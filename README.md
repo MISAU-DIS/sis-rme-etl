@@ -653,42 +653,82 @@ of the result set will be used as the destination field value. If the query retu
     - **COALESCE_TRANSFORMER(fieldOrValue1, ..., fieldOrValuen)** Returns the first non-null value obtained from a sequence of candidate inputs. Each parameter is evaluated in order and transformed into a value; if the result of the first parameter is null, the transformer evaluates the second, and so on until a non-null value is found. If all evaluated parameters result in null, the final result is null.
 Parameters may represent fixed values, dynamic parameters, or fields from available data sources. When referencing a field, it can be specified using the simple form "field" or the qualified form "dataSourceName.field" when disambiguation between data sources is required.
     - **SIMPLE_VALUE_TRANSFORMER** Performs direct assignment of the source value to the destination field. Any dynamic parameters present in the source value are resolved before assignment. This transformer is used automatically when no explicit transformer is defined for a field mapping.
-    - **PARENT_ON_DEMAND_TRANSFORMER(parentTable,parent_field_oin_datasource_object:srcField,on_demand_check_condition:condition,template:templateName,dstField₁:srcFieldOrValue₁,...,dstFieldₙ:srcFieldOrValueₙ, override_fields:fiel1,field2,...)**: Ensures that a related parent record exists in the destination table and returns its primary key as the transformed value. The transformer may resolve the parent from the source database, reuse an already existing parent previously created on demand in the destination database, or create the parent on demand when necessary. The transformer requires the parent table name and at least one of the following special parameters:
+    - **PARENT_ON_DEMAND_TRANSFORMER(parentTable,parent_field_oin_datasource_object:srcField,on_demand_check_condition:condition,template:templateName,template_param_paramName:srcFieldOrValue,...,dstField₁:srcFieldOrValue₁,...,dstFieldₙ:srcFieldOrValueₙ, override_fields:field1,field2,...)**: Ensures that a related parent record exists in the destination table and returns its primary key as the transformed value. The transformer may resolve the parent from the source database, reuse an already existing parent previously created on demand in the destination database, or create the parent on demand when necessary.
+      The transformer requires the parent table name and at least one of the following special parameters:
       - *parent_field_oin_datasource_object:srcField* – identifies the source field used to resolve the parent record from the source database
       - *on_demand_check_condition:condition* – defines a condition used to search for an already existing parent record previously created on demand in the destination database  
-      - *An optional template:templateName* parameter may also be provided to define the template used to initialize the EtlItemConfiguration responsible for creating or loading the parent on demand.
-      - Additional parameters may be used to populate fields of the parent record when it needs to be created. Each additional parameter must follow the format **dstField:srcFieldOrValue**.
-      - The value assigned to dstField may be:
-        - a field from the available data sources (e.g. date_sta
-      - *override_fields:fiel1,field2,...* - Defines the list of fields that should be updated on an existing parent record when it is reused by the PARENT_ON_DEMAND_TRANSFORMER. By default, when a parent record already exists in the destination database, it is reused as-is and no updates are applied. However, in some scenarios it may be necessary to update specific fields of the existing parent using the same transformation logic defined for parent creation.
-        This parameter allows specifying which fields should be recalculated and overwritten on the existing parent record.
-        Format
-        ```
-        override_fields:field1,field2,...,fieldN
-        ```
-        Behavior
-        
-        The specified fields will be recomputed using their corresponding mappings. The computed values will overwrite the existing values in the destination parent record. Only the listed fields are updated; all other fields remain unchanged. The same transformation rules apply as for parent creationrted:encounter_datetime)
-        - a constant value (e.g. visit_type_id:42)
-        - a dynamic ETL parameter starting with @ (e.g. location_id:@migration_location_id)
-        - the literal null to explicitly set the field to null (e.g. date_stopped:null)
-        - omitted after the colon to implicitly set the field to null (e.g. indication_concept_id:)
-        
-		```
-		 **ParentOnDemandLoadTransformer**(
-		    visit,
-		    parent_field_oin_datasource_object:visit_id,
-		    on_demand_check_condition:patient_id=patient_id and date_started=encounter_datetime,
-		    template:visit_on_demand_template,
-		    visit_type_id:42,
-		    date_started:encounter_datetime,
-		    location_id:@migration_location_id,
-		    date_stopped:null,
-		    indication_concept_id:
-		)
-		```
+      - *template:templateName* – optional parameter that defines the template used to initialize the **EtlItemConfiguration** responsible for creating or loading the parent on demand. This allows reuse of predefined ETL configurations and reduces duplication.
 
-        - In this example, a record in the visit table will be created on demand if it does not yet exist. The date_started field will be populated from encounter_datetime, visit_type_id will receive the constant value 42, location_id will use the dynamic parameter @migration_location_id, and the fields date_stopped and indication_concept_id will be set to null.
+      **Template parameters injection**
+      
+      	When a *template* is provided, it is also possible to dynamically inject parameters into that template using a **flat prefix-based approach**.
+  	  	Template parameters must follow the format:
+      	```template_param_<paramName>:srcFieldOrValue```
+       
+      	Where:
+	  - *paramName* – the name of the parameter defined in the template
+      - *srcFieldOrValue* – the value assigned to the parameter, which may be:
+        - a field from available data sources (e.g. *@patient_id*)
+        - a constant value (e.g. *42*)
+        - a dynamic ETL parameter starting with *@* (e.g. *@migration_location_id*)
+        - *null* or empty (to assign a null value)
+
+        These parameters are resolved at runtime and injected into the template before the parent record is created or loaded.
+
+      **Additional field mappings**
+    
+        Additional parameters may be used to populate fields of the parent record when it needs to be created. Each additional parameter must follow the format:
+
+        ```
+        dstField:srcFieldOrValue
+        ```
+        
+	   The value assigned to *dstField* may be:
+        - a field from the available data sources (e.g. *date_started:encounter_datetime*)
+        - a constant value (e.g. *visit_type_id:42*)
+  	    - a dynamic ETL parameter starting with *@* (e.g. *location_id:@migration_location_id*)
+  	    - the literal *null* to explicitly set the field to null (e.g. *date_stopped:null*)
+  	    - omitted after the colon to implicitly set the field to null (e.g. *indication_concept_id:*)
+
+  		**Override existing parent fields**
+
+  		- *override_fields:field1,field2,...* – defines the list of fields that should be updated when an existing parent record is reused.
+			By default, when a parent record already exists in the destination database, it is reused as-is and no updates are applied.
+			However, in some scenarios it may be necessary to update specific fields of the existing parent using the same transformation 	logic defined for parent creation.
+
+  			Behavior:
+  				- The specified fields are recomputed using their corresponding mappings
+  				- The computed values overwrite the existing values in the destination parent record
+  				- Only the listed fields are updated; all other fields remain unchanged
+  				- The same transformation rules apply as for parent creation
+
+		  **Example**
+		
+		  ```
+		  ParentOnDemandLoadTransformer(
+		      visit,
+		      parent_field_oin_datasource_object:visit_id,
+		      on_demand_check_condition:patient_id=patient_id and date_started=encounter_datetime,
+		      template:visit_on_demand_template,
+		      template_param_patient_id:@patient_id,
+		      template_param_visit_date:@encounter_datetime,
+		      visit_type_id:42,
+		      date_started:encounter_datetime,
+		      location_id:@migration_location_id,
+		      date_stopped:null,
+		      indication_concept_id:
+		  )
+		  ```
+		
+		  In this example:
+		  - A record in the *visit* table will be created on demand if it does not yet exist
+		  - The template *visit_on_demand_template* is used to initialize the ETL configuration
+		  - The template parameters *patient_id* and *visit_date* are dynamically injected
+		  - The field *date_started* is populated from *encounter_datetime*
+		  - The field *visit_type_id* receives the constant value *42*
+		  - The field *location_id* uses the dynamic parameter *@migration_location_id*
+		  - The fields *date_stopped* and *indication_concept_id* are set to null
+      
 - (5) *dataType*: an optional attribute used to explicitly define the data type of the field value. When not specified, the system will infer the type from the transformation result. Supported data types include: *int*, *long*, *double*, *string*, *date*, and *boolean*.
   - (6) *overrideTriggerValue*: specifies a value that triggers the override mechanism. If the transformed field value equals this value, the final value will be replaced by the configured defaultValue.
 - **objectLanguage**: defines the scripting or expression language used to process field generation when custom logic is required. This property can be omitted if no custom field generator is used.
