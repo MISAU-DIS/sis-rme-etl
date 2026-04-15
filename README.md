@@ -653,11 +653,24 @@ of the result set will be used as the destination field value. If the query retu
     - **COALESCE_TRANSFORMER(fieldOrValue1, ..., fieldOrValuen)** Returns the first non-null value obtained from a sequence of candidate inputs. Each parameter is evaluated in order and transformed into a value; if the result of the first parameter is null, the transformer evaluates the second, and so on until a non-null value is found. If all evaluated parameters result in null, the final result is null.
 Parameters may represent fixed values, dynamic parameters, or fields from available data sources. When referencing a field, it can be specified using the simple form "field" or the qualified form "dataSourceName.field" when disambiguation between data sources is required.
     - **SIMPLE_VALUE_TRANSFORMER** Performs direct assignment of the source value to the destination field. Any dynamic parameters present in the source value are resolved before assignment. This transformer is used automatically when no explicit transformer is defined for a field mapping.
-    - **PARENT_ON_DEMAND_TRANSFORMER(parentTable,parent_field_oin_datasource_object:srcField,on_demand_check_condition:condition,template:templateName,template_param_paramName:srcFieldOrValue,...,dstField₁:srcFieldOrValue₁,...,dstFieldₙ:srcFieldOrValueₙ, override_fields:field1,field2,...)**: Ensures that a related parent record exists in the destination table and returns its primary key as the transformed value. The transformer may resolve the parent from the source database, reuse an already existing parent previously created on demand in the destination database, or create the parent on demand when necessary.
+    - **PARENT_ON_DEMAND_TRANSFORMER(parentTable,parent_field_oin_datasource_object:srcField,on_demand_check_condition:conditionOrSqlFile,template:templateName,template_param_paramName:srcFieldOrValue,...,dstField₁:srcFieldOrValue₁,...,dstFieldₙ:srcFieldOrValueₙ, override_fields:field1,field2,...)**: Ensures that a related parent record exists in the destination table and returns its primary key as the transformed value. The transformer may resolve the parent from the source database, reuse an already existing parent previously created on demand in the destination database, or create the parent on demand when necessary.
       The transformer requires the parent table name and at least one of the following special parameters:
       - *parent_field_oin_datasource_object:srcField* – identifies the source field used to resolve the parent record from the source database
-      - *on_demand_check_condition:condition* – defines a condition used to search for an already existing parent record previously created on demand in the destination database  
-      - *template:templateName* – optional parameter that defines the template used to initialize the **EtlItemConfiguration** responsible for creating or loading the parent on demand. This allows reuse of predefined ETL configurations and reduces duplication.
+      - *on_demand_check_condition:conditionOrSqlFile* – defines how the ETL engine should search for an already existing parent record previously created on demand in the destination database.  
+        This parameter supports two formats:
+         - **Inline SQL condition**  
+           Example: `patient_id=patient_id and date_started=encounter_datetime`
+         - **SQL file reference**  
+           Example: `on_demand_check_condition:on_demand_order_group_check_condition.sql`  
+      	   In this case, the SQL condition will be loaded from a file located in the directory:  
+          `@etlRootDirectory/dump-scripts/`
+
+		    ⚠️ **Important behavior**:
+		    - The condition is always evaluated against the **destination database**
+		    - Therefore, all fields referenced in the condition are expected to correspond to **destination fields**
+		    - If a value used in the condition originates from the source (or another data source), the ETL engine will attempt to resolve it into its corresponding destination value **whenever possible**
+		    - This automatic resolution is only possible if the referenced field is part of the data available for the on-demand parent creation process (e.g., defined via template parameters or mappings)
+		  - *template:templateName* – optional parameter that defines the template used to initialize the **EtlItemConfiguration** responsible for creating or loading the parent on demand. This allows reuse of predefined ETL configurations and reduces duplication.
 
       **Template parameters injection**
       
