@@ -628,23 +628,60 @@ Each **extraObjectDataSource** is defined by the following properties:
 		    - STRING_TRANSFORMER(@name).trim().toLowerCase()
         
         If the expression is invalid or a method cannot be resolved/invoked, an exception is raised.
-    - **MAPPING_TRANSFORMER(mapping_table,mapping_src_field,mapping_dst_field,extra_condition:extra_condition_value,on_missing:on_missing_value)** performs value transformation using a lookup table stored in the database.
-      The transformer searches for a record in the specified mapping table where the value of the source field matches the configured mapping_src_field. If a matching record is found, the value of mapping_dst_field is returned as the transformed value.
-
+    - **MAPPING_TRANSFORMER(mapping_table,mapping_src_field,mapping_dst_field,extra_condition:extra_condition_value,on_missing:on_missing_value,input:valueOrTransformer)** performs value transformation using a lookup table stored in the database.
+      The transformer searches for a record in the specified mapping table where the value of the input matches the configured *mapping_src_field*. If a matching record is found, the value of *mapping_dst_field* is returned as the transformed value.
+      
       Required parameters:
-      - mapping_table – Name of the mapping table
-      - mapping_src_field – Source field in the mapping table used for lookup
-      - mapping_dst_field – Destination field in the mapping table whose value will be returned
+       - *mapping_table* – Name of the mapping table
+       - *mapping_src_field* – Field in the mapping table used for lookup
+       - *mapping_dst_field* – Field in the mapping table whose value will be returned
 
       Optional parameters:
-      - extra_condition:extra_condition_value – additional SQL condition used to filter the mapping table;
-      - on_missing:on_missing_value – Defines the behavior when no mapping is found
-        Supported values:
-        - *MARK_RECORD_AS_FAILED* – The record is marked as failed and processing continues
-        - *SET_TO_NULL* – The destination field is assigned null
-        - *ABORT_PROCESS* – The ETL process is aborted with an exception
+       - *input:valueOrTransformer* – Defines the value to be used as input for the mapping lookup. If not specified, the input value will be determined automatically from the field being transformed.
 
-		“Optional parameters can be provided in any order using the key:value format. The transformer will automatically detect and apply only the parameters that are defined.”
+        This parameter supports:
+          - direct values (e.g. `input:42`)
+          - source fields (e.g. `input:concept_id`)
+          - dynamic ETL parameters (e.g. `input:@concept_id`)
+          - nested transformers (e.g. `input:COALESCE_TRANSFORMER(...)`)
+    
+        When a nested transformer is provided, it will be executed first and its output will be used as the input value for the mapping lookup.
+
+      - *extra_condition:extra_condition_value* – additional SQL condition used to filter the mapping table
+
+      - *on_missing:on_missing_value* – Defines the behavior when no mapping is found  
+    
+	  Supported values:
+       - *MARK_RECORD_AS_FAILED* – The record is marked as failed and processing continues
+       - *SET_TO_NULL* – The destination field is assigned null
+       - *ABORT_PROCESS* – The ETL process is aborted with an exception
+       - *USE_INPUT* – The original input value is returned without applying any mapping
+
+      **Parameter rules:**
+       - Optional parameters can be provided in any order using the `key:value` format
+       - The transformer automatically detects and applies only the parameters that are defined
+       - When multiple transformers are used (nested transformers), execution occurs from inner to outer
+
+      **Example:**
+	  ```
+	  MAPPING_TRANSFORMER(
+	      sesp_sisrme_metadata_mapping,
+	      sesp_value,
+	      sisrme_value,
+	      on_missing:USE_INPUT,
+	      extra_condition:mapping_group="concept",
+	      input:COALESCE_TRANSFORMER(
+	          ${aliases_prefix}_order_obs_src_ds_name.value_coded,
+	          ${aliases_prefix}_obs_src_ds_name.value_coded,
+	          ${aliases_prefix}_obs_src_ds_name.concept_id
+	      )
+	  )
+	  ```
+	  In this example:
+	  - The *COALESCE_TRANSFORMER* is executed first to determine the input value
+	  - The resulting value is used to lookup the mapping table *sesp_sisrme_metadata_mapping*
+	  - The lookup is filtered using the condition `mapping_group="concept"`
+	  - If no mapping is found, the original input value is returned due to `USE_INPUT`
 
     - **FAST_SQL_TRANSFORMER(sqlQuery)** Retrieves the field value by executing a SQL query against the source database. The SQL query must return at least one column; only the first column of the first row 
 of the result set will be used as the destination field value. If the query returns no rows or the resulting value is null, the transformer will:
