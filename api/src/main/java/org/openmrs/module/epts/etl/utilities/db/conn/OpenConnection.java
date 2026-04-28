@@ -26,9 +26,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-import javax.ws.rs.ForbiddenException;
-
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 /**
@@ -165,7 +164,7 @@ public class OpenConnection implements Connection, Closeable {
 	public void finalizeConnection(BaseConfiguration finalizedFrom) {
 		
 		if (finalizedFrom != openedFrom) {
-			throw new ForbiddenException("Only the opening object can finalize the connection!!");
+			throw new ForbiddenOperationException("Only the opening object can finalize the connection!!");
 		}
 		
 		if (connection == null)
