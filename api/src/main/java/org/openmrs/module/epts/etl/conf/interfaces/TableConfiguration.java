@@ -1580,19 +1580,22 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				if (parent.getTableName().equalsIgnoreCase(this.getSharePkWith())) {
 					
 					if (!parent.isFullLoaded()) {
+						OpenConnection localConn = null;
+						
 						try {
-							
 							if (conn == null) {
-								conn = this.getRelatedEtlConf().openSrcConn(this);
+								localConn = this.getRelatedEtlConf().openSrcConn(this);
+								parent.fullLoad(localConn);
+							} else {
+								parent.fullLoad(conn);
 							}
 							
-							parent.fullLoad(conn);
 						}
 						catch (DBException e) {
 							throw new EtlExceptionImpl(e);
 						}
 						finally {
-								finalizeConnection((OpenConnection) conn, this);
+							finalizeConnection(localConn);
 						}
 					}
 					
