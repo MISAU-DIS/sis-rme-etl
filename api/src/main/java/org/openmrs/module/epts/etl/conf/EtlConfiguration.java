@@ -836,9 +836,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				EtlCounter counter = new EtlCounter();
 				
 				for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
-					if (item.isDisabled())
-						continue;
-					
 					counter.increase();
 					
 					item.setRelatedEtlConfig(this);

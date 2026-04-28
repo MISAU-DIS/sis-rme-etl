@@ -8,6 +8,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
@@ -806,5 +807,25 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				child.ensureEtlStageTableExists(counter, operationConfig, srcConn, dstConn);
 			}
 		}
+	}
+	
+	public List<EtlDataSource> collectAllAvaliableDataSources(Connection conn) {
+		List<EtlDataSource> ds = new ArrayList<>();
+		
+		if (!this.getSrcConf().doNotUseAsDatasource()) {
+			ds.add(this.getSrcConf());
+			
+			ds.addAll(this.getSrcConf().getAvaliableExtraDataSource());
+		}
+		
+		if (this.hasParentItemConf()) {
+			DstConf dstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
+			
+			ds.add(dstConf);
+			
+			ds.addAll(this.getParentItemConf().collectAllAvaliableDataSources(conn));
+		}
+		
+		return ds;
 	}
 }

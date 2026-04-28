@@ -843,4 +843,12 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		this.createRelatedStageAreaSrcUniqueKeysTable(srcConn);
 	}
 	
+	public EtlItemConfiguration getParentItemConf() {
+		if (this.hasParentItemConf()) {
+			return this.getParentConf().getParentItemConf();
+		}
+		
+		return null;
+	}
+	
 }
