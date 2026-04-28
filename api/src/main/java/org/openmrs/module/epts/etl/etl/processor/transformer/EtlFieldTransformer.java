@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -13,15 +14,12 @@ import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
  * Allow the custom field transformation.
  */
-public interface EtlFieldTransformer {
-	
-	public static final CommonUtilities utilities = CommonUtilities.getInstance();
+public interface EtlFieldTransformer extends EtlDataConfiguration {
 	
 	static final Pattern PARAM_PATTERN = Pattern.compile("@(\\w+)");
 	
@@ -160,7 +158,9 @@ public interface EtlFieldTransformer {
 				return paramValue;
 			}
 			
-			matcher.appendReplacement(buffer, Matcher.quoteReplacement(paramValue.toString()));
+			if (paramValue != null) {
+				matcher.appendReplacement(buffer, Matcher.quoteReplacement(paramValue.toString()));
+			}
 		}
 		
 		matcher.appendTail(buffer);
@@ -174,6 +174,23 @@ public interface EtlFieldTransformer {
 	
 	default boolean hasOverrideConnection() {
 		return this.getOverrideConnection() != null;
+	}
+	
+	default FieldTransformerType determineTransformerType() {
+		
+		Class<?> clazz = this.getClass();
+		
+		for (FieldTransformerType type : FieldTransformerType.values()) {
+			if (type.getClassName() != null && type.getClassName().equals(clazz.getCanonicalName())) {
+				return type;
+			}
+		}
+		
+		return FieldTransformerType.CUSTOM_TRANSFORMER;
+	}
+	
+	default void init(Connection srcConn, Connection dstConn) throws DBException {
+		
 	}
 	
 }

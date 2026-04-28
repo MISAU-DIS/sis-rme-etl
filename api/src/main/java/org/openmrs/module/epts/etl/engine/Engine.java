@@ -12,11 +12,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.ThreadingMode;
 import org.openmrs.module.epts.etl.controller.OperationController;
@@ -42,7 +44,7 @@ import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
  * 
  * @author jpboane
  */
-public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
+public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfiguration implements MonitoredOperation {
 	
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 	
@@ -101,29 +103,29 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 		return finalCheckStatus;
 	}
 	
-	public OpenConnection openSrcConn() throws DBException {
-		return getController().openSrcConnection();
+	public OpenConnection openSrcConn(BaseConfiguration opendFrom) throws DBException {
+		return getController().openSrcConnection(opendFrom);
 	}
 	
-	public OpenConnection tryToOpenDstConn() throws DBException {
-		return getController().tryToOpenDstConn();
+	public OpenConnection tryToOpenDstConn(BaseConfiguration opendFrom) throws DBException {
+		return getController().tryToOpenDstConn(opendFrom);
 	}
 	
-	public List<OpenConnection> openSrcConn(int qtyConnections) throws DBException {
+	public List<OpenConnection> openSrcConn(int qtyConnections, BaseConfiguration opendFrom) throws DBException {
 		List<OpenConnection> conns = new ArrayList<>(qtyConnections);
 		
 		for (int i = 0; i < qtyConnections; i++) {
-			conns.add(this.openSrcConn());
+			conns.add(this.openSrcConn(opendFrom));
 		}
 		
 		return conns;
 	}
 	
-	public List<OpenConnection> tryToOpenDstConn(int qtyConnections) throws DBException {
+	public List<OpenConnection> tryToOpenDstConn(int qtyConnections, BaseConfiguration opendFrom) throws DBException {
 		List<OpenConnection> conns = new ArrayList<>(qtyConnections);
 		
 		for (int i = 0; i < qtyConnections; i++) {
-			conns.add(this.tryToOpenDstConn());
+			conns.add(this.tryToOpenDstConn(opendFrom));
 		}
 		
 		return conns;
@@ -157,8 +159,8 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 			OpenConnection dstConn = null;
 			
 			try {
-				srcConn = this.openSrcConn();
-				dstConn = this.tryToOpenDstConn();
+				srcConn = this.openSrcConn(this);
+				dstConn = this.tryToOpenDstConn(this);
 				
 				if (dstConn != null && DBUtilities.isSameDatabaseServer(srcConn, dstConn)) {
 					return utilities.stringHasValue(getSearchParams().generateDestinationExclusionClause(srcConn, dstConn));
@@ -170,10 +172,8 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 				throw new RuntimeException(e);
 			}
 			finally {
-				if (srcConn != null)
-					srcConn.finalizeConnection();
-				if (dstConn != null)
-					dstConn.finalizeConnection();
+				finalizeConnection(dstConn, this);
+				finalizeConnection(srcConn, this);
 			}
 		}
 	}
@@ -320,14 +320,13 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 				}
 				
 				this.setSearchParams(controller.initMainSearchParams(t, this));
-				this.getSearchParams().setRelatedEngine(this);
 				
 				changeStatusToRunning();
 				
 				OpenConnection conn = null;
 				
 				try {
-					conn = openSrcConn();
+					conn = openSrcConn(this);
 					
 					if (getRelatedOperationController().isResumable()) {
 						this.getTableOperationProgressInfo().save(conn);
@@ -336,9 +335,7 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 					}
 				}
 				finally {
-					if (conn != null) {
-						conn.finalizeConnection();
-					}
+					finalizeConnection(conn, this);
 				}
 				
 				calculateStatistics();
@@ -443,7 +440,7 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 				boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
 				boolean useMultiThreadSearch = true;
 				
-				performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(), tryToOpenDstConn());
+				performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this), tryToOpenDstConn(this));
 				
 				if (taskProcessor.getTaskResultInfo().hasFatalError()) {
 					taskProcessor.getTaskResultInfo().throwDefaultExcetions(this);
@@ -475,13 +472,13 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 		boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
 		boolean useMultiThreadSearch = true;
 		
-		performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(), tryToOpenDstConn());
+		performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this), tryToOpenDstConn(this));
 		
 		if (taskProcessor.getTaskResultInfo().hasFatalError()) {
 			taskProcessor.getTaskResultInfo().throwDefaultExcetions(this);
 		} else {
 			
-			OpenConnection srcConn = openSrcConn();
+			OpenConnection srcConn = openSrcConn(this);
 			
 			try {
 				RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
@@ -489,7 +486,7 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 				srcConn.markAsSuccessifullyTerminated();
 			}
 			finally {
-				srcConn.finalizeConnection();
+				srcConn.finalizeConnection(this);
 			}
 			
 			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
@@ -511,6 +508,8 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 		if (getThreadRecordIntervalsManager().getFinalCheckIntervalsManager() == null) {
 			getThreadRecordIntervalsManager().initializeFinalCheckIntervalManager();
 		}
+		
+		getSearchParams().setFinalCheckStatus(finalCheckStatus);
 		
 		getSearchParams().setThreadRecordIntervalsManager(getThreadRecordIntervalsManager().getFinalCheckIntervalsManager());
 		
@@ -583,8 +582,8 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 				
 				ExecutorService executorService = Executors.newFixedThreadPool(avaliableIntervals.size(), threadFactor);
 				
-				final OpenConnection sharedSrcConn = openSrcConn();
-				final OpenConnection sharedDstConn = tryToOpenDstConn();
+				final OpenConnection sharedSrcConn = openSrcConn(this);
+				final OpenConnection sharedDstConn = tryToOpenDstConn(this);
 				
 				try {
 					for (int i = 0; i < avaliableIntervals.size(); i++) {
@@ -610,8 +609,8 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 								try {
 									boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
 									
-									performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(),
-									    tryToOpenDstConn());
+									performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this),
+									    tryToOpenDstConn(this));
 								}
 								catch (DBException e) {
 									taskProcessor.getTaskResultInfo().setFatalException(e);
@@ -663,7 +662,7 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 					
 				}
 				finally {
-					OpenConnection.finalizeAllConnections(sharedSrcConn, sharedDstConn);
+					OpenConnection.finalizeAllConnections(this, sharedSrcConn, sharedDstConn);
 					
 					// Shutdown the executorService service
 					executorService.shutdown();
@@ -729,7 +728,7 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 		}
 		finally {
 			if (persistTheWork) {
-				OpenConnection.finalizeAllConnections(srcConn, dstConn);
+				OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
 			}
 		}
 	}
@@ -739,7 +738,7 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 	}
 	
 	private void calculateStatistics() throws DBException {
-		OpenConnection conn = getController().openSrcConnection();
+		OpenConnection conn = getController().openSrcConnection(this);
 		
 		try {
 			logInfo("CALCULATING STATISTICS! Using '"
@@ -768,8 +767,8 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 				} else {
 					logDebug("Loading from Database...");
 					
-					total = getSearchParams().countAllRecords(conn);
-					remaining = getSearchParams().countNotProcessedRecords(conn);
+					total = getSearchParams().countAllRecords(this.getController(), conn);
+					remaining = getSearchParams().countNotProcessedRecords(this.getController(), conn);
 				}
 				
 				processed = total - remaining;
@@ -794,7 +793,7 @@ public class Engine<T extends EtlDatabaseObject> implements MonitoredOperation {
 			throw new RuntimeException(e);
 		}
 		finally {
-			conn.finalizeConnection();
+			conn.finalizeConnection(this);
 		}
 	}
 	

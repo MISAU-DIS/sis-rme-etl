@@ -3,11 +3,12 @@ package org.openmrs.module.epts.etl.etl.processor.transformer;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -43,15 +44,16 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private static DefaultFieldTransformer INSTANCE;
 	
-	private DefaultFieldTransformer(List<Object> parameters, DstConf relatedDstConf, TransformableField field) {
-		super(parameters, relatedDstConf, field);
+	private DefaultFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	    TransformableField field) {
+		super(parameters, relatedEtlTransformTarget, field);
 	}
 	
-	public static DefaultFieldTransformer getInstance(List<Object> parameters, DstConf relatedDstConf,
-	        TransformableField field) {
+	public static DefaultFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	        TransformableField field, Connection conn) {
 		
 		if (INSTANCE == null) {
-			INSTANCE = new DefaultFieldTransformer(parameters, relatedDstConf, field);
+			INSTANCE = new DefaultFieldTransformer(parameters, relatedEtlTransformTarget, field);
 		}
 		
 		return INSTANCE;
@@ -59,8 +61,9 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-	        Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
+	        EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects,
+	        final TransformableField field, Connection srcConn, Connection dstConn)
+	        throws DBException, EtlTransformationException {
 		
 		Object dstValue = null;
 		EtlDataSource ds = null;
@@ -103,9 +106,17 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 		
 		if (!found) {
-			throw new EtlTransformationException(
-			        "The field '" + field.getName() + "' does not belong to any configured source table", srcObject,
-			        ActionOnEtlException.ABORT_PROCESS);
+			String msg = "The field '" + field.getName()
+			        + "' was transformed to null, but it is not configured to accept null values. "
+			        + "To avoid process interruption, explicitly allow null values for this field or ensure the transformation produces a valid value.";
+			
+			if (field.nullValueBehavior().markAsFailed()) {
+				throw new EtlTransformationException(msg, srcObject, ActionOnEtlException.LOG);
+			} else if (field.nullValueBehavior().abort()) {
+				throw new EtlExceptionImpl(msg, srcObject, ActionOnEtlException.ABORT_PROCESS);
+			} else if (field.nullValueBehavior().allow()) {
+				return null;
+			}
 		}
 		
 		return new FieldTransformingInfo(field, dstValue, ds);

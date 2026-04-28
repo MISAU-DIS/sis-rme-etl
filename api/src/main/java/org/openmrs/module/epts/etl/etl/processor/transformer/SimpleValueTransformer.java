@@ -2,8 +2,10 @@ package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
@@ -36,24 +38,19 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  */
 public class SimpleValueTransformer extends AbstractEtlFieldTransformer {
 	
-	public static SimpleValueTransformer INSTANCE;
+	protected static final Map<String, SimpleValueTransformer> INSTANCES = new ConcurrentHashMap<>();
 	
-	private static Object LOCK = new Object();
-	
-	private SimpleValueTransformer(List<Object> parameters, DstConf relatedDstConf, TransformableField field) {
-		super(parameters, relatedDstConf, field);
+	private SimpleValueTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	    TransformableField field) {
+		super(parameters, relatedEtlTransformTarget, field);
 	}
 	
-	public static SimpleValueTransformer getInstance(List<Object> parameters, DstConf relatedDstConf,
-	        TransformableField field) {
+	public static SimpleValueTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	        TransformableField field, Connection conn) {
 		
-		if (INSTANCE == null) {
-			synchronized (LOCK) {
-				INSTANCE = new SimpleValueTransformer(parameters, relatedDstConf, field);
-			}
-		}
+		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 		
-		return INSTANCE;
+		return INSTANCES.computeIfAbsent(key, k -> new SimpleValueTransformer(parameters, relatedEtlTransformTarget, field));
 	}
 	
 	@Override

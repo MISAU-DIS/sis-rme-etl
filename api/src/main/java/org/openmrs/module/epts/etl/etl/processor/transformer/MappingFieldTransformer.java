@@ -6,14 +6,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.MappingNotFoundBehavior;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingMappingException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -106,9 +108,12 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private List<String> rawParameterDefinitions;
 	
-	public MappingFieldTransformer(List<Object> parameters, DstConf relatedDstConf, TransformableField field) {
+	private FieldsMapping input;
+	
+	public MappingFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	    TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		
-		super(parameters, relatedDstConf, field);
+		super(parameters, relatedEtlTransformTarget, field);
 		
 		validateParams(parameters);
 		
@@ -139,8 +144,16 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 					        + " has no value on transformer:  " + getTransformerDsc());
 				}
 				
-				if (paramName.equals("extra_condition")) {
-					
+				if (paramName.equals("input")) {
+					if (isTransformerExpression(paramValue)) {
+						this.input = FieldsMapping.fastCreate(field.getDstField(), field.getDstField(), false, conn);
+						this.input.setTransformer(paramValue);
+						this.input.tryToLoadTransformer(relatedEtlTransformTarget, conn);
+						
+					} else {
+						this.input = FieldsMapping.fastCreate(paramValue, paramValue, relatedEtlTransformTarget, conn);
+					}
+				} else if (paramName.equals("extra_condition")) {
 					this.extraCondition = paramValue;
 				} else if (paramName.equals("on_missing")) {
 					try {
@@ -163,93 +176,56 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 		return this.onMissing;
 	}
 	
-	public String getTransformerDsc() {
-		String sql = "MAPPING_TRANSFORMER: (" + this.mappingTable + "," + this.mappingSrcField + "," + this.mappingDstField;
-		
-		if (utilities.listHasElement(this.rawParameterDefinitions)) {
-			sql += ", " + this.rawParameterDefinitions.toString();
-		}
-		
-		return sql + ")";
-	}
-	
-	private void buildMappingCache(Connection srcConn) throws DBException {
-		List<EtlDatabaseObject> rows = this.tableConfig.searchRecords(null, null, srcConn);
-		
-		Map<String, Object> cache = new HashMap<>();
-		
-		for (EtlDatabaseObject obj : rows) {
-			
-			Object src = obj.getFieldValue(this.mappingSrcField);
-			Object dst = obj.getFieldValue(this.mappingDstField);
-			
-			if (src != null) {
-				cache.put(src.toString(), dst);
+	private void buildMappingCache(List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn) throws DBException {
+		if (mappingCache == null) {
+			synchronized (lock) {
+				
+				if (mappingCache == null) {
+					
+					this.tableConfig = new GenericTableConfiguration(mappingTable,
+					        (TableConfiguration) additionalSrcObjects.get(0).getRelatedConfiguration());
+					
+					this.tableConfig.setExtraConditionForExtract(this.extraCondition);
+					this.tableConfig.fullLoad(srcConn);
+					
+					List<EtlDatabaseObject> rows = this.tableConfig.searchRecords(null, null, null, srcConn);
+					
+					Map<String, Object> cache = new HashMap<>();
+					
+					for (EtlDatabaseObject obj : rows) {
+						
+						Object src = obj.getFieldValue(this.mappingSrcField);
+						Object dst = obj.getFieldValue(this.mappingDstField);
+						
+						if (src != null) {
+							cache.put(src.toString(), dst);
+						}
+					}
+					
+					this.mappingCache = cache;
+				}
 			}
 		}
 		
-		this.mappingCache = cache;
 	}
 	
 	public String getMappingTable() {
 		return mappingTable;
 	}
 	
-	public static MappingFieldTransformer getInstance(List<Object> parameters, DstConf relatedDstConf,
-	        TransformableField field) {
+	public static MappingFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	        TransformableField field, Connection conn) {
 		
-		validateParams(parameters);
+		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 		
-		String table = parameters.get(0).toString();
-		String srcField = parameters.get(1).toString();
-		String dstField = parameters.get(2).toString();
-		String extraCondition = null;
-		MappingNotFoundBehavior onMissing = MappingNotFoundBehavior.ABORT_PROCESS;
-		
-		List<String> rawParameterDefinitions = parameters.size() > 3
-		        ? parameters.subList(3, parameters.size()).stream().map(Object::toString).toList()
-		        : null;
-		
-		if (utilities.listHasElement(rawParameterDefinitions)) {
-			
-			for (String fieldData : rawParameterDefinitions) {
-				String[] mapping = fieldData.split(":", 2);
-				
-				if (mapping.length != 2) {
-					throw new EtlExceptionImpl("Wrong format for conditional parameters within the transformer "
-					        + "MAPPING_TRANSFORMER(" + parameters + ")" + "\n"
-					        + "Each object param must be specified as paramName:paramValue");
-				}
-				
-				String paramName = mapping[0];
-				String paramValue = mapping[1];
-				
-				if (!utilities.stringHasValue(paramValue)) {
-					throw new EtlExceptionImpl("The paramValue for parameter " + paramName
-					        + " has no value on transformer:  MAPPING_TRANSFORMER(" + parameters + ")");
-				}
-				
-				if (paramName.equals("extra_condition")) {
-					extraCondition = paramValue;
-				} else if (paramName.equals("on_missing")) {
-					try {
-						onMissing = MappingNotFoundBehavior.valueOf(paramValue);
-					}
-					catch (Exception e) {
-						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
-						        + " on transformer:  " + "MAPPING_TRANSFORMER(" + parameters + ")");
-					}
-					
-				} else {
-					throw new ForbiddenOperationException("Unsupported parameter " + paramName + " on transformer:  "
-					        + "MAPPING_TRANSFORMER(" + parameters + ")");
-				}
+		return INSTANCES.computeIfAbsent(key, k -> {
+			try {
+				return new MappingFieldTransformer(parameters, relatedEtlTransformTarget, field, conn);
 			}
-		}
-		
-		String key = buildCacheKey(table, srcField, dstField, extraCondition, onMissing);
-		
-		return INSTANCES.computeIfAbsent(key, k -> new MappingFieldTransformer(parameters, relatedDstConf, field));
+			catch (DBException e) {
+				throw new EtlExceptionImpl(e);
+			}
+		});
 	}
 	
 	public static void validateParams(List<Object> parameters) {
@@ -258,13 +234,6 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 			        "MappingFieldTransformer requires at least 3 parameters: mapping_table, mapping_src_field and mapping_dst_field.");
 		}
 		
-	}
-	
-	private static String buildCacheKey(String table, String srcField, String dstField, String extraCondition,
-	        MappingNotFoundBehavior onMissing) {
-		
-		return table + "|" + srcField + "|" + dstField + (extraCondition != null ? "|" + extraCondition : "") + "|"
-		        + onMissing;
 	}
 	
 	@Override
@@ -276,34 +245,51 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 			throw new EtlExceptionImpl("MappingFieldTransformer requires at least one source object.");
 		}
 		
-		if (mappingCache == null) {
+		buildMappingCache(additionalSrcObjects, srcConn);
+		
+		Object valueToTransform = null;
+		
+		FieldTransformingInfo transformingInfo = null;
+		
+		if (this.hasInput()) {
+			transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject, transformedRecord,
+			    additionalSrcObjects, this.input, srcConn, dstConn);
 			
-			synchronized (lock) {
-				
-				if (mappingCache == null) {
-					
-					this.tableConfig = new GenericTableConfiguration(mappingTable,
-					        (TableConfiguration) additionalSrcObjects.get(0).getRelatedConfiguration());
-					
-					this.tableConfig.setExtraConditionForExtract(this.extraCondition);
-					this.tableConfig.fullLoad(srcConn);
-					
-					buildMappingCache(srcConn);
-				}
+			try {
+				valueToTransform = transformingInfo.getTransformedValue();
 			}
+			catch (Exception e) {
+				throw e;
+			}
+			
+		} else {
+			valueToTransform = field.getValueToTransform();
 		}
 		
+		if (valueToTransform == null)
+			return null;
+		
 		String srcValueWithParamsReplaced = EtlFieldTransformer
-		        .tryToReplaceParametersOnSrcValue(additionalSrcObjects, field.getValueToTransform()).toString();
+		        .tryToReplaceParametersOnSrcValue(additionalSrcObjects, valueToTransform).toString();
 		
 		Object dstValue = mappingCache.get(srcValueWithParamsReplaced);
 		
 		if (dstValue != null) {
-			FieldTransformingInfo transformingInfo = new FieldTransformingInfo(field, dstValue, null);
+			transformingInfo = new FieldTransformingInfo(field, dstValue, null);
 			
 			transformingInfo.setLoadedWithDefaultValue(true);
 			
 			return transformingInfo;
+		} else if (onMissing().useInputOnMissingMapping()) {
+			if (transformingInfo != null) {
+				return transformingInfo;
+			} else {
+				transformingInfo = new FieldTransformingInfo(field, dstValue, null);
+				
+				transformingInfo.setLoadedWithDefaultValue(true);
+				
+				return transformingInfo;
+			}
 		}
 		
 		if (field.getDefaultValue() == null) {
@@ -324,6 +310,10 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 		
 		return null;
+	}
+	
+	private boolean hasInput() {
+		return this.input != null;
 	}
 	
 }

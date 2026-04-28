@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
@@ -50,16 +50,17 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  */
 public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	
-	private final Object lock = new Object();
-	
 	private static final Map<String, FastSqlFieldTransformer> INSTANCES = new ConcurrentHashMap<>();
+	
+	private static final Object LOCK = new Object();
 	
 	private String sqlQuery;
 	
 	private volatile QueryDataSourceConfig dataSourceConfig;
 	
-	public FastSqlFieldTransformer(List<Object> parameters, DstConf relatedDstConf, TransformableField field) {
-		super(parameters, relatedDstConf, field);
+	public FastSqlFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	    TransformableField field) {
+		super(parameters, relatedEtlTransformTarget, field);
 		
 		this.sqlQuery = retrieveSqlQueryFromParameters(parameters);
 	}
@@ -68,12 +69,13 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		return sqlQuery;
 	}
 	
-	public static FastSqlFieldTransformer getInstance(List<Object> parameters, DstConf relatedDstConf,
-	        TransformableField field) {
+	public static FastSqlFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	        TransformableField field, Connection conn) {
 		
-		String sqlQuery = retrieveSqlQueryFromParameters(parameters);
+		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 		
-		return INSTANCES.computeIfAbsent(sqlQuery, k -> new FastSqlFieldTransformer(parameters, relatedDstConf, field));
+		return INSTANCES.computeIfAbsent(key,
+		    k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field));
 	}
 	
 	private static String retrieveSqlQueryFromParameters(List<Object> parameters) {
@@ -95,12 +97,8 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	        EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 	        Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 		
-		/*if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
-			throw new EtlExceptionImpl("FastSqlFieldTransformer requires at least one source object.");
-		}*/
-		
 		if (dataSourceConfig == null) {
-			synchronized (lock) {
+			synchronized (LOCK) {
 				if (dataSourceConfig == null) {
 					
 					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery, (SrcConf) field.getDataSource());

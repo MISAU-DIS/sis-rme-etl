@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.EtlNullBehavior;
@@ -20,9 +19,7 @@ public class DataSourceField extends Field implements TransformableField {
 	
 	private EtlFieldTransformer transformerInstance;
 	
-	private Extension extension;
-	
-	private boolean dataTypeLoaded;
+	private Boolean dataTypeLoaded;
 	
 	private Object defaultValue;
 	
@@ -41,6 +38,15 @@ public class DataSourceField extends Field implements TransformableField {
 	public DataSourceField() {
 		this.nullValueBehavior = EtlNullBehavior.ALLOW;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
+	}
+	
+	public static DataSourceField fastCreate(String name, Object value) {
+		DataSourceField ds = new DataSourceField();
+		
+		ds.setValue(value);
+		ds.setName(name);
+		
+		return ds;
 	}
 	
 	public RelationshipResolutionStrategy getRelationshipResolutionStrategy() {
@@ -109,19 +115,11 @@ public class DataSourceField extends Field implements TransformableField {
 		this.transformerInstance = transformerInstance;
 	}
 	
-	public Extension getExtension() {
-		return extension;
+	public Boolean isDataTypeLoaded() {
+		return dataTypeLoaded != null && dataTypeLoaded;
 	}
 	
-	public void setExtension(Extension extension) {
-		this.extension = extension;
-	}
-	
-	public boolean isDataTypeLoaded() {
-		return dataTypeLoaded;
-	}
-	
-	public void setDataTypeLoaded(boolean dataTypeLoaded) {
+	public void setDataTypeLoaded(Boolean dataTypeLoaded) {
 		this.dataTypeLoaded = dataTypeLoaded;
 	}
 	
@@ -133,7 +131,7 @@ public class DataSourceField extends Field implements TransformableField {
 		this.auxFieldMapping = auxFieldMapping;
 	}
 	
-	public boolean hasAuxFieldMapping() {
+	public Boolean hasAuxFieldMapping() {
 		return this.auxFieldMapping != null;
 	}
 	
@@ -160,8 +158,8 @@ public class DataSourceField extends Field implements TransformableField {
 	}
 	
 	@Override
-	public boolean hasSrcField() {
-		return false;
+	public Boolean hasSrcField() {
+		return Boolean.FALSE;
 	}
 	
 	@Override

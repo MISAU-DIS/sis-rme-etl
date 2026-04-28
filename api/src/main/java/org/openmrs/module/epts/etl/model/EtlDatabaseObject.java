@@ -26,8 +26,8 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
-import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -68,9 +68,9 @@ public interface EtlDatabaseObject extends EtlObject {
 	 * objects related to tables presents on {@link MainJoiningEntity#getJoiningTable()} will be
 	 * placed on this field.
 	 */
-	List<? extends EtlDatabaseObject> getAuxLoadObject();
+	List<EtlDatabaseObject> getAuxLoadObject();
 	
-	void setAuxLoadObject(List<? extends EtlDatabaseObject> auxLoadObjects);
+	void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObjects);
 	
 	/**
 	 * Load the destination parents id to this object
@@ -465,10 +465,10 @@ public interface EtlDatabaseObject extends EtlObject {
 		return utils.listHasElement(getUniqueKeysInfo());
 	}
 	
-	default void setRelatedConfiguration(DatabaseObjectConfiguration config) {
+	default void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
 	}
 	
-	default DatabaseObjectConfiguration getRelatedConfiguration() {
+	default EtlDatabaseObjectConfiguration getRelatedConfiguration() {
 		return null;
 	}
 	
@@ -843,10 +843,10 @@ public interface EtlDatabaseObject extends EtlObject {
 		
 		return succed;
 	}
-
+	
 	default void loadValuesToUniqueKeyFields(EtlDatabaseObject srcRecord) {
 		
-		for(EtlDatabaseObjectUniqueKeyInfo o : srcRecord.getUniqueKeysInfo()) {
+		for (EtlDatabaseObjectUniqueKeyInfo o : srcRecord.getUniqueKeysInfo()) {
 			try {
 				UniqueKeyInfo uk = this.getUniqueKeyInfo(o);
 				
@@ -854,8 +854,7 @@ public interface EtlDatabaseObject extends EtlObject {
 					uk.loadValuesToFields(srcRecord);
 				}
 			}
-			catch (ForbiddenOperationException e) {
-			}
+			catch (ForbiddenOperationException e) {}
 		}
 	}
 }

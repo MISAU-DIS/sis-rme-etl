@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.conf.interfaces;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.types.EtlNullBehavior;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -43,7 +42,7 @@ public interface TransformableField {
 	
 	void setTransformer(String transformer);
 	
-	void setDataTypeLoaded(boolean dataTypeLoaded);
+	void setDataTypeLoaded(Boolean dataTypeLoaded);
 	
 	String getDstField();
 	
@@ -82,7 +81,7 @@ public interface TransformableField {
 	
 	void setRelationshipResolutionStrategy(RelationshipResolutionStrategy strategy);
 	
-	default boolean hasTypeClass() {
+	default Boolean hasTypeClass() {
 		return this.getTypeClass() != null;
 	}
 	
@@ -106,7 +105,7 @@ public interface TransformableField {
 	 */
 	void setOverrideTriggerValue(Object obj);
 	
-	default boolean hasSrcField() {
+	default Boolean hasSrcField() {
 		return utilities.stringHasValue(this.getSrcField());
 	}
 	
@@ -125,7 +124,7 @@ public interface TransformableField {
 	 * @throws ForbiddenOperationException if an override value is defined but no default value is
 	 *             configured
 	 */
-	default boolean shouldOverrideValue(Object obj) throws ForbiddenOperationException {
+	default Boolean shouldOverrideValue(Object obj) throws ForbiddenOperationException {
 		
 		if (this.getOverrideTriggerValue() != null) {
 			
@@ -149,17 +148,18 @@ public interface TransformableField {
 		return false;
 	}
 	
-	default boolean hasDataType() {
+	default Boolean hasDataType() {
 		return utilities.stringHasValue(this.getDataType());
 	}
 	
-	default void loadType(DstConf dstConf, EtlDataSource dataSource) {
-		tryToLoadTransformer(dstConf);
+	default void loadType(EtlTranformTarget dstConf, EtlDataSource dataSource, Connection conn) {
+		tryToLoadTransformer(dstConf, conn);
 		
 		if (this.hasDataType()) {
 			if (!utilities.isStringIn(this.getDataType().toLowerCase(), "int", "double", "string", "date", "long",
 			    "boolean")) {
-				throw new ForbiddenOperationException("Unsupported dataType for field " + this.getDstField());
+				throw new ForbiddenOperationException(
+				        "Unsupported dataType for field " + this.getDstField() + ">" + this.getDataType().toLowerCase());
 			}
 		} else if (dstConf != null && dstConf.containsField(this.getDstField())) {
 			this.setDataType(dstConf.getField(this.getDstField()).getDataType());
@@ -201,16 +201,16 @@ public interface TransformableField {
 	
 	Class<?> getTypeClass();
 	
-	default boolean hasTransformerInstance() {
+	default Boolean hasTransformerInstance() {
 		return this.getTransformerInstance() != null;
 	}
 	
-	default boolean hasTransformer() {
+	default Boolean hasTransformer() {
 		return utilities.stringHasValue(getTransformer());
 	}
 	
-	default void tryToLoadTransformer(DstConf dstConf) {
-		FieldTransformerType.tryToLoadTransformerToField(this, dstConf);
+	default void tryToLoadTransformer(EtlTranformTarget dstConf, Connection conn) {
+		FieldTransformerType.tryToLoadTransformerToField(this, dstConf, conn);
 	}
 	
 	EtlDataSource getDataSource();

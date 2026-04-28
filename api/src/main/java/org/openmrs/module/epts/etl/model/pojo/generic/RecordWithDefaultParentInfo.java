@@ -29,7 +29,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 	public static RecordWithDefaultParentInfo init(EtlDatabaseObject srcObject, EtlDatabaseObject dstObject,
 	        EtlDatabaseObject parentInOrigin, ParentTable parentRefInfo, Connection conn) throws DBException {
 		
-		DatabaseObjectConfiguration recursiveRecordTableInfo = parentRefInfo.getRelatedEtlConf()
+		EtlDatabaseObjectConfiguration recursiveRecordTableInfo = parentRefInfo.getRelatedEtlConf()
 		        .getRecordWithDefaultParentsInfoTabConf();
 		
 		if (!recursiveRecordTableInfo.isFullLoaded()) {
@@ -109,7 +109,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 			throw new ForbiddenOperationException("The relatedItemConf must be full loaded!!!");
 		}
 		
-		DstConf dstConf = relatedItemConf.findDstTable(null, this.getDstTableName());
+		DstConf dstConf = relatedItemConf.findDstTable_(null, this.getDstTableName());
 		
 		this.parentRefInfo = relatedSrcConf.getFieldIsRelatedParent(Field.fastCreateField(this.getParentField()));
 		
