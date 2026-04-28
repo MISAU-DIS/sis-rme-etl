@@ -1821,8 +1821,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			return false;
 		}
 		
-		stepIntoBreakpoint(getRelatedEtlConf(), ((OpenConnection) conn).getConnection() == null);
-		
 		return DBUtilities.checkIfTableUseAutoIcrement(this.getSchema(), this.getTableName(), conn);
 	}
 	

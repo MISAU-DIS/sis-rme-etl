@@ -202,7 +202,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		
 	}
 	
-	private synchronized void runInSequencialMode() throws DBException {
+	protected synchronized void runInSequencialMode() throws DBException {
 		changeStatusToRunning();
 		
 		List<EtlItemConfiguration> allSync = null;
@@ -328,7 +328,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		}
 	}
 	
-	private synchronized void runInParallelMode() throws DBException {
+	protected synchronized void runInParallelMode() throws DBException {
 		
 		this.enginesActivititieMonitor = new ArrayList<>();
 		

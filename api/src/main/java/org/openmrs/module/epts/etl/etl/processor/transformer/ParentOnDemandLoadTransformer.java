@@ -522,10 +522,28 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		srcParent.setAuxLoadObject(!srcParent.hasAuxLoadObject() ? new ArrayList<>() : srcParent.getAuxLoadObject());
 		srcParent.getAuxLoadObject().addAll(additionalSrcObjects);
 		
-		EtlLoadHelper loadHelper = EtlLoadHelper.fastLoadRecord(processor, srcParent, (DstConf) etlTransformTarget,
-		    transformationType, srcConn, dstConn);
+		List<EtlDatabaseObject> migratedRecs = null;
 		
-		List<EtlDatabaseObject> migratedRecs = loadHelper.getAllSuccedTransformedObjects((DstConf) etlTransformTarget);
+		try {
+			EtlLoadHelper loadHelper = EtlLoadHelper.fastLoadRecord(processor, srcParent, (DstConf) etlTransformTarget,
+			    transformationType, srcConn, dstConn);
+			
+			migratedRecs = loadHelper.getAllSuccedTransformedObjects((DstConf) etlTransformTarget);
+			
+		}
+		catch (DBException e) {
+			if (e.isDuplicatePrimaryOrUniqueKeyException()) {
+				EtlDatabaseObject dstParent = resolveParent(processor, srcParent, srcObject, transformedRecord,
+				    additionalSrcObjects, srcConn, dstConn);
+				
+				if (dstParent != null) {
+					migratedRecs = utilities.parseToList(dstParent);
+				} else
+					throw e;
+				
+			} else
+				throw e;
+		}
 		
 		if (utilities.listHasElement(migratedRecs)) {
 			return migratedRecs.get(0);

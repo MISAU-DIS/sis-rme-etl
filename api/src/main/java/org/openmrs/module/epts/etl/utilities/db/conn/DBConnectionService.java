@@ -145,7 +145,11 @@ public class DBConnectionService {
 			throw new DBException(e);
 		
 		try {
-			return this.dataSource.getConnection();
+			Connection conn = this.dataSource.getConnection();
+			
+			conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+			
+			return conn;
 		}
 		catch (SQLException e1) {
 			logger.warn("OpenedConnections: " + OpenConnection.qtyOpenedConnections + ", ClosedConnections: "

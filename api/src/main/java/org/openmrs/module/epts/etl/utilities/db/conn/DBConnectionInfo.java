@@ -322,13 +322,13 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 			throw new EtlExceptionImpl(e);
 		}
 	}
-
+	
 	@Override
 	public EtlDataConfiguration getParentConf() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
+	
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 		// TODO Auto-generated method stub

@@ -276,6 +276,7 @@ public abstract class BaseDAO {
 	
 	public static List<Long> executeQueryWithoutRetry(String sql, Object[] params, Connection connection)
 	        throws DBException {
+		
 		PreparedStatement st = null;
 		
 		try {

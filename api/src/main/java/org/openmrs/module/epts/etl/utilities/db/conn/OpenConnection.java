@@ -126,7 +126,7 @@ public class OpenConnection implements Connection, Closeable {
 	/**
 	 * @return o valor do atributo {@link #connection}
 	 */
-	public Connection getConnection() {
+	public Connection getConnection_() {
 		return connection;
 	}
 	
