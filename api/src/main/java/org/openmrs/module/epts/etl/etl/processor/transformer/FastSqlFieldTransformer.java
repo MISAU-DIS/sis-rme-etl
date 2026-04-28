@@ -103,7 +103,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 					
 					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery, (SrcConf) field.getDataSource());
 					
-					conf.fullLoad(srcConn);
+					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
 					
 					dataSourceConfig = conf;
 				}

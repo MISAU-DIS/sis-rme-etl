@@ -30,7 +30,9 @@ public enum ConflictResolutionType {
 	/**
 	 * Represents the resolution to apply on conflict
 	 */
-	MAKE_YOUR_DECISION;
+	MAKE_YOUR_DECISION,
+	
+	REJECT;
 	
 	// @formatter:on
 	public boolean keepExisting() {
@@ -51,5 +53,9 @@ public enum ConflictResolutionType {
 	
 	public boolean none() {
 		return this.equals(NONE);
+	}
+	
+	public boolean isReject() {
+		return this.equals(REJECT);
 	}
 }

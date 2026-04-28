@@ -262,13 +262,12 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 			if (e.isDuplicatePrimaryOrUniqueKeyException()) {
 				DBUtilities.handlePostgresExceptionIssue(conn);
 				
-				if (onConflict.makeYourDecision()) {
-					try {
-						resolveConflictWithExistingRecord(tableConfiguration, e, conn);
-					}
-					catch (Exception e1) {
-						e1.printStackTrace();
-					}
+				tableConfiguration.stepIntoBreakpoint(tableConfiguration.getRelatedEtlConf(), onConflict == null);
+				
+				if (onConflict != null) {
+					resolveConflictWithExistingRecord(tableConfiguration, onConflict, e, conn);
+				} else {
+					resolveConflictWithExistingRecord(tableConfiguration, ConflictResolutionType.REJECT, e, conn);
 				}
 			} else
 				throw e;
