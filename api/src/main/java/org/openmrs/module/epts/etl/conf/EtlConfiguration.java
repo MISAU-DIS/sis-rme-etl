@@ -889,11 +889,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 				
 				DefaultEtlValidator.tryToValidate(this, srcConn, dstConn);
-				
-				if (ensureEtlStageTablesExist()) {
-					ensureEtlStageTablesExist(srcConn, dstConn);
-				}
-				
 			}
 			finally {
 				finalizeConnection(srcConn, this);

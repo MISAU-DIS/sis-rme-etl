@@ -70,6 +70,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	
 	private Map<String, List<EtlDatabaseObject>> recordsToDisplay;
 	
+	private int currentIteration;
+	
 	public Engine(OperationController<T> controller, EtlItemConfiguration etlItemConfiguration,
 	    TableOperationProgressInfo tableOperationProgressInfo) {
 		this.controller = controller;
@@ -320,6 +322,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				}
 				
 				this.setSearchParams(controller.initMainSearchParams(t, this));
+				this.getSearchParams().setThreadRecordIntervalsManager(t);
 				
 				changeStatusToRunning();
 				
@@ -416,6 +419,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		ThreadRecordIntervalsManager<T> iManager = getThreadRecordIntervalsManager();
 		
 		while (iManager.canGoNext() || !iManager.getCurrentLimits().isFullProcessed()) {
+			increaseIteration();
+			
 			if (iManager.getCurrentLimits().isFullProcessed()) {
 				iManager.moveNext();
 			}
@@ -451,6 +456,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 	
+	private synchronized void increaseIteration() {
+		this.currentIteration++;
+	}
+	
 	public void tryToProcessSkippedrecords() throws DBException, Exception {
 		ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
 		
@@ -467,33 +476,35 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        .initRelatedTaskProcessor(this, getThreadRecordIntervalsManager().getCurrentLimits(), false)
 		        .initReloadRecordsWithDefaultParentsTaskProcessor(iManager);
 		
-		taskProcessor.setProcessorId(this.getEngineId());
-		
-		boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
-		boolean useMultiThreadSearch = true;
-		
-		performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this), tryToOpenDstConn(this));
-		
-		if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-			taskProcessor.getTaskResultInfo().throwDefaultExcetions(this);
-		} else {
+		if (taskProcessor != null) {
+			taskProcessor.setProcessorId(this.getEngineId());
 			
-			OpenConnection srcConn = openSrcConn(this);
+			boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
+			boolean useMultiThreadSearch = true;
 			
-			try {
-				RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
+			performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this), tryToOpenDstConn(this));
+			
+			if (taskProcessor.getTaskResultInfo().hasFatalError()) {
+				taskProcessor.getTaskResultInfo().throwDefaultExcetions(this);
+			} else {
 				
-				srcConn.markAsSuccessifullyTerminated();
+				OpenConnection srcConn = openSrcConn(this);
+				
+				try {
+					RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
+					
+					srcConn.markAsSuccessifullyTerminated();
+				}
+				finally {
+					srcConn.finalizeConnection(this);
+				}
+				
+				iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+				iManager.save();
+				
+				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+				getSearchParams().setExtraCondition(originalExtraCondition);
 			}
-			finally {
-				srcConn.finalizeConnection(this);
-			}
-			
-			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
-			iManager.save();
-			
-			getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
-			getSearchParams().setExtraCondition(originalExtraCondition);
 		}
 	}
 	
@@ -1115,6 +1126,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		dstRecords.addAll(resultObjs);
 		
 		this.getRecordsToDisplay().put(dstConf.getTableName(), dstRecords);
+	}
+	
+	public int getCurrentIteration() {
+		return this.currentIteration;
 	}
 	
 }
