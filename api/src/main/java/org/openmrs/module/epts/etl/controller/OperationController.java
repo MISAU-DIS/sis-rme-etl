@@ -463,6 +463,11 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			}
 		}
 		
+		return true;
+		
+	}
+	
+	public boolean childOperationsAreAlreadyFinished() {
 		if (hasChild()) {
 			for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
 				if (!child.operationIsAlreadyFinished()) {

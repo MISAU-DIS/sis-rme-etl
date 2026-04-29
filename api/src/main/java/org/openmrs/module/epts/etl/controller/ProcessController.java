@@ -634,7 +634,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	@JsonIgnore
 	public boolean processIsAlreadyFinished() {
 		for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
-			if (!controller.operationIsAlreadyFinished()) {
+			if (!controller.operationIsAlreadyFinished() || !controller.childOperationsAreAlreadyFinished()) {
 				return false;
 			}
 		}
