@@ -2,10 +2,11 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
@@ -283,7 +284,21 @@ public class AuxExtractTable extends AbstractTableConfiguration implements Joina
 	}
 	
 	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate() != null ? this.getTemplate() : getMainExtractTable().retrieveNearestTemplate();
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		Map<String, Object> allParameters = new HashMap<>();
+		
+		Map<String, Object> ownParameters = super.retrieveAllAvailableTemplateParameters();
+		
+		if (ownParameters != null && !ownParameters.isEmpty()) {
+			allParameters.putAll(ownParameters);
+		}
+		
+		Map<String, Object> parentParameters = this.getMainExtractTable().retrieveAllAvailableTemplateParameters();
+		
+		if (parentParameters != null && !parentParameters.isEmpty()) {
+			allParameters.putAll(parentParameters);
+		}
+		
+		return allParameters;
 	}
 }

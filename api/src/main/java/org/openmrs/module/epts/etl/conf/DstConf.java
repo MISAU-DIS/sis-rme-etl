@@ -10,6 +10,7 @@ import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -36,7 +37,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class DstConf extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf, EtlTranformTarget {
+public class DstConf extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf, EtlTranformTarget, EtlItemConfigurationComponent {
 	
 	/*
 	 * The user defined joinFields with #getSrcConf()
@@ -1314,11 +1315,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		getRelatedEtlConf().addConfiguredTable(this);
 	}
 	
-	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate() != null ? this.getTemplate() : getParentConf().retrieveNearestTemplate();
-	}
-	
 	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn) throws DBException {
 		this.fullLoad(dstConn);
 		
@@ -1369,6 +1365,11 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	@Override
 	public void setAllPrefferredDataSource(List<EtlDataSource> ds) {
 		this.allPrefferredDataSource = ds;
+	}
+	
+	@Override
+	public EtlItemConfiguration getParentEtlItemConf() {
+		return this.getParentConf();
 	}
 	
 }

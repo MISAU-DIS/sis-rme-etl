@@ -89,7 +89,8 @@ public interface JoinableEntity extends TableConfiguration, EtlDataSource {
 	
 	@Override
 	default void fullLoad(Connection conn) throws DBException {
-		this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition", this.retrieveNearestTemplate(), conn);
+		this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition", retrieveAllAvailableTemplateParameters(),
+		    conn);
 		
 		TableConfiguration.super.fullLoad(conn);
 	}

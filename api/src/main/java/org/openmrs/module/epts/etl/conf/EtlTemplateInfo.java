@@ -217,14 +217,15 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 	
 	@Override
 	public EtlDataConfiguration getParentConf() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
-		// TODO Auto-generated method stub
-		
+	}
+	
+	public boolean hasParameters() {
+		return this.parameters != null && !this.parameters.isEmpty();
 	}
 	
 }

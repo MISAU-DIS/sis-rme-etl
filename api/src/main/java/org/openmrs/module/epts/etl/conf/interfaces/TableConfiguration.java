@@ -13,7 +13,6 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
@@ -2897,9 +2896,4 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine, Connection conn) throws DBException {
 		return this.getExtremeRecord(engine, SqlFunctionType.MAX, conn);
 	}
-	
-	default EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate();
-	}
-	
 }

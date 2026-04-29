@@ -266,7 +266,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						this.onDemandCheckCondition = srcFieldOrValue;
 						
 						this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition",
-						    relatedEtlTransformTarget.getTemplate(), conn);
+						    relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
 					} else if (dstField.equals("template")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The template has no value");

@@ -62,8 +62,16 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		return hasTemplate() ? getTemplate().getName() : null;
 	}
 	
-	default void tryToLoadDumpScriptContentToFieldAndValidate(String fieldName, EtlTemplateInfo template, Connection conn)
-	        throws DBException {
+	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		if (hasTemplate()) {
+			return this.getTemplate().getAllAvailableParameters();
+		} else {
+			return null;
+		}
+	}
+	
+	default void tryToLoadDumpScriptContentToFieldAndValidate(String fieldName, Map<String, Object> templateParameters,
+	        Connection conn) throws DBException {
 		
 		Object fieldValue = utilities.getFieldValue(this, fieldName);
 		
@@ -79,10 +87,8 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				fromFile = " from file " + fieldValue;
 				originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
 				
-				if (template != null) {
-					queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null, null, null,
-					    template.getAllAvailableParameters());
-				}
+				queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null, null, null,
+				    templateParameters);
 				
 				utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 			}

@@ -36,10 +36,6 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 		return relatedEtlConf.getGeneralBehaviourOnEtlException();
 	}
 	
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate();
-	}
-	
 	public List<String> getDynamicElements() {
 		return dynamicElements;
 	}

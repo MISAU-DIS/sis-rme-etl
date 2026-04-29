@@ -7,7 +7,9 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
@@ -29,8 +31,8 @@ import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -189,10 +191,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 			
 			String query = new String(Files.readAllBytes(Paths.get(pathToScript)));
 			
-			if (retrieveNearestTemplate() != null) {
-				query = EtlDataConfiguration.resolvePlaceholders(query, null, null, null,
-				    retrieveNearestTemplate().getParameters());
-			}
+			query = EtlDataConfiguration.resolvePlaceholders(query, null, null, null,
+			    retrieveAllAvailableTemplateParameters());
 			
 			this.setQuery(query);
 			
@@ -632,11 +632,6 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 	@Override
 	public ActionOnEtlException getGeneralBehaviourOnEtlException() {
 		return relatedSrcConf.getGeneralBehaviourOnEtlException();
-	}
-	
-	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate() != null ? this.getTemplate() : getParentConf().retrieveNearestTemplate();
 	}
 	
 	@Override

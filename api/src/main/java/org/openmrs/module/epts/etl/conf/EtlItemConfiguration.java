@@ -3,7 +3,9 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
@@ -783,9 +785,25 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 	
 	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.hasTemplate() ? this.getTemplate()
-		        : (this.hasParentItemConf() ? this.getParentItemConf().retrieveNearestTemplate() : null);
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		
+		Map<String, Object> allParameters = new HashMap<>();
+		
+		Map<String, Object> ownParameters = super.retrieveAllAvailableTemplateParameters();
+		
+		if (ownParameters != null && !ownParameters.isEmpty()) {
+			allParameters.putAll(ownParameters);
+		}
+		
+		if (hasParentItemConf()) {
+			Map<String, Object> parentParameters = this.getParentItemConf().retrieveAllAvailableTemplateParameters();
+			
+			if (parentParameters != null && !parentParameters.isEmpty()) {
+				allParameters.putAll(parentParameters);
+			}
+		}
+		
+		return allParameters;
 	}
 	
 	public void ensureEtlStageTableExists(EtlCounter counter, EtlOperationConfig operationConfig, Connection srcConn,
