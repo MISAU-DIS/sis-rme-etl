@@ -124,7 +124,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	}
 	
 	public Boolean useAsDataSource() {
-		return useAsDataSource;
+		return isTrue(useAsDataSource);
 	}
 	
 	public OnMultipleDataSourceFoundBehavior onMultipleDataSourceWithSameName() {
