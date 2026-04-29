@@ -104,7 +104,7 @@ public class EtlTemplateConfiguration {
 				EtlTemplateInfo extendsTemplateInfo = this.getExtendsTemplate()
 				        .cloneAndEnsureParametersAndOverridePlaceholdersReplacement(inputParams);
 				
-				extendsTemplateInfo.setParentTemplate(templateInfo);
+				extendsTemplateInfo.setChildTemplate(templateInfo);
 				
 				templateInfo.setParentTemplate(extendsTemplateInfo);
 				
@@ -149,12 +149,12 @@ public class EtlTemplateConfiguration {
 		List<String> missingParams = allowedParams.stream().filter(p -> !inputParams.containsKey(p)).toList();
 		
 		if (!missingParams.isEmpty()) {
-			String parentMsg = templateInfo.getParentTemplate() != null
-			        ? " Within extends template: " + templateInfo.getParentTemplate().getName()
+			String childMsg = templateInfo.getChildTemplate() != null
+			        ? " Within extends template: " + templateInfo.getChildTemplate().getName()
 			        : "";
 			
 			throw new EtlExceptionImpl("The following parameters are missing in template (" + this.getName() + "): "
-			        + missingParams + parentMsg);
+			        + missingParams + childMsg);
 		}
 	}
 	
@@ -169,12 +169,12 @@ public class EtlTemplateConfiguration {
 		List<String> unknownParams = inputParams.keySet().stream().filter(key -> !allowedSet.contains(key)).toList();
 		
 		if (!unknownParams.isEmpty()) {
-			String parentMsg = templateInfo.getParentTemplate() != null
-			        ? " Within extends template: " + templateInfo.getParentTemplate().getName()
+			String childMsg = templateInfo.getChildTemplate() != null
+			        ? " Within extends template: " + templateInfo.getChildTemplate().getName()
 			        : "";
 			
 			throw new EtlExceptionImpl("The following parameters are not allowed for template (" + this.getName() + "): "
-			        + unknownParams + parentMsg);
+			        + unknownParams + childMsg);
 		}
 	}
 	
