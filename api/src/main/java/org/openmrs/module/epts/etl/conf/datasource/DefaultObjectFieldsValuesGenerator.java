@@ -28,10 +28,10 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 		for (DataSourceField field : dataSource.getObjectFields()) {
 			
 			if (field.hasAuxFieldMapping()) {
-				field.setValue(field.getAuxFieldMapping().getTransformerInstance().transform(processor, srcObject, dstObject,
-				    avaliableSrcObjects, field.getAuxFieldMapping(), srcConn, dstConn).getTransformedValue());
 				
 				try {
+					field.setValue(field.getAuxFieldMapping().getTransformerInstance().transform(processor, srcObject,
+					    dstObject, avaliableSrcObjects, field.getAuxFieldMapping(), srcConn, dstConn).getTransformedValue());
 					
 					if (field.getDefaultValue() != null) {
 						
