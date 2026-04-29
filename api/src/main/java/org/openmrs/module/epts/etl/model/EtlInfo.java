@@ -330,7 +330,7 @@ public class EtlInfo {
 					parentInDst = refInfo.getDefaultObject(dstConn);
 					
 					if (parentInDst == null) {
-						parentInDst = refInfo.generateAndSaveDefaultObject(dstConn);
+						parentInDst = refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
 					}
 					
 					//The parentInSrc will be null if it does not exists and were used default parent

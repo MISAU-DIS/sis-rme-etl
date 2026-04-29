@@ -827,9 +827,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 				
 				srcConn = openSrcConn(this);
-				dstConn = tryOpenDstConn(this);
 				
 				ensureEtlBaseSchemaTablesExists(srcConn);
+				
+				dstConn = tryOpenDstConn(this);
 				
 				List<EtlItemConfiguration> allItem = new ArrayList<>();
 				
@@ -1708,6 +1709,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			return openDstConn(opendFrom);
 		}
 		catch (ForbiddenOperationException e) {
+			return null;
+		}
+		catch (DBException e) {
 			return null;
 		}
 	}

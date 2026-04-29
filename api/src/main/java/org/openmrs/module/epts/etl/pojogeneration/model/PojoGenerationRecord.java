@@ -360,9 +360,7 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 	}
 	
 	@Override
-	public void loadWithDefaultValues(Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 	}
 	
 	@Override

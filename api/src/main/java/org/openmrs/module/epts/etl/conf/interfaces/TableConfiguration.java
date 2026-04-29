@@ -507,12 +507,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 	
 	@SuppressWarnings("deprecation")
-	default EtlDatabaseObject generateAndSaveDefaultObject(Connection conn) throws DBException {
+	default EtlDatabaseObject generateAndSaveDefaultObject(Connection srcConn, Connection dstConf) throws DBException {
 		
 		synchronized (this) {
 			
 			try {
-				EtlDatabaseObject defaultObject = this.getDefaultObject(conn);
+				EtlDatabaseObject defaultObject = this.getDefaultObject(dstConf);
 				
 				if (defaultObject != null) {
 					return defaultObject;
@@ -520,10 +520,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					defaultObject = this.getSyncRecordClass().newInstance();
 					defaultObject.setRelatedConfiguration(this);
 					
-					defaultObject.loadWithDefaultValues(conn);
+					defaultObject.loadWithDefaultValues(srcConn, dstConf);
 					
 					try {
-						defaultObject.save(this, conn);
+						defaultObject.save(this, dstConf);
 					}
 					catch (DBException e) {
 						if (!e.isDuplicatePrimaryOrUniqueKeyException()) {
@@ -531,7 +531,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						}
 					}
 					
-					defaultObject = this.getDefaultObject(conn);
+					defaultObject = this.getDefaultObject(dstConf);
 					
 					EtlConfigurationTableConf defaultGeneratedObjectKeyTabConf = this.getRelatedEtlConf()
 					        .getDefaultGeneratedObjectKeyTabConf();
@@ -542,7 +542,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						        + defaultGeneratedObjectKeyTabConf.getTableName());
 						
 						defaultGeneratedObjectKeyTabConf.setTableAlias(defaultGeneratedObjectKeyTabConf.getTableName());
-						defaultGeneratedObjectKeyTabConf.fullLoad(conn);
+						defaultGeneratedObjectKeyTabConf.fullLoad(srcConn);
 					}
 					
 					for (Key key : defaultObject.getObjectId().getFields()) {
@@ -554,7 +554,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						keyInfo.setFieldValue("column_name", key.getName());
 						keyInfo.setFieldValue("key_value", key.getValue());
 						
-						keyInfo.save(defaultGeneratedObjectKeyTabConf, conn);
+						keyInfo.save(defaultGeneratedObjectKeyTabConf, srcConn);
 					}
 					
 					return defaultObject;

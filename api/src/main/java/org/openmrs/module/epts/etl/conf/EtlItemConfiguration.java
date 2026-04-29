@@ -335,6 +335,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	
 	public void tryToCreateDefaultRecordsForAllTables() throws DBException {
 		OpenConnection dstConn = getRelatedEtlConf().tryOpenDstConn(this);
+		OpenConnection srcConn = getRelatedEtlConf().openSrcConn(this);
 		
 		if (dstConn == null)
 			return;
@@ -373,16 +374,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 							getRelatedEtlConf()
 							        .logDebug("Creating default dstRecord for table " + refInfo.getFullTableDescription());
 							
-							refInfo.generateAndSaveDefaultObject(dstConn);
+							refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
 						}
 					}
 				}
 				
 				dstConn.markAsSuccessifullyTerminated();
+				srcConn.markAsSuccessifullyTerminated();
 			}
 		}
 		finally {
 			dstConn.finalizeConnection(this);
+			srcConn.finalizeConnection(this);
 		}
 		
 	}
@@ -442,7 +445,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					map.setDstType(this.getSrcConf().getDstType());
 					
 					try {
-						map.tryToLoadSchemaInfo(this.relatedEtlSchemaObject, srcConn);
+						map.tryToLoadSchemaInfo(this.relatedEtlSchemaObject, dstConn);
 					}
 					catch (DatabaseResourceDoesNotExists e) {
 						if (map.getDstType().isDb() && !this.createDstTableIfNotExists()) {

@@ -345,7 +345,7 @@ public class DatabasePreparationRecord implements EtlDatabaseObject {
 	}
 	
 	@Override
-	public void loadWithDefaultValues(Connection conn) throws DBException {
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		
 	}
 	

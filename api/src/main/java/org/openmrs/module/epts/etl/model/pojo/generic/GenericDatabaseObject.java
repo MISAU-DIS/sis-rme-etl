@@ -114,7 +114,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	
 	@SuppressWarnings("deprecation")
 	@Override
-	public void loadWithDefaultValues(Connection conn) throws DBException {
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		if (this.relatedConfiguration == null) {
 			throw new ForbiddenOperationException("The relatedConfiguration  is not set");
 		}
@@ -135,10 +135,10 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 						}
 						
 						if (!p.isFullLoaded()) {
-							p.fullLoad(conn);
+							p.fullLoad(dstConn);
 						}
 						
-						defaultParent = p.getDefaultObject(conn);
+						defaultParent = p.getDefaultObject(dstConn);
 					}
 					catch (Exception e) {
 						e.printStackTrace();
@@ -149,8 +149,8 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 							defaultParent = conf.getSyncRecordClass().newInstance();
 							defaultParent.setRelatedConfiguration(p);
 							
-							if (defaultParent.checkIfAllRelationshipCanBeresolved(conf, conn)) {
-								defaultParent = p.generateAndSaveDefaultObject(conn);
+							if (defaultParent.checkIfAllRelationshipCanBeresolved(conf, dstConn)) {
+								defaultParent = p.generateAndSaveDefaultObject(srcConn, dstConn);
 							} else {
 								throw new ForbiddenOperationException("There are recursive relationship between "
 								        + conf.getTableName() + " and " + p.getTableName()

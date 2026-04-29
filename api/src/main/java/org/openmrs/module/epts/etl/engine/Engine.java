@@ -505,6 +505,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
 				getSearchParams().setExtraCondition(originalExtraCondition);
 			}
+		}else {
+			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+			iManager.save();
 		}
 	}
 	

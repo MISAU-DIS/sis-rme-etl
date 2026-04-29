@@ -211,7 +211,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	
 	void fastCreateSimpleNumericKey(long i);
 	
-	void loadWithDefaultValues(Connection conn) throws DBException;
+	void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException;
 	
 	/**
 	 * Checks if there are recursive relashioship between the {@link #getRelatedConfiguration()} and
