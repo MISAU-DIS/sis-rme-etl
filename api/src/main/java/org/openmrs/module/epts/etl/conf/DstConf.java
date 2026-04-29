@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
@@ -1370,6 +1371,11 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	@Override
 	public EtlItemConfiguration getParentEtlItemConf() {
 		return this.getParentConf();
+	}
+	
+	@Override
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		return EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
 	}
 	
 }

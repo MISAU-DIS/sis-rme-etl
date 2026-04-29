@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -637,12 +636,16 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 	@Override
 	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
 	        throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
-		// TODO Auto-generated method stub
 	}
 	
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
 		this.relatedSrcConf = (SrcConf) relatedParent;
+	}
+	
+	@Override
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		return EtlAdditionalDataSource.super.retrieveAllAvailableTemplateParameters();
 	}
 	
 }

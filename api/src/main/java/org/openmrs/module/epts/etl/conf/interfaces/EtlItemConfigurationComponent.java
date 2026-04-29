@@ -14,16 +14,16 @@ public interface EtlItemConfigurationComponent extends EtlDataConfiguration {
 		
 		Map<String, Object> allParameters = new HashMap<>();
 		
-		Map<String, Object> ownParameters = EtlDataConfiguration.super.retrieveAllAvailableTemplateParameters();
-		
-		if (ownParameters != null && !ownParameters.isEmpty()) {
-			allParameters.putAll(ownParameters);
-		}
-		
 		Map<String, Object> parentParameters = this.getParentEtlItemConf().retrieveAllAvailableTemplateParameters();
 		
 		if (parentParameters != null && !parentParameters.isEmpty()) {
 			allParameters.putAll(parentParameters);
+		}
+		
+		Map<String, Object> ownParameters = EtlDataConfiguration.super.retrieveAllAvailableTemplateParameters();
+		
+		if (ownParameters != null && !ownParameters.isEmpty()) {
+			allParameters.putAll(ownParameters);
 		}
 		
 		return allParameters;

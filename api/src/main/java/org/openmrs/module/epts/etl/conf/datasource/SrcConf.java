@@ -4,6 +4,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlCounter;
@@ -849,6 +850,11 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	@Override
 	public EtlItemConfiguration getParentEtlItemConf() {
 		return this.getParentConf();
+	}
+	
+	@Override
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		return EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
 	}
 	
 }

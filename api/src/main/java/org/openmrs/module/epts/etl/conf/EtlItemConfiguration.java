@@ -789,18 +789,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		
 		Map<String, Object> allParameters = new HashMap<>();
 		
-		Map<String, Object> ownParameters = super.retrieveAllAvailableTemplateParameters();
-		
-		if (ownParameters != null && !ownParameters.isEmpty()) {
-			allParameters.putAll(ownParameters);
-		}
-		
 		if (hasParentItemConf()) {
 			Map<String, Object> parentParameters = this.getParentItemConf().retrieveAllAvailableTemplateParameters();
 			
 			if (parentParameters != null && !parentParameters.isEmpty()) {
 				allParameters.putAll(parentParameters);
 			}
+		}
+		
+		Map<String, Object> ownParameters = super.retrieveAllAvailableTemplateParameters();
+		
+		if (ownParameters != null && !ownParameters.isEmpty()) {
+			allParameters.putAll(ownParameters);
 		}
 		
 		return allParameters;
