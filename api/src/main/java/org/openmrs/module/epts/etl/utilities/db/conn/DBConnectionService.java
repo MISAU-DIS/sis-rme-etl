@@ -144,7 +144,7 @@ public class DBConnectionService {
 		if (qtyTry <= 0)
 			throw new DBException(e);
 		
-		try {
+		try {			
 			Connection conn = this.dataSource.getConnection();
 			
 			//conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);

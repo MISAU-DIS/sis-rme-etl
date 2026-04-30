@@ -1264,7 +1264,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		
 		if (supportedOperations != null) {
 			for (EtlOperationType operationType : supportedOperations) {
-				if (!isOperationConfigured(operationType) && !operationCanBeOmitted(supportedOperations, operationType))
+				if (!isOperationConfigured(operationType) && !operationCanBeOmitted(operationType))
 					errorMsg += ++errNum + ". The operation '" + operationType + " is not configured\n";
 			}
 		}
@@ -1319,17 +1319,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return false;
 	}
 	
-	private boolean operationCanBeOmitted(List<EtlOperationType> supportedOperations, EtlOperationType operationType) {
+	private boolean operationCanBeOmitted(EtlOperationType operationType) {
 		boolean ok = false;
 		
-		if (operationType.isEtl()) {
-			for (EtlOperationType type : supportedOperations) {
-				
-				if (isOperationConfigured(type)) {
-					ok = true;
-					
-					break;
-				}
+		if (this.processType.isEtl()) {
+			if (operationType.isDatabasePreparation() || operationType.isDbExtract()) {
+				return true;
 			}
 		}
 		

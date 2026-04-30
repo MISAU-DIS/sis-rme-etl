@@ -30,7 +30,7 @@ public enum EtlOperationType {
 	DETECT_GAPES,
 	ETL,
 	DETECT_MISSING_RECORDS,
-	DB_EXTRACT, 
+	DB_EXTRACT,
 	DB_PREPARATION;
 	
 	public static boolean isDetectMIssingRecords(String operationType) {
@@ -204,5 +204,9 @@ public enum EtlOperationType {
 	
 	public boolean isSupportedOperation() {
 		return CommonUtilities.getInstance().getPosOnArray(EtlOperationType.values(), this) >= 0;
+	}
+	
+	public boolean isDbExtract() {
+		return this.equals(DB_EXTRACT);
 	}
 }
