@@ -111,7 +111,10 @@ public class OpenConnection implements Connection, Closeable {
 		
 		for (OpenConnection conn : conns) {
 			if (conn != null) {
-				conn.finalizeConnection(finalizer);
+				try {
+					conn.finalizeConnection(finalizer);
+				}
+				catch (Exception e) {}
 			}
 		}
 	}

@@ -147,7 +147,7 @@ public class DBConnectionService {
 		try {
 			Connection conn = this.dataSource.getConnection();
 			
-			conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+			//conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 			
 			return conn;
 		}

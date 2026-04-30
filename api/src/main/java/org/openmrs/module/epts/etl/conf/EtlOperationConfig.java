@@ -791,7 +791,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 	
 	public static List<EtlOperationType> getSupportedOperationsInEtlProcess() {
-		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT };
+		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT, EtlOperationType.DB_PREPARATION };
 		
 		return utilities.parseArrayToList(supported);
 	}
