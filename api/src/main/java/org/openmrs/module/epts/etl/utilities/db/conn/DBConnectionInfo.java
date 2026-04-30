@@ -39,11 +39,14 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	
 	private Integer dbHostPort;
 	
+	private DBConnectionIsolationLevel isolationLevel;
+	
 	private DBConnectionService dbService;
 	
 	private EtlConfiguration relatedEtlConf;
 	
 	public DBConnectionInfo() {
+		isolationLevel = DBConnectionIsolationLevel.TRANSACTION_NONE;
 	}
 	
 	public DBConnectionInfo(String dataBaseUserName, String dataBaseUserPassword, String connectionURI,
@@ -59,6 +62,10 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		this(dataBaseUserName, dataBaseUserPassword, connectionURI, driveClassName);
 		
 		this.schema = schema;
+	}
+	
+	public DBConnectionIsolationLevel getIsolationLevel() {
+		return isolationLevel;
 	}
 	
 	public EtlConfiguration getRelatedEtlConf() {

@@ -2600,7 +2600,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedSrcStageTableConf(Connection conn) throws DBException {
 		if (!existRelatedExportStageTable(conn)) {
-			createRelatedSrcStageAreaTable(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedSrcStageTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedSrcStageTableName(), this.getSyncStageSchema(), conn);
@@ -2608,7 +2609,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedDstStageTableConf(Connection conn) throws DBException {
 		if (!existRelatedDstStageTable(conn)) {
-			createRelatedDstSyncStage(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedDstStageTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedDstStageTableName(), this.getSyncStageSchema(), conn);
@@ -2616,7 +2618,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedStageDstUniqueKeysTableConf(Connection conn) throws DBException {
 		if (!existRelatedStageDstUniqueKeysTable(conn)) {
-			createRelatedSyncStageAreaDstUniqueKeysTable(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedStageDstUniqueKeysTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
+			
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedStageDstUniqueKeysTableName(), this.getSyncStageSchema(),
@@ -2625,7 +2629,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedStageSrcUniqueKeysTableConf(Connection conn) throws DBException {
 		if (!existRelatedStageSrcUniqueKeysTable(conn)) {
-			createRelatedStageAreaSrcUniqueKeysTable(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedStageSrcUniqueKeysTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
+			
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedStageSrcUniqueKeysTableName(), this.getSyncStageSchema(),

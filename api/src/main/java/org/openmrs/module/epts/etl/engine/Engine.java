@@ -77,7 +77,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		this.controller = controller;
 		this.etlItemConfiguration = etlItemConfiguration;
 		
-		this.engineId = getEtlConfigCode();
+		this.engineId = (this.getRelatedEtlOperationConfig().getOperationType() + "_" + getEtlConfigCode()).toLowerCase();
 		
 		this.operationStatus = MonitoredOperation.STATUS_NOT_INITIALIZED;
 		this.tableOperationProgressInfo = tableOperationProgressInfo;
@@ -505,7 +505,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
 				getSearchParams().setExtraCondition(originalExtraCondition);
 			}
-		}else {
+		} else {
 			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
 			iManager.save();
 		}
