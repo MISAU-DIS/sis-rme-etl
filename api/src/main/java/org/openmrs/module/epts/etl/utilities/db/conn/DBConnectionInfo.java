@@ -46,7 +46,7 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	private EtlConfiguration relatedEtlConf;
 	
 	public DBConnectionInfo() {
-		isolationLevel = DBConnectionIsolationLevel.TRANSACTION_NONE;
+		isolationLevel = DBConnectionIsolationLevel.TRANSACTION_REPEATABLE_READ;
 	}
 	
 	public DBConnectionInfo(String dataBaseUserName, String dataBaseUserPassword, String connectionURI,
@@ -66,6 +66,10 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	
 	public DBConnectionIsolationLevel getIsolationLevel() {
 		return isolationLevel;
+	}
+	
+	public void setIsolationLevel(DBConnectionIsolationLevel isolationLevel) {
+		this.isolationLevel = isolationLevel;
 	}
 	
 	public EtlConfiguration getRelatedEtlConf() {
