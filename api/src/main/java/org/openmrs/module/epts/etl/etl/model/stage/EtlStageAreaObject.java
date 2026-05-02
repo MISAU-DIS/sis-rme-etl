@@ -329,12 +329,16 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 		List<EtlDatabaseObject> collected = new ArrayList<>(stageInfo.size());
 		
 		for (EtlStageAreaObject sti : stageInfo) {
-			if (sti.getKeyInfo() != null) {
+			if (sti.getKeyInfo() != null && sti.hasParentKey()) {
 				collected.addAll(sti.getKeyInfo());
 			}
 		}
 		
 		return collected;
+	}
+	
+	private boolean hasParentKey() {
+		return getFieldValue("stage_record_id") != null;
 	}
 	
 	public static void loadParentIdToChild(List<EtlStageAreaObject> stageAreaObjects) {
