@@ -338,7 +338,12 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	}
 	
 	private boolean hasParentKey() {
-		return getFieldValue("stage_record_id") != null;
+		
+		if (!this.getRelatedConfiguration().isSrcStageTable()) {
+			return getFieldValue("stage_record_id") != null;
+		} else {
+			return true;
+		}
 	}
 	
 	public static void loadParentIdToChild(List<EtlStageAreaObject> stageAreaObjects) {

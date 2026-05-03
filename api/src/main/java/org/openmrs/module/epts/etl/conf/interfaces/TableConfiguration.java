@@ -47,6 +47,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlDataSource {
 	
+	public static final String STAGE_TABLE_DST_UNIQUE_KEYS = "_dst_unique_keys";
+
+	public static final String STAGE_TABLE_SRC_UNIQUE_KEYS_SUFIX = "_src_unique_keys";
+
+	public static final String STAGE_TABLE_DST_SUFIX = "_dst_stage";
+
+	public static final String STAGE_TABLE_SRC_SUFIX = "_src_stage";
+
 	public static final String[] REMOVABLE_METADATA = {};
 	
 	public static final Object lock = new Object();
@@ -1202,22 +1210,22 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	@JsonIgnore
 	default String generateRelatedSrcStageTableName() {
-		return this.getTableName() + "_src_stage";
+		return this.getTableName() + STAGE_TABLE_SRC_SUFIX;
 	}
 	
 	@JsonIgnore
 	default String generateRelatedDstStageTableName() {
-		return this.getTableName() + "_dst_stage";
+		return this.getTableName() + STAGE_TABLE_DST_SUFIX;
 	}
 	
 	@JsonIgnore
 	default String generateRelatedStageSrcUniqueKeysTableName() {
-		return this.generateRelatedSrcStageTableName() + "_src_unique_keys";
+		return this.generateRelatedSrcStageTableName() + STAGE_TABLE_SRC_UNIQUE_KEYS_SUFIX;
 	}
 	
 	@JsonIgnore
 	default String generateRelatedStageDstUniqueKeysTableName() {
-		return this.generateRelatedSrcStageTableName() + "_dst_unique_keys";
+		return this.generateRelatedSrcStageTableName() + STAGE_TABLE_DST_UNIQUE_KEYS;
 	}
 	
 	@JsonIgnore

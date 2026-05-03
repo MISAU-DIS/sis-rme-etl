@@ -87,4 +87,8 @@ public class EtlConfigurationTableConf extends AbstractTableConfiguration {
 	public String getQuery() {
 		return null;
 	}
+	
+	public boolean isSrcStageTable() {
+		return this.getTableName().endsWith(STAGE_TABLE_SRC_SUFIX);
+	}
 }
