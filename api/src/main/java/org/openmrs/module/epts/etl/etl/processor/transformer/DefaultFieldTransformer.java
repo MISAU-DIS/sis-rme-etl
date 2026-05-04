@@ -8,7 +8,6 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
-import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -113,7 +112,7 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 			if (field.nullValueBehavior().markAsFailed()) {
 				throw new EtlTransformationException(msg, srcObject, ActionOnEtlException.LOG);
 			} else if (field.nullValueBehavior().abort()) {
-				throw new EtlExceptionImpl(msg, srcObject, ActionOnEtlException.ABORT_PROCESS);
+				throw new EtlTransformationException(msg, srcObject, ActionOnEtlException.ABORT_PROCESS);
 			} else if (field.nullValueBehavior().allow()) {
 				return null;
 			}

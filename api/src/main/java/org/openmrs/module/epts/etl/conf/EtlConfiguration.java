@@ -990,7 +990,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				
 				for (File script : srcScriptsDir.listFiles()) {
 					if (!scriptAlredExecuted(EtlSide.SRC, script)) {
-						
 						DBUtilities.runScriptOnDbServer(srcConnInfo, script.getAbsolutePath());
 						markScriptAsExecuted(EtlSide.SRC, script);
 					} else {
@@ -1020,6 +1019,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private void markScriptAsExecuted(EtlSide etlSide, File script) {
 		String dstFile = this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide
 		        + FileUtilities.generateFileName(script);
+		
+		FileUtilities.tryToCreateDirectoryStructure(new File(dstFile).getParent());
 		
 		FileUtilities.write(dstFile,
 		    "Executed At within process: " + this.generateProcessId() + " At " + DateAndTimeUtilities.getCurrentDate());

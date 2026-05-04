@@ -302,9 +302,14 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	@Override
 	public boolean isFinished() {
-		if (Controller.super.isStopped())
+		if (Controller.super.isStopped()) {
 			return true;
-		
+		}
+	
+		if (Controller.super.isFinished()) {
+			return true;
+		}
+	
 		if (utilities.listHasElement(this.operationsControllers)) {
 			for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
 				if (controller.getOperationConfig().isDisabled()) {
