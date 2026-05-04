@@ -1,13 +1,18 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.lang.reflect.Method;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class StringTranformerElements {
 	
@@ -17,18 +22,52 @@ public class StringTranformerElements {
 	
 	private String function;
 	
-	private List<Object> params;
+	private List<FieldsMapping> params;
 	
 	private StringTranformerElements nextElements;
 	
+	private FieldsMapping auxMapping;
+	
 	private Method method;
+	
+	private DstConf relatedDstConf;
+	
+	private boolean fullLoaded;
+	
+	StringTranformerElements(DstConf relatedDstConf) {
+		this.relatedDstConf = relatedDstConf;
+	}
 	
 	public Object getValueToTransform() {
 		return valueToTransform;
 	}
 	
-	public void setValueToTransform(Object valueToTransform) {
+	public FieldsMapping getAuxMapping() {
+		return auxMapping;
+	}
+	
+	public void setValueToTransform(Object valueToTransform) throws FieldAvaliableInMultipleDataSources, DBException {
 		this.valueToTransform = valueToTransform;
+	}
+	
+	private synchronized void fullLoad(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+		if (!fullLoaded) {
+			if (this.valueToTransform != null) {
+				try {
+					this.auxMapping = FieldsMapping.fastCreate(this.valueToTransform.toString(), this.relatedDstConf, conn);
+					
+					if (!this.auxMapping.hasDataSourceName()) {
+						this.auxMapping = FieldsMapping.createSimpleFieldsMapping("anknown_field", this.valueToTransform,
+						    relatedDstConf, conn);
+					}
+				}
+				catch (Exception e) {
+					throw e;
+				}
+
+				fullLoaded = true;
+			}
+		}
 	}
 	
 	public String getFunction() {
@@ -39,11 +78,11 @@ public class StringTranformerElements {
 		this.function = function;
 	}
 	
-	public List<Object> getParams() {
+	public List<FieldsMapping> getParams() {
 		return params;
 	}
 	
-	public void setParams(List<Object> params) {
+	public void setParams(List<FieldsMapping> params) {
 		this.params = params;
 	}
 	
@@ -76,7 +115,7 @@ public class StringTranformerElements {
 		}
 	}
 	
-	public void init() {
+	public void init(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		resolveBestMethod();
 	}
 	
@@ -98,32 +137,33 @@ public class StringTranformerElements {
 		throw new RuntimeException("No matching method found: " + methodName + " with " + paramCount + " params");
 	}
 	
-	public Object evaluate(List<EtlDatabaseObject> additionalSrcObjects) throws Exception {
+	public Object evaluate(List<EtlDatabaseObject> additionalSrcObjects, Connection conn) throws Exception {
 		
 		StringTranformerElements element = this;
 		
 		if (element.getFunction() != null) {
-			List<Object> params = element.getParams();
+			List<FieldsMapping> params = element.getParams();
 			
 			Class<?>[] paramTypes = method.getParameterTypes();
 			Object[] methodParams = new Object[paramTypes.length];
 			
 			for (int i = 0; i < paramTypes.length; i++) {
+				FieldTransformingInfo rawValue = params.get(i).getTransformerInstance().transform(null, null, null,
+				    additionalSrcObjects, params.get(i), conn, conn);
 				
-				Object rawValue = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(additionalSrcObjects,
-				    params.get(i).toString());
-				
-				methodParams[i] = convertToType(rawValue, paramTypes[i]);
+				methodParams[i] = convertToType(rawValue.getTransformedValue(), paramTypes[i]);
 			}
 			
-			Object valueToTransform = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(additionalSrcObjects,
-			    element.getValueToTransform().toString());
+			Object valueToTransform = this.getAuxMapping().getTransformerInstance()
+			        .transform(null, null, null, additionalSrcObjects, auxMapping, conn, conn).getTransformedValue();
 			
 			Object currentValue = method.invoke(valueToTransform.toString(), methodParams);
 			
 			if (element.getNextElements() != null) {
 				element.getNextElements().setValueToTransform(currentValue);
-				return element.getNextElements().evaluate(additionalSrcObjects);
+				element.getNextElements().fullLoad(conn);
+				
+				return element.getNextElements().evaluate(additionalSrcObjects, conn);
 			}
 			
 			return currentValue;
@@ -166,10 +206,12 @@ public class StringTranformerElements {
 		return value;
 	}
 	
-	public static StringTranformerElements buildChain(Object value, String remaining) {
+	public static StringTranformerElements buildChain(Object value, String remaining, DstConf relatedDstConf,
+	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		
-		StringTranformerElements element = new StringTranformerElements();
+		StringTranformerElements element = new StringTranformerElements(relatedDstConf);
 		element.setValueToTransform(value);
+		element.fullLoad(conn);
 		
 		if (remaining == null || remaining.isBlank()) {
 			return null;
@@ -188,20 +230,20 @@ public class StringTranformerElements {
 		
 		element.setFunction(methodName);
 		
-		List<Object> params = new ArrayList<>();
+		List<FieldsMapping> params = new ArrayList<>();
 		
 		if (!argsStr.isBlank()) {
 			String[] args = splitArguments(argsStr);
 			for (String arg : args) {
-				params.add(parseArgument(arg));
+				params.add(parseArgument(arg, relatedDstConf, conn));
 			}
 		}
 		
 		element.setParams(params);
 		
-		element.init();
+		element.init(conn);
 		
-		element.setNextElements(buildChain(null, next));
+		element.setNextElements(buildChain(null, next, relatedDstConf, conn));
 		
 		return element;
 	}
@@ -235,26 +277,43 @@ public class StringTranformerElements {
 		return result.toArray(new String[0]);
 	}
 	
-	private static Object parseArgument(String arg) {
+	private static FieldsMapping parseArgument(String arg, DstConf dstConf, Connection conn)
+	        throws FieldAvaliableInMultipleDataSources, DBException {
 		
 		arg = arg.trim();
 		
+		Object argInstance = arg;
+		
 		// Strings com aspas
 		if ((arg.startsWith("\"") && arg.endsWith("\"")) || (arg.startsWith("'") && arg.endsWith("'"))) {
-			return arg.substring(1, arg.length() - 1);
+			argInstance = arg.substring(1, arg.length() - 1);
 		}
 		
 		// Integer
 		if (arg.matches("-?\\d+")) {
-			return Integer.parseInt(arg);
+			argInstance = Integer.parseInt(arg);
 		}
 		
 		// Double
 		if (arg.matches("-?\\d+\\.\\d+")) {
-			return Double.parseDouble(arg);
+			argInstance = Double.parseDouble(arg);
 		}
 		
-		return arg;
+		FieldsMapping map = null;
+		
+		if (argInstance instanceof String) {
+			map = FieldsMapping.fastCreate(arg, dstConf, conn);
+			
+			if (!map.hasDataSourceName()) {
+				map = null;
+			}
+		}
+		
+		if (map == null) {
+			map = FieldsMapping.createSimpleFieldsMapping("anknown_field", argInstance, dstConf, conn);
+		}
+		
+		return map;
 	}
 	
 }

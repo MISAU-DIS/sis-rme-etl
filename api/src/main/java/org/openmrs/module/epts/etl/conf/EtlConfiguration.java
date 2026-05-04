@@ -1016,9 +1016,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 	}
 	
-	private void markScriptAsExecuted(EtlSide etlSide, File script) {
-		String dstFile = this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide
+	private String generateExecutedScriptPath(EtlSide etlSide, File script) {
+		return this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide + ""
 		        + FileUtilities.generateFileName(script);
+	}
+	
+	private void markScriptAsExecuted(EtlSide etlSide, File script) {
+		String dstFile = generateExecutedScriptPath(etlSide, script);
 		
 		FileUtilities.tryToCreateDirectoryStructure(new File(dstFile).getParent());
 		
@@ -1027,10 +1031,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 	
 	private boolean scriptAlredExecuted(EtlSide etlSide, File script) {
-		String dstFile = this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide
-		        + FileUtilities.generateFileName(script);
-		
-		return new File(dstFile).exists();
+		return new File(generateExecutedScriptPath(etlSide, script)).exists();
 	}
 	
 	public boolean hasTestingItem() {

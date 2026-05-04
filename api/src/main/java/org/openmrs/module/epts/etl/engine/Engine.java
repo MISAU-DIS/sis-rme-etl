@@ -839,6 +839,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 	
 	private void requestStopDueError(Exception e) {
+		e.printStackTrace();
+		
 		requestStop();
 		
 		getRelatedOperationController().requestStopDueError(this, e);
