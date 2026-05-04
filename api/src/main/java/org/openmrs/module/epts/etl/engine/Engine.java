@@ -400,7 +400,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 		}
 		catch (Exception e) {
-			this.requestStop();
+			this.requestStopDueError(e);
 			
 			e.printStackTrace();
 			
