@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -26,7 +27,6 @@ import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
-import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
@@ -57,7 +57,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	protected String controllerId;
 	
-	protected int operationStatus;
+	protected EtlOperationStatus operationStatus;
 	
 	protected boolean stopRequested;
 	
@@ -81,7 +81,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.processController = processController;
 		this.operationConfig = operationConfig;
 		
-		this.operationStatus = MonitoredOperation.STATUS_NOT_INITIALIZED;
+		this.operationStatus = EtlOperationStatus.STATUS_NOT_INITIALIZED;
 		
 		this.controllerId = operationConfig.generateOperationId();
 		
@@ -100,6 +100,16 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			finalizeConnection(conn, this);
 		}
 		
+	}
+	
+	@Override
+	public EtlOperationStatus getOperationStatus() {
+		return operationStatus;
+	}
+	
+	@Override
+	public void setOperationStatus(EtlOperationStatus status) {
+		this.operationStatus = status;
 	}
 	
 	private List<EtlItemConfiguration> getFinalizedItems() {
@@ -598,20 +608,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		return this.stopRequested;
 	}
 	
-	public boolean isInitialized() {
-		return this.operationStatus != MonitoredOperation.STATUS_NOT_INITIALIZED;
-	}
-	
-	@Override
-	public boolean isNotInitialized() {
-		return this.operationStatus == MonitoredOperation.STATUS_NOT_INITIALIZED;
-	}
-	
-	@Override
-	public boolean isRunning() {
-		return this.operationStatus == MonitoredOperation.STATUS_RUNNING;
-	}
-	
 	@Override
 	public boolean isStopped() {
 		if (isNotInitialized())
@@ -627,7 +623,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			return true;
 		}
 		
-		return this.operationStatus == MonitoredOperation.STATUS_STOPPED;
+		return this.operationStatus == EtlOperationStatus.STATUS_STOPPED;
 	}
 	
 	@Override
@@ -645,7 +641,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			
 			return true;
 		} else {
-			return this.operationStatus == MonitoredOperation.STATUS_FINISHED;
+			return this.operationStatus == EtlOperationStatus.STATUS_FINISHED;
 		}
 	}
 	
@@ -725,51 +721,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 	
 	@Override
-	public boolean isPaused() {
-		return this.operationStatus == MonitoredOperation.STATUS_PAUSED;
-	}
-	
-	@Override
-	public boolean isSleeping() {
-		return this.operationStatus == MonitoredOperation.STATUS_SLEEPING;
-	}
-	
-	@Override
-	public void changeStatusToSleeping() {
-		this.operationStatus = MonitoredOperation.STATUS_SLEEPING;
-		
-		logTrace("Operation Changed to Sleeping");
-	}
-	
-	@Override
-	public void changeStatusToRunning() {
-		this.operationStatus = MonitoredOperation.STATUS_RUNNING;
-		
-		logTrace("Operation Changed to Running");
-	}
-	
-	@Override
-	public void changeStatusToStopped() {
-		this.operationStatus = MonitoredOperation.STATUS_STOPPED;
-		
-		logTrace("Operation Changed to Stopped");
-	}
-	
-	@Override
-	public void changeStatusToFinished() {
-		this.operationStatus = MonitoredOperation.STATUS_FINISHED;
-		
-		logTrace("Operation Changed to Finished");
-	}
-	
-	@Override
-	public void changeStatusToPaused() {
-		this.operationStatus = MonitoredOperation.STATUS_PAUSED;
-		
-		logTrace("Operation Paused");
-	}
-	
-	@Override
 	public void onStart() {
 		if (!generateOperationStatusFile().exists()) {
 			if (this.progressInfo.getStartTime() == null) {
@@ -782,6 +733,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		if (this.progressInfo.getStartTime() == null) {
 			this.progressInfo.setStartTime(DateAndTimeUtilities.getCurrentDate());
 		}
+		
+		changeStatusToRunning();
 	}
 	
 	@Override
@@ -885,10 +838,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		requestStop();
 		
 		if (utilities().listHasElement(this.enginesActivititieMonitor)) {
-			for (Engine<T> m : this.enginesActivititieMonitor) {
-				m.requestStopDueError();
-			}
-			
 			while (!isStopped()) {
 				logger.warn("STOP REQUESTED DUE AN ERROR AND WAITING FOR ALL ENGINES TO BE STOPPED", 120);
 				TimeCountDown.sleep(5);
@@ -915,7 +864,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			
 		}
 		
-		logTrace("Requestin the ProcessController to Stop");
+		logTrace("Requestig the ProcessController to Stop");
 		
 		this.getProcessController().requestStop();
 	}

@@ -1,6 +1,8 @@
 package org.openmrs.module.epts.etl.utilities;
 
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.Main;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -10,9 +12,9 @@ import org.slf4j.event.Level;
 
 public class EptsEtlLogger {
 	
-	static CommonUtilities utilities = CommonUtilities.getInstance();
+	private final Map<String, Date> lastLogDates = new ConcurrentHashMap<>();
 	
-	private Date lastLogDate;
+	static CommonUtilities utilities = CommonUtilities.getInstance();
 	
 	Logger logger = LoggerFactory.getLogger(Main.class);
 	
@@ -68,10 +70,26 @@ public class EptsEtlLogger {
 	 * @param logInterval the max log interval permited fore repited logs
 	 */
 	public void warn(String msg, double logInterval) {
-		double elapsedTime = getLastLogElapsedTime();
 		
-		if (elapsedTime < 0 || elapsedTime >= logInterval) {
+		Date now = utilities.getCurrentDate();
+		
+		Date lastDate = lastLogDates.get(msg);
+		
+		if (lastDate == null) {
+			
 			warn(msg);
+			lastLogDates.put(msg, now);
+			
+			return;
+		}
+		
+		double elapsedTime = DateAndTimeUtilities.dateDiff(now, lastDate, DateAndTimeUtilities.SECOND_FORMAT);
+		
+		if (elapsedTime >= logInterval) {
+			
+			warn(msg);
+			
+			lastLogDates.put(msg, now);
 		}
 	}
 	
@@ -80,8 +98,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.warn(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -90,9 +106,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.info(msg);
-			//logger.error(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -102,8 +115,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.error(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -113,8 +124,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.debug(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -124,25 +133,11 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.trace(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
 	String putAdditionalInfoOnLog(String msg) {
-		return msg;// += " At: " + utilities.formatDateToDDMMYYYY_HHMISS(utilities.getCurrentDate());
+		return msg;
 	}
 	
-	void updateLastLogDate() {
-		this.lastLogDate = utilities.getCurrentDate();
-	}
-	
-	double getLastLogElapsedTime() {
-		if (this.lastLogDate == null) {
-			return -1;
-		}
-		
-		return DateAndTimeUtilities.dateDiff(utilities.getCurrentDate(), this.lastLogDate,
-		    DateAndTimeUtilities.SECOND_FORMAT);
-	}
 }

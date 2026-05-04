@@ -1,45 +1,83 @@
 package org.openmrs.module.epts.etl.utilities.concurrent;
 
+import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
+
 /**
- * Representa uma operacao monitorada 
+ * Representa uma operacao monitorada
  * 
  * @author JPBOANE
- *
  */
-public interface MonitoredOperation extends Runnable{
-	public static final int STATUS_NOT_INITIALIZED=0;
-	public static final int STATUS_RUNNING=1;
-	public static final int STATUS_PAUSED = 2;
-	public static final int STATUS_STOPPED=3;
-	public static final int STATUS_SLEEPING=4;
-	//public static final int STATUS_FINISHING=5;
-	public static final int STATUS_FINISHED=6;
+public interface MonitoredOperation extends Runnable {
 	
-	public TimeController getTimer();
+	TimeController getTimer();
 	
-	public void requestStop();
+	EtlOperationStatus getOperationStatus();
 	
-	public boolean stopRequested();
+	void setOperationStatus(EtlOperationStatus status);
 	
-	public boolean isNotInitialized();
-	public boolean isRunning();
-	public boolean isStopped();
-	public boolean isFinished() ;
-	public boolean isPaused() ;
-	public boolean isSleeping();
-	//public boolean isFinishing();
+	void requestStop();
 	
-	public void changeStatusToRunning();
-	public void changeStatusToStopped();
-	public void changeStatusToFinished();
-	public void changeStatusToPaused();
-	public void changeStatusToSleeping();
-	//public void changeStatusToFinishing();
+	boolean stopRequested();
 	
-	public abstract void onStart();
-	public abstract void onSleep();
-	public abstract void onStop();
-	public abstract void onFinish();
+	default boolean isNotInitialized() {
+		return this.getOperationStatus().notInitialized();
+	}
+	
+	default boolean isRunning() {
+		return this.getOperationStatus().running();
+	}
+	
+	default boolean isStopped() {
+		return this.getOperationStatus().stopped();
+	}
+	
+	default boolean isFinished() {
+		return this.getOperationStatus().finished();
+	}
+	
+	default boolean isPaused() {
+		return this.getOperationStatus().paused();
+	}
+	
+	default boolean isSleeping() {
+		return this.getOperationStatus().slepping();
+	}
+	
+	default void changeStatusToRunning() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_RUNNING);
+	}
+	
+	default void changeStatusToStopped() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_STOPPED);
+	}
+	
+	default void changeStatusToFinished() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_FINISHED);
+	}
+	
+	default void changeStatusToPaused() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_PAUSED);
+	}
+	
+	default void changeStatusToSleeping() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_SLEEPING);
+	}
+	
+	default void onStart() {
+		changeStatusToStopped();
+	}
+	
+	default void onSleep() {
+		changeStatusToSleeping();
+	}
+	
+	default void onStop() {
+		changeStatusToStopped();
+	}
+	
+	default void onFinish() {
+		changeStatusToFinished();
+	}
 	
 	public abstract int getWaitTimeToCheckStatus();
 	
