@@ -26,6 +26,7 @@ import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlInconsistencyBehavior;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.ProcessController;
@@ -978,11 +979,23 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private void tryToExecuteStartupScripts(DBConnectionInfo srcConnInfo, DBConnectionInfo dstConnInfo) throws DBException {
 		
 		if (!this.hasParentEtlConf()) {
+			
+			logWarn("Ensuring execution of startup scripts...");
+			
 			File srcScriptsDir = this.getSrcSqlStartupScriptsDirectory();
 			
 			if (srcScriptsDir.listFiles() != null) {
+				
+				logDebug("Found " + srcScriptsDir.listFiles().length + " Scripts on src startup scripts!");
+				
 				for (File script : srcScriptsDir.listFiles()) {
-					DBUtilities.runScriptOnDbServer(srcConnInfo, script.getAbsolutePath());
+					if (!scriptAlredExecuted(EtlSide.SRC, script)) {
+						
+						DBUtilities.runScriptOnDbServer(srcConnInfo, script.getAbsolutePath());
+						markScriptAsExecuted(EtlSide.SRC, script);
+					} else {
+						logWarn("Script was already executed: " + script);
+					}
 				}
 			}
 			
@@ -990,11 +1003,33 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			
 			if (dstScriptsDir.listFiles() != null) {
 				for (File script : dstScriptsDir.listFiles()) {
-					DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
+					
+					if (!scriptAlredExecuted(EtlSide.DST, script)) {
+						DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
+						markScriptAsExecuted(EtlSide.DST, script);
+					} else {
+						logWarn("Script was already executed: " + script);
+					}
+					
 				}
 			}
 			
 		}
+	}
+	
+	private void markScriptAsExecuted(EtlSide etlSide, File script) {
+		String dstFile = this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide
+		        + FileUtilities.generateFileName(script);
+		
+		FileUtilities.write(dstFile,
+		    "Executed At within process: " + this.generateProcessId() + " At " + DateAndTimeUtilities.getCurrentDate());
+	}
+	
+	private boolean scriptAlredExecuted(EtlSide etlSide, File script) {
+		String dstFile = this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide
+		        + FileUtilities.generateFileName(script);
+		
+		return new File(dstFile).exists();
 	}
 	
 	public boolean hasTestingItem() {
