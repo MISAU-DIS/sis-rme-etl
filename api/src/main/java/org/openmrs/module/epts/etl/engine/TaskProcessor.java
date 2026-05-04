@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
+import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
@@ -305,6 +306,31 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+	}
+	
+	@Override
+	public TimeController getTimer() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public void requestStop() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public boolean stopRequested() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public int getWaitTimeToCheckStatus() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public void run() {
+		throw new ForbiddenOperationException("Unimplemented method!");
 	}
 	
 	public abstract void performeEtl(List<T> records, Connection srcConn, Connection dstConn) throws DBException;
