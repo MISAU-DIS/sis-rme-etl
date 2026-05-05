@@ -642,14 +642,19 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 									
 									performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, sharedSrcConn,
 									    sharedDstConn);
+									
+									taskProcessor.changeStatusToFinished();
 								} else {
 									try {
 										boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
 										
 										performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this),
 										    tryToOpenDstConn(this));
+										
+										taskProcessor.changeStatusToFinished();
 									}
 									catch (DBException e) {
+										taskProcessor.changeStatusToStopped();
 										taskProcessor.getTaskResultInfo().setFatalException(e);
 									}
 								}
@@ -682,6 +687,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 							
 							EtlOperationResultHeader<T> r = EtlOperationResultHeader.getDefaultResultWithFatalError(results);
 							
+							requestStopDueError(r.getFatalException());
 							r.throwDefaultExcetions(this);
 						} else {
 							
@@ -844,7 +850,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 	
 	private void requestStopDueError(Exception e) {
-		e.printStackTrace();
+		if (e != null) {
+			e.printStackTrace();
+		}
 		
 		requestStop();
 		
@@ -863,10 +871,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					boolean atLeaseOneIsRunning = false;
 					
 					for (TaskProcessor<T> t : this.getCurrentTaskProcessor()) {
-						if (!(t.isStopped() || t.isFinished())) {
+						if (!t.isStopped() && !t.isFinished()) {
 							atLeaseOneIsRunning = true;
 							
-							logWarn("Stop Requested but processor Is Still Running:" + t.getProcessorId(), 15);
+							logWarn("Stop Requested but processor Is Still Running:" + t.getProcessorId() + "("
+							        + t.getOperationStatus() + ")",
+							    15);
 						}
 					}
 					
