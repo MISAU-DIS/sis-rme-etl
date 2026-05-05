@@ -60,7 +60,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		    dstConf, transformationType, srcConn);
 		
 		try {
-			if (srcObjects.isEmpty()) {
+			dstConf.stepIntoBreakpoint(dstConf.getRelatedEtlConf(), srcObjects == null);
+			
+			if (srcObjects == null || srcObjects.isEmpty()) {
 				return null;
 			}
 		}

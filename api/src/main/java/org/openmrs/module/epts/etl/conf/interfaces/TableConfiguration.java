@@ -48,13 +48,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlDataSource {
 	
 	public static final String STAGE_TABLE_DST_UNIQUE_KEYS = "_dst_unique_keys";
-
+	
 	public static final String STAGE_TABLE_SRC_UNIQUE_KEYS_SUFIX = "_src_unique_keys";
-
+	
 	public static final String STAGE_TABLE_DST_SUFIX = "_dst_stage";
-
+	
 	public static final String STAGE_TABLE_SRC_SUFIX = "_src_stage";
-
+	
 	public static final String[] REMOVABLE_METADATA = {};
 	
 	public static final Object lock = new Object();
@@ -1225,7 +1225,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	@JsonIgnore
 	default String generateRelatedStageDstUniqueKeysTableName() {
-		return this.generateRelatedSrcStageTableName() + STAGE_TABLE_DST_UNIQUE_KEYS;
+		return this.generateRelatedDstStageTableName() + STAGE_TABLE_DST_UNIQUE_KEYS;
 	}
 	
 	@JsonIgnore

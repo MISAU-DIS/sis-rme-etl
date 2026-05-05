@@ -840,11 +840,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 		
 		if (this.hasParentItemConf()) {
-			DstConf dstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
+			DstConf parentDstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
 			
-			ds.add(dstConf);
+			ds.add(parentDstConf);
 			
-			ds.addAll(this.getParentItemConf().collectAllAvaliableDataSources(conn));
+			ds.addAll(parentDstConf.getAllAvaliableDataSource());
 		}
 		
 		return ds;

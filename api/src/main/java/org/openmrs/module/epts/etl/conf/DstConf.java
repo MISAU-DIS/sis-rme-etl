@@ -13,7 +13,6 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
-import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
@@ -684,62 +683,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		if (isLoadedDataSourceInfo())
 			return;
 		
-		if (useSrcConfAsDataSource()) {
-			addToAvaliableDataSource(getSrcConf());
-			
-			if (this.getSrcConf().hasAuxExtractTable()) {
-				for (JoinableEntity auxExtractTable : this.getSrcConf().getJoiningTable()) {
-					if (!auxExtractTable.doNotUseAsDatasource()) {
-						addToAvaliableDataSource(auxExtractTable);
-					}
-					
-					if (auxExtractTable.isMainJoiningEntity() && auxExtractTable.parseToJoining().hasAuxExtractTable()) {
-						for (JoinableEntity innerAuxExtractTable : auxExtractTable.parseToJoining().getJoiningTable()) {
-							if (!innerAuxExtractTable.doNotUseAsDatasource()) {
-								addToAvaliableDataSource(innerAuxExtractTable);
-							}
-						}
-					}
-				}
-			}
-			
-			if (utilities.listHasElement(getSrcConf().getAvaliableExtraDataSource())) {
-				for (EtlDataSource ds : utilities.parseList(getSrcConf().getAvaliableExtraDataSource(),
-				    EtlDataSource.class)) {
-					addToAvaliableDataSource(ds);
-				}
-			}
-		}
-		
-		if (hasParentDstConf()) {
-			addToAvaliableDataSource(this.getParentDstConf());
-			
-			if (utilities.listHasElement(this.getParentDstConf().getAllAvaliableDataSource())) {
-				
-				List<EtlDataSource> avaliableDataSource = null;
-				
-				if (this.getParentDstConf().useSharedPKKey()
-				        && this.getTableName().equals(this.getParentDstConf().getSharePkWith())) {
-					
-					avaliableDataSource = new ArrayList<>();
-					
-					for (EtlDataSource p : this.getParentDstConf().getAllAvaliableDataSource()) {
-						if (p != this.getParentDstConf().getSrcConf().getSharedKeyRefInfo(conn)) {
-							avaliableDataSource.add(p);
-						}
-					}
-					
-				} else {
-					avaliableDataSource = this.getParentDstConf().getAllAvaliableDataSource();
-				}
-				
-				for (EtlDataSource ds : avaliableDataSource) {
-					if (ds != this.getParentDstConf().getSrcConf()) {
-						addToAvaliableDataSource(ds);
-					}
-				}
-			}
-		}
+		this.addAllToAvaliableDataSource(this.getParentConf().collectAllAvaliableDataSources(conn));
 		
 		this.fullLoadAllRelatedTables(getRelatedEtlConf(), null, conn);
 		
