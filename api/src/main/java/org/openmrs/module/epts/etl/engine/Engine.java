@@ -768,9 +768,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 		}
 		catch (Exception e) {
+			taskProcessor.changeStatusToStopped();
+			
 			requestStopDueError(e);
 			
-			taskProcessor.changeStatusToStopped();
 			taskProcessor.getTaskResultInfo().setFatalException(e);
 		}
 		finally {
