@@ -20,7 +20,7 @@ import java.util.List;
 
 import org.apache.commons.fileupload.FileItem;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBOperation;
 
@@ -32,7 +32,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBOperation;
  */
 public abstract class BaseDAO {
 	
-	public static EptsEtlLogger logger = EptsEtlLogger.getLogger(BaseDAO.class);
+	public static EtlLogger logger = EtlLogger.getLogger(BaseDAO.class);
 	
 	public static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 	

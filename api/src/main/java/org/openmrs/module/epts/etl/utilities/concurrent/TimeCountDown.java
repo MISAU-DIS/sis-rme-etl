@@ -7,11 +7,11 @@ package org.openmrs.module.epts.etl.utilities.concurrent;
 
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
 public class TimeCountDown extends ScheduledOperation {
 	
-	public static EptsEtlLogger logger = EptsEtlLogger.getLogger(TimeCountDown.class);
+	public static EtlLogger logger = EtlLogger.getLogger(TimeCountDown.class);
 	
 	private String message;
 	

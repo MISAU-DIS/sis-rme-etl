@@ -7,7 +7,7 @@ import org.openmrs.module.epts.etl.etl.model.EtlDynamicSearchParams;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -18,7 +18,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	private EptsEtlLogger logger;
+	private EtlLogger logger;
 	
 	private EtlConfiguration etlConfig;
 	
@@ -31,7 +31,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		
 		this.etlConfig = etlConfig;
 		
-		this.logger = new EptsEtlLogger(DynamicProcessStarter.class);
+		this.logger = new EtlLogger(DynamicProcessStarter.class);
 	}
 	
 	private List<EtlDatabaseObject> loadAvaliableSrcObjects(EtlConfiguration etlConfig) {
@@ -61,7 +61,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		}
 	}
 	
-	public EptsEtlLogger getLogger() {
+	public EtlLogger getLogger() {
 		return logger;
 	}
 	
@@ -83,7 +83,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	public void run() {
 		
 		try {
-			if (EptsEtlLogger.determineLogLevel().equals(Level.DEBUG)) {
+			if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
 				TimeCountDown.sleep(10);
 			}
 			

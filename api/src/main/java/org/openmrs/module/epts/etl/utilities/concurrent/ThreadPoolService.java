@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
 /**
  * @author jpboane
@@ -37,7 +37,7 @@ public class ThreadPoolService {
 		return ExecutorServiceManager.find(this.createdThreadPools, threadId);
 	}
 	
-	public void terminateTread(EptsEtlLogger logger, String threadId, Runnable runnable) {
+	public void terminateTread(EtlLogger logger, String threadId, Runnable runnable) {
 		logger.info("TRYING TO TERMINATE THREAD [" + threadId + "]");
 		
 		ExecutorServiceManager manager = retrieveExistingExecutor(threadId);

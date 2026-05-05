@@ -37,7 +37,7 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -109,7 +109,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private List<AbstractTableConfiguration> allTables;
 	
-	private EptsEtlLogger logger;
+	private EtlLogger logger;
 	
 	private String syncStageSchema;
 	
@@ -714,7 +714,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			if (this.logger != null)
 				return;
 			
-			this.logger = new EptsEtlLogger(EtlConfiguration.class);
+			this.logger = new EtlLogger(EtlConfiguration.class);
 		}
 		
 	}

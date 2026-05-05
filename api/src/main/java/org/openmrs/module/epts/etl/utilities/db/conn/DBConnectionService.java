@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -17,7 +17,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public class DBConnectionService {
 	
-	private static final EptsEtlLogger logger = EptsEtlLogger.getLogger(DBConnectionService.class);
+	private static final EtlLogger logger = EtlLogger.getLogger(DBConnectionService.class);
 	
 	private static final Object LOCK = new Object();
 	

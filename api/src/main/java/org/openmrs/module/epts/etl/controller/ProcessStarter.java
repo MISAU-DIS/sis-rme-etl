@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -24,14 +24,14 @@ public class ProcessStarter implements ControllerStarter {
 	
 	protected ProcessController currentController;
 	
-	private EptsEtlLogger logger;
+	private EtlLogger logger;
 	
 	private static final String stringLock = new String("LOCK_STRING");
 	
 	public ProcessStarter(EtlConfiguration etlConfig) {
 		this.etlConfig = etlConfig;
 		
-		this.logger = new EptsEtlLogger(ProcessStarter.class);
+		this.logger = new EtlLogger(ProcessStarter.class);
 	}
 	
 	public ProcessController getCurrentController() {
@@ -41,10 +41,10 @@ public class ProcessStarter implements ControllerStarter {
 	public ProcessStarter(EtlConfiguration etlConfig, Logger logger) {
 		this.etlConfig = etlConfig;
 		
-		this.logger = new EptsEtlLogger(logger);
+		this.logger = new EtlLogger(logger);
 	}
 	
-	public EptsEtlLogger getLogger() {
+	public EtlLogger getLogger() {
 		return logger;
 	}
 	
@@ -89,7 +89,7 @@ public class ProcessStarter implements ControllerStarter {
 	public void run() {
 		
 		try {
-			if (EptsEtlLogger.determineLogLevel().equals(Level.DEBUG)) {
+			if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
 				TimeCountDown.sleep(10);
 			}
 			

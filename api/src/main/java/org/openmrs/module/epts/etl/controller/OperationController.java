@@ -26,7 +26,7 @@ import org.openmrs.module.epts.etl.model.OperationProgressInfo;
 import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
@@ -45,7 +45,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public abstract class OperationController<T extends EtlDatabaseObject> extends AbstractBaseConfiguration implements Controller {
 	
-	protected EptsEtlLogger logger;
+	protected EtlLogger logger;
 	
 	protected ProcessController processController;
 	
@@ -76,7 +76,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	private List<EtlItemConfiguration> finalizedItems;
 	
 	public OperationController(ProcessController processController, EtlOperationConfig operationConfig) {
-		this.logger = new EptsEtlLogger(OperationController.class);
+		this.logger = new EtlLogger(OperationController.class);
 		
 		this.processController = processController;
 		this.operationConfig = operationConfig;
@@ -144,7 +144,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		return progressInfo;
 	}
 	
-	public EptsEtlLogger getLogger() {
+	public EtlLogger getLogger() {
 		return logger;
 	}
 	

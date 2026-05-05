@@ -20,7 +20,7 @@ import org.openmrs.module.epts.etl.model.OperationProgressInfo;
 import org.openmrs.module.epts.etl.model.ProcessProgressInfo;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
@@ -64,7 +64,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	private ProcessInfo processInfo;
 	
-	private EptsEtlLogger logger;
+	private EtlLogger logger;
 	
 	private EtlDatabaseObject schemaInfoSrc;
 	
@@ -77,7 +77,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		
 		this.starter = starter;
 		
-		this.logger = new EptsEtlLogger(ProcessController.class);
+		this.logger = new EtlLogger(ProcessController.class);
 		
 		init(configuration);
 	}

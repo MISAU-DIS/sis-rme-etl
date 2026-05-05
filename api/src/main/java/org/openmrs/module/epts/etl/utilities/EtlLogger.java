@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-public class EptsEtlLogger {
+public class EtlLogger {
 	
 	private final Map<String, Date> lastLogDates = new ConcurrentHashMap<>();
 	
@@ -20,18 +20,18 @@ public class EptsEtlLogger {
 	
 	private Level level_;
 	
-	public <T> EptsEtlLogger(Class<T> clazz) {
+	public <T> EtlLogger(Class<T> clazz) {
 		this.logger = LoggerFactory.getLogger(clazz);
 		this.level_ = determineLogLevel();
 	}
 	
-	public <T> EptsEtlLogger(Logger logger) {
+	public <T> EtlLogger(Logger logger) {
 		this.logger = logger;
 		this.level_ = determineLogLevel();
 	}
 	
-	public static <T> EptsEtlLogger getLogger(Class<T> clazz) {
-		return new EptsEtlLogger(clazz);
+	public static <T> EtlLogger getLogger(Class<T> clazz) {
+		return new EtlLogger(clazz);
 	}
 	
 	public Level getLevel_() {
