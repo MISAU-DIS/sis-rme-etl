@@ -431,6 +431,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		while (iManager.canGoNext() || !iManager.getCurrentLimits().isFullProcessed()) {
 			if (stopRequested()) {
 				logWarn("Stopping the Task as Stop Requested!");
+				changeStatusToStopped();
 			} else {
 				
 				increaseIteration();
@@ -571,6 +572,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		while (iManager.canGoNext() || !iManager.getCurrentLimits().isFullProcessed()) {
 			if (stopRequested()) {
 				logWarn("Stopping the Task as Stop Requested!");
+				
+				changeStatusToStopped();
+				
 			} else {
 				if (globalProgressMeter.getRemain() == 0) {
 					if (getRelatedEtlOperationConfig().finishOnNoRemainRecordsToProcess()) {
