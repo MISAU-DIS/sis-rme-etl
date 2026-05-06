@@ -464,7 +464,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					    tryToOpenDstConn(this));
 					
 					if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-						taskProcessor.getTaskResultInfo().throwDefaultExcetions(this);
+						requestStopDueError(taskProcessor.getTaskResultInfo().getFatalException());
 					}
 				}
 				
@@ -478,6 +478,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 	
 	public void tryToProcessSkippedrecords() throws DBException, Exception {
+		if (stopRequested()) {
+			return;
+		}
+		
 		ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
 		
 		logDebug("TRY TO PROCESS SKIPPED RECORDS ON INTERVAL " + iManager.getCurrentLimits());
@@ -502,9 +506,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this), tryToOpenDstConn(this));
 			
 			if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-				taskProcessor.getTaskResultInfo().throwDefaultExcetions(this);
+				requestStopDueError(taskProcessor.getTaskResultInfo().getFatalException());
 			} else {
-				
 				OpenConnection srcConn = openSrcConn(this);
 				
 				try {
@@ -688,7 +691,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 							EtlOperationResultHeader<T> r = EtlOperationResultHeader.getDefaultResultWithFatalError(results);
 							
 							requestStopDueError(r.getFatalException());
-							r.throwDefaultExcetions(this);
 						} else {
 							
 							if (useSharedConnection && !this.getEtlConfiguration().hasTestingItem()) {
@@ -770,7 +772,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				taskProcessor.changeStatusToFinished();
 			} else {
 				taskProcessor.changeStatusToStopped();
-				taskProcessor.getTaskResultInfo().throwDefaultExcetions(this);
 			}
 		}
 		catch (Exception e) {
