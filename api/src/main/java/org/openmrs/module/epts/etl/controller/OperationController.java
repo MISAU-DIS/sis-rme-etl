@@ -27,6 +27,7 @@ import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
+import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
@@ -45,6 +46,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public abstract class OperationController<T extends EtlDatabaseObject> extends AbstractBaseConfiguration implements Controller {
 	
+	public static final Object LOCK = new Object();
+	
 	protected EtlLogger logger;
 	
 	protected ProcessController processController;
@@ -59,7 +62,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	protected EtlOperationStatus operationStatus;
 	
-	protected boolean stopRequested;
+	protected volatile boolean stopRequested;
 	
 	protected EtlOperationConfig operationConfig;
 	
@@ -494,6 +497,11 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		return controllerId;
 	}
 	
+	@Override
+	public String getOperationId() {
+		return this.getOperationId();
+	}
+	
 	public List<Engine<T>> getEnginesActivititieMonitor() {
 		return enginesActivititieMonitor;
 	}
@@ -778,33 +786,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 	
 	@Override
-	public void requestStop() {
-		logTrace("Requesting stop of the operation...");
-		
-		synchronized (this.getControllerId()) {
-			if (isNotInitialized()) {
-				logDebug("The operation was not initialized! Stopping now!");
-				
-				changeStatusToStopped();
-			} else if (!stopRequested() && !isFinished() && !isStopped()) {
-				if (this.enginesActivititieMonitor != null) {
-					for (Engine<T> monitor : this.enginesActivititieMonitor) {
-						monitor.requestStop();
-					}
-				}
-				
-				this.stopRequested = true;
-			}
-			
-			if (getChildren() != null) {
-				for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
-					child.requestStop();
-				}
-			}
-		}
-	}
-	
-	@Override
 	public int getWaitTimeToCheckStatus() {
 		return this.getEtlConfiguration().getWaitTimeToCheckStatus();
 	}
@@ -829,44 +810,72 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	public void requestStopDueError(Engine<T> monitor, Exception e) {
 		
-		lastException = e;
+		if (stopRequested() || isStopped() || isFinished()) {
+			return;
+		}
 		
-		lastException.printStackTrace();
+		synchronized (LOCK) {
+			if (stopRequested() || isStopped() || isFinished()) {
+				return;
+			}
+			
+			performStopDueToError(monitor, e);
+		}
 		
-		logger.warn("STOP REQUESTED DUE ABOVE ERROR! THE OPERATION WILL PERFORME THE STOP");
+	}
+	
+	public void performStopDueToError(Engine<T> monitor, Exception e) {
+		this.lastException = e;
+		
+		logger.error("STOP REQUESTED DUE ERROR. THE OPERATION WILL STOP.", e);
 		
 		requestStop();
 		
-		if (utilities().listHasElement(this.enginesActivititieMonitor)) {
-			while (!isStopped()) {
-				logger.warn("STOP REQUESTED DUE AN ERROR AND WAITING FOR ALL ENGINES TO BE STOPPED", 120);
-				TimeCountDown.sleep(5);
-			}
-		} else {
-			logger.warn("STOPPING THE OPERATION...");
-			
-			changeStatusToStopped();
+		this.getProcessController().requestStop();
+		
+		waitForOperationToStopStop(utilities().parseList(this.getChildren(), MonitoredOperation.class));
+		waitForOperationToStopStop(utilities().parseList(this.enginesActivititieMonitor, MonitoredOperation.class));
+		
+		logger.warn("STOPPING THE OPERATION AS REQUESTED...");
+		
+		changeStatusToStopped();
+	}
+	
+	@Override
+	public void requestStop() {
+		if (stopRequested()) {
+			return;
 		}
 		
-		if (getChildren() != null) {
-			logWarn("Requesting children to stop...");
-			
-			for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
-				child.requestStop();
+		synchronized (LOCK) {
+			if (stopRequested()) {
+				return;
 			}
 			
-			for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
-				while (!child.isStopped()) {
-					logger.warn("WAITING FOR CHILD " + child.getControllerId() + " TO STOP...", 120);
-					TimeCountDown.sleep(5);
+			logTrace("Requesting stop of the operation...");
+			
+			if (isNotInitialized()) {
+				logDebug("The operation was not initialized! Stopping now!");
+				changeStatusToStopped();
+				return;
+			}
+			
+			this.stopRequested = true;
+			
+			if (this.enginesActivititieMonitor != null) {
+				for (Engine<T> engine : this.enginesActivititieMonitor) {
+					engine.requestStop();
 				}
 			}
 			
+			if (getChildren() != null) {
+				logWarn("Requesting children to stop...");
+				
+				for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
+					child.requestStop();
+				}
+			}
 		}
-		
-		logTrace("Requestig the ProcessController to Stop");
-		
-		this.getProcessController().requestStop();
 	}
 	
 	public TableOperationProgressInfo retrieveProgressInfo(EtlItemConfiguration config) {
@@ -903,6 +912,10 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	public void logWarn(String msg, long interval) {
 		this.processController.logWarn(msg, interval);
+	}
+	
+	public void logErr(String msg, Exception e) {
+		this.processController.logErr(msg, e);
 	}
 	
 	public void logInfo(String msg) {

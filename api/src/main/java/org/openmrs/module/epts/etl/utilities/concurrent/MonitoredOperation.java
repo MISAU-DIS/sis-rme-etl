@@ -1,6 +1,9 @@
 package org.openmrs.module.epts.etl.utilities.concurrent;
 
+import java.util.List;
+
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
+import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 /**
  * Representa uma operacao monitorada
@@ -8,6 +11,8 @@ import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
  * @author JPBOANE
  */
 public interface MonitoredOperation extends Runnable {
+	
+	static final CommonUtilities utilities = CommonUtilities.getInstance();
 	
 	TimeController getTimer();
 	
@@ -18,6 +23,10 @@ public interface MonitoredOperation extends Runnable {
 	void requestStop();
 	
 	boolean stopRequested();
+	
+	int getWaitTimeToCheckStatus();
+	
+	String getOperationId();
 	
 	default boolean isNotInitialized() {
 		return this.getOperationStatus().notInitialized();
@@ -79,6 +88,35 @@ public interface MonitoredOperation extends Runnable {
 		changeStatusToFinished();
 	}
 	
-	public abstract int getWaitTimeToCheckStatus();
+	void logWarn(String msg);
+	
+	void logWarn(String msg, long interval);
+	
+	default void waitForOperationToStopStop(List<MonitoredOperation> operations) {
+		if (!utilities.listHasElement(operations)) {
+			return;
+		}
+		
+		int maxIterations = 120; // 120 * 5s = 10 minutos
+		
+		for (int iteration = 0; iteration < maxIterations; iteration++) {
+			boolean anyRunning = false;
+			
+			for (MonitoredOperation operation : operations) {
+				if (!operation.isStopped()) {
+					anyRunning = true;
+					logWarn("STOP REQUESTED DUE ERROR BUT OPERATION IS STILL RUNNING: " + operation.getOperationId(), 120);
+				}
+			}
+			
+			if (!anyRunning) {
+				return;
+			}
+			
+			TimeCountDown.sleep(5);
+		}
+		
+		logWarn("Timeout while waiting for engines to stop.");
+	}
 	
 }

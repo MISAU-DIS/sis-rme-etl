@@ -68,6 +68,8 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	private EtlDatabaseObject schemaInfoSrc;
 	
+	private static final Object LOCK = new Object();
+	
 	public ProcessController() {
 		this.progressInfo = new ProcessProgressInfo(this);
 	}
@@ -305,11 +307,11 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		if (Controller.super.isStopped()) {
 			return true;
 		}
-	
+		
 		if (Controller.super.isFinished()) {
 			return true;
 		}
-	
+		
 		if (utilities.listHasElement(this.operationsControllers)) {
 			for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
 				if (controller.getOperationConfig().isDisabled()) {
@@ -350,43 +352,32 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	}
 	
 	@Override
-	public synchronized void requestStop() {
-		String fileName = generateStopRequestFile().getAbsolutePath();
+	public void requestStop() {
 		
-		FileUtilities.write(fileName, "{\"stopRequestedAt\":"
-		        + DateAndTimeUtilities.formatToMilissegundos(DateAndTimeUtilities.getCurrentDate()) + "\"}");
-		
-		if (isNotInitialized()) {
-			changeStatusToStopped();
-		} else if (utilities.listHasElement(this.operationsControllers)) {
-			for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
-				controller.requestStop();
-			}
-			
-			boolean atLeastOneOperationIsRunning = false;
-			int iteration = 0;
-			
-			while (iteration == 0 || atLeastOneOperationIsRunning) {
-				atLeastOneOperationIsRunning = false;
-				
-				logger.warn("WAITING FOR PROCESS TO STOP AS REQUESTED...", 120);
-				
-				for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
-					
-					if (controller.isRunning()) {
-						atLeastOneOperationIsRunning = true;
-						
-						logger.warn("PROCESS " + controller.getControllerId() + " IS STILL RUNNING...", 120);
-					}
-				}
-				
-				TimeCountDown.sleep(5);
-				
-				iteration++;
-			}
+		if (stopRequested()) {
+			return;
 		}
 		
-		changeStatusToStopped();
+		synchronized (LOCK) {
+			if (stopRequested()) {
+				return;
+			}
+			
+			String fileName = generateStopRequestFile().getAbsolutePath();
+			
+			FileUtilities.write(fileName, "{\"stopRequestedAt\":"
+			        + DateAndTimeUtilities.formatToMilissegundos(DateAndTimeUtilities.getCurrentDate()) + "\"}");
+			
+			if (isNotInitialized()) {
+				changeStatusToStopped();
+			} else if (utilities.listHasElement(this.operationsControllers)) {
+				for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+					if (!controller.stopRequested()) {
+						controller.requestStop();
+					}
+				}
+			}
+		}
 	}
 	
 	@Override
@@ -639,6 +630,11 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		return this.controllerId;
 	}
 	
+	@Override
+	public String getOperationId() {
+		return this.getControllerId();
+	}
+	
 	public void logDebug(String msg) {
 		logger.debug(msg);
 	}
@@ -657,6 +653,10 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	public void logWarn(String msg, long interval) {
 		logger.warn(msg, interval);
+	}
+	
+	public void logErr(String msg, Exception e) {
+		logger.error(msg, e);
 	}
 	
 	public void logErr(String msg) {

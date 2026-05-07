@@ -153,5 +153,9 @@ public class EtlLogger {
 	String putAdditionalInfoOnLog(String msg) {
 		return msg;
 	}
+
+	public void error(String msg, Exception e) {
+		logger.error(msg, e);
+	}
 	
 }

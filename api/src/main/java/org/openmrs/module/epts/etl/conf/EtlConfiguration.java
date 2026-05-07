@@ -1641,7 +1641,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public void setClassPath(String retrieveClassPath) {
 	}
 	
-	public TableConfiguration findTableInSrc(TableConfiguration tableConf, Connection srcConn) throws DBException {
+	public TableConfiguration findTableInSrc_(TableConfiguration tableConf, Connection srcConn) throws DBException {
 		String srcSchema = getSrcConnInfo().determineSchema();
 		
 		if (!DBUtilities.isTableExists(srcSchema, tableConf.getTableName(), srcConn)) {

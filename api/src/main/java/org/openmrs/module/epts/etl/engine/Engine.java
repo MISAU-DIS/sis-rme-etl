@@ -50,6 +50,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 	
+	private static final Object LOCK = new Object();
+	
 	private OperationController<T> controller;
 	
 	private EtlItemConfiguration etlItemConfiguration;
@@ -58,7 +60,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	
 	private EtlOperationStatus operationStatus;
 	
-	private boolean stopRequested;
+	private volatile boolean stopRequested;
 	
 	protected TableOperationProgressInfo tableOperationProgressInfo;
 	
@@ -228,6 +230,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return engineId;
 	}
 	
+	@Override
+	public String getOperationId() {
+		return this.getEngineId();
+	}
+	
 	public EtlItemConfiguration getEtlItemConfiguration() {
 		return this.etlItemConfiguration;
 	}
@@ -375,37 +382,43 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					this.performeTaskInSingleProcessor();
 				}
 				
-				if (mustDoFinalCheck()) {
-					perfomeFinalization();
-				}
-				
-				if (this.getRecordsToDisplay() != null) {
-					for (DstConf dstConf : this.getEtlItemConfiguration().getDstConf()) {
-						if (dstConf.getDstType().isConsole()) {
-							displayResultInConsole(this.getRecordsToDisplay().get(dstConf.getTableName()));
-						} else if (dstConf.getDstType().isPopUp()) {
-							displayResultInPopUp(this.getRecordsToDisplay().get(dstConf.getTableName()));
-						} else
-							throw new ForbiddenOperationException("Unsupported display method " + dstConf.getDstType());
-					}
-				}
-				
-				changeStatusToFinished();
-				
-				if (getRelatedOperationController().isResumable()) {
-					getRelatedOperationController().markTableOperationAsFinished(this.getEtlItemConfiguration());
-				}
-				
-				getRelatedOperationController().finalize(this);
+				performeEngineFinalization();
 			}
 		}
 		catch (Exception e) {
-			this.requestStopDueError(e);
+			this.stopOperationDueError(e);
 			
 			e.printStackTrace();
 			
 			logErr(e.getLocalizedMessage());
 			logErr(e.getMessage());
+		}
+	}
+	
+	private void performeEngineFinalization() throws DBException, Exception {
+		if (!stopRequested()) {
+			if (mustDoFinalCheck()) {
+				perfomeFinalization();
+			}
+			
+			if (this.getRecordsToDisplay() != null) {
+				for (DstConf dstConf : this.getEtlItemConfiguration().getDstConf()) {
+					if (dstConf.getDstType().isConsole()) {
+						displayResultInConsole(this.getRecordsToDisplay().get(dstConf.getTableName()));
+					} else if (dstConf.getDstType().isPopUp()) {
+						displayResultInPopUp(this.getRecordsToDisplay().get(dstConf.getTableName()));
+					} else
+						throw new ForbiddenOperationException("Unsupported display method " + dstConf.getDstType());
+				}
+			}
+			
+			changeStatusToFinished();
+			
+			if (getRelatedOperationController().isResumable()) {
+				getRelatedOperationController().markTableOperationAsFinished(this.getEtlItemConfiguration());
+			}
+			
+			getRelatedOperationController().finalize(this);
 		}
 	}
 	
@@ -428,10 +441,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	public void performeTaskInSingleProcessor() throws DBException, Exception {
 		ThreadRecordIntervalsManager<T> iManager = getThreadRecordIntervalsManager();
 		
-		while (iManager.canGoNext() || !iManager.getCurrentLimits().isFullProcessed()) {
+		while ((iManager.canGoNext() || !iManager.getCurrentLimits().isFullProcessed())) {
 			if (stopRequested()) {
 				logWarn("Stopping the Task as Stop Requested!");
 				changeStatusToStopped();
+				
+				return;
 			} else {
 				
 				increaseIteration();
@@ -464,7 +479,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					    tryToOpenDstConn(this));
 					
 					if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-						requestStopDueError(taskProcessor.getTaskResultInfo().getFatalException());
+						stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
 					}
 				}
 				
@@ -506,7 +521,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this), tryToOpenDstConn(this));
 			
 			if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-				requestStopDueError(taskProcessor.getTaskResultInfo().getFatalException());
+				stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
 			} else {
 				OpenConnection srcConn = openSrcConn(this);
 				
@@ -575,9 +590,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		while (iManager.canGoNext() || !iManager.getCurrentLimits().isFullProcessed()) {
 			if (stopRequested()) {
 				logWarn("Stopping the Task as Stop Requested!");
-				
 				changeStatusToStopped();
 				
+				return;
 			} else {
 				if (globalProgressMeter.getRemain() == 0) {
 					if (getRelatedEtlOperationConfig().finishOnNoRemainRecordsToProcess()) {
@@ -690,7 +705,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 							
 							EtlOperationResultHeader<T> r = EtlOperationResultHeader.getDefaultResultWithFatalError(results);
 							
-							requestStopDueError(r.getFatalException());
+							stopOperationDueError(r.getFatalException());
 						} else {
 							
 							if (useSharedConnection && !this.getEtlConfiguration().hasTestingItem()) {
@@ -777,7 +792,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		catch (Exception e) {
 			taskProcessor.changeStatusToStopped();
 			
-			requestStopDueError(e);
+			stopOperationDueError(e);
 			
 			taskProcessor.getTaskResultInfo().setFatalException(e);
 		}
@@ -843,31 +858,23 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			reportProgress();
 		}
 		catch (DBException e) {
-			requestStopDueError(e);
+			stopOperationDueError(e);
 		}
 		finally {
 			conn.finalizeConnection(this);
 		}
 	}
 	
-	private void requestStopDueError(Exception e) {
+	private void stopOperationDueError(Exception e) {
 		if (e != null) {
-			e.printStackTrace();
+			logErr("Stop requested due error:", e);
 		}
 		
 		requestStop();
 		
-		getRelatedOperationController().requestStopDueError(this, e);
-	}
-	
-	@Override
-	public synchronized void requestStop() {
-		if (isNotInitialized()) {
-			changeStatusToStopped();
-		} else if (!stopRequested() && !isFinished() && !isStopped()) {
-			this.stopRequested = true;
+		synchronized (LOCK) {
 			
-			while (!isStopped()) {
+			while (!isStopped() && !isFinished()) {
 				if (utilities.listHasElement(this.getCurrentTaskProcessor())) {
 					boolean atLeaseOneIsRunning = false;
 					
@@ -887,11 +894,27 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					}
 					
 					TimeCountDown.sleep(5);
-					
 				} else {
 					changeStatusToStopped();
 				}
 			}
+		}
+		
+		getRelatedOperationController().requestStopDueError(this, e);
+	}
+	
+	public void logErr(String msg, Exception e) {
+		getRelatedOperationController().logErr(msg, e);
+	}
+	
+	@Override
+	public void requestStop() {
+		if (isStopped() || isFinished() || stopRequested()) {
+			return;
+		}
+		
+		synchronized (LOCK) {
+			this.stopRequested = true;
 		}
 	}
 	
