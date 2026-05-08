@@ -5,11 +5,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
@@ -34,7 +36,7 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class EtlInfo {
+public class EtlInfo extends AbstractEtlDataConfiguration {
 	
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 	
@@ -330,7 +332,7 @@ public class EtlInfo {
 					parentInDst = refInfo.getDefaultObject(dstConn);
 					
 					if (parentInDst == null) {
-						parentInDst = refInfo.generateAndSaveDefaultObject(dstConn);
+						parentInDst = refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
 					}
 					
 					//The parentInSrc will be null if it does not exists and were used default parent
@@ -573,6 +575,8 @@ public class EtlInfo {
 			getProcessor().logDebug("Recursive relationship found reloading parents for record "
 			        + this.getTransformedObject() + " with parent: " + defaultParentInfo);
 			
+			stepIntoBreakpoint(getEtlConfiguration(), defaultParentInfo.getDstRecId() == null);
+			
 			defaultParentInfo.save((TableConfiguration) defaultParentInfo.getRelatedConfiguration(),
 			    ConflictResolutionType.KEEP_EXISTING, srcConn);
 		}
@@ -691,6 +695,18 @@ public class EtlInfo {
 	
 	public boolean hasParentsWithDefaultValues() {
 		return utilities.listHasElement(this.parentsWithDefaultValues);
+	}
+	
+	@Override
+	public EtlDataConfiguration getParentConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

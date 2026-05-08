@@ -93,7 +93,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 	}
 	
 	public Long getDstRecId() {
-		return Long.parseLong(this.getFieldValue("dst_rec_id").toString());
+		return this.getFieldValue("dst_rec_id") != null ? Long.parseLong(this.getFieldValue("dst_rec_id").toString()) : null;
 	}
 	
 	public Long getSrcParentId() {

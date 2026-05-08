@@ -2,7 +2,9 @@ package org.openmrs.module.epts.etl.conf.interfaces;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
@@ -19,7 +21,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
  * Represents an database object which can be joined to other database object (the
  * {@link MainJoiningEntity})
  */
-public interface JoinableEntity extends TableConfiguration, EtlDataSource {
+public interface JoinableEntity extends TableConfiguration {
 	
 	List<FieldsMapping> getJoinFields();
 	
@@ -89,7 +91,8 @@ public interface JoinableEntity extends TableConfiguration, EtlDataSource {
 	
 	@Override
 	default void fullLoad(Connection conn) throws DBException {
-		this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition", this.retrieveNearestTemplate(), conn);
+		this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition", retrieveAllAvailableTemplateParameters(),
+		    conn);
 		
 		TableConfiguration.super.fullLoad(conn);
 	}
@@ -186,6 +189,25 @@ public interface JoinableEntity extends TableConfiguration, EtlDataSource {
 		} else {
 			return JoinType.INNER;
 		}
+	}
+	
+	@Override
+	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		Map<String, Object> allParameters = new HashMap<>();
+		
+		Map<String, Object> parentParameters = this.getMainExtractTable().retrieveAllAvailableTemplateParameters();
+		
+		if (parentParameters != null && !parentParameters.isEmpty()) {
+			allParameters.putAll(parentParameters);
+		}
+		
+		Map<String, Object> ownParameters = TableConfiguration.super.retrieveAllAvailableTemplateParameters();
+		
+		if (ownParameters != null && !ownParameters.isEmpty()) {
+			allParameters.putAll(ownParameters);
+		}
+		
+		return allParameters;
 	}
 	
 }

@@ -103,7 +103,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 					
 					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery, (SrcConf) field.getDataSource());
 					
-					conf.fullLoad(srcConn);
+					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
 					
 					dataSourceConfig = conf;
 				}
@@ -127,7 +127,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		if (field.getDefaultValue() == null) {
 			EtlDatabaseObject obj = utilities.listHasElement(additionalSrcObjects) ? additionalSrcObjects.get(0) : null;
 			
-			throw new EmptyTransformedValueException(obj, field.getSrcField(), this, ActionOnEtlException.ABORT_PROCESS);
+			throw new EmptyTransformedValueException(obj,
+			        field.getSrcField() != null ? field.getSrcField() : field.getDstField(), this,
+			        ActionOnEtlException.ABORT_PROCESS);
 		}
 		
 		return null;

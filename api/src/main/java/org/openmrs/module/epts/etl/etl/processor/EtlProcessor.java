@@ -153,6 +153,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		
 		p.setRelatedEtlProcessor(this);
 		
+		//return null;
+		
 		return p;
 	}
 }

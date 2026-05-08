@@ -4,14 +4,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
-import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
@@ -36,7 +37,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class DstConf extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf, EtlTranformTarget {
+public class DstConf extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf, EtlTranformTarget, EtlItemConfigurationComponent {
 	
 	/*
 	 * The user defined joinFields with #getSrcConf()
@@ -122,7 +123,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	}
 	
 	public Boolean useAsDataSource() {
-		return useAsDataSource;
+		return isTrue(useAsDataSource);
 	}
 	
 	public OnMultipleDataSourceFoundBehavior onMultipleDataSourceWithSameName() {
@@ -682,62 +683,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		if (isLoadedDataSourceInfo())
 			return;
 		
-		if (useSrcConfAsDataSource()) {
-			addToAvaliableDataSource(getSrcConf());
-			
-			if (this.getSrcConf().hasAuxExtractTable()) {
-				for (JoinableEntity auxExtractTable : this.getSrcConf().getJoiningTable()) {
-					if (!auxExtractTable.doNotUseAsDatasource()) {
-						addToAvaliableDataSource(auxExtractTable);
-					}
-					
-					if (auxExtractTable.isMainJoiningEntity() && auxExtractTable.parseToJoining().hasAuxExtractTable()) {
-						for (JoinableEntity innerAuxExtractTable : auxExtractTable.parseToJoining().getJoiningTable()) {
-							if (!innerAuxExtractTable.doNotUseAsDatasource()) {
-								addToAvaliableDataSource(innerAuxExtractTable);
-							}
-						}
-					}
-				}
-			}
-			
-			if (utilities.listHasElement(getSrcConf().getAvaliableExtraDataSource())) {
-				for (EtlDataSource ds : utilities.parseList(getSrcConf().getAvaliableExtraDataSource(),
-				    EtlDataSource.class)) {
-					addToAvaliableDataSource(ds);
-				}
-			}
-		}
-		
-		if (hasParentDstConf()) {
-			addToAvaliableDataSource(this.getParentDstConf());
-			
-			if (utilities.listHasElement(this.getParentDstConf().getAllAvaliableDataSource())) {
-				
-				List<EtlDataSource> avaliableDataSource = null;
-				
-				if (this.getParentDstConf().useSharedPKKey()
-				        && this.getTableName().equals(this.getParentDstConf().getSharePkWith())) {
-					
-					avaliableDataSource = new ArrayList<>();
-					
-					for (EtlDataSource p : this.getParentDstConf().getAllAvaliableDataSource()) {
-						if (p != this.getParentDstConf().getSrcConf().getSharedKeyRefInfo(conn)) {
-							avaliableDataSource.add(p);
-						}
-					}
-					
-				} else {
-					avaliableDataSource = this.getParentDstConf().getAllAvaliableDataSource();
-				}
-				
-				for (EtlDataSource ds : avaliableDataSource) {
-					if (ds != this.getParentDstConf().getSrcConf()) {
-						addToAvaliableDataSource(ds);
-					}
-				}
-			}
-		}
+		this.addAllToAvaliableDataSource(this.getParentConf().collectAllAvaliableDataSources(conn));
 		
 		this.fullLoadAllRelatedTables(getRelatedEtlConf(), null, conn);
 		
@@ -1314,11 +1260,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		getRelatedEtlConf().addConfiguredTable(this);
 	}
 	
-	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate() != null ? this.getTemplate() : getParentConf().retrieveNearestTemplate();
-	}
-	
 	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn) throws DBException {
 		this.fullLoad(dstConn);
 		
@@ -1369,6 +1310,16 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	@Override
 	public void setAllPrefferredDataSource(List<EtlDataSource> ds) {
 		this.allPrefferredDataSource = ds;
+	}
+	
+	@Override
+	public EtlItemConfiguration getParentEtlItemConf() {
+		return this.getParentConf();
+	}
+	
+	@Override
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		return EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
 	}
 	
 }

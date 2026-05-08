@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
 import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -153,10 +154,14 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 		return utilities.listHasElement(this.getObjectFields());
 	}
 	
-	private void addAllAvaliableDataSources() {
+	private void addAllAvaliableDataSources(Connection conn) {
 		this.addToAvaliableDataSource(this);
 		this.addToAvaliableDataSource(this.getSrcConf());
 		this.addAllToAvaliableDataSource(this.getSrcConf().getAvaliableExtraDataSource());
+		
+		if (this.getSrcConf().hasParentItemConf()) {
+			this.addAllToAvaliableDataSource(this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
+		}
 	}
 	
 	@Override
@@ -165,15 +170,13 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 			return;
 		}
 		
-		addAllAvaliableDataSources();
+		this.addAllAvaliableDataSources(conn);
 		
 		this.tryToLoadFieldValueGenerator();
 		
 		if (hasObjectFields()) {
 			for (DataSourceField field : this.getObjectFields()) {
 				field.setParent(this);
-				
-				field.loadType(this, this, conn);
 				
 				FieldsMapping auxFieldMapping = FieldsMapping.fastCreate(field, conn);
 				
@@ -182,10 +185,12 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 					field.setSrcField(null);
 					
 					field.setAuxFieldMapping(auxFieldMapping);
+					
+					field.setTransformer(SimpleValueTransformer.class.getCanonicalName());
+					field.setTransformerInstance(SimpleValueTransformer.getInstance(null, this, field, conn));
 				}
 				
-				field.tryToLoadTransformer(null, conn);
-				field.loadType(null, this, conn);
+				field.loadType(this, this, conn);
 			}
 		} else {
 			throw new ForbiddenOperationException(
@@ -245,6 +250,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	@Override
 	public Boolean isMetadata() {
 		return false_();
+	}
+	
+	@Override
+	public Boolean isAutoIncrementId() {
+		return true;
 	}
 	
 	@Override

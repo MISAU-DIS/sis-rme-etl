@@ -4,15 +4,16 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
@@ -37,7 +38,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class SrcConf extends AbstractTableConfiguration implements MainJoiningEntity, JoinableEntity, EtlSrcConf {
+public class SrcConf extends AbstractTableConfiguration implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent {
 	
 	private List<AuxExtractTable> auxExtractTable;
 	
@@ -830,17 +831,30 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		return searchParams.search(null, parentSrcObject, auxDataSourceObjects, srcConn, srcConn);
 	}
 	
-	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate() != null ? this.getTemplate() : getParentConf().retrieveNearestTemplate();
-	}
-	
 	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn) throws DBException {
 		this.fullLoad(srcConn);
 		
 		this.createRelatedSrcStageAreaTable(srcConn);
 		
 		this.createRelatedStageAreaSrcUniqueKeysTable(srcConn);
+	}
+	
+	public EtlItemConfiguration getParentItemConf() {
+		if (this.hasParentItemConf()) {
+			return this.getParentConf().getParentItemConf();
+		}
+		
+		return null;
+	}
+	
+	@Override
+	public EtlItemConfiguration getParentEtlItemConf() {
+		return this.getParentConf();
+	}
+	
+	@Override
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		return EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
 	}
 	
 }

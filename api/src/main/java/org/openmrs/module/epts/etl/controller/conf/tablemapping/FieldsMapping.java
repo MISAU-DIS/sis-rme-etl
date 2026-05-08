@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlNullBehavior;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
@@ -105,10 +106,10 @@ public class FieldsMapping extends Field implements TransformableField {
 		
 		this.dstField = dstField != null ? dstField : this.srcField;
 		
-		if (dstField == null) {
+		if (this.dstField == null) {
 			throw new EtlExceptionImpl("A FieldsMapping must have at least a srcFieldName or dstField");
 		} else {
-			dstField = dstField.toString().split("\\.")[0];
+			dstField = this.dstField.toString().split("\\.")[0];
 		}
 		
 		if (tryToLoadTransformer)
@@ -282,6 +283,18 @@ public class FieldsMapping extends Field implements TransformableField {
 		return fastCreate(fieldName, fieldName, loadTransformer, conn);
 	}
 	
+	public static FieldsMapping createSimpleFieldsMapping(String fieldName, Object value, EtlTranformTarget target,
+	        Connection conn) {
+		FieldsMapping map = FieldsMapping.fastCreate(fieldName, conn);
+		
+		map.setSrcField(null);
+		map.setSrcValue(value);
+		map.setTransformer(SimpleValueTransformer.class.getCanonicalName());
+		map.tryToLoadTransformer(target, conn);
+		
+		return map;
+	}
+	
 	public static FieldsMapping fastCreate(String fullFieldName, String dstField, EtlTranformTarget target, Connection conn)
 	        throws FieldAvaliableInMultipleDataSources, DBException {
 		FieldsMapping fieldMap = FieldsMapping.fastCreate(fullFieldName, dstField, false, conn);
@@ -289,6 +302,12 @@ public class FieldsMapping extends Field implements TransformableField {
 		fieldMap.tryToLoadDataSourceAndTransformer(fieldMap.getDataSourceName(), target, conn);
 		
 		return fieldMap;
+		
+	}
+	
+	public static FieldsMapping fastCreate(String fullFieldName, EtlTranformTarget target, Connection conn)
+	        throws FieldAvaliableInMultipleDataSources, DBException {
+		return fastCreate(fullFieldName, null, target, conn);
 		
 	}
 	

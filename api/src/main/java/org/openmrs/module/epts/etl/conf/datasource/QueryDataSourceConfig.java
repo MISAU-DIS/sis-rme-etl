@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
@@ -29,8 +30,8 @@ import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -189,10 +190,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 			
 			String query = new String(Files.readAllBytes(Paths.get(pathToScript)));
 			
-			if (retrieveNearestTemplate() != null) {
-				query = EtlDataConfiguration.resolvePlaceholders(query, null, null, null,
-				    retrieveNearestTemplate().getParameters());
-			}
+			query = EtlDataConfiguration.resolvePlaceholders(query, null, null, null,
+			    retrieveAllAvailableTemplateParameters());
 			
 			this.setQuery(query);
 			
@@ -635,19 +634,18 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 	}
 	
 	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate() != null ? this.getTemplate() : getParentConf().retrieveNearestTemplate();
-	}
-	
-	@Override
 	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
 	        throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
-		// TODO Auto-generated method stub
 	}
 	
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
 		this.relatedSrcConf = (SrcConf) relatedParent;
+	}
+	
+	@Override
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		return EtlAdditionalDataSource.super.retrieveAllAvailableTemplateParameters();
 	}
 	
 }

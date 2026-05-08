@@ -156,8 +156,8 @@ public interface TransformableField {
 		tryToLoadTransformer(dstConf, conn);
 		
 		if (this.hasDataType()) {
-			if (!utilities.isStringIn(this.getDataType().toLowerCase(), "int", "double", "string", "date", "long",
-			    "boolean")) {
+			if (!utilities.isStringIn(this.getDataType().toLowerCase(), "int", "double", "string", "date", "long", "boolean",
+			    "varchar")) {
 				throw new ForbiddenOperationException(
 				        "Unsupported dataType for field " + this.getDstField() + ">" + this.getDataType().toLowerCase());
 			}

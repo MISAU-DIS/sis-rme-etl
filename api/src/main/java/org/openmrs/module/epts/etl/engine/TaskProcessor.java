@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.IdGeneratorManager;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -21,6 +22,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
+import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
@@ -32,7 +35,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * 
  * @author jpboane
  */
-public abstract class TaskProcessor<T extends EtlDatabaseObject> extends AbstractEtlDataConfiguration {
+public abstract class TaskProcessor<T extends EtlDatabaseObject> extends AbstractEtlDataConfiguration implements MonitoredOperation {
 	
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 	
@@ -48,11 +51,29 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	
 	protected List<IdGeneratorManager> idGeneratorManager;
 	
+	protected EtlOperationStatus operationStatus;
+	
 	public TaskProcessor(Engine<T> monitr, IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		this.monitor = monitr;
 		this.limits = limits;
 		this.runningInConcurrency = runningInConcurrency;
 		this.taskResultInfo = new EtlOperationResultHeader<>(limits);
+		this.operationStatus = EtlOperationStatus.STATUS_NOT_INITIALIZED;
+	}
+	
+	@Override
+	public String getOperationId() {
+		return getProcessorId();
+	}
+	
+	@Override
+	public EtlOperationStatus getOperationStatus() {
+		return operationStatus;
+	}
+	
+	@Override
+	public void setOperationStatus(EtlOperationStatus operationStatus) {
+		this.operationStatus = operationStatus;
 	}
 	
 	public List<IdGeneratorManager> getIdGeneratorManager() {
@@ -152,7 +173,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	
 	@SuppressWarnings("unchecked")
 	public void performe(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn) throws DBException {
-		
 		if (getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
 		        || getRelatedEtlOperationConfig().getThreadingMode().isMultiThread()) {
 			useMultiThreadSearch = false;
@@ -194,6 +214,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
+		
 	}
 	
 	public EtlDstType determineDstType(DstConf dstConf) {
@@ -290,6 +311,31 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+	}
+	
+	@Override
+	public TimeController getTimer() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public void requestStop() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public boolean stopRequested() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public int getWaitTimeToCheckStatus() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public void run() {
+		throw new ForbiddenOperationException("Unimplemented method!");
 	}
 	
 	public abstract void performeEtl(List<T> records, Connection srcConn, Connection dstConn) throws DBException;

@@ -3,10 +3,10 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
-import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
@@ -331,7 +331,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration implements
 	}
 	
 	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate() != null ? this.getTemplate() : getParentConf().retrieveNearestTemplate();
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		return EtlAdditionalDataSource.super.retrieveAllAvailableTemplateParameters();
 	}
 }

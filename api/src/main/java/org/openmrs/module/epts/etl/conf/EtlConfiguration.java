@@ -26,6 +26,7 @@ import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlInconsistencyBehavior;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.ProcessController;
@@ -36,7 +37,7 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -108,7 +109,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private List<AbstractTableConfiguration> allTables;
 	
-	private EptsEtlLogger logger;
+	private EtlLogger logger;
 	
 	private String syncStageSchema;
 	
@@ -713,7 +714,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			if (this.logger != null)
 				return;
 			
-			this.logger = new EptsEtlLogger(EtlConfiguration.class);
+			this.logger = new EtlLogger(EtlConfiguration.class);
 		}
 		
 	}
@@ -827,18 +828,16 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 				
 				srcConn = openSrcConn(this);
-				dstConn = tryOpenDstConn(this);
 				
 				ensureEtlBaseSchemaTablesExists(srcConn);
+				
+				dstConn = tryOpenDstConn(this);
 				
 				List<EtlItemConfiguration> allItem = new ArrayList<>();
 				
 				EtlCounter counter = new EtlCounter();
 				
 				for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
-					if (item.isDisabled())
-						continue;
-					
 					counter.increase();
 					
 					item.setRelatedEtlConfig(this);
@@ -892,11 +891,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 				
 				DefaultEtlValidator.tryToValidate(this, srcConn, dstConn);
-				
-				if (ensureEtlStageTablesExist()) {
-					ensureEtlStageTablesExist(srcConn, dstConn);
-				}
-				
 			}
 			finally {
 				finalizeConnection(srcConn, this);
@@ -985,11 +979,22 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private void tryToExecuteStartupScripts(DBConnectionInfo srcConnInfo, DBConnectionInfo dstConnInfo) throws DBException {
 		
 		if (!this.hasParentEtlConf()) {
+			
+			logWarn("Ensuring execution of startup scripts...");
+			
 			File srcScriptsDir = this.getSrcSqlStartupScriptsDirectory();
 			
 			if (srcScriptsDir.listFiles() != null) {
+				
+				logDebug("Found " + srcScriptsDir.listFiles().length + " Scripts on src startup scripts!");
+				
 				for (File script : srcScriptsDir.listFiles()) {
-					DBUtilities.runScriptOnDbServer(srcConnInfo, script.getAbsolutePath());
+					if (!scriptAlredExecuted(EtlSide.SRC, script)) {
+						DBUtilities.runScriptOnDbServer(srcConnInfo, script.getAbsolutePath());
+						markScriptAsExecuted(EtlSide.SRC, script);
+					} else {
+						logWarn("Script was already executed: " + script);
+					}
 				}
 			}
 			
@@ -997,11 +1002,36 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			
 			if (dstScriptsDir.listFiles() != null) {
 				for (File script : dstScriptsDir.listFiles()) {
-					DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
+					
+					if (!scriptAlredExecuted(EtlSide.DST, script)) {
+						DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
+						markScriptAsExecuted(EtlSide.DST, script);
+					} else {
+						logWarn("Script was already executed: " + script);
+					}
+					
 				}
 			}
 			
 		}
+	}
+	
+	private String generateExecutedScriptPath(EtlSide etlSide, File script) {
+		return this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide + ""
+		        + FileUtilities.generateFileName(script);
+	}
+	
+	private void markScriptAsExecuted(EtlSide etlSide, File script) {
+		String dstFile = generateExecutedScriptPath(etlSide, script);
+		
+		FileUtilities.tryToCreateDirectoryStructure(new File(dstFile).getParent());
+		
+		FileUtilities.write(dstFile,
+		    "Executed At within process: " + this.generateProcessId() + " At " + DateAndTimeUtilities.getCurrentDate());
+	}
+	
+	private boolean scriptAlredExecuted(EtlSide etlSide, File script) {
+		return new File(generateExecutedScriptPath(etlSide, script)).exists();
 	}
 	
 	public boolean hasTestingItem() {
@@ -1271,7 +1301,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		
 		if (supportedOperations != null) {
 			for (EtlOperationType operationType : supportedOperations) {
-				if (!isOperationConfigured(operationType) && !operationCanBeOmitted(supportedOperations, operationType))
+				if (!isOperationConfigured(operationType) && !operationCanBeOmitted(operationType))
 					errorMsg += ++errNum + ". The operation '" + operationType + " is not configured\n";
 			}
 		}
@@ -1326,17 +1356,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return false;
 	}
 	
-	private boolean operationCanBeOmitted(List<EtlOperationType> supportedOperations, EtlOperationType operationType) {
+	private boolean operationCanBeOmitted(EtlOperationType operationType) {
 		boolean ok = false;
 		
-		if (operationType.isEtl()) {
-			for (EtlOperationType type : supportedOperations) {
-				
-				if (isOperationConfigured(type)) {
-					ok = true;
-					
-					break;
-				}
+		if (this.processType.isEtl()) {
+			if (operationType.isDatabasePreparation() || operationType.isDbExtract()) {
+				return true;
 			}
 		}
 		
@@ -1616,7 +1641,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public void setClassPath(String retrieveClassPath) {
 	}
 	
-	public TableConfiguration findTableInSrc(TableConfiguration tableConf, Connection srcConn) throws DBException {
+	public TableConfiguration findTableInSrc_(TableConfiguration tableConf, Connection srcConn) throws DBException {
 		String srcSchema = getSrcConnInfo().determineSchema();
 		
 		if (!DBUtilities.isTableExists(srcSchema, tableConf.getTableName(), srcConn)) {
@@ -1716,6 +1741,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			return openDstConn(opendFrom);
 		}
 		catch (ForbiddenOperationException e) {
+			return null;
+		}
+		catch (DBException e) {
 			return null;
 		}
 	}

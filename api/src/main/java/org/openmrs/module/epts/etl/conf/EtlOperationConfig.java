@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.controller.SiteOperationController;
 import org.openmrs.module.epts.etl.data.validation.missingrecords.controller.DetectMissingRecordsController;
+import org.openmrs.module.epts.etl.databasepreparation.controller.DatabasePreparationController;
 import org.openmrs.module.epts.etl.dbquickexport.controller.DBQuickExportController;
 import org.openmrs.module.epts.etl.dbquickload.controller.DBQuickLoadController;
 import org.openmrs.module.epts.etl.detectgapes.controller.DetectGapesController;
@@ -519,6 +520,10 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		return this.operationType.isDetectGapesOperation();
 	}
 	
+	public boolean isDatabasePreparation() {
+		return this.operationType.isDatabasePreparation();
+	}
+	
 	@JsonIgnore
 	public boolean isNewRecordsDetector() {
 		return this.operationType.isNewRecordsDetector();
@@ -642,6 +647,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			return new GenericOperationController(parent, this);
 		} else if (isDetectGapes()) {
 			return new DetectGapesController(parent, this);
+		} else if (isDatabasePreparation()) {
+			return new DatabasePreparationController(parent, this);
 		} else
 			throw new ForbiddenOperationException("Operationtype [" + this.operationType + "]not supported!");
 	}
@@ -784,7 +791,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 	
 	public static List<EtlOperationType> getSupportedOperationsInEtlProcess() {
-		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT };
+		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT, EtlOperationType.DB_PREPARATION };
 		
 		return utilities.parseArrayToList(supported);
 	}

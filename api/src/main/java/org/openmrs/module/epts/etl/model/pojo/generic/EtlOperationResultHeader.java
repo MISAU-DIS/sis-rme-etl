@@ -378,7 +378,6 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 			}
 			
 			throw new EtlExceptionImpl(msg, getFatalException());
-			
 		}
 		
 		for (EtlOperationItemResult<T> o : getRecordsWithUnexpectedErrors()) {

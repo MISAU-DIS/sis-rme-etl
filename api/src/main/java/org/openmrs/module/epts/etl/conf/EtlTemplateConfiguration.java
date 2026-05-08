@@ -85,8 +85,8 @@ public class EtlTemplateConfiguration {
 		Map<String, Object> inputParams = templateInfo.getParameters();
 		
 		try {
-			validateAllowedParanms(inputParams);
-			validateMissingParanms(inputParams);
+			validateAllowedParanms(templateInfo);
+			validateMissingParanms(templateInfo);
 			
 			if (this.template == null && this.extendsTemplate == null) {
 				throw new EtlExceptionImpl("Missing template content on " + this.getTemplate());
@@ -103,6 +103,8 @@ public class EtlTemplateConfiguration {
 				
 				EtlTemplateInfo extendsTemplateInfo = this.getExtendsTemplate()
 				        .cloneAndEnsureParametersAndOverridePlaceholdersReplacement(inputParams);
+				
+				extendsTemplateInfo.setChildTemplate(templateInfo);
 				
 				templateInfo.setParentTemplate(extendsTemplateInfo);
 				
@@ -135,7 +137,8 @@ public class EtlTemplateConfiguration {
 		}
 	}
 	
-	void validateMissingParanms(Map<String, Object> inputParams) {
+	void validateMissingParanms(EtlTemplateInfo templateInfo) {
+		Map<String, Object> inputParams = templateInfo.getParameters();
 		
 		Set<String> allowedParams = this.getParameters();
 		
@@ -146,12 +149,18 @@ public class EtlTemplateConfiguration {
 		List<String> missingParams = allowedParams.stream().filter(p -> !inputParams.containsKey(p)).toList();
 		
 		if (!missingParams.isEmpty()) {
-			throw new EtlExceptionImpl(
-			        "The following parameters are missing in template (" + this.getName() + "): " + missingParams);
+			String childMsg = templateInfo.getChildTemplate() != null
+			        ? " Within extends template: " + templateInfo.getChildTemplate().getName()
+			        : "";
+			
+			throw new EtlExceptionImpl("The following parameters are missing in template (" + this.getName() + "): "
+			        + missingParams + childMsg);
 		}
 	}
 	
-	void validateAllowedParanms(Map<String, Object> inputParams) {
+	void validateAllowedParanms(EtlTemplateInfo templateInfo) {
+		Map<String, Object> inputParams = templateInfo.getParameters();
+		
 		if (inputParams == null)
 			return;
 		
@@ -160,8 +169,12 @@ public class EtlTemplateConfiguration {
 		List<String> unknownParams = inputParams.keySet().stream().filter(key -> !allowedSet.contains(key)).toList();
 		
 		if (!unknownParams.isEmpty()) {
-			throw new EtlExceptionImpl(
-			        "The following parameters are not allowed for template (" + this.getName() + "): " + unknownParams);
+			String childMsg = templateInfo.getChildTemplate() != null
+			        ? " Within extends template: " + templateInfo.getChildTemplate().getName()
+			        : "";
+			
+			throw new EtlExceptionImpl("The following parameters are not allowed for template (" + this.getName() + "): "
+			        + unknownParams + childMsg);
 		}
 	}
 	

@@ -1,46 +1,122 @@
 package org.openmrs.module.epts.etl.utilities.concurrent;
 
+import java.util.List;
+
+import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
+import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+
 /**
- * Representa uma operacao monitorada 
+ * Representa uma operacao monitorada
  * 
  * @author JPBOANE
- *
  */
-public interface MonitoredOperation extends Runnable{
-	public static final int STATUS_NOT_INITIALIZED=0;
-	public static final int STATUS_RUNNING=1;
-	public static final int STATUS_PAUSED = 2;
-	public static final int STATUS_STOPPED=3;
-	public static final int STATUS_SLEEPING=4;
-	//public static final int STATUS_FINISHING=5;
-	public static final int STATUS_FINISHED=6;
+public interface MonitoredOperation extends Runnable {
 	
-	public TimeController getTimer();
+	static final CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	public void requestStop();
+	TimeController getTimer();
 	
-	public boolean stopRequested();
+	EtlOperationStatus getOperationStatus();
 	
-	public boolean isNotInitialized();
-	public boolean isRunning();
-	public boolean isStopped();
-	public boolean isFinished() ;
-	public boolean isPaused() ;
-	public boolean isSleeping();
-	//public boolean isFinishing();
+	void setOperationStatus(EtlOperationStatus status);
 	
-	public void changeStatusToRunning();
-	public void changeStatusToStopped();
-	public void changeStatusToFinished();
-	public void changeStatusToPaused();
-	public void changeStatusToSleeping();
-	//public void changeStatusToFinishing();
+	void requestStop();
 	
-	public abstract void onStart();
-	public abstract void onSleep();
-	public abstract void onStop();
-	public abstract void onFinish();
+	boolean stopRequested();
 	
-	public abstract int getWaitTimeToCheckStatus();
+	int getWaitTimeToCheckStatus();
+	
+	String getOperationId();
+	
+	default boolean isNotInitialized() {
+		return this.getOperationStatus().notInitialized();
+	}
+	
+	default boolean isRunning() {
+		return this.getOperationStatus().running();
+	}
+	
+	default boolean isStopped() {
+		return this.getOperationStatus().stopped();
+	}
+	
+	default boolean isFinished() {
+		return this.getOperationStatus().finished();
+	}
+	
+	default boolean isPaused() {
+		return this.getOperationStatus().paused();
+	}
+	
+	default boolean isSleeping() {
+		return this.getOperationStatus().slepping();
+	}
+	
+	default void changeStatusToRunning() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_RUNNING);
+	}
+	
+	default void changeStatusToStopped() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_STOPPED);
+	}
+	
+	default void changeStatusToFinished() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_FINISHED);
+	}
+	
+	default void changeStatusToPaused() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_PAUSED);
+	}
+	
+	default void changeStatusToSleeping() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_SLEEPING);
+	}
+	
+	default void onStart() {
+		changeStatusToStopped();
+	}
+	
+	default void onSleep() {
+		changeStatusToSleeping();
+	}
+	
+	default void onStop() {
+		changeStatusToStopped();
+	}
+	
+	default void onFinish() {
+		changeStatusToFinished();
+	}
+	
+	void logWarn(String msg);
+	
+	void logWarn(String msg, long interval);
+	
+	default void waitForOperationToStopStop(List<MonitoredOperation> operations) {
+		if (!utilities.listHasElement(operations)) {
+			return;
+		}
+		
+		int maxIterations = 120; // 120 * 5s = 10 minutos
+		
+		for (int iteration = 0; iteration < maxIterations; iteration++) {
+			boolean anyRunning = false;
+			
+			for (MonitoredOperation operation : operations) {
+				if (!operation.isStopped()) {
+					anyRunning = true;
+					logWarn("STOP REQUESTED DUE ERROR BUT OPERATION IS STILL RUNNING: " + operation.getOperationId(), 120);
+				}
+			}
+			
+			if (!anyRunning) {
+				return;
+			}
+			
+			TimeCountDown.sleep(5);
+		}
+		
+		logWarn("Timeout while waiting for engines to stop.");
+	}
 	
 }

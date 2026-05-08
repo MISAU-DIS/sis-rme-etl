@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.pojogeneration.model;
+package org.openmrs.module.epts.etl.databasepreparation.model;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
-import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -24,16 +24,16 @@ import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
 
-public class PojoGenerationRecord implements EtlDatabaseObject {
+public class DatabasePreparationRecord implements EtlDatabaseObject {
 	
-	private AbstractTableConfiguration tableConfiguration;
+	private EtlItemConfiguration itemConf;
 	
-	public PojoGenerationRecord(AbstractTableConfiguration tableConfiguration) {
-		this.tableConfiguration = tableConfiguration;
+	public DatabasePreparationRecord(EtlItemConfiguration itemConf) {
+		this.itemConf = itemConf;
 	}
 	
-	public AbstractTableConfiguration getTableConfiguration() {
-		return tableConfiguration;
+	public EtlItemConfiguration getItemConf() {
+		return itemConf;
 	}
 	
 	@Override
@@ -41,8 +41,11 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 	}
 	
 	@Override
-	public String generateTableName() {
-		return null;
+	public void loadObjectIdData() throws ForbiddenOperationException {
+	}
+	
+	@Override
+	public void loadObjectIdData(TableConfiguration tabConf) {
 	}
 	
 	@Override
@@ -55,342 +58,53 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 	}
 	
 	@Override
-	public void refreshLastSyncDateOnOrigin(TableConfiguration tableConfiguration, String recordOriginLocationCode,
-	        Connection conn) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void refreshLastSyncDateOnDestination(TableConfiguration tableConfiguration, String recordOriginLocationCode,
-	        Connection conn) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public Oid getObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void setObjectId(Oid objectId) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public List<EtlDatabaseObjectUniqueKeyInfo> getUniqueKeysInfo() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void setUniqueKeysInfo(List<EtlDatabaseObjectUniqueKeyInfo> uniqueKeysInfo) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void loadDestParentInfo(TableConfiguration tableInfo, String recordOriginLocationCode, Connection conn)
-	        throws ParentNotYetMigratedException, DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public Object[] getInsertParamsWithoutObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public String getInsertSQLWithoutObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public Object[] getInsertParamsWithObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public String getInsertSQLWithObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public String getUpdateSQL() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public Object[] getUpdateParams() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public String generateInsertValuesWithoutObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public String generateInsertValuesWithObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void setInsertSQLQuestionMarksWithObjectId(String insertQuestionMarks) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public String getInsertSQLQuestionMarksWithObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void save(TableConfiguration syncTableInfo, Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void update(TableConfiguration syncTableInfo, Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public String getUuid() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void setUuid(String uuid) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public boolean hasParents() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
-	@Override
-	public Object getParentValue(ParentTable refInfo) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public String generateFullFilledUpdateSql() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void loadObjectIdData(TableConfiguration tabConf) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public EtlDatabaseObject getSharedPkObj() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void consolidateData(TableConfiguration tableInfo, Connection conn)
-	        throws InconsistentStateException, DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void resolveInconsistence(TableConfiguration tableInfo, Connection conn)
-	        throws InconsistentStateException, DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public EtlStageRecordVO retrieveRelatedSyncInfo(TableConfiguration tableInfo, String recordOriginLocationCode,
-	        Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public EtlDatabaseObject retrieveParentInDestination(Integer parentId, String recordOriginLocationCode,
-	        TableConfiguration parentTableConfiguration, boolean ignorable, Connection conn)
-	        throws ParentNotYetMigratedException, DBException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public EtlStageRecordVO getRelatedSyncInfo() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void setRelatedSyncInfo(EtlStageRecordVO relatedSyncInfo) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public String generateMissingInfo(Map<ParentTableImpl, Integer> missingParents) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void remove(Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public Map<ParentTableImpl, Integer> loadMissingParents(TableConfiguration tableInfo, Connection conn)
-	        throws DBException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void removeDueInconsistency(TableConfiguration syncTableInfo, Map<ParentTableImpl, Integer> missingParents,
-	        Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void changeParentValue(ParentTable refInfo, EtlDatabaseObject newParent) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void setParentToNull(ParentTableImpl refInfo) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void changeObjectId(TableConfiguration abstractTableConfiguration, Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void changeParentForAllChildren(EtlDatabaseObject newParent, TableConfiguration syncTableInfo, Connection conn)
-	        throws DBException {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public Date getDateChanged() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public Date getDateVoided() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public Date getDateCreated() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public boolean hasExactilyTheSameDataWith(EtlDatabaseObject srcObj) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
-	@Override
-	public Object getFieldValue(String fieldName) throws ForbiddenOperationException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void setFieldValue(String fieldName, Object value) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void fastCreateSimpleNumericKey(long i) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
-	}
-	
-	@Override
-	public void copyFrom(EtlDatabaseObject parentRecordInOrigin) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
 	public List<Field> getFields() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public void setFields(List<Field> fields) {
-		// TODO Auto-generated method stub
-		
+	}
+	
+	@Override
+	public void setFieldValue(String fieldName, Object value) {
+	}
+	
+	@Override
+	public void refreshLastSyncDateOnOrigin(TableConfiguration tableConfiguration, String recordOriginLocationCode,
+	        Connection conn) {
+	}
+	
+	@Override
+	public void refreshLastSyncDateOnDestination(TableConfiguration tableConfiguration, String recordOriginLocationCode,
+	        Connection conn) {
 	}
 	
 	@Override
 	public List<EtlDatabaseObject> getDestinationObjects() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public void setDestinationObjects(List<EtlDatabaseObject> destinationObjects) {
-		// TODO Auto-generated method stub
-		
+	}
+	
+	@Override
+	public Oid getObjectId() {
+		return null;
+	}
+	
+	@Override
+	public void setObjectId(Oid objectId) {
+	}
+	
+	@Override
+	public List<EtlDatabaseObjectUniqueKeyInfo> getUniqueKeysInfo() {
+		return null;
+	}
+	
+	@Override
+	public void setUniqueKeysInfo(List<EtlDatabaseObjectUniqueKeyInfo> uniqueKeysInfo) {
 	}
 	
 	@Override
@@ -399,39 +113,249 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 	}
 	
 	@Override
+	public void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObjects) {
+	}
+	
+	@Override
+	public void loadDestParentInfo(TableConfiguration tableInfo, String recordOriginLocationCode, Connection conn)
+	        throws ParentNotYetMigratedException, DBException {
+	}
+	
+	@Override
+	public Object[] getInsertParamsWithoutObjectId() {
+		return null;
+	}
+	
+	@Override
+	public String getInsertSQLWithoutObjectId() {
+		return null;
+	}
+	
+	@Override
+	public Object[] getInsertParamsWithObjectId() {
+		return null;
+	}
+	
+	@Override
+	public String getInsertSQLWithObjectId() {
+		return null;
+	}
+	
+	@Override
+	public String getUpdateSQL() {
+		return null;
+	}
+	
+	@Override
+	public Object[] getUpdateParams() {
+		return null;
+	}
+	
+	@Override
+	public String generateInsertValuesWithoutObjectId() {
+		return null;
+	}
+	
+	@Override
+	public String generateInsertValuesWithObjectId() {
+		return null;
+	}
+	
+	@Override
+	public void setInsertSQLQuestionMarksWithObjectId(String insertQuestionMarks) {
+	}
+	
+	@Override
+	public String getInsertSQLQuestionMarksWithObjectId() {
+		return null;
+	}
+	
+	@Override
+	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
+	}
+	
+	@Override
+	public String getInsertSQLQuestionMarksWithoutObjectId() {
+		return null;
+	}
+	
+	@Override
 	public void save(TableConfiguration syncTableInfo, ConflictResolutionType onConflict, Connection conn)
 	        throws DBException {
-		// TODO Auto-generated method stub
-		
+	}
+	
+	@Override
+	public void save(TableConfiguration syncTableInfo, Connection conn) throws DBException {
+	}
+	
+	@Override
+	public void update(TableConfiguration syncTableInfo, Connection conn) throws DBException {
+	}
+	
+	@Override
+	public String getUuid() {
+		return null;
+	}
+	
+	@Override
+	public void setUuid(String uuid) {
+	}
+	
+	@Override
+	public boolean hasParents() {
+		return false;
+	}
+	
+	@Override
+	public Object getParentValue(ParentTable refInfo) {
+		return null;
+	}
+	
+	@Override
+	public String generateTableName() {
+		return null;
+	}
+	
+	@Override
+	public String generateFullFilledUpdateSql() {
+		return null;
+	}
+	
+	@Override
+	public EtlDatabaseObject getSharedPkObj() {
+		return null;
 	}
 	
 	@Override
 	public void setSharedPkObj(EtlDatabaseObject sharedPkObj) {
-		// TODO Auto-generated method stub
 		
 	}
 	
 	@Override
 	public EtlInfo getEtlInfo() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public void setEtlInfo(EtlInfo info) {
-		// TODO Auto-generated method stub
+		
+	}
+	
+	@Override
+	public void consolidateData(TableConfiguration tableInfo, Connection conn)
+	        throws InconsistentStateException, DBException {
+		
+	}
+	
+	@Override
+	public void resolveInconsistence(TableConfiguration tableInfo, Connection conn)
+	        throws InconsistentStateException, DBException {
+		
+	}
+	
+	@Override
+	public EtlStageRecordVO retrieveRelatedSyncInfo(TableConfiguration tableInfo, String recordOriginLocationCode,
+	        Connection conn) throws DBException {
+		return null;
+	}
+	
+	@Override
+	public EtlDatabaseObject retrieveParentInDestination(Integer parentId, String recordOriginLocationCode,
+	        TableConfiguration parentTableConfiguration, boolean ignorable, Connection conn)
+	        throws ParentNotYetMigratedException, DBException {
+		return null;
+	}
+	
+	@Override
+	public EtlStageRecordVO getRelatedSyncInfo() {
+		return null;
+	}
+	
+	@Override
+	public void setRelatedSyncInfo(EtlStageRecordVO relatedSyncInfo) {
+		
+	}
+	
+	@Override
+	public String generateMissingInfo(Map<ParentTableImpl, Integer> missingParents) {
+		return null;
+	}
+	
+	@Override
+	public void remove(Connection conn) throws DBException {
+		
+	}
+	
+	@Override
+	public Map<ParentTableImpl, Integer> loadMissingParents(TableConfiguration tableInfo, Connection conn)
+	        throws DBException {
+		return null;
+	}
+	
+	@Override
+	public void removeDueInconsistency(TableConfiguration syncTableInfo, Map<ParentTableImpl, Integer> missingParents,
+	        Connection conn) throws DBException {
+		
+	}
+	
+	@Override
+	public void changeParentValue(ParentTable refInfo, EtlDatabaseObject newParent) {
+		
+	}
+	
+	@Override
+	public void setParentToNull(ParentTableImpl refInfo) {
+		
+	}
+	
+	@Override
+	public void changeObjectId(TableConfiguration abstractTableConfiguration, Connection conn) throws DBException {
+		
+	}
+	
+	@Override
+	public void changeParentForAllChildren(EtlDatabaseObject newParent, TableConfiguration syncTableInfo, Connection conn)
+	        throws DBException {
+		
+	}
+	
+	@Override
+	public Date getDateChanged() {
+		return null;
+	}
+	
+	@Override
+	public Date getDateVoided() {
+		return null;
+	}
+	
+	@Override
+	public Date getDateCreated() {
+		return null;
+	}
+	
+	@Override
+	public boolean hasExactilyTheSameDataWith(EtlDatabaseObject srcObj) {
+		return false;
+	}
+	
+	@Override
+	public void fastCreateSimpleNumericKey(long i) {
+		
+	}
+	
+	@Override
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		
+	}
+	
+	@Override
+	public void copyFrom(EtlDatabaseObject parentRecordInOrigin) {
 		
 	}
 	
 	@Override
 	public void tryToReplaceFieldWithKey(Key k) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObjects) {
-		// TODO Auto-generated method stub
 		
 	}
 }

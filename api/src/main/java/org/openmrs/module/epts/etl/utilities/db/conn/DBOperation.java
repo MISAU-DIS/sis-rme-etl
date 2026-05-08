@@ -3,11 +3,11 @@ package org.openmrs.module.epts.etl.utilities.db.conn;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
 public class DBOperation {
 	
-	public static EptsEtlLogger logger = EptsEtlLogger.getLogger(DBException.class);
+	public static EtlLogger logger = EtlLogger.getLogger(DBException.class);
 	
 	private String sql;
 	

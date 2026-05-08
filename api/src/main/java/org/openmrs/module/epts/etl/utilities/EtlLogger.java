@@ -1,6 +1,8 @@
 package org.openmrs.module.epts.etl.utilities;
 
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.Main;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -8,28 +10,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-public class EptsEtlLogger {
+public class EtlLogger {
+	
+	private final Map<String, Date> lastLogDates = new ConcurrentHashMap<>();
 	
 	static CommonUtilities utilities = CommonUtilities.getInstance();
-	
-	private Date lastLogDate;
 	
 	Logger logger = LoggerFactory.getLogger(Main.class);
 	
 	private Level level_;
 	
-	public <T> EptsEtlLogger(Class<T> clazz) {
+	private boolean blocked;
+	
+	public <T> EtlLogger(Class<T> clazz) {
 		this.logger = LoggerFactory.getLogger(clazz);
 		this.level_ = determineLogLevel();
+		
+		this.blocked = false;
 	}
 	
-	public <T> EptsEtlLogger(Logger logger) {
+	public <T> EtlLogger(Logger logger) {
 		this.logger = logger;
 		this.level_ = determineLogLevel();
+		
+		this.blocked = false;
 	}
 	
-	public static <T> EptsEtlLogger getLogger(Class<T> clazz) {
-		return new EptsEtlLogger(clazz);
+	public static <T> EtlLogger getLogger(Class<T> clazz) {
+		return new EtlLogger(clazz);
 	}
 	
 	public Level getLevel_() {
@@ -60,6 +68,10 @@ public class EptsEtlLogger {
 		throw new ForbiddenOperationException("Unsupported Log Level [" + log + "]");
 	}
 	
+	public boolean isBlocked() {
+		return blocked;
+	}
+	
 	/**
 	 * Inteligent logwarn. It only logs if the elapsed time (in seconds) after the last log is
 	 * greater that #logInterval
@@ -68,10 +80,30 @@ public class EptsEtlLogger {
 	 * @param logInterval the max log interval permited fore repited logs
 	 */
 	public void warn(String msg, double logInterval) {
-		double elapsedTime = getLastLogElapsedTime();
 		
-		if (elapsedTime < 0 || elapsedTime >= logInterval) {
+		synchronized (msg) {
+			
+		}
+		
+		Date now = utilities.getCurrentDate();
+		
+		Date lastDate = lastLogDates.get(msg);
+		
+		if (lastDate == null) {
+			
 			warn(msg);
+			lastLogDates.put(msg, now);
+			
+			return;
+		}
+		
+		double elapsedTime = DateAndTimeUtilities.dateDiff(now, lastDate, DateAndTimeUtilities.SECOND_FORMAT);
+		
+		if (elapsedTime >= logInterval) {
+			
+			warn(msg);
+			
+			lastLogDates.put(msg, now);
 		}
 	}
 	
@@ -80,8 +112,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.warn(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -90,9 +120,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.info(msg);
-			//logger.error(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -102,8 +129,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.error(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -113,8 +138,6 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.debug(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
@@ -124,25 +147,15 @@ public class EptsEtlLogger {
 			msg = putAdditionalInfoOnLog(msg);
 			
 			logger.trace(msg);
-			
-			updateLastLogDate();
 		}
 	}
 	
 	String putAdditionalInfoOnLog(String msg) {
-		return msg;// += " At: " + utilities.formatDateToDDMMYYYY_HHMISS(utilities.getCurrentDate());
+		return msg;
+	}
+
+	public void error(String msg, Exception e) {
+		logger.error(msg, e);
 	}
 	
-	void updateLastLogDate() {
-		this.lastLogDate = utilities.getCurrentDate();
-	}
-	
-	double getLastLogElapsedTime() {
-		if (this.lastLogDate == null) {
-			return -1;
-		}
-		
-		return DateAndTimeUtilities.dateDiff(utilities.getCurrentDate(), this.lastLogDate,
-		    DateAndTimeUtilities.SECOND_FORMAT);
-	}
 }

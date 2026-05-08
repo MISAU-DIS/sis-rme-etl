@@ -176,6 +176,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	
 	protected final Object lock = new Object();
 	
+	protected final String[] listFields = { "override_fields" };
+	
 	protected static final Map<String, ParentOnDemandLoadTransformer> INSTANCES = new ConcurrentHashMap<>();
 	
 	private String parentTableName;
@@ -229,87 +231,75 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		        : null;
 		
 		if (utilities.listHasElement(this.rawParameterDefinitions)) {
-			this.onDemandParentFieldMappings = new ArrayList<>();
+			String prev = null;
 			
 			for (String fieldData : this.rawParameterDefinitions) {
 				String[] mapping = fieldData.split(":", 2);
 				
 				if (mapping.length != 2) {
-					throw new EtlExceptionImpl("Wrong format for newObjectData within the " + getTransformerDsc() + "\n"
-					        + "Each object param must be specified as filedName:srcFieldOrValue");
-				}
-				
-				String dstField = mapping[0];
-				String srcFieldOrValue = mapping[1];
-				
-				if (dstField.equals("parent_field_in_datasource_object")) {
-					if (!utilities.stringHasValue(srcFieldOrValue)) {
-						throw new ForbiddenOperationException("The parent_field_in_datasource_object has no value");
-					}
-					
-					this.parentSourceField = srcFieldOrValue;
-					
-					this.parentSourceIdMapping = utilities.stringHasValue(this.parentSourceField)
-					        ? new FieldsMapping(this.parentSourceField,
-					                relatedEtlTransformTarget.getSrcConf().getTableAlias(), field.getDstField(), conn)
-					        : null;
-					
-				} else if (dstField.equals("on_demand_check_condition")) {
-					if (!utilities.stringHasValue(srcFieldOrValue)) {
-						throw new ForbiddenOperationException("The on_demand_check_condition has no value");
-					}
-					
-					this.onDemandCheckCondition = srcFieldOrValue;
-					
-					this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition",
-					    relatedEtlTransformTarget.getTemplate(), conn);
-				} else if (dstField.equals("template")) {
-					if (!utilities.stringHasValue(srcFieldOrValue)) {
-						throw new ForbiddenOperationException("The template has no value");
-					}
-					
-					this.templateName = srcFieldOrValue;
-				} else if (dstField.startsWith("template_param_")) {
-					
-					String paramName = dstField.substring("template_param_".length());
-					
-					if (!utilities.stringHasValue(paramName)) {
-						throw new ForbiddenOperationException("Invalid template_param key: " + dstField);
-					}
-					
-					templateParams.put(paramName, srcFieldOrValue);
-				} else if (dstField.equals("override_fields")) {
-					this.overrideFieldsStr = srcFieldOrValue;
+					if (isOverrideField(prev)) {
+						this.overrideFieldsStr += "," + mapping[0];
+					} else
+						throw new EtlExceptionImpl("Wrong format for newObjectData within the " + getTransformerDsc() + "\n"
+						        + "Each object param must be specified as filedName:srcFieldOrValue");
 				} else {
-					if (!utilities.stringHasValue(srcFieldOrValue) || srcFieldOrValue.toLowerCase().equals("null")) {
-						srcFieldOrValue = null;
+					String dstField = mapping[0];
+					String srcFieldOrValue = mapping[1];
+					
+					if (dstField.equals("parent_field_in_datasource_object")) {
+						if (!utilities.stringHasValue(srcFieldOrValue)) {
+							throw new ForbiddenOperationException("The parent_field_in_datasource_object has no value");
+						}
+						
+						this.parentSourceField = srcFieldOrValue;
+						
+						this.parentSourceIdMapping = utilities.stringHasValue(this.parentSourceField)
+						        ? new FieldsMapping(this.parentSourceField,
+						                relatedEtlTransformTarget.getSrcConf().getTableAlias(), field.getDstField(), conn)
+						        : null;
+						
+					} else if (dstField.equals("on_demand_check_condition")) {
+						if (!utilities.stringHasValue(srcFieldOrValue)) {
+							throw new ForbiddenOperationException("The on_demand_check_condition has no value");
+						}
+						
+						this.onDemandCheckCondition = srcFieldOrValue;
+						
+						this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition",
+						    relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
+					} else if (dstField.equals("template")) {
+						if (!utilities.stringHasValue(srcFieldOrValue)) {
+							throw new ForbiddenOperationException("The template has no value");
+						}
+						
+						this.templateName = srcFieldOrValue;
+					} else if (dstField.startsWith("template_param_")) {
+						
+						String paramName = dstField.substring("template_param_".length());
+						
+						if (!utilities.stringHasValue(paramName)) {
+							throw new ForbiddenOperationException("Invalid template_param key: " + dstField);
+						}
+						
+						templateParams.put(paramName, srcFieldOrValue);
+					} else if (dstField.equals("override_fields")) {
+						this.overrideFieldsStr = srcFieldOrValue;
+					} else {
+						if (!utilities.stringHasValue(srcFieldOrValue) || srcFieldOrValue.toLowerCase().equals("null")) {
+							srcFieldOrValue = null;
+						}
+						
+						FieldsMapping fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
+						
+						if (onDemandParentFieldMappings == null) {
+							onDemandParentFieldMappings = new ArrayList<>();
+						}
+						
+						this.onDemandParentFieldMappings.add(fm);
 					}
-					
-					FieldsMapping fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
-					
-					this.onDemandParentFieldMappings.add(fm);
-				}
-			}
-		}
-		
-		if (utilities.stringHasValue(this.overrideFieldsStr)) {
-			String[] toOverride = this.overrideFieldsStr.split(",");
-			
-			this.overrideFields = new ArrayList<>(toOverride.length);
-			
-			for (String to : toOverride) {
-				FieldsMapping f = new FieldsMapping();
-				f.setDstField(to);
-				
-				int i = onDemandParentFieldMappings.indexOf(f);
-				
-				if (i < 0) {
-					throw new EtlExceptionImpl("The field to override '" + f.getDstField()
-					        + "' is not listed on onDemandFields on transformer \n" + getTransformerDsc());
 				}
 				
-				overrideFields.add(onDemandParentFieldMappings.get(i));
-				
+				prev = fieldData;
 			}
 		}
 		
@@ -324,6 +314,15 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 		
 		logTrace("Transformer Initialized \n" + this);
+	}
+	
+	private boolean isOverrideField(String fieldData) {
+		if (fieldData == null)
+			return false;
+		
+		String[] map = fieldData.split(":");
+		
+		return "override_fields".equals(map[0]);
 	}
 	
 	@Override
@@ -401,7 +400,13 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			
 			if (dstParent == null) {
 				if (usesTemplate()) {
-					SrcConf srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+					SrcConf srcConf = null;
+					
+					if (srcParent == null) {
+						srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+					} else {
+						srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn, dstConn);
+					}
 					
 					List<EtlDatabaseObject> recs;
 					
@@ -517,10 +522,28 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		srcParent.setAuxLoadObject(!srcParent.hasAuxLoadObject() ? new ArrayList<>() : srcParent.getAuxLoadObject());
 		srcParent.getAuxLoadObject().addAll(additionalSrcObjects);
 		
-		EtlLoadHelper loadHelper = EtlLoadHelper.fastLoadRecord(processor, srcParent, (DstConf) etlTransformTarget,
-		    transformationType, srcConn, dstConn);
+		List<EtlDatabaseObject> migratedRecs = null;
 		
-		List<EtlDatabaseObject> migratedRecs = loadHelper.getAllSuccedTransformedObjects((DstConf) etlTransformTarget);
+		try {
+			EtlLoadHelper loadHelper = EtlLoadHelper.fastLoadRecord(processor, srcParent, (DstConf) etlTransformTarget,
+			    transformationType, srcConn, dstConn);
+			
+			migratedRecs = loadHelper.getAllSuccedTransformedObjects((DstConf) etlTransformTarget);
+			
+		}
+		catch (DBException e) {
+			if (e.isDuplicatePrimaryOrUniqueKeyException()) {
+				EtlDatabaseObject dstParent = resolveParent(processor, srcParent, srcObject, transformedRecord,
+				    additionalSrcObjects, srcConn, dstConn);
+				
+				if (dstParent != null) {
+					migratedRecs = utilities.parseToList(dstParent);
+				} else
+					throw e;
+				
+			} else
+				throw e;
+		}
 		
 		if (utilities.listHasElement(migratedRecs)) {
 			return migratedRecs.get(0);
@@ -586,21 +609,22 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	
 	protected void ensureEtlTransformTargetForNonExistingSrcParentInitialized(boolean skipFullLoad, Connection srcConn,
 	        Connection dstConn) throws DBException {
-		ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
 		
-		DstConf etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
-		
-		if (skipFullLoad && !etlTransformTarget.isFullLoaded()) {
-			etlTransformTarget.tryToGenerateTableAlias(etlTransformTarget.getRelatedEtlConf());
+		synchronized (lock) {
+			ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
 			
-			if (!usesTemplate()) {
-				etlTransformTarget.setMapping(this.onDemandParentFieldMappings);
-			}
+			DstConf etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 			
-			etlTransformTarget.addAllToAvaliableDataSource(this.relatedEtlTransformTarget.getAllAvaliableDataSource());
-			etlTransformTarget.addAllToPreferredDataSource(this.relatedEtlTransformTarget.getAllPrefferredDataSource());
-		} else if (!etlTransformTarget.isFullLoaded()) {
-			synchronized (lock) {
+			if (skipFullLoad && !etlTransformTarget.isFullLoaded()) {
+				etlTransformTarget.tryToGenerateTableAlias(etlTransformTarget.getRelatedEtlConf());
+				
+				if (!usesTemplate()) {
+					etlTransformTarget.setMapping(this.onDemandParentFieldMappings);
+				}
+				
+				etlTransformTarget.addAllToAvaliableDataSource(this.relatedEtlTransformTarget.getAllAvaliableDataSource());
+				etlTransformTarget.addAllToPreferredDataSource(this.relatedEtlTransformTarget.getAllPrefferredDataSource());
+			} else if (!etlTransformTarget.isFullLoaded()) {
 				if (!etlTransformTarget.isFullLoaded()) {
 					
 					if (!usesTemplate()) {
@@ -668,6 +692,44 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return this.parentSourceIdMapping != null;
 	}
 	
+	void ensureOverrideFieldsInitialized(Connection srcConn, Connection dstConn) throws DBException {
+		
+		if (!existingSrcParentIsApplicable()) {
+			throw new ForbiddenOperationException("The override fields are not applicable for this transformer!");
+		}
+		
+		if (utilities.stringHasValue(this.overrideFieldsStr)) {
+			
+			synchronized (lock) {
+				ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
+				
+				List<FieldsMapping> onDemandFields = onDemandParentFieldMappings != null ? onDemandParentFieldMappings
+				        : getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn).getMapping();
+				
+				String[] toOverride = this.overrideFieldsStr.split(",");
+				
+				for (String to : toOverride) {
+					FieldsMapping f = new FieldsMapping();
+					f.setDstField(to);
+					
+					int i = onDemandFields.indexOf(f);
+					
+					if (i < 0) {
+						throw new EtlExceptionImpl("The field to override '" + f.getDstField()
+						        + "' is not listed on onDemandFields on transformer \n" + this);
+					}
+					
+					if (this.overrideFields == null)
+						this.overrideFields = new ArrayList<>();
+					
+					overrideFields.add(onDemandFields.get(i));
+					
+				}
+			}
+			
+		}
+	}
+	
 	void ensureEtlTransformTargetForExistingSrcParentInitialized(Connection srcConf, Connection dstConn) throws DBException {
 		if (!sourceParentMayExists()) {
 			throw new EtlExceptionImpl(
@@ -708,6 +770,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						preferredDataSource = this.relatedEtlTransformTarget.getAllPrefferredDataSource();
 						
 					}
+					
+					ensureOverrideFieldsInitialized(srcConf, dstConn);
 					
 					etlTransformTarget.setMapping(this.overrideFields);
 					

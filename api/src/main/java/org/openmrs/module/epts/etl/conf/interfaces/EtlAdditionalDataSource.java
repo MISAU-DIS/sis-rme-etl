@@ -1,7 +1,9 @@
 package org.openmrs.module.epts.etl.conf.interfaces;
 
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -69,4 +71,23 @@ public interface EtlAdditionalDataSource extends EtlDataSource {
 	 * @return {@code true} if multiple source objects are allowed; {@code false} otherwise
 	 */
 	Boolean allowMultipleSrcObjectsForLoading();
+	
+	@Override
+	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		Map<String, Object> allParameters = new HashMap<>();
+		
+		Map<String, Object> parentParameters = this.getRelatedSrcConf().retrieveAllAvailableTemplateParameters();
+		
+		if (parentParameters != null && !parentParameters.isEmpty()) {
+			allParameters.putAll(parentParameters);
+		}
+		
+		Map<String, Object> ownParameters = EtlDataSource.super.retrieveAllAvailableTemplateParameters();
+		
+		if (ownParameters != null && !ownParameters.isEmpty()) {
+			allParameters.putAll(ownParameters);
+		}
+		
+		return allParameters;
+	}
 }

@@ -10,13 +10,13 @@ import org.openmrs.module.epts.etl.controller.DynamicProcessStarter;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.controller.ProcessStarter;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.utilities.EptsEtlLogger;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class Main implements Runnable {
 	
-	static EptsEtlLogger logger = new EptsEtlLogger(Main.class);
+	static EtlLogger logger = new EtlLogger(Main.class);
 	
 	public static void main(String[] synConfigFiles) throws IOException, DBException {
 		

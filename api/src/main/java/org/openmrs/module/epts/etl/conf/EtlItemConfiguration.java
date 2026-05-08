@@ -3,11 +3,14 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
@@ -334,6 +337,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	
 	public void tryToCreateDefaultRecordsForAllTables() throws DBException {
 		OpenConnection dstConn = getRelatedEtlConf().tryOpenDstConn(this);
+		OpenConnection srcConn = getRelatedEtlConf().openSrcConn(this);
 		
 		if (dstConn == null)
 			return;
@@ -372,16 +376,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 							getRelatedEtlConf()
 							        .logDebug("Creating default dstRecord for table " + refInfo.getFullTableDescription());
 							
-							refInfo.generateAndSaveDefaultObject(dstConn);
+							refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
 						}
 					}
 				}
 				
 				dstConn.markAsSuccessifullyTerminated();
+				srcConn.markAsSuccessifullyTerminated();
 			}
 		}
 		finally {
 			dstConn.finalizeConnection(this);
+			srcConn.finalizeConnection(this);
 		}
 		
 	}
@@ -441,7 +447,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					map.setDstType(this.getSrcConf().getDstType());
 					
 					try {
-						map.tryToLoadSchemaInfo(this.relatedEtlSchemaObject, srcConn);
+						map.tryToLoadSchemaInfo(this.relatedEtlSchemaObject, dstConn);
 					}
 					catch (DatabaseResourceDoesNotExists e) {
 						if (map.getDstType().isDb() && !this.createDstTableIfNotExists()) {
@@ -779,9 +785,25 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 	
 	@Override
-	public EtlTemplateInfo retrieveNearestTemplate() {
-		return this.hasTemplate() ? this.getTemplate()
-		        : (this.hasParentItemConf() ? this.getParentItemConf().retrieveNearestTemplate() : null);
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		
+		Map<String, Object> allParameters = new HashMap<>();
+		
+		if (hasParentItemConf()) {
+			Map<String, Object> parentParameters = this.getParentItemConf().retrieveAllAvailableTemplateParameters();
+			
+			if (parentParameters != null && !parentParameters.isEmpty()) {
+				allParameters.putAll(parentParameters);
+			}
+		}
+		
+		Map<String, Object> ownParameters = super.retrieveAllAvailableTemplateParameters();
+		
+		if (ownParameters != null && !ownParameters.isEmpty()) {
+			allParameters.putAll(ownParameters);
+		}
+		
+		return allParameters;
 	}
 	
 	public void ensureEtlStageTableExists(EtlCounter counter, EtlOperationConfig operationConfig, Connection srcConn,
@@ -806,5 +828,25 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				child.ensureEtlStageTableExists(counter, operationConfig, srcConn, dstConn);
 			}
 		}
+	}
+	
+	public List<EtlDataSource> collectAllAvaliableDataSources(Connection conn) {
+		List<EtlDataSource> ds = new ArrayList<>();
+		
+		if (!this.getSrcConf().doNotUseAsDatasource()) {
+			ds.add(this.getSrcConf());
+			
+			ds.addAll(this.getSrcConf().getAvaliableExtraDataSource());
+		}
+		
+		if (this.hasParentItemConf()) {
+			DstConf parentDstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
+			
+			ds.add(parentDstConf);
+			
+			ds.addAll(parentDstConf.getAllAvaliableDataSource());
+		}
+		
+		return ds;
 	}
 }

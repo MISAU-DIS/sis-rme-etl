@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadStatus;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
+import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordAlreadyLoadedRecordException;
 import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordNotYetAvaliableException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -210,7 +211,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	
 	void fastCreateSimpleNumericKey(long i);
 	
-	void loadWithDefaultValues(Connection conn) throws DBException;
+	void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException;
 	
 	/**
 	 * Checks if there are recursive relashioship between the {@link #getRelatedConfiguration()} and
@@ -619,8 +620,8 @@ public interface EtlDatabaseObject extends EtlObject {
 		return this.getEtlInfo().getConflictResolutionType() != null;
 	}
 	
-	default void resolveConflictWithExistingRecord(TableConfiguration tableConfiguration, DBException exception,
-	        Connection conn) throws DBException, ForbiddenOperationException {
+	default void resolveConflictWithExistingRecord(TableConfiguration tableConfiguration, ConflictResolutionType onConflict,
+	        DBException exception, Connection conn) throws DBException, ForbiddenOperationException {
 		
 		EtlDatabaseObject recordOnDB = null;
 		
@@ -643,17 +644,19 @@ public interface EtlDatabaseObject extends EtlObject {
 		boolean existingRecordIsOutdated = false;
 		
 		//Quickly abort the conflict resolution if the resolution type is ConflictResolutionType.KEEP_EXISTING
-		if (tableConfiguration.onConflict().keepExisting()) {
+		if (onConflict.keepExisting()) {
 			
 			if (recordOnDB != null) {
 				this.setObjectId(recordOnDB.getObjectId());
 			}
 			
 			//Nothing to do
+		} else if (onConflict.isReject()) {
+			throw new ConflictWithRecordAlreadyLoadedRecordException(this, recordOnDB, exception);
 		} else {
 			if (recordOnDB == null) {
 				throw new ConflictWithRecordNotYetAvaliableException(this, exception);
-			} else if (tableConfiguration.onConflict().updateExisting()) {
+			} else if (onConflict.updateExisting()) {
 				existingRecordIsOutdated = true;
 			} else if (utils.listHasElement(tableConfiguration.getWinningRecordFieldsInfo())) {
 				for (List<org.openmrs.module.epts.etl.model.Field> fields : tableConfiguration
@@ -727,7 +730,6 @@ public interface EtlDatabaseObject extends EtlObject {
 			}
 			
 			if (existingRecordIsOutdated) {
-				
 				this.getEtlInfo().setConflictResolutionType(ConflictResolutionType.UPDATED_EXISTING);
 				
 				this.setObjectId(recordOnDB.getObjectId());

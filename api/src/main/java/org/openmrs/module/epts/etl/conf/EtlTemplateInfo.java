@@ -31,6 +31,8 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 	
 	private EtlTemplateInfo parentTemplate;
 	
+	private EtlTemplateInfo childTemplate;
+	
 	public EtlTemplateInfo() {
 	}
 	
@@ -94,6 +96,14 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 		}
 		
 		return null;
+	}
+	
+	public EtlTemplateInfo getChildTemplate() {
+		return childTemplate;
+	}
+	
+	public void setChildTemplate(EtlTemplateInfo childTemplate) {
+		this.childTemplate = childTemplate;
 	}
 	
 	private JsonNode resolveJsonNodePlaceholders(JsonNode node, Map<String, Object> params) {
@@ -207,14 +217,15 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 	
 	@Override
 	public EtlDataConfiguration getParentConf() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
-		// TODO Auto-generated method stub
-		
+	}
+	
+	public boolean hasParameters() {
+		return this.parameters != null && !this.parameters.isEmpty();
 	}
 	
 }

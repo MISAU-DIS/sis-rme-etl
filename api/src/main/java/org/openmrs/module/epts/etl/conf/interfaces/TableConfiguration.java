@@ -13,7 +13,6 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
@@ -47,6 +46,14 @@ import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlDataSource {
+	
+	public static final String STAGE_TABLE_DST_UNIQUE_KEYS = "_dst_unique_keys";
+	
+	public static final String STAGE_TABLE_SRC_UNIQUE_KEYS_SUFIX = "_src_unique_keys";
+	
+	public static final String STAGE_TABLE_DST_SUFIX = "_dst_stage";
+	
+	public static final String STAGE_TABLE_SRC_SUFIX = "_src_stage";
 	
 	public static final String[] REMOVABLE_METADATA = {};
 	
@@ -507,12 +514,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 	
 	@SuppressWarnings("deprecation")
-	default EtlDatabaseObject generateAndSaveDefaultObject(Connection conn) throws DBException {
+	default EtlDatabaseObject generateAndSaveDefaultObject(Connection srcConn, Connection dstConf) throws DBException {
 		
 		synchronized (this) {
 			
 			try {
-				EtlDatabaseObject defaultObject = this.getDefaultObject(conn);
+				EtlDatabaseObject defaultObject = this.getDefaultObject(dstConf);
 				
 				if (defaultObject != null) {
 					return defaultObject;
@@ -520,10 +527,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					defaultObject = this.getSyncRecordClass().newInstance();
 					defaultObject.setRelatedConfiguration(this);
 					
-					defaultObject.loadWithDefaultValues(conn);
+					defaultObject.loadWithDefaultValues(srcConn, dstConf);
 					
 					try {
-						defaultObject.save(this, conn);
+						defaultObject.save(this, dstConf);
 					}
 					catch (DBException e) {
 						if (!e.isDuplicatePrimaryOrUniqueKeyException()) {
@@ -531,7 +538,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						}
 					}
 					
-					defaultObject = this.getDefaultObject(conn);
+					defaultObject = this.getDefaultObject(dstConf);
 					
 					EtlConfigurationTableConf defaultGeneratedObjectKeyTabConf = this.getRelatedEtlConf()
 					        .getDefaultGeneratedObjectKeyTabConf();
@@ -542,7 +549,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						        + defaultGeneratedObjectKeyTabConf.getTableName());
 						
 						defaultGeneratedObjectKeyTabConf.setTableAlias(defaultGeneratedObjectKeyTabConf.getTableName());
-						defaultGeneratedObjectKeyTabConf.fullLoad(conn);
+						defaultGeneratedObjectKeyTabConf.fullLoad(srcConn);
 					}
 					
 					for (Key key : defaultObject.getObjectId().getFields()) {
@@ -554,7 +561,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						keyInfo.setFieldValue("column_name", key.getName());
 						keyInfo.setFieldValue("key_value", key.getValue());
 						
-						keyInfo.save(defaultGeneratedObjectKeyTabConf, conn);
+						keyInfo.save(defaultGeneratedObjectKeyTabConf, srcConn);
 					}
 					
 					return defaultObject;
@@ -1203,22 +1210,22 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	@JsonIgnore
 	default String generateRelatedSrcStageTableName() {
-		return this.getTableName() + "_src_stage";
+		return this.getTableName() + STAGE_TABLE_SRC_SUFIX;
 	}
 	
 	@JsonIgnore
 	default String generateRelatedDstStageTableName() {
-		return this.getTableName() + "_dst_stage";
+		return this.getTableName() + STAGE_TABLE_DST_SUFIX;
 	}
 	
 	@JsonIgnore
 	default String generateRelatedStageSrcUniqueKeysTableName() {
-		return this.generateRelatedSrcStageTableName() + "_src_unique_keys";
+		return this.generateRelatedSrcStageTableName() + STAGE_TABLE_SRC_UNIQUE_KEYS_SUFIX;
 	}
 	
 	@JsonIgnore
 	default String generateRelatedStageDstUniqueKeysTableName() {
-		return this.generateRelatedSrcStageTableName() + "_dst_unique_keys";
+		return this.generateRelatedDstStageTableName() + STAGE_TABLE_DST_UNIQUE_KEYS;
 	}
 	
 	@JsonIgnore
@@ -1820,8 +1827,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		if (this.getPrimaryKey() == null || this.getPrimaryKey().isCompositeKey()) {
 			return false;
 		}
-		
-		stepIntoBreakpoint(getRelatedEtlConf(), ((OpenConnection) conn).getConnection() == null);
 		
 		return DBUtilities.checkIfTableUseAutoIcrement(this.getSchema(), this.getTableName(), conn);
 	}
@@ -2603,7 +2608,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedSrcStageTableConf(Connection conn) throws DBException {
 		if (!existRelatedExportStageTable(conn)) {
-			createRelatedSrcStageAreaTable(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedSrcStageTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedSrcStageTableName(), this.getSyncStageSchema(), conn);
@@ -2611,7 +2617,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedDstStageTableConf(Connection conn) throws DBException {
 		if (!existRelatedDstStageTable(conn)) {
-			createRelatedDstSyncStage(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedDstStageTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedDstStageTableName(), this.getSyncStageSchema(), conn);
@@ -2619,7 +2626,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedStageDstUniqueKeysTableConf(Connection conn) throws DBException {
 		if (!existRelatedStageDstUniqueKeysTable(conn)) {
-			createRelatedSyncStageAreaDstUniqueKeysTable(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedStageDstUniqueKeysTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
+			
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedStageDstUniqueKeysTableName(), this.getSyncStageSchema(),
@@ -2628,7 +2637,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	
 	default EtlConfigurationTableConf generateRelatedStageSrcUniqueKeysTableConf(Connection conn) throws DBException {
 		if (!existRelatedStageSrcUniqueKeysTable(conn)) {
-			createRelatedStageAreaSrcUniqueKeysTable(conn);
+			throw new ForbiddenOperationException("The table " + this.generateRelatedStageSrcUniqueKeysTableName()
+			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
+			
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedStageSrcUniqueKeysTableName(), this.getSyncStageSchema(),
@@ -2899,9 +2910,4 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine, Connection conn) throws DBException {
 		return this.getExtremeRecord(engine, SqlFunctionType.MAX, conn);
 	}
-	
-	default EtlTemplateInfo retrieveNearestTemplate() {
-		return this.getTemplate();
-	}
-	
 }
