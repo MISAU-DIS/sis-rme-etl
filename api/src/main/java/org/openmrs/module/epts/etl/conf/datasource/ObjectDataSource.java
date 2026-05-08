@@ -253,6 +253,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	}
 	
 	@Override
+	public Boolean isAutoIncrementId() {
+		return true;
+	}
+	
+	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		return this.relatedSrcConf.getRelatedConnInfo();
 	}

@@ -74,6 +74,10 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
 	        throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 		
+		if (getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField()) && isAutoIncrementId()) {
+			return;
+		}
+		
 		if (!isLoadedDataSourceInfo()) {
 			loadDataSourceInfo(conn);
 		}
@@ -148,6 +152,8 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 		}
 		
 	}
+	
+	Boolean isAutoIncrementId();
 	
 	default void addToPrefferedDataSource(EtlDataSource ds) {
 		if (this.getAllPrefferredDataSource() == null) {
