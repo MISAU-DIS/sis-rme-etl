@@ -1236,6 +1236,12 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			DstConf thisDstConf = (DstConf) this;
 			DstConf otherDstConf = (DstConf) obj;
 			
+			if (thisDstConf.hasAlias()) {
+				return thisDstConf.getTableAlias().equals(otherDstConf.getTableAlias());
+			} else if (otherDstConf.hasAlias()) {
+				return otherDstConf.getTableAlias().equals(thisDstConf.getTableAlias());
+			}
+			
 			if (thisDstConf.hasSrcObjectCondition()) {
 				return thisDstConf.getSrcObjectCondition().equals(otherDstConf.getSrcObjectCondition());
 			}

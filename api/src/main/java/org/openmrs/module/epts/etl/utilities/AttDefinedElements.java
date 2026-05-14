@@ -347,8 +347,8 @@ public class AttDefinedElements {
 	}
 	
 	public static boolean isString(String attType) {
-		return utilities.isStringIn(attType, "java.lang.String", "String", "VARCHAR", "CHAR", "TEXT", "MEDIUMTEXT",
-		    "LONGTEXT");
+		return utilities.isStringIn(attType.toLowerCase(), "java.lang.string", "string", "varchar", "char", "text",
+		    "mediumtext", "longtext");
 	}
 	
 	public static AttDefinedElements define(String dbAttName, String dbAttType, boolean isLast,
@@ -408,7 +408,7 @@ public class AttDefinedElements {
 		if (utilities.isStringIn(databaseType, "TINYINT"))
 			return "Byte";
 		if (utilities.isStringIn(databaseType, "BIT"))
-			return "Boolean";		
+			return "Boolean";
 		if (utilities.isStringIn(databaseType, "YEAR", "SMALLINT"))
 			return "Short";
 		if (utilities.isStringIn(databaseType, "BIGINT", "INT8", "SERIAL", "BIGINT UNSIGNED"))

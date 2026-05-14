@@ -501,24 +501,27 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		
 		logDebug("TRY TO PROCESS SKIPPED RECORDS ON INTERVAL " + iManager.getCurrentLimits());
 		
-		String originalExtraCondition = getSearchParams().getExtraCondition();
-		String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
-		
-		getSrcConf().setExtraConditionForExtract(null);
-		
-		getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
-		
 		TaskProcessor<T> taskProcessor = getController()
 		        .initRelatedTaskProcessor(this, getThreadRecordIntervalsManager().getCurrentLimits(), false)
 		        .initReloadRecordsWithDefaultParentsTaskProcessor(iManager);
 		
 		if (taskProcessor != null) {
+			String originalExtraCondition = getSearchParams().getExtraCondition();
+			String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
+			
+			getSrcConf().setExtraConditionForExtract(null);
+			
+			getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
+			
 			taskProcessor.setProcessorId(this.getEngineId());
 			
 			boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
 			boolean useMultiThreadSearch = true;
 			
 			performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this), tryToOpenDstConn(this));
+			
+			getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+			getSearchParams().setExtraCondition(originalExtraCondition);
 			
 			if (taskProcessor.getTaskResultInfo().hasFatalError()) {
 				stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
@@ -536,9 +539,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				
 				iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
 				iManager.save();
-				
-				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
-				getSearchParams().setExtraCondition(originalExtraCondition);
 			}
 		} else {
 			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();

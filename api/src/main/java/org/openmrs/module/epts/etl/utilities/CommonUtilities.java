@@ -22,13 +22,11 @@ import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.base.VO;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -1250,7 +1248,7 @@ public class CommonUtilities implements Serializable {
 				}
 			}
 		}
-
+		
 		throw new ForbiddenOperationException("The field '" + fieldName + "' was not found on object '" + objectName + "'");
 	}
 	
@@ -1308,13 +1306,17 @@ public class CommonUtilities implements Serializable {
 		
 		// 🔹 Integer
 		if (destinationType == Integer.class || destinationType == int.class) {
-			return Integer.parseInt(str);
+			Double d = Double.parseDouble(str);
+			
+			return d.intValue();
 		}
 		
 		// 🔹 Long
 		if (destinationType == Long.class || destinationType == long.class) {
-			return Long.parseLong(str);
-		}
+			Double d = Double.parseDouble(str);
+			
+			return d.longValue();
+			}
 		
 		// 🔹 Double
 		if (destinationType == Double.class || destinationType == double.class) {

@@ -110,11 +110,13 @@ public class EtlLoadHelper {
 		for (DstConf dst : this.getDstConf()) {
 			load(dst, srcConn, dstConn);
 			
-			if (hasUnresolvedError(dst)) {
-				logError("Found issues loading to " + dst);
-				logError("Aborting operation");
-				
-				return;
+			if (!dst.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
+				if (hasUnresolvedError(dst)) {
+					logError("Found issues loading to " + dst);
+					logError("Aborting operation");
+					
+					return;
+				}
 			}
 		}
 		
@@ -469,7 +471,6 @@ public class EtlLoadHelper {
 		
 		EtlItemConfiguration conf = dstConf.getParentConf();
 		
-		return processor.perform(conf, utilities.parseToList(srcRecord), null, LoadingType.INNER, srcConn,
-		    dstConn);
+		return processor.perform(conf, utilities.parseToList(srcRecord), null, LoadingType.INNER, srcConn, dstConn);
 	}
 }
