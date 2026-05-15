@@ -574,8 +574,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 						int i = 0;
 						
 						for (EtlDatabaseObject record : objects) {
-							record.loadObjectIdData(tabConf);
-							record.setObjectId(Oid.fastCreate(record.getObjectId().asSimpleKey().getName(), ids.get(i)));
+							record.loadObjectIdData(tabConf, ids.get(i));
 							
 							i += 1;
 						}

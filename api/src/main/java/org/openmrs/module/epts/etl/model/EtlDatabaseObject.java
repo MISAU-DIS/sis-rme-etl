@@ -287,6 +287,15 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 	}
 	
+	default void loadObjectIdData(TableConfiguration tabConf, Object keyValue) {
+		if (tabConf.useSimplePk()) {
+			loadObjectIdData(tabConf);
+			
+			this.getObjectId().asSimpleKey().setValue(keyValue);
+		} else
+			throw new ForbiddenOperationException("Method not allowed for complex PK!");
+	}
+	
 	default void loadObjectIdData() throws ForbiddenOperationException {
 		TableConfiguration tabConf = (TableConfiguration) getRelatedConfiguration();
 		
