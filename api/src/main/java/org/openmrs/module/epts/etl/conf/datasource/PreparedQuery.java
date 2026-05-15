@@ -305,21 +305,27 @@ public class PreparedQuery {
 					questionMarkToBeReplaced++;
 				} else if (param.getContextType().inClause()) {
 					
-					String parts[] = param.getValue().toString().split(",");
-					
-					String quetionMarks = "";
-					
-					for (int j = 0; j < parts.length; j++) {
-						if (!quetionMarks.isEmpty()) {
-							quetionMarks += ",";
+					if (param.getValue() != null) {
+						String parts[] = param.getValue().toString().split(",");
+						
+						String quetionMarks = "";
+						
+						for (int j = 0; j < parts.length; j++) {
+							if (!quetionMarks.isEmpty()) {
+								quetionMarks += ",";
+							}
+							
+							quetionMarks += "?";
 						}
 						
-						quetionMarks += "?";
+						pQuery = utilities.replaceNthOccurrenceWithString(pQuery, "?", quetionMarks,
+						    questionMarkToBeReplaced);
+						
+						questionMarkToBeReplaced += parts.length;
+					} else {
+						throw new EtlExceptionImpl("Missing parameter value for param " + param.getName()
+						        + " within the datasource " + this.getDataSource().getName());
 					}
-					
-					pQuery = utilities.replaceNthOccurrenceWithString(pQuery, "?", quetionMarks, questionMarkToBeReplaced);
-					
-					questionMarkToBeReplaced += parts.length;
 				} else if (param.getContextType().dbResource()) {
 					
 					if (param.hasValue()) {
