@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
@@ -86,6 +87,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							
 							logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
 						} else {
+							dstObject = mappingInfo.createRecordInstance();
+							dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, record, dstObject));
+							dstObject.getEtlInfo().setExceptionOnEtl(new EtlExceptionImpl(
+							        "Not generated because one or more required related src object was not found!"));
+							
+							record.addDestinationRecord(dstObject);
+							
 							logTrace("The dstRecord " + srcRecord + " could not be transformed");
 						}
 					}
