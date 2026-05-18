@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.sql.Connection;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,6 +14,7 @@ import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -150,16 +152,27 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 			}
 			
 			if (!found) {
-				throw new EtlTransformationException("Parameter '" + paramName + "' not found in source objects.",
+				throw new MissingParameterOnEtlTransformationException ("Parameter '" + paramName + "' not found in source objects.",
 				        srcObjects.get(0), ActionOnEtlException.ABORT_PROCESS);
 			}
 			
 			if (srcValueAsString.equals("@" + paramName)) {
 				return paramValue;
 			}
+			if (paramValue==null) {
+				paramValue = "null";
+			}
 			
 			if (paramValue != null) {
-				matcher.appendReplacement(buffer, Matcher.quoteReplacement(paramValue.toString()));
+				String s = "";
+				
+				if (paramValue instanceof Date) {
+					s = "" + ((Date) paramValue).getTime();
+				} else {
+					s = paramValue.toString();
+				}
+				
+				matcher.appendReplacement(buffer, Matcher.quoteReplacement(s));
 			}
 		}
 		

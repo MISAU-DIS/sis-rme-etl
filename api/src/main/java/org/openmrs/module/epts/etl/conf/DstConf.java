@@ -19,7 +19,6 @@ import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
-import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ParentOnDemandLoadTransformer;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -188,10 +187,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	public void setSrcObjectCondition(String srcObjectCondition) {
 		this.srcObjectCondition = srcObjectCondition;
-	}
-	
-	public Boolean hasSrcObjectCondition() {
-		return utilities.stringHasValue(this.getSrcObjectCondition());
 	}
 	
 	public Boolean isIncludeAllFieldsFromDataSource() {
@@ -1038,184 +1033,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
 		FieldsMapping.tryToReplacePlaceholders(this.getJoinFields(), schemaInfoSrc);
 		FieldsMapping.tryToReplacePlaceholders(this.getMapping(), schemaInfoSrc);
-	}
-	
-	public Boolean checkIfSrcObjectCanBeLoaded(EtlDatabaseObject srcObject) throws DBException {
-		if (this.hasSrcObjectCondition()) {
-			if (matchesCondition(srcObject,
-			    EtlFieldTransformer
-			            .tryToReplaceParametersOnSrcValue(utilities.parseToList(srcObject), this.getSrcObjectCondition())
-			            .toString())) {
-				return true;
-			}
-			
-		} else {
-			return true;
-		}
-		
-		return false;
-	}
-	
-	private Boolean matchesCondition(EtlDatabaseObject obj, String condition) {
-		
-		condition = condition.replaceAll("(?i)\\s+or\\s+", "||");
-		condition = condition.replaceAll("(?i)\\s+and\\s+", "&&");
-		
-		String[] orConditions = condition.split("\\|\\|");
-		
-		for (String orCond : orConditions) {
-			
-			Boolean andResult = true;
-			
-			String[] andConditions = orCond.split("&&");
-			
-			for (String andCond : andConditions) {
-				
-				if (!evaluateCondition(obj, andCond.trim())) {
-					andResult = false;
-					break;
-				}
-			}
-			
-			if (andResult) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	private Boolean evaluateCondition(EtlDatabaseObject obj, String condition) {
-		
-		// IN
-		if (condition.matches("(?i).+\\s+in\\s*\\(.+\\)")) {
-			return evaluateIn(obj, condition);
-		}
-		
-		// LIKE
-		if (condition.matches("(?i).+\\s+like\\s+.+")) {
-			return evaluateLike(obj, condition);
-		}
-		
-		// operadores de comparação
-		String operator = null;
-		
-		if (condition.contains(">="))
-			operator = ">=";
-		else if (condition.contains("<="))
-			operator = "<=";
-		else if (condition.contains("!="))
-			operator = "!=";
-		else if (condition.contains(">"))
-			operator = ">";
-		else if (condition.contains("<"))
-			operator = "<";
-		else if (condition.contains("="))
-			operator = "=";
-		
-		if (operator == null) {
-			throw new IllegalArgumentException("Unsupported condition: " + condition);
-		}
-		
-		String[] parts = condition.split("\\Q" + operator + "\\E");
-		
-		String field = parts[0].trim();
-		String expected = stripQuotes(parts[1].trim());
-		
-		Object value = obj.getFieldValue(field);
-		
-		if (value == null) {
-			return false;
-		}
-		
-		String actual = value.toString();
-		
-		switch (operator) {
-			
-			case "=":
-				return actual.equals(expected);
-			
-			case "!=":
-				return !actual.equals(expected);
-			
-			case ">":
-				return compare(actual, expected) > 0;
-			
-			case "<":
-				return compare(actual, expected) < 0;
-			
-			case ">=":
-				return compare(actual, expected) >= 0;
-			
-			case "<=":
-				return compare(actual, expected) <= 0;
-			
-			default:
-				throw new IllegalArgumentException("Unsupported operator");
-		}
-	}
-	
-	private int compare(String a, String b) {
-		
-		try {
-			Double da = Double.valueOf(a);
-			Double db = Double.valueOf(b);
-			
-			return da.compareTo(db);
-			
-		}
-		catch (NumberFormatException e) {
-			return a.compareTo(b);
-		}
-	}
-	
-	private Boolean evaluateIn(EtlDatabaseObject obj, String condition) {
-		
-		String[] parts = condition.split("(?i)in");
-		
-		String field = parts[0].trim();
-		String valuesPart = parts[1].trim();
-		
-		valuesPart = valuesPart.replaceAll("[()]", "");
-		
-		Object value = obj.getFieldValue(field);
-		
-		if (value == null)
-			return false;
-		
-		String actual = value.toString();
-		
-		for (String v : valuesPart.split(",")) {
-			
-			if (actual.equals(stripQuotes(v.trim()))) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	private Boolean evaluateLike(EtlDatabaseObject obj, String condition) {
-		
-		String[] parts = condition.split("(?i)like");
-		
-		String field = parts[0].trim();
-		String pattern = stripQuotes(parts[1].trim());
-		
-		Object value = obj.getFieldValue(field);
-		
-		if (value == null)
-			return false;
-		
-		String actual = value.toString();
-		
-		String regex = pattern.replace("%", ".*").replace("_", ".");
-		
-		return actual.matches(regex);
-	}
-	
-	private String stripQuotes(String s) {
-		return s.replaceAll("^['\"]|['\"]$", "");
 	}
 	
 	@Override

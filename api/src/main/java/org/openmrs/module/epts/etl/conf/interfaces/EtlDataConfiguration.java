@@ -255,31 +255,30 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		}
 		
 		Matcher m = PLACEHOLDER.matcher(text);
+		
 		StringBuffer sb = new StringBuffer();
 		
 		while (m.find()) {
 			
 			String key = m.group(1);
 			
-			// 🔹 Se há whitelist e key não está nela → ignora
+			// whitelist
 			if (allowedPlaceholders != null && !allowedPlaceholders.contains(key)) {
-				m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0))); // mantém ${key}
+				m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0)));
+				
 				continue;
 			}
 			
 			Object value = null;
 			
-			// 1. ENV
 			if (env != null) {
 				value = env.get(key);
 			}
 			
-			// 2. System props
 			if (value == null && sysProps != null) {
 				value = sysProps.getProperty(key);
 			}
 			
-			// 3. File props
 			if (value == null && fileProps != null) {
 				value = fileProps.getProperty(key);
 			}
@@ -288,12 +287,27 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				throw new IllegalArgumentException("Missing placeholder value for: " + key);
 			}
 			
-			m.appendReplacement(sb, Matcher.quoteReplacement(value.toString()));
+			String replacement = value.toString();
+			
+			// 🔥 JSON escape
+			replacement = escapeJsonString(replacement);
+			
+			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
 		}
 		
 		m.appendTail(sb);
 		
 		return sb.toString();
+	}
+	
+	public static String escapeJsonString(String value) {
+		
+		if (value == null) {
+			return null;
+		}
+		
+		return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t",
+		    "\\t");
 	}
 	
 	default void stepIntoBreakpoint(EtlConfiguration etlConf, boolean b) {

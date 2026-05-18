@@ -868,4 +868,35 @@ public interface EtlDatabaseObject extends EtlObject {
 			catch (ForbiddenOperationException e) {}
 		}
 	}
+	
+	default boolean isSrcObject() {
+		return this.getRelatedConfiguration() instanceof SrcConf;
+	}
+	
+	default boolean isDstObject() {
+		return this.getRelatedConfiguration() instanceof DstConf;
+	}
+	
+	default List<EtlDatabaseObject> collectAllAvaliableSrcObjects() {
+		List<EtlDatabaseObject> avaliableSrcOjects = new ArrayList<>();
+		
+		if (this.getEtlInfo() != null) {
+			return this.getEtlInfo().getAvaliableSrcObjects();
+		} else if (this.isSrcObject()
+		        || (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource())) {
+			avaliableSrcOjects.add(this);
+		}
+		
+		if (this.hasDestinationRecords()) {
+			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
+				
+				if (utils.listHasElement(obj.collectAllAvaliableSrcObjects())) {
+					avaliableSrcOjects.addAll(obj.collectAllAvaliableSrcObjects());
+				}
+			}
+		}
+		
+		return avaliableSrcOjects;
+	}
+	
 }

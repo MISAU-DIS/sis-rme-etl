@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.etl.processor;
 
 import java.sql.Connection;
 import java.util.List;
+import java.util.function.Function;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
@@ -116,13 +117,22 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		
 		logDebug("Initializing the loading of " + etlObjects.size() + " " + etlItemConf.getSrcConf().getFullTableName());
 		
-		EtlLoadHelper loadHelper = new EtlLoadHelper(this, etlObjects, loadingType);
+		EtlLoadHelper loadHelper = null;
 		
-		loadHelper.load(srcConn, dstConn);
+		loadHelper = new EtlLoadHelper(this, etlObjects, loadingType, etlItemConf.hasAllDstConfDisabled());
 		
-		tryToPerfomeEtlOnChild(etlItemConf, loadHelper, srcConn, dstConn);
-		
-		logInfo("ETL OPERATION [" + etlItemConf.getConfigCode() + "] DONE ON " + etlObjects.size() + "' RECORDS");
+		if (loadHelper.hasDstConf()) {
+			loadHelper.load(srcConn, dstConn);
+			
+			tryToPerfomeEtlOnChild(etlItemConf, loadHelper, srcConn, dstConn);
+			
+			logInfo("ETL OPERATION [" + etlItemConf.getConfigCode() + "] DONE ON " + etlObjects.size() + "' RECORDS");
+		} else {
+			logWarn("NO DST OBJECT WAS FOUND FOR ETL[" + etlItemConf.getConfigCode() + "] ON '" + etlObjects.size()
+			        + "' RECORDS");
+			
+			tryToPerfomeEtlOnChild(etlItemConf, etlObjects, srcConn, dstConn);
+		}
 		
 		return loadHelper;
 	}
@@ -130,27 +140,55 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf, EtlLoadHelper loadHelper, Connection srcConn,
 	        Connection dstConn) throws DBException {
 		
-		if (itemConf.hasChildItemConf()) {
-			for (EtlItemConfiguration childItemConf : itemConf.getChildItemConf()) {
-				childItemConf.fullLoad(this.getRelatedEtlOperationConfig());
-				
-				for (EtlDatabaseObject rec : loadHelper
-				        .getAllSuccedTransformedObjects(childItemConf.getRelatedParentDstConf())) {
-					performeEtlOnChildItem(childItemConf, rec, srcConn, dstConn);
-				}
+		tryToPerfomeEtlOnChild(itemConf,
+		    childItemConf -> loadHelper.getAllSuccedTransformedObjects(childItemConf.getRelatedParentDstConf()), srcConn,
+		    dstConn);
+	}
+	
+	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf,
+	        Function<EtlItemConfiguration, List<EtlDatabaseObject>> objectsProvider, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		
+		if (!itemConf.hasChildItemConf()) {
+			return;
+		}
+		
+		for (EtlItemConfiguration childItemConf : itemConf.getChildItemConf()) {
+			childItemConf.fullLoad(this.getRelatedEtlOperationConfig());
+			
+			List<EtlDatabaseObject> records = objectsProvider.apply(childItemConf);
+			
+			if (records == null || records.isEmpty()) {
+				continue;
+			}
+			
+			for (EtlDatabaseObject rec : records) {
+				performeEtlOnChildItem(childItemConf, rec, srcConn, dstConn);
 			}
 		}
+	}
+	
+	private void tryToPerfomeEtlOnChild(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+	        Connection srcConn, Connection dstConn) throws DBException {
+		
+		tryToPerfomeEtlOnChild(etlItemConf, childItemConf -> etlObjects, srcConn, dstConn);
 	}
 	
 	private void performeEtlOnChildItem(EtlItemConfiguration itemConf, EtlDatabaseObject transformedParent,
 	        Connection srcConn, Connection dstConn) throws DBException {
 		
-		List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(),
-		    transformedParent.getEtlInfo().getRelatedSrcObject(), transformedParent.getEtlInfo().getAvaliableSrcObjects(),
-		    srcConn);
+		EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
+		        : transformedParent.getEtlInfo().getRelatedSrcObject();
+		
+		List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
+		        : transformedParent.getEtlInfo().getAvaliableSrcObjects();
+		
+		List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
+		    avaliableSrcObjects, srcConn);
 		
 		if (!etlObjects.isEmpty()) {
-			perform(itemConf, etlObjects, transformedParent, LoadingType.INNER, srcConn, dstConn);
+			perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null, LoadingType.INNER,
+			    srcConn, dstConn);
 		}
 	}
 	

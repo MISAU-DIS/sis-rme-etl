@@ -591,4 +591,9 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	public void setMapping(List<FieldsMapping> mapping) {
 	}
 	
+	@Override
+	public String getSrcObjectCondition() {
+		return null;
+	}
+	
 }

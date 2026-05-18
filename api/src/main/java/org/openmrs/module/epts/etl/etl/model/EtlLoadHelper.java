@@ -17,9 +17,9 @@ import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObjectDAO;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
-import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
+import org.openmrs.module.epts.etl.exceptions.NoDstForGivenSrcException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
@@ -43,7 +43,8 @@ public class EtlLoadHelper {
 	
 	private List<DstConf> dstConf;
 	
-	public EtlLoadHelper(EtlProcessor processor, List<EtlDatabaseObject> srcObjects, LoadingType loadingType) {
+	public EtlLoadHelper(EtlProcessor processor, List<EtlDatabaseObject> srcObjects, LoadingType loadingType,
+	    boolean ignoreNoDstIssue) {
 		this.processor = processor;
 		this.srcObjects = srcObjects;
 		this.loadingType = loadingType;
@@ -60,8 +61,8 @@ public class EtlLoadHelper {
 			}
 		}
 		
-		if (utilities.listHasNoElement(this.dstConf)) {
-			throw new EtlExceptionImpl("No dst was found for given src objects!");
+		if (utilities.listHasNoElement(this.dstConf) && !ignoreNoDstIssue) {
+			throw new NoDstForGivenSrcException();
 		}
 		
 	}
@@ -461,7 +462,7 @@ public class EtlLoadHelper {
 		
 		etlInfo.getProcessor().logTrace(msg);
 		
-		new EtlLoadHelper(etlInfo.getProcessor(), utilities.parseToList(srcObject), LoadingType.INNER)
+		new EtlLoadHelper(etlInfo.getProcessor(), utilities.parseToList(srcObject), LoadingType.INNER, false)
 		        .load(etlInfo.getDstConf(), srcConn, dstConn);
 	}
 	
@@ -472,5 +473,9 @@ public class EtlLoadHelper {
 		EtlItemConfiguration conf = dstConf.getParentConf();
 		
 		return processor.perform(conf, utilities.parseToList(srcRecord), null, LoadingType.INNER, srcConn, dstConn);
+	}
+	
+	public boolean hasDstConf() {
+		return utilities.listHasElement(this.getDstConf());
 	}
 }

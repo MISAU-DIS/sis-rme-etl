@@ -11,6 +11,7 @@ import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.GenericEtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
@@ -26,7 +27,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
-public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
+public class EtlItemConfiguration extends AbstractEtlDataConfiguration implements GenericEtlTransformTarget {
 	
 	private String id;
 	
@@ -82,6 +83,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	
 	private String shortCode;
 	
+	private String srcObjectCondition;
+	
 	public EtlItemConfiguration() {
 	}
 	
@@ -91,6 +94,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	
 	public void setShortCode(String shortCode) {
 		this.shortCode = shortCode;
+	}
+	
+	public String getSrcObjectCondition() {
+		return srcObjectCondition;
+	}
+	
+	public void setSrcObjectCondition(String srcObjectCondition) {
+		this.srcObjectCondition = srcObjectCondition;
 	}
 	
 	public Boolean isDoNotFullLoadDstConf() {
@@ -848,5 +859,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 		
 		return ds;
+	}
+	
+	public boolean hasAllDstConfDisabled() {
+		for (DstConf dstConf : this.getDstConf()) {
+			if (!dstConf.isDisabled()) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }

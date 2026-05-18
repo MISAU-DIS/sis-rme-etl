@@ -16,7 +16,7 @@ import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
+public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration, GenericEtlTransformTarget {
 	
 	void loadDataSourceInfo(Connection conn) throws DBException;
 	
