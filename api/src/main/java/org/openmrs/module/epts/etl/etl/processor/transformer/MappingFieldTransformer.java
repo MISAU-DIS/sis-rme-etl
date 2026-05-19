@@ -312,8 +312,4 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 		return null;
 	}
 	
-	private boolean hasInput() {
-		return this.input != null;
-	}
-	
 }

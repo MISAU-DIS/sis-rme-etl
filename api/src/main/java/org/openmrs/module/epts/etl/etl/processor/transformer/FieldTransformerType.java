@@ -24,6 +24,7 @@ public enum FieldTransformerType {
 	PARENT_ON_DEMAND_TRANSFORMER(
 	        ParentOnDemandLoadTransformer.class.getCanonicalName(),
 	        ParentOnDemandLoadTransformer::getInstance),
+	DATE_TRANSFORMER(DateFieldTransformer.class.getCanonicalName(), DateFieldTransformer::getInstance),
 	CUSTOM_TRANSFORMER(null, null);
 	
 	private final String className;
@@ -77,6 +78,10 @@ public enum FieldTransformerType {
 		return this == CUSTOM_TRANSFORMER;
 	}
 	
+	public boolean isDate() {
+		return this == DATE_TRANSFORMER;
+	}
+	
 	private static Method getFactoryMethod(Class<?> clazz) throws Exception {
 		
 		return METHOD_CACHE.computeIfAbsent(clazz.getName(), k -> {
@@ -89,8 +94,8 @@ public enum FieldTransformerType {
 		});
 	}
 	
-	public EtlFieldTransformer create(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget, TransformableField field,
-	        Connection conn) {
+	public EtlFieldTransformer create(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	        TransformableField field, Connection conn) {
 		
 		if (this.isCustom()) {
 			try {
@@ -168,7 +173,8 @@ public enum FieldTransformerType {
 		throw new IllegalArgumentException("Unknown transformer: " + def);
 	}
 	
-	public static void tryToLoadTransformerToField(TransformableField field, EtlTranformTarget EtlTransformTarget, Connection conn) {
+	public static void tryToLoadTransformerToField(TransformableField field, EtlTranformTarget EtlTransformTarget,
+	        Connection conn) {
 		
 		if (field.getTransformerInstance() != null)
 			return;

@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
@@ -23,7 +24,9 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	
 	protected TransformableField field;
 	
-	private Connection overrideConnection;
+	protected Connection overrideConnection;
+	
+	protected FieldsMapping input;
 	
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTargedConf,
 	    TransformableField field) {
@@ -38,6 +41,18 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		        : null;
 		
 		return (dstConf != null ? dstConf.toString() : "No EtlTransformTarget") + "|" + field.toString() + params;
+	}
+	
+	public boolean hasInput() {
+		return this.input != null;
+	}
+	
+	public FieldsMapping getInput() {
+		return input;
+	}
+	
+	public void setInput(FieldsMapping input) {
+		this.input = input;
 	}
 	
 	public EtlTranformTarget getRelatedEtlTransformTarget() {
