@@ -108,8 +108,6 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private List<String> rawParameterDefinitions;
 	
-	private FieldsMapping input;
-	
 	public MappingFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
 	    TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		

@@ -91,7 +91,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 					
 				} else if (paramName.equals("output_format")) {
 					try {
-						this.outputFormat = DateAndTimeFormat.valueOf(paramValue);
+						this.outputFormat = DateAndTimeFormat.resolve(paramValue);
 					}
 					catch (Exception e) {
 						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
@@ -187,15 +187,15 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 			return null;
 		}
 		
-		String readyValueToTranform = EtlFieldTransformer
-		        .tryToReplaceParametersOnSrcValue(additionalSrcObjects, valueToTransform).toString();
+		Object readyValueToTranform = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(additionalSrcObjects,
+		    valueToTransform);
 		
 		Object transformedValue = evaluate(srcObject, readyValueToTranform);
 		
 		return new FieldTransformingInfo(field, transformedValue, null);
 	}
 	
-	private Object evaluate(EtlDatabaseObject srcObject, String readyValueToTransform) {
+	private Object evaluate(EtlDatabaseObject srcObject, Object readyValueToTransform) {
 		
 		try {
 			
@@ -205,7 +205,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 					return utilities.getCurrentDate();
 				
 				case PARSE:
-					return parseDate(readyValueToTransform);
+					return parseDate(readyValueToTransform.toString());
 				
 				case FORMAT:
 					return formatDate(readyValueToTransform);
@@ -322,11 +322,11 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 		return cal.getTime();
 	}
 	
-	private Date getStartOfDay(String value) throws ParseException {
+	private Date getStartOfDay(Object value) throws ParseException {
 		
 		Calendar cal = Calendar.getInstance();
 		
-		cal.setTime(parseDate(value));
+		cal.setTime(value instanceof Date ? (Date) value : parseDate(value.toString()));
 		
 		cal.set(Calendar.HOUR_OF_DAY, 0);
 		
@@ -339,11 +339,11 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 		return cal.getTime();
 	}
 	
-	private Date getEndOfDay(String value) throws ParseException {
+	private Date getEndOfDay(Object value) throws ParseException {
 		
 		Calendar cal = Calendar.getInstance();
 		
-		cal.setTime(parseDate(value));
+		cal.setTime(value instanceof Date ? (Date) value : parseDate(value.toString()));
 		
 		cal.set(Calendar.HOUR_OF_DAY, 23);
 		

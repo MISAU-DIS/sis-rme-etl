@@ -289,7 +289,6 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			
 			String replacement = value.toString();
 			
-			// 🔥 JSON escape
 			replacement = escapeJsonString(replacement);
 			
 			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
