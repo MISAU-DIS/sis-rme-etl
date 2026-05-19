@@ -778,7 +778,34 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
 		  - The field *visit_type_id* receives the constant value *42*
 		  - The field *location_id* uses the dynamic parameter *@migration_location_id*
 		  - The fields *date_stopped* and *indication_concept_id* are set to null
-      
+
+    - **DATE_TRANSFORMER(input:valueOrTransformer,operation:operationName,input_format:format,output_format:format,amount:number,unit:unitName,on_invalid:behavior)**  
+  		Performs date and datetime transformations. It can parse string values into dates, format dates as strings, and apply basic date operations such as adding or subtracting days, months, years, hours, minutes, or seconds.
+  
+  		Supported parameters:
+  	    - *input:valueOrTransformer* – Defines the value to be transformed. It may be a field, fixed value, dynamic parameter, or another transformer.
+        - *operation:operationName* – Defines the operation to apply.
+        - *input_format:format* – Format used to parse the input value when it is a string.
+        - *output_format:format* – Format used to format the resulting date as a string.
+        - *amount:number* – Numeric value used by date arithmetic operations.
+        - *unit:unitName* – Unit used by arithmetic operations. Supported values may include *DAYS*, *MONTHS*, *YEARS*, *HOURS*, *MINUTES*, and *SECONDS*.
+        - *on_invalid:behavior* – Optional behavior when the date cannot be parsed or transformed.
+        - 
+       Supported operations:
+       - *PARSE* – Converts a string into a date/datetime.
+       - *FORMAT* – Formats a date/datetime into a string.
+       - *ADD* – Adds time to a date/datetime.
+       - *SUBTRACT* – Subtracts time from a date/datetime.
+       - *NOW* – Returns the current date/datetime.
+       - *START_OF_DAY* – Returns the date at the beginning of the day.
+       - *END_OF_DAY* – Returns the date at the end of the day.
+
+       Examples:
+       - DATE_TRANSFORMER(input:encounter_datetime,operation:FORMAT,output_format:yyyy-MM-dd)
+       - DATE_TRANSFORMER(input:birthdate,operation:ADD,amount:1,unit:YEARS)
+       - DATE_TRANSFORMER(input:@migration_date,operation:PARSE,input_format:yyyy-MM-dd)
+       - DATE_TRANSFORMER(input:COALESCE_TRANSFORMER(obs_datetime,encounter_datetime),operation:FORMAT,output_format:yyyy-MM-dd HH:mm:ss)
+	  
 - (5) *dataType*: an optional attribute used to explicitly define the data type of the field value. When not specified, the system will infer the type from the transformation result. Supported data types include: *int*, *long*, *double*, *string*, *date*, and *boolean*.
   - (6) *overrideTriggerValue*: specifies a value that triggers the override mechanism. If the transformed field value equals this value, the final value will be replaced by the configured defaultValue.
 - **objectLanguage**: defines the scripting or expression language used to process field generation when custom logic is required. This property can be omitted if no custom field generator is used.
