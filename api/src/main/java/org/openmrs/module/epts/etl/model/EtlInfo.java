@@ -276,7 +276,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			        && this.getDstConf().getTableName().equals(refInfo.getTableName());
 			
 			boolean skipDstParentLoad = false;
-			
+	
 			skipDstParentLoad = tinfo.skipRelationshipResolution() || parentIsDstParentConf;
 			
 			if (!skipDstParentLoad) {

@@ -343,7 +343,7 @@ public class AttDefinedElements {
 	
 	public static boolean isNumeric(String attType) {
 		return utilities.isStringIn(attType.toLowerCase(), "int", "integer", "long", "byte", "short", "double", "float",
-		    "tinyint", "bigint", "bigint unsigned");
+		    "tinyint", "bigint", "bigint unsigned", "int unsigned");
 	}
 	
 	public static boolean isString(String attType) {
@@ -403,13 +403,13 @@ public class AttDefinedElements {
 		/*NOTE: Temporary Convert INT8 and SERIAL as Integer as Postgres use INT8 for serial columns (PK) Which is INT8.
 		  note that this type should be converted to LONG but as if the core of Epts-Etl use Integer for PK for now we 
 		  are forcing INT8 to be Integer*/
-		if (utilities.isStringIn(databaseType, "INT", "MEDIUMINT", "INT8", "BIGINT", "SERIAL", "SERIAL4"))
+		if (utilities.isStringIn(databaseType, "INT", "MEDIUMINT", "INT8", "BIGINT", "SERIAL", "SERIAL4", "INT UNSIGNED"))
 			return "Integer";
 		if (utilities.isStringIn(databaseType, "TINYINT"))
 			return "Byte";
 		if (utilities.isStringIn(databaseType, "BIT"))
 			return "Boolean";
-		if (utilities.isStringIn(databaseType, "YEAR", "SMALLINT"))
+		if (utilities.isStringIn(databaseType, "YEAR", "SMALLINT", "SMALLINT UNSIGNED"))
 			return "Short";
 		if (utilities.isStringIn(databaseType, "BIGINT", "INT8", "SERIAL", "BIGINT UNSIGNED"))
 			return "Long";

@@ -120,16 +120,23 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				if (refInfo.getTableName().equals(migratedDstParent.getRelatedConfiguration().getObjectName())) {
 					Field fk = transformedRec.getField(refInfo);
 					
-					FieldsMapping f = ((DstConf) transformedRec.getRelatedConfiguration())
-					        .getMappingUsingDstField(fk.getName());
+					FieldsMapping definedMapping = dstConf.getMappingUsingDstField(fk.getName());
 					
-					fk.setTransformingInfo(
-					    new FieldTransformingInfo(f, migratedDstParent.getObjectId().asSimpleNumericValue(),
-					            (EtlDataSource) migratedDstParent.getRelatedConfiguration()));
+					dstConf.stepIntoBreakpoint(null,
+					    transformedRec.getRelatedConfiguration().getAlias().equals("mdc_obs_dah_dst_ds"));
 					
-					transformedRec.setFieldValue(fk.getName(), fk.getTransformingInfo().getTransformedValue());
-					
-					break;
+					if (definedMapping.overridable()) {
+						FieldsMapping f = ((DstConf) transformedRec.getRelatedConfiguration())
+						        .getMappingUsingDstField(fk.getName());
+						
+						fk.setTransformingInfo(
+						    new FieldTransformingInfo(f, migratedDstParent.getObjectId().asSimpleNumericValue(),
+						            (EtlDataSource) migratedDstParent.getRelatedConfiguration()));
+						
+						transformedRec.setFieldValue(fk.getName(), fk.getTransformingInfo().getTransformedValue());
+						
+						break;
+					}
 				}
 			}
 		}
