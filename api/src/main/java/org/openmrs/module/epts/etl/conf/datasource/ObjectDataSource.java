@@ -72,6 +72,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	
 	private OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping;
 	
+	public ObjectDataSource() {
+		this.ignoreUnmappedFields = true;
+		this.onMultipleDataSourceForSameMapping = OnMultipleDataSourceFoundBehavior.USE_LAST;
+	}
+	
 	@Override
 	public List<String> getDynamicElements() {
 		return dynamicElements;
@@ -155,13 +160,14 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	}
 	
 	private void addAllAvaliableDataSources(Connection conn) {
-		this.addToAvaliableDataSource(this);
 		this.addToAvaliableDataSource(this.getSrcConf());
 		this.addAllToAvaliableDataSource(this.getSrcConf().getAvaliableExtraDataSource());
 		
 		if (this.getSrcConf().hasParentItemConf()) {
 			this.addAllToAvaliableDataSource(this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
 		}
+		
+		this.setAllNotPrefferredDataSource(this.getAllAvaliableDataSource());
 	}
 	
 	@Override
@@ -572,14 +578,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	@Override
 	public Boolean isLoadedDataSourceInfo() {
-		// TODO Auto-generated method stub
-		return null;
+		return false;
 	}
 	
 	@Override

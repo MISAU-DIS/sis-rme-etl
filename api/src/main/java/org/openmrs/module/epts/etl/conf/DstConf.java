@@ -430,9 +430,14 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			
 			if (!this.getAllMapping().contains(fm)) {
 				try {
-					fm.tryToLoadTransformer(this, conn);
 					
-					tryToLoadDataSourceToFieldMapping(fm, conn);
+					if (this.hasMapping() && this.getMapping().contains(fm)) {
+						fm = utilities.findOnList(this.getMapping(), fm);
+					} else {
+						fm.tryToLoadTransformer(this, conn);
+						
+						tryToLoadDataSourceToFieldMapping(fm, conn);
+					}
 					
 					addMapping(fm);
 				}
@@ -455,7 +460,9 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			}
 		}
 		
-		if (mappingProblem.hasIssue()) {
+		if (mappingProblem.hasIssue())
+		
+		{
 			throw new FieldsMappingException(this, mappingProblem);
 		}
 		

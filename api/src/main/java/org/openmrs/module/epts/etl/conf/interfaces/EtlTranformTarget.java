@@ -74,7 +74,8 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration, Gener
 	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
 	        throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 		
-		if (getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField()) && isAutoIncrementId()) {
+		if (getPrimaryKey() != null && getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField())
+		        && isAutoIncrementId()) {
 			return;
 		}
 		
@@ -88,30 +89,32 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration, Gener
 			return;
 		}
 		
-		for (EtlDataSource pref : this.getAllPrefferredDataSource()) {
-			if (pref.containsField(fm.getSrcField())) {
-				fm.setDataSourceName(pref.getAlias());
-				fm.setDataSource(pref);
-				
-				fm.loadType(this, pref, conn);
-				
-				if (fm.getDefaultValue() == null) {
+		if (utilities.listHasElement(this.getAllPrefferredDataSource())) {
+			for (EtlDataSource pref : this.getAllPrefferredDataSource()) {
+				if (pref.containsField(fm.getSrcField())) {
+					fm.setDataSourceName(pref.getAlias());
+					fm.setDataSource(pref);
 					
-					Field f = pref.getField(fm.getSrcField());
+					fm.loadType(this, pref, conn);
 					
-					if (f instanceof DataSourceField) {
-						DataSourceField prefField = (DataSourceField) f;
+					if (fm.getDefaultValue() == null) {
 						
-						if (prefField.getDefaultValue() != null) {
-							fm.setDefaultValue(prefField.getDefaultValue());
-							fm.setOverrideTriggerValue(prefField.getOverrideTriggerValue());
+						Field f = pref.getField(fm.getSrcField());
+						
+						if (f instanceof DataSourceField) {
+							DataSourceField prefField = (DataSourceField) f;
+							
+							if (prefField.getDefaultValue() != null) {
+								fm.setDefaultValue(prefField.getDefaultValue());
+								fm.setOverrideTriggerValue(prefField.getOverrideTriggerValue());
+							}
 						}
 					}
+					
+					qtyOccurences++;
+					
+					break;
 				}
-				
-				qtyOccurences++;
-				
-				break;
 			}
 		}
 		
