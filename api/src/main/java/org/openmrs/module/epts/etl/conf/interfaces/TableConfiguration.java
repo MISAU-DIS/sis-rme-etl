@@ -2682,12 +2682,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				sql += "CREATE TABLE " + fullTableName + "(\n";
 				sql += DBUtilities.generateTableAutoIncrementField("id", conn) + endLineMarker;
 				sql += DBUtilities.generateTableBigIntField("stage_record_id", notNullConstraint, conn) + endLineMarker;
-				sql += DBUtilities.generateTableVarcharField("dst_table_name", 100, notNullConstraint, conn) + endLineMarker;
+				sql += DBUtilities.generateTableVarcharField("dst_table_name", 250, notNullConstraint, conn) + endLineMarker;
 				sql += DBUtilities.generateTableVarcharField("dst_compacted_object_uk", 190, nullConstraint, conn)
 				        + endLineMarker;
 				sql += DBUtilities.generateTableVarcharField("src_stage_table_name", 100, notNullConstraint, conn)
 				        + endLineMarker;
-				sql += DBUtilities.generateTableVarcharField("etl_confing_id", 190, nullConstraint, conn) + endLineMarker;
+				sql += DBUtilities.generateTableVarcharField("etl_confing_id", 250, nullConstraint, conn) + endLineMarker;
 				sql += DBUtilities.generateTableVarcharField("conflict_resolution_type", 30, notNullConstraint, conn)
 				        + endLineMarker;
 				

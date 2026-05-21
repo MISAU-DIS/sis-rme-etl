@@ -60,8 +60,6 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		    dstConf, transformationType, srcConn);
 		
 		try {
-			dstConf.stepIntoBreakpoint(dstConf.getRelatedEtlConf(), srcObjects == null);
-			
 			if (srcObjects == null || srcObjects.isEmpty()) {
 				return null;
 			}
@@ -122,10 +120,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					
 					FieldsMapping definedMapping = dstConf.getMappingUsingDstField(fk.getName());
 					
-					dstConf.stepIntoBreakpoint(null,
-					    transformedRec.getRelatedConfiguration().getAlias().equals("mdc_obs_dah_dst_ds"));
-					
-					if (definedMapping.overridable()) {
+					if (transformedRec.getFieldValue(fk.getName()) == null || definedMapping.overridable()) {
 						FieldsMapping f = ((DstConf) transformedRec.getRelatedConfiguration())
 						        .getMappingUsingDstField(fk.getName());
 						

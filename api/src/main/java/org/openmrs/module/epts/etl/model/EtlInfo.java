@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
@@ -270,13 +271,17 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			
 			FieldTransformingInfo tinfo = this.getTransformedObject().getField(refInfo).getTransformingInfo();
 			
+			if (tinfo == null) {
+				throw new EtlExceptionImpl("DstField for parent does not have FieldTransformingInfo: " + refInfo);
+			}
+			
 			//We check if this parent is same to the parent dstConf
 			//The FK for parent dstConf is already loaded with the dst PK
 			boolean parentIsDstParentConf = this.getDstConf().hasParentDstConf()
 			        && this.getDstConf().getTableName().equals(refInfo.getTableName());
 			
 			boolean skipDstParentLoad = false;
-	
+			
 			skipDstParentLoad = tinfo.skipRelationshipResolution() || parentIsDstParentConf;
 			
 			if (!skipDstParentLoad) {

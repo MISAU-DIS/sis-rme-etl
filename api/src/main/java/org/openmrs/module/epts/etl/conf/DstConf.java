@@ -460,9 +460,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			}
 		}
 		
-		if (mappingProblem.hasIssue())
-		
-		{
+		if (mappingProblem.hasIssue()) {
 			throw new FieldsMappingException(this, mappingProblem);
 		}
 		

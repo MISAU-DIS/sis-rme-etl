@@ -20,6 +20,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.inconsistenceresolver.model.InconsistenceInfo;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.RecordWithDefaultParentInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -153,7 +154,11 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 						dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);
 					}
 					catch (DBException e) {
-						throw new EtlExceptionImpl(e);
+						if (e.isDuplicatePrimaryOrUniqueKeyException()) {
+							dstParent = DatabaseObjectDAO.getByUniqueKeys(dstParent, dstConn);
+							dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);
+						} else
+							throw new EtlExceptionImpl(e);
 					}
 					finally {
 						
