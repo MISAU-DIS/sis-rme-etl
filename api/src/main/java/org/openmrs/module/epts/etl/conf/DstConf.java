@@ -397,6 +397,8 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			mappingProblem = loadConfiguredMappingAdditionalInfo(conn);
 			
 			for (FieldsMapping fm : this.getMapping()) {
+				fm.setManuallyConfigured(true);
+				
 				if (!mappingProblem.contains(fm)) {
 					addMapping(fm);
 				}

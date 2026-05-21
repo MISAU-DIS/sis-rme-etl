@@ -47,6 +47,10 @@ public abstract class AbstractBaseConfiguration implements BaseConfiguration {
 		return b != null && b;
 	}
 	
+	public static Boolean isFalse(Boolean b) {
+		return !isTrue(b);
+	}
+	
 	public static Boolean false_() {
 		return Boolean.FALSE;
 	}

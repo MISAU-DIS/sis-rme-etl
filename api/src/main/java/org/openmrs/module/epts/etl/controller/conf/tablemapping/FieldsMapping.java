@@ -75,7 +75,7 @@ public class FieldsMapping extends Field implements TransformableField {
 	
 	private EtlTranformTarget targetObject;
 	
-	private Boolean overridable;
+	private Boolean manuallyConfigured;
 	
 	public FieldsMapping() {
 		this.nullValueBehavior = EtlNullBehavior.ABORT_PROCESS;
@@ -83,7 +83,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		
 		this.possibleSrc = new ArrayList<>(5);
 		
-		this.overridable = true;
+		this.manuallyConfigured = false;
 	}
 	
 	public FieldsMapping(String srcFieldFullName, String dstField, Boolean tryToLoadTransformer, Connection conn) {
@@ -120,12 +120,16 @@ public class FieldsMapping extends Field implements TransformableField {
 			tryToLoadTransformer(null, conn);
 	}
 	
-	public Boolean getOverridable() {
-		return overridable;
+	public Boolean getManuallyConfigured() {
+		return manuallyConfigured;
 	}
 	
-	public void setOverridable(Boolean overridable) {
-		this.overridable = overridable;
+	public void setManuallyConfigured(Boolean manuallyConfigured) {
+		this.manuallyConfigured = manuallyConfigured;
+	}
+	
+	public Boolean isManuallyConfigured() {
+		return isTrue(getManuallyConfigured());
 	}
 	
 	public EtlNullBehavior getNullValueBehavior() {
@@ -671,6 +675,6 @@ public class FieldsMapping extends Field implements TransformableField {
 	}
 	
 	public boolean overridable() {
-		return isTrue(this.overridable);
+		return !isManuallyConfigured();
 	}
 }
