@@ -609,17 +609,22 @@ public class DatabaseObjectDAO extends BaseDAO {
 							}
 						}
 						catch (DBException e1) {
-							
-							if (tabConf.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()
-							        && generateOperationResult) {
-								
-								record.getEtlInfo().setExceptionOnEtl(e);
-								
-								result.addToRecordsWithUnresolvedErrors(record.getEtlInfo().getRelatedSrcObject(), e1);
+							if (e1.getMessage().contains("stage_record_id")) {
+								tabConf.getRelatedEtlConf()
+								        .logWarn("Error encountered when creating stage record " + record);
 							} else {
-								tryToLoadObjToException(e, objects.get(0));
 								
-								throw e;
+								if (tabConf.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()
+								        && generateOperationResult) {
+									
+									record.getEtlInfo().setExceptionOnEtl(e);
+									
+									result.addToRecordsWithUnresolvedErrors(record.getEtlInfo().getRelatedSrcObject(), e1);
+								} else {
+									tryToLoadObjToException(e, objects.get(0));
+									
+									throw e;
+								}
 							}
 						}
 					}
