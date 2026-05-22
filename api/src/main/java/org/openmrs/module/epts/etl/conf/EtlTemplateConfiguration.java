@@ -96,12 +96,13 @@ public class EtlTemplateConfiguration {
 			    this.getParameters(), null, null, inputParams);
 			
 			EtlDataConfiguration parentFromTemplate = null;
+			EtlTemplateInfo extendsTemplateInfo = null;
 			
 			if (this.isExtension()) {
 				EtlTemplateConfiguration baseTemplate = EtlTemplateConfiguration.findTemplate(this.getRelatedEtlConf(),
 				    this.getExtendsTemplate().getName());
 				
-				EtlTemplateInfo extendsTemplateInfo = this.getExtendsTemplate()
+				extendsTemplateInfo = this.getExtendsTemplate()
 				        .cloneAndEnsureParametersAndOverridePlaceholdersReplacement(inputParams);
 				
 				extendsTemplateInfo.setChildTemplate(templateInfo);
@@ -116,7 +117,7 @@ public class EtlTemplateConfiguration {
 			T etlDataConf = new ObjectMapperProvider().getContext(clazz).readValue(json, clazz);
 			
 			if (parentFromTemplate != null) {
-				etlDataConf.copyFromTemplate(parentFromTemplate, this.getName());
+				etlDataConf.copyFromTemplate(parentFromTemplate, this.getName(), extendsTemplateInfo);
 			}
 			
 			this.ensureOverride(etlDataConf, templateInfo);

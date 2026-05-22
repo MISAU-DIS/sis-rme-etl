@@ -17,6 +17,10 @@ public enum EtlOperationStatus {
 		this.status = status;
 	}
 	
+	public String getDsc() {
+		return this.name().split("STATUS_")[1];
+	}
+	
 	public boolean notInitialized() {
 		return this.equals(STATUS_NOT_INITIALIZED);
 	}

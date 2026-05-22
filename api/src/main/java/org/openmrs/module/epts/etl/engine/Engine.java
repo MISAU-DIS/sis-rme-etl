@@ -25,6 +25,7 @@ import org.openmrs.module.epts.etl.conf.types.ThreadingMode;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
@@ -261,6 +262,54 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	
 	public DBConnectionInfo getSrcConnInfo() {
 		return this.getRelatedOperationController().getSrcConnInfo();
+	}
+	
+	@Override
+	public void changeStatusToRunning() {
+		MonitoredOperation.super.changeStatusToRunning();
+		
+		updateProgressInfo(EtlOperationStatus.STATUS_RUNNING);
+	}
+	
+	@Override
+	public void changeStatusToStopped() {
+		MonitoredOperation.super.changeStatusToPaused();
+		
+		updateProgressInfo(EtlOperationStatus.STATUS_STOPPED);
+	}
+	
+	@Override
+	public void changeStatusToFinished() {
+		MonitoredOperation.super.changeStatusToFinished();
+		
+		updateProgressInfo(EtlOperationStatus.STATUS_FINISHED);
+	}
+	
+	@Override
+	public void changeStatusToPaused() {
+		MonitoredOperation.super.changeStatusToPaused();
+		
+		updateProgressInfo(EtlOperationStatus.STATUS_PAUSED);
+	}
+	
+	private void updateProgressInfo(EtlOperationStatus status) {
+		this.getTableOperationProgressInfo().setFieldValue("status", status.getDsc());
+		
+		OpenConnection conn = null;
+		
+		try {
+			conn = openSrcConn(this);
+			
+			this.getTableOperationProgressInfo().save(conn);
+			
+			conn.markAsSuccessifullyTerminated();
+		}
+		catch (DBException e) {
+			throw new EtlExceptionImpl(e);
+		}
+		finally {
+			finalizeConnection(conn, this);
+		}
 	}
 	
 	@Override

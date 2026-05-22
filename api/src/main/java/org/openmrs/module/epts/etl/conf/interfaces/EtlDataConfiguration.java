@@ -4,6 +4,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -121,7 +123,8 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			
 			fromTemplate.setRelatedEtlConfig(getRelatedEtlConf());
 			
-			this.copyFromTemplate(fromTemplate, this.getTemplate().getName());
+			this.copyFromTemplate(fromTemplate, this.getTemplate() != null ? this.getTemplate().getName() : null,
+			    this.getTemplate());
 		}
 		
 	}
@@ -130,19 +133,26 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		return this.getTemplate() != null;
 	}
 	
-	@SuppressWarnings("unchecked")
-	default void copyFromTemplate(EtlDataConfiguration template, String templateName) {
+	default void copyFromTemplate(EtlDataConfiguration toCopyFrom, String mainTemplateName, EtlTemplateInfo templateInfo) {
 		
-		if (template == null) {
+		if (toCopyFrom == null) {
 			return;
 		}
 		
-		String errorSufix = "Error happened Within template: " + templateName;
+		String errorSufix = "Error happened Within template: " + mainTemplateName;
 		
-		if (!this.getClass().isAssignableFrom(template.getClass())
-		        && !template.getClass().isAssignableFrom(this.getClass())) {
-			throw new EtlExceptionImpl(errorSufix + "> Incompatible template type: " + template.getClass().getName());
+		if (!this.getClass().isAssignableFrom(toCopyFrom.getClass())
+		        && !toCopyFrom.getClass().isAssignableFrom(this.getClass())) {
+			throw new EtlExceptionImpl(errorSufix + "> Incompatible template type: " + toCopyFrom.getClass().getName());
 		}
+		
+		copyFieldsFromTemplate(toCopyFrom, errorSufix);
+		
+		applyDynamicElementsIfMissing(this, templateInfo, errorSufix);
+	}
+	
+	@SuppressWarnings("unchecked")
+	default void copyFieldsFromTemplate(Object toCopyFrom, String errorSufix) {
 		
 		Class<?> currentClass = this.getClass();
 		
@@ -165,7 +175,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				try {
 					field.setAccessible(true);
 					
-					Object templateValue = field.get(template);
+					Object templateValue = field.get(toCopyFrom);
 					
 					if (templateValue == null) {
 						continue;
@@ -188,8 +198,9 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 						}
 						
 					} else {
+						
 						if (!canBeOverriten(currentValue, field)) {
-							throw new EtlExceptionImpl(errorSufix + ">  Field '" + field.getName()
+							throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName()
 							        + "' already has a value and cannot be overridden by template.");
 						}
 						
@@ -198,13 +209,127 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 					
 				}
 				catch (IllegalAccessException e) {
-					throw new EtlExceptionImpl(
-					        errorSufix + ">  Error copying field '" + field.getName() + "' from template.", e);
+					throw new EtlExceptionImpl(errorSufix + "> Error copying field '" + field.getName() + "' from template.",
+					        e);
 				}
 			}
 			
 			currentClass = currentClass.getSuperclass();
 		}
+	}
+	
+	public static void applyDynamicElementsIfMissing(Object target, EtlTemplateInfo templateInfo, String errorSufix) {
+		
+		if (target == null || templateInfo == null || templateInfo.getDynamicElements() == null) {
+			return;
+		}
+		
+		applyDynamicElementsOnCurrentObject(target, templateInfo.getDynamicElements(), errorSufix);
+		
+		for (Field field : getAllFields(target.getClass())) {
+			
+			int modifiers = field.getModifiers();
+			
+			if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers)) {
+				continue;
+			}
+			
+			if (field.getType().isPrimitive() || field.getType().isEnum() || field.getType().getName().startsWith("java.")) {
+				continue;
+			}
+			
+			try {
+				field.setAccessible(true);
+				
+				Object value = field.get(target);
+				
+				if (value == null) {
+					continue;
+				}
+				
+				if (value instanceof Collection<?>) {
+					for (Object item : (Collection<?>) value) {
+						applyDynamicElementsIfMissing(item, templateInfo, errorSufix);
+					}
+				} else {
+					applyDynamicElementsIfMissing(value, templateInfo, errorSufix);
+				}
+				
+			}
+			catch (IllegalAccessException e) {
+				throw new EtlExceptionImpl(
+				        errorSufix + "> Error applying dynamicElements on field '" + field.getName() + "'.", e);
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static void applyDynamicElementsOnCurrentObject(Object target, List<?> dynamicElements, String errorSufix) {
+		
+		Field dynamicField = findField(target.getClass(), "dynamicElements");
+		
+		if (dynamicField == null) {
+			return;
+		}
+		
+		try {
+			dynamicField.setAccessible(true);
+			
+			Object currentValue = dynamicField.get(target);
+			
+			if (currentValue == null) {
+				dynamicField.set(target, new ArrayList<>(dynamicElements));
+				return;
+			}
+			
+			if (currentValue instanceof List<?>) {
+				List<Object> currentList = (List<Object>) currentValue;
+				
+				if (currentList.isEmpty()) {
+					currentList.addAll(dynamicElements);
+				}
+				
+				return;
+			}
+			
+			throw new EtlExceptionImpl(errorSufix + "> Field 'dynamicElements' exists but is not a List in class "
+			        + target.getClass().getName());
+			
+		}
+		catch (IllegalAccessException e) {
+			throw new EtlExceptionImpl(
+			        errorSufix + "> Error setting dynamicElements in class " + target.getClass().getName(), e);
+		}
+	}
+	
+	public static Field findField(Class<?> clazz, String fieldName) {
+		
+		Class<?> current = clazz;
+		
+		while (current != null && current != Object.class) {
+			try {
+				return current.getDeclaredField(fieldName);
+			}
+			catch (NoSuchFieldException ignored) {
+				current = current.getSuperclass();
+			}
+		}
+		
+		return null;
+	}
+	
+	public static List<Field> getAllFields(Class<?> clazz) {
+		
+		List<Field> fields = new ArrayList<>();
+		
+		Class<?> current = clazz;
+		
+		while (current != null && current != Object.class) {
+			fields.addAll(Arrays.asList(current.getDeclaredFields()));
+			current = current.getSuperclass();
+		}
+		
+		return fields;
 	}
 	
 	static String[] SAFE_FIELDS = { "joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper",
