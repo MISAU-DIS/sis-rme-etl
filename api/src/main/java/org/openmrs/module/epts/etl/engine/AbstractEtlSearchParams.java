@@ -296,6 +296,10 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		
 		String sql = searchClauses.generateSQL(srcConn);
 		
+		if (getSrcConf().limitToOneResult()) {
+			sql = sql + "\n limit 1";
+		}
+		
 		if (getRelatedEtlConf() != null) {
 			getRelatedEtlConf().logTrace(
 			    "Using query for intervals " + intervalExtremeRecord + " > \n------------ \n " + this.generateFulfilledQuery(

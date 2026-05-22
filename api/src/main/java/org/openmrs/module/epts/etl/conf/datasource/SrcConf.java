@@ -63,8 +63,23 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	private String joinExtraCondition;
 	
+	private Boolean limitToOneResult;
+	
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
+		this.limitToOneResult = false;
+	}
+	
+	public Boolean getLimitToOneResult() {
+		return limitToOneResult;
+	}
+	
+	public void setLimitToOneResult(Boolean limitToOneResult) {
+		this.limitToOneResult = limitToOneResult;
+	}
+	
+	public Boolean limitToOneResult() {
+		return isTrue(this.getLimitToOneResult());
 	}
 	
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
