@@ -122,7 +122,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				recWithDefaultParentInfo.setFieldValue("last_err", e.getLocalizedMessage());
 				
 				recWithDefaultParentInfo.save((TableConfiguration) recWithDefaultParentInfo.getRelatedConfiguration(),
-				    dstConn);
+				    srcConn);
 				
 				continue;
 			}
