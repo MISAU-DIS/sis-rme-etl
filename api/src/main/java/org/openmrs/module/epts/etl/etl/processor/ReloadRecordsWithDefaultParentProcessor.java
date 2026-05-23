@@ -84,7 +84,9 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 			for (EtlDatabaseObject etlObj : etlObjects) {
 				EtlDatabaseObject dstObject = reloadDefaultsParents(mainSrc, etlObj, srcConn, dstConn);
 				
-				dstObject.update((TableConfiguration) dstObject.getRelatedConfiguration(), dstConn);
+				if (dstObject != null) {
+					dstObject.update((TableConfiguration) dstObject.getRelatedConfiguration(), dstConn);
+				}
 			}
 		}
 		catch (Exception e) {
@@ -143,6 +145,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 			
 			EtlDatabaseObject dstParent = null;
 			EtlDatabaseObject parentAsSrc = null;
+			boolean successifulyReloaded = false;
 			
 			for (SrcConf src : avaliableSrcForCurrParent) {
 				DstConf dst = ((EtlItemConfiguration) src.getParentConf()).findDstTable_(getRelatedEtlOperationConfig(),
@@ -166,17 +169,21 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 						dstParent = parentAsSrc.getDestinationObjects().get(0);
 						
 						dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);
+						
+						successifulyReloaded = true;
 					}
 					catch (DBException e) {
 						if (e.isDuplicatePrimaryOrUniqueKeyException()) {
 							dstParent = DatabaseObjectDAO.getByUniqueKeys(dstParent, dstConn);
 							dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);
+							
+							successifulyReloaded = true;
 						} else
 							throw new EtlExceptionImpl(e);
 					}
 					finally {
 						
-						if (dstParent.getEtlInfo().hasParentsWithDefaultValues()
+						if (successifulyReloaded && dstParent.getEtlInfo().hasParentsWithDefaultValues()
 						        || (exception != null && exception.isIntegrityConstraintViolationException())) {
 							
 							String msg = "The parent for default for parent ["
