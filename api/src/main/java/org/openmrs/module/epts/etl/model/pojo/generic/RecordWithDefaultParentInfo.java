@@ -9,8 +9,8 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -25,6 +25,9 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 	private EtlDatabaseObject parentRecordInOrigin;
 	
 	private ParentTable parentRefInfo;
+	
+	public RecordWithDefaultParentInfo() {
+	}
 	
 	public static RecordWithDefaultParentInfo init(EtlDatabaseObject srcObject, EtlDatabaseObject dstObject,
 	        EtlDatabaseObject parentInOrigin, ParentTable parentRefInfo, Connection conn) throws DBException {
@@ -55,6 +58,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		rec.setFieldValue("parent_field", parentRefInfo.getChildColumnOnSimpleMapping());
 		rec.setFieldValue("src_parent_id", parentInOrigin.getObjectId().asSimpleNumericValue());
 		rec.setFieldValue("inconsistent_parent", -1);
+		rec.setFieldValue("status", "PENDING");
 		
 		return rec;
 		
@@ -125,11 +129,11 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		}
 		
 		if (this.srcRelatedObject == null) {
-			throw new EtlExceptionImpl("The SrcRelatedObject is not anymore on database: " + this);
+			throw new RecordNotFoundException(relatedSrcConf, this.getSrcRecId());
 		}
 		
 		if (this.dstRelatedObject == null) {
-			throw new EtlExceptionImpl("The DstRelatedObject is not anymore on database: " + this);
+			throw new RecordNotFoundException(dstConf, this.getDstRecId());
 		}
 		
 		this.parentRecordInOrigin = DatabaseObjectDAO.getByOid(this.parentRefInfo,
@@ -165,14 +169,17 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		sql += " from   " + tabConf.generateSelectFromClauseContent();
 		sql += " where  src_rec_id = ? ";
 		sql += "		and src_table_name = ?";
+		sql += "		and status = ?";
 		
-		Object[] params = { srcRecId, srcTable.getTableName() };
+		Object[] params = { srcRecId, srcTable.getTableName(), "PENDING" };
 		
 		return DatabaseObjectDAO.search(tabConf.getLoadHealper(), RecordWithDefaultParentInfo.class, sql, params, srcConn);
 	}
 	
 	public void setAsInconsistent(Connection conn) throws DBException {
 		this.setFieldValue("inconsistent_parent", 1);
+		this.setFieldValue("status", "ERR");
+		this.setFieldValue("last_err", "INCONSISTENT");
 		
 		this.update((TableConfiguration) this.getRelatedConfiguration(), conn);
 	}

@@ -18,6 +18,7 @@ import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
 import org.openmrs.module.epts.etl.inconsistenceresolver.model.InconsistenceInfo;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -111,7 +112,20 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				recWithDefaultParentInfo.setDstRelatedObject(dstObject);
 			}
 			
-			recWithDefaultParentInfo.fullLoad(this.getRelatedEtlItemConfiguration(), srcConn, dstConn);
+			try {
+				recWithDefaultParentInfo.fullLoad(this.getRelatedEtlItemConfiguration(), srcConn, dstConn);
+			}
+			catch (RecordNotFoundException e) {
+				logWarn("A issue happened while processing record with default values: " + e.getLocalizedMessage());
+				
+				recWithDefaultParentInfo.setFieldValue("status", "ERR");
+				recWithDefaultParentInfo.setFieldValue("last_err", e.getLocalizedMessage());
+				
+				recWithDefaultParentInfo.save((TableConfiguration) recWithDefaultParentInfo.getRelatedConfiguration(),
+				    dstConn);
+				
+				continue;
+			}
 			
 			srcObject = recWithDefaultParentInfo.getSrcRelatedObject();
 			dstObject = recWithDefaultParentInfo.getDstRelatedObject();

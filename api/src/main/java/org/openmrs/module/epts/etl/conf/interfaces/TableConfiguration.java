@@ -613,7 +613,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		sql += this.getTableAlias() + "." + this.getPrimaryKey().retrieveSimpleKeyColumnName();
 		sql += " in  (	select src_rec_id \n";
 		sql += "		from " + recWithDefaultParents.getFullTableName() + "\n";
-		sql += " 		where src_table_name = '" + this.getTableName() + "')";
+		sql += " 		where src_table_name = '" + this.getTableName() +"' \n";
+		sql += " 			  and status 	 = 'PENDING')";
 		
 		return sql;
 	}

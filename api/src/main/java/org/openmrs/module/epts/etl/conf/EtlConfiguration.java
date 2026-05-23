@@ -2106,7 +2106,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		sql += DBUtilities.generateTableVarcharField("parent_field", 50, notNullConstraint, conn) + endLineMarker;
 		sql += DBUtilities.generateTableBigIntField("src_parent_id", notNullConstraint, conn) + endLineMarker;
 		sql += DBUtilities.generateTableNumericField("inconsistent_parent", 1, notNullConstraint, -1, conn) + endLineMarker;
+		sql += DBUtilities.generateTableVarcharField("status", 50, notNullConstraint, "PENDING", conn) + endLineMarker;
+		sql += DBUtilities.generateTableVarcharField("last_err", 500, "NULL", conn) + endLineMarker;
 		sql += DBUtilities.generateTableDateTimeFieldWithDefaultValue("creation_date", conn) + endLineMarker;
+		String checkCondition = "status IN ('PENDING', 'ERR')";
+		String keyName = "CHK_" + tableName + "_STATUS".toUpperCase();
+		
+		sql += DBUtilities.generateTableCheckConstraintDefinition(keyName, checkCondition, conn) + endLineMarker;
 		
 		sql += DBUtilities.generateTableUniqueKeyDefinition(tableName + "_unq_record_key".toLowerCase(),
 		    "src_rec_id, parent_table, parent_field", conn) + endLineMarker;
