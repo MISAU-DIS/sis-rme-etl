@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -139,7 +140,7 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 					        this.type + " override type requires a non-null value for path: " + this.path);
 				}
 				
-				Object newValue = prepareValue(templateInfo, targetField.getType());
+				Object newValue = prepareValue(templateInfo, targetField);
 				
 				targetField.set(parentObject, newValue);
 				
@@ -158,14 +159,36 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 	
 	private Object prepareValue(EtlTemplateInfo templateInfo, Class<?> type) throws IOException {
 		
-		if (this.value != null) {
-			
-			String json = EtlDataConfiguration.resolvePlaceholders(this.value.toString(), null, null, null,
-			    templateInfo.getAllAvailableParameters());
-			
-			return new ObjectMapperProvider().getContext(type).readValue(json, type);
-		} else
+		if (this.value == null || this.value.isNull()) {
 			return null;
+		}
+		
+		String json = EtlDataConfiguration.resolvePlaceholders(this.value.toString(), null, null, null,
+		    templateInfo.getAllAvailableParameters());
+		
+		return new ObjectMapperProvider().getContext(type).readValue(json, type);
+	}
+	
+	private Object prepareValue(EtlTemplateInfo templateInfo, Field targetField) throws IOException {
+		
+		if (this.value == null || this.value.isNull()) {
+			return null;
+		}
+		
+		String json = EtlDataConfiguration.resolvePlaceholders(this.value.toString(), null, null, null,
+		    templateInfo.getAllAvailableParameters());
+		
+		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
+		
+		if (List.class.isAssignableFrom(targetField.getType())) {
+			Class<?> itemType = resolveListItemType(targetField);
+			
+			JavaType listType = mapper.getTypeFactory().constructCollectionType(List.class, itemType);
+			
+			return mapper.readValue(json, listType);
+		}
+		
+		return mapper.readValue(json, targetField.getType());
 	}
 	
 	private int findMatchingElementIndex(List<?> list, JsonNode matchNode) {
