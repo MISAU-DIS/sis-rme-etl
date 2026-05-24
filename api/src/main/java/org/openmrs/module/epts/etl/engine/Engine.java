@@ -272,6 +272,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 	
 	@Override
+	public void changeStatusToStopping() {
+		MonitoredOperation.super.changeStatusToRunning();
+		
+		updateProgressInfo(EtlOperationStatus.STATUS_STOPPING);
+	}
+	
+	@Override
 	public void changeStatusToStopped() {
 		MonitoredOperation.super.changeStatusToPaused();
 		
@@ -393,7 +400,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				this.getSearchParams().setThreadRecordIntervalsManager(t);
 				
 				changeStatusToRunning();
-					
+				
 				calculateStatistics();
 				
 				doFirstSaveAllLimits();
@@ -949,6 +956,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		
 		synchronized (LOCK) {
 			this.stopRequested = true;
+			
+			changeStatusToStopping();
 		}
 	}
 	
