@@ -2,6 +2,8 @@ package org.openmrs.module.epts.etl.engine;
 
 import java.util.Date;
 
+import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
@@ -532,5 +534,30 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	
 	String formatPercentage(double percentage) {
 		return utilities.getNumberInXPrecision(percentage, 2);
+	}
+	
+	public void changeStatus(EtlOperationStatus status) {
+		
+		switch (status) {
+			case STATUS_RUNNING:
+				changeStatusToRunning();
+				break;
+			case STATUS_STOPPED:
+				changeStatusToStopped();
+				break;
+			case STATUS_FINISHED:
+				changeStatusToFinished();
+				break;
+			case STATUS_SLEEPING:
+				changeStatusToSleeping();
+				break;
+			case STATUS_STOPPED_DUE_ERROR:
+				changeStatusToStopped();
+				break;
+			
+			default:
+				throw new EtlExceptionImpl("Unsupported status " + status);
+		}
+		
 	}
 }

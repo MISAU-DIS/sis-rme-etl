@@ -293,7 +293,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 	
 	private void updateProgressInfo(EtlOperationStatus status) {
-		this.getTableOperationProgressInfo().setFieldValue("status", status.getDsc());
+		this.getTableOperationProgressInfo().getProgressMeter().changeStatus(status);
 		
 		OpenConnection conn = null;
 		
@@ -393,22 +393,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				this.getSearchParams().setThreadRecordIntervalsManager(t);
 				
 				changeStatusToRunning();
-				
-				OpenConnection conn = null;
-				
-				try {
-					conn = openSrcConn(this);
 					
-					if (getRelatedOperationController().isResumable()) {
-						this.getTableOperationProgressInfo().save(conn);
-						
-						conn.markAsSuccessifullyTerminated();
-					}
-				}
-				finally {
-					finalizeConnection(conn, this);
-				}
-				
 				calculateStatistics();
 				
 				doFirstSaveAllLimits();

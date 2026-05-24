@@ -355,8 +355,11 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	public void requestStop() {
 		
 		if (stopRequested()) {
+			logWarn("Stop Already requested!!!");
 			return;
 		}
+		
+		logWarn("Requesting Stop");
 		
 		synchronized (LOCK) {
 			if (stopRequested()) {
@@ -369,8 +372,13 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			        + DateAndTimeUtilities.formatToMilissegundos(DateAndTimeUtilities.getCurrentDate()) + "\"}");
 			
 			if (isNotInitialized()) {
+				logWarn("Process not initialized, the stopping now!");
+				
 				changeStatusToStopped();
 			} else if (utilities.listHasElement(this.operationsControllers)) {
+				
+				logWarn("Requesting stop of Operation Controllers...");
+				
 				for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
 					if (!controller.stopRequested()) {
 						controller.requestStop();
