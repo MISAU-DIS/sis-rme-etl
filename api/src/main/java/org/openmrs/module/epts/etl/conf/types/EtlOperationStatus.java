@@ -9,7 +9,8 @@ public enum EtlOperationStatus {
 	STATUS_SLEEPING(4),
 	STATUS_FINISHING(5),
 	STATUS_FINISHED(6),
-	STATUS_STOPPED_DUE_ERROR(7);
+	STATUS_STOPPED_DUE_ERROR(7),
+	STATUS_STOPPING(8);
 	
 	int status;
 	
@@ -35,6 +36,10 @@ public enum EtlOperationStatus {
 	
 	public boolean stopped() {
 		return this.equals(STATUS_STOPPED);
+	}
+	
+	public boolean stopping() {
+		return this.equals(STATUS_STOPPING);
 	}
 	
 	public boolean slepping() {

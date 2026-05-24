@@ -40,6 +40,10 @@ public interface MonitoredOperation extends Runnable {
 		return this.getOperationStatus().stopped();
 	}
 	
+	default boolean isStopping() {
+		return this.getOperationStatus().stopping();
+	}
+	
 	default boolean isFinished() {
 		return this.getOperationStatus().finished();
 	}
@@ -58,6 +62,10 @@ public interface MonitoredOperation extends Runnable {
 	
 	default void changeStatusToStopped() {
 		this.setOperationStatus(EtlOperationStatus.STATUS_STOPPED);
+	}
+	
+	default void changeStatusToStopping() {
+		this.setOperationStatus(EtlOperationStatus.STATUS_STOPPING);
 	}
 	
 	default void changeStatusToFinished() {

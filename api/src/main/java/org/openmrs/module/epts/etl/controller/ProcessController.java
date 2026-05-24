@@ -354,7 +354,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	@Override
 	public void requestStop() {
 		
-		if (stopRequested()) {
+		if (isStopping()) {
 			logWarn("Stop Already requested!!!");
 			return;
 		}
@@ -362,9 +362,11 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		logWarn("Requesting Stop");
 		
 		synchronized (LOCK) {
-			if (stopRequested()) {
+			if (isStopping()) {
 				return;
 			}
+			
+			changeStatusToStopping();
 			
 			String fileName = generateStopRequestFile().getAbsolutePath();
 			
@@ -449,7 +451,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 					running = false;
 					
 					this.onStop();
-				} else if (stopRequested()) {
+				} else if (stopRequested() && !isStopping() ) {
 					requestStop();
 				}
 			}
