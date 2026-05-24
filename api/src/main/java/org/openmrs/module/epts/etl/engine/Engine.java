@@ -248,6 +248,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return this.getEtlItemConfiguration().getConfigCode();
 	}
 	
+	public String getEtlConfigDsc() {
+		return this.getEtlItemConfiguration().getConfigDsc();
+	}
+	
 	public EtlProgressMeter getProgressMeter() {
 		return this.tableOperationProgressInfo != null ? this.tableOperationProgressInfo.getProgressMeter() : null;
 	}
@@ -323,7 +327,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	public void run() {
 		try {
 			
-			logInfo("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase() + "]");
+			logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase() + "]");
 			
 			long minRecId = tableOperationProgressInfo.getProgressMeter().getMinRecordId();
 			
@@ -852,7 +856,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		OpenConnection conn = getController().openSrcConnection(this);
 		
 		try {
-			logInfo("CALCULATING STATISTICS! Using '"
+			logWarn("CALCULATING STATISTICS! Using '"
 			        + this.getRelatedEtlOperationConfig().getTotalCountStrategy().toString() + "' strategy...");
 			
 			int remaining = getProgressMeter().getRemain();
@@ -1163,8 +1167,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        ? this.getThreadRecordIntervalsManager().getMaxSupportedProcessors()
 		        : 1;
 		
-		log += this.getEtlConfigCode().toUpperCase() + "\n\nPROGRESS (" + getEtlConfigCode().toUpperCase()
-		        + "):\n------------------\n";
+		log += "PROGRESS (" + getEtlConfigDsc().toUpperCase() + "):\n";
+		
+		log += "--------------------------------------------------------------------------\n";
 		
 		long diff = globalProgressMeter.getTotalToAnalyze() - globalProgressMeter.getTotal();
 		
@@ -1181,10 +1186,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		log += "PROCESSED: " + globalProgressMeter.getDetailedProgress() + ", ";
 		log += "REMAINING: " + globalProgressMeter.getDetailedRemaining() + ",";
 		log += "\nTIME                 : " + utilities.ident(globalProgressMeter.getHumanReadbleTime(), 12);
-		log += "\nUSING THREADS: " + qtyThreads;
-		log += "\n------------------";
+		log += "\nUSING THREADS: " + qtyThreads + "\n";
+		log += "--------------------------------------------------------------------------\n";
 		
-		this.logInfo(log);
+		this.logWarn(log);
 	}
 	
 	public synchronized void requestDisplayOfEtlResult(DstConf dstConf, List<EtlDatabaseObject> resultObjs) {

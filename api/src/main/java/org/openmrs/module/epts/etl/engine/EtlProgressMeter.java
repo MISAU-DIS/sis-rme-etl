@@ -38,6 +38,8 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	
 	public static final String STATUS_FINISHED = "FINISHED";
 	
+	public static final String STATUS_STOPPING = "STOPPING";
+	
 	private String id;
 	
 	private String designation;
@@ -342,6 +344,11 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		this.getTimer().start();
 	}
 	
+	public void changeStatusToStopping() {
+		this.status = EtlProgressMeter.STATUS_STOPPED;
+		this.statusMsg = EtlProgressMeter.STATUS_STOPPED;
+	}
+	
 	public void changeStatusToStopped() {
 		this.status = EtlProgressMeter.STATUS_STOPPED;
 		this.statusMsg = EtlProgressMeter.STATUS_STOPPED;
@@ -552,6 +559,10 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 				changeStatusToSleeping();
 				break;
 			case STATUS_STOPPED_DUE_ERROR:
+				changeStatusToStopped();
+				break;
+			
+			case STATUS_STOPPING:
 				changeStatusToStopped();
 				break;
 			

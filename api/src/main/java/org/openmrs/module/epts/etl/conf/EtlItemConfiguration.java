@@ -596,6 +596,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 		return utilities.stringHasValue(configCode) ? configCode : this.srcConf.getTableName();
 	}
 	
+	public String getConfigDsc() {
+		String dsc = this.srcConf.getTableAlias();
+		
+		return dsc + this.getConfigCode().substring((this.getConfigCode().split(this.getSrcConf().getName())[0]).length());
+	}
+	
 	public void setConfigCode(String configCode) {
 		this.configCode = configCode;
 	}
