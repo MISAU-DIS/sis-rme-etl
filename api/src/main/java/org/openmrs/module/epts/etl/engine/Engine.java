@@ -327,7 +327,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	public void run() {
 		try {
 			
-			logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase() + "]");
+			logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigDsc().toUpperCase() + "]");
 			
 			long minRecId = tableOperationProgressInfo.getProgressMeter().getMinRecordId();
 			
