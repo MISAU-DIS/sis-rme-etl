@@ -449,7 +449,10 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	public boolean operationTableIsAlreadyFinished(EtlItemConfiguration etlConfig) {
 		try {
-			TableOperationProgressInfo tableOpPm = retrieveProgressInfo(etlConfig);
+			
+			etlConfig.stepIntoBreakpoint(getEtlConfiguration(), this.getControllerId().startsWith("db_") && this.getControllerId().contains("clinica"));
+			
+			TableOperationProgressInfo tableOpPm = this.retrieveProgressInfo(etlConfig);
 			
 			if (tableOpPm == null) {
 				logWarn("No Table Operation Info found for [" + etlConfig.getConfigCode() + "]");

@@ -113,6 +113,10 @@ public interface GenericEtlTransformTarget {
 			value = field;
 		}
 		
+		if (value == null) {
+			value = "null";
+		}
+		
 		String actual = value.toString();
 		
 		switch (operator) {

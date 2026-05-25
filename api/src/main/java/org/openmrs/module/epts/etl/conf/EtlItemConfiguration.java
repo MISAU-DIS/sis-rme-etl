@@ -599,7 +599,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 	public String getConfigDsc() {
 		String dsc = this.srcConf.getTableAlias();
 		
-		return dsc + this.getConfigCode().substring((this.getConfigCode().split(this.getSrcConf().getName())[0]).length());
+		int srcTableLength = this.getSrcConf().getTableName().length();
+		
+		return dsc + this.getConfigCode().substring(srcTableLength);
 	}
 	
 	public void setConfigCode(String configCode) {
