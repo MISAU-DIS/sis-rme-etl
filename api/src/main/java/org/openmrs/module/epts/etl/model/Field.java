@@ -430,7 +430,7 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 		if (isDateField()) {
 			setValue(DEFAULT_DATE_VALUE);
 		} else if (isNumericColumnType()) {
-			setValue(DEFAULT_INT_VALUE);
+			setValue(DEFAULT_INT_VALUE+1);
 		} else if (isBooleanColumnType()) {
 			setValue(DEFAULT_BOOLEAN_VALUE);
 		} else {
