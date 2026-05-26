@@ -110,6 +110,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		this.onMultipleDataSourceWithSameName = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
 		this.useAsDataSource = false;
 		this.ignoreNoDstIssue = false;
+		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
 	}
 	
 	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {
@@ -577,7 +578,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			super.fullLoad(conn);
 		} else {
 			try {
-				this.currThreadStartId = DEFAULT_NEXT_TREAD_ID;
+				this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
 				
 				this.setFieldsLoaded(true);
 				
@@ -887,24 +888,32 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		
 	}
 	
+	private void setCurrThreadStartId(int currThreadStartId) {
+		this.currThreadStartId = currThreadStartId;
+	}
+	
+	private int getCurrThreadStartId() {
+		return currThreadStartId;
+	}
+	
 	public long determineNextStartId(IdGeneratorManager idGeneratorMgt, Connection conn)
 	        throws DBException, ForbiddenOperationException {
 		synchronized (stringLock) {
-			if (this.currThreadStartId == DEFAULT_NEXT_TREAD_ID) {
-				this.currThreadStartId = DatabaseObjectDAO.getLastRecord(this, conn);
+			if (this.getCurrThreadStartId() == DEFAULT_NEXT_TREAD_ID) {
+				this.setCurrThreadStartId(DatabaseObjectDAO.getLastRecord(this, conn));
 				
 				//This mean that the table is empty so let try to add the increase 
-				if (this.currThreadStartId == 0) {
-					this.currThreadStartId += this.getPrimaryKeyInitialIncrementValue() - 1;
+				if (this.getCurrThreadStartId() == 0) {
+					this.setCurrThreadStartId(this.getCurrThreadStartId() + this.getPrimaryKeyInitialIncrementValue() - 1);
 				}
 				
-				this.currThreadStartId = this.currThreadStartId + 1;
+				this.setCurrThreadStartId(this.getCurrThreadStartId() + 1);
 			}
 			
-			this.currThreadStartId += this.currQtyRecords;
+			this.setCurrThreadStartId(this.getCurrThreadStartId() + this.currQtyRecords);
 			this.currQtyRecords = idGeneratorMgt.getEtlObjects().size();
 			
-			return this.currThreadStartId;
+			return this.getCurrThreadStartId();
 		}
 	}
 	

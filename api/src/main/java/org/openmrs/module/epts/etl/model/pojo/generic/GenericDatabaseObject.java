@@ -232,10 +232,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 					field.setValue(retrieveFieldValue(field.getName(), field.getDataType(), rs));
 				}
 			}
-			catch (SQLException e) {
-				//Ignore exception on field retrieval
-				e.printStackTrace();
-			}
+			catch (SQLException e) {}
 			
 			try {
 				super.setFieldValue(field.getNameAsClassAtt(), field.getValue());
