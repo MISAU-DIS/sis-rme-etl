@@ -284,7 +284,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	
 	@Override
 	public void changeStatusToStopped() {
-		MonitoredOperation.super.changeStatusToPaused();
+		MonitoredOperation.super.changeStatusToStopped();
 		
 		updateProgressInfo(EtlOperationStatus.STATUS_STOPPED);
 	}
