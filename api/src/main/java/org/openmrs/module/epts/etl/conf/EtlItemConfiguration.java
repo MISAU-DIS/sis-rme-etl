@@ -869,9 +869,23 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 		return ds;
 	}
 	
+	public boolean ignoreNoDstIssue() {
+		return hasAllDstConfDisabled() || allDstConfIgnoreNoDstIssue();
+	}
+	
 	public boolean hasAllDstConfDisabled() {
 		for (DstConf dstConf : this.getDstConf()) {
 			if (!dstConf.isDisabled()) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	public boolean allDstConfIgnoreNoDstIssue() {
+		for (DstConf dstConf : this.getDstConf()) {
+			if (!dstConf.ignoreNoDstIssue()) {
 				return false;
 			}
 		}

@@ -69,6 +69,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	        EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 	        throws DBException {
 		
+		stepIntoBreakpoint(getRelatedEtlConf(), etlItemConf.getSrcConf().getTableName().equals("obs"));
+		
 		for (EtlDatabaseObject record : etlObjects) {
 			EtlDatabaseObject srcRecord = (EtlDatabaseObject) record;
 			srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
@@ -119,7 +121,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		
 		EtlLoadHelper loadHelper = null;
 		
-		loadHelper = new EtlLoadHelper(this, etlObjects, loadingType, etlItemConf.hasAllDstConfDisabled());
+		loadHelper = new EtlLoadHelper(this, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
 		
 		if (loadHelper.hasDstConf()) {
 			loadHelper.load(srcConn, dstConn);

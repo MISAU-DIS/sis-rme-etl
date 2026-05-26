@@ -103,10 +103,25 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	private Boolean fieldsMappingAlredyGenerated;
 	
+	private Boolean ignoreNoDstIssue;
+	
 	public DstConf() {
 		this.onMultipleDataSourceForSameMapping = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
 		this.onMultipleDataSourceWithSameName = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
 		this.useAsDataSource = false;
+		this.ignoreNoDstIssue = false;
+	}
+	
+	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {
+		this.ignoreNoDstIssue = ignoreNoDstIssue;
+	}
+	
+	public Boolean getIgnoreNoDstIssue() {
+		return ignoreNoDstIssue;
+	}
+	
+	public Boolean ignoreNoDstIssue() {
+		return isTrue(ignoreNoDstIssue);
 	}
 	
 	public Boolean getUseAsDataSource() {
