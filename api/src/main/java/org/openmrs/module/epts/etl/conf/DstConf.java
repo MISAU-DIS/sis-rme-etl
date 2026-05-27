@@ -110,7 +110,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		this.onMultipleDataSourceWithSameName = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
 		this.useAsDataSource = false;
 		this.ignoreNoDstIssue = false;
-		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
 	}
 	
 	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {
@@ -667,6 +666,8 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
+		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
+		
 		loadJoinFields(conn);
 		
 		loadDataSourceInfo(conn);
