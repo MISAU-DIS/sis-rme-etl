@@ -248,10 +248,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return this.getEtlItemConfiguration().getConfigCode();
 	}
 	
-	public String getEtlConfigDsc() {
-		return this.getEtlItemConfiguration().getConfigDsc();
-	}
-	
 	public EtlProgressMeter getProgressMeter() {
 		return this.tableOperationProgressInfo != null ? this.tableOperationProgressInfo.getProgressMeter() : null;
 	}
@@ -327,7 +323,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	public void run() {
 		try {
 			
-			logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigDsc().toUpperCase() + "]");
+			logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase() + "]");
 			
 			long minRecId = tableOperationProgressInfo.getProgressMeter().getMinRecordId();
 			
@@ -1167,7 +1163,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        ? this.getThreadRecordIntervalsManager().getMaxSupportedProcessors()
 		        : 1;
 		
-		log += "PROGRESS (" + getEtlConfigDsc().toUpperCase() + "):\n";
+		log += "PROGRESS (" + getEtlConfigCode().toUpperCase() + "):\n";
 		
 		log += "--------------------------------------------------------------------------\n";
 		

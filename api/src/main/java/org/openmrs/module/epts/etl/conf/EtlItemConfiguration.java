@@ -310,9 +310,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 			}
 		}
 		
-		code = utilities.stringHasValue(code) ? code : this.getSrcConf().getTableName();
+		code = utilities.stringHasValue(code) ? code : this.getSrcConf().getTableAlias();
 		
-		code = this.getSrcConf().getTableName() + "_to_" + code;
+		code = this.getSrcConf().getTableAlias() + "_to_" + code;
 		
 		this.setShortCode(code);
 		
@@ -594,14 +594,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 	
 	public String getConfigCode() {
 		return utilities.stringHasValue(configCode) ? configCode : this.srcConf.getTableName();
-	}
-	
-	public String getConfigDsc() {
-		String dsc = this.srcConf.getTableAlias();
-		
-		int srcTableLength = this.getSrcConf().getTableName().length();
-		
-		return dsc + this.getConfigCode().substring(srcTableLength);
 	}
 	
 	public void setConfigCode(String configCode) {
