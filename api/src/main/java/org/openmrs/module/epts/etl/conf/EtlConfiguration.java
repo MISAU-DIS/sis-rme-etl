@@ -1032,7 +1032,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 	
 	private String generateExecutedScriptPath(EtlSide etlSide, File script) {
-		return this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide + ""
+		return this.getEtlRootDirectory() + "/process_status/executed-startup-scripts/" + etlSide + "_"
 		        + FileUtilities.generateFileName(script);
 	}
 	
