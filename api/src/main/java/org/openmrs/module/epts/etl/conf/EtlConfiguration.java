@@ -193,6 +193,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	public Boolean ensureEtlStageTablesExist;
 	
+	public Boolean disableDefaultObjectCreation;
+	
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 		
@@ -209,6 +211,19 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.defaultExceptionBehavior = ActionOnEtlException.ABORT_PROCESS;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 		this.defaultInconsistencyBehavior = EtlInconsistencyBehavior.ABORT_PROCESS;
+		this.disableDefaultObjectCreation = false;
+	}
+	
+	public Boolean getDisableDefaultObjectCreation() {
+		return disableDefaultObjectCreation;
+	}
+	
+	public void setDisableDefaultObjectCreation(Boolean disableDefaultObjectCreation) {
+		this.disableDefaultObjectCreation = disableDefaultObjectCreation;
+	}
+	
+	public Boolean disableDefaultObjectCreation() {
+		return isTrue(getDisableDefaultObjectCreation());
 	}
 	
 	public Boolean getEnsureEtlStageTablesExist() {
@@ -2228,6 +2243,26 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	@Override
 	public List<String> getDynamicElements() {
+		return null;
+	}
+	
+	public DstConf tryToFindDstWithInitialIncrementValue(TableConfiguration dstTable) throws DBException {
+		for (EtlItemConfiguration conf : getRelatedEtlConf().getEtlItemConfiguration()) {
+			
+			if (conf.containsDstTable(dstTable.getTableName())) {
+				
+				for (DstConf dst : conf.getDstConf()) {
+					if (dst.getTableName().equals(dstTable.getTableName())) {
+						
+						if (dst.getPrimaryKeyInitialIncrementValue() != null) {
+							return dst;
+						}
+						
+					}
+				}
+			}
+		}
+		
 		return null;
 	}
 	

@@ -514,23 +514,36 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 	
 	@SuppressWarnings("deprecation")
-	default EtlDatabaseObject generateAndSaveDefaultObject(Connection srcConn, Connection dstConf) throws DBException {
+	default EtlDatabaseObject generateAndSaveDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
 		
 		synchronized (this) {
 			
 			try {
-				EtlDatabaseObject defaultObject = this.getDefaultObject(dstConf);
+				
+				TableConfiguration dst = this.getRelatedEtlConf().tryToFindDstWithInitialIncrementValue(this);
+				
+				if (dst == null) {
+					dst = this;
+				}
+				
+				EtlDatabaseObject defaultObject = dst.getDefaultObject(dstConn);
 				
 				if (defaultObject != null) {
 					return defaultObject;
 				} else {
-					defaultObject = this.getSyncRecordClass().newInstance();
-					defaultObject.setRelatedConfiguration(this);
+					defaultObject = dst.getSyncRecordClass().newInstance();
+					defaultObject.setRelatedConfiguration(dst);
 					
-					defaultObject.loadWithDefaultValues(srcConn, dstConf);
+					defaultObject.loadWithDefaultValues(srcConn, dstConn);
+					
+
+					if (dst.useManualGeneratedObjectId() && !dst.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
+						defaultObject.loadObjectIdData();
+						defaultObject.getObjectId().asSimpleKey().setValue(dst.getPrimaryKeyInitialIncrementValue());
+					}
 					
 					try {
-						defaultObject.save(this, dstConf);
+						defaultObject.save(dst, dstConn);
 					}
 					catch (DBException e) {
 						if (!e.isDuplicatePrimaryOrUniqueKeyException()) {
@@ -538,7 +551,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						}
 					}
 					
-					defaultObject = this.getDefaultObject(dstConf);
+					defaultObject = dst.getDefaultObject(dstConn);
 					
 					EtlConfigurationTableConf defaultGeneratedObjectKeyTabConf = this.getRelatedEtlConf()
 					        .getDefaultGeneratedObjectKeyTabConf();
@@ -613,7 +626,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		sql += this.getTableAlias() + "." + this.getPrimaryKey().retrieveSimpleKeyColumnName();
 		sql += " in  (	select src_rec_id \n";
 		sql += "		from " + recWithDefaultParents.getFullTableName() + "\n";
-		sql += " 		where src_table_name = '" + this.getTableName() +"' \n";
+		sql += " 		where src_table_name = '" + this.getTableName() + "' \n";
 		sql += " 			  and status 	 = 'PENDING')";
 		
 		return sql;
