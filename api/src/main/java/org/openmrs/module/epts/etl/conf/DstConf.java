@@ -109,7 +109,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		this.onMultipleDataSourceForSameMapping = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
 		this.onMultipleDataSourceWithSameName = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
 		this.useAsDataSource = false;
-		this.ignoreNoDstIssue = false;
 	}
 	
 	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {
