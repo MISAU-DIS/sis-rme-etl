@@ -52,8 +52,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	private TimeController timer;
-	
 	private boolean progressInfoLoaded;
 	
 	private ProcessStarter starter;
@@ -137,7 +135,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		
 		this.controllerId = configuration.generateProcessId();
 		
-		this.operationStatus = EtlOperationStatus.STATUS_NOT_INITIALIZED;
+		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 		
 		this.operationsControllers = new ArrayList<>();
 		
@@ -241,8 +239,18 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	@Override
 	@JsonIgnore
-	public TimeController getTimer() {
-		return this.timer;
+	public TimeController getTotalTimer() {
+		return null;
+	}
+	
+	@Override
+	public TimeController getPauseTimer() {
+		return null;
+	}
+	
+	@Override
+	public TimeController getProcessingTimer() {
+		return null;
 	}
 	
 	@Override
@@ -299,7 +307,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			return true;
 		}
 		
-		return this.operationStatus == EtlOperationStatus.STATUS_STOPPED;
+		return this.operationStatus == EtlOperationStatus.STOPPED;
 	}
 	
 	@Override
@@ -348,7 +356,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			return true;
 		}
 		
-		return this.operationStatus == EtlOperationStatus.STATUS_FINISHED;
+		return this.operationStatus == EtlOperationStatus.FINISHED;
 	}
 	
 	@Override
@@ -392,9 +400,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	@Override
 	public void run() {
-		this.timer = new TimeController();
-		this.timer.start();
-		
 		tryToRemoveOldStopRequested();
 		
 		if (stopRequested()) {
@@ -451,7 +456,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 					running = false;
 					
 					this.onStop();
-				} else if (stopRequested() && !isStopping() ) {
+				} else if (stopRequested() && !isStopping()) {
 					requestStop();
 				}
 			}

@@ -58,7 +58,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		this.limits = limits;
 		this.runningInConcurrency = runningInConcurrency;
 		this.taskResultInfo = new EtlOperationResultHeader<>(limits);
-		this.operationStatus = EtlOperationStatus.STATUS_NOT_INITIALIZED;
+		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 	}
 	
 	@Override
@@ -314,7 +314,17 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 	
 	@Override
-	public TimeController getTimer() {
+	public TimeController getTotalTimer() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public TimeController getPauseTimer() {
+		throw new ForbiddenOperationException("Unimplemented method!");
+	}
+	
+	@Override
+	public TimeController getProcessingTimer() {
 		throw new ForbiddenOperationException("Unimplemented method!");
 	}
 	

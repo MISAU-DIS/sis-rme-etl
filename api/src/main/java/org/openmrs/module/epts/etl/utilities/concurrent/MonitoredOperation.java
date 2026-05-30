@@ -14,7 +14,11 @@ public interface MonitoredOperation extends Runnable {
 	
 	static final CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	TimeController getTimer();
+	TimeController getTotalTimer();
+	
+	TimeController getPauseTimer();
+	
+	TimeController getProcessingTimer();
 	
 	EtlOperationStatus getOperationStatus();
 	
@@ -57,27 +61,27 @@ public interface MonitoredOperation extends Runnable {
 	}
 	
 	default void changeStatusToRunning() {
-		this.setOperationStatus(EtlOperationStatus.STATUS_RUNNING);
+		this.setOperationStatus(EtlOperationStatus.RUNNING);
 	}
 	
 	default void changeStatusToStopped() {
-		this.setOperationStatus(EtlOperationStatus.STATUS_STOPPED);
+		this.setOperationStatus(EtlOperationStatus.STOPPED);
 	}
 	
 	default void changeStatusToStopping() {
-		this.setOperationStatus(EtlOperationStatus.STATUS_STOPPING);
+		this.setOperationStatus(EtlOperationStatus.STOPPING);
 	}
 	
 	default void changeStatusToFinished() {
-		this.setOperationStatus(EtlOperationStatus.STATUS_FINISHED);
+		this.setOperationStatus(EtlOperationStatus.FINISHED);
 	}
 	
 	default void changeStatusToPaused() {
-		this.setOperationStatus(EtlOperationStatus.STATUS_PAUSED);
+		this.setOperationStatus(EtlOperationStatus.PAUSED);
 	}
 	
 	default void changeStatusToSleeping() {
-		this.setOperationStatus(EtlOperationStatus.STATUS_SLEEPING);
+		this.setOperationStatus(EtlOperationStatus.SLEEPING);
 	}
 	
 	default void onStart() {

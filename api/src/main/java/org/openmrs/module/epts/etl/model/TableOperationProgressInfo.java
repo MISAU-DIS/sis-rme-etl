@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.util.Date;
 
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.SiteOperationController;
 import org.openmrs.module.epts.etl.engine.EtlProgressMeter;
@@ -46,13 +47,19 @@ public class TableOperationProgressInfo extends BaseVO {
 		int minRecordId = resultSet.getInt("min_record_id");
 		int maxRecordId = resultSet.getInt("max_record_id");
 		int total = resultSet.getInt("total_records");
-		String status = resultSet.getString("status");
-		int processed = resultSet.getInt("total_processed_records");
-		Date startTime = resultSet.getTimestamp("started_at");
-		Date lastRefreshAt = resultSet.getTimestamp("last_refresh_at");
+		double processing_time = resultSet.getInt("processing_time");
+		double pause_time = resultSet.getInt("pause_time");
+		EtlOperationStatus status = EtlOperationStatus.valueOf(resultSet.getString("status"));
 		
-		this.progressMeter = EtlProgressMeter.fullInit(status, startTime, lastRefreshAt, minRecordId, maxRecordId, total,
-		    processed);
+		int processed = resultSet.getInt("total_processed_records");
+		
+		Date startTime = resultSet.getTimestamp("started_at");
+		Date stopTime = null;
+		
+		stopTime = resultSet.getTimestamp("last_refresh_at");
+		
+		this.progressMeter = EtlProgressMeter.fullInit(status, startTime, stopTime, processing_time, pause_time, minRecordId,
+		    maxRecordId, total, processed);
 	}
 	
 	public TableOperationProgressInfo(OperationController<? extends EtlDatabaseObject> controller,
@@ -156,7 +163,6 @@ public class TableOperationProgressInfo extends BaseVO {
 		try {
 			TableOperationProgressInfo top = TableOperationProgressInfo
 			        .loadFromJSON(new String(Files.readAllBytes(file.toPath())));
-			top.getProgressMeter().retrieveTimer();
 			
 			return top;
 		}

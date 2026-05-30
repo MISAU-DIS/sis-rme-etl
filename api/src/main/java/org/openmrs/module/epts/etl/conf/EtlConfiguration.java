@@ -2065,6 +2065,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		sql += DBUtilities.generateTableVarcharField("record_origin_location_code", 100, "NOT NULL", conn) + ",\n";
 		sql += DBUtilities.generateTableDateTimeField("started_at", "NOT NULL", conn) + ",\n";
 		sql += DBUtilities.generateTableDateTimeField("last_refresh_at", "NOT NULL", conn) + ",\n";
+		sql += DBUtilities.generateTableDecimalField("processing_time", 20, 0, "NOT NULL", conn) + ",\n";
+		sql += DBUtilities.generateTableDecimalField("pause_time", 20, 0, "NOT NULL", conn) + ",\n";
 		sql += DBUtilities.generateTableIntegerField("min_record_id", 11, "NOT NULL", conn) + ",\n";
 		sql += DBUtilities.generateTableIntegerField("max_record_id", 11, "NOT NULL", conn) + ",\n";
 		sql += DBUtilities.generateTableIntegerField("total_records", 11, "NOT NULL", conn) + ",\n";

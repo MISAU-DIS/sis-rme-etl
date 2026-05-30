@@ -84,7 +84,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		
 		this.engineId = (this.getRelatedEtlOperationConfig().getOperationType() + "_" + getEtlConfigCode()).toLowerCase();
 		
-		this.operationStatus = EtlOperationStatus.STATUS_NOT_INITIALIZED;
+		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 		this.tableOperationProgressInfo = tableOperationProgressInfo;
 		
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
@@ -268,35 +268,35 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	public void changeStatusToRunning() {
 		MonitoredOperation.super.changeStatusToRunning();
 		
-		updateProgressInfo(EtlOperationStatus.STATUS_RUNNING);
+		updateProgressInfo(EtlOperationStatus.RUNNING);
 	}
 	
 	@Override
 	public void changeStatusToStopping() {
 		MonitoredOperation.super.changeStatusToRunning();
 		
-		updateProgressInfo(EtlOperationStatus.STATUS_STOPPING);
+		updateProgressInfo(EtlOperationStatus.STOPPING);
 	}
 	
 	@Override
 	public void changeStatusToStopped() {
 		MonitoredOperation.super.changeStatusToStopped();
 		
-		updateProgressInfo(EtlOperationStatus.STATUS_STOPPED);
+		updateProgressInfo(EtlOperationStatus.STOPPED);
 	}
 	
 	@Override
 	public void changeStatusToFinished() {
 		MonitoredOperation.super.changeStatusToFinished();
 		
-		updateProgressInfo(EtlOperationStatus.STATUS_FINISHED);
+		updateProgressInfo(EtlOperationStatus.FINISHED);
 	}
 	
 	@Override
 	public void changeStatusToPaused() {
 		MonitoredOperation.super.changeStatusToPaused();
 		
-		updateProgressInfo(EtlOperationStatus.STATUS_PAUSED);
+		updateProgressInfo(EtlOperationStatus.PAUSED);
 	}
 	
 	private void updateProgressInfo(EtlOperationStatus status) {
@@ -1091,21 +1091,31 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	
 	@Override
 	public void onStop() {
-		getTimer().stop();
+		getTotalTimer().stop();
 		
 		this.changeStatusToStopped();
 	}
 	
 	@Override
 	public void onFinish() {
-		getTimer().stop();
+		getTotalTimer().stop();
 		
 		this.changeStatusToFinished();
 	}
 	
 	@Override
-	public TimeController getTimer() {
-		return getProgressMeter() != null ? getProgressMeter().getTimer() : null;
+	public TimeController getTotalTimer() {
+		return getProgressMeter() != null ? getProgressMeter().getTotalTimer() : null;
+	}
+	
+	@Override
+	public TimeController getProcessingTimer() {
+		return getProgressMeter() != null ? getProgressMeter().getProcessingTimer() : null;
+	}
+	
+	@Override
+	public TimeController getPauseTimer() {
+		return getProgressMeter() != null ? getProgressMeter().getPauseTimer() : null;
 	}
 	
 	public TableOperationProgressInfo getTableOperationProgressInfo() {
@@ -1181,7 +1191,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        + utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotal()), 12) + ", ";
 		log += "PROCESSED: " + globalProgressMeter.getDetailedProgress() + ", ";
 		log += "REMAINING: " + globalProgressMeter.getDetailedRemaining() + ",";
-		log += "\nTIME                 : " + utilities.ident(globalProgressMeter.getHumanReadbleTime(), 12);
+		log += "\nPROCESSING TIME                 : "
+		        + utilities.ident(globalProgressMeter.getHumanReadbleProcessingTime(), 12);
+		log += "\nsSTOP TIME                 : " + utilities.ident(globalProgressMeter.getHumanReadblePauseTime(), 12);
+		log += "\nTOTAL TIME                 : " + utilities.ident(globalProgressMeter.getHumanReadbleTotalTime(), 12);
+		log += "\nREMAINING TIME                 : "
+		        + utilities.ident(globalProgressMeter.getHumanReadbleEstimatedRemainingTime(), 12);
+		
 		log += "\nUSING THREADS: " + qtyThreads + "\n";
 		log += "--------------------------------------------------------------------------\n";
 		

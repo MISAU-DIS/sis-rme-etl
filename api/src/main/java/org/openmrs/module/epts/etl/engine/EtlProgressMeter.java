@@ -16,29 +16,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 public class EtlProgressMeter implements TimeCountDownInitializer {
 	
-	/**
-	 * Utilitarios do sistema
-	 */
 	private CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	/**
-	 * Constante usada para indicar o estado de erro
-	 */
-	public static final int STATUS_ERROR = -1;
-	
-	public static final String STATUS_NOT_INITIALIZED = "NOT INITIALIZED";
-	
-	public static final String STATUS_RUNNING = "RUNNING";
-	
-	public static final String STATUS_PAUSED = "PAUSED";
-	
-	public static final String STATUS_STOPPED = "STOPPED";
-	
-	public static final String STATUS_SLEEPING = "SLEEPING";
-	
-	public static final String STATUS_FINISHED = "FINISHED";
-	
-	public static final String STATUS_STOPPING = "STOPPING";
+	public final Object LOCK = new Object();
 	
 	private String id;
 	
@@ -61,7 +41,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	/**
 	 * Estado corrente
 	 */
-	private String status;
+	private EtlOperationStatus status;
 	
 	/**
 	 * Registos processados
@@ -100,16 +80,19 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	
 	private Date finishTime;
 	
-	private double elapsedTime;
+	private TimeController processingTimer;
 	
-	private TimeController timer;
+	private TimeController pauseTimer;
+	
+	private TimeController totalTimer;
 	
 	public EtlProgressMeter() {
-		this.status = STATUS_NOT_INITIALIZED;
+		this.status = EtlOperationStatus.NOT_INITIALIZED;
 	}
 	
 	public EtlProgressMeter(String statusMsg, long minRecordId, long maxRecordId, int total, int processed,
 	    long lastAnalyzedRecordId) {
+		
 		this();
 		
 		this.minRecordId = minRecordId;
@@ -128,8 +111,19 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	private EtlProgressMeter(String id) {
 		this();
 		
-		//this._default = true;
 		this.id = id;
+	}
+	
+	public TimeController getProcessingTimer() {
+		return processingTimer;
+	}
+	
+	public TimeController getPauseTimer() {
+		return pauseTimer;
+	}
+	
+	public TimeController getTotalTimer() {
+		return totalTimer;
 	}
 	
 	public long getLastAnalyzedRecordId() {
@@ -152,15 +146,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		this.finishTime = finishTime;
 	}
 	
-	public void setElapsedTime(double elapsedTime) {
-		this.elapsedTime = elapsedTime;
-	}
-	
-	public double getElapsedTime() {
-		return getTimer() != null ? getTimer().getDuration(TimeController.DURACAO_IN_MINUTES) : this.elapsedTime;
-	}
-	
-	public String getStatus() {
+	public EtlOperationStatus getStatus() {
 		return status;
 	}
 	
@@ -169,7 +155,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	}
 	
 	/**
-	 * Refrsca a informacao do estado actual da migracao, recalcunlando a percentagem de progresso
+	 * Refresca a informacao do estado actual da migracao, recalcunlando a percentagem de progresso
 	 * 
 	 * @param statusMsg Mensagem do corrente estado da migracao
 	 * @param total de registos em migracao
@@ -194,13 +180,28 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		}
 	}
 	
-	public String getHumanReadbleTime() {
-		return getTimer() != null ? getTimer().toString() : "00:00:00";
+	@JsonIgnore
+	public String getHumanReadbleProcessingTime() {
+		return getProcessingTimer() != null ? getProcessingTimer().toString() : "00:00:00";
 	}
 	
 	@JsonIgnore
-	public TimeController getTimer() {
-		return this.timer;
+	public String getHumanReadblePauseTime() {
+		return getPauseTimer() != null ? getPauseTimer().toString() : "00:00:00";
+	}
+	
+	@JsonIgnore
+	public String getHumanReadbleTotalTime() {
+		return getTotalTimer() != null ? getTotalTimer().toString() : "00:00:00";
+	}
+	
+	@JsonIgnore
+	public String getHumanReadbleEstimatedRemainingTime() {
+		double eta = (getTotal() * getProcessingTimer().getElapsedSeconds()) / this.getProcessed();
+		
+		TimeController tc = new TimeController(eta);
+		
+		return tc.toString();
 	}
 	
 	public void changeRefreshInterval(int refreshInterval) {
@@ -271,7 +272,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	}
 	
 	public int getTotalAnalyzed() {
-		return (int) (this.lastAnalyzedRecordId - this.minRecordId);
+		return (int) (this.lastAnalyzedRecordId - this.minRecordId) + 1;
 	}
 	
 	public int getRemainToAnalyze() {
@@ -310,69 +311,92 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	}
 	
 	public boolean isRunning() {
-		return this.status.equals(EtlProgressMeter.STATUS_RUNNING);
+		return this.status.running();
 	}
 	
 	public boolean isPaused() {
-		return this.status.equals(EtlProgressMeter.STATUS_PAUSED);
+		return this.status.paused();
 	}
 	
 	public boolean isStopped() {
-		return this.status.equals(EtlProgressMeter.STATUS_STOPPED);
+		return this.status.stopped();
 	}
 	
 	public boolean isSleeping() {
-		return this.status.equals(EtlProgressMeter.STATUS_SLEEPING);
+		return this.status.slepping();
 	}
 	
 	public boolean isFinished() {
-		return this.status.equals(EtlProgressMeter.STATUS_FINISHED);
+		return this.status.finished();
 	}
 	
 	public void changeStatusToSleeping() {
-		this.status = EtlProgressMeter.STATUS_SLEEPING;
-		this.statusMsg = EtlProgressMeter.STATUS_SLEEPING;
+		this.status = EtlOperationStatus.SLEEPING;
+		this.statusMsg = EtlOperationStatus.SLEEPING.getDsc();
 		
 	}
 	
 	public void changeStatusToRunning() {
-		this.status = EtlProgressMeter.STATUS_RUNNING;
-		this.statusMsg = EtlProgressMeter.STATUS_RUNNING;
+		this.status = EtlOperationStatus.RUNNING;
+		this.statusMsg = EtlOperationStatus.RUNNING.getDsc();
 		
-		tryToInitializeTimer();
+		tryToInitializeTimeControllers();
 		
-		this.getTimer().start();
+		this.getProcessingTimer().start();
+		this.getTotalTimer().start();
+		this.getPauseTimer().stop();
 	}
 	
 	public void changeStatusToStopping() {
-		this.status = EtlProgressMeter.STATUS_STOPPED;
-		this.statusMsg = EtlProgressMeter.STATUS_STOPPED;
+		this.status = EtlOperationStatus.STOPPED;
+		this.statusMsg = EtlOperationStatus.STOPPED.getDsc();
 	}
 	
 	public void changeStatusToStopped() {
-		this.status = EtlProgressMeter.STATUS_STOPPED;
-		this.statusMsg = EtlProgressMeter.STATUS_STOPPED;
+		this.status = EtlOperationStatus.STOPPED;
+		this.statusMsg = EtlOperationStatus.STOPPED.getDsc();
 		
-		tryToInitializeTimer();
+		tryToInitializeTimeControllers();
 		
-		this.getTimer().stop();
+		this.getProcessingTimer().stop();
+		this.getTotalTimer().stop();
+		this.getPauseTimer().start();
 	}
 	
 	public void changeStatusToFinished() {
-		this.status = EtlProgressMeter.STATUS_FINISHED;
-		this.statusMsg = EtlProgressMeter.STATUS_FINISHED;
+		this.status = EtlOperationStatus.FINISHED;
+		this.statusMsg = EtlOperationStatus.FINISHED.getDsc();
 		
 		this.finishTime = DateAndTimeUtilities.getCurrentDate();
 		
-		tryToInitializeTimer();
+		tryToInitializeTimeControllers();
 		
-		this.getTimer().stop();
+		this.getTotalTimer().stop();
+		this.getProcessingTimer().stop();
 	}
 	
-	private void tryToInitializeTimer() {
-		if (this.getTimer() == null) {
-			this.timer = new TimeController();
-			this.startTime = this.timer.getStartTime();
+	private void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+	
+	private void tryToInitializeTimeControllers() {
+		
+		synchronized (LOCK) {
+			if (this.totalTimer == null) {
+				this.totalTimer = new TimeController();
+			}
+			
+			if (this.processingTimer == null) {
+				this.processingTimer = new TimeController();
+			}
+			
+			if (this.pauseTimer == null) {
+				this.pauseTimer = new TimeController();
+			}
+			
+			if (this.getStartTime() == null) {
+				this.setStartTime(DateAndTimeUtilities.getCurrentDate());
+			}
 		}
 	}
 	
@@ -489,14 +513,9 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		this.updated = false;
 	}
 	
-	public void retrieveTimer() {
-		if (getStartTime() != null) {
-			this.timer = TimeController.retrieveTimer(getStartTime(), getElapsedTime());
-		}
-	}
-	
-	public static EtlProgressMeter fullInit(String status, Date startTime, Date stopTime, long minRecordId, long maxRecordId,
-	        int total, int processed) {
+	public static EtlProgressMeter fullInit(EtlOperationStatus status, Date startTime, Date lastStopTime,
+	        double processingTime, double pauseTime, long minRecordId, long maxRecordId, int total, int processed) {
+		
 		EtlProgressMeter progressMeter = new EtlProgressMeter();
 		
 		progressMeter.status = status;
@@ -505,14 +524,33 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		progressMeter.maxRecordId = maxRecordId;
 		progressMeter.total = total;
 		progressMeter.processed = processed;
-		progressMeter.elapsedTime = TimeController.computeElapsedTime(startTime, stopTime);
 		
-		progressMeter.timer = new TimeController(startTime, progressMeter.elapsedTime);
+		double currentPauseTime = pauseTime;
 		
-		if (progressMeter.isFinished())
-			progressMeter.finishTime = stopTime;
+		if (lastStopTime != null && shouldAccumulatePauseTime(status)) {
+			double elapsedPauseTime = DateAndTimeUtilities.dateDiff(DateAndTimeUtilities.getCurrentDate(), lastStopTime,
+			    DateAndTimeUtilities.SECOND_FORMAT);
+			
+			if (elapsedPauseTime > 0) {
+				currentPauseTime += elapsedPauseTime;
+			}
+		}
+		
+		double totalTime = processingTime + currentPauseTime;
+		
+		progressMeter.totalTimer = new TimeController(totalTime);
+		progressMeter.processingTimer = new TimeController(processingTime);
+		progressMeter.pauseTimer = new TimeController(currentPauseTime);
+		
+		if (progressMeter.isFinished()) {
+			progressMeter.finishTime = lastStopTime;
+		}
 		
 		return progressMeter;
+	}
+	
+	private static boolean shouldAccumulatePauseTime(EtlOperationStatus status) {
+		return status != null && !status.finished();
 	}
 	
 	public long getMinRecordId() {
@@ -546,23 +584,23 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	public void changeStatus(EtlOperationStatus status) {
 		
 		switch (status) {
-			case STATUS_RUNNING:
+			case RUNNING:
 				changeStatusToRunning();
 				break;
-			case STATUS_STOPPED:
+			case STOPPED:
 				changeStatusToStopped();
 				break;
-			case STATUS_FINISHED:
+			case FINISHED:
 				changeStatusToFinished();
 				break;
-			case STATUS_SLEEPING:
+			case SLEEPING:
 				changeStatusToSleeping();
 				break;
-			case STATUS_STOPPED_DUE_ERROR:
+			case STOPPED_DUE_ERROR:
 				changeStatusToStopped();
 				break;
 			
-			case STATUS_STOPPING:
+			case STOPPING:
 				changeStatusToStopped();
 				break;
 			

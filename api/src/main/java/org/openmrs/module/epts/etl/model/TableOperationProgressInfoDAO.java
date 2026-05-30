@@ -25,7 +25,9 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 							record.getProgressMeter().getMinRecordId(),
 							record.getProgressMeter().getMaxRecordId(),
 							record.getProgressMeter().getProcessed(), 
-							record.getProgressMeter().getStatus() };
+							record.getProgressMeter().getProcessingTimer().getElapsedSeconds(),
+							record.getProgressMeter().getPauseTimer().getElapsedSeconds(),
+							record.getProgressMeter().getStatus().getDsc() };
 		
 		 
 		// @formatter:on
@@ -41,8 +43,12 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 		sql += "																  min_record_id,\n";
 		sql += "																  max_record_id,\n";
 		sql += "																  total_processed_records,\n";
+		sql += "																  processing_time,\n";
+		sql += "																  pause_time,\n";
 		sql += "																  status)\n";
 		sql += "	VALUES(?,\n";
+		sql += "		   ?,\n";
+		sql += "		   ?,\n";
 		sql += "		   ?,\n";
 		sql += "		   ?,\n";
 		sql += "		   ?,\n";
@@ -67,7 +73,9 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 							record.getProgressMeter().getMinRecordId(),
 							record.getProgressMeter().getMaxRecordId(),
 							record.getProgressMeter().getProcessed(), 
-							record.getProgressMeter().getStatus(), 
+							record.getProgressMeter().getProcessingTimer().getElapsedSeconds(),
+							record.getProgressMeter().getPauseTimer().getElapsedSeconds(),
+							record.getProgressMeter().getStatus().getDsc(), 
 							record.getOperationId() };
 		
 		String sql = "";
@@ -78,6 +86,8 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 		sql += "		min_record_id = ?,\n";
 		sql += "		max_record_id = ?,\n";		
 		sql += "		total_processed_records=?,";
+		sql += "		processing_time=?,";
+		sql += "		pause_time=?,";
 		sql += "		status=?";
 		sql += " WHERE operation_id = ? ";
 		

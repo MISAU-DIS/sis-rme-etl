@@ -68,8 +68,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	protected OperationController<? extends EtlDatabaseObject> parent;
 	
-	protected TimeController timer;
-	
 	protected boolean selfTreadKilled;
 	
 	protected Exception lastException;
@@ -84,7 +82,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.processController = processController;
 		this.operationConfig = operationConfig;
 		
-		this.operationStatus = EtlOperationStatus.STATUS_NOT_INITIALIZED;
+		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 		
 		this.controllerId = operationConfig.generateOperationId();
 		
@@ -216,7 +214,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 	
 	protected synchronized void runInSequencialMode() throws DBException {
-		changeStatusToRunning();
+		this.changeStatusToRunning();
 		
 		List<EtlItemConfiguration> allSync = null;
 		
@@ -529,9 +527,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			
 			this.logDebug("Starting Processs...");
 			
-			this.timer = new TimeController();
-			this.timer.start();
-			
 			this.onStart();
 			
 			if (this.stopRequested()) {
@@ -602,13 +597,24 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			}
 		}
 		catch (Exception e) {
+			e.printStackTrace();
 			this.requestStopDueError(null, e);
 		}
 	}
 	
 	@Override
-	public TimeController getTimer() {
-		return this.timer;
+	public TimeController getTotalTimer() {
+		return null;
+	}
+	
+	@Override
+	public TimeController getPauseTimer() {
+		return null;
+	}
+	
+	@Override
+	public TimeController getProcessingTimer() {
+		return null;
 	}
 	
 	@Override
@@ -631,7 +637,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			return true;
 		}
 		
-		return this.operationStatus == EtlOperationStatus.STATUS_STOPPED;
+		return this.operationStatus == EtlOperationStatus.STOPPED;
 	}
 	
 	@Override
@@ -649,7 +655,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			
 			return true;
 		} else {
-			return this.operationStatus == EtlOperationStatus.STATUS_FINISHED;
+			return this.operationStatus == EtlOperationStatus.FINISHED;
 		}
 	}
 	
@@ -764,8 +770,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	@Override
 	public void onFinish() {
-		getTimer().stop();
-		
 		logDebug("FINISHING OPERATION " + getControllerId());
 		
 		this.processController.finalize(this);

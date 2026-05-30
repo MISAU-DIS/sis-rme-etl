@@ -10,8 +10,8 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.controller.OperationController;
-import org.openmrs.module.epts.etl.engine.EtlProgressMeter;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
@@ -35,7 +35,7 @@ public class OperationProgressInfo {
 	
 	private double elapsedTime;
 	
-	private String status;
+	private EtlOperationStatus status;
 	
 	private OperationController<? extends EtlDatabaseObject> controller;
 	
@@ -46,7 +46,7 @@ public class OperationProgressInfo {
 	
 	public OperationProgressInfo(OperationController<? extends EtlDatabaseObject> controller) {
 		this.controller = controller;
-		this.status = EtlProgressMeter.STATUS_NOT_INITIALIZED;
+		this.status = EtlOperationStatus.NOT_INITIALIZED;
 		this.operationName = controller.getControllerId();
 	}
 	
@@ -82,11 +82,11 @@ public class OperationProgressInfo {
 		this.elapsedTime = elapsedTime;
 	}
 	
-	public String getStatus() {
+	public EtlOperationStatus getStatus() {
 		return status;
 	}
 	
-	public void setStatus(String status) {
+	public void setStatus(EtlOperationStatus status) {
 		this.status = status;
 	}
 	
@@ -163,59 +163,54 @@ public class OperationProgressInfo {
 		this.status = determineStatus();
 	}
 	
-	@JsonIgnore
 	public boolean isRunning() {
-		return this.status.equals(EtlProgressMeter.STATUS_RUNNING);
+		return this.status.running();
 	}
 	
-	@JsonIgnore
 	public boolean isPaused() {
-		return this.status.equals(EtlProgressMeter.STATUS_PAUSED);
+		return this.status.paused();
 	}
 	
-	@JsonIgnore
 	public boolean isStopped() {
-		return this.status.equals(EtlProgressMeter.STATUS_STOPPED);
+		return this.status.stopped();
 	}
 	
-	@JsonIgnore
 	public boolean isSleeping() {
-		return this.status.equals(EtlProgressMeter.STATUS_SLEEPING);
+		return this.status.slepping();
 	}
 	
-	@JsonIgnore
 	public boolean isFinished() {
-		return this.status.equals(EtlProgressMeter.STATUS_FINISHED);
+		return this.status.finished();
 	}
 	
 	public void changeStatusToSleeping() {
-		this.status = EtlProgressMeter.STATUS_SLEEPING;
+		this.status = EtlOperationStatus.SLEEPING;
 		
 		save();
 	}
 	
 	public void changeStatusToRunning() {
-		this.status = EtlProgressMeter.STATUS_RUNNING;
+		this.status = EtlOperationStatus.RUNNING;
 		
 		save();
 	}
 	
 	public void changeStatusToStopped() {
-		this.status = EtlProgressMeter.STATUS_STOPPED;
+		this.status = EtlOperationStatus.STOPPED;
 		
 		save();
 	}
 	
 	public void changeStatusToFinished() {
-		this.status = EtlProgressMeter.STATUS_FINISHED;
+		this.status = EtlOperationStatus.FINISHED;
 		this.finishTime = DateAndTimeUtilities.getCurrentDate();
 		
 		save();
 	}
 	
 	@JsonIgnore
-	private String determineStatus() {
-		return "";
+	private EtlOperationStatus determineStatus() {
+		return null;
 	}
 	
 	@JsonIgnore

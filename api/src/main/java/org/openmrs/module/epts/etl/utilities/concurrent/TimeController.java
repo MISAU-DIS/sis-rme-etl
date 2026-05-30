@@ -1,152 +1,134 @@
-/**
- * TimeCountDown
- * Est� classe � respons�vel por um mecanismo de contagem decrescente do tempo. Quando o tempo se esgota, � rebentada uma excep��o
- * 
- */
 package org.openmrs.module.epts.etl.utilities.concurrent;
 
-
 import java.io.Serializable;
-import java.util.Date;
 
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.FuncoesGenericas;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class TimeController implements Runnable, Serializable{
+public class TimeController implements Serializable {
+	
 	private static final long serialVersionUID = 1L;
-	Thread timer = null;
-	private long segundos;
-	private long minutos;
-	private long horas;
-	private long dias;
 	
-	private Date startTime;
-	
-	private static final CommonUtilities utilities = CommonUtilities.getInstance();
-	
-	public TimeController(){
-		segundos = 0;
-		minutos = 0;
-		horas = 0;
-		dias=0;
-		
-		this.startTime = DateAndTimeUtilities.getCurrentDate();
-	}
-	
-	/**
-	 * 
-	 * @param startTime
-	 * @param elapsedTime in minutes
-	 */
-	public TimeController(Date startTime, double elapsedTime){
-		int elapsedTimeInSeconds = (int) (60 * elapsedTime);
-		
-		Date currTime = DateAndTimeUtilities.addSecondsToDate(startTime, elapsedTimeInSeconds);
-		
-		dias = (long) DateAndTimeUtilities.dateDiff(currTime, startTime, DateAndTimeUtilities.DAY_FORMAT);
-		
-		horas = (long) (DateAndTimeUtilities.dateDiff(currTime, startTime, DateAndTimeUtilities.HOUR_FORMAT)%24);
-		
-		minutos = (long) (DateAndTimeUtilities.dateDiff(currTime, startTime, DateAndTimeUtilities.MINUTE_FORMAT)%60);
-		
-		segundos = (long) (DateAndTimeUtilities.dateDiff(currTime, startTime, DateAndTimeUtilities.SECOND_FORMAT)%60);
-		
-		this.startTime = startTime;
-	}
-	
-	public static TimeController retrieveTimer(Date startDate, double elapsedTime) {
-		TimeController timer = new TimeController(startDate, elapsedTime);
-		
-		return timer;
-	}
-	
-	public Date getStartTime() {
-		return startTime;
-	}
-	
-	@Override
-	public void run() {
-		try {
-			while(timer != null){
-				Thread.sleep(1000);
-				
-				segundos++;
-				
-				if (segundos == 60) {
-					minutos++;
-					segundos=0;
-				}
-				if (minutos== 60) {
-					horas++;
-					minutos=0;
-				}
-				if (horas== 24) {
-					dias++;
-					horas=0;
-				}
-				
-				//System.out.println(horas+":"+minutos+":"+segundos);
-			}
-		} catch (InterruptedException e) {
-	}	
-	}
-
 	public static final String DURACAO_IN_MINUTES = "MINUTES";
-	public static final String DURACAO_IN_SECONDS= "SECONDS";
+	
+	public static final String DURACAO_IN_SECONDS = "SECONDS";
+	
 	public static final String DURACAO_IN_HOURS = "HOURS";
+	
 	public static final String DURACAO_IN_DAYS = "DAYS";
 	
-	public double getDuration(String durationType){
-		if (!utilities.isStringIn(durationType, DURACAO_IN_MINUTES, DURACAO_IN_SECONDS, DURACAO_IN_HOURS, DURACAO_IN_DAYS)){
-			throw new ForbiddenOperationException("Unsupported type!");
+	private long startedAtNanos;
+	
+	private long accumulatedNanos;
+	
+	private boolean running;
+	
+	public TimeController() {
+		this.accumulatedNanos = 0;
+		this.running = false;
+	}
+	
+	public TimeController(double elapsedTimeInSeconds) {
+		this.accumulatedNanos = (long) (elapsedTimeInSeconds * 1_000_000_000L);
+		this.running = false;
+	}
+	
+	public static TimeController retrieveTimer(double elapsedTimeInSeconds) {
+		return new TimeController(elapsedTimeInSeconds);
+	}
+	
+	public synchronized void start() {
+		if (running) {
+			throw new ForbiddenOperationException("The timer is already running!!!");
 		}
 		
-		double diasInSeconds = this.dias*24*60*60;
-		double hoursInSecond = this.horas*60*60;
-		double minutesInSeconds = this.minutos*60;
+		this.startedAtNanos = System.nanoTime();
+		this.running = true;
+	}
+	
+	public synchronized void restart() {
+		this.accumulatedNanos = 0;
+		this.startedAtNanos = System.nanoTime();
+		this.running = true;
+	}
+	
+	public synchronized void stop() {
+		if (running) {
+			this.accumulatedNanos += System.nanoTime() - this.startedAtNanos;
+			this.running = false;
+		}
+	}
+	
+	public synchronized double getCurrentTakenTime() {
+		return getElapsedSeconds();
+	}
+	
+	public synchronized double getElapsedSeconds() {
+		return getElapsedNanos() / 1_000_000_000.0;
+	}
+	
+	private long getElapsedNanos() {
+		if (running) {
+			return accumulatedNanos + (System.nanoTime() - startedAtNanos);
+		}
 		
-		double totalInSeconds = diasInSeconds+hoursInSecond+minutesInSeconds+this.segundos;
-		if (durationType.equals(DURACAO_IN_SECONDS)) return totalInSeconds;
-		if (durationType.equals(DURACAO_IN_MINUTES)) return totalInSeconds/60;
-		if (durationType.equals(DURACAO_IN_HOURS)) return totalInSeconds/60/60;
-		 return totalInSeconds/60/60/24;
+		return accumulatedNanos;
+	}
+	
+	public synchronized double getDuration(String durationType) {
+		double totalInSeconds = getElapsedSeconds();
+		
+		switch (durationType) {
+			case DURACAO_IN_SECONDS:
+				return totalInSeconds;
+			
+			case DURACAO_IN_MINUTES:
+				return totalInSeconds / 60;
+			
+			case DURACAO_IN_HOURS:
+				return totalInSeconds / 3600;
+			
+			case DURACAO_IN_DAYS:
+				return totalInSeconds / 86400;
+			
+			default:
+				throw new EtlExceptionImpl("Unsupported durationType: '" + durationType + "'!");
+		}
 	}
 	
 	@JsonIgnore
 	@Override
 	public String toString() {
-		return FuncoesGenericas.garantirXCaracterOnNumber(horas, 2)+":"+FuncoesGenericas.garantirXCaracterOnNumber(minutos, 2)+":"+FuncoesGenericas.garantirXCaracterOnNumber(segundos, 2);
-	}
-	public void start(){
-		if (timer == null){
-			timer = new Thread(this);
-			
-			if (this.startTime == null) this.startTime = DateAndTimeUtilities.getCurrentDate();
-			
-			timer.start();
-			
-		}
-		else throw new ForbiddenOperationException("The timer is already running!!!");
+		return formatToHumanReadbleTime();
 	}
 	
-	public void restar(){
-		timer = null;
-		start();
+	@JsonIgnore
+	public synchronized String formatToHumanReadbleTime() {
+		long totalSeconds = (long) getElapsedSeconds();
+		
+		long days = totalSeconds / 86400;
+		long remaining = totalSeconds % 86400;
+		
+		long hours = remaining / 3600;
+		remaining %= 3600;
+		
+		long minutes = remaining / 60;
+		long seconds = remaining % 60;
+		
+		if (days > 0) {
+			return days + "d " + pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+		}
+		
+		return pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
 	}
-
-	public void stop(){
-	   if (timer != null){
-		   timer.interrupt();
-		   timer = null;
-	   }
+	
+	private String pad(long value) {
+		return value < 10 ? "0" + value : String.valueOf(value);
 	}
-
-	public static double computeElapsedTime(Date startTime, Date stopTime) {
-		return DateAndTimeUtilities.dateDiff(stopTime, startTime, DateAndTimeUtilities.MINUTE_FORMAT);
+	
+	public synchronized boolean isRunning() {
+		return running;
 	}
-
 }
