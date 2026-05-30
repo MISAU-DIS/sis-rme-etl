@@ -239,6 +239,8 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		
+		super.loadOwnElements(schemaInfo, conn);
+		
 		if (hasJoinExtraCondition()) {
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getJoinExtraCondition(), null)) {
 				throw new EtlConfException("Invalid joinExtraCondition \n" + this.getJoinExtraCondition());

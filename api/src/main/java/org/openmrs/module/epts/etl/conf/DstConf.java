@@ -665,6 +665,8 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
+		super.loadOwnElements(schemaInfo, conn);
+		
 		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
 		
 		loadJoinFields(conn);

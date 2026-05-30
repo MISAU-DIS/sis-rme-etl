@@ -449,9 +449,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	public boolean operationTableIsAlreadyFinished(EtlItemConfiguration etlConfig) {
 		try {
-			
-			etlConfig.stepIntoBreakpoint(getEtlConfiguration(), this.getControllerId().startsWith("db_") && this.getControllerId().contains("clinica"));
-			
 			TableOperationProgressInfo tableOpPm = this.retrieveProgressInfo(etlConfig);
 			
 			if (tableOpPm == null) {
@@ -530,34 +527,34 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	public void run() {
 		try {
 			
-			logDebug("Starting Processs...");
+			this.logDebug("Starting Processs...");
 			
-			timer = new TimeController();
-			timer.start();
+			this.timer = new TimeController();
+			this.timer.start();
 			
-			onStart();
+			this.onStart();
 			
-			if (stopRequested()) {
-				logWarn("THE OPERATION " + getControllerId() + " COULD NOT BE INITIALIZED DUE STOP REQUESTED!!!!");
+			if (this.stopRequested()) {
+				this.logWarn("THE OPERATION " + getControllerId() + " COULD NOT BE INITIALIZED DUE STOP REQUESTED!!!!");
 				
-				changeStatusToStopped();
+				this.changeStatusToStopped();
 				
-				if (hasChild()) {
-					for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
+				if (this.hasChild()) {
+					for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
 						child.requestStop();
 					}
 				}
-			} else if (operationIsAlreadyFinished()) {
+			} else if (this.operationIsAlreadyFinished()) {
 				logWarn("THE OPERATION " + getControllerId() + " WAS ALREADY FINISHED!");
 				
-				changeStatusToFinished();
+				this.changeStatusToFinished();
 			} else {
-				basicInitAllConfElements();
+				this.basicInitAllConfElements();
 				
-				if (isParallelModeProcessing()) {
-					runInParallelMode();
+				if (this.isParallelModeProcessing()) {
+					this.runInParallelMode();
 				} else {
-					runInSequencialMode();
+					this.runInSequencialMode();
 				}
 			}
 			
@@ -577,7 +574,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 					this.onStop();
 				}
 				
-				if (getOperationConfig().isParallelModeProcessing()) {
+				if (this.getOperationConfig().isParallelModeProcessing()) {
 					
 					if (this.enginesActivititieMonitor != null) {
 						
