@@ -32,21 +32,29 @@ public class DBConnectionService {
 	private DBConnectionService(DBConnectionInfo dbConnInfo) {
 		this.dbConnInfo = dbConnInfo;
 		
-		this.dataSource = new DataSource();
-		
-		this.dataSource.setDriverClassName(dbConnInfo.getDriveClassName());
-		this.dataSource.setUrl(dbConnInfo.getConnectionURI());
-		this.dataSource.setUsername(dbConnInfo.getDataBaseUserName());
-		this.dataSource.setPassword(dbConnInfo.getDataBaseUserPassword());
 		this.dataSource.setInitialSize(10);
 		this.dataSource.setMaxActive(dbConnInfo.getMaxActiveConnections() != 0 ? dbConnInfo.getMaxActiveConnections() : 64);
 		this.dataSource.setMaxWait(30000);
+		
 		this.dataSource.setDefaultAutoCommit(false);
-		this.dataSource.setMaxIdle(dbConnInfo.getMaxIdleConnections() != 0 ? dbConnInfo.getMaxIdleConnections() : 64);
-		this.dataSource.setMinIdle(dbConnInfo.getMinIdleConnections() != 0 ? dbConnInfo.getMinIdleConnections() : 32);
-		this.dataSource.setMinEvictableIdleTimeMillis(15 * 60000);
-		this.dataSource.getPoolProperties().getDbProperties().setProperty("connectRetryCount", "" + 255);
-		this.dataSource.getPoolProperties().getDbProperties().setProperty("connectRetryInterval", "" + 15);
+		
+		this.dataSource.setMaxIdle(dbConnInfo.getMaxIdleConnections() != 0 ? dbConnInfo.getMaxIdleConnections() : 32);
+		this.dataSource.setMinIdle(dbConnInfo.getMinIdleConnections() != 0 ? dbConnInfo.getMinIdleConnections() : 10);
+		
+		this.dataSource.setMinEvictableIdleTimeMillis(5 * 60 * 1000);
+		
+		this.dataSource.setTestOnBorrow(true);
+		this.dataSource.setValidationQuery("SELECT 1");
+		this.dataSource.setValidationInterval(5);
+		
+		this.dataSource.setTestWhileIdle(true);
+		this.dataSource.setTimeBetweenEvictionRunsMillis(60 * 1000);
+		
+		this.dataSource.setTestOnReturn(false);
+		
+		this.dataSource.setRemoveAbandoned(true);
+		this.dataSource.setRemoveAbandonedTimeout(300);
+		this.dataSource.setLogAbandoned(true);
 		
 		this.openConnections = new ArrayList<>();
 	}
