@@ -30,10 +30,14 @@ public class DBOperation {
 	}
 	
 	public void retryDueTemporaryDBError(String error) throws DBException {
+		
+		String queryInfo = BaseDAO.generateMInimalQueryInfo(sql, params);
+		
 		if (qtyTry < maxTry) {
 			qtyTry++;
-			logger.warn(error.toUpperCase() + " DETECTED");
-			logger.warn("RETRYING OPERATION [" + qtyTry + "] OF [" + maxTry + "]");
+			logger.warn(error.toUpperCase() + " DETECTED WHILE EXECUTING: " + queryInfo + "\n" + "RETRYING OPERATION ["
+			        + qtyTry + "] OF [" + maxTry + "]");
+			
 			try {
 				BaseDAO.executeQueryWithoutRetry(sql, params, conn);
 				

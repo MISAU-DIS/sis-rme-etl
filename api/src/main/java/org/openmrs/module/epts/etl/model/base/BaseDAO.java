@@ -356,17 +356,12 @@ public abstract class BaseDAO {
 	}
 	
 	private static boolean tryToSolveIssues(DBException e, String sql, Object[] params, Connection conn) throws DBException {
-		String queryInfo = generateQueryInfo(sql, params);
-		
 		if (e.isDeadLock(conn)) {
-			logger.warn("DEADLOCK DETECTED WHILE EXECUTING QUERY: " + queryInfo);
-			
 			DBOperation dbOp = new DBOperation(sql, params, conn, 50);
 			dbOp.retryDueTemporaryDBError("DEADLOCK");
 			
 			return true;
 		} else if (e.isLockWaitTimeExceded(conn)) {
-			logger.warn("LOCK WAIT TIME EXCEED WHILE EXECUTING QUERY: " + queryInfo);
 			DBOperation dbOp = new DBOperation(sql, params, conn, 50);
 			dbOp.retryDueTemporaryDBError("LOCK WAIT TIME EXCEED");
 			
@@ -376,7 +371,7 @@ public abstract class BaseDAO {
 		return false;
 	}
 	
-	private static String generateQueryInfo(String sql, Object[] params) {
+	public static String generateMInimalQueryInfo(String sql, Object[] params) {
 		
 		if (sql == null) {
 			return "<null query>";
