@@ -45,6 +45,8 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	
 	private EtlConfiguration relatedEtlConf;
 	
+	private Boolean autoCommit;
+	
 	public DBConnectionInfo() {
 		isolationLevel = DBConnectionIsolationLevel.TRANSACTION_REPEATABLE_READ;
 	}
@@ -62,6 +64,18 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		this(dataBaseUserName, dataBaseUserPassword, connectionURI, driveClassName);
 		
 		this.schema = schema;
+	}
+	
+	public Boolean getAutoCommit() {
+		return autoCommit;
+	}
+	
+	public void setAutoCommit(Boolean autoCommit) {
+		this.autoCommit = autoCommit;
+	}
+	
+	public boolean isAutoCommit() {
+		return isTrue(getAutoCommit());
 	}
 	
 	public DBConnectionIsolationLevel getIsolationLevel() {

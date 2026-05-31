@@ -43,7 +43,7 @@ public class DBConnectionService {
 		this.dataSource.setMaxActive(dbConnInfo.getMaxActiveConnections() != 0 ? dbConnInfo.getMaxActiveConnections() : 64);
 		this.dataSource.setMaxWait(30000);
 		
-		this.dataSource.setDefaultAutoCommit(false);
+		this.dataSource.setDefaultAutoCommit(dbConnInfo.isAutoCommit());
 		
 		this.dataSource.setMaxIdle(dbConnInfo.getMaxIdleConnections() != 0 ? dbConnInfo.getMaxIdleConnections() : 32);
 		this.dataSource.setMinIdle(dbConnInfo.getMinIdleConnections() != 0 ? dbConnInfo.getMinIdleConnections() : 10);
