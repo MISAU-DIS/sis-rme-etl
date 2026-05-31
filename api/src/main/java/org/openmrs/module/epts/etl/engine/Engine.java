@@ -1191,11 +1191,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        + utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotal()), 12) + ", ";
 		log += "PROCESSED: " + globalProgressMeter.getDetailedProgress() + ", ";
 		log += "REMAINING: " + globalProgressMeter.getDetailedRemaining() + ",";
-		log += "\nPROCESSING TIME                 : "
+		log += "\nPROCESSING TIME            : "
 		        + utilities.ident(globalProgressMeter.getHumanReadbleProcessingTime(), 12);
 		log += "\nsSTOP TIME                 : " + utilities.ident(globalProgressMeter.getHumanReadblePauseTime(), 12);
 		log += "\nTOTAL TIME                 : " + utilities.ident(globalProgressMeter.getHumanReadbleTotalTime(), 12);
-		log += "\nREMAINING TIME                 : "
+		log += "\nREMAINING TIME             : "
 		        + utilities.ident(globalProgressMeter.getHumanReadbleEstimatedRemainingTime(), 12);
 		
 		log += "\nUSING THREADS: " + qtyThreads + "\n";

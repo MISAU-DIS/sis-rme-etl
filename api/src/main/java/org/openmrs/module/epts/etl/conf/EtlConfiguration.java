@@ -55,7 +55,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	static final String STRING_LOCK = new String("LOCK_STRING");
+	static final Object LOCK_READ = new Object();
+	
+	static final Object LOCK_WRITE = new Object();
 	
 	public static final String SKIPPED_RECORD_TABLE_NAME = "skipped_record";
 	
@@ -724,7 +726,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (this.logger != null)
 			return;
 		
-		synchronized (STRING_LOCK) {
+		synchronized (LOCK_READ) {
 			
 			if (this.logger != null)
 				return;
@@ -780,7 +782,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			return;
 		}
 		
-		synchronized (STRING_LOCK) {
+		synchronized (LOCK_READ) {
 			
 			OpenConnection srcConn = null;
 			OpenConnection dstConn = null;
@@ -1685,36 +1687,41 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 	
 	public void addToFullLoadedTables(TableConfiguration tableConfiguration) {
-		if (getFullLoadedTables() == null)
-			fullLoadedTables = new ArrayList<>();
-		
-		fullLoadedTables.add(tableConfiguration);
+		synchronized (LOCK_WRITE) {
+			if (getFullLoadedTables() == null)
+				fullLoadedTables = new ArrayList<>();
+			
+			fullLoadedTables.add(tableConfiguration);
+		}
 	}
 	
 	public TableConfiguration findOnFullLoadedTables(String tableName, String schema) {
 		if (getFullLoadedTables() == null)
 			return null;
 		
-		boolean done = false;
-		
-		//To avoid failure on ConcurrentModificationException
-		while (!done) {
+		synchronized (LOCK_READ) {
 			
-			try {
-				for (TableConfiguration tab : this.getFullLoadedTables()) {
-					if (tab.getSchema().equals(schema) && tab.getTableName().equals(tableName)) {
-						return tab;
-					}
-				}
+			boolean done = false;
+			
+			while (!done) {
 				
-				done = true;
+				try {
+					for (TableConfiguration tab : this.getFullLoadedTables()) {
+						if (tab.getSchema().equals(schema) && tab.getTableName().equals(tableName)) {
+							return tab;
+						}
+					}
+					
+					done = true;
+				}
+				catch (ConcurrentModificationException e) {
+					logWarn("ConcurrentModificationException found when finding on loaded table. The aplication will retry");
+					TimeCountDown.sleep(2);
+				}
 			}
-			catch (ConcurrentModificationException e) {
-				logWarn("ConcurrentModificationException found when finding on loaded table. The aplication will retry");
-				TimeCountDown.sleep(2);
-			}
+			return null;
 		}
-		return null;
+		
 	}
 	
 	public void tryToAddToBusyTableAliasName(String tableAlias) {

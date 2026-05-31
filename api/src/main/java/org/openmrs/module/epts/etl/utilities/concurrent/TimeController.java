@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.utilities.concurrent;
 import java.io.Serializable;
 
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
-import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -40,12 +39,10 @@ public class TimeController implements Serializable {
 	}
 	
 	public synchronized void start() {
-		if (running) {
-			throw new ForbiddenOperationException("The timer is already running!!!");
+		if (!running) {
+			this.startedAtNanos = System.nanoTime();
+			this.running = true;
 		}
-		
-		this.startedAtNanos = System.nanoTime();
-		this.running = true;
 	}
 	
 	public synchronized void restart() {

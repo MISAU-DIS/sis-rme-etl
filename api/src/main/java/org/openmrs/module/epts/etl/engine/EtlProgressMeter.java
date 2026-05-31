@@ -344,7 +344,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		
 		this.getProcessingTimer().start();
 		this.getTotalTimer().start();
-		this.getPauseTimer().stop();
+		//this.getPauseTimer().stop();
 	}
 	
 	public void changeStatusToStopping() {
@@ -360,7 +360,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		
 		this.getProcessingTimer().stop();
 		this.getTotalTimer().stop();
-		this.getPauseTimer().start();
+		//this.getPauseTimer().start();
 	}
 	
 	public void changeStatusToFinished() {

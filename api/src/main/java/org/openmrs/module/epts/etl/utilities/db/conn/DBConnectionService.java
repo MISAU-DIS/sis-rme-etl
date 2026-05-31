@@ -2,8 +2,8 @@ package org.openmrs.module.epts.etl.utilities.db.conn;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
@@ -19,38 +19,17 @@ public class DBConnectionService {
 	
 	private static final EtlLogger logger = EtlLogger.getLogger(DBConnectionService.class);
 	
-	private static final Object LOCK = new Object();
+	private final Object LOCK = new Object();
 	
-	private static List<DBConnectionService> services = new ArrayList<DBConnectionService>();
+	private static List<DBConnectionService> services = new CopyOnWriteArrayList<DBConnectionService>();
 	
 	private DBConnectionInfo dbConnInfo;
 	
 	private DataSource dataSource;
 	
-	private List<OpenConnection> openConnections;
+	private final List<OpenConnection> openConnections = new CopyOnWriteArrayList<>();
 	
 	private DBConnectionService(DBConnectionInfo dbConnInfo) {
-		/*this.dbConnInfo = dbConnInfo;
-		
-		this.dataSource = new DataSource();
-		
-		this.dataSource.setDriverClassName(dbConnInfo.getDriveClassName());
-		this.dataSource.setUrl(dbConnInfo.getConnectionURI());
-		this.dataSource.setUsername(dbConnInfo.getDataBaseUserName());
-		this.dataSource.setPassword(dbConnInfo.getDataBaseUserPassword());
-		this.dataSource.setInitialSize(10);
-		this.dataSource.setMaxActive(dbConnInfo.getMaxActiveConnections() != 0 ? dbConnInfo.getMaxActiveConnections() : 64);
-		this.dataSource.setMaxWait(30000);
-		this.dataSource.setDefaultAutoCommit(false);
-		this.dataSource.setMaxIdle(dbConnInfo.getMaxIdleConnections() != 0 ? dbConnInfo.getMaxIdleConnections() : 64);
-		this.dataSource.setMinIdle(dbConnInfo.getMinIdleConnections() != 0 ? dbConnInfo.getMinIdleConnections() : 32);
-		this.dataSource.setMinEvictableIdleTimeMillis(15 * 60000);
-		this.dataSource.getPoolProperties().getDbProperties().setProperty("connectRetryCount", "" + 255);
-		this.dataSource.getPoolProperties().getDbProperties().setProperty("connectRetryInterval", "" + 15);
-		
-		this.openConnections = new ArrayList<>();
-		*/
-		
 		this.dbConnInfo = dbConnInfo;
 		
 		this.dataSource = new DataSource();
@@ -73,24 +52,22 @@ public class DBConnectionService {
 		
 		this.dataSource.setTestOnBorrow(true);
 		this.dataSource.setValidationQuery("SELECT 1");
-		this.dataSource.setValidationInterval(5);
+		this.dataSource.setValidationInterval(30_000);
 		
 		this.dataSource.setTestWhileIdle(true);
-		this.dataSource.setTimeBetweenEvictionRunsMillis(60 * 1000);
+		this.dataSource.setTimeBetweenEvictionRunsMillis(60_000);
+		this.dataSource.setMinEvictableIdleTimeMillis(5 * 60_000);
 		
-		this.dataSource.setTestOnReturn(false);
-		
-		this.dataSource.setRemoveAbandoned(true);
-		this.dataSource.setRemoveAbandonedTimeout(300);
+		this.dataSource.setRemoveAbandoned(false);
 		this.dataSource.setLogAbandoned(true);
+		
+		dataSource.setDefaultTransactionIsolation(dbConnInfo.getIsolationLevel().level);
 		
 		this.dataSource.getPoolProperties().getDbProperties().setProperty("connectRetryCount", "" + 255);
 		this.dataSource.getPoolProperties().getDbProperties().setProperty("connectRetryInterval", "" + 15);
-		
-		this.openConnections = new ArrayList<>();
-		
 	}
 	
+	@Override
 	public void finalize() {
 		try {
 			this.dataSource.close();
@@ -161,8 +138,8 @@ public class DBConnectionService {
 	}
 	
 	@JsonIgnore
-	public synchronized OpenConnection openConnection(BaseConfiguration openedFrom) throws DBException {
-		OpenConnection conn = new OpenConnection(openConnection(50, null), openedFrom, this);
+	public OpenConnection openConnection(BaseConfiguration openedFrom) throws DBException {
+		OpenConnection conn = new OpenConnection(openConnection(), openedFrom, this);
 		addOpenConnection(conn);
 		
 		return conn;
@@ -180,34 +157,38 @@ public class DBConnectionService {
 		}
 	}
 	
-	private synchronized Connection openConnection(int qtyTry, SQLException e) throws DBException {
-		if (qtyTry <= 0)
-			throw new DBException(e);
+	private synchronized Connection openConnection() throws DBException {
 		
-		try {
-			Connection conn = this.dataSource.getConnection();
-			
-			conn.setTransactionIsolation(dbConnInfo.getIsolationLevel().getLevel());
-			
-			return conn;
-		}
-		catch (SQLException e1) {
-			logger.warn("OpenedConnections: " + OpenConnection.qtyOpenedConnections + ", ClosedConnections: "
-			        + OpenConnection.qtyClosedConnections);
-			
-			if (DBUtilities.determineDataBaseFromException(e1).equals(DBUtilities.MYSQL_DATABASE)) {
-				if (DBException.checkIfExceptionContainsMessage(e1, "Unknown database")) {
-					throw new DBException(e1);
+		int qtyTry = 50;
+		
+		SQLException exception = null;
+		
+		while (qtyTry >= 0) {
+			try {
+				Connection conn = this.dataSource.getConnection();
+				
+				return conn;
+			}
+			catch (SQLException e) {
+				exception = e;
+				
+				logger.warn("OpenedConnections: " + OpenConnection.qtyOpenedConnections + ", ClosedConnections: "
+				        + OpenConnection.qtyClosedConnections);
+				
+				if (DBUtilities.determineDataBaseFromException(e).equals(DBUtilities.MYSQL_DATABASE)) {
+					if (DBException.checkIfExceptionContainsMessage(e, "Unknown database")) {
+						throw new DBException(e);
+					}
 				}
+				
+				logger.error("Nao foi possivel obter a conexao. Tentando novamente obter a conexao novamente...", e);
+				
+				TimeCountDown.sleep(2);
 			}
 			
-			e1.printStackTrace();
-			
-			logger.warn("Nao foi possivel obter a conexao. Tentando novamente obter a conexao novamente...");
-			
-			TimeCountDown.sleep(5);
-			
-			return openConnection(--qtyTry, e1);
+			qtyTry--;
 		}
+		
+		throw new DBException(exception);
 	}
 }
