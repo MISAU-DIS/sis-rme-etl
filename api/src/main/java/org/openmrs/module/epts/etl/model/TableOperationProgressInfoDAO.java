@@ -25,8 +25,8 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 							record.getProgressMeter().getMinRecordId(),
 							record.getProgressMeter().getMaxRecordId(),
 							record.getProgressMeter().getProcessed(), 
-							record.getProgressMeter().getProcessingTimer().getElapsedSeconds(),
-							record.getProgressMeter().getPauseTimer().getElapsedSeconds(),
+							record.getProgressMeter().getProcessingTimer() != null ? record.getProgressMeter().getProcessingTimer().getElapsedSeconds() : 0,
+							record.getProgressMeter().getPauseTimer() != null ? record.getProgressMeter().getPauseTimer().getElapsedSeconds() : 0,
 							record.getProgressMeter().getStatus().getDsc() };
 		
 		 
@@ -73,8 +73,8 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 							record.getProgressMeter().getMinRecordId(),
 							record.getProgressMeter().getMaxRecordId(),
 							record.getProgressMeter().getProcessed(), 
-							record.getProgressMeter().getProcessingTimer().getElapsedSeconds(),
-							record.getProgressMeter().getPauseTimer().getElapsedSeconds(),
+							record.getProgressMeter().getProcessingTimer() != null ? record.getProgressMeter().getProcessingTimer().getElapsedSeconds() : 0,
+							record.getProgressMeter().getPauseTimer() != null ? record.getProgressMeter().getPauseTimer().getElapsedSeconds() : 0,
 							record.getProgressMeter().getStatus().getDsc(), 
 							record.getOperationId() };
 		

@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.conf.types;
 
 public enum EtlOperationStatus {
 	
+	//@// @formatter:off
 	NOT_INITIALIZED(0),
 	RUNNING(1),
 	PAUSED(2),
@@ -12,6 +13,8 @@ public enum EtlOperationStatus {
 	STOPPED_DUE_ERROR(7),
 	STOPPING(8);
 	
+	
+	// @formatter:on
 	int status;
 	
 	EtlOperationStatus(int status) {

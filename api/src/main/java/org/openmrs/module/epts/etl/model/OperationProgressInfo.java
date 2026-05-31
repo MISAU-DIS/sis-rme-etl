@@ -163,22 +163,27 @@ public class OperationProgressInfo {
 		this.status = determineStatus();
 	}
 	
+	@JsonIgnore
 	public boolean isRunning() {
 		return this.status.running();
 	}
 	
+	@JsonIgnore
 	public boolean isPaused() {
 		return this.status.paused();
 	}
 	
+	@JsonIgnore
 	public boolean isStopped() {
 		return this.status.stopped();
 	}
 	
+	@JsonIgnore
 	public boolean isSleeping() {
 		return this.status.slepping();
 	}
 	
+	@JsonIgnore
 	public boolean isFinished() {
 		return this.status.finished();
 	}
