@@ -17,6 +17,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.fileupload.FileItem;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -354,15 +356,17 @@ public abstract class BaseDAO {
 	}
 	
 	private static boolean tryToSolveIssues(DBException e, String sql, Object[] params, Connection conn) throws DBException {
+		String queryInfo = generateQueryInfo(sql, params);
+		
 		if (e.isDeadLock(conn)) {
-			logger.warn("DEADLOCK DETECTED");
+			logger.warn("DEADLOCK DETECTED WHILE EXECUTING QUERY: " + queryInfo);
 			
 			DBOperation dbOp = new DBOperation(sql, params, conn, 50);
 			dbOp.retryDueTemporaryDBError("DEADLOCK");
 			
 			return true;
 		} else if (e.isLockWaitTimeExceded(conn)) {
-			logger.warn("LOCK WAIT TIME EXCEED...");
+			logger.warn("LOCK WAIT TIME EXCEED WHILE EXECUTING QUERY: " + queryInfo);
 			DBOperation dbOp = new DBOperation(sql, params, conn, 50);
 			dbOp.retryDueTemporaryDBError("LOCK WAIT TIME EXCEED");
 			
@@ -370,6 +374,83 @@ public abstract class BaseDAO {
 		}
 		
 		return false;
+	}
+	
+	private static String generateQueryInfo(String sql, Object[] params) {
+		
+		if (sql == null) {
+			return "<null query>";
+		}
+		
+		String normalized = sql.replaceAll("\\s+", " ").trim();
+		
+		String operation = "UNKNOWN";
+		String table = "?";
+		
+		Matcher insertMatcher = Pattern.compile("(?i)^insert\\s+into\\s+([a-zA-Z0-9_\\.]+)").matcher(normalized);
+		
+		Matcher updateMatcher = Pattern.compile("(?i)^update\\s+([a-zA-Z0-9_\\.]+)").matcher(normalized);
+		
+		Matcher deleteMatcher = Pattern.compile("(?i)^delete\\s+from\\s+([a-zA-Z0-9_\\.]+)").matcher(normalized);
+		
+		if (insertMatcher.find()) {
+			operation = "INSERT INTO";
+			table = insertMatcher.group(1);
+		} else if (updateMatcher.find()) {
+			operation = "UPDATE";
+			table = updateMatcher.group(1);
+		} else if (deleteMatcher.find()) {
+			operation = "DELETE FROM";
+			table = deleteMatcher.group(1);
+		}
+		
+		StringBuilder info = new StringBuilder();
+		
+		info.append(operation).append(" ").append(table);
+		
+		String shortenedSql = normalized;
+		
+		if (shortenedSql.length() > 200) {
+			shortenedSql = shortenedSql.substring(0, 200) + "...";
+		}
+		
+		info.append(" | SQL=[").append(shortenedSql).append("]");
+		
+		if (params != null && params.length > 0) {
+			
+			info.append(" | params=[");
+			
+			int maxParams = Math.min(params.length, 5);
+			
+			for (int i = 0; i < maxParams; i++) {
+				
+				if (i > 0) {
+					info.append(",");
+				}
+				
+				Object p = params[i];
+				
+				if (p == null) {
+					info.append("null");
+				} else {
+					String value = String.valueOf(p);
+					
+					if (value.length() > 50) {
+						value = value.substring(0, 50) + "...";
+					}
+					
+					info.append(value);
+				}
+			}
+			
+			if (params.length > maxParams) {
+				info.append(",...");
+			}
+			
+			info.append("]");
+		}
+		
+		return info.toString();
 	}
 	
 	public static void commitConnection(Connection conn) {
