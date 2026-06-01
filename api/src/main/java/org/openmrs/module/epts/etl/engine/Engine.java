@@ -1161,41 +1161,52 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	public void reportProgress() {
 		EtlProgressMeter globalProgressMeter = this.getProgressMeter();
 		
-		String log = "";
+		StringBuilder log = new StringBuilder();
 		
 		int qtyThreads = this.getRelatedEtlOperationConfig().getThreadingMode().isMultiThread()
 		        ? this.getThreadRecordIntervalsManager().getMaxSupportedProcessors()
 		        : 1;
 		
-		log += "PROGRESS (" + getEtlConfigCode().toUpperCase() + "):\n";
+		log.append("PROGRESS (").append(getEtlConfigCode().toUpperCase()).append("):\n");
 		
-		log += "--------------------------------------------------------------------------\n";
+		log.append("--------------------------------------------------------------------------\n");
 		
 		long diff = globalProgressMeter.getTotalToAnalyze() - globalProgressMeter.getTotal();
 		
 		if (!utilities.isBetween(diff, -10, 10)) {
-			log += "TOTAL TO ANALYZE			: ";
-			log += utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotalToAnalyze()), 12)
-			        + ", ";
-			log += "PROCESSED					: " + globalProgressMeter.getDetailedProgressOfAnalyzedRecords() + ", ";
-			log += "REMAINING					: " + globalProgressMeter.getDetailedRemainingToAnalize() + ",\n";
+			
+			log.append(formatReportLine("TOTAL TO ANALYZE",
+			    utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotalToAnalyze()) + ", PROCESSED: "
+			            + globalProgressMeter.getDetailedProgressOfAnalyzedRecords() + ", REMAINING: "
+			            + globalProgressMeter.getDetailedRemainingToAnalize()));
 		}
 		
-		log += "TOTAL RECS TO PROCESS			: "
-		        + utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotal()), 12) + ", ";
-		log += "PROCESSED						: " + globalProgressMeter.getDetailedProgress() + ", ";
-		log += "REMAINING						: " + globalProgressMeter.getDetailedRemaining() + ",";
-		log += "\nPROCESSING TIME				: "
-		        + utilities.ident(globalProgressMeter.getHumanReadbleProcessingTime(), 12);
-		log += "\nSTOP TIME						: " + utilities.ident(globalProgressMeter.getHumanReadblePauseTime(), 12);
-		log += "\nTOTAL TIME					: " + utilities.ident(globalProgressMeter.getHumanReadbleTotalTime(), 12);
-		log += "\nREMAINING TIME				: "
-		        + utilities.ident(globalProgressMeter.getHumanReadbleEstimatedRemainingTime(), 12);
+		log.append(formatReportLine("TOTAL RECS TO PROCESS",
+		    utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotal()) + ", PROCESSED: "
+		            + globalProgressMeter.getDetailedProgress() + ", REMAINING: "
+		            + globalProgressMeter.getDetailedRemaining()));
 		
-		log += "\nUSING THREADS					:" + qtyThreads + "\n";
-		log += "--------------------------------------------------------------------------\n";
+		log.append("\n");
 		
-		this.logWarn(log);
+		log.append(formatReportLine("PROCESSING TIME", globalProgressMeter.getHumanReadbleProcessingTime()));
+		
+		log.append(formatReportLine("STOP TIME", globalProgressMeter.getHumanReadblePauseTime()));
+		
+		log.append(formatReportLine("TOTAL TIME", globalProgressMeter.getHumanReadbleTotalTime()));
+		
+		log.append(formatReportLine("REMAINING TIME", globalProgressMeter.getHumanReadbleEstimatedRemainingTime()));
+		
+		log.append("\n");
+		
+		log.append(formatReportLine("USING THREADS", qtyThreads));
+		
+		log.append("--------------------------------------------------------------------------\n");
+		
+		this.logWarn(log.toString());
+	}
+	
+	private static String formatReportLine(String label, Object value) {
+		return String.format("%-22s : %s%n", label, value);
 	}
 	
 	public synchronized void requestDisplayOfEtlResult(DstConf dstConf, List<EtlDatabaseObject> resultObjs) {
