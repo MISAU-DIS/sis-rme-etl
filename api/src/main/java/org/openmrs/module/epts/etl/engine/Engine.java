@@ -648,13 +648,15 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				List<IntervalExtremeRecord> avaliableIntervals = iManager.getCurrentLimits().getAllNotProcessed();
 				
 				if (iManager.getCurrentLimits().isFullProcessed()) {
-					logTrace("Moving to next interval from " + iManager.getCurrentLimits());
+					String msg = "Moving to next interval from: " + iManager.getCurrentLimits();
 					
 					iManager.moveNext();
 					
 					avaliableIntervals = iManager.getCurrentLimits().getAllNotProcessed();
 					
-					logTrace("Moved to next interval " + iManager.getCurrentLimits());
+					msg += " to: " + iManager.getCurrentLimits();
+					
+					logWarn(msg);
 					
 				} else {
 					if (avaliableIntervals.size() > 0) {
@@ -1167,7 +1169,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        ? this.getThreadRecordIntervalsManager().getMaxSupportedProcessors()
 		        : 1;
 		
-		log.append("PROGRESS (").append(getEtlConfigCode().toUpperCase()).append("):\n");
+		log.append("PROGRESS").append("):\n");
 		
 		log.append("--------------------------------------------------------------------------\n");
 		

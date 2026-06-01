@@ -1815,7 +1815,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					done = true;
 				}
 				catch (ConcurrentModificationException e) {
-					logWarn("ConcurrentModificationException found when finding on loaded table. The aplication will retry");
+					logTrace(
+					    "ConcurrentModificationException found when finding on loaded table. The aplication will retry");
 					TimeCountDown.sleep(2);
 				}
 			}
