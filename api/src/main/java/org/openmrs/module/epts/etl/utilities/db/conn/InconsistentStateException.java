@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.inconsistenceresolver.model.InconsistenceInfo;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -34,7 +34,7 @@ public class InconsistentStateException extends EtlExceptionImpl {
 	}
 	
 	public InconsistentStateException(EtlDatabaseObject obj, Map<ParentTableImpl, Integer> missingParents) {
-		super(generateMissingInfo(obj, missingParents), obj, ActionOnEtlException.ABORT_PROCESS);
+		super(generateMissingInfo(obj, missingParents), obj, ActionOnEtlIssue.ABORT_PROCESS);
 		
 		this.missingParents = missingParents;
 	}

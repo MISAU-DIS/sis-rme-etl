@@ -14,8 +14,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
-import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
@@ -95,9 +95,9 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	private Boolean loadedDataSourceInfo;
 	
-	private OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping;
+	private ActionOnEtlIssue onMultipleDataSourceForSameMapping;
 	
-	private OnMultipleDataSourceFoundBehavior onMultipleDataSourceWithSameName;
+	private ActionOnEtlIssue onMultipleDataSourceWithSameName;
 	
 	private Boolean useAsDataSource;
 	
@@ -106,8 +106,8 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	private Boolean ignoreNoDstIssue;
 	
 	public DstConf() {
-		this.onMultipleDataSourceForSameMapping = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
-		this.onMultipleDataSourceWithSameName = OnMultipleDataSourceFoundBehavior.ABORT_PROCESS;
+		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.ABORT_PROCESS;
+		this.onMultipleDataSourceWithSameName = ActionOnEtlIssue.ABORT_PROCESS;
 		this.useAsDataSource = false;
 	}
 	
@@ -139,27 +139,27 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		return isTrue(useAsDataSource);
 	}
 	
-	public OnMultipleDataSourceFoundBehavior onMultipleDataSourceWithSameName() {
+	public ActionOnEtlIssue onMultipleDataSourceWithSameName() {
 		return onMultipleDataSourceWithSameName;
 	}
 	
-	public OnMultipleDataSourceFoundBehavior getOnMultipleDataSourceWithSameName() {
+	public ActionOnEtlIssue getOnMultipleDataSourceWithSameName() {
 		return onMultipleDataSourceWithSameName;
 	}
 	
-	public void setOnMultipleDataSourceWithSameName(OnMultipleDataSourceFoundBehavior onMultipleDataSourceWithSameName) {
+	public void setOnMultipleDataSourceWithSameName(ActionOnEtlIssue onMultipleDataSourceWithSameName) {
 		this.onMultipleDataSourceWithSameName = onMultipleDataSourceWithSameName;
 	}
 	
-	public OnMultipleDataSourceFoundBehavior getOnMultipleDataSourceForSameMapping() {
+	public ActionOnEtlIssue getOnMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
 	}
 	
-	public void setOnMultipleDataSourceForSameMapping(OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping) {
+	public void setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue onMultipleDataSourceForSameMapping) {
 		this.onMultipleDataSourceForSameMapping = onMultipleDataSourceForSameMapping;
 	}
 	
-	public OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping() {
+	public ActionOnEtlIssue onMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
 	}
 	

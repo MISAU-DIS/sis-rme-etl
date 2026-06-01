@@ -9,9 +9,9 @@ import java.util.regex.Pattern;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
@@ -153,7 +153,7 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 			
 			if (!found) {
 				throw new MissingParameterOnEtlTransformationException ("Parameter '" + paramName + "' not found in source objects.",
-				        srcObjects.get(0), ActionOnEtlException.ABORT_PROCESS);
+				        srcObjects.get(0), ActionOnEtlIssue.ABORT_PROCESS);
 			}
 			
 			if (srcValueAsString.equals("@" + paramName)) {

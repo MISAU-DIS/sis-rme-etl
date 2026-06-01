@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
-import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -28,7 +28,7 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration, Gener
 	
 	void setAllAvaliableDataSource(List<EtlDataSource> ds);
 	
-	OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping();
+	ActionOnEtlIssue onMultipleDataSourceForSameMapping();
 	
 	Boolean isIgnoreUnmappedFields();
 	

@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 
 public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfiguration implements EtlDataConfiguration {
 	
@@ -32,7 +32,7 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 	}
 	
 	@Override
-	public ActionOnEtlException getGeneralBehaviourOnEtlException() {
+	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
 		return relatedEtlConf.getGeneralBehaviourOnEtlException();
 	}
 	

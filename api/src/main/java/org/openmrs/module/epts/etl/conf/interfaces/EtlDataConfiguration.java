@@ -17,7 +17,7 @@ import org.openmrs.module.epts.etl.conf.DefaultEtlValidator;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -40,7 +40,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	
 	void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc);
 	
-	ActionOnEtlException getGeneralBehaviourOnEtlException();
+	ActionOnEtlIssue getGeneralBehaviourOnEtlException();
 	
 	EtlTemplateInfo getTemplate();
 	

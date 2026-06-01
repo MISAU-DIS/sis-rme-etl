@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -117,7 +117,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		
 		if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
 			throw new EtlTransformationException("StringTransformer requires at least one source object.", null, srcObject,
-			        ActionOnEtlException.ABORT_PROCESS);
+			        ActionOnEtlIssue.ABORT_PROCESS);
 		}
 		
 		try {
@@ -134,7 +134,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		catch (Exception e) {
 			
 			throw new EtlTransformationException("Failed to evaluate string expression: " + field.getValueToTransform(), e,
-			        srcObject, ActionOnEtlException.ABORT_PROCESS);
+			        srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		}
 	}
 	

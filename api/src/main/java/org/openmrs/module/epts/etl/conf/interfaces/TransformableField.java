@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf.interfaces;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.types.EtlNullBehavior;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ArithmeticFieldTransformer;
@@ -75,7 +75,7 @@ public interface TransformableField {
 		return null;
 	}
 	
-	EtlNullBehavior nullValueBehavior();
+	ActionOnEtlIssue nullValueBehavior();
 	
 	RelationshipResolutionStrategy relationshipResolutionStrategy();
 	

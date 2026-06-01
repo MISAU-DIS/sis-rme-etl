@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -24,7 +24,7 @@ public class EtlStageObjectInfo {
 		
 		if (!srcObj.hasDestinationRecords()) {
 			throw new EtlExceptionImpl("No dst objects found with src object: " + srcObj, srcObj,
-			        ActionOnEtlException.ABORT_PROCESS);
+			        ActionOnEtlIssue.ABORT_PROCESS);
 		}
 		
 		this.setDstStageInfoObject(

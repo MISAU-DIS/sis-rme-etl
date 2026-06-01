@@ -6,8 +6,8 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -109,10 +109,10 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 			        + "' was transformed to null, but it is not configured to accept null values. "
 			        + "To avoid process interruption, explicitly allow null values for this field or ensure the transformation produces a valid value.";
 			
-			if (field.nullValueBehavior().markAsFailed()) {
-				throw new EtlTransformationException(msg, srcObject, ActionOnEtlException.LOG);
+			if (field.nullValueBehavior().markRecordAsFailed()) {
+				throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
 			} else if (field.nullValueBehavior().abort()) {
-				throw new EtlTransformationException(msg, srcObject, ActionOnEtlException.ABORT_PROCESS);
+				throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 			} else if (field.nullValueBehavior().allow()) {
 				return null;
 			}

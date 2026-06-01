@@ -8,8 +8,8 @@ import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlValidator;
 import org.openmrs.module.epts.etl.conf.interfaces.ValidationRule;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
-import org.openmrs.module.epts.etl.conf.types.EtlInconsistencyBehavior;
 import org.openmrs.module.epts.etl.conf.types.ValidationPhase;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
@@ -26,7 +26,7 @@ public class DefaultEtlValidator implements EtlValidator {
 	
 	private DefaultValidationRule rule;
 	
-	private EtlInconsistencyBehavior behavior;
+	private ActionOnEtlIssue behavior;
 	
 	private String message;
 	
@@ -44,7 +44,7 @@ public class DefaultEtlValidator implements EtlValidator {
 	
 	public DefaultEtlValidator() {
 		phase = ValidationPhase.AFTER_LOAD;
-		behavior = EtlInconsistencyBehavior.ABORT_PROCESS;
+		behavior = ActionOnEtlIssue.ABORT_PROCESS;
 		connectionToUse = EtlDBConnectionType.srcConnInfo;
 	}
 	
@@ -145,7 +145,7 @@ public class DefaultEtlValidator implements EtlValidator {
 	}
 	
 	@Override
-	public EtlInconsistencyBehavior getBehavior() {
+	public ActionOnEtlIssue getBehavior() {
 		return this.behavior;
 	}
 	
@@ -168,7 +168,7 @@ public class DefaultEtlValidator implements EtlValidator {
 		this.rule = rule;
 	}
 	
-	public void setBehavior(EtlInconsistencyBehavior behavior) {
+	public void setBehavior(ActionOnEtlIssue behavior) {
 		this.behavior = behavior;
 	}
 	

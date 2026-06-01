@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
-import org.openmrs.module.epts.etl.conf.types.EtlNullBehavior;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
@@ -31,12 +31,12 @@ public class DataSourceField extends Field implements TransformableField {
 	
 	private RelationshipResolutionStrategy relationshipResolutionStrategy;
 	
-	private EtlNullBehavior nullValueBehavior;
+	private ActionOnEtlIssue nullValueBehavior;
 	
 	private EtlDataSource parent;
 	
 	public DataSourceField() {
-		this.nullValueBehavior = EtlNullBehavior.ALLOW;
+		this.nullValueBehavior = ActionOnEtlIssue.ALLOW;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 	}
 	
@@ -75,12 +75,12 @@ public class DataSourceField extends Field implements TransformableField {
 		this.overrideTriggerValue = overrideTriggerValue;
 	}
 	
-	public void setNullValueBehavior(EtlNullBehavior nullValueBehavior) {
+	public void setNullValueBehavior(ActionOnEtlIssue nullValueBehavior) {
 		this.nullValueBehavior = nullValueBehavior;
 	}
 	
 	@Override
-	public EtlNullBehavior nullValueBehavior() {
+	public ActionOnEtlIssue nullValueBehavior() {
 		return this.nullValueBehavior;
 	}
 	

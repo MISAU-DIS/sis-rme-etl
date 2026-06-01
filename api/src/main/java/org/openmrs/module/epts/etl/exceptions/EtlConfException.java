@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.exceptions;
 
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 
 public class EtlConfException extends EtlExceptionImpl {
@@ -14,7 +15,7 @@ public class EtlConfException extends EtlExceptionImpl {
 	}
 	
 	public EtlConfException(String msg, EtlObject etlObject) {
-		super(msg, etlObject, ActionOnEtlException.ABORT_PROCESS);
+		super(msg, etlObject, ActionOnEtlIssue.ABORT_PROCESS);
 	}
 	
 	public EtlConfException(String msg, Exception e) {
@@ -22,7 +23,7 @@ public class EtlConfException extends EtlExceptionImpl {
 	}
 	
 	public EtlConfException(String msg, Exception e, EtlObject etlObject) {
-		super(msg, e, etlObject, ActionOnEtlException.ABORT_PROCESS);
+		super(msg, e, etlObject, ActionOnEtlIssue.ABORT_PROCESS);
 	}
 	
 	public EtlConfException(Exception e) {
@@ -30,7 +31,7 @@ public class EtlConfException extends EtlExceptionImpl {
 	}
 	
 	public EtlConfException(Exception e, EtlObject etlObject) {
-		super(e, etlObject, ActionOnEtlException.ABORT_PROCESS);
+		super(e, etlObject, ActionOnEtlIssue.ABORT_PROCESS);
 	}
 	
 }

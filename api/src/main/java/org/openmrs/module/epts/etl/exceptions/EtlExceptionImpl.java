@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.exceptions;
 
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 
 public class EtlExceptionImpl extends RuntimeException implements EtlException {
@@ -8,17 +9,17 @@ public class EtlExceptionImpl extends RuntimeException implements EtlException {
 	
 	private EtlObject etlObject;
 	
-	private ActionOnEtlException action;
+	private ActionOnEtlIssue action;
 	
 	public EtlExceptionImpl() {
-		this.action = ActionOnEtlException.ABORT_PROCESS;
+		this.action = ActionOnEtlIssue.ABORT_PROCESS;
 	}
 	
 	public EtlExceptionImpl(String msg) {
 		super(msg);
 	}
 	
-	public EtlExceptionImpl(String msg, EtlObject etlObject, ActionOnEtlException action) {
+	public EtlExceptionImpl(String msg, EtlObject etlObject, ActionOnEtlIssue action) {
 		super(msg);
 		
 		this.action = action;
@@ -28,10 +29,10 @@ public class EtlExceptionImpl extends RuntimeException implements EtlException {
 	public EtlExceptionImpl(String msg, Exception e) {
 		super(msg, e);
 		
-		this.action = ActionOnEtlException.ABORT_PROCESS;
+		this.action = ActionOnEtlIssue.ABORT_PROCESS;
 	}
 	
-	public EtlExceptionImpl(String msg, Exception e, EtlObject etlObject, ActionOnEtlException action) {
+	public EtlExceptionImpl(String msg, Exception e, EtlObject etlObject, ActionOnEtlIssue action) {
 		super(msg, e);
 		
 		this.action = action;
@@ -41,11 +42,11 @@ public class EtlExceptionImpl extends RuntimeException implements EtlException {
 	public EtlExceptionImpl(Exception e) {
 		this(e.getLocalizedMessage());
 		
-		this.action = ActionOnEtlException.ABORT_PROCESS;
+		this.action = ActionOnEtlIssue.ABORT_PROCESS;
 		
 	}
 	
-	public EtlExceptionImpl(Exception e, EtlObject etlObject, ActionOnEtlException action) {
+	public EtlExceptionImpl(Exception e, EtlObject etlObject, ActionOnEtlIssue action) {
 		this(e.getLocalizedMessage());
 		
 		this.action = action;
@@ -62,7 +63,7 @@ public class EtlExceptionImpl extends RuntimeException implements EtlException {
 	}
 	
 	@Override
-	public ActionOnEtlException getAction() {
+	public ActionOnEtlIssue getAction() {
 		return this.action;
 	}
 	

@@ -12,7 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
-import org.openmrs.module.epts.etl.conf.types.EtlNullBehavior;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
@@ -69,7 +69,7 @@ public class FieldsMapping extends Field implements TransformableField {
 	
 	private RelationshipResolutionStrategy relationshipResolutionStrategy;
 	
-	private EtlNullBehavior nullValueBehavior;
+	private ActionOnEtlIssue nullValueBehavior;
 	
 	private EtlDataSource dataSource;
 	
@@ -78,7 +78,7 @@ public class FieldsMapping extends Field implements TransformableField {
 	private Boolean manuallyConfigured;
 	
 	public FieldsMapping() {
-		this.nullValueBehavior = EtlNullBehavior.ABORT_PROCESS;
+		this.nullValueBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 		
 		this.possibleSrc = new ArrayList<>(5);
@@ -132,11 +132,11 @@ public class FieldsMapping extends Field implements TransformableField {
 		return isTrue(getManuallyConfigured());
 	}
 	
-	public EtlNullBehavior getNullValueBehavior() {
+	public ActionOnEtlIssue getNullValueBehavior() {
 		return nullValueBehavior;
 	}
 	
-	public void setNullValueBehavior(EtlNullBehavior nullValueBehavior) {
+	public void setNullValueBehavior(ActionOnEtlIssue nullValueBehavior) {
 		this.nullValueBehavior = nullValueBehavior;
 	}
 	
@@ -149,7 +149,7 @@ public class FieldsMapping extends Field implements TransformableField {
 	}
 	
 	@Override
-	public EtlNullBehavior nullValueBehavior() {
+	public ActionOnEtlIssue nullValueBehavior() {
 		return this.nullValueBehavior;
 	}
 	

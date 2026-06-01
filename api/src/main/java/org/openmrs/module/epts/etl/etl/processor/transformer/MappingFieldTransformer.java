@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
-import org.openmrs.module.epts.etl.conf.types.MappingNotFoundBehavior;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -96,7 +96,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private String extraCondition;
 	
-	private MappingNotFoundBehavior onMissing;
+	private ActionOnEtlIssue onMissing;
 	
 	private volatile TableConfiguration tableConfig;
 	
@@ -115,7 +115,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 		
 		validateParams(parameters);
 		
-		this.onMissing = MappingNotFoundBehavior.ABORT_PROCESS;
+		this.onMissing = ActionOnEtlIssue.ABORT_PROCESS;
 		this.mappingTable = parameters.get(0).toString();
 		this.mappingSrcField = parameters.get(1).toString();
 		this.mappingDstField = parameters.get(2).toString();
@@ -155,7 +155,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 					this.extraCondition = paramValue;
 				} else if (paramName.equals("on_missing")) {
 					try {
-						this.onMissing = MappingNotFoundBehavior.valueOf(paramValue);
+						this.onMissing = ActionOnEtlIssue.valueOf(paramValue);
 					}
 					catch (Exception e) {
 						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
@@ -170,7 +170,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 	}
 	
-	public MappingNotFoundBehavior onMissing() {
+	public ActionOnEtlIssue onMissing() {
 		return this.onMissing;
 	}
 	

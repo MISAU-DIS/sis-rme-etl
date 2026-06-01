@@ -19,13 +19,12 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.JavaObjectFieldsValuesGenerator;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ObjectLanguageType;
-import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -70,11 +69,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	
 	private Boolean ignoreUnmappedFields;
 	
-	private OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping;
+	private ActionOnEtlIssue onMultipleDataSourceForSameMapping;
 	
 	public ObjectDataSource() {
 		this.ignoreUnmappedFields = true;
-		this.onMultipleDataSourceForSameMapping = OnMultipleDataSourceFoundBehavior.USE_LAST;
+		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
 	}
 	
 	@Override
@@ -457,7 +456,7 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	}
 	
 	@Override
-	public ActionOnEtlException getGeneralBehaviourOnEtlException() {
+	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
 		return this.getRelatedEtlConf().getGeneralBehaviourOnEtlException();
 	}
 	
@@ -564,11 +563,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 		this.ignoreUnmappedFields = ignoreUnmappedFields;
 	}
 	
-	public OnMultipleDataSourceFoundBehavior getOnMultipleDataSourceForSameMapping() {
+	public ActionOnEtlIssue getOnMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
 	}
 	
-	public void setOnMultipleDataSourceForSameMapping(OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping) {
+	public void setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue onMultipleDataSourceForSameMapping) {
 		this.onMultipleDataSourceForSameMapping = onMultipleDataSourceForSameMapping;
 	}
 	
@@ -586,7 +585,7 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	}
 	
 	@Override
-	public OnMultipleDataSourceFoundBehavior onMultipleDataSourceForSameMapping() {
+	public ActionOnEtlIssue onMultipleDataSourceForSameMapping() {
 		return this.onMultipleDataSourceForSameMapping;
 	}
 	

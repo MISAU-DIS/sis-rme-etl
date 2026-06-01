@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.exceptions;
 
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 
 public interface EtlException {
@@ -10,7 +11,7 @@ public interface EtlException {
 	
 	Throwable getException();
 	
-	ActionOnEtlException getAction();
+	ActionOnEtlIssue getAction();
 	
 	EtlObject getEtlObject();
 	

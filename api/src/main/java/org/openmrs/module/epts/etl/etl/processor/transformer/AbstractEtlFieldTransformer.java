@@ -12,8 +12,8 @@ import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfiguration implements EtlFieldTransformer {
@@ -110,7 +110,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	}
 	
 	@Override
-	public ActionOnEtlException getGeneralBehaviourOnEtlException() {
+	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
 		return null;
 	}
 	

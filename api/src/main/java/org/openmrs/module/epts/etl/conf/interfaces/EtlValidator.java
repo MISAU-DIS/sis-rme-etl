@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
-import org.openmrs.module.epts.etl.conf.types.EtlInconsistencyBehavior;
 import org.openmrs.module.epts.etl.conf.types.ValidationPhase;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -43,7 +43,7 @@ public interface EtlValidator {
 	
 	ValidationPhase getPhase();
 	
-	EtlInconsistencyBehavior getBehavior();
+	ActionOnEtlIssue getBehavior();
 	
 	DataSourceField getValue();
 	

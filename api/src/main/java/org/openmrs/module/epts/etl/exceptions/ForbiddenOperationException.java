@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.exceptions;
 
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 
 /**
@@ -53,8 +54,8 @@ public class ForbiddenOperationException extends RuntimeException implements Etl
 	}
 	
 	@Override
-	public ActionOnEtlException getAction() {
-		return ActionOnEtlException.ABORT_PROCESS;
+	public ActionOnEtlIssue getAction() {
+		return ActionOnEtlIssue.ABORT_PROCESS;
 	}
 	
 	@Override

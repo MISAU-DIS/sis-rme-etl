@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -60,7 +60,7 @@ public class SimpleValueTransformer extends AbstractEtlFieldTransformer {
 		
 		if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
 			throw new EtlTransformationException("SimpleValueTransformer requires at least one source object.", srcObject,
-			        ActionOnEtlException.ABORT_PROCESS);
+			        ActionOnEtlIssue.ABORT_PROCESS);
 		}
 		
 		Object result = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(additionalSrcObjects,

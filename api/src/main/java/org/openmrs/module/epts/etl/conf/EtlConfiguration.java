@@ -22,16 +22,15 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableAliasesGenerator;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
-import org.openmrs.module.epts.etl.conf.types.EtlInconsistencyBehavior;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.ProcessController;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -175,9 +174,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private boolean reRunable;
 	
-	private ActionOnEtlException defaultExceptionBehavior;
+	private ActionOnEtlIssue defaultExceptionBehavior;
 	
-	private EtlInconsistencyBehavior defaultInconsistencyBehavior;
+	private ActionOnEtlIssue defaultInconsistencyBehavior;
 	
 	/**
 	 * Defines additional source tables that are not explicitly configured as ETL sources but are
@@ -211,9 +210,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		
 		this.waitTimeToCheckStatus = 5;
 		
-		this.defaultExceptionBehavior = ActionOnEtlException.ABORT_PROCESS;
+		this.defaultExceptionBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
-		this.defaultInconsistencyBehavior = EtlInconsistencyBehavior.ABORT_PROCESS;
+		this.defaultInconsistencyBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.disableDefaultObjectCreation = false;
 	}
 	
@@ -2045,23 +2044,23 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 	
 	@Override
-	public ActionOnEtlException getGeneralBehaviourOnEtlException() {
+	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
 		return this.defaultExceptionBehavior;
 	}
 	
-	public ActionOnEtlException getDefaultExceptionBehavior() {
+	public ActionOnEtlIssue getDefaultExceptionBehavior() {
 		return defaultExceptionBehavior;
 	}
 	
-	public void setDefaultExceptionBehavior(ActionOnEtlException defaultExceptionBehavior) {
+	public void setDefaultExceptionBehavior(ActionOnEtlIssue defaultExceptionBehavior) {
 		this.defaultExceptionBehavior = defaultExceptionBehavior;
 	}
 	
-	public EtlInconsistencyBehavior getDefaultInconsistencyBehavior() {
+	public ActionOnEtlIssue getDefaultInconsistencyBehavior() {
 		return defaultInconsistencyBehavior;
 	}
 	
-	public void setDefaultInconsistencyBehavior(EtlInconsistencyBehavior defaultInconsistencyBehavior) {
+	public void setDefaultInconsistencyBehavior(ActionOnEtlIssue defaultInconsistencyBehavior) {
 		this.defaultInconsistencyBehavior = defaultInconsistencyBehavior;
 	}
 	

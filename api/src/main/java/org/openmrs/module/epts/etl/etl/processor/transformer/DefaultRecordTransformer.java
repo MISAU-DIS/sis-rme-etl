@@ -12,9 +12,9 @@ import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.MissingRequiredTransformationObject;
@@ -47,7 +47,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 		
 		if (srcObject == null) {
-			throw new EtlTransformationException("SrcObject cannot be null", null, ActionOnEtlException.ABORT_PROCESS);
+			throw new EtlTransformationException("SrcObject cannot be null", null, ActionOnEtlIssue.ABORT_PROCESS);
 		}
 		
 		processor.logTrace("Transforming dstRecord " + srcObject);

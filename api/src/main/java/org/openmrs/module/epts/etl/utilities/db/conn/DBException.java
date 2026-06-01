@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.utilities.db.conn;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -25,7 +25,7 @@ public class DBException extends SQLException implements EtlException {
 	private int SQLCodeError;
 	
 	private String SQLState;
-	
+		
 	private String dataBaseName;
 	
 	public static final int ORACLE_UNIQUE_CONSTRAINTS_VIOLATED_COD = 1;
@@ -268,8 +268,8 @@ public class DBException extends SQLException implements EtlException {
 	}
 	
 	@Override
-	public ActionOnEtlException getAction() {
-		return ActionOnEtlException.ABORT_PROCESS;
+	public ActionOnEtlIssue getAction() {
+		return ActionOnEtlIssue.ABORT_PROCESS;
 	}
 	
 	@Override

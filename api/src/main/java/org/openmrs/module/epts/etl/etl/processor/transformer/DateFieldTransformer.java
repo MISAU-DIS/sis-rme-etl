@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
-import org.openmrs.module.epts.etl.conf.types.EtlInconsistencyBehavior;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -37,7 +37,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private DateTimeUnit unit;
 	
-	private EtlInconsistencyBehavior onInvalid;
+	private ActionOnEtlIssue onInvalid;
 	
 	private List<String> rawParameterDefinitions;
 	
@@ -46,7 +46,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 		
 		super(parameters, relatedEtlTargedConf, field);
 		
-		this.onInvalid = EtlInconsistencyBehavior.ABORT_PROCESS;
+		this.onInvalid = ActionOnEtlIssue.ABORT_PROCESS;
 		
 		this.rawParameterDefinitions = parameters != null ? parameters.stream().map(Object::toString).toList()
 		        : Collections.emptyList();
@@ -82,7 +82,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 					this.operation = DateTransformOperation.valueOf(paramValue);
 				} else if (paramName.equals("on_invalid")) {
 					try {
-						this.onInvalid = EtlInconsistencyBehavior.valueOf(paramValue);
+						this.onInvalid = ActionOnEtlIssue.valueOf(paramValue);
 					}
 					catch (Exception e) {
 						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName

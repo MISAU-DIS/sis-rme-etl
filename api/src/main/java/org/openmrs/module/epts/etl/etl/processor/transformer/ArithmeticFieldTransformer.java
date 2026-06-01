@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -75,7 +75,7 @@ public class ArithmeticFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 		if (field.getValueToTransform() == null) {
 			throw new EtlTransformationException("Source value must be provided for arithmetic transformation.", srcObject,
-			        ActionOnEtlException.ABORT_PROCESS);
+			        ActionOnEtlIssue.ABORT_PROCESS);
 		}
 		
 		String srcValueWithParamsReplaced = EtlFieldTransformer
@@ -95,7 +95,7 @@ public class ArithmeticFieldTransformer extends AbstractEtlFieldTransformer {
 		catch (Exception e) {
 			
 			throw new EtlTransformationException("Failed to evaluate arithmetic expression: " + field.getValueToTransform(),
-			        e, srcObject, ActionOnEtlException.ABORT_PROCESS);
+			        e, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		}
 	}
 	

@@ -20,11 +20,10 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
-import org.openmrs.module.epts.etl.conf.types.OnMultipleDataSourceFoundBehavior;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ActionOnEtlException;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
@@ -428,7 +427,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		
 		if (dstParent == null) {
 			throw new EtlTransformationException("Error on transforming the parentDstRecord on " + getTransformerDsc(),
-			        srcObject, ActionOnEtlException.ABORT_PROCESS);
+			        srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		}
 		
 		return new FieldTransformingInfo(field, dstParent.getObjectId().asSimpleValue(),
@@ -844,7 +843,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 		
 		for (DstConf dstC : conf.getDstConf()) {
-			dstC.setOnMultipleDataSourceWithSameName(OnMultipleDataSourceFoundBehavior.USE_LAST);
+			dstC.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.USE_LAST);
 		}
 		
 		return conf;
