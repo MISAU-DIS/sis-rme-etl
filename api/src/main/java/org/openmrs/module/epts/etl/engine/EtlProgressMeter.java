@@ -197,11 +197,16 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	
 	@JsonIgnore
 	public String getHumanReadbleEstimatedRemainingTime() {
-		double eta = (getTotal() * getProcessingTimer().getElapsedSeconds()) / this.getProcessed();
-		
-		TimeController tc = new TimeController(eta);
-		
-		return tc.toString();
+		if (this.getProcessed() == 0) {
+			return "UNKNOW";
+		} else {
+			
+			double eta = (getTotal() * getProcessingTimer().getElapsedSeconds()) / this.getProcessed();
+			
+			TimeController tc = new TimeController(eta);
+			
+			return tc.toString();
+		}
 	}
 	
 	public void changeRefreshInterval(int refreshInterval) {

@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
 import org.openmrs.module.epts.etl.conf.types.ValidationPhase;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -103,10 +104,16 @@ public class DefaultEtlValidator implements EtlValidator {
 			getValue().getTransformerInstance().setOverrideConnection(dstConn);
 		}
 		
-		FieldTransformingInfo value = getValue().transform(processor, srcObject, transformedRecord, additionalSrcObjects,
-		    srcConn, dstConn);
-		
-		boolean valid = this.getRule().evaluate(value.getTransformedValue());
+		boolean valid;
+		try {
+			FieldTransformingInfo value = getValue().transform(processor, srcObject, transformedRecord, additionalSrcObjects,
+			    srcConn, dstConn);
+			
+			valid = this.getRule().evaluate(value.getTransformedValue());
+		}
+		catch (EmptyTransformedValueException e) {
+			valid = false;
+		}
 		
 		if (!valid) {
 			handleFailure(transformedRecord);
