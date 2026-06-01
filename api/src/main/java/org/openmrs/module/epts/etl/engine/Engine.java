@@ -1174,25 +1174,25 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		long diff = globalProgressMeter.getTotalToAnalyze() - globalProgressMeter.getTotal();
 		
 		if (!utilities.isBetween(diff, -10, 10)) {
-			log += "TOTAL TO ANALYZE     		: "
-			        + utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotalToAnalyze()), 12)
+			log += "TOTAL TO ANALYZE			: ";
+			log += utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotalToAnalyze()), 12)
 			        + ", ";
 			log += "PROCESSED					: " + globalProgressMeter.getDetailedProgressOfAnalyzedRecords() + ", ";
 			log += "REMAINING					: " + globalProgressMeter.getDetailedRemainingToAnalize() + ",\n";
 		}
 		
-		log += "TOTAL RECS TO PROCESS		 	: "
+		log += "TOTAL RECS TO PROCESS			: "
 		        + utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotal()), 12) + ", ";
-		log += "PROCESSED					 	: " + globalProgressMeter.getDetailedProgress() + ", ";
-		log += "REMAINING					 	: " + globalProgressMeter.getDetailedRemaining() + ",";
-		log += "\nPROCESSING TIME            	: "
+		log += "PROCESSED						: " + globalProgressMeter.getDetailedProgress() + ", ";
+		log += "REMAINING						: " + globalProgressMeter.getDetailedRemaining() + ",";
+		log += "\nPROCESSING TIME				: "
 		        + utilities.ident(globalProgressMeter.getHumanReadbleProcessingTime(), 12);
-		log += "\nSTOP TIME                  	: " + utilities.ident(globalProgressMeter.getHumanReadblePauseTime(), 12);
-		log += "\nTOTAL TIME                 	: " + utilities.ident(globalProgressMeter.getHumanReadbleTotalTime(), 12);
-		log += "\nREMAINING TIME             	: "
+		log += "\nSTOP TIME						: " + utilities.ident(globalProgressMeter.getHumanReadblePauseTime(), 12);
+		log += "\nTOTAL TIME					: " + utilities.ident(globalProgressMeter.getHumanReadbleTotalTime(), 12);
+		log += "\nREMAINING TIME				: "
 		        + utilities.ident(globalProgressMeter.getHumanReadbleEstimatedRemainingTime(), 12);
 		
-		log += "\nUSING THREADS: " + qtyThreads + "\n";
+		log += "\nUSING THREADS					:" + qtyThreads + "\n";
 		log += "--------------------------------------------------------------------------\n";
 		
 		this.logWarn(log);
