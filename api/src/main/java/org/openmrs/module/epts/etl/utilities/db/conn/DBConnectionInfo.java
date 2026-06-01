@@ -8,6 +8,7 @@ import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -47,6 +48,8 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	
 	private Boolean autoCommit;
 	
+	private EtlDBConnectionType connType;
+	
 	public DBConnectionInfo() {
 		isolationLevel = DBConnectionIsolationLevel.TRANSACTION_REPEATABLE_READ;
 	}
@@ -64,6 +67,26 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		this(dataBaseUserName, dataBaseUserPassword, connectionURI, driveClassName);
 		
 		this.schema = schema;
+	}
+	
+	public EtlDBConnectionType getConnType() {
+		return connType;
+	}
+	
+	public void setConnType(EtlDBConnectionType connType) {
+		this.connType = connType;
+	}
+	
+	public boolean isSrcConn() {
+		return this.getConnType() != null && this.getConnType().isSrc();
+	}
+	
+	public boolean isDstConn() {
+		return this.getConnType() != null && this.getConnType().isDst();
+	}
+	
+	public boolean isMainConn() {
+		return this.getConnType() != null && this.getConnType().isMain();
 	}
 	
 	public Boolean getAutoCommit() {

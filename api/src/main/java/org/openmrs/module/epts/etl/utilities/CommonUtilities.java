@@ -79,15 +79,15 @@ public class CommonUtilities implements Serializable {
 	}
 	
 	public String addAtributeToValidationString(String currentString, long field, String scapeStr) {
-		return addAtributeToValidationString(currentString, "" + field, scapeStr);
+		return concatStringsWithSeparator(currentString, "" + field, scapeStr);
 	}
 	
 	public String addAtributeToValidationString(String currentString, char field, String scapeStr) {
-		return addAtributeToValidationString(currentString, "" + field, scapeStr);
+		return concatStringsWithSeparator(currentString, "" + field, scapeStr);
 	}
 	
 	public String addAtributeToValidationString(String currentString, Object field, String scapeStr) {
-		return addAtributeToValidationString(currentString, "" + field, scapeStr);
+		return concatStringsWithSeparator(currentString, "" + field, scapeStr);
 	}
 	
 	/**

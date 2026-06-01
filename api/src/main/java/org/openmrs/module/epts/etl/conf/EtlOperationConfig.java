@@ -791,7 +791,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 	
 	public static List<EtlOperationType> getSupportedOperationsInEtlProcess() {
-		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT, EtlOperationType.DB_PREPARATION };
+		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT,
+		        EtlOperationType.DB_PREPARATION };
 		
 		return utilities.parseArrayToList(supported);
 	}
@@ -980,6 +981,10 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		} else {
 			setMaxSupportedProcessors(1);
 		}
+	}
+	
+	public boolean hasChild() {
+		return this.getChild() != null;
 	}
 	
 }

@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableAliasesGenerator;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
+import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
 import org.openmrs.module.epts.etl.conf.types.EtlInconsistencyBehavior;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
@@ -1327,13 +1328,102 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			errorMsg += ++errNum + ". No Src conn were configured!";
 		}
 		
+		String connIssue = validateTransationConf();
+		
+		if (utilities.stringHasValue(connIssue)) {
+			errorMsg += ++errNum + ". " + connIssue;
+		}
+		
 		if (utilities.stringHasValue(errorMsg)) {
 			errorMsg = "There are errors on Configuration file " + this.relatedConfFile.getAbsolutePath() + "\n" + errorMsg;
 			throw new ForbiddenOperationException(errorMsg);
 		} else if (this.childConfig != null) {
 			this.childConfig.validate();
 		}
+	}
+	
+	private String validateTransationConf() {
+		initConnInfo();
 		
+		String issues = "";
+		
+		issues = validateTransationConf(this.getSrcConnInfo());
+		
+		if (utilities.stringHasValue(issues)) {
+			return issues;
+		}
+		
+		issues = validateTransationConf(this.getDstConnInfo());
+		
+		if (utilities.stringHasValue(issues)) {
+			return issues;
+		}
+		
+		issues = validateTransationConf(this.getMainConnInfo());
+		
+		if (utilities.stringHasValue(issues)) {
+			return issues;
+		}
+		
+		if (getDefaultExceptionBehavior().abort()) {
+			
+		}
+		
+		return null;
+	}
+	
+	private String validateTransationConf(DBConnectionInfo connInfo) {
+		String operationsWithShareConn = null;
+		
+		if (connInfo != null && connInfo.isAutoCommit()) {
+			
+			if (hasOperation()) {
+				for (EtlOperationConfig operation : this.getOperations()) {
+					operationsWithShareConn = validateTransationConf(operation, connInfo, operationsWithShareConn);
+				}
+				
+				if (operationsWithShareConn != null) {
+					return connInfo.getConnType()
+					        + ": autoCommit=true is forbiden when use SharedConnectionPerThread. Affected Operations: "
+					        + operationsWithShareConn;
+				}
+			}
+			
+			if (this.getDefaultExceptionBehavior().abort()) {
+				return connInfo.getConnType()
+				        + ": autoCommit=true is forbiden when defaultExceptionBehavior is set to ABORT_PROCESS";
+			}
+			
+		}
+		
+		return null;
+	}
+	
+	private String validateTransationConf(EtlOperationConfig operation, DBConnectionInfo connInfo,
+	        String operationsWithShareConn) {
+		
+		if (operation.isUseSharedConnectionPerThread()) {
+			operationsWithShareConn = utilities.addAtributeToValidationString(operationsWithShareConn,
+			    operation.getOperationType().name(), ",");
+		}
+		
+		if (operation.hasChild()) {
+			return validateTransationConf(operation.getChild(), connInfo, operationsWithShareConn);
+		}
+		
+		return operationsWithShareConn;
+	}
+	
+	private void initConnInfo() {
+		if (this.hasSrcConnInfo()) {
+			this.getSrcConnInfo().setConnType(EtlDBConnectionType.srcConnInfo);
+		}
+		if (this.hasDstConnInfo()) {
+			this.getDstConnInfo().setConnType(EtlDBConnectionType.dstConnInfo);
+		}
+		if (this.hasMainConnInfo()) {
+			this.getMainConnInfo().setConnType(EtlDBConnectionType.mainConnInfo);
+		}
 	}
 	
 	public boolean hasFinalizer() {
