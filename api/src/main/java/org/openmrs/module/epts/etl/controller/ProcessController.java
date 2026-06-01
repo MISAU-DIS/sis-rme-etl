@@ -19,7 +19,6 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.OperationProgressInfo;
 import org.openmrs.module.epts.etl.model.ProcessProgressInfo;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
@@ -68,6 +67,8 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	private static final Object LOCK = new Object();
 	
+	private boolean stopRequested;
+	
 	public ProcessController() {
 		this.progressInfo = new ProcessProgressInfo(this);
 	}
@@ -80,6 +81,14 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		this.logger = new EtlLogger(ProcessController.class);
 		
 		init(configuration);
+	}
+	
+	public boolean isStopRequested() {
+		return stopRequested;
+	}
+	
+	public void setStopRequested(boolean stopRequested) {
+		this.stopRequested = stopRequested;
 	}
 	
 	@Override
@@ -255,7 +264,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	
 	@Override
 	public boolean stopRequested() {
-		return generateStopRequestFile().exists();
+		return this.isStopRequested() || generateStopRequestFile().exists();
 	}
 	
 	@Override
@@ -376,10 +385,14 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			
 			changeStatusToStopping();
 			
+			setStopRequested(true);
+			
+			/*
 			String fileName = generateStopRequestFile().getAbsolutePath();
 			
 			FileUtilities.write(fileName, "{\"stopRequestedAt\":"
 			        + DateAndTimeUtilities.formatToMilissegundos(DateAndTimeUtilities.getCurrentDate()) + "\"}");
+			*/
 			
 			if (isNotInitialized()) {
 				logWarn("Process not initialized, the stopping now!");

@@ -35,7 +35,6 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
 import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
-import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
@@ -907,40 +906,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 	
 	private void stopOperationDueError(Exception e) {
-		if (e != null) {
-			logErr("Stop requested due error:", e);
-		}
-		
-		requestStop();
-		
-		synchronized (LOCK) {
-			
-			while (!isStopped() && !isFinished()) {
-				if (utilities.listHasElement(this.getCurrentTaskProcessor())) {
-					boolean atLeaseOneIsRunning = false;
-					
-					for (TaskProcessor<T> t : this.getCurrentTaskProcessor()) {
-						if (!t.isStopped() && !t.isFinished()) {
-							atLeaseOneIsRunning = true;
-							
-							logWarn("Stop Requested but processor Is Still Running:" + t.getProcessorId() + "("
-							        + t.getOperationStatus() + ")",
-							    15);
-						}
-					}
-					
-					if (!atLeaseOneIsRunning) {
-						logWarn("Stopping engine as requested: " + this.getEngineId());
-						changeStatusToStopped();
-					}
-					
-					TimeCountDown.sleep(5);
-				} else {
-					changeStatusToStopped();
-				}
-			}
-		}
-		
 		getRelatedOperationController().requestStopDueError(this, e);
 	}
 	
@@ -958,6 +923,35 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			this.stopRequested = true;
 			
 			changeStatusToStopping();
+			
+			boolean stopNow = false;
+			
+			if (utilities.listHasElement(this.getCurrentTaskProcessor())) {
+				boolean atLeaseOneIsRunning = false;
+				
+				for (TaskProcessor<T> t : this.getCurrentTaskProcessor()) {
+					if (!t.isStopped() && !t.isFinished()) {
+						atLeaseOneIsRunning = true;
+						
+						logWarn("Stop Requested but processor Is Still Running:" + t.getProcessorId() + "("
+						        + t.getOperationStatus() + ")",
+						    15);
+					}
+				}
+				
+				if (!atLeaseOneIsRunning) {
+					stopNow = true;
+				}
+			} else {
+				stopNow = true;
+			}
+			
+			if (stopNow) {
+				logWarn("No task is running, stopping the Engune now: " + this.getEngineId());
+				
+				changeStatusToStopped();
+			}
+			
 		}
 	}
 	
@@ -1191,7 +1185,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        + utilities.ident(utilities.generateCommaSeparetedNumber(globalProgressMeter.getTotal()), 12) + ", ";
 		log += "PROCESSED					 	: " + globalProgressMeter.getDetailedProgress() + ", ";
 		log += "REMAINING					 	: " + globalProgressMeter.getDetailedRemaining() + ",";
-		log += "\nPROCESSING TIME            	: " + utilities.ident(globalProgressMeter.getHumanReadbleProcessingTime(), 12);
+		log += "\nPROCESSING TIME            	: "
+		        + utilities.ident(globalProgressMeter.getHumanReadbleProcessingTime(), 12);
 		log += "\nSTOP TIME                  	: " + utilities.ident(globalProgressMeter.getHumanReadblePauseTime(), 12);
 		log += "\nTOTAL TIME                 	: " + utilities.ident(globalProgressMeter.getHumanReadbleTotalTime(), 12);
 		log += "\nREMAINING TIME             	: "

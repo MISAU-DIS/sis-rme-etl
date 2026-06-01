@@ -27,7 +27,6 @@ import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
-import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
@@ -510,7 +509,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 	
 	private void startAndAddToEnginesActivititieMonitor(Engine<T> activitityMonitor) {
-		this.enginesActivititieMonitor.add(activitityMonitor);
+		this.getEnginesActivititieMonitor().add(activitityMonitor);
 		
 		ThreadPoolService.getInstance().createNewThreadPoolExecutor(activitityMonitor.getEngineId())
 		        .execute(activitityMonitor);
@@ -571,7 +570,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				
 				if (this.getOperationConfig().isParallelModeProcessing()) {
 					
-					if (this.enginesActivititieMonitor != null) {
+					if (this.getEnginesActivititieMonitor() != null) {
 						
 						int qty = 0;
 						
@@ -579,7 +578,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 						
 						msg += "----------------------------------------\n";
 						
-						for (Engine<T> engine : this.enginesActivititieMonitor) {
+						for (Engine<T> engine : this.getEnginesActivititieMonitor()) {
 							
 							if (engine.isRunning()) {
 								qty++;
@@ -627,8 +626,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		if (isNotInitialized())
 			return false;
 		
-		if (isParallelModeProcessing() && this.enginesActivititieMonitor != null) {
-			for (Engine<T> monitor : this.enginesActivititieMonitor) {
+		if (isParallelModeProcessing() && this.getEnginesActivititieMonitor() != null) {
+			for (Engine<T> monitor : this.getEnginesActivititieMonitor()) {
 				if (!monitor.isStopped()) {
 					return false;
 				}
@@ -646,8 +645,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			return false;
 		}
 		
-		if (isParallelModeProcessing() && this.enginesActivititieMonitor != null) {
-			for (Engine<T> monitor : this.enginesActivititieMonitor) {
+		if (isParallelModeProcessing() && this.getEnginesActivititieMonitor() != null) {
+			for (Engine<T> monitor : this.getEnginesActivititieMonitor()) {
 				if (!monitor.isFinished()) {
 					return false;
 				}
@@ -781,7 +780,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			return;
 		
 		if (this.enginesActivititieMonitor != null) {
-			for (Engine<T> monitor : this.enginesActivititieMonitor) {
+			for (Engine<T> monitor : this.getEnginesActivititieMonitor()) {
 				ThreadPoolService.getInstance().terminateTread(logger, monitor.getEngineId(), monitor);
 			}
 		}
@@ -813,36 +812,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 	
 	public void requestStopDueError(Engine<T> monitor, Exception e) {
+		logErr("Requesting stop due error", e);
 		
-		if (stopRequested() || isStopped() || isFinished()) {
-			return;
-		}
-		
-		synchronized (LOCK) {
-			if (stopRequested() || isStopped() || isFinished()) {
-				return;
-			}
-			
-			performStopDueToError(monitor, e);
-		}
-		
-	}
-	
-	public void performStopDueToError(Engine<T> monitor, Exception e) {
-		this.lastException = e;
-		
-		logger.error("STOP REQUESTED DUE ERROR. THE OPERATION WILL STOP.", e);
-		
-		requestStop();
-		
-		this.getProcessController().requestStop();
-		
-		waitForOperationToStopStop(utilities().parseList(this.getChildren(), MonitoredOperation.class));
-		waitForOperationToStopStop(utilities().parseList(this.enginesActivititieMonitor, MonitoredOperation.class));
-		
-		logger.warn("STOPPING THE OPERATION AS REQUESTED...");
-		
-		changeStatusToStopped();
+		getProcessController().requestStop();
 	}
 	
 	@Override
@@ -866,8 +838,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			
 			this.stopRequested = true;
 			
-			if (this.enginesActivititieMonitor != null) {
-				for (Engine<T> engine : this.enginesActivititieMonitor) {
+			if (this.getEnginesActivititieMonitor() != null) {
+				for (Engine<T> engine : this.getEnginesActivititieMonitor()) {
 					engine.requestStop();
 				}
 			}
@@ -878,6 +850,23 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
 					child.requestStop();
 				}
+			}
+			
+			boolean atLeastOneEngineIsRunning = false;
+			
+			if (this.getEnginesActivititieMonitor() != null) {
+				for (Engine<T> engine : this.getEnginesActivititieMonitor()) {
+					
+					if (engine.isRunning()) {
+						atLeastOneEngineIsRunning = true;
+					}
+				}
+			}
+			
+			if (!atLeastOneEngineIsRunning) {
+				logDebug("No engine is running! Stopping now as requested!");
+				
+				changeStatusToStopped();
 			}
 		}
 	}

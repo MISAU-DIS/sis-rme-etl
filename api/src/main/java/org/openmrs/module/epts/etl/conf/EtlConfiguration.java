@@ -1333,12 +1333,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			errorMsg += ++errNum + ". " + connIssue;
 		}
 		
-		if (getDefaultExceptionBehavior().allowedOnEtlConfiguration()) {
+		if (!getDefaultExceptionBehavior().allowedOnEtlConfiguration()) {
 			errorMsg += ++errNum + ". The defaultExceptionBehavior: "
 			        + (this.getDefaultExceptionBehavior() + " is not allowed!");
 		}
 		
-		if (getDefaultInconsistencyBehavior().allowedOnEtlConfiguration()) {
+		if (!getDefaultInconsistencyBehavior().allowedOnEtlConfiguration()) {
 			errorMsg += ++errNum + ". The defaultInconsistencyBehavior: "
 			        + (this.getDefaultExceptionBehavior() + " is not allowed!");
 		}
