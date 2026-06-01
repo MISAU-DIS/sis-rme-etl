@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -340,15 +341,15 @@ public class EtlLoadHelper {
 				
 				if (!etlInfo.getResultItem().hasUnresolvedInconsistences()) {
 					etlInfo.setStatus(EtlStatus.READY);
+					
 					if (etlInfo.getResultItem().hasInconsistences()) {
 						this.logTrace(errorMsg);
 					}
 				} else {
-					
 					InconsistentStateException e = new InconsistentStateException(
 					        etlInfo.getResultItem().getInconsistenceInfo());
 					
-					if (getProcessor().getRelatedEtlConfiguration().getDefaultInconsistencyBehavior().abortProcess()) {
+					if (getEtlConfiguration().getDefaultInconsistencyBehavior().abortProcess()) {
 						throw e;
 					} else {
 						etlInfo.setExceptionOnEtl(e);
@@ -363,6 +364,10 @@ public class EtlLoadHelper {
 			
 		}
 		
+	}
+	
+	private EtlConfiguration getEtlConfiguration() {
+		return getProcessor().getRelatedEtlConfiguration();
 	}
 	
 	/**

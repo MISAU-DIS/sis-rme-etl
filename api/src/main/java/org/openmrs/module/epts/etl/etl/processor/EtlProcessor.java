@@ -100,7 +100,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 					}
 				}
 				catch (EtlTransformationException e) {
-					if (getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().log()) {
+					if (getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().log()
+					        || getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().markRecordAsFailed()) {
 						EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
 						
 						dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, dstObject, dstObject));

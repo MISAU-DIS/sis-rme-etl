@@ -36,7 +36,7 @@ public class DataSourceField extends Field implements TransformableField {
 	private EtlDataSource parent;
 	
 	public DataSourceField() {
-		this.nullValueBehavior = ActionOnEtlIssue.ALLOW;
+		this.nullValueBehavior = ActionOnEtlIssue.IGNORE;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 	}
 	

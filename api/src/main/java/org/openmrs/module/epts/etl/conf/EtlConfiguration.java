@@ -1333,12 +1333,23 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			errorMsg += ++errNum + ". " + connIssue;
 		}
 		
+		if (getDefaultExceptionBehavior().allowedOnEtlConfiguration()) {
+			errorMsg += ++errNum + ". The defaultExceptionBehavior: "
+			        + (this.getDefaultExceptionBehavior() + " is not allowed!");
+		}
+		
+		if (getDefaultInconsistencyBehavior().allowedOnEtlConfiguration()) {
+			errorMsg += ++errNum + ". The defaultInconsistencyBehavior: "
+			        + (this.getDefaultExceptionBehavior() + " is not allowed!");
+		}
+		
 		if (utilities.stringHasValue(errorMsg)) {
 			errorMsg = "There are errors on Configuration file " + this.relatedConfFile.getAbsolutePath() + "\n" + errorMsg;
 			throw new ForbiddenOperationException(errorMsg);
 		} else if (this.childConfig != null) {
 			this.childConfig.validate();
 		}
+		
 	}
 	
 	private String validateTransationConf() {
@@ -2362,6 +2373,16 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 		
 		return null;
+	}
+	
+	public ActionOnEtlIssue determineFinalActionOnIssue(ActionOnEtlIssue action) {
+		if (!action.comparable(this.getDefaultExceptionBehavior())) {
+			throw new EtlExceptionImpl(
+			        "The action " + action + " Is Not comparable To etlConfiguration defaultExceptionBehavior: "
+			                + this.getDefaultExceptionBehavior());
+		}
+		
+		return action.compareTo(this.getDefaultExceptionBehavior()) > 0 ? action : this.getDefaultExceptionBehavior();
 	}
 	
 }

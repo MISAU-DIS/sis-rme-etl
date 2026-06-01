@@ -113,7 +113,7 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 				throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
 			} else if (field.nullValueBehavior().abort()) {
 				throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
-			} else if (field.nullValueBehavior().allow()) {
+			} else if (field.nullValueBehavior().ignore()) {
 				return null;
 			}
 		}

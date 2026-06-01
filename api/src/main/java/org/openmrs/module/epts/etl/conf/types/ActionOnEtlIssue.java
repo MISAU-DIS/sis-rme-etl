@@ -4,23 +4,27 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 public enum ActionOnEtlIssue {
 	
-	ABORT_PROCESS,
-	LOG,
-	IGNORE,
 	USE_LAST,
 	USE_FIRST,
-	ALLOW,
 	SET_TO_NULL,
-	MARK_RECORD_AS_FAILED,
 	CREATE_ON_DST,
 	USE_INPUT,
-	USE_DEFAULT;
+	USE_DEFAULT,
+	LOG,
+	IGNORE,
+	MARK_RECORD_AS_FAILED,
+	ABORT_PROCESS;
 	
 	public static final CommonUtilities utilities = CommonUtilities.getInstance();
 	
+	public static final ActionOnEtlIssue[] COMPARABLE = { LOG, IGNORE, MARK_RECORD_AS_FAILED, ABORT_PROCESS };
+	
+	public static final ActionOnEtlIssue[] ALLOWED_ON_ETL_CONFIGURATION = { LOG, IGNORE, MARK_RECORD_AS_FAILED,
+	        ABORT_PROCESS };
+	
 	public static final ActionOnEtlIssue[] ON_MULTIPLE_DATA_SOURCE_FOUND = { ABORT_PROCESS, USE_LAST, USE_FIRST };
 	
-	public static final ActionOnEtlIssue[] ON_NULL = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, ALLOW };
+	public static final ActionOnEtlIssue[] ON_NULL = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, IGNORE };
 	
 	public static final ActionOnEtlIssue[] ON_INCONSISTENCY = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, SET_TO_NULL };
 	
@@ -28,6 +32,9 @@ public enum ActionOnEtlIssue {
 	        CREATE_ON_DST };
 	
 	public static final ActionOnEtlIssue[] ON_MISSING_MAPPING = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, USE_INPUT, IGNORE };
+	
+	public static final ActionOnEtlIssue[] IN_SAME_LEVEL = { USE_DEFAULT, USE_INPUT, SET_TO_NULL, USE_LAST, USE_FIRST,
+	        CREATE_ON_DST };
 	
 	public boolean useInputOnMissingMapping() {
 		return this.equals(USE_INPUT);
@@ -73,10 +80,6 @@ public enum ActionOnEtlIssue {
 		return this.equals(USE_FIRST);
 	}
 	
-	public boolean allow() {
-		return this.equals(ALLOW);
-	}
-	
 	public boolean markRecordAsFailed() {
 		return this.equals(MARK_RECORD_AS_FAILED);
 	}
@@ -100,4 +103,13 @@ public enum ActionOnEtlIssue {
 	public boolean allowedOnMissingMapping() {
 		return utilities.existOnArray(ON_MISSING_MAPPING, this);
 	}
+	
+	public boolean comparable(ActionOnEtlIssue otherAction) {
+		return utilities.existOnArray(COMPARABLE, this) && utilities.existOnArray(COMPARABLE, otherAction);
+	}
+	
+	public boolean allowedOnEtlConfiguration() {
+		return utilities.existOnArray(ALLOWED_ON_ETL_CONFIGURATION, this);
+	}
+	
 }
