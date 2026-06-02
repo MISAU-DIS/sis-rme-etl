@@ -102,14 +102,14 @@ public interface MonitoredOperation extends Runnable {
 	
 	void logWarn(String msg);
 	
-	void logWarn(String msg, long interval);
+	void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog);
 	
 	default void waitForOperationToStopStop(List<MonitoredOperation> operations) {
 		if (!utilities.listHasElement(operations)) {
 			return;
 		}
 		
-		int maxIterations = 120; // 120 * 5s = 10 minutos
+		int maxIterations = 120;
 		
 		for (int iteration = 0; iteration < maxIterations; iteration++) {
 			boolean anyRunning = false;
@@ -117,7 +117,8 @@ public interface MonitoredOperation extends Runnable {
 			for (MonitoredOperation operation : operations) {
 				if (!operation.isStopped()) {
 					anyRunning = true;
-					logWarn("STOP REQUESTED DUE ERROR BUT OPERATION IS STILL RUNNING: " + operation.getOperationId(), 120);
+					logWarn("STOP REQUESTED DUE ERROR BUT OPERATION IS STILL RUNNING: " + operation.getOperationId(), 120,
+					    false);
 				}
 			}
 			

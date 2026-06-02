@@ -7,18 +7,14 @@ import org.openmrs.module.epts.etl.etl.model.EtlDynamicSearchParams;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.slf4j.event.Level;
 
 public class DynamicProcessStarter extends ProcessStarter implements ControllerStarter {
 	
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
-	
-	private EtlLogger logger;
 	
 	private EtlConfiguration etlConfig;
 	
@@ -30,8 +26,6 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		}
 		
 		this.etlConfig = etlConfig;
-		
-		this.logger = new EtlLogger(DynamicProcessStarter.class);
 	}
 	
 	private List<EtlDatabaseObject> loadAvaliableSrcObjects(EtlConfiguration etlConfig) {
@@ -61,10 +55,6 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		}
 	}
 	
-	public EtlLogger getLogger() {
-		return logger;
-	}
-	
 	ProcessController init(EtlDatabaseObject src) throws ForbiddenOperationException, DBException {
 		ProcessController currentController;
 		
@@ -83,9 +73,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	public void run() {
 		
 		try {
-			if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
-				TimeCountDown.sleep(10);
-			}
+			applyStartupDebugDelayIfConfigured();
 			
 			this.currentController = null;
 			
@@ -98,7 +86,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 				while (!this.currentController.isFinalized()) {
 					TimeCountDown.sleep(30);
 					
-					logger.warn("THE APPLICATION IS STILL RUNING...", 60 * 15);
+					logger.warn("THE APPLICATION IS STILL RUNING...", 60 * 15, true);
 				}
 			}
 			
@@ -117,7 +105,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	}
 	
 	@Override
-	public void finalize(Controller c) {
+	public void handleControllerFinalization(Controller c) {
 		c.killSelfCreatedThreads();
 		
 		ProcessController controller = (ProcessController) c;
@@ -127,11 +115,11 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 				throw new ForbiddenOperationException(
 				        "You cannot configure childConfigFilePath on dynamic etl configuration!!!!");
 			} else {
-				controller.finalize();
+				controller.handleFinalization();
 			}
 		} else if (c.isStopped()) {
 			logger.warn("THE APPLICATION IS STOPPING DUE STOP REQUESTED!");
-			controller.finalize();
+			controller.handleFinalization();
 		}
 		
 	}

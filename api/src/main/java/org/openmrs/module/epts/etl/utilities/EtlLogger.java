@@ -1,10 +1,9 @@
 package org.openmrs.module.epts.etl.utilities;
 
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.openmrs.module.epts.etl.Main;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,27 +11,25 @@ import org.slf4j.event.Level;
 
 public class EtlLogger {
 	
-	private final Map<String, Date> lastLogDates = new ConcurrentHashMap<>();
+	private static final CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	static CommonUtilities utilities = CommonUtilities.getInstance();
+	private final Map<String, AtomicLong> lastLogByKey = new ConcurrentHashMap<>();
 	
-	Logger logger = LoggerFactory.getLogger(Main.class);
+	private final AtomicLong lastEffectiveLogTimeMillis = new AtomicLong(-1);
 	
-	private Level level_;
+	private final Logger logger;
 	
-	private boolean blocked;
+	private final Level level;
+	
+	private volatile boolean blocked;
 	
 	public <T> EtlLogger(Class<T> clazz) {
-		this.logger = LoggerFactory.getLogger(clazz);
-		this.level_ = determineLogLevel();
-		
-		this.blocked = false;
+		this(LoggerFactory.getLogger(clazz));
 	}
 	
-	public <T> EtlLogger(Logger logger) {
+	public EtlLogger(Logger logger) {
 		this.logger = logger;
-		this.level_ = determineLogLevel();
-		
+		this.level = determineLogLevel();
 		this.blocked = false;
 	}
 	
@@ -40,122 +37,189 @@ public class EtlLogger {
 		return new EtlLogger(clazz);
 	}
 	
-	public Level getLevel_() {
-		return level_;
+	public double getElapsedTimeSinceLastEffectiveLogInSeconds() {
+		long last = lastEffectiveLogTimeMillis.get();
+		
+		if (last < 0) {
+			return -1;
+		}
+		
+		return (System.currentTimeMillis() - last) / 1000.0;
 	}
 	
-	public Logger getLogger() {
-		return logger;
+	public void warn(String msg, double logIntervalInSeconds, boolean suppressIfAnyRecentLog) {
+		warn(msg, msg, logIntervalInSeconds, suppressIfAnyRecentLog);
+	}
+	
+	public void warn(String key, String msg, double logIntervalInSeconds, boolean suppressIfAnyRecentLog) {
+		
+		if (!isEnabled(Level.WARN)) {
+			return;
+		}
+		
+		long now = System.currentTimeMillis();
+		long intervalMillis = (long) (logIntervalInSeconds * 1000);
+		
+		AtomicLong lastLogTime = lastLogByKey.computeIfAbsent(key, k -> new AtomicLong(-1));
+		
+		while (true) {
+			
+			long lastForThisKey = lastLogTime.get();
+			
+			// 1. suprimir se esta mesma mensagem foi exibida recentemente
+			if (lastForThisKey > 0 && now - lastForThisKey < intervalMillis) {
+				return;
+			}
+			
+			// 2. opcionalmente suprimir se QUALQUER log foi exibido recentemente
+			if (suppressIfAnyRecentLog) {
+				long lastGlobalLog = lastEffectiveLogTimeMillis.get();
+				
+				if (lastGlobalLog > 0 && now - lastGlobalLog < intervalMillis) {
+					return;
+				}
+			}
+			
+			if (lastLogTime.compareAndSet(lastForThisKey, now)) {
+				warn(msg);
+				return;
+			}
+		}
+	}
+	
+	public void warn(String msg) {
+		log(Level.WARN, msg, null);
+	}
+	
+	public void info(String msg) {
+		log(Level.INFO, msg, null);
+	}
+	
+	public void error(String msg) {
+		log(Level.ERROR, msg, null);
+	}
+	
+	public void error(String msg, Exception e) {
+		log(Level.ERROR, msg, e);
+	}
+	
+	public void debug(String msg) {
+		log(Level.DEBUG, msg, null);
+	}
+	
+	public void trace(String msg) {
+		log(Level.TRACE, msg, null);
+	}
+	
+	private boolean log(Level msgLevel, String msg, Throwable throwable) {
+		
+		if (!isEnabled(msgLevel)) {
+			return false;
+		}
+		
+		String finalMsg = putAdditionalInfoOnLog(msg);
+		
+		switch (msgLevel) {
+			case ERROR:
+				if (throwable != null) {
+					logger.error(finalMsg, throwable);
+				} else {
+					logger.error(finalMsg);
+				}
+				break;
+			
+			case WARN:
+				logger.warn(finalMsg);
+				break;
+			
+			case INFO:
+				logger.info(finalMsg);
+				break;
+			
+			case DEBUG:
+				logger.debug(finalMsg);
+				break;
+			
+			case TRACE:
+				logger.trace(finalMsg);
+				break;
+			
+			default:
+				return false;
+		}
+		
+		lastEffectiveLogTimeMillis.set(System.currentTimeMillis());
+		
+		return true;
+	}
+	
+	private boolean isEnabled(Level msgLevel) {
+		
+		if (blocked) {
+			return false;
+		}
+		
+		if (msgLevel.compareTo(level) > 0) {
+			return false;
+		}
+		
+		switch (msgLevel) {
+			case ERROR:
+				return logger.isErrorEnabled();
+			
+			case WARN:
+				return logger.isWarnEnabled();
+			
+			case INFO:
+				return logger.isInfoEnabled();
+			
+			case DEBUG:
+				return logger.isDebugEnabled();
+			
+			case TRACE:
+				return logger.isTraceEnabled();
+			
+			default:
+				return false;
+		}
 	}
 	
 	public static Level determineLogLevel() {
 		String log = System.getProperty("log.level");
 		
-		if (!utilities.stringHasValue(log))
+		if (!utilities.stringHasValue(log)) {
 			return Level.INFO;
-		
-		if (log.equals("DEBUG"))
-			return Level.DEBUG;
-		if (log.equals("INFO"))
-			return Level.INFO;
-		if (log.equals("WARN"))
-			return Level.WARN;
-		if (log.equals("ERROR"))
-			return Level.ERROR;
-		if (log.equals("TRACE"))
-			return Level.TRACE;
-		
-		throw new ForbiddenOperationException("Unsupported Log Level [" + log + "]");
-	}
-	
-	public boolean isBlocked() {
-		return blocked;
-	}
-	
-	/**
-	 * Inteligent logwarn. It only logs if the elapsed time (in seconds) after the last log is
-	 * greater that #logInterval
-	 * 
-	 * @param msg the message to log
-	 * @param logInterval the max log interval permited fore repited logs
-	 */
-	public void warn(String msg, double logInterval) {
-		
-		synchronized (msg) {
-			
 		}
 		
-		Date now = utilities.getCurrentDate();
-		
-		Date lastDate = lastLogDates.get(msg);
-		
-		if (lastDate == null) {
-			
-			warn(msg);
-			lastLogDates.put(msg, now);
-			
-			return;
+		try {
+			return Level.valueOf(log.trim().toUpperCase());
 		}
-		
-		double elapsedTime = DateAndTimeUtilities.dateDiff(now, lastDate, DateAndTimeUtilities.SECOND_FORMAT);
-		
-		if (elapsedTime >= logInterval) {
-			
-			warn(msg);
-			
-			lastLogDates.put(msg, now);
-		}
-	}
-	
-	public void warn(String msg) {
-		if (Level.WARN.compareTo(level_) <= 0) {
-			msg = putAdditionalInfoOnLog(msg);
-			
-			logger.warn(msg);
-		}
-	}
-	
-	public void info(String msg) {
-		if (Level.INFO.compareTo(level_) <= 0) {
-			msg = putAdditionalInfoOnLog(msg);
-			
-			logger.info(msg);
-		}
-	}
-	
-	public void error(String msg) {
-		if (Level.ERROR.compareTo(level_) <= 0) {
-			
-			msg = putAdditionalInfoOnLog(msg);
-			
-			logger.error(msg);
-		}
-	}
-	
-	public void debug(String msg) {
-		if (Level.DEBUG.compareTo(level_) <= 0) {
-			
-			msg = putAdditionalInfoOnLog(msg);
-			
-			logger.debug(msg);
-		}
-	}
-	
-	public void trace(String msg) {
-		if (Level.TRACE.compareTo(level_) <= 0) {
-			
-			msg = putAdditionalInfoOnLog(msg);
-			
-			logger.trace(msg);
+		catch (Exception e) {
+			throw new ForbiddenOperationException("Unsupported Log Level [" + log + "]");
 		}
 	}
 	
 	String putAdditionalInfoOnLog(String msg) {
 		return msg;
 	}
-
-	public void error(String msg, Exception e) {
-		logger.error(msg, e);
+	
+	public boolean isBlocked() {
+		return blocked;
 	}
 	
+	public void block() {
+		this.blocked = true;
+	}
+	
+	public void unblock() {
+		this.blocked = false;
+	}
+	
+	public Level getLevel() {
+		return level;
+	}
+	
+	public Logger getLogger() {
+		return logger;
+	}
 }

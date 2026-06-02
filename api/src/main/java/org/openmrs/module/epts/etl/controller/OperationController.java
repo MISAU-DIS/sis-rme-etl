@@ -589,7 +589,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 						
 						msg += "----------------------------------------";
 						
-						logWarn(msg, 60);
+						logWarn(msg, 60, false);
 					}
 				}
 				
@@ -764,14 +764,14 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			lastException.printStackTrace();
 		}
 		
-		this.processController.finalize(this);
+		this.processController.handleControllerFinalization(this);
 	}
 	
 	@Override
 	public void onFinish() {
 		logDebug("FINISHING OPERATION " + getControllerId());
 		
-		this.processController.finalize(this);
+		this.processController.handleControllerFinalization(this);
 	}
 	
 	@Override
@@ -903,8 +903,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.processController.logTrace(msg);
 	}
 	
-	public void logWarn(String msg, long interval) {
-		this.processController.logWarn(msg, interval);
+	@Override
+	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
+		this.processController.logWarn(msg, interval, suppressIfAnyRecentLog);
 	}
 	
 	public void logErr(String msg, Exception e) {

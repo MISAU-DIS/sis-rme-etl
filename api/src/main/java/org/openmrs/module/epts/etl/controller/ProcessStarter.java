@@ -18,20 +18,20 @@ public class ProcessStarter implements ControllerStarter {
 	
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 	
-	private boolean initialized;
+	private volatile boolean initialized;
 	
 	private EtlConfiguration etlConfig;
 	
 	protected ProcessController currentController;
 	
-	private EtlLogger logger;
+	protected EtlLogger logger;
 	
-	private static final String stringLock = new String("LOCK_STRING");
+	private final Object LOCK = new Object();
 	
 	public ProcessStarter(EtlConfiguration etlConfig) {
 		this.etlConfig = etlConfig;
 		
-		this.logger = new EtlLogger(ProcessStarter.class);
+		this.logger = new EtlLogger(this.getClass());
 	}
 	
 	public ProcessController getCurrentController() {
@@ -65,7 +65,7 @@ public class ProcessStarter implements ControllerStarter {
 			return;
 		}
 		
-		synchronized (stringLock) {
+		synchronized (LOCK) {
 			if (this.initialized) {
 				return;
 			}
@@ -87,47 +87,40 @@ public class ProcessStarter implements ControllerStarter {
 	
 	@Override
 	public void run() {
-		
 		try {
-			if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
-				TimeCountDown.sleep(10);
-			}
+			applyStartupDebugDelayIfConfigured();
 			
 			init();
 			
-			if (this.currentController.getEtlConf().isDisabled()) {
-				logger.info(
-				    "Operation " + this.currentController.getControllerId() + " is marked as disabled... skipping...");
-				
-				finalize(this.currentController);
-			} else {
-				
-				ThreadPoolService.getInstance().createNewThreadPoolExecutor(this.currentController.getControllerId())
-				        .execute(this.currentController);
-				
-				while (!this.currentController.isFinalized()) {
-					TimeCountDown.sleep(60);
-					
-					logger.warn("THE APPLICATION IS STILL RUNING...", 60 * 15);
-				}
-				
-				if (this.currentController.isFinished()) {
-					logger.warn("ALL JOBS ARE FINISHED");
-				} else if (this.currentController.isStopped()) {
-					logger.warn("ALL JOBS ARE STOPPED");
-				}
+			ProcessController controller = this.currentController;
+			
+			if (controller.getEtlConf().isDisabled()) {
+				logger.info("Operation " + controller.getControllerId() + " is disabled. Skipping...");
+				controller.markAsFinished();
+				handleControllerFinalization(controller);
+				return;
 			}
+			
+			startController(controller);
+			
+			waitUntilFinalized(controller);
+			
+			logFinalStatus(controller);
+			
 		}
-		catch (ForbiddenOperationException e) {
-			throw e;
-		}
-		catch (DBException e) {
+		catch (Exception e) {
+			logger.error("ProcessStarter failed", e);
+			
+			if (this.currentController != null) {
+				this.currentController.requestStop();
+			}
+			
 			throw new RuntimeException(e);
 		}
 	}
 	
 	@Override
-	public void finalize(Controller controllerToFinalize) {
+	public void handleControllerFinalization(Controller controllerToFinalize) {
 		controllerToFinalize.killSelfCreatedThreads();
 		
 		ProcessController controller = (ProcessController) controllerToFinalize;
@@ -148,7 +141,7 @@ public class ProcessStarter implements ControllerStarter {
 						
 						this.currentController.markAsFinished();
 						
-						this.finalize(this.currentController);
+						this.handleControllerFinalization(this.currentController);
 					} else {
 						ExecutorService executor = ThreadPoolService.getInstance()
 						        .createNewThreadPoolExecutor(this.currentController.getControllerId());
@@ -169,16 +162,44 @@ public class ProcessStarter implements ControllerStarter {
 					throw new RuntimeException(e);
 				}
 				finally {
-					controller.finalize();
+					controller.handleFinalization();
 				}
 			} else {
-				controller.finalize();
+				controller.handleFinalization();
 			}
 		} else if (controllerToFinalize.isStopped()) {
 			logger.warn("THE APPLICATION IS STOPPING DUE STOP REQUESTED!");
-			controller.finalize();
+			controller.handleFinalization();
 		}
 		
+	}
+	
+	public void applyStartupDebugDelayIfConfigured() {
+		if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
+			TimeCountDown.sleep(10);
+		}
+	}
+	
+	private void startController(ProcessController controller) {
+		ExecutorService executor = ThreadPoolService.getInstance().createNewThreadPoolExecutor(controller.getControllerId());
+		
+		executor.execute(controller);
+	}
+	
+	private void waitUntilFinalized(ProcessController controller) {
+		while (!controller.isFinalized()) {
+			TimeCountDown.sleep(60);
+			
+			logger.warn("THE APPLICATION IS STILL RUNNING...", 60 * 15, true);
+		}
+	}
+	
+	private void logFinalStatus(ProcessController controller) {
+		if (controller.isFinished()) {
+			logger.warn("ALL JOBS ARE FINISHED");
+		} else if (controller.isStopped()) {
+			logger.warn("ALL JOBS ARE STOPPED");
+		}
 	}
 	
 }

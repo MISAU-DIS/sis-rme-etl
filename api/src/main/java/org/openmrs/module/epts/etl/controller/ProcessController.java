@@ -176,14 +176,14 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		return finalized;
 	}
 	
-	public void finalize() {
+	public void handleFinalization() {
 		setFinalized(true);
 		
 		getEtlConf().finalizeAllApps();
 	}
 	
 	@Override
-	public void finalize(Controller c) {
+	public void handleControllerFinalization(Controller c) {
 		c.killSelfCreatedThreads();
 		
 		List<OperationController<? extends EtlDatabaseObject>> nextOperation = ((OperationController<? extends EtlDatabaseObject>) c)
@@ -458,7 +458,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			while (running) {
 				TimeCountDown.sleep(getWaitTimeToCheckStatus());
 				
-				this.logger.warn("The process " + getControllerId() + " is still running...", 60 * 5);
+				this.logger.warn(("The process " + getControllerId() + " is still running...").toUpperCase(), 60 * 5, true);
 				
 				if (this.isFinished()) {
 					this.markAsFinished();
@@ -568,7 +568,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		
 		FileUtilities.removeFile(generateStopRequestFile().getAbsolutePath());
 		
-		this.starter.finalize(this);
+		this.starter.handleControllerFinalization(this);
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -592,7 +592,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			}
 		}
 		
-		starter.finalize(this);
+		starter.handleControllerFinalization(this);
 	}
 	
 	@Override
@@ -679,8 +679,8 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		logger.trace(msg);
 	}
 	
-	public void logWarn(String msg, long interval) {
-		logger.warn(msg, interval);
+	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
+		logger.warn(msg, interval, suppressIfAnyRecentLog);
 	}
 	
 	public void logErr(String msg, Exception e) {

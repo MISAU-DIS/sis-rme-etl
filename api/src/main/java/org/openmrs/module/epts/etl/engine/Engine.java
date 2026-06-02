@@ -934,10 +934,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				for (TaskProcessor<T> t : this.getCurrentTaskProcessor()) {
 					if (!t.isStopped() && !t.isFinished()) {
 						atLeaseOneIsRunning = true;
-						
-						logWarn("Stop Requested but processor Is Still Running:" + t.getProcessorId() + "("
-						        + t.getOperationStatus() + ")",
-						    15);
 					}
 				}
 				
@@ -1068,8 +1064,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		getRelatedOperationController().logTrace(msg);
 	}
 	
-	public void logWarn(String msg, long interval) {
-		getRelatedOperationController().logWarn(msg, interval);
+	@Override
+	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
+		getRelatedOperationController().logWarn(msg, interval, suppressIfAnyRecentLog);
 	}
 	
 	@Override
@@ -1169,7 +1166,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        ? this.getThreadRecordIntervalsManager().getMaxSupportedProcessors()
 		        : 1;
 		
-		log.append("PROGRESS").append("):\n");
+		log.append("\n").append("PROGRESS").append(":\n");
 		
 		log.append("--------------------------------------------------------------------------\n");
 		

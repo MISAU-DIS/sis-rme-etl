@@ -264,8 +264,9 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		monitor.logWarn(msg);
 	}
 	
-	public void logWarn(String msg, long interval) {
-		monitor.logWarn(msg, interval);
+	@Override
+	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
+		monitor.logWarn(msg, interval, suppressIfAnyRecentLog);
 	}
 	
 	public boolean writeOperationHistory() {
