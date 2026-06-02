@@ -46,7 +46,7 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	
 	private EtlConfiguration relatedEtlConf;
 	
-	private Boolean autoCommit;
+	private Boolean defaultAutoCommit;
 	
 	private EtlDBConnectionType connType;
 	
@@ -89,16 +89,16 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		return this.getConnType() != null && this.getConnType().isMain();
 	}
 	
-	public Boolean getAutoCommit() {
-		return autoCommit;
+	public Boolean getDefaultAutoCommit() {
+		return defaultAutoCommit;
 	}
 	
-	public void setAutoCommit(Boolean autoCommit) {
-		this.autoCommit = autoCommit;
+	public void setDefaultAutoCommit(Boolean defaultAutoCommit) {
+		this.defaultAutoCommit = defaultAutoCommit;
 	}
 	
 	public boolean isAutoCommit() {
-		return isTrue(getAutoCommit());
+		return isTrue(getDefaultAutoCommit());
 	}
 	
 	public DBConnectionIsolationLevel getIsolationLevel() {
