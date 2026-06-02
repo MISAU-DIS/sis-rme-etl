@@ -88,6 +88,8 @@ Each of these elements accepts the following parameters:
   - *maxActiveConnections* – Maximum number of active connections allowed.
   - *maxIdleConnections* – Maximum number of idle connections in the pool.
   - *minIdleConnections* – Minimum number of idle connections maintained in the pool.
+  - *isolationLevel* - The connection isolation lavel supporting the JDBC isolation lavel. When ommited default to TRANSACTION_REPEATABLE_READ.
+  - *defaultAutoCommit* - The auto commit behavior. When ommited default to false 
     
 ## dynamicSrcConf
 This parameter enables dynamic generation of the *EtlConfiguration*. In this context, "dynamic" refers to the ability to derive configuration parameters from records stored in a database table, allowing multiple configurations to be produced from a single JSON definition.
@@ -237,7 +239,7 @@ Each operation can be configured using the following fields:
 - *processorFullClassName*: The fully qualified class name of a custom processor implementation to override the default processing behavior.
 - *skipFinalDataVerification*: Controls whether the final verification step is executed. This step checks if all source records were successfully processed into the destination. Setting this to true skips the verification, which can improve performance for large datasets.
 - *doNotWriteOperationHistory*: By default, the ETL process records execution details in staging tables. Setting this to true disables history tracking, which can improve performance but reduces traceability.
-- *useSharedConnectionPerThread*: When using multi-threading, setting this to true forces all threads to share the same database connection. This can reduce deadlocks but may impact performance. It is useful when consistency across batch operations is required.
+- *useSharedConnectionPerThread*: When using multi-threading, setting this to true forces all threads to share the same database connection. This can reduce deadlocks but may impact performance. It is useful when consistency across batch operations is required. You cannot use this setting when connection defaultAutoCommit is set to true;
 - *actionType*: Defines the action to be performed on the destination:
   - *CREATE* – Inserts new records (default)
   - *UPDATE* – Updates existing records
