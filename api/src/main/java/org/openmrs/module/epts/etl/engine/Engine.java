@@ -1166,9 +1166,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		        ? this.getThreadRecordIntervalsManager().getMaxSupportedProcessors()
 		        : 1;
 		
-		log.append("\n").append("PROGRESS").append(":\n");
+		log.append("\n");
+		log.append("-----------\n");
+		log.append("PROGRESS").append(":\n");
 		
-		log.append("--------------------------------------------------------------------------\n");
+		log.append("------------------------------------------------------------------------------------------------------\n");
 		
 		long diff = globalProgressMeter.getTotalToAnalyze() - globalProgressMeter.getTotal();
 		
@@ -1199,7 +1201,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		
 		log.append(formatReportLine("USING THREADS", qtyThreads));
 		
-		log.append("--------------------------------------------------------------------------\n");
+		log.append("------------------------------------------------------------------------------------------------------\n");
 		
 		this.logWarn(log.toString());
 	}
