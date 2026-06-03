@@ -48,6 +48,8 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	private List<ObjectDataSource> extraObjectDataSource;
 	
+	private List<JsonDataSource> extraJsonDataSource;
+	
 	private EtlDstType dstType;
 	
 	private List<FieldsMapping> joinFields;
@@ -107,6 +109,8 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		if (this.hasAlias()) {
 			this.setUsingManualDefinedAlias(true);
 			getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
+		} else {
+			tryToGenerateTableAlias(getRelatedEtlConf());
 		}
 		
 		List<EtlAdditionalDataSource> allAvaliableDataSources = this.getAvaliableExtraDataSource();
@@ -122,6 +126,8 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 				if (tAsTabConf.hasAlias()) {
 					tAsTabConf.setUsingManualDefinedAlias(true);
 					getRelatedEtlConf().tryToAddToBusyTableAliasName(tAsTabConf.getTableAlias());
+				} else {
+					tAsTabConf.tryToGenerateTableAlias(getRelatedEtlConf());
 				}
 				
 				getRelatedEtlConf().addConfiguredTable((AbstractTableConfiguration) t);
@@ -138,6 +144,8 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 					t.setUsingManualDefinedAlias(true);
 					
 					getRelatedEtlConf().tryToAddToBusyTableAliasName(t.getTableAlias());
+				} else {
+					t.tryToGenerateTableAlias(getRelatedEtlConf());
 				}
 			}
 		}
@@ -146,6 +154,14 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	@Override
 	public Boolean doNotUseAsDatasource() {
 		return false;
+	}
+	
+	public List<JsonDataSource> getExtraJsonDataSource() {
+		return extraJsonDataSource;
+	}
+	
+	public void setExtraJsonDataSource(List<JsonDataSource> extraJsonDataSOurce) {
+		this.extraJsonDataSource = extraJsonDataSOurce;
 	}
 	
 	public List<ObjectDataSource> getExtraObjectDataSource() {
@@ -380,6 +396,14 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 					ds.fullLoad(srcConn);
 				}
 			}
+			
+			if (hasExtraJsonSourceConfig()) {
+				for (JsonDataSource jDs : this.getExtraJsonDataSource()) {
+					jDs.setRelatedSrcConf(this);
+					jDs.fullLoad(srcConn);
+				}
+			}
+			
 		}
 		finally {
 			srcConn.finalizeConnection(this);
@@ -478,6 +502,10 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 			ds.addAll(this.getExtraObjectDataSource());
 		}
 		
+		if (hasExtraJsonSourceConfig()) {
+			ds.addAll(this.getExtraJsonDataSource());
+		}
+		
 		return ds;
 	}
 	
@@ -516,6 +544,11 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	public Boolean hasExtraQueryDataSourceConfig() {
 		return utilities.listHasElement(this.getExtraQueryDataSource());
+		
+	}
+	
+	public Boolean hasExtraJsonSourceConfig() {
+		return utilities.listHasElement(this.getExtraJsonDataSource());
 		
 	}
 	

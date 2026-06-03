@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.model.base;
 
-import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -43,26 +42,7 @@ public interface VO {
 	void setFieldValue(String fieldName, Object value);
 	
 	default void generateFields() {
-		List<Field> fields = new ArrayList<Field>();
-		Class<?> cl = getClass();
-		
-		while (cl != null) {
-			java.lang.reflect.Field[] in = cl.getDeclaredFields();
-			for (int i = 0; i < in.length; i++) {
-				java.lang.reflect.Field instanceField = in[i];
-				if (Modifier.isStatic(instanceField.getModifiers()))
-					continue;
-				
-				instanceField.setAccessible(true);
-				
-				Field f = Field.fastCreateWithType(instanceField.getName(), instanceField.getType().getTypeName());
-				
-				fields.add(f);
-			}
-			cl = cl.getSuperclass();
-		}
-		
-		setFields(fields);
+		setFields(utils.generateObjectFields(this));
 	}
 	
 	@JsonIgnore

@@ -172,6 +172,22 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 		} else {
 			this.value = value;
 		}
+		
+		tryToParseValue();
+	}
+	
+	private void tryToParseValue() {
+		if (!this.hasDataType()) {
+			return;
+		}
+		
+		if (this.getTypeClass() == null) {
+			this.determineTypeClass();
+		}
+		
+		if (this.getValue() != null) {
+			this.value = utilities.parseValue(this.getValue(), this.getTypeClass());
+		}
 	}
 	
 	public static Object getParameter(List<? extends Field> fields, String name) {
@@ -430,7 +446,7 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 		if (isDateField()) {
 			setValue(DEFAULT_DATE_VALUE);
 		} else if (isNumericColumnType()) {
-			setValue(DEFAULT_INT_VALUE+1);
+			setValue(DEFAULT_INT_VALUE + 1);
 		} else if (isBooleanColumnType()) {
 			setValue(DEFAULT_BOOLEAN_VALUE);
 		} else {

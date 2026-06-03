@@ -1316,7 +1316,7 @@ public class CommonUtilities implements Serializable {
 			Double d = Double.parseDouble(str);
 			
 			return d.longValue();
-			}
+		}
 		
 		// 🔹 Double
 		if (destinationType == Double.class || destinationType == double.class) {
@@ -1511,5 +1511,30 @@ public class CommonUtilities implements Serializable {
 	
 	public <T> List<T> fastCreateList() {
 		return new ArrayList<>();
+	}
+	
+	public List<org.openmrs.module.epts.etl.model.Field> generateObjectFields(Object obj) {
+		List<org.openmrs.module.epts.etl.model.Field> fields = new ArrayList<>();
+		Class<?> cl = obj.getClass();
+		
+		while (cl != null) {
+			java.lang.reflect.Field[] in = cl.getDeclaredFields();
+			for (int i = 0; i < in.length; i++) {
+				java.lang.reflect.Field instanceField = in[i];
+				if (Modifier.isStatic(instanceField.getModifiers()))
+					continue;
+				
+				instanceField.setAccessible(true);
+				
+				org.openmrs.module.epts.etl.model.Field f = org.openmrs.module.epts.etl.model.Field
+				        .fastCreateWithType(instanceField.getName(), instanceField.getType().getTypeName());
+				
+				f.setAttDefinedElements(null);
+				fields.add(f);
+			}
+			cl = cl.getSuperclass();
+		}
+		
+		return fields;
 	}
 }

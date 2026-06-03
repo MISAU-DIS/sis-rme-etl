@@ -170,12 +170,13 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	Boolean isMustLoadChildrenInfo();
 	
 	default Boolean containsField(String fieldName) {
-		for (Field f : this.getFields()) {
-			if (f.getName().equals(fieldName)) {
-				return true;
+		if (this.hasFields()) {
+			for (Field f : this.getFields()) {
+				if (f.getName().equals(fieldName)) {
+					return true;
+				}
 			}
 		}
-		
 		return false;
 	}
 	

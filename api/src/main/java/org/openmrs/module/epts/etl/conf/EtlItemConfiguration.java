@@ -782,6 +782,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 		if (hasDstConf()) {
 			for (DstConf conf : this.getDstConf()) {
 				conf.tryToLoadSchemaInfo(null, dstConn);
+				
 			}
 		}
 	}

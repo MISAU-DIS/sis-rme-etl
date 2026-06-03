@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ParentOnDemandLoadTransformer;
+import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
@@ -478,11 +479,19 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			throw new FieldsMappingException(this, mappingProblem);
 		}
 		
-		this.fieldsMappingAlredyGenerated = true;
+		this.setFieldsMappingAlredyGenerated(true);
+	}
+	
+	public void setFieldsMappingAlredyGenerated(Boolean fieldsMappingAlredyGenerated) {
+		this.fieldsMappingAlredyGenerated = fieldsMappingAlredyGenerated;
+	}
+	
+	public Boolean getFieldsMappingAlredyGenerated() {
+		return fieldsMappingAlredyGenerated;
 	}
 	
 	private boolean fieldsMappingAlredyGenerated() {
-		return !this.useDefaultTransformer() || isTrue(this.fieldsMappingAlredyGenerated);
+		return !this.useDefaultTransformer() || isTrue(this.getFieldsMappingAlredyGenerated());
 	}
 	
 	public FieldsMapping getMappingUsingDstField(String dstFieldName) {
@@ -618,7 +627,9 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 				if (this.getSrcConf().hasUniqueKeys()) {
 					for (UniqueKeyInfo uk : this.getSrcConf().getUniqueKeys()) {
 						if (this.containsAllFields(utilities.parseList(uk.getFields(), Field.class))) {
-							this.addUniqueKey(uk);
+							if (this.hasUniqueKeys() && !this.getUniqueKeys().contains(uk)) {
+								this.addUniqueKey(uk);
+							}
 						}
 					}
 				}
@@ -626,6 +637,8 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 				this.setUniqueKeyInfoLoaded(true);
 				
 				tryToLoadTransformer(conn);
+				
+				this.generateAllFieldsMapping(conn);
 				
 				this.setFullLoaded(true);
 			}
@@ -902,21 +915,29 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	        throws DBException, ForbiddenOperationException {
 		synchronized (stringLock) {
 			if (this.getCurrThreadStartId() == DEFAULT_NEXT_TREAD_ID) {
-				this.setCurrThreadStartId(DatabaseObjectDAO.getLastRecord(this, conn));
 				
-				//This mean that the table is empty so let try to add the increase 
-				if (this.getCurrThreadStartId() == 0) {
-					this.setCurrThreadStartId(this.getCurrThreadStartId() + this.getPrimaryKeyInitialIncrementValue() - 1);
+				if (isInMemoryTable()) {
+					this.setCurrThreadStartId(0);
+					if (this.getPrimaryKeyInitialIncrementValue() == null) {
+						this.setPrimaryKeyInitialIncrementValue(0);
+					}
+				} else {
+					this.setCurrThreadStartId(DatabaseObjectDAO.getLastRecord(this, conn));
 				}
-				
-				this.setCurrThreadStartId(this.getCurrThreadStartId() + 1);
 			}
 			
-			this.setCurrThreadStartId(this.getCurrThreadStartId() + this.currQtyRecords);
-			this.currQtyRecords = idGeneratorMgt.getEtlObjects().size();
+			//This mean that the table is empty so let try to add the increase 
+			if (this.getCurrThreadStartId() == 0) {
+				this.setCurrThreadStartId(this.getCurrThreadStartId() + this.getPrimaryKeyInitialIncrementValue() - 1);
+			}
 			
-			return this.getCurrThreadStartId();
+			this.setCurrThreadStartId(this.getCurrThreadStartId() + 1);
 		}
+		
+		this.setCurrThreadStartId(this.getCurrThreadStartId() + this.currQtyRecords);
+		this.currQtyRecords = idGeneratorMgt.getEtlObjects().size();
+		
+		return this.getCurrThreadStartId();
 	}
 	
 	/**
@@ -1105,15 +1126,18 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	}
 	
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
-		super.init(relatedItemConf, relatedItemConf.getRelatedEtlSchemaObject(), srcConn, dstConn);
 		
-		if (this.hasAlias()) {
-			this.setUsingManualDefinedAlias(true);
+		if (!isInMemoryTable()) {
+			super.init(relatedItemConf, relatedItemConf.getRelatedEtlSchemaObject(), srcConn, dstConn);
 			
-			this.getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
+			if (this.hasAlias()) {
+				this.setUsingManualDefinedAlias(true);
+				
+				this.getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
+			}
+			
+			getRelatedEtlConf().addConfiguredTable(this);
 		}
-		
-		getRelatedEtlConf().addConfiguredTable(this);
 	}
 	
 	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn) throws DBException {
@@ -1176,6 +1200,15 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		return EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
+	}
+	
+	@Override
+	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
+	        throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
+		
+		if (!isInMemoryTable()) {
+			super.tryToLoadSchemaInfo(schemaInfoSrc, conn);
+		}
 	}
 	
 }

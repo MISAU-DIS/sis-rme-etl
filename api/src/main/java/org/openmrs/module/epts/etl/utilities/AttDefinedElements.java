@@ -353,6 +353,7 @@ public class AttDefinedElements {
 	
 	public static AttDefinedElements define(String dbAttName, String dbAttType, boolean isLast,
 	        EtlDatabaseObjectConfiguration pojoble) {
+		
 		AttDefinedElements elements = new AttDefinedElements(dbAttName, dbAttType, isLast, pojoble);
 		elements.generateElemets();
 		

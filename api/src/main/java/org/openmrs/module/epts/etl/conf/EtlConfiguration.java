@@ -193,9 +193,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private String mainEtlTable;
 	
-	public Boolean ensureEtlStageTablesExist;
+	private Boolean ensureEtlStageTablesExist;
 	
-	public Boolean disableDefaultObjectCreation;
+	private Boolean disableDefaultObjectCreation;
+	
+	private List<String> ignorableStartupScripts;
 	
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
@@ -214,6 +216,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 		this.defaultInconsistencyBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.disableDefaultObjectCreation = false;
+	}
+	
+	public List<String> getIgnorableStartupScripts() {
+		return ignorableStartupScripts;
+	}
+	
+	public void setIgnorableStartupScripts(List<String> ignorableStartupScripts) {
+		this.ignorableStartupScripts = ignorableStartupScripts;
 	}
 	
 	public Boolean getDisableDefaultObjectCreation() {
@@ -1007,6 +1017,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				
 				for (File script : srcScriptsDir.listFiles()) {
 					if (!scriptAlredExecuted(EtlSide.SRC, script)) {
+						if (isIgnorableStartupScript(script)) {
+							continue;
+						}
+						
 						DBUtilities.runScriptOnDbServer(srcConnInfo, script.getAbsolutePath());
 						markScriptAsExecuted(EtlSide.SRC, script);
 					} else {
@@ -1021,6 +1035,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				for (File script : dstScriptsDir.listFiles()) {
 					
 					if (!scriptAlredExecuted(EtlSide.DST, script)) {
+						
+						if (isIgnorableStartupScript(script)) {
+							continue;
+						}
+						
 						DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
 						markScriptAsExecuted(EtlSide.DST, script);
 					} else {
@@ -1031,6 +1050,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			}
 			
 		}
+	}
+	
+	private boolean isIgnorableStartupScript(File script) {
+		if (utilities.listHasElement(this.getIgnorableStartupScripts())) {
+			for (String s : this.getIgnorableStartupScripts()) {
+				if (s.equals(script.getName())) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	private String generateExecutedScriptPath(EtlSide etlSide, File script) {
