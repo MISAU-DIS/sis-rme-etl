@@ -149,10 +149,19 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			addDstObject(result, dstObject);
 			addSharedObjects(result, srcObject);
 			addParentObjects(result, srcObject, migratedDstParent);
-			addAuxObjects(result, srcObject);
 			addExtraDataSources(processor, result, srcObject, dstObject, transformationType, srcConn);
 			
-			return new ArrayList<>(result);
+			Set<EtlDatabaseObject> finalList = new LinkedHashSet<>();
+			
+			for (EtlDatabaseObject primaryDs : result) {
+				List<EtlDatabaseObject> aux = retrieveAuxLoadObjects(primaryDs);
+				
+				if (utilities.listHasElement(aux)) {
+					result.addAll(aux);
+				}
+			}
+			
+			return new ArrayList<>(finalList);
 		}
 		catch (MissingRequiredTransformationObject e) {
 			return null;
@@ -172,26 +181,33 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 	}
 	
-	private void addAuxObjects(Set<EtlDatabaseObject> srcObjects, EtlDatabaseObject srcObject) {
+	private List<EtlDatabaseObject> retrieveAuxLoadObjects(EtlDatabaseObject srcObject) {
 		if (srcObject.hasAuxLoadObject()) {
+			
+			List<EtlDatabaseObject> aux = new ArrayList<>();
+			
 			for (EtlDatabaseObject auxObject : srcObject.getAuxLoadObject()) {
-				srcObjects.add(auxObject);
+				aux.add(auxObject);
 				
 				if (auxObject.hasSharedPkObj()) {
-					srcObjects.add(auxObject.getSharedPkObj());
+					aux.add(auxObject.getSharedPkObj());
 				}
 				
 				if (auxObject.hasAuxLoadObject()) {
 					for (EtlDatabaseObject innerObject : auxObject.getAuxLoadObject()) {
-						srcObjects.add(innerObject);
+						aux.add(innerObject);
 						
 						if (innerObject.hasSharedPkObj()) {
-							srcObjects.add(innerObject.getSharedPkObj());
+							aux.add(innerObject.getSharedPkObj());
 						}
 					}
 				}
 			}
+			
+			return aux;
 		}
+		
+		return null;
 	}
 	
 	private void addSharedObjects(Set<EtlDatabaseObject> srcObjects, EtlDatabaseObject srcObject) {

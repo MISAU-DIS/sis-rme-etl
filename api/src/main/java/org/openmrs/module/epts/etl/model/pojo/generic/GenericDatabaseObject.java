@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
@@ -457,11 +458,18 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		return obj;
 	}
 	
-	public static GenericDatabaseObject fastCreate(String tableName, List<Field> fields) {
-		GenericDatabaseObject obj = new GenericDatabaseObject();
+	public static GenericDatabaseObject fastCreate(String tableName, List<Field> fields, EtlConfiguration etlConf) {
+		TableConfiguration tabConf = new GenericTableConfiguration(tableName);
+		tabConf.setRelatedEtlConfig(etlConf);
+		
+		tabConf.tryToGenerateTableAlias(etlConf);
+		
+		tabConf.setFields(Field.cloneFields(fields, null));
+		
+		GenericDatabaseObject obj = new GenericDatabaseObject(tabConf);
 		
 		obj.setFields(fields);
-		obj.setRelatedConfiguration(new GenericTableConfiguration(tableName));
+		obj.setRelatedConfiguration(tabConf);
 		
 		return obj;
 	}

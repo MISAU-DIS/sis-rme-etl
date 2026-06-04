@@ -10,6 +10,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -622,6 +623,28 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 	public EtlDataConfiguration getParentConf() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public static List<Field> cloneFields(List<Field> fields, EtlDatabaseObject originalObject) {
+		List<Field> clonedFields = new ArrayList<>();
+		
+		if (utilities.listHasElement(fields)) {
+			for (Field field : fields) {
+				Field copy = field.createACopy();
+				
+				if (originalObject != null) {
+					try {
+						Object value = originalObject.getFieldValue(field.getName());
+						copy.setValue(value);
+					}
+					catch (ForbiddenOperationException e) {}
+				}
+				
+				clonedFields.add(copy);
+			}
+		}
+		
+		return clonedFields;
 	}
 	
 }

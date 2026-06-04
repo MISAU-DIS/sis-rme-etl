@@ -197,19 +197,28 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 	
 	void basicInitAllConfElements() throws DBException {
-		OpenConnection srcConn = openSrcConnection(this);
-		OpenConnection dstConn = tryToOpenDstConn(this);
 		
-		try {
-			for (EtlItemConfiguration config : getProcessController().getEtlConf().getEtlItemConfiguration()) {
-				config.doMinimalTableInitialization(srcConn, dstConn);
+		if (getEtlConfiguration().hasEtlItemsConf() || getEtlConfiguration().hasTestingItem()) {
+			
+			OpenConnection srcConn = openSrcConnection(this);
+			OpenConnection dstConn = tryToOpenDstConn(this);
+			
+			try {
+				if (getEtlConfiguration().hasEtlItemsConf()) {
+					for (EtlItemConfiguration config : getProcessController().getEtlConf().getEtlItemConfiguration()) {
+						config.doMinimalTableInitialization(srcConn, dstConn);
+					}
+				}
+				
+				if (getEtlConfiguration().hasTestingItem()) {
+					getEtlConfiguration().getTestingEtlItemConfiguration().doMinimalTableInitialization(srcConn, dstConn);
+				}
+			}
+			finally {
+				finalizeConnection(srcConn, this);
+				finalizeConnection(dstConn, this);
 			}
 		}
-		finally {
-			finalizeConnection(srcConn, this);
-			finalizeConnection(dstConn, this);
-		}
-		
 	}
 	
 	protected synchronized void runInSequencialMode() throws DBException {
@@ -467,14 +476,16 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	
 	public boolean operationIsAlreadyFinished() {
 		
-		for (EtlItemConfiguration config : getEtlItemConfiguration()) {
-			if (!operationTableIsAlreadyFinished(config)) {
-				return false;
+		if (getEtlConfiguration().hasEtlItemsConf()) {
+			
+			for (EtlItemConfiguration config : getEtlItemConfiguration()) {
+				if (!operationTableIsAlreadyFinished(config)) {
+					return false;
+				}
 			}
 		}
 		
-		return true;
-		
+		return !getEtlConfiguration().hasTestingItem();
 	}
 	
 	public boolean childOperationsAreAlreadyFinished() {

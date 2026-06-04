@@ -25,6 +25,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
+import org.openmrs.module.epts.etl.model.pojo.generic.JsonEtlObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -45,6 +46,8 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	private String jsonConverterFullClassName;
 	
+	private JsonOutputDataSource outputDataSource;
+	
 	private Class<EtlJsonConverter> jsonConverterClazz;
 	
 	private List<String> prefferredDataSource;
@@ -61,6 +64,14 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	public JsonDataSource() {
 		this.loadedDataSourceInfo = false;
+	}
+	
+	public JsonOutputDataSource getOutputDataSource() {
+		return outputDataSource;
+	}
+	
+	public void setOutputDataSource(JsonOutputDataSource outputDataSource) {
+		this.outputDataSource = outputDataSource;
 	}
 	
 	public Class<EtlJsonConverter> getJsonConverterClazz() {
@@ -386,6 +397,8 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		this.relatedSrcConf = relatedSrcConf;
+		
+		this.setRelatedEtlConfig(this.getRelatedSrcConf().getRelatedEtlConf());
 	}
 	
 	@Override
@@ -397,13 +410,21 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 		
 		String json = fi.getTransformedValue().toString();
 		
-		return createConverter().convert(json, conn, conn);
+		JsonEtlObject mainObj = jsonConverterInstance.convert(json, conn, conn);
+		
+		return mainObj;
 	}
 	
 	@SuppressWarnings("deprecation")
 	private EtlJsonConverter createConverter() {
 		try {
-			return this.getJsonConverterClazz().newInstance();
+			EtlJsonConverter cv = this.getJsonConverterClazz().newInstance();
+			
+			cv.setRelatedEtlConfig(getRelatedEtlConf());
+			
+			cv.setParent(this);
+			
+			return cv;
 		}
 		catch (InstantiationException e) {
 			throw new EtlExceptionImpl(e);

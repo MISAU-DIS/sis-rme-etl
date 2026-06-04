@@ -195,25 +195,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	String getAlias();
 	
 	default List<Field> cloneFields(EtlDatabaseObject originalObject) {
-		List<Field> clonedFields = new ArrayList<>();
-		
-		if (hasFields()) {
-			for (Field field : this.getFields()) {
-				Field copy = field.createACopy();
-				
-				if (originalObject != null) {
-					try {
-						Object value = originalObject.getFieldValue(field.getName());
-						copy.setValue(value);
-					}
-					catch (ForbiddenOperationException e) {}
-				}
-				
-				clonedFields.add(copy);
-			}
-		}
-		
-		return clonedFields;
+		return Field.cloneFields(this.getFields(), originalObject);
 	}
 	
 	default Boolean hasFields() {

@@ -860,52 +860,55 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				
 				dstConn = tryOpenDstConn(this);
 				
-				List<EtlItemConfiguration> allItem = new ArrayList<>();
-				
-				EtlCounter counter = new EtlCounter();
-				
-				for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
-					counter.increase();
+				if (hasEtlItemsConf()) {
 					
-					item.setRelatedEtlConfig(this);
+					List<EtlItemConfiguration> allItem = new ArrayList<>();
 					
-					if (item.isDynamic()) {
-						List<EtlItemConfiguration> dynamicItems = item.generateDynamicItems(this, conn);
+					EtlCounter counter = new EtlCounter();
+					
+					for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
+						counter.increase();
 						
-						if (utilities.listHasElement(dynamicItems)) {
-							logDebug("Found Dynamic Item on position [" + counter.getCounter() + "] whith "
-							        + dynamicItems.size() + " returned item!");
+						item.setRelatedEtlConfig(this);
+						
+						if (item.isDynamic()) {
+							List<EtlItemConfiguration> dynamicItems = item.generateDynamicItems(this, conn);
 							
-							for (EtlItemConfiguration dItem : dynamicItems) {
-								allItem.add(dItem);
+							if (utilities.listHasElement(dynamicItems)) {
+								logDebug("Found Dynamic Item on position [" + counter.getCounter() + "] whith "
+								        + dynamicItems.size() + " returned item!");
 								
-								dItem.init(this, false, srcConn, dstConn);
+								for (EtlItemConfiguration dItem : dynamicItems) {
+									allItem.add(dItem);
+									
+									dItem.init(this, false, srcConn, dstConn);
+								}
+								
+							} else {
+								logWarn("No Item was returned on dynamic item [" + counter.getCounter() + "]");
 							}
 							
 						} else {
-							logWarn("No Item was returned on dynamic item [" + counter.getCounter() + "]");
+							if (item.getAutoIncrementHandlingType() == null) {
+								item.setAutoIncrementHandlingType(this.getAutoIncrementHandlingType());
+							}
+							
+							if (item.getPrimaryKeyInitialIncrementValue() == null) {
+								item.setPrimaryKeyInitialIncrementValue(this.getPrimaryKeyInitialIncrementValue());
+							}
+							
+							allItem.add(item);
+							
+							logInfo("Starting initialization of item " + counter);
+							
+							item.init(this, false, srcConn, dstConn);
+							
+							logInfo("Item initialized: " + item.getConfigCode());
 						}
-						
-					} else {
-						if (item.getAutoIncrementHandlingType() == null) {
-							item.setAutoIncrementHandlingType(this.getAutoIncrementHandlingType());
-						}
-						
-						if (item.getPrimaryKeyInitialIncrementValue() == null) {
-							item.setPrimaryKeyInitialIncrementValue(this.getPrimaryKeyInitialIncrementValue());
-						}
-						
-						allItem.add(item);
-						
-						logInfo("Starting initialization of item " + counter);
-						
-						item.init(this, false, srcConn, dstConn);
-						
-						logInfo("Item initialized: " + item.getConfigCode());
 					}
+					
+					this.setEtlItemConfiguration(allItem);
 				}
-				
-				this.setEtlItemConfiguration(allItem);
 				
 				if (this.hasTestingItem()) {
 					this.getTestingEtlItemConfiguration().init(this, true, srcConn, dstConn);
@@ -924,6 +927,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				finalizeConnection(dstConn, this);
 			}
 		}
+	}
+	
+	public boolean hasEtlItemsConf() {
+		return utilities.listHasElement(this.getEtlItemConfiguration());
 	}
 	
 	public void ensureEtlStageTablesExist(Connection srcConn, Connection dstConn) throws DBException {

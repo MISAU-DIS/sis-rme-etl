@@ -3,15 +3,15 @@ package org.openmrs.module.epts.etl.conf.interfaces;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.model.pojo.generic.JsonEtlObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
-public interface EtlJsonConverter {
+public interface EtlJsonConverter extends EtlDataConfiguration {
 	
 	public static CommonUtilities utils = CommonUtilities.getInstance();
 	
-	EtlDatabaseObject convert(String json, Connection srcConn, Connection dstConn);
+	JsonEtlObject convert(String json, Connection srcConn, Connection dstConn);
 	
 	@SuppressWarnings("unchecked")
 	default <T extends Field> List<T> getFields() {
@@ -27,4 +27,5 @@ public interface EtlJsonConverter {
 	
 	<T extends Field> List<T> getConverterStructrureFields();
 	
+	void setParent(EtlDataConfiguration jsonDataSource);
 }

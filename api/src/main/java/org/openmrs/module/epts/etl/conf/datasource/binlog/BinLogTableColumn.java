@@ -55,6 +55,8 @@ public class BinLogTableColumn {
 		
 		f.setValue(this.getValue());
 		
+		asField = f;
+		
 		return asField;
 	}
 	

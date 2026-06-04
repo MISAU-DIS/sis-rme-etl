@@ -6,15 +6,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonOutputDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlJsonConverter;
 import org.openmrs.module.epts.etl.conf.types.DBOperationType;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
+import org.openmrs.module.epts.etl.model.pojo.generic.JsonEtlObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
@@ -76,9 +76,9 @@ public class BinlogJsonConvertor extends AbctractBinlogObject implements EtlJson
 	}
 	
 	@Override
-	public void setParent(AbstractEtlDataConfiguration parent) {
+	public void setParent(EtlDataConfiguration parent) {
 		
-		if (!(parent instanceof JsonDataSource)) {
+		if (parent != null && !(parent instanceof JsonDataSource)) {
 			throw new ForbiddenOperationException("The parent of BinlogJsonConvertor must be a JsonDataSource");
 		}
 		super.setParent(parent);
@@ -90,19 +90,26 @@ public class BinlogJsonConvertor extends AbctractBinlogObject implements EtlJson
 	}
 	
 	@Override
-	public EtlDatabaseObject convert(String json, Connection srcConn, Connection dstConn) {
+	public JsonEtlObject convert(String json, Connection srcConn, Connection dstConn) {
+		JsonEtlObject obj = null;
+		
 		try {
 			BinlogJsonConvertor converted = new ObjectMapperProvider().getContext(BinlogJsonConvertor.class).readValue(json,
 			    BinlogJsonConvertor.class);
 			
-			GenericDatabaseObject obj = GenericDatabaseObject.fastCreate(this.getTable_name(),
-			    converted.columnsAsEtlFields());
+			JsonOutputDataSource outputDs = this.getParentConf().getOutputDataSource();
 			
-			if (converted.hasParents()) {
+			obj = JsonEtlObject.fastCreate(outputDs, converted.columnsAsEtlFields());
+			
+			if (converted.hasParents() && outputDs.hasParents()) {
 				obj.setAuxLoadObject(new ArrayList<>(converted.getParents().size()));
 				
-				for (BinlogTableParent p : converted.getParents()) {
-					obj.getAuxLoadObject().add(GenericDatabaseObject.fastCreate(p.getTable_name(), p.columnsAsEtlFields()));
+				for (JsonOutputDataSource p : outputDs.getParentOutputDataSource()) {
+					BinlogTableParent selected = p.select(converted.getParents());
+					
+					if (selected != null) {
+						obj.addParent(JsonEtlObject.fastCreate(p, selected.columnsAsEtlFields()));
+					}
 				}
 			}
 		}
@@ -116,6 +123,6 @@ public class BinlogJsonConvertor extends AbctractBinlogObject implements EtlJson
 			throw new EtlConfException(e);
 		}
 		
-		return null;
+		return obj;
 	}
 }

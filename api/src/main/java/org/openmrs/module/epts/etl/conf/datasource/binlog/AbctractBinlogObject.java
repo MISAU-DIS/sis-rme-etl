@@ -15,7 +15,7 @@ public abstract class AbctractBinlogObject extends AbstractEtlDataConfiguration 
 	
 	private List<BinLogTableColumn> columns;
 	
-	private AbstractEtlDataConfiguration parent;
+	private EtlDataConfiguration parent;
 	
 	private volatile Boolean initialized;
 	
@@ -69,7 +69,7 @@ public abstract class AbctractBinlogObject extends AbstractEtlDataConfiguration 
 		return this.parent;
 	}
 	
-	public void setParent(AbstractEtlDataConfiguration parent) {
+	public void setParent(EtlDataConfiguration parent) {
 		this.parent = parent;
 	}
 	
