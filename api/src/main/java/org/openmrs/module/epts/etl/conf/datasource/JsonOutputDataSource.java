@@ -29,7 +29,7 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 	
 	private String name;
 	
-	private JsonDataSource parent;
+	private SrcConf parent;
 	
 	private List<String> fields;
 	
@@ -81,10 +81,10 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 	
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
-		if (relatedParent instanceof JsonDataSource) {
-			this.parent = (JsonDataSource) relatedParent;
+		if (relatedParent instanceof SrcConf) {
+			this.parent = (SrcConf) relatedParent;
 		} else {
-			throw new ForbiddenOperationException("The parent of JsonOutputDataSource must be a JsonDataSource!");
+			throw new ForbiddenOperationException("The parent of JsonOutputDataSource must be a SrcConf!");
 		}
 	}
 	
@@ -160,7 +160,7 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 	
 	@Override
 	public SrcConf getParentConf() {
-		return this.parent.getParentConf();
+		return this.parent;
 	}
 	
 	@Override
@@ -274,11 +274,12 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 	
 	@Override
 	public SrcConf getRelatedSrcConf() {
-		return this.parent.getParentConf();
+		return this.parent;
 	}
 	
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
+		this.parent = relatedSrcConf;
 	}
 	
 	public boolean hasParents() {
