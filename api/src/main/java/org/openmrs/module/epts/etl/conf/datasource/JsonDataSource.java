@@ -6,10 +6,10 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
+import org.openmrs.module.epts.etl.conf.datasource.json.JsonEtlMainObject;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlJsonConverter;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -19,7 +19,7 @@ import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
-import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -44,11 +44,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	private volatile Boolean fullLoaded;
 	
-	private String jsonConverterFullClassName;
-	
 	private JsonOutputDataSource outputDataSource;
-	
-	private Class<EtlJsonConverter> jsonConverterClazz;
 	
 	private List<String> prefferredDataSource;
 	
@@ -60,34 +56,12 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	private Boolean loadedDataSourceInfo;
 	
-	private EtlJsonConverter jsonConverterInstance;
-	
 	public JsonDataSource() {
 		this.loadedDataSourceInfo = false;
 	}
 	
 	public JsonOutputDataSource getOutputDataSource() {
 		return outputDataSource;
-	}
-	
-	public void setOutputDataSource(JsonOutputDataSource outputDataSource) {
-		this.outputDataSource = outputDataSource;
-	}
-	
-	public Class<EtlJsonConverter> getJsonConverterClazz() {
-		return jsonConverterClazz;
-	}
-	
-	public void setJsonConverterClazz(Class<EtlJsonConverter> jsonConverterClazz) {
-		this.jsonConverterClazz = jsonConverterClazz;
-	}
-	
-	public String getJsonConverterFullClassName() {
-		return jsonConverterFullClassName;
-	}
-	
-	public void setJsonConverterFullClassName(String jsonConverterFullClassName) {
-		this.jsonConverterFullClassName = jsonConverterFullClassName;
 	}
 	
 	public void setName(String name) {
@@ -172,12 +146,30 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 				return;
 			}
 			
+			if (!utilities.stringHasValue(this.getName())) {
+				throw new EtlConfException("Name is required for JsonDataSOurce.");
+			}
+			
+			if (this.getOutputDataSource() == null) {
+				throw new EtlConfException("No outputDataSource was defined for jsonDataSource" + this.getName());
+			}
+			
 			loadDataSourceInfo(conn);
 			
-			ensureConverterIsLoaded();
 			ensurePayloadFieldInfoIsLoaded(conn);
 			
 			this.setFullLoaded(true);
+		}
+	}
+	
+	@Override
+	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
+	        Connection dstConn) throws DBException {
+		
+		EtlAdditionalDataSource.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+		
+		if (this.getOutputDataSource() != null) {
+			this.getOutputDataSource().init(this, etlSchemaObject, srcConn, dstConn);
 		}
 	}
 	
@@ -190,7 +182,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	@Override
 	public String generateClassName() {
-		return this.jsonConverterFullClassName;
+		return null;
 	}
 	
 	@Override
@@ -205,7 +197,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	@Override
 	public <T extends Field> List<T> getFields() {
-		return this.jsonConverterInstance.getFields();
+		return this.outputDataSource.getFields();
 	}
 	
 	@Override
@@ -268,7 +260,6 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	@Override
 	public Boolean isMustLoadChildrenInfo() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
@@ -410,28 +401,9 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 		
 		String json = fi.getTransformedValue().toString();
 		
-		JsonEtlObject mainObj = jsonConverterInstance.convert(json, conn, conn);
+		JsonEtlObject mainObj = JsonEtlMainObject.convert(this, json, conn, conn);
 		
 		return mainObj;
-	}
-	
-	@SuppressWarnings("deprecation")
-	private EtlJsonConverter createConverter() {
-		try {
-			EtlJsonConverter cv = this.getJsonConverterClazz().newInstance();
-			
-			cv.setRelatedEtlConfig(getRelatedEtlConf());
-			
-			cv.setParent(this);
-			
-			return cv;
-		}
-		catch (InstantiationException e) {
-			throw new EtlExceptionImpl(e);
-		}
-		catch (IllegalAccessException e) {
-			throw new EtlExceptionImpl(e);
-		}
 	}
 	
 	@Override
@@ -443,37 +415,4 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	public Boolean allowMultipleSrcObjectsForLoading() {
 		return false;
 	}
-	
-	@SuppressWarnings("unchecked")
-	public synchronized void ensureConverterIsLoaded() throws ForbiddenOperationException {
-		try {
-			if (this.getJsonConverterClazz() == null) {
-				
-				if (utilities.stringHasValue(this.getJsonConverterFullClassName())) {
-					
-					ClassLoader loader = EtlJsonConverter.class.getClassLoader();
-					
-					Class<EtlJsonConverter> c = (Class<EtlJsonConverter>) loader
-					        .loadClass(this.getJsonConverterFullClassName());
-					
-					this.setJsonConverterClazz((Class<EtlJsonConverter>) c);
-					
-					if (this.getJsonConverterClazz() == null) {
-						throw new ForbiddenOperationException(
-						        "The Json Converter class [" + this.getJsonConverterFullClassName() + "] cannot be found");
-					}
-					
-					this.jsonConverterInstance = createConverter();
-				} else {
-					throw new ForbiddenOperationException(
-					        "You should specify the json converter full class [jsonConverterFullClassName] for JsonDataSource");
-				}
-			}
-		}
-		catch (ClassNotFoundException e) {
-			throw new EtlExceptionImpl(
-			        "The jsonConverterClazz " + this.getJsonConverterFullClassName() + " could not be loaded", e);
-		}
-	}
-	
 }

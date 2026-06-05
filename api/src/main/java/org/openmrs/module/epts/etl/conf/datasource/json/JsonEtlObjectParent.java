@@ -1,9 +1,9 @@
-package org.openmrs.module.epts.etl.conf.datasource.binlog;
+package org.openmrs.module.epts.etl.conf.datasource.json;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 
-public class BinlogTableParent extends AbctractBinlogObject {
+public class JsonEtlObjectParent extends JsonEtlAbctractObject {
 	
 	private String child_field;
 	
@@ -16,14 +16,14 @@ public class BinlogTableParent extends AbctractBinlogObject {
 	}
 	
 	@Override
-	public BinlogJsonConvertor getParentConf() {
-		return (BinlogJsonConvertor) super.getParentConf();
+	public JsonEtlMainObject getParentConf() {
+		return (JsonEtlMainObject) super.getParentConf();
 	}
 	
 	@Override
 	public void setParent(EtlDataConfiguration parent) {
 		
-		if (!(parent instanceof BinlogJsonConvertor)) {
+		if (!(parent instanceof JsonEtlMainObject)) {
 			throw new ForbiddenOperationException("The parent of BinlogTableParent must be a BinlogJsonConvertor");
 		}
 		super.setParent(parent);

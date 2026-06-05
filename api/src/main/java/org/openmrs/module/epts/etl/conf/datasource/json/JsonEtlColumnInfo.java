@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.conf.datasource.binlog;
+package org.openmrs.module.epts.etl.conf.datasource.json;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
-public class BinLogTableColumn {
+public class JsonEtlColumnInfo {
 	
 	private static final CommonUtilities utilities = CommonUtilities.getInstance();
 	
@@ -60,11 +60,11 @@ public class BinLogTableColumn {
 		return asField;
 	}
 	
-	public static List<Field> toEtlField(List<BinLogTableColumn> columns) {
+	public static List<Field> toEtlField(List<JsonEtlColumnInfo> columns) {
 		if (utilities.listHasElement(columns)) {
 			List<Field> fields = new ArrayList<>(columns.size());
 			
-			for (BinLogTableColumn c : columns) {
+			for (JsonEtlColumnInfo c : columns) {
 				fields.add(c.asEtlField());
 			}
 			

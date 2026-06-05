@@ -1,23 +1,32 @@
-package org.openmrs.module.epts.etl.conf.datasource.binlog;
+package org.openmrs.module.epts.etl.conf.datasource.json;
 
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 
-public abstract class AbctractBinlogObject extends AbstractEtlDataConfiguration {
+public abstract class JsonEtlAbctractObject extends AbstractEtlDataConfiguration {
 	
 	protected final Object LOCK = new Object();
 	
 	private String table_name;
 	
-	private List<BinLogTableColumn> columns;
+	private List<JsonEtlColumnInfo> columns;
 	
 	private EtlDataConfiguration parent;
 	
 	private volatile Boolean initialized;
+	
+	public JsonEtlAbctractObject() {
+		
+	}
+	
+	public JsonEtlAbctractObject(JsonDataSource parent) {
+		setParent(parent);
+	}
 	
 	private boolean hasColumns() {
 		return utilities.listHasElement(this.columns);
@@ -39,7 +48,7 @@ public abstract class AbctractBinlogObject extends AbstractEtlDataConfiguration 
 			}
 			
 			if (hasColumns()) {
-				for (BinLogTableColumn c : this.columns) {
+				for (JsonEtlColumnInfo c : this.columns) {
 					c.init();
 				}
 			}
@@ -56,11 +65,11 @@ public abstract class AbctractBinlogObject extends AbstractEtlDataConfiguration 
 		this.table_name = table_name;
 	}
 	
-	public List<BinLogTableColumn> getColumns() {
+	public List<JsonEtlColumnInfo> getColumns() {
 		return columns;
 	}
 	
-	public void setColumns(List<BinLogTableColumn> columns) {
+	public void setColumns(List<JsonEtlColumnInfo> columns) {
 		this.columns = columns;
 	}
 	
@@ -78,7 +87,7 @@ public abstract class AbctractBinlogObject extends AbstractEtlDataConfiguration 
 	}
 	
 	public List<Field> columnsAsEtlFields() {
-		return BinLogTableColumn.toEtlField(this.columns);
+		return JsonEtlColumnInfo.toEtlField(this.columns);
 	}
 	
 }

@@ -154,10 +154,12 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			Set<EtlDatabaseObject> finalList = new LinkedHashSet<>();
 			
 			for (EtlDatabaseObject primaryDs : result) {
+				finalList.add(primaryDs);
+				
 				List<EtlDatabaseObject> aux = retrieveAuxLoadObjects(primaryDs);
 				
 				if (utilities.listHasElement(aux)) {
-					result.addAll(aux);
+					finalList.addAll(aux);
 				}
 			}
 			

@@ -116,8 +116,6 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		List<EtlAdditionalDataSource> allAvaliableDataSources = this.getAvaliableExtraDataSource();
 		
 		for (EtlAdditionalDataSource t : allAvaliableDataSources) {
-			t.tryToLoadFromTemplate();
-			
 			t.init(this, getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
 			
 			if (t instanceof AbstractTableConfiguration) {
@@ -503,7 +501,14 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		}
 		
 		if (hasExtraJsonSourceConfig()) {
-			ds.addAll(this.getExtraJsonDataSource());
+			
+			for (JsonDataSource d : this.getExtraJsonDataSource()) {
+				ds.add(d.getOutputDataSource());
+				
+				if (d.getOutputDataSource().hasParents()) {
+					ds.addAll(d.getOutputDataSource().getParentOutputDataSource());
+				}
+			}
 		}
 		
 		return ds;

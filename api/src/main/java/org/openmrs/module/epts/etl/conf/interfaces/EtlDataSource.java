@@ -109,6 +109,8 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 			throw new EtlExceptionImpl("RelatedParent cannot be null!");
 		
 		this.setParentConf(relatedParent);
+		this.setRelatedEtlConfig(relatedParent.getRelatedEtlConf());
+		
 		this.tryToLoadFromTemplate();
 		
 		Connection conn = null;

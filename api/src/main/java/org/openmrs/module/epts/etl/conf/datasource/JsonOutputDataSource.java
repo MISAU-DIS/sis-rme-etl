@@ -7,7 +7,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.conf.datasource.binlog.BinlogTableParent;
+import org.openmrs.module.epts.etl.conf.datasource.json.JsonEtlObjectParent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
@@ -130,6 +130,20 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 			
 		}
 		
+	}
+	
+	@Override
+	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
+	        Connection dstConn) throws DBException {
+		
+		EtlAdditionalDataSource.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+		
+		if (this.hasParents()) {
+			
+			for (JsonOutputDataSource ds : this.getParentOutputDataSource()) {
+				ds.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+			}
+		}
 	}
 	
 	@Override
@@ -271,11 +285,11 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 		return utilities.listHasElement(this.getParentOutputDataSource());
 	}
 	
-	public BinlogTableParent select(List<BinlogTableParent> parents) {
+	public JsonEtlObjectParent select(List<JsonEtlObjectParent> parents) {
 		if (parents == null)
 			return null;
 		
-		for (BinlogTableParent p : parents) {
+		for (JsonEtlObjectParent p : parents) {
 			if (this.childField.equals(p.getChild_field())) {
 				return p;
 			}
