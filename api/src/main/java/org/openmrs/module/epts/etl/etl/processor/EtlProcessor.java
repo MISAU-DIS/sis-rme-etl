@@ -80,9 +80,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				}
 				
 				try {
-					if (mappingInfo.checkIfSrcObjectCanBeLoaded(srcRecord, srcConn, dstConn)) {
+					List<EtlDatabaseObject> avaliableSrcObjects = mappingInfo.getTransformerInstance().collectSourceObjects(this,
+					    srcRecord, mappingInfo.createRecordInstance(), parentMigratedRec, mappingInfo,
+					    TransformationType.PRINCIPAL, srcConn);
+					
+					if (mappingInfo.checkIfSrcObjectCanBeLoaded(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
 						EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this, srcRecord,
-						    mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL, srcConn, dstConn);
+						    avaliableSrcObjects, mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL, srcConn, dstConn);
 						
 						if (dstObject != null) {
 							record.addDestinationRecord(dstObject);
@@ -182,7 +186,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
 		        : transformedParent.getEtlInfo().getRelatedSrcObject();
 		
-		if (itemConf.checkIfSrcObjectCanBeLoaded(srcObject, srcConn, dstConn)) {
+		if (itemConf.checkIfSrcObjectCanBeLoaded(srcObject, null, srcConn, dstConn)) {
 			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 			        : transformedParent.getEtlInfo().getAvaliableSrcObjects();
 			

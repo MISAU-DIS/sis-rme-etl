@@ -23,7 +23,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class JsonOutputDataSource extends AbstractEtlDataConfiguration implements EtlAdditionalDataSource, EtlSrcConf {
+public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration implements EtlAdditionalDataSource, EtlSrcConf {
 	
 	private final Object LOCK = new Object();
 	
@@ -35,8 +35,6 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 	
 	private List<Field> dataSourceFields;
 	
-	private List<JsonOutputDataSource> parentOutputDataSource;
-	
 	private String childField;
 	
 	public String getChildField() {
@@ -45,14 +43,6 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 	
 	public void setChildField(String childField) {
 		this.childField = childField;
-	}
-	
-	public List<JsonOutputDataSource> getParentOutputDataSource() {
-		return parentOutputDataSource;
-	}
-	
-	public void setParentOutputDataSource(List<JsonOutputDataSource> parentOutputDataSource) {
-		this.parentOutputDataSource = parentOutputDataSource;
 	}
 	
 	@Override
@@ -130,20 +120,6 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 			
 		}
 		
-	}
-	
-	@Override
-	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
-	        Connection dstConn) throws DBException {
-		
-		EtlAdditionalDataSource.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
-		
-		if (this.hasParents()) {
-			
-			for (JsonOutputDataSource ds : this.getParentOutputDataSource()) {
-				ds.init(relatedParent, etlSchemaObject, srcConn, dstConn);
-			}
-		}
 	}
 	
 	@Override
@@ -280,10 +256,6 @@ public class JsonOutputDataSource extends AbstractEtlDataConfiguration implement
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		this.parent = relatedSrcConf;
-	}
-	
-	public boolean hasParents() {
-		return utilities.listHasElement(this.getParentOutputDataSource());
 	}
 	
 	public JsonEtlObjectParent select(List<JsonEtlObjectParent> parents) {

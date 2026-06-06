@@ -7,7 +7,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
-import org.openmrs.module.epts.etl.conf.datasource.JsonOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonSimpleOutputDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class JsonEtlObject extends AbstractDatabaseObject {
 	
-	private JsonOutputDataSource relatedConfiguration;
+	private JsonSimpleOutputDataSource relatedConfiguration;
 	
 	private List<JsonEtlObject> parents;
 	
@@ -58,7 +58,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	public void setSharedPkObj(EtlDatabaseObject sharedPkObj) {
 	}
 	
-	public JsonEtlObject(JsonOutputDataSource relatedConfiguration) {
+	public JsonEtlObject(JsonSimpleOutputDataSource relatedConfiguration) {
 		setRelatedConfiguration(relatedConfiguration);
 	}
 	
@@ -154,18 +154,18 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	
 	@Override
 	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		if (!(config instanceof JsonOutputDataSource)) {
+		if (!(config instanceof JsonSimpleOutputDataSource)) {
 			throw new ForbiddenOperationException("The config must be a JsonOutputDataSource");
 		}
 		
-		this.relatedConfiguration = (JsonOutputDataSource) config;
+		this.relatedConfiguration = (JsonSimpleOutputDataSource) config;
 		
 		this.fields = this.getRelatedConfiguration().cloneFields(this);
 	}
 	
 	@Override
 	@JsonIgnore
-	public JsonOutputDataSource getRelatedConfiguration() {
+	public JsonSimpleOutputDataSource getRelatedConfiguration() {
 		return this.relatedConfiguration;
 	}
 	
@@ -274,7 +274,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 		return this.generateTableName();
 	}
 	
-	public static JsonEtlObject fastCreate(JsonOutputDataSource etlConf, List<Field> fields) {
+	public static JsonEtlObject fastCreate(JsonSimpleOutputDataSource etlConf, List<Field> fields) {
 		JsonEtlObject obj = new JsonEtlObject(etlConf);
 		obj.setFields(fields);
 		

@@ -21,6 +21,7 @@ import java.util.Stack;
 import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -343,6 +344,36 @@ public class CommonUtilities implements Serializable {
 		}
 		
 		return str.split("\\s+");
+	}
+	
+	public String[] splitByAny(String str, String... tokens) {
+		
+		if (str == null) {
+			return new String[0];
+		}
+		
+		str = str.trim();
+		
+		if (str.isEmpty()) {
+			return new String[0];
+		}
+		
+		StringBuilder regex = new StringBuilder();
+		
+		for (String token : tokens) {
+			
+			if (token == null || token.isEmpty()) {
+				continue;
+			}
+			
+			if (regex.length() > 0) {
+				regex.append("|");
+			}
+			
+			regex.append(Pattern.quote(token));
+		}
+		
+		return str.split(regex.toString());
 	}
 	
 	/**

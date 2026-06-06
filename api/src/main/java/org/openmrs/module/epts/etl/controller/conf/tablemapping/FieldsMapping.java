@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.NoFieldWithFieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
@@ -111,7 +112,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		this.dstField = dstField != null ? dstField : this.srcField;
 		
 		if (this.dstField == null) {
-			throw new EtlExceptionImpl("A FieldsMapping must have at least a srcFieldName or dstField");
+			throw new NoFieldWithFieldsMapping ();
 		} else {
 			dstField = this.dstField.toString().split("\\.")[0];
 		}

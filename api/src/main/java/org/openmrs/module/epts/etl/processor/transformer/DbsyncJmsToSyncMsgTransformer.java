@@ -105,5 +105,22 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 		
 		return null;
 	}
+
+	@Override
+	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
+	        List<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
+	        TransformationType transformationType, Connection srcConn, Connection dstConn)
+	        throws DBException, EtlTransformationException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
+	        EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent, DstConf dstConf,
+	        TransformationType transformationType, Connection srcConn) throws DBException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 }

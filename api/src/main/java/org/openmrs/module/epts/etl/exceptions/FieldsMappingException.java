@@ -7,6 +7,10 @@ public class FieldsMappingException extends EtlExceptionImpl {
 	
 	private static final long serialVersionUID = 1505624913800886849L;
 	
+	public FieldsMappingException(String msg) {
+		super(msg);
+	}
+	
 	public FieldsMappingException(DstConf conf, FieldsMappingIssues mappingIssue) {
 		super(generateIssueMsg(conf, mappingIssue));
 	}

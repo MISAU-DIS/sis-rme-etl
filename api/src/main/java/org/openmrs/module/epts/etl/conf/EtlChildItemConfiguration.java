@@ -178,7 +178,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	
 	@Override
 	public UniqueKeyInfo getPrimaryKey() {
-		throw new ForbiddenOperationException("Forbiden Method!");
+		return null;
 	}
 	
 	@Override

@@ -44,7 +44,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	
 	private volatile Boolean fullLoaded;
 	
-	private JsonOutputDataSource outputDataSource;
+	private JsonMainOutputDataSource outputDataSource;
 	
 	private List<String> prefferredDataSource;
 	
@@ -60,8 +60,12 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 		this.loadedDataSourceInfo = false;
 	}
 	
-	public JsonOutputDataSource getOutputDataSource() {
+	public JsonMainOutputDataSource getOutputDataSource() {
 		return outputDataSource;
+	}
+	
+	public void setOutputDataSource(JsonMainOutputDataSource outputDataSource) {
+		this.outputDataSource = outputDataSource;
 	}
 	
 	public void setName(String name) {
@@ -153,6 +157,8 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 			if (this.getOutputDataSource() == null) {
 				throw new EtlConfException("No outputDataSource was defined for jsonDataSource" + this.getName());
 			}
+			
+			this.getOutputDataSource().setParent(this);
 			
 			loadDataSourceInfo(conn);
 			

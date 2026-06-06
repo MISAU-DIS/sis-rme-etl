@@ -7,7 +7,8 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
-import org.openmrs.module.epts.etl.conf.datasource.JsonOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonMainOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonSimpleOutputDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.types.DBOperationType;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -95,14 +96,14 @@ public class JsonEtlMainObject extends JsonEtlAbctractObject implements EtlDataC
 			
 			mainObject.setParent(parent);
 			
-			JsonOutputDataSource outputDs = parent.getOutputDataSource();
+			JsonMainOutputDataSource outputDs = parent.getOutputDataSource();
 			
 			obj = JsonEtlObject.fastCreate(outputDs, mainObject.columnsAsEtlFields());
 			
 			if (mainObject.hasParents() && outputDs.hasParents()) {
 				obj.setAuxLoadObject(new ArrayList<>(mainObject.getParents().size()));
 				
-				for (JsonOutputDataSource p : outputDs.getParentOutputDataSource()) {
+				for (JsonSimpleOutputDataSource p : outputDs.getParentOutputDataSource()) {
 					JsonEtlObjectParent selected = p.select(mainObject.getParents());
 					
 					if (selected != null) {

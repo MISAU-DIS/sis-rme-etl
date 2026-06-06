@@ -42,6 +42,29 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	        EtlDatabaseObject migratedDstParent, TransformationType transformationType, Connection srcConn,
 	        Connection dstConn) throws DBException, EtlTransformationException {
 		
+		EtlDatabaseObject transformedRec = dstConf.createRecordInstance();
+		
+		List<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, transformedRec, migratedDstParent,
+		    dstConf, transformationType, srcConn);
+		
+		try {
+			if (srcObjects == null || srcObjects.isEmpty()) {
+				return null;
+			}
+		}
+		catch (Exception e) {
+			throw e;
+		}
+		
+		return transform(processor, srcObject, srcObjects, dstConf, migratedDstParent, transformationType, srcConn, dstConn);
+	}
+	
+	@Override
+	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
+	        List<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
+	        TransformationType transformationType, Connection srcConn, Connection dstConn)
+	        throws DBException, EtlTransformationException {
+		
 		if (dstConf.isDisabled()) {
 			throw new EtlExceptionImpl("Attempt to tranform to disabled dstConf");
 		}
@@ -56,19 +79,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		
 		transformedRec.setEtlInfo(EtlInfo.initEtlRecord(processor, srcObject, transformedRec));
 		
-		List<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, transformedRec, migratedDstParent,
-		    dstConf, transformationType, srcConn);
-		
-		try {
-			if (srcObjects == null || srcObjects.isEmpty()) {
-				return null;
-			}
-		}
-		catch (Exception e) {
-			throw e;
-		}
-		
-		applyFieldTransformations(processor, transformedRec, srcObjects, srcConn, dstConn);
+		applyFieldTransformations(processor, transformedRec, collectedSrcObjects, srcConn, dstConn);
 		
 		resolvePrimaryKeyAndParent(processor, srcObject, transformedRec, migratedDstParent, srcConn, dstConn);
 		
@@ -76,7 +87,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			transformedRec.setUuid(UUID.randomUUID().toString());
 		}
 		
-		transformedRec.getEtlInfo().setTransformationSrcObject(srcObjects);
+		transformedRec.getEtlInfo().setTransformationSrcObject(collectedSrcObjects);
 		
 		processor.logTrace("Record " + srcObject + " transformed to " + transformedRec);
 		
@@ -137,7 +148,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 	}
 	
-	private List<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
+	public List<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
 	        EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent, DstConf dstConf,
 	        TransformationType transformationType, Connection srcConn) throws DBException {
 		
