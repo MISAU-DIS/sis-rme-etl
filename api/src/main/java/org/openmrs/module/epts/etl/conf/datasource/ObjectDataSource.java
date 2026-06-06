@@ -71,6 +71,8 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	
 	private ActionOnEtlIssue onMultipleDataSourceForSameMapping;
 	
+	private Boolean loadedDataSourceInfo;
+	
 	public ObjectDataSource() {
 		this.ignoreUnmappedFields = true;
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
@@ -158,24 +160,13 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 		return utilities.listHasElement(this.getObjectFields());
 	}
 	
-	private void addAllAvaliableDataSources(Connection conn) {
-		this.addToAvaliableDataSource(this.getSrcConf());
-		this.addAllToAvaliableDataSource(this.getSrcConf().getAvaliableExtraDataSource());
-		
-		if (this.getSrcConf().hasParentItemConf()) {
-			this.addAllToAvaliableDataSource(this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
-		}
-		
-		this.setAllNotPrefferredDataSource(this.getAllAvaliableDataSource());
-	}
-	
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
 		if (isFullLoaded()) {
 			return;
 		}
 		
-		this.addAllAvaliableDataSources(conn);
+		this.loadDataSourceInfo(conn);
 		
 		this.tryToLoadFieldValueGenerator();
 		
@@ -577,11 +568,19 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
+		this.addToAvaliableDataSource(this.getSrcConf());
+		this.addAllToAvaliableDataSource(this.getSrcConf().getAvaliableExtraDataSource());
+		
+		if (this.getSrcConf().hasParentItemConf()) {
+			this.addAllToAvaliableDataSource(this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
+		}
+		
+		this.setAllNotPrefferredDataSource(this.getAllAvaliableDataSource());
 	}
 	
 	@Override
 	public Boolean isLoadedDataSourceInfo() {
-		return false;
+		return isTrue(loadedDataSourceInfo);
 	}
 	
 	@Override

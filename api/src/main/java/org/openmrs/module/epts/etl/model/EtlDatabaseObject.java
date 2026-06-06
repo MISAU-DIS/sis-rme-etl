@@ -25,6 +25,7 @@ import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordAlreadyLoadedRec
 import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordNotYetAvaliableException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -758,7 +759,16 @@ public interface EtlDatabaseObject extends EtlObject {
 			}
 		}
 		
-		throw new ForbiddenOperationException("The field '" + fieldName + "' cannot be found on object " + this);
+		throw new MissingFieldException(fieldName, this.getRelatedConfiguration());
+	}
+	
+	default boolean contaisField(String fieldName) {
+		try {
+			return getField(fieldName) != null;
+		}
+		catch (MissingFieldException e) {
+			return false;
+		}
 	}
 	
 	default Class<?> getFieldType(String fieldName) {

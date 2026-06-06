@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -79,7 +80,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				}
 				
 				try {
-					if (mappingInfo.checkIfSrcObjectCanBeLoaded(srcRecord)) {
+					if (mappingInfo.checkIfSrcObjectCanBeLoaded(srcRecord, srcConn, dstConn)) {
 						EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this, srcRecord,
 						    mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL, srcConn, dstConn);
 						
@@ -147,14 +148,14 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 	
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf,
-	        Function<EtlItemConfiguration, List<EtlDatabaseObject>> objectsProvider, Connection srcConn, Connection dstConn)
-	        throws DBException {
+	        Function<EtlChildItemConfiguration, List<EtlDatabaseObject>> objectsProvider, Connection srcConn,
+	        Connection dstConn) throws DBException {
 		
 		if (!itemConf.hasChildItemConf()) {
 			return;
 		}
 		
-		for (EtlItemConfiguration childItemConf : itemConf.getChildItemConf()) {
+		for (EtlChildItemConfiguration childItemConf : itemConf.getChildItemConf()) {
 			childItemConf.fullLoad(this.getRelatedEtlOperationConfig());
 			
 			List<EtlDatabaseObject> records = objectsProvider.apply(childItemConf);
@@ -175,21 +176,23 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		tryToPerfomeEtlOnChild(etlItemConf, childItemConf -> etlObjects, srcConn, dstConn);
 	}
 	
-	private void performeEtlOnChildItem(EtlItemConfiguration itemConf, EtlDatabaseObject transformedParent,
+	private void performeEtlOnChildItem(EtlChildItemConfiguration itemConf, EtlDatabaseObject transformedParent,
 	        Connection srcConn, Connection dstConn) throws DBException {
 		
 		EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
 		        : transformedParent.getEtlInfo().getRelatedSrcObject();
 		
-		List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
-		        : transformedParent.getEtlInfo().getAvaliableSrcObjects();
-		
-		List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
-		    avaliableSrcObjects, srcConn);
-		
-		if (!etlObjects.isEmpty()) {
-			perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null, LoadingType.INNER,
-			    srcConn, dstConn);
+		if (itemConf.checkIfSrcObjectCanBeLoaded(srcObject, srcConn, dstConn)) {
+			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
+			        : transformedParent.getEtlInfo().getAvaliableSrcObjects();
+			
+			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
+			    avaliableSrcObjects, srcConn);
+			
+			if (!etlObjects.isEmpty()) {
+				perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null, LoadingType.INNER,
+				    srcConn, dstConn);
+			}
 		}
 	}
 	

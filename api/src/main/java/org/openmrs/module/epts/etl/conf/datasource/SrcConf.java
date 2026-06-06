@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
@@ -302,14 +303,14 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	public SrcConf getParentSrcConf() {
 		if (hasParentItemConf()) {
-			return this.getParentConf().getParentItemConf().getSrcConf();
+			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
 		}
 		
 		return null;
 	}
 	
 	public Boolean hasParentItemConf() {
-		return this.getParentConf().hasParentItemConf();
+		return this.getParentConf() instanceof EtlChildItemConfiguration;
 	}
 	
 	private void loadEtlFields() {
@@ -766,7 +767,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	@Override
 	public Boolean isJoinable() {
-		return this.getParentConf().hasParentItemConf();
+		return hasParentItemConf();
 	}
 	
 	@Override
@@ -785,7 +786,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 			throw new ForbiddenOperationException("Only a srcConf with a child EtlItemConf can have a joining entity");
 		}
 		
-		return this.getParentConf().getParentItemConf().getSrcConf();
+		return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
 	}
 	
 	@Override
@@ -906,7 +907,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	public EtlItemConfiguration getParentItemConf() {
 		if (this.hasParentItemConf()) {
-			return this.getParentConf().getParentItemConf();
+			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf();
 		}
 		
 		return null;

@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
@@ -817,7 +818,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		
 		parentConf.setRelatedEtlConfig(this.relatedEtlTransformTarget.getRelatedEtlConf());
 		
-		EtlItemConfiguration conf = EtlItemConfiguration.fastCreate(parentConf, srcConn);
+		EtlChildItemConfiguration conf = EtlChildItemConfiguration.fastCreate(parentConf, srcConn);
 		
 		EtlTemplateInfo template = usesTemplate() ? new EtlTemplateInfo(this.templateName) : null;
 		

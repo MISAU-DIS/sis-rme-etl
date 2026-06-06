@@ -8,15 +8,19 @@ import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration, GenericEtlTransformTarget {
+public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 	
 	void loadDataSourceInfo(Connection conn) throws DBException;
 	
@@ -43,6 +47,237 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration, Gener
 	void setMapping(List<FieldsMapping> mapping);
 	
 	void setAllMapping(List<FieldsMapping> allMapping);
+	
+	String getSrcObjectCondition();
+	
+	default Boolean hasSrcObjectCondition() {
+		return utilities.stringHasValue(this.getSrcObjectCondition());
+	}
+	
+	default Boolean checkIfSrcObjectCanBeLoaded(EtlDatabaseObject srcObject, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		if (this.hasSrcObjectCondition()) {
+			
+			try {
+				String preparedCondition = ensureSrcObjectConditionTransformableElementsAreGenerated(srcObject, srcConn,
+				    dstConn);
+				
+				if (matchesCondition(srcObject, preparedCondition)) {
+					return true;
+				}
+			}
+			catch (MissingParameterOnEtlTransformationException e) {
+				return false;
+			}
+			
+		} else {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	default String ensureSrcObjectConditionTransformableElementsAreGenerated(EtlDatabaseObject srcObject, Connection srcConn,
+	        Connection dstConn) throws FieldAvaliableInMultipleDataSources, DBException {
+		
+		if (hasSrcObjectCondition()) {
+			List<EtlDatabaseObject> avaliableSrcObjects = srcObject.collectAllAvaliableSrcObjects();
+			
+			String preparedCondition = EtlFieldTransformer
+			        .tryToReplaceParametersOnSrcValue(avaliableSrcObjects, this.getSrcObjectCondition()).toString();
+			
+			String[] srcObjectConditionElements = utilities.splitByEmptySpace(preparedCondition);
+			
+			for (String element : srcObjectConditionElements) {
+				if (srcObject.contaisField(element)) {
+					continue;
+				}
+				
+				FieldsMapping map = FieldsMapping.fastCreate(element, this, srcConn);
+				
+				if (map.hasDataSourceName()) {
+					FieldTransformingInfo v = map.getTransformerInstance().transform(null, srcObject, srcObject,
+					    avaliableSrcObjects, map, srcConn, srcConn);
+					
+					preparedCondition = preparedCondition.replaceAll(element, v.getTransformedValue().toString());
+				}
+				
+			}
+			
+			return preparedCondition;
+		}
+		
+		return null;
+	}
+	
+	default Boolean matchesCondition(EtlDatabaseObject obj, String condition) {
+		
+		condition = condition.replaceAll("(?i)\\s+or\\s+", "||");
+		condition = condition.replaceAll("(?i)\\s+and\\s+", "&&");
+		
+		String[] orConditions = condition.split("\\|\\|");
+		
+		for (String orCond : orConditions) {
+			
+			Boolean andResult = true;
+			
+			String[] andConditions = orCond.split("&&");
+			
+			for (String andCond : andConditions) {
+				
+				if (!evaluateCondition(obj, andCond.trim())) {
+					andResult = false;
+					break;
+				}
+			}
+			
+			if (andResult) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	default Boolean evaluateCondition(EtlDatabaseObject obj, String condition) {
+		
+		// IN
+		if (condition.matches("(?i).+\\s+in\\s*\\(.+\\)")) {
+			return evaluateIn(obj, condition);
+		}
+		
+		// LIKE
+		if (condition.matches("(?i).+\\s+like\\s+.+")) {
+			return evaluateLike(obj, condition);
+		}
+		
+		// operadores de comparação
+		String operator = null;
+		
+		if (condition.contains(">="))
+			operator = ">=";
+		else if (condition.contains("<="))
+			operator = "<=";
+		else if (condition.contains("!="))
+			operator = "!=";
+		else if (condition.contains(">"))
+			operator = ">";
+		else if (condition.contains("<"))
+			operator = "<";
+		else if (condition.contains("="))
+			operator = "=";
+		
+		if (operator == null) {
+			throw new IllegalArgumentException("Unsupported condition: " + condition);
+		}
+		
+		String[] parts = condition.split("\\Q" + operator + "\\E");
+		
+		String field = parts[0].trim();
+		String expected = stripQuotes(parts[1].trim());
+		
+		Object value;
+		
+		try {
+			value = obj.getFieldValue(field);
+		}
+		catch (ForbiddenOperationException e) {
+			value = field;
+		}
+		
+		if (value == null) {
+			value = "null";
+		}
+		
+		String actual = value.toString();
+		
+		switch (operator) {
+			
+			case "=":
+				return actual.equals(expected);
+			
+			case "!=":
+				return !actual.equals(expected);
+			
+			case ">":
+				return compare(actual, expected) > 0;
+			
+			case "<":
+				return compare(actual, expected) < 0;
+			
+			case ">=":
+				return compare(actual, expected) >= 0;
+			
+			case "<=":
+				return compare(actual, expected) <= 0;
+			
+			default:
+				throw new IllegalArgumentException("Unsupported operator");
+		}
+	}
+	
+	default int compare(String a, String b) {
+		
+		try {
+			Double da = Double.valueOf(a);
+			Double db = Double.valueOf(b);
+			
+			return da.compareTo(db);
+			
+		}
+		catch (NumberFormatException e) {
+			return a.compareTo(b);
+		}
+	}
+	
+	default Boolean evaluateIn(EtlDatabaseObject obj, String condition) {
+		
+		String[] parts = condition.split("(?i)in");
+		
+		String field = parts[0].trim();
+		String valuesPart = parts[1].trim();
+		
+		valuesPart = valuesPart.replaceAll("[()]", "");
+		
+		Object value = obj.getFieldValue(field);
+		
+		if (value == null)
+			return false;
+		
+		String actual = value.toString();
+		
+		for (String v : valuesPart.split(",")) {
+			
+			if (actual.equals(stripQuotes(v.trim()))) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	default Boolean evaluateLike(EtlDatabaseObject obj, String condition) {
+		
+		String[] parts = condition.split("(?i)like");
+		
+		String field = parts[0].trim();
+		String pattern = stripQuotes(parts[1].trim());
+		
+		Object value = obj.getFieldValue(field);
+		
+		if (value == null)
+			return false;
+		
+		String actual = value.toString();
+		
+		String regex = pattern.replace("%", ".*").replace("_", ".");
+		
+		return actual.matches(regex);
+	}
+	
+	default String stripQuotes(String s) {
+		return s.replaceAll("^['\"]|['\"]$", "");
+	}
 	
 	default void addMapping(FieldsMapping fm) throws ForbiddenOperationException {
 		if (this.getAllMapping() == null) {

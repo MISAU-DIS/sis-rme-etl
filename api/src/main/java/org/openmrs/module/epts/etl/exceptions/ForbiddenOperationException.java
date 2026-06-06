@@ -9,7 +9,7 @@ import org.openmrs.module.epts.etl.model.base.EtlObject;
  * @author JP. Boane
  * @version 1.0 07/12/2012
  */
-public class ForbiddenOperationException extends RuntimeException implements EtlException {
+public class ForbiddenOperationException extends EtlExceptionImpl {
 	
 	private static final long serialVersionUID = 1414389901658588032L;
 	

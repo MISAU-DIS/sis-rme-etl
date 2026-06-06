@@ -2,7 +2,7 @@ package org.openmrs.module.epts.etl.exceptions;
 
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
-public class MissingFieldException extends EtlExceptionImpl {
+public class MissingFieldException extends ForbiddenOperationException {
 	
 	private static final long serialVersionUID = -4799473775930078338L;
 	

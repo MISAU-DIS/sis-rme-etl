@@ -11,7 +11,6 @@ import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.GenericEtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
@@ -27,7 +26,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
-public class EtlItemConfiguration extends AbstractEtlDataConfiguration implements GenericEtlTransformTarget {
+public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	
 	private String id;
 	
@@ -71,19 +70,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 	 */
 	private Integer primaryKeyInitialIncrementValue;
 	
-	private List<EtlItemConfiguration> childItemConf;
-	
-	private EtlItemConfiguration parentItemConf;
-	
-	private DstConf relatedParentDstConf;
-	
-	private String relatedParentDstConfName;
+	private List<EtlChildItemConfiguration> childItemConf;
 	
 	private Boolean doNotFullLoadDstConf;
 	
 	private String shortCode;
-	
-	private String srcObjectCondition;
 	
 	public EtlItemConfiguration() {
 	}
@@ -96,14 +87,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 		this.shortCode = shortCode;
 	}
 	
-	public String getSrcObjectCondition() {
-		return srcObjectCondition;
-	}
-	
-	public void setSrcObjectCondition(String srcObjectCondition) {
-		this.srcObjectCondition = srcObjectCondition;
-	}
-	
 	public Boolean isDoNotFullLoadDstConf() {
 		return doNotFullLoadDstConf != null && doNotFullLoadDstConf;
 	}
@@ -112,35 +95,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 		this.doNotFullLoadDstConf = doNotFullLoadDstConf;
 	}
 	
-	public String getRelatedParentDstConfName() {
-		return relatedParentDstConfName;
-	}
-	
-	public void setRelatedParentDstConfName(String relatedParentDstConfName) {
-		this.relatedParentDstConfName = relatedParentDstConfName;
-	}
-	
-	public EtlItemConfiguration getParentItemConf() {
-		return parentItemConf;
-	}
-	
-	public void setParentItemConf(EtlItemConfiguration parentItemConf) {
-		this.parentItemConf = parentItemConf;
-	}
-	
-	public DstConf getRelatedParentDstConf() {
-		return relatedParentDstConf;
-	}
-	
-	public void setRelatedParentDstConf(DstConf relatedParentDstConf) {
-		this.relatedParentDstConf = relatedParentDstConf;
-	}
-	
-	public List<EtlItemConfiguration> getChildItemConf() {
+	public List<EtlChildItemConfiguration> getChildItemConf() {
 		return childItemConf;
 	}
 	
-	public void setChildItemConf(List<EtlItemConfiguration> childItemConf) {
+	public void setChildItemConf(List<EtlChildItemConfiguration> childItemConf) {
 		this.childItemConf = childItemConf;
 	}
 	
@@ -292,7 +251,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 		
 		relatedEtlConf.addConfiguredTable(this.getSrcConf());
 		
-		String code = "";
+		String codeElements = "";
 		
 		List<String> alreadyIncludedTables = new ArrayList<>();
 		
@@ -305,29 +264,33 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 				if (!alreadyIncludedTables.contains(dst.getTableName())) {
 					alreadyIncludedTables.add(dst.getTableName());
 					
-					code = utilities.stringHasValue(code) ? code + "_and_" + dst.getTableName() : dst.getTableName();
+					codeElements = utilities.stringHasValue(codeElements) ? codeElements + "_and_" + dst.getTableName()
+					        : dst.getTableName();
 				}
 			}
 		}
 		
-		code = utilities.stringHasValue(code) ? code : this.getSrcConf().getTableAlias();
+		codeElements = utilities.stringHasValue(codeElements) ? codeElements : this.getSrcConf().getTableAlias();
 		
-		code = this.getSrcConf().getTableAlias() + "_to_" + code;
+		codeElements = this.getSrcConf().getTableAlias() + "_to_" + codeElements;
 		
-		this.setShortCode(code);
+		this.setShortCode(codeElements);
 		
-		code += "_on_" + getRelatedEtlConf().generateProcessId()
-		        + (this.hasParentItemConf() ? "_within_" + this.getParentItemConf().getShortCode() : "");
-		
-		this.setConfigCode(getRelatedEtlConf().finalizeItemCodeGeneration(code));
+		this.setConfigCode(getRelatedEtlConf().finalizeItemCodeGeneration(codeElements));
 		
 		this.tryToLoadChildItemConf(testing, srcConn, dstConn);
+	}
+	
+	protected String putOperationElementoOnCode(String codeElements) {
+		codeElements += "_on_" + getRelatedEtlConf().generateProcessId();
+		
+		return codeElements;
 	}
 	
 	private void tryToLoadChildItemConf(boolean testing, Connection srcConn, Connection dstConn) throws DBException {
 		
 		if (this.hasChildItemConf()) {
-			for (EtlItemConfiguration childItem : this.getChildItemConf()) {
+			for (EtlChildItemConfiguration childItem : this.getChildItemConf()) {
 				childItem.setParentItemConf(this);
 				
 				if (!utilities.stringHasValue(childItem.getRelatedParentDstConfName())) {
@@ -510,20 +473,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 				this.getSrcConf().generateStagingTables(srcConn);
 			}
 			
-			if (this.hasParentItemConf() && this.getRelatedParentDstConf() == null) {
-				
-				if (!utilities.stringHasValue(this.getRelatedParentDstConfName())) {
-					if (utilities.listHasExactlyOneElement(this.getParentItemConf().getDstConf())) {
-						this.setRelatedParentDstConfName(this.getParentItemConf().getDstConf().get(0).getName());
-					} else {
-						throw new ForbiddenOperationException("The relatedParentDstConfName was not defined for the conf "
-						        + this.getParentItemConf().getConfigCode());
-					}
-				}
-				
-				this.setRelatedParentDstConf(this.getParentItemConf().findDstConf(this.getRelatedParentDstConfName()));
-			}
-			
 			this.setFullLoaded(true);
 		}
 		catch (SQLException e) {
@@ -562,10 +511,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 	
 	public Boolean hasChildItemConf() {
 		return utilities.listHasElement(this.childItemConf);
-	}
-	
-	public Boolean hasParentItemConf() {
-		return this.parentItemConf != null;
 	}
 	
 	@Override
@@ -798,16 +743,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 	
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
-		
 		Map<String, Object> allParameters = new HashMap<>();
-		
-		if (hasParentItemConf()) {
-			Map<String, Object> parentParameters = this.getParentItemConf().retrieveAllAvailableTemplateParameters();
-			
-			if (parentParameters != null && !parentParameters.isEmpty()) {
-				allParameters.putAll(parentParameters);
-			}
-		}
 		
 		Map<String, Object> ownParameters = super.retrieveAllAvailableTemplateParameters();
 		
@@ -849,14 +785,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration implement
 			ds.add(this.getSrcConf());
 			
 			ds.addAll(this.getSrcConf().getAvaliableExtraDataSource());
-		}
-		
-		if (this.hasParentItemConf()) {
-			DstConf parentDstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
-			
-			ds.add(parentDstConf);
-			
-			ds.addAll(parentDstConf.getAllAvaliableDataSource());
 		}
 		
 		return ds;

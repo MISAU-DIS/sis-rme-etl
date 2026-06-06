@@ -330,6 +330,21 @@ public class CommonUtilities implements Serializable {
 		return FuncoesGenericas.splitDoubleNumber(numero);
 	}
 	
+	public String[] splitByEmptySpace(String str) {
+		
+		if (str == null) {
+			return new String[0];
+		}
+		
+		str = str.trim();
+		
+		if (str.isEmpty()) {
+			return new String[0];
+		}
+		
+		return str.split("\\s+");
+	}
+	
 	/**
 	 * Gera o selfId concatenando o id da reparticao (prefixo) com o numero sequencial.
 	 * 

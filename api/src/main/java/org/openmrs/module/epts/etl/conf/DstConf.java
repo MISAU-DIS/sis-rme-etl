@@ -166,7 +166,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	public DstConf getParentDstConf() {
 		if (hasParentDstConf()) {
-			return this.getSrcConf().getParentConf().getRelatedParentDstConf();
+			return ((EtlChildItemConfiguration) this.getSrcConf().getParentConf()).getRelatedParentDstConf();
 		}
 		
 		return null;
@@ -193,7 +193,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	}
 	
 	public Boolean hasParentDstConf() {
-		return this.getSrcConf().getParentConf().hasParentItemConf();
+		return this.getSrcConf().getParentConf() instanceof EtlChildItemConfiguration;
 	}
 	
 	public String getSrcObjectCondition() {
