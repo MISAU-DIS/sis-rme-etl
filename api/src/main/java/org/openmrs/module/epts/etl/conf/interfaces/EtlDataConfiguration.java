@@ -1,5 +1,8 @@
 package org.openmrs.module.epts.etl.conf.interfaces;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Connection;
@@ -89,7 +92,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				fromFile = " from file " + fieldValue;
 				originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
 				
-				queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null, null, null,
+				queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
 				    templateParameters);
 				
 				utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
@@ -372,8 +375,28 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		return false;
 	}
 	
-	public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Properties fileProps,
-	        Properties sysProps, Map<String, ?> env) {
+	public static Properties loadProperties(String path) {
+		if (path == null)
+			return null;
+		
+		Properties props = new Properties();
+		
+		try (InputStream is = new FileInputStream(path)) {
+			props.load(is);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Error loading properties file: " + path, e);
+		}
+		
+		return props;
+	}
+	
+	public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env) {
+		
+		Properties prefProps = utilities.toProperties(env);
+		Properties appProps = loadProperties(System.getProperty("etl.env.file"));
+		Properties javaProps = System.getProperties();
+		Properties sysProps = utilities.toProperties(System.getenv());
 		
 		if (text == null || text.isBlank()) {
 			return text;
@@ -396,16 +419,18 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			
 			Object value = null;
 			
-			if (env != null) {
-				value = env.get(key);
+			value = prefProps.get(key);
+			
+			if (value == null) {
+				value = appProps.getProperty(key);
 			}
 			
-			if (value == null && sysProps != null) {
+			if (value == null) {
+				value = javaProps.getProperty(key);
+			}
+			
+			if (value == null) {
 				value = sysProps.getProperty(key);
-			}
-			
-			if (value == null && fileProps != null) {
-				value = fileProps.getProperty(key);
 			}
 			
 			if (value == null) {

@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Properties;
 import java.util.Stack;
 import java.util.UUID;
 import java.util.Vector;
@@ -1582,5 +1583,25 @@ public class CommonUtilities implements Serializable {
 		}
 		
 		return fields;
+	}
+	
+	public Properties toProperties(Map<String, ?> map) {
+		
+		Properties props = new Properties();
+		
+		if (map == null || map.isEmpty()) {
+			return props;
+		}
+		
+		for (Map.Entry<String, ?> entry : map.entrySet()) {
+			
+			if (entry.getKey() == null) {
+				continue;
+			}
+			
+			props.setProperty(entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
+		}
+		
+		return props;
 	}
 }

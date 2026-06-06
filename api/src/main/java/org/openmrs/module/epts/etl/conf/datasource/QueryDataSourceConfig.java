@@ -190,8 +190,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 			
 			String query = new String(Files.readAllBytes(Paths.get(pathToScript)));
 			
-			query = EtlDataConfiguration.resolvePlaceholders(query, null, null, null,
-			    retrieveAllAvailableTemplateParameters());
+			query = EtlDataConfiguration.resolvePlaceholders(query, null, retrieveAllAvailableTemplateParameters());
 			
 			this.setQuery(query);
 			

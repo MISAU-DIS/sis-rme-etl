@@ -93,7 +93,7 @@ public class EtlTemplateConfiguration {
 			}
 			
 			json = EtlDataConfiguration.resolvePlaceholders(this.template != null ? this.template.toString() : "{}",
-			    this.getParameters(), null, null, inputParams);
+			    this.getParameters(), inputParams);
 			
 			EtlDataConfiguration parentFromTemplate = null;
 			EtlTemplateInfo extendsTemplateInfo = null;

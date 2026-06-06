@@ -1,9 +1,7 @@
 package org.openmrs.module.epts.etl.conf;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -12,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.regex.Matcher;
 
@@ -704,32 +701,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		
 		String json = FileUtilities.realAllFileAsString(file);
 		
-		Properties fileProps = loadProperties(System.getProperty("etl.env.file"));
-		
-		EtlConfiguration conf = EtlConfiguration.loadFromJSON(
-		    EtlDataConfiguration.resolvePlaceholders(json, null, fileProps, System.getProperties(), System.getenv()), file);
+		EtlConfiguration conf = EtlConfiguration.loadFromJSON(EtlDataConfiguration.resolvePlaceholders(json, null, null),
+		    file);
 		
 		conf.setConfigFilePath(file.getAbsolutePath());
 		
 		conf.setRelatedConfFile(file);
 		
 		return conf;
-	}
-	
-	public static Properties loadProperties(String path) {
-		if (path == null)
-			return null;
-		
-		Properties props = new Properties();
-		
-		try (InputStream is = new FileInputStream(path)) {
-			props.load(is);
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Error loading properties file: " + path, e);
-		}
-		
-		return props;
 	}
 	
 	void initLogger() {

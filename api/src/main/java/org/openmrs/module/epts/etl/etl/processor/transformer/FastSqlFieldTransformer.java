@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -59,10 +60,19 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	private volatile QueryDataSourceConfig dataSourceConfig;
 	
 	public FastSqlFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
-	    TransformableField field) {
+	    TransformableField field, Connection conn) {
+		
 		super(parameters, relatedEtlTransformTarget, field);
 		
 		this.sqlQuery = retrieveSqlQueryFromParameters(parameters);
+		
+		try {
+			this.tryToLoadDumpScriptContentToFieldAndValidate("sqlQuery",
+			    relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
+		}
+		catch (DBException e) {
+			throw new EtlConfException(e);
+		}
 	}
 	
 	public String getSqlQuery() {
@@ -75,7 +85,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 		
 		return INSTANCES.computeIfAbsent(key,
-		    k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field));
+		    k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field, conn));
 	}
 	
 	private static String retrieveSqlQueryFromParameters(List<Object> parameters) {
