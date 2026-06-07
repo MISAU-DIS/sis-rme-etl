@@ -270,28 +270,27 @@ Each ETL item typically contains two main components:
 
 ```
 {
-{
    "srcConf":{
       "tableName":"",
       "extraConditionForExtract":"",
       "observationDateFields":[
-         
       ],
       "sharePkWith":"",
       "metadata":"",
       "removeForbidden":"",
       "uniqueKeys":[
-         
       ],
       "parents":[
-         
       ],
       "extraTableDataSource":[
-         
       ],
       "extraQueryDataSource":[
-         
       ],
+      "queryOrderingInfo":{
+         "fields":[ 
+         ],
+         "type":""
+      },
       "onConflict":""
    },
    "dstConf":[
@@ -341,6 +340,7 @@ The main configuration fields are described below:
 - *extraTableDataSource*: An optional list of auxiliary tables to be used as additional data sources during transformation.
 - *extraQueryDataSource*: An optional list of custom queries used as additional data sources.
 - *extraObjectDataSource*: An optional list of object-based data source configurations.
+- *queryOrderingInfo*: provide the ordering to be used when querying the src table. The fields list the ordering fields and the supported types are "ASC" and "DSC";
 - *onConflict*: Refers to [dstConf.onConflict](#onConflict), defining how conflicts should be handled during processing.
 
 Below are additional details for the more complex configurations within *srcConf*.
