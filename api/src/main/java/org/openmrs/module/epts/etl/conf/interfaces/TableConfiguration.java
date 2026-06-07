@@ -19,9 +19,11 @@ import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.RefType;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
+import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.conf.types.SqlOrderingType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
@@ -58,6 +60,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	public static final String[] REMOVABLE_METADATA = {};
 	
 	public static final Object lock = new Object();
+	
+	void setQueryOrderingInfo(EtlQueryOrderingInfo orderingInfo);
+	
+	EtlQueryOrderingInfo getQueryOrderingInfo();
 	
 	void setTableName(String tableName);
 	
@@ -536,7 +542,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					
 					defaultObject.loadWithDefaultValues(srcConn, dstConn);
 					
-
 					if (dst.useManualGeneratedObjectId() && !dst.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
 						defaultObject.loadObjectIdData();
 						defaultObject.getObjectId().asSimpleKey().setValue(dst.getPrimaryKeyInitialIncrementValue());
@@ -1406,6 +1411,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				
 				this.loadOwnElements(null, conn);
 				
+				if (this.getQueryOrderingInfo() == null) {
+					this.createDefaultOrderingInfo();
+				}
+				
 				this.setFullLoaded(true);
 				
 				getRelatedEtlConf().addToFullLoadedTables(this);
@@ -1417,6 +1426,19 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				throw new RuntimeException(e);
 			}
 		}
+	}
+	
+	default void createDefaultOrderingInfo() {
+		
+		List<String> fields = new ArrayList<>();
+		
+		for (Key f : this.getPrimaryKey().getFields()) {
+			fields.add(f.getName());
+		}
+		
+		EtlQueryOrderingInfo oInfo = new EtlQueryOrderingInfo(fields, SqlOrderingType.ASC);
+		
+		setQueryOrderingInfo(oInfo);
 	}
 	
 	default Boolean overrideAutoIncrement() {

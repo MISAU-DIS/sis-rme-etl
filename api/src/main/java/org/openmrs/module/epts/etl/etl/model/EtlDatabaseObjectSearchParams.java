@@ -31,8 +31,8 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		super(srcConf, limits);
 		
 		if (getSrcConf() != null) {
-			if (getSrcConf().getOrderBy() != null) {
-				setOrderByFields(this.getSrcConf().getOrderBy());
+			if (getSrcConf().getQueryOrderingInfo() != null) {
+				setOrderByFields(getSrcConf().getQueryOrderingInfo().asFieldList());
 			} else if (getSrcConf().hasPK()) {
 				setOrderByFields(getSrcConf().getPrimaryKey().parseFieldNamesToArray(getSrcConf().getTableAlias()));
 			}

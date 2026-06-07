@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -124,6 +125,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	
 	private Integer primaryKeyInitialIncrementValue;
 	
+	private EtlQueryOrderingInfo queryOrderingInfo;
+	
 	public AbstractTableConfiguration() {
 		this.loadHealper = new DatabaseObjectLoaderHelper(this);
 	}
@@ -132,6 +135,16 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this();
 		
 		this.tableName = tableName;
+	}
+	
+	@Override
+	public EtlQueryOrderingInfo getQueryOrderingInfo() {
+		return this.queryOrderingInfo;
+	}
+	
+	@Override
+	public void setQueryOrderingInfo(EtlQueryOrderingInfo orderingInfo) {
+		this.queryOrderingInfo = orderingInfo;
 	}
 	
 	@Override

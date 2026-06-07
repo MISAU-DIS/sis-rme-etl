@@ -68,19 +68,9 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	private Boolean limitToOneResult;
 	
-	private String orderBy;
-	
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
-	}
-	
-	public String getOrderBy() {
-		return orderBy;
-	}
-	
-	public void setOrderBy(String orderBy) {
-		this.orderBy = orderBy;
 	}
 	
 	public Boolean getLimitToOneResult() {
