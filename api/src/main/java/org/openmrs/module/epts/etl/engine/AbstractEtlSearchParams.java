@@ -57,6 +57,10 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		this.searchSourceType = SearchSourceType.SOURCE;
 		this.srcConf = srcConf;
 		
+		if (this.srcConf != null) {
+			this.setQueryOrderingInfo(srcConf.getQueryOrderingInfo());
+		}
+		
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
 	}
 	
@@ -289,10 +293,6 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	        Connection srcConn, Connection dstCOnn) throws DBException {
 		SearchClauses<T> searchClauses = this.generateSearchClauses(intervalExtremeRecord, parentObject,
 		    auxDataSourceObjects, srcConn, dstCOnn);
-		
-		if (this.getOrderByFields() != null) {
-			searchClauses.addToOrderByFields(this.getOrderByFields());
-		}
 		
 		String sql = searchClauses.generateSQL(srcConn);
 		

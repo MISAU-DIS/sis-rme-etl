@@ -9,9 +9,7 @@ public class DBQuickExportSearchParams extends EtlDatabaseObjectSearchParams {
 	
 	public DBQuickExportSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
-		super(engine.getSrcConf(), limits);
 		
-		setOrderByFields(getSrcConf().getPrimaryKey().parseFieldNamesToArray());
+		super(engine.getSrcConf(), limits);
 	}
-	
 }

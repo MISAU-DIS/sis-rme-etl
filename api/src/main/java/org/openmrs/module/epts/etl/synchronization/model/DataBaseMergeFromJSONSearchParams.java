@@ -26,15 +26,13 @@ public class DataBaseMergeFromJSONSearchParams extends SyncImportInfoSearchParam
 	
 	public DataBaseMergeFromJSONSearchParams(Engine<EtlStageRecordVO> engine,
 	    ThreadRecordIntervalsManager<EtlStageRecordVO> limits) {
-		super(engine, limits);
 		
-		setOrderByFields("id");
+		super(engine, limits);
 	}
 	
 	public DataBaseMergeFromJSONSearchParams(Engine<EtlStageRecordVO> config,
 	    ThreadRecordIntervalsManager<EtlStageRecordVO> limits, String appOriginLocationCode) {
 		super(config, limits, appOriginLocationCode);
-		setOrderByFields("id");
 	}
 	
 	public DatabaseMergeFromJSONController getRelatedController() {

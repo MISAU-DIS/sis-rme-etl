@@ -29,14 +29,6 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 	
 	public EtlDatabaseObjectSearchParams(SrcConf srcConf, ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
 		super(srcConf, limits);
-		
-		if (getSrcConf() != null) {
-			if (getSrcConf().getQueryOrderingInfo() != null) {
-				setOrderByFields(getSrcConf().getQueryOrderingInfo().asFieldList());
-			} else if (getSrcConf().hasPK()) {
-				setOrderByFields(getSrcConf().getPrimaryKey().parseFieldNamesToArray(getSrcConf().getTableAlias()));
-			}
-		}
 	}
 	
 	@Override

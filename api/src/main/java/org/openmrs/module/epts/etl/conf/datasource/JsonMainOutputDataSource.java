@@ -3,14 +3,13 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class JsonMainOutputDataSource extends JsonSimpleOutputDataSource implements EtlAdditionalDataSource {
+public class JsonMainOutputDataSource extends JsonSimpleOutputDataSource {
 	
 	private List<JsonSimpleOutputDataSource> parentOutputDataSource;
 	
@@ -50,10 +49,9 @@ public class JsonMainOutputDataSource extends JsonSimpleOutputDataSource impleme
 	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
 	        Connection dstConn) throws DBException {
 		
-		EtlAdditionalDataSource.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+		super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 		
 		if (this.hasParents()) {
-			
 			for (JsonSimpleOutputDataSource ds : this.getParentOutputDataSource()) {
 				ds.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 			}

@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -46,15 +47,7 @@ public abstract class AbstractSearchParams<T extends VO> extends AbstractBaseCon
 	
 	protected String extraCondition;
 	
-	protected String[] orderByFields;
-	
-	public String getExtraCondition() {
-		return extraCondition;
-	}
-	
-	public void setExtraCondition(String extraCondition) {
-		this.extraCondition = extraCondition;
-	}
+	private EtlQueryOrderingInfo queryOrderingInfo;
 	
 	public AbstractSearchParams() {
 		this.startAt = 1;
@@ -65,6 +58,26 @@ public abstract class AbstractSearchParams<T extends VO> extends AbstractBaseCon
 		this.qtdRecordPerSelected = qtdRecordPerSelected;
 		this.startAt = 1;
 		searchResult = new SearchResult<T>();
+	}
+	
+	public void setQueryOrderingInfo(EtlQueryOrderingInfo queryOrderingInfo) {
+		this.queryOrderingInfo = queryOrderingInfo;
+	}
+	
+	public EtlQueryOrderingInfo getQueryOrderingInfo() {
+		return queryOrderingInfo;
+	}
+	
+	public boolean hasQueryOrderingInfo() {
+		return this.getQueryOrderingInfo() != null;
+	}
+	
+	public String getExtraCondition() {
+		return extraCondition;
+	}
+	
+	public void setExtraCondition(String extraCondition) {
+		this.extraCondition = extraCondition;
 	}
 	
 	public boolean hasResult() {
@@ -280,14 +293,6 @@ public abstract class AbstractSearchParams<T extends VO> extends AbstractBaseCon
 	}
 	
 	public abstract Class<T> getRecordClass();
-	
-	public void setOrderByFields(String... orderByFields) {
-		this.orderByFields = orderByFields;
-	}
-	
-	public String[] getOrderByFields() {
-		return orderByFields;
-	}
 	
 	@SuppressWarnings("unchecked")
 	public List<T> collectDataSourceObjects(T parent, List<T> auxDataSourceObjects) {

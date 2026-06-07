@@ -27,8 +27,6 @@ public class DetectGapesSearchParams extends EtlDatabaseObjectSearchParams {
 		super(engine.getSrcConf(), limits);
 		
 		this.engine = engine;
-		
-		setOrderByFields(getSrcConf().getPrimaryKey().parseFieldNamesToArray());
 	}
 	
 	public DetectGapesController getRelatedController() {

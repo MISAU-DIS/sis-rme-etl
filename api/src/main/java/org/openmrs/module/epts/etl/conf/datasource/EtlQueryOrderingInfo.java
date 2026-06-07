@@ -60,4 +60,8 @@ public class EtlQueryOrderingInfo extends AbstractEtlDataConfiguration {
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 	}
 	
+	public String generateQueryOrderingInfo() {
+		return "ORDER BY " + asFieldList() + " " + this.getType().name();
+	}
+	
 }

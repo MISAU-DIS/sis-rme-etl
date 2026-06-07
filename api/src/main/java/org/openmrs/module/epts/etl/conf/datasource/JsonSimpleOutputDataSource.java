@@ -46,6 +46,13 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration imp
 	}
 	
 	@Override
+	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
+	        Connection dstConn) throws DBException {
+		
+		EtlAdditionalDataSource.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+	}
+	
+	@Override
 	public String getName() {
 		return this.name;
 	}

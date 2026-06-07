@@ -67,10 +67,6 @@ public class SearchParamsDAO extends BaseDAO {
 		
 		SearchClauses<T> searchClauses = searchParams.generateSearchClauses(null, null, null, conn, null);
 		
-		if (searchParams.getOrderByFields() != null) {
-			searchClauses.addToOrderByFields(searchParams.getOrderByFields());
-		}
-		
 		String sql = searchClauses.generateSQL(conn);
 		
 		return search(searchParams.getRecordClass(), sql, searchClauses.getParameters(), conn);
@@ -80,10 +76,6 @@ public class SearchParamsDAO extends BaseDAO {
 	public static <T extends VO> List<T> search_(Engine<EtlDatabaseObject> engine, Connection conn) throws DBException {
 		SearchClauses<T> searchClauses = (SearchClauses<T>) engine.getSearchParams().generateSearchClauses(null, null, null,
 		    conn, null);
-		
-		if (engine.getSearchParams().getOrderByFields() != null) {
-			searchClauses.addToOrderByFields(engine.getSearchParams().getOrderByFields());
-		}
 		
 		String sql = searchClauses.generateSQL(conn);
 		

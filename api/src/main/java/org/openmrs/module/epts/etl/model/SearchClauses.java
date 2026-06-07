@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.base.VO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -20,6 +21,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
  * @version 1.0 18/07/2013 Quelimane
  */
 public class SearchClauses<T extends VO> {
+	
+	public static final int READ_TYPE = 0;
 	
 	/**
 	 * Sequencia de clausulas
@@ -48,10 +51,6 @@ public class SearchClauses<T extends VO> {
 	
 	private String groupingFields;
 	
-	private String orderByFields;
-	
-	private String orderByType;
-	
 	/**
 	 * Indica se o select possui a clausula distinct
 	 */
@@ -71,12 +70,8 @@ public class SearchClauses<T extends VO> {
 		clauseFrom = "";
 		columnsToSelect = "";
 		groupingFields = "";
-		orderByFields = "";
 		havingClauses = "";
-		orderByType = "ASC";
-		
 		parameters = new Object[0];
-		
 		this.searchParameters = searchParameters;
 	}
 	
@@ -100,33 +95,6 @@ public class SearchClauses<T extends VO> {
 	 */
 	public void addAllColumnsToGroupFields() {
 		this.groupingFields = columnsToSelect;
-	}
-	
-	public void addToOrderByFields(String... field) {
-		for (String str : field) {
-			addToOrderByFields(str);
-		}
-	}
-	
-	public void addToOrderByFields(String field) {
-		String[] elements = field.toUpperCase().split(" ");
-		
-		if (elements.length > 1) {
-			if (utilities.isStringIn(elements[elements.length - 1], "DESC", "ASC")) {
-				String newStr = "";
-				
-				for (int i = 0; i < elements.length - 1; i++) {
-					newStr += elements[i] + " ";
-				}
-				
-				field = newStr;
-				
-				this.orderByType = elements[elements.length - 1];
-			}
-		}
-		
-		this.orderByFields += FuncoesGenericas.stringHasValue(this.orderByFields) ? "\n" : "";
-		this.orderByFields = FuncoesGenericas.concatStringsWithSeparator(this.orderByFields, field, ",");
 	}
 	
 	public String getDefaultColumnToSelect() {
@@ -236,10 +204,6 @@ public class SearchClauses<T extends VO> {
 		return groupingFields;
 	}
 	
-	public String getOrderByFields() {
-		return orderByFields;
-	}
-	
 	/**
 	 * @return o valor do atributo {@link #havingClauses}
 	 */
@@ -266,8 +230,7 @@ public class SearchClauses<T extends VO> {
 		sql += "			  	 \n" + (FuncoesGenericas.stringHasValue(groupingFields) ? "GROUP BY " + groupingFields : "");
 		sql += "			  	 \n" + (FuncoesGenericas.stringHasValue(havingClauses) ? "HAVING " + havingClauses : "");
 		sql += "			  	 \n"
-		        + (FuncoesGenericas.stringHasValue(orderByFields) ? "ORDER BY " + orderByFields + " " + this.orderByType
-		                : "");
+		        + (this.hasQueryOrderingInfo() ? this.getQueryOrderingInfo().generateQueryOrderingInfo() : "");
 		
 		if (this.searchParameters.isPhaseSelected() && !utilities.stringHasValue(groupingFields)) {
 			
@@ -277,6 +240,14 @@ public class SearchClauses<T extends VO> {
 		}
 		
 		return sql;
+	}
+	
+	private EtlQueryOrderingInfo getQueryOrderingInfo() {
+		return this.searchParameters.getQueryOrderingInfo();
+	}
+	
+	private boolean hasQueryOrderingInfo() {
+		return this.searchParameters.hasQueryOrderingInfo();
 	}
 	
 	public AbstractSearchParams<T> getSearchParameters() {
@@ -391,17 +362,18 @@ public class SearchClauses<T extends VO> {
 		}
 	}
 	
+	/*
 	public void clone(SearchClauses<?> toCloneFrom) {
 		this.clauses = toCloneFrom.clauses;
 		this.parameters = toCloneFrom.parameters;
 		this.columnsToSelect = toCloneFrom.columnsToSelect;
 		this.clauseFrom = toCloneFrom.clauseFrom;
 		this.groupingFields = toCloneFrom.groupingFields;
-		this.orderByFields = toCloneFrom.orderByFields;
+		this.queryOrderingInfo = toCloneFrom.queryOrderingInfo;
 		this.distinctSelect = toCloneFrom.distinctSelect;
 		this.defaultColumnToSelect = toCloneFrom.defaultColumnToSelect;
 	}
-	
+	*/
 	/**
 	 * Add to this 'clausulasDePesquisa' all the clauses from 'anotherClauses'
 	 * 
@@ -432,13 +404,6 @@ public class SearchClauses<T extends VO> {
 						if (true)
 							throw new ForbiddenOperationException(
 							        "Actualmente o metodo nao suporta a juncao de clausulas cuja tabela de juncao da 2a clausula nao esta na primeira posicao!");
-						/*
-						if (c.getSecondTab().equals(joinTable)){
-							this.addToClauseFrom("INNER JOIN " + joinTable + " " + c.getSecondTabAlias() +   " ON " + joinCondition); 
-							c.setSecondTab("");
-							c.setSecondTabAlias("");
-						}
-						*/
 					}
 				}
 				
@@ -448,17 +413,6 @@ public class SearchClauses<T extends VO> {
 		}
 		
 		this.addToGroupingFields(anotherClauses.groupingFields);
-		this.addToOrderByFields(anotherClauses.orderByFields);
-	}
-	
-	public static final int READ_TYPE = 0;
-	
-	public void changeOrdeyByTypeToDesc() {
-		this.orderByType = "DESC";
-	}
-	
-	public void changeOrdeyByTypeToAsc() {
-		this.orderByType = "ASC";
 	}
 	
 	public void generateAndAddInClause(String field, Object[] inValues) {
