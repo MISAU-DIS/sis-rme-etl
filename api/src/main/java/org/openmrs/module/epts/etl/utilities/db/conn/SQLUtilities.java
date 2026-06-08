@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.conf.datasource.SqlFunctionInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -1966,6 +1967,8 @@ public class SQLUtilities {
 	
 	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
 	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+		
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString();
 		
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
 		

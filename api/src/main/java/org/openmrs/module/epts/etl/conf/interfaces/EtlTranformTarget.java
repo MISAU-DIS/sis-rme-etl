@@ -8,18 +8,16 @@ import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
-import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
-import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
-import org.openmrs.module.epts.etl.exceptions.NoFieldWithFieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 	
@@ -58,10 +56,13 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 	default Boolean checkIfSrcObjectCanBeLoaded(EtlDatabaseObject srcObject, List<EtlDatabaseObject> avaliableSrcObjects,
 	        Connection srcConn, Connection dstConn) throws DBException {
 		if (this.hasSrcObjectCondition()) {
-			
 			try {
-				String preparedCondition = ensureSrcObjectConditionTransformableElementsAreGenerated(srcObject,
-				    avaliableSrcObjects, srcConn, dstConn);
+				
+				List<EtlDatabaseObject> list = utilities.listHasElement(avaliableSrcObjects) ? avaliableSrcObjects
+				        : utilities.parseToList(srcObject);
+				
+				String preparedCondition = SQLUtilities.ensureDataSourceElementsReplaced(this.getSrcObjectCondition(), list,
+				    dstConn);
 				
 				if (matchesCondition(srcObject, preparedCondition)) {
 					return true;
@@ -76,46 +77,6 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 		}
 		
 		return false;
-	}
-	
-	default String ensureSrcObjectConditionTransformableElementsAreGenerated(EtlDatabaseObject srcObject,
-	        List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn, Connection dstConn)
-	        throws FieldAvaliableInMultipleDataSources, DBException {
-		
-		if (hasSrcObjectCondition()) {
-			
-			String preparedCondition = EtlFieldTransformer
-			        .tryToReplaceParametersOnSrcValue(avaliableSrcObjects, this.getSrcObjectCondition()).toString();
-			
-			String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
-			
-			String[] srcObjectConditionElements = utilities.splitByAny(preparedCondition, arithmeticOperators);
-			
-			for (String element : srcObjectConditionElements) {
-				if (srcObject.contaisField(element)) {
-					continue;
-				}
-				
-				try {
-					FieldsMapping map = FieldsMapping.fastCreate(element, this, srcConn);
-					
-					if (map.hasDataSourceName()) {
-						FieldTransformingInfo v = map.getTransformerInstance().transform(null, srcObject, srcObject,
-						    avaliableSrcObjects, map, srcConn, srcConn);
-						
-						preparedCondition = preparedCondition.replaceAll(element, v.getTransformedValue().toString());
-					}
-				}
-				catch (NoFieldWithFieldsMapping e) {
-					continue;
-				}
-				
-			}
-			
-			return preparedCondition;
-		}
-		
-		return null;
 	}
 	
 	default Boolean matchesCondition(EtlDatabaseObject obj, String condition) {
