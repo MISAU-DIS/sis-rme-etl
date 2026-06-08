@@ -56,6 +56,7 @@ The process configuration file is the core element of the application. Each proc
   - *AS_SCHEMA_DEFINED* – The ETL process respects the auto-increment behavior defined in the schema (default).
   - *IGNORE_SCHEMA_DEFINITION* – The ETL process ignores the schema definition and manually controls primary key generation.
   This value can be overridden at the ETL item configuration level.
+- defaultFieldValues*: Defines a global set of default values to be applied when the ETL engine needs to create default records in the destination database;
 - *primaryKeyInitialIncrementValue*: A numeric value added to the primary key of the first destination record across all configured tables. This property cannot be used when *autoIncrementHandlingType* is set to *AS_SCHEMA_DEFINED*. If provided without explicitly setting *autoIncrementHandlingType*, the value will default to *IGNORE_SCHEMA_DEFINITION*. This setting can be overridden at the *EtlItemConfiguration* or *DstConf* level.
 - *dynamicSrcConf*: Enables dynamic configuration generation based on data stored in a database table. This allows a single configuration file to act as a template that is expanded into multiple configurations using table records. This is particularly useful when processing multiple source databases or environments dynamically.
 - *finalizer*: Defines additional tasks to be executed after the process has completed.
@@ -218,6 +219,28 @@ Validators allow dynamic validation of data, configuration values, or database s
     }
   ]
 ```
+## Default Fields Values
+Defines a global set of default values to be applied when the ETL engine needs to create default records in the destination database.
+
+These default records are typically created when a record being transformed depends on a parent record that does not yet exist in the destination database. In such cases, the ETL engine may create a placeholder parent record to preserve referential integrity and allow the transformation process to continue.
+
+Records created using these default values are usually considered inconsistent or non-authoritative and should not be treated as reliable business data. Therefore, the configured values should explicitly mark them as inactive, voided, retired, or otherwise invalid according to the destination data model.
+
+### Example:
+```
+{
+   "defaultFieldValues":{
+      "voided":1,
+      "date_voided":"1975-01-01",
+      "void_reason":"Default Record",
+      "retired":1,
+      "date_retired":"1975-01-01",
+      "retire_reason":"Default Record"
+   }
+}
+```
+
+In this example, any default record created by the ETL process will be marked as voided or retired, ensuring that it is not interpreted as valid production data.
 
 
 ## The Operation configuration
