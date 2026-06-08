@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.MissingMetadataException;
 import org.openmrs.module.epts.etl.exceptions.NoFieldWithFieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -112,7 +113,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		this.dstField = dstField != null ? dstField : this.srcField;
 		
 		if (this.dstField == null) {
-			throw new NoFieldWithFieldsMapping ();
+			throw new NoFieldWithFieldsMapping();
 		} else {
 			dstField = this.dstField.toString().split("\\.")[0];
 		}
@@ -337,7 +338,7 @@ public class FieldsMapping extends Field implements TransformableField {
 			if (ds != null) {
 				this.setDataSourceName(ds.getAlias());
 			} else {
-				throw new EtlExceptionImpl("Invalid datasource '" + dataSourceName + "' on field definition '"
+				throw new  MissingMetadataException("Invalid datasource '" + dataSourceName + "' on field definition '"
 				        + this.getOriginalSrcFieldDefinition() + "'");
 			}
 			

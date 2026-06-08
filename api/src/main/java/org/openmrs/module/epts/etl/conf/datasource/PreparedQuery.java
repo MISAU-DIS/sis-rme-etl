@@ -410,7 +410,10 @@ public class PreparedQuery {
 			cloned.ensureDynamicElementsLoaded(processor, srcObject, dstObject, srcObjects, srcConn);
 		}
 		
+		cloned.setQuery(SQLUtilities.ensureDataSourceElementsReplaced(cloned.getQuery(), srcObjects, srcConn));
+		
 		return cloned;
+		
 	}
 	
 	private void ensureDynamicElementsLoaded(EtlProcessor processor, EtlDatabaseObject srcObject,

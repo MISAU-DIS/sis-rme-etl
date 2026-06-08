@@ -102,7 +102,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 	}
 	
 	public Boolean isDoNotLoadFields() {
-		return isTrue(doNotLoadFields) || this.hasFields();
+		return isTrue(doNotLoadFields) || (this.hasFields() && isFullLoaded());
 	}
 	
 	public void setDoNotLoadFields(Boolean doNotLoadFields) {
@@ -255,13 +255,13 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 	}
 	
 	@Override
-	public void prepare(List<EtlDatabaseObject> mainObject, Connection conn) throws DBException {
+	public void prepare(List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
 		if (isPrepared()) {
 			return;
 		}
 		
 		synchronized (stringLock) {
-			PreparedQuery query = PreparedQuery.prepare(this, mainObject, getRelatedEtlConf(),
+			PreparedQuery query = PreparedQuery.prepare(this, avaliableSrcObjects, getRelatedEtlConf(),
 			    DbmsType.determineFromConnection(conn));
 			
 			if (!isDoNotLoadFields()) {
@@ -271,12 +271,15 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 				Object[] params = paramsAsList != null ? paramsAsList.toArray() : null;
 				
 				try {
-					setFields(SQLUtilities.determineFieldsFromQuery(query.generatePreparedQuery(), params, conn));
+					setFields(SQLUtilities.determineFieldsFromQuery(SQLUtilities.ensureDataSourceElementsReplaced(
+					    query.generatePreparedQuery(), avaliableSrcObjects, conn), params, conn));
 				}
 				catch (DBException e) {
 					throw new DBException("Error computing the query " + this.getName(), e);
 				}
 			}
+			
+			this.fullLoaded = true;
 			
 			this.defaultPreparedQuery = query;
 		}

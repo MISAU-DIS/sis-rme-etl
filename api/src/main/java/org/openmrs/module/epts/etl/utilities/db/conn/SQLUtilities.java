@@ -16,11 +16,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.datasource.SqlFunctionInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.MissingMetadataException;
+import org.openmrs.module.epts.etl.exceptions.NoFieldWithFieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
@@ -1956,6 +1962,35 @@ public class SQLUtilities {
 		matcher.appendTail(result);
 		
 		return (T) result.toString();
+	}
+	
+	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
+	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+		
+		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
+		
+		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
+		
+		for (String element : srcObjectConditionElements) {
+			try {
+				FieldsMapping map = FieldsMapping.fastCreate(element,
+				    FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+				
+				if (map.hasDataSourceName()) {
+					FieldTransformingInfo v = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
+					    avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
+					
+					query = query.replaceAll(element, v.getTransformedValue().toString());
+					
+				}
+			}
+			catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
+				continue;
+			}
+			
+		}
+		
+		return query;
 	}
 	
 }
