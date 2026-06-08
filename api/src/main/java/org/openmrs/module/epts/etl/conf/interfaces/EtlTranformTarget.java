@@ -49,6 +49,19 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 	
 	String getSrcObjectCondition();
 	
+	Boolean isAutoIncrementId();
+	
+	EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException;
+	
+	default Boolean ignoreUnmappedFields() {
+		try {
+			return this.isIgnoreUnmappedFields();
+		}
+		catch (NullPointerException e) {
+			return false;
+		}
+	}
+	
 	default Boolean hasSrcObjectCondition() {
 		return utilities.stringHasValue(this.getSrcObjectCondition());
 	}
@@ -350,8 +363,16 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 			}
 		}
 		
-		if (qtyOccurences == 0 && !isIgnoreUnmappedFields() && !hasTransformer) {
-			throw new FieldNotAvaliableInAnyDataSource(fm.getSrcField());
+		if (qtyOccurences == 0 && !hasTransformer) {
+			if (ignoreUnmappedFields()) {
+				EtlDatabaseObject defaultObject = getTargetDefaultObject(conn, conn);
+				
+				if (defaultObject != null) {
+					fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+				}
+			} else {
+				throw new FieldNotAvaliableInAnyDataSource(fm.getSrcField());
+			}
 		}
 		
 		if (qtyOccurences > 1 && !hasTransformer && !this.onMultipleDataSourceForSameMapping().useLast()) {
@@ -359,8 +380,6 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 		}
 		
 	}
-	
-	Boolean isAutoIncrementId();
 	
 	default void addToPrefferedDataSource(EtlDataSource ds) {
 		if (this.getAllPrefferredDataSource() == null) {

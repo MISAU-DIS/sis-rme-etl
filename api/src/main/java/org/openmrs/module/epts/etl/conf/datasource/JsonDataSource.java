@@ -421,4 +421,9 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	public Boolean allowMultipleSrcObjectsForLoading() {
 		return false;
 	}
+	
+	@Override
+	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
+		throw new ForbiddenOperationException("Default Target Object is not Allowed!");
+	}
 }

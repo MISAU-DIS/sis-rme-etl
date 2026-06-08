@@ -1372,7 +1372,7 @@ public class CommonUtilities implements Serializable {
 		
 		// 🔹 Boolean
 		if (destinationType == Boolean.class || destinationType == boolean.class) {
-			return Boolean.parseBoolean(str);
+			return parseBoolean(str);
 		}
 		
 		// 🔹 Character
@@ -1412,6 +1412,17 @@ public class CommonUtilities implements Serializable {
 		
 		// 🔹 fallback
 		throw new IllegalArgumentException("Unsupported conversion from " + value.getClass() + " to " + destinationType);
+	}
+	
+	public Boolean parseBoolean(Object obj) {
+		
+		if (obj instanceof Boolean) {
+			return (Boolean) obj;
+		}
+		
+		Boolean true_ = utilities.isStringIn(obj.toString().toLowerCase(), "true", "1");
+		
+		return true_.equals(obj);
 	}
 	
 	/**
@@ -1604,4 +1615,5 @@ public class CommonUtilities implements Serializable {
 		
 		return props;
 	}
+	
 }

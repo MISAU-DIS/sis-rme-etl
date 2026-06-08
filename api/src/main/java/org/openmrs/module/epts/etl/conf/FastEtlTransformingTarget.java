@@ -285,4 +285,9 @@ public class FastEtlTransformingTarget implements EtlTranformTarget {
 		return null;
 	}
 	
+	@Override
+	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
+		return null;
+	}
+	
 }

@@ -196,6 +196,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private List<String> ignorableStartupScripts;
 	
+	private Map<String, String> defaultFieldValues;
+	
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 		
@@ -213,6 +215,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 		this.defaultInconsistencyBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.disableDefaultObjectCreation = false;
+	}
+	
+	public Map<String, String> getDefaultFieldValues() {
+		return defaultFieldValues;
+	}
+	
+	public void setDefaultFieldValues(Map<String, String> defaultFieldValues) {
+		this.defaultFieldValues = defaultFieldValues;
+	}
+	
+	public Boolean hasDefaultFieldsValues() {
+		return this.getDefaultFieldValues() != null && !this.getDefaultFieldValues().isEmpty();
 	}
 	
 	public List<String> getIgnorableStartupScripts() {

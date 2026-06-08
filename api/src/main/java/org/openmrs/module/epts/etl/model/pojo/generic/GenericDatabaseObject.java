@@ -18,6 +18,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -114,61 +115,104 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		
 	}
 	
-	@SuppressWarnings("deprecation")
+	private boolean applyKnownDefaultValue(Field field) {
+		
+		if (field == null || field.getName() == null) {
+			return false;
+		}
+		
+		String fieldName = field.getName().toLowerCase();
+		
+		if (!this.getRelatedConfiguration().getRelatedEtlConf().hasDefaultFieldsValues()
+		        || !getRelatedConfiguration().getRelatedEtlConf().getDefaultFieldValues().containsKey(fieldName)) {
+			return false;
+		}
+		
+		Object defaultValue = getRelatedConfiguration().getRelatedEtlConf().getDefaultFieldValues().get(fieldName);
+		
+		field.setValue(utilities.parseValue(defaultValue, field.getTypeClass()));
+		
+		return true;
+	}
+	
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		
 		if (this.relatedConfiguration == null) {
-			throw new ForbiddenOperationException("The relatedConfiguration  is not set");
+			throw new ForbiddenOperationException("The relatedConfiguration is not set");
 		}
 		
 		TableConfiguration conf = (TableConfiguration) getRelatedConfiguration();
 		
 		for (Field f : this.fields) {
-			if (!f.allowNull()) {
+			
+			ParentTable parent = conf.getFieldIsRelatedParent(f);
+			
+			if (parent != null) {
+				loadDefaultParentValue(conf, parent, srcConn, dstConn);
 				
-				ParentTable p = conf.getFieldIsRelatedParent(f);
-				
-				if (p != null) {
-					EtlDatabaseObject defaultParent = null;
-					
-					try {
-						if (!p.hasAlias()) {
-							p.tryToGenerateTableAlias(conf.getRelatedEtlConf());
-						}
-						
-						if (!p.isFullLoaded()) {
-							p.fullLoad(dstConn);
-						}
-						
-						defaultParent = p.getDefaultObject(dstConn);
-					}
-					catch (Exception e) {
-						e.printStackTrace();
-					}
-					
-					if (defaultParent == null) {
-						try {
-							defaultParent = conf.getSyncRecordClass().newInstance();
-							defaultParent.setRelatedConfiguration(p);
-							
-							if (defaultParent.checkIfAllRelationshipCanBeresolved(conf, dstConn)) {
-								defaultParent = p.generateAndSaveDefaultObject(srcConn, dstConn);
-							} else {
-								throw new ForbiddenOperationException("There are recursive relationship between "
-								        + conf.getTableName() + " and " + p.getTableName()
-								        + " which cannot automatically resolved...! Please manual create default dstRecord for one of thise table using id '-1'");
-							}
-						}
-						catch (InstantiationException | IllegalAccessException e) {
-							throw new RuntimeException(e);
-						}
-					}
-					
-					this.changeParentValue(p, defaultParent);
-				} else {
-					f.loadWithDefaultValue();
-				}
+				continue;
 			}
+			
+			if (applyKnownDefaultValue(f)) {
+				continue;
+			}
+			
+			if (f.allowNull()) {
+				continue;
+			}
+			
+			f.loadWithDefaultValue();
+		}
+	}
+	
+	private void loadDefaultParentValue(TableConfiguration conf, ParentTable parent, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		
+		EtlDatabaseObject defaultParent = null;
+		
+		try {
+			if (!parent.hasAlias()) {
+				parent.tryToGenerateTableAlias(conf.getRelatedEtlConf());
+			}
+			
+			if (!parent.isFullLoaded()) {
+				parent.fullLoad(dstConn);
+			}
+			
+			defaultParent = parent.getDefaultObject(dstConn);
+			
+		}
+		catch (Exception e) {
+			throw new EtlExceptionImpl(e);
+		}
+		
+		if (defaultParent == null) {
+			defaultParent = generateDefaultParent(conf, parent, srcConn, dstConn);
+		}
+		
+		this.changeParentValue(parent, defaultParent);
+	}
+	
+	private EtlDatabaseObject generateDefaultParent(TableConfiguration conf, ParentTable parent, Connection srcConn,
+	        Connection dstConn) throws DBException {
+		
+		try {
+			EtlDatabaseObject defaultParent = conf.getSyncRecordClass().getDeclaredConstructor().newInstance();
+			
+			defaultParent.setRelatedConfiguration(parent);
+			
+			if (defaultParent.checkIfAllRelationshipCanBeresolved(conf, dstConn)) {
+				return parent.generateAndSaveDefaultObject(srcConn, dstConn);
+			}
+			
+			throw new ForbiddenOperationException("There are recursive relationships between " + conf.getTableName()
+			        + " and " + parent.getTableName() + " which cannot be automatically resolved. "
+			        + "Please manually create default dstRecord for one of these tables using id '-1'.");
+			
+		}
+		catch (ReflectiveOperationException e) {
+			throw new EtlExceptionImpl(e);
 		}
 	}
 	

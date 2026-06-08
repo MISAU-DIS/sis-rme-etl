@@ -106,10 +106,28 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	private Boolean ignoreNoDstIssue;
 	
+	private EtlDatabaseObject targetDefaultObject;
+	
 	public DstConf() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.ABORT_PROCESS;
 		this.onMultipleDataSourceWithSameName = ActionOnEtlIssue.ABORT_PROCESS;
 		this.useAsDataSource = false;
+	}
+	
+	private void ensureTargetDefaultObjectInitialized(Connection srcConn, Connection dstConn) throws DBException {
+		if (this.targetDefaultObject == null) {
+			
+			this.targetDefaultObject = createRecordInstance();
+			
+			this.targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
+		}
+	}
+	
+	@Override
+	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
+		this.ensureTargetDefaultObjectInitialized(srcConn, dstConn);
+		
+		return this.targetDefaultObject;
 	}
 	
 	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {

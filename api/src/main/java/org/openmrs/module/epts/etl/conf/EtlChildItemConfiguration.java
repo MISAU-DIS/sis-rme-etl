@@ -373,4 +373,9 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 		return false;
 	}
 	
+	@Override
+	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
+		return null;
+	}
+	
 }

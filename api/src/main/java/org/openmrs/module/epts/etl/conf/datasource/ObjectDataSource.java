@@ -597,4 +597,9 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 		return null;
 	}
 	
+	@Override
+	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
+		throw new ForbiddenOperationException("Default Target Object is not Allowed!");
+	}
+	
 }

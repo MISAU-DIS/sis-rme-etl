@@ -537,8 +537,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				if (defaultObject != null) {
 					return defaultObject;
 				} else {
-					defaultObject = dst.getSyncRecordClass().newInstance();
-					defaultObject.setRelatedConfiguration(dst);
+					defaultObject = dst.createRecordInstance();
 					
 					defaultObject.loadWithDefaultValues(srcConn, dstConn);
 					
