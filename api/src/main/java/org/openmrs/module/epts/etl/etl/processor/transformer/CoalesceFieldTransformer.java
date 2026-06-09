@@ -72,39 +72,48 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 		this.coalesceFields = new ArrayList<>();
 		
 		for (Object obj : parameters) {
+			FieldsMapping fm;
 			
-			String[] fieldParts = obj.toString().split("\\.");
-			
-			String dataSourceName = null;
-			String srcFieldName;
-			
-			if (fieldParts.length > 1) {
-				dataSourceName = fieldParts[0];
-				srcFieldName = fieldParts[1];
+			if (isTransformerExpression(obj.toString())) {
+				fm = FieldsMapping.fastCreate(field.getDstField(), field.getDstField(), false, conn);
+				fm.setTransformer(obj.toString());
+				fm.tryToLoadTransformer(relatedEtlTransformTarget, conn);
+				
 			} else {
-				srcFieldName = fieldParts[0];
-			}
-			
-			FieldsMapping fm = FieldsMapping.fastCreate(srcFieldName, field.getDstField(), true, conn);
-			fm.tryToLoadTransformer(EtlTransformTarget, conn);
-			
-			if (dataSourceName != null) {
 				
-				EtlDataSource ds = EtlTransformTarget.findDataSource(dataSourceName);
+				String[] fieldParts = obj.toString().split("\\.");
 				
-				if (ds != null) {
-					fm.setDataSourceName(ds.getAlias());
+				String dataSourceName = null;
+				String srcFieldName;
+				
+				if (fieldParts.length > 1) {
+					dataSourceName = fieldParts[0];
+					srcFieldName = fieldParts[1];
 				} else {
-					throw new EtlExceptionImpl(
-					        "Invalid datasource '" + dataSourceName + "' on CoalesceFieldTransformer: " + obj);
+					srcFieldName = fieldParts[0];
 				}
 				
-			} else {
-				EtlTransformTarget.tryToLoadDataSourceToFieldMapping(fm, conn);
-			}
-			
-			if (!fm.hasDataSourceName()) {
-				fm.setSrcValue(obj);
+				fm = FieldsMapping.fastCreate(srcFieldName, field.getDstField(), true, conn);
+				fm.tryToLoadTransformer(EtlTransformTarget, conn);
+				
+				if (dataSourceName != null) {
+					
+					EtlDataSource ds = EtlTransformTarget.findDataSource(dataSourceName);
+					
+					if (ds != null) {
+						fm.setDataSourceName(ds.getAlias());
+					} else {
+						throw new EtlExceptionImpl(
+						        "Invalid datasource '" + dataSourceName + "' on CoalesceFieldTransformer: " + obj);
+					}
+					
+				} else {
+					EtlTransformTarget.tryToLoadDataSourceToFieldMapping(fm, conn);
+				}
+				
+				if (!fm.hasDataSourceName()) {
+					fm.setSrcValue(obj);
+				}
 			}
 			
 			this.coalesceFields.add(fm);

@@ -97,25 +97,25 @@ public class FieldsMapping extends Field implements TransformableField {
 		
 		if (fieldParts != null) {
 			if (fieldParts.length > 1) {
-				this.dataSourceName = fieldParts[0];
-				this.srcField = fieldParts[1];
+				this.setDataSourceName(fieldParts[0]);
+				this.setSrcField(fieldParts[1]);
 			} else {
 				if (utilities.isNumeric(fieldParts[0])) {
-					this.srcValue = fieldParts[0];
+					this.setSrcField(fieldParts[0]);
 				} else {
-					this.srcField = fieldParts[0];
+					this.setSrcField(fieldParts[0]);
 				}
 			}
 		} else {
 			setMapToNullValue(true);
 		}
 		
-		this.dstField = dstField != null ? dstField : this.srcField;
+		this.setDstField(dstField != null ? dstField : this.getSrcField());
 		
-		if (this.dstField == null) {
+		if (this.getDstField() == null) {
 			throw new NoFieldWithFieldsMapping();
 		} else {
-			dstField = this.dstField.toString().split("\\.")[0];
+			dstField = this.getDstField().toString().split("\\.")[0];
 		}
 		
 		if (tryToLoadTransformer)
@@ -187,10 +187,10 @@ public class FieldsMapping extends Field implements TransformableField {
 			}
 			
 			this.possibleSrc.add(dataSourceName);
-			this.dataSourceName = dataSourceName;
+			this.setDataSourceName(dataSourceName);
 			
 		} else {
-			this.dataSourceName = dataSourceName;
+			this.setDataSourceName(dataSourceName);
 		}
 		
 		if (srcField == null) {
@@ -338,7 +338,7 @@ public class FieldsMapping extends Field implements TransformableField {
 			if (ds != null) {
 				this.setDataSourceName(ds.getAlias());
 			} else {
-				throw new  MissingMetadataException("Invalid datasource '" + dataSourceName + "' on field definition '"
+				throw new MissingMetadataException("Invalid datasource '" + dataSourceName + "' on field definition '"
 				        + this.getOriginalSrcFieldDefinition() + "'");
 			}
 			
@@ -356,7 +356,8 @@ public class FieldsMapping extends Field implements TransformableField {
 		this.tryToLoadTransformer(target, conn);
 	}
 	
-	public void fullLoad(EtlTransformTarget target, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public void fullLoad(EtlTransformTarget target, Connection conn)
+	        throws FieldAvaliableInMultipleDataSources, DBException {
 		this.copyFrom(fastCreate(this.srcField, this.dstField, target, conn));
 		
 	}
@@ -402,6 +403,9 @@ public class FieldsMapping extends Field implements TransformableField {
 	}
 	
 	public void setDstField(String destField) {
+		if (utilities.containsSpace(destField)) {
+			throw new ForbiddenOperationException("Space found on field " + destField);
+		}
 		this.dstField = destField;
 	}
 	
@@ -418,6 +422,9 @@ public class FieldsMapping extends Field implements TransformableField {
 	}
 	
 	public void setSrcField(String srcField) {
+		if (utilities.containsSpace(srcField)) {
+			throw new ForbiddenOperationException("Space found on field " + srcField);
+		}
 		this.srcField = srcField;
 	}
 	

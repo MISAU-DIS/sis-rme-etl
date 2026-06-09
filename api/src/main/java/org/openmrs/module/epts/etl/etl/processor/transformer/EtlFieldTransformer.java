@@ -152,14 +152,15 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 			}
 			
 			if (!found) {
-				throw new MissingParameterOnEtlTransformationException ("Parameter '" + paramName + "' not found in source objects.",
-				        srcObjects.get(0), ActionOnEtlIssue.ABORT_PROCESS);
+				throw new MissingParameterOnEtlTransformationException(
+				        "Parameter '" + paramName + "' not found in source objects.", srcObjects.get(0),
+				        ActionOnEtlIssue.ABORT_PROCESS);
 			}
 			
 			if (srcValueAsString.equals("@" + paramName)) {
 				return paramValue;
 			}
-			if (paramValue==null) {
+			if (paramValue == null) {
 				paramValue = "null";
 			}
 			

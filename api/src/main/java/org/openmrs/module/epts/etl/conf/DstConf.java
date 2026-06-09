@@ -370,9 +370,9 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			for (FieldsMapping fm : this.getMapping()) {
 				
 				if (!utilities.stringHasValue(fm.getDstField())) {
-					throw new ForbiddenOperationException(
-					        "One or more mapping on dstTable '" + this.getTableName() + "' on Etl Configuration '"
-					                + this.getParentConf().getConfigCode() + "' configuration does not have dstField");
+					throw new ForbiddenOperationException("One or more mapping on dstTable '" + this.getTableName()
+					        + "' on Etl Configuration '" + this.getParentConf().getConfigCode()
+					        + "' configuration does not have dstField: [" + fm + "]");
 				}
 				
 				fm.tryToLoadTransformer(this, conn);

@@ -410,7 +410,13 @@ public class PreparedQuery {
 			cloned.ensureDynamicElementsLoaded(processor, srcObject, dstObject, srcObjects, srcConn);
 		}
 		
-		cloned.setQuery(SQLUtilities.ensureDataSourceElementsReplaced(cloned.getQuery(), srcObjects, srcConn));
+		if (utilities.listHasNoElement(srcObjects) && srcObject != null) {
+			srcObjects = utilities.parseToList(srcObject);
+		}
+		
+		if (utilities.listHasElement(srcObjects)) {
+			cloned.setQuery(SQLUtilities.ensureDataSourceElementsReplaced(cloned.getQuery(), srcObjects, srcConn));
+		}
 		
 		return cloned;
 		

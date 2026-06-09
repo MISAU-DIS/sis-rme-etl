@@ -1965,6 +1965,19 @@ public class SQLUtilities {
 		return (T) result.toString();
 	}
 	
+	public static boolean isValidQueryColumnDefinition(String columnDef) {
+		
+		if (columnDef == null || columnDef.isBlank()) {
+			return false;
+		}
+		
+		columnDef = columnDef.trim();
+		
+		String regex = "^[a-zA-Z_][a-zA-Z0-9_]*" + "(\\.[a-zA-Z_][a-zA-Z0-9_]*)?$";
+		
+		return columnDef.matches(regex);
+	}
+	
 	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
 	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		
@@ -1976,14 +1989,19 @@ public class SQLUtilities {
 		
 		for (String element : srcObjectConditionElements) {
 			try {
-				FieldsMapping map = FieldsMapping.fastCreate(element,
+				
+				if (!isValidQueryColumnDefinition(element)) {
+					continue;
+				}
+				
+				FieldsMapping map = FieldsMapping.fastCreate(element.strip().trim(),
 				    FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
 				
 				if (map.hasDataSourceName()) {
 					FieldTransformingInfo v = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
 					    avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
 					
-					query = query.replaceAll(element, v.getTransformedValue().toString());
+					query = query.replaceAll(element.strip().trim(), v.getTransformedValue().toString());
 					
 				}
 			}

@@ -1616,4 +1616,8 @@ public class CommonUtilities implements Serializable {
 		return props;
 	}
 	
+	public boolean containsSpace(String name) {
+		return name != null && name.contains(" ");
+	}
+	
 }

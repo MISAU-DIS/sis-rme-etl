@@ -150,6 +150,10 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 	}
 	
 	public void setName(String name) {
+		if (utilities.containsSpace(name)) {
+			throw new ForbiddenOperationException("Space found on field " + name);
+		}
+		
 		this.name = name;
 	}
 	

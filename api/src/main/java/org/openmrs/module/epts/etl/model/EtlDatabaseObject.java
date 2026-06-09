@@ -754,7 +754,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	
 	default Field getField(String fieldName) {
 		for (Field field : this.getFields()) {
-			if (field.getName().equals(fieldName)) {
+			if (field.getName().trim().equals(fieldName.trim())) {
 				return field;
 			}
 		}

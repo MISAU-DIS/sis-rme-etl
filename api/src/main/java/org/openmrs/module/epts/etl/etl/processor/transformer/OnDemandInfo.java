@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -63,6 +64,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
 	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+		
 		OnDemandInfo o = new OnDemandInfo();
 		
 		o.init(parameters, relatedEtlTransformTarget, field, conn);
@@ -72,6 +74,10 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	
 	public void init(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field, Connection conn)
 	        throws FieldAvaliableInMultipleDataSources, DBException {
+		
+		this.relatedEtlTransformTarget = relatedEtlTransformTarget;
+		this.field = field;
+		this.originalParameters = parameters;
 		
 		if (parameters == null || parameters.size() < 1) {
 			throw new ForbiddenOperationException("A ParentOnDemandLoadTransformer needs at least 1 parameters.\n"
@@ -121,7 +127,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						
 						this.onDemandCheckCondition = srcFieldOrValue;
 						
-						relatedEtlTransformTarget.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition",
+						this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition",
 						    relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
 					} else if (dstField.equals("template")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
@@ -151,7 +157,16 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 							srcFieldOrValue = null;
 						}
 						
-						FieldsMapping fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
+						FieldsMapping fm;
+						
+						if (isTransformerExpression(srcFieldOrValue)) {
+							fm = FieldsMapping.fastCreate(dstField, dstField, false, conn);
+							fm.setTransformer(srcFieldOrValue);
+							fm.tryToLoadTransformer(relatedEtlTransformTarget, conn);
+							
+						} else {
+							fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
+						}
 						
 						if (onDemandParentFieldMappings == null) {
 							onDemandParentFieldMappings = new ArrayList<>();
@@ -174,6 +189,11 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 			throw new ForbiddenOperationException(
 			        "Template parameters specified but no templated was defined with transformer: \n" + getTransformerDsc());
 		}
+	}
+	
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.relatedEtlTransformTarget.getRelatedEtlConf();
 	}
 	
 	public ActionOnEtlIssue unmappedFieldBehavior() {
@@ -356,14 +376,14 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	
 	@Override
 	public EtlDataConfiguration getParentConf() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
-		// TODO Auto-generated method stub
-		
 	}
 	
+	public boolean isTransformerExpression(String value) {
+		return value != null && value.contains("(") && value.endsWith(")");
+	}
 }

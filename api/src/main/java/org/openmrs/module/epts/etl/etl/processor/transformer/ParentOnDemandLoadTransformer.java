@@ -25,6 +25,7 @@ import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -185,6 +186,16 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	        throws FieldAvaliableInMultipleDataSources, DBException {
 		
 		super(onDemandInfo.getOriginalParameters(), onDemandInfo.getRelatedEtlTransformTarget(), onDemandInfo.getField());
+		
+		this.onDemandInfo = onDemandInfo;
+	}
+	
+	public void setOnDemandInfo(OnDemandInfo onDemandInfo) {
+		this.onDemandInfo = onDemandInfo;
+	}
+	
+	public OnDemandInfo getOnDemandInfo() {
+		return onDemandInfo;
 	}
 	
 	@Override
@@ -219,11 +230,11 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		if (existingSrcParentIsApplicable()) {
 			
 			try {
-				srcParent = resolveSrcParent(processor, srcObject, transformedRecord, additionalSrcObjects, srcConn,
+				srcParent = this.resolveSrcParent(processor, srcObject, transformedRecord, additionalSrcObjects, srcConn,
 				    dstConn);
 				
-				dstParent = resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects, srcConn,
-				    dstConn);
+				dstParent = this.resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
+				    srcConn, dstConn);
 			}
 			catch (InconsistentStateException e) {
 				
@@ -701,10 +712,17 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			parentConf.tryToLoadSchemaInfo(null, srcConn);
 		}
 		catch (DatabaseResourceDoesNotExists e) {
-			parentConf = new GenericTableConfiguration(
-			        this.getRelatedEtlTransformTarget().getRelatedEtlConf().getMainEtlTable());
 			
-			useMainEtlTable = true;
+			if (this.getRelatedEtlTransformTarget().getRelatedEtlConf().hasDefaultEtlTable()) {
+				
+				parentConf = new GenericTableConfiguration(
+				        this.getRelatedEtlTransformTarget().getRelatedEtlConf().getDefaultSourceTable());
+				
+				useMainEtlTable = true;
+			} else
+				throw new EtlConfException("The defined parentTableName [" + this.getParentTableName()
+				        + "] cannot be found on the srcDb and no defaultEtlTable was configred with the EtlConfiguration. Error when loading transformer: "
+				        + this);
 		}
 		
 		parentConf.setRelatedEtlConfig(this.relatedEtlTransformTarget.getRelatedEtlConf());

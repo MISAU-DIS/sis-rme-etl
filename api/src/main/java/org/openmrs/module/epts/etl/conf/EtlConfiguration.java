@@ -188,7 +188,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private RelationshipResolutionStrategy relationshipResolutionStrategy;
 	
-	private String mainEtlTable;
+	private String defaultSourceTable;
 	
 	private Boolean ensureEtlStageTablesExist;
 	
@@ -261,12 +261,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return this.ensureEtlStageTablesExist != null && this.ensureEtlStageTablesExist;
 	}
 	
-	public String getMainEtlTable() {
-		return mainEtlTable;
+	public String getDefaultSourceTable() {
+		return defaultSourceTable;
 	}
 	
-	public void setMainEtlTable(String mainEtlTable) {
-		this.mainEtlTable = mainEtlTable;
+	public void setDefaultSourceTable(String defaultSourceTable) {
+		this.defaultSourceTable = defaultSourceTable;
 	}
 	
 	public RelationshipResolutionStrategy getRelationshipResolutionStrategy() {
@@ -2415,6 +2415,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 		
 		return action.compareTo(this.getDefaultExceptionBehavior()) > 0 ? action : this.getDefaultExceptionBehavior();
+	}
+	
+	public boolean hasDefaultEtlTable() {
+		return utilities.stringHasValue(this.getDefaultSourceTable());
 	}
 	
 }
