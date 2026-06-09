@@ -5,6 +5,7 @@ import java.sql.Connection;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.engine.Engine;
+import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -16,10 +17,6 @@ public class SqlFunctionInfo {
 	
 	private String aliasName;
 	
-	private long maxRecordId;
-	
-	private long minRecordId;
-	
 	public SqlFunctionInfo() {
 		
 	}
@@ -27,22 +24,6 @@ public class SqlFunctionInfo {
 	public SqlFunctionInfo(SqlFunctionType type, String aliasName) {
 		this.type = type;
 		this.aliasName = aliasName;
-	}
-	
-	public long getMaxRecordId() {
-		return maxRecordId;
-	}
-	
-	public void setMaxRecordId(long maxRecordId) {
-		this.maxRecordId = maxRecordId;
-	}
-	
-	public long getMinRecordId() {
-		return minRecordId;
-	}
-	
-	public void setMinRecordId(long minRecordId) {
-		this.minRecordId = minRecordId;
 	}
 	
 	public TableConfiguration getMainTable() {
@@ -84,13 +65,15 @@ public class SqlFunctionInfo {
 		return this.getType().isCount();
 	}
 	
-	public void detemineLimits(Engine<? extends EtlDatabaseObject> engine, Connection conn) throws DBException {
+	public IntervalExtremeRecord detemineLimits(Engine<? extends EtlDatabaseObject> engine, Connection conn)
+	        throws DBException {
 		if (!this.getMainTable().isFullLoaded()) {
 			this.getMainTable().fullLoad(conn);
 		}
 		
-		this.setMinRecordId(this.getMainTable().getMinRecordId(engine, conn));
-		this.setMaxRecordId(this.getMainTable().getMaxRecordId(engine, conn));
+		return new IntervalExtremeRecord(this.getMainTable().getMinRecordId(engine, conn),
+		        this.getMainTable().getMaxRecordId(engine, conn));
+		
 	}
 	
 }

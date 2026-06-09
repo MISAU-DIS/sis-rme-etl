@@ -1,16 +1,25 @@
 package org.openmrs.module.epts.etl.conf.datasource;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.conf.types.ParameterContextType;
 import org.openmrs.module.epts.etl.conf.types.ParameterValueType;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
+import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -192,17 +201,36 @@ public class QueryParameter extends Field {
 		return query.toLowerCase().matches(selectRegex);
 	}
 	
-	public boolean isDynamicElement(EtlDataSource ds) {
-		if (!ds.hasDynamicElements())
-			return false;
+	public boolean isComposite() {
+		return this.getName().startsWith("(") && this.getName().endsWith(")");
+	}
+	
+	public String getAjustedName() {
+		return this.getName().replace("(", "").replace(")", "");
+	}
+	
+	public Object retrieveParamValue(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDatabaseObject dstObject,
+	        List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+	        throws FieldAvaliableInMultipleDataSources, DBException {
 		
-		for (String element : ds.getDynamicElements()) {
-			if (this.getName().equals(element) || this.getName().equals( "(" +element + ")")) {
-				return true;
+		if (this.isComposite()) {
+			FieldsMapping map = FieldsMapping.fastCreate(this.getAjustedName(),
+			    FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+			
+			if (!map.hasDataSourceName()) {
+				throw new EtlExceptionImpl("The field " + this.getAjustedName()
+				        + " cannot be transformed as it does not occure in any datasource");
 			}
+			
+			FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
+			    avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
+			
+			return valueInfo.getTransformedValue();
+		} else {
+			return EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, "@" + this.getName())
+			        .toString();
 		}
 		
-		return false;
 	}
 	
 }

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
@@ -13,7 +12,6 @@ import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
@@ -420,23 +418,12 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		
 		dstConf = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 		
-		ensureOnDemandCheckConditionElementsInitialized(true, srcConn, dstConn);
+		List<EtlDatabaseObject> allObjs = srcObjects != null ? srcObjects
+		        : (srcObject != null ? utilities.parseToList(srcObject) : null);
 		
-		String condition = this.getParametrizedOnDemandCheckCondition();
+		String condition = SQLUtilities.ensureDataSourceElementsReplaced(this.getOnDemandCheckCondition(), allObjs, dstConn);
 		
-		Object[] params = new Object[this.getOnDemandCondtionElements().size()];
-		
-		EtlDatabaseObject auxObject = dstConf.createRecordInstance();
-		
-		for (int i = 0; i < params.length; i++) {
-			FieldsMapping mapping = this.getOnDemandCondtionElements().get(i).getMappig();
-			
-			params[i] = mapping.getTransformerInstance()
-			        .transform(processor, srcObjects.get(0), auxObject, srcObjects, mapping, srcConn, dstConn)
-			        .getTransformedValue();
-		}
-		
-		return dstConf.find(condition, params, dstConn);
+		return dstConf.find(condition, null, dstConn);
 	}
 	
 	DstConf getEtlTransformTargetForExistingSrcParent(Connection srcConn, Connection dstConn) throws DBException {
@@ -497,50 +484,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 	}
 	
-	void ensureOnDemandCheckConditionElementsInitialized(boolean skipFullLoad, Connection srcConn, Connection dstConn)
-	        throws DBException {
-		if (this.getOnDemandCondtionElements() == null) {
-			synchronized (lock) {
-				
-				ensureEtlTransformTargetForNonExistingSrcParentInitialized(skipFullLoad, srcConn, dstConn);
-				
-				String parametrizedOnDemandCheckCondition = this.getOnDemandCheckCondition();
-				
-				if (utilities.stringHasValue(this.getOnDemandCheckCondition())) {
-					
-					//We force onDemandCheckCondition to be a full query so that can be correctly be processed by extractSqlConditionElements method
-					String query = "select * from x where " + this.getOnDemandCheckCondition();
-					
-					List<SqlConditionElement> elements = SQLUtilities.extractSqlConditionElements(query);
-					
-					List<SqlConditionElement> toRemove = new ArrayList<>();
-					
-					for (SqlConditionElement field : elements) {
-						
-						//We want to skip same situation where a field is compared to a subqueries
-						if (!SQLUtilities.isValidSqlCondition(field.toString())) {
-							toRemove.add(field);
-							continue;
-						}
-						
-						field.fullLoad(relatedEtlTransformTarget, dstConn);
-						
-						String regex = "\\b" + Pattern.quote(field.getField()) + "\\s*" + Pattern.quote(field.getOperator())
-						        + "\\s*" + Pattern.quote(field.getValue()) + "\\b";
-						
-						parametrizedOnDemandCheckCondition = parametrizedOnDemandCheckCondition.replaceAll(regex,
-						    field.getField() + " " + field.getOperator() + " ?");
-					}
-					
-					elements.removeAll(toRemove);
-					
-					this.onDemandInfo.setParametrizedOnDemandCheckCondition(parametrizedOnDemandCheckCondition);
-					this.onDemandInfo.setOnDemandCondtionElements(elements);
-				}
-			}
-		}
-	}
-	
 	public String getParentTableName() {
 		return onDemandInfo.getParentTableName();
 	}
@@ -563,14 +506,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	
 	public String getOnDemandCheckCondition() {
 		return this.onDemandInfo.getOnDemandCheckCondition();
-	}
-	
-	public String getParametrizedOnDemandCheckCondition() {
-		return this.onDemandInfo.getParametrizedOnDemandCheckCondition();
-	}
-	
-	public List<SqlConditionElement> getOnDemandCondtionElements() {
-		return this.onDemandInfo.getOnDemandCondtionElements();
 	}
 	
 	public List<FieldsMapping> getOnDemandParentFieldMappings() {

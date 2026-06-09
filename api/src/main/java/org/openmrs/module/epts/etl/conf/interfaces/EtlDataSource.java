@@ -1,7 +1,9 @@
 package org.openmrs.module.epts.etl.conf.interfaces;
 
 import java.sql.Connection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
@@ -28,14 +30,36 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 		return this.getDefaultPreparedQuery() != null;
 	}
 	
-	default void prepare(List<EtlDatabaseObject> mainObject, Connection conn) throws DBException {
+	public static List<EtlDataSource> extractDataSourceFromObjects(List<EtlDatabaseObject> avaliableSrcObjects) {
+		
+		if (utilities.listHasElement(avaliableSrcObjects)) {
+			
+			Set<EtlDataSource> datasources = new HashSet<>();
+			
+			for (EtlDatabaseObject obj : avaliableSrcObjects) {
+				if (obj.getRelatedConfiguration() instanceof EtlDataSource) {
+					
+					datasources.add((EtlDataSource) obj.getRelatedConfiguration());
+				}
+			}
+			
+			if (!datasources.isEmpty()) {
+				return List.copyOf(datasources);
+			}
+			
+		}
+		
+		return null;
+	}
+	
+	default void prepare(List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
 		if (isPrepared()) {
 			return;
 		}
 		
 		synchronized (LOCK) {
-			PreparedQuery query = PreparedQuery.prepare(this, mainObject, getRelatedEtlConf(),
-			    DbmsType.determineFromConnection(conn));
+			PreparedQuery query = PreparedQuery.prepare(this, extractDataSourceFromObjects(avaliableSrcObjects),
+			    getRelatedEtlConf(), DbmsType.determineFromConnection(conn));
 			
 			setDefaultPreparedQuery(query);
 		}
@@ -52,9 +76,7 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 			prepare(avaliableSrcObjects, srcConn);
 		}
 		
-		return this.getDefaultPreparedQuery()
-		        .cloneAndLoadValues(null, parentSrcObject, parentSrcObject, avaliableSrcObjects, srcConn)
-		        .query(engine, srcConn);
+		return this.getDefaultPreparedQuery().query(null, parentSrcObject, parentSrcObject, avaliableSrcObjects, srcConn);
 	}
 	
 	default void loadOwnFieldsToEtlFields(List<EtlField> etlFields, Boolean presereOriginalNames) {

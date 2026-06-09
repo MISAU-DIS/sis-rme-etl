@@ -2,7 +2,11 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,17 +17,16 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableAliasesGenerator;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
+import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
-import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -38,7 +41,7 @@ public class PreparedQuery {
 	
 	private String query;
 	
-	private List<EtlDatabaseObject> srcObjects;
+	private List<EtlDataSource> avaliableDataSources;
 	
 	private EtlConfiguration etlConfig;
 	
@@ -69,7 +72,7 @@ public class PreparedQuery {
 		return getDataSource().getRelatedEtlConf();
 	}
 	
-	PreparedQuery(EtlDataSource dataSource, List<EtlDatabaseObject> srcObject, EtlConfiguration configuration,
+	PreparedQuery(EtlDataSource dataSource, List<EtlDataSource> avaliableDataSources, EtlConfiguration configuration,
 	    boolean ignoreMissingParameters, DbmsType dbmsType) {
 		this.dbmsType = dbmsType;
 		this.setDataSource(dataSource);
@@ -80,41 +83,27 @@ public class PreparedQuery {
 		
 		this.setQuery(dataSource.getQuery());
 		this.setEtlConfig(configuration);
-		this.setSrcObject(srcObject);
+		this.setAvaliableDataSources(avaliableDataSources);
 		this.tryToLoadSQLFunctionInfo();
 		
-		logTrace("Loading Query Parameters..");
-		
-		ensureDynamicElementsLoadedAsParameteres();
+		setQuery(ensureDynamicElementsLoadedAsParameteres(this.getQuery()));
+		setQuery(autoDefineDataSourceParameters(this.getQuery()));
 		
 		this.setQueryParams(extractParamOnQuery(this.getQuery()));
 		
 		logTrace("Query Parameters Loaded!");
-		if (!hasQueryParams())
-			return;
-		
-		try {
-			
-			logTrace("Loading Query Parameters Values...");
-			
-			loadQueryParamValues();
-			
-			logTrace("Query parameters loaded!");
-		}
-		catch (MissingParameterException e) {
-			if (!ignoreMissingParameters) {
-				throw e;
-			}
-			
-		}
 	}
 	
-	private void ensureDynamicElementsLoadedAsParameteres() {
-		if (hasDynamicElements()) {
-			for (String element : this.getDataSource().getDynamicElements()) {
-				setQuery(getQuery().replaceAll(element, "@(" + element + ")"));
-			}
-		}
+	public boolean hasAvaliableDataSources() {
+		return utilities.listHasElement(avaliableDataSources);
+	}
+	
+	public List<EtlDataSource> getAvaliableDataSources() {
+		return avaliableDataSources;
+	}
+	
+	public void setAvaliableDataSources(List<EtlDataSource> avaliableDataSources) {
+		this.avaliableDataSources = avaliableDataSources;
 	}
 	
 	public boolean isEnsuredDynamicElementsLoaded() {
@@ -128,68 +117,6 @@ public class PreparedQuery {
 	PreparedQuery(EtlAdditionalDataSource queryDs, EtlConfiguration config, boolean ignoreMissingParameters,
 	    DbmsType dbmsType) {
 		this(queryDs, null, config, ignoreMissingParameters, dbmsType);
-	}
-	
-	void loadQueryParamValues() {
-		List<String> missingParameters = new ArrayList<>();
-		
-		for (QueryParameter field : this.getQueryParams()) {
-			
-			if (field.isDynamicElement(this.getDataSource())) {
-				continue;
-			}
-			
-			try {
-				field.setValue(getParamValueFromEtlConfig(field.getName()));
-			}
-			catch (ForbiddenOperationException e) {
-				try {
-					field.setValue(getParamValueFromSourceMainObject(field.getName()));
-				}
-				catch (ForbiddenOperationException e1) {
-					missingParameters.add(field.getName());
-				}
-			}
-		}
-		
-		if (!missingParameters.isEmpty()) {
-			throw new MissingParameterException(missingParameters);
-		}
-	}
-	
-	Object retrieveParamValue(String paramName) {
-		List<String> missingParameters = new ArrayList<>();
-		
-		QueryParameter param = null;
-		
-		for (QueryParameter field : this.getQueryParams()) {
-			
-			if (!field.getName().equals(paramName))
-				continue;
-			
-			try {
-				field.setValue(getParamValueFromEtlConfig(field.getName()));
-			}
-			catch (ForbiddenOperationException e) {
-				try {
-					field.setValue(getParamValueFromSourceMainObject(field.getName()));
-				}
-				catch (ForbiddenOperationException e1) {
-					missingParameters.add(field.getName());
-				}
-			}
-			
-			param = field;
-			
-			break;
-		}
-		
-		if (!missingParameters.isEmpty()) {
-			throw new MissingParameterException(missingParameters);
-		}
-		
-		return param != null ? param.getValue() : null;
-		
 	}
 	
 	void logTrace(String msg) {
@@ -256,10 +183,6 @@ public class PreparedQuery {
 		this.subqueries = subqueries;
 	}
 	
-	private List<EtlDatabaseObject> getSrcObjects() {
-		return srcObjects;
-	}
-	
 	private List<QueryParameter> getQueryParams() {
 		return queryParams;
 	}
@@ -288,194 +211,60 @@ public class PreparedQuery {
 		this.queryParams = queryParams;
 	}
 	
-	private void setSrcObject(List<EtlDatabaseObject> srcObject) {
-		this.srcObjects = srcObject;
+	public PreparedQueryInfo generatePreparedQuery(EtlProcessor processor, EtlDatabaseObject srcObject,
+	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+	        throws FieldAvaliableInMultipleDataSources, DBException {
+		
+		return generatePreparedQuery(processor, srcObject, dstObject, avaliableSrcObjects, this.query, conn);
 	}
 	
-	public String generatePreparedQuery() {
-		String pQuery = replaceSqlParametersWithQuestionMarks(this.getQuery());
+	public PreparedQueryInfo generatePreparedQuery(EtlProcessor processor, EtlDatabaseObject srcObject,
+	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, String query, Connection conn)
+	        throws FieldAvaliableInMultipleDataSources, DBException {
 		
-		int questionMarkToBeReplaced = 1;
+		List<Object> params = new ArrayList<>();
 		
-		if (hasQueryParams()) {
-			for (int i = 0; i < getQueryParams().size(); i++) {
-				QueryParameter param = this.getQueryParams().get(i);
-				
-				if (param.getContextType().compareClause() || param.getContextType().selectField()) {
-					questionMarkToBeReplaced++;
-				} else if (param.getContextType().inClause()) {
-					
-					if (param.getValue() != null) {
-						String parts[] = param.getValue().toString().split(",");
-						
-						String quetionMarks = "";
-						
-						for (int j = 0; j < parts.length; j++) {
-							if (!quetionMarks.isEmpty()) {
-								quetionMarks += ",";
-							}
-							
-							quetionMarks += "?";
-						}
-						
-						pQuery = utilities.replaceNthOccurrenceWithString(pQuery, "?", quetionMarks,
-						    questionMarkToBeReplaced);
-						
-						questionMarkToBeReplaced += parts.length;
-					} else {
-						throw new EtlExceptionImpl("Missing parameter value for param " + param.getName()
-						        + " within the datasource " + this.getDataSource().getName());
-					}
-				} else if (param.getContextType().dbResource()) {
-					
-					if (param.hasValue()) {
-						pQuery = utilities.replaceNthOccurrenceWithString(pQuery, "?", param.getValue().toString(),
-						    questionMarkToBeReplaced);
-					} else {
-						throw new ForbiddenOperationException("The parameter '" + param.getName()
-						        + "' has no value and its needed to generate prepared query!!");
-					}
-					
-				}
-			}
-		}
-		
-		if (hasDynamicElements() && !isEnsuredDynamicElementsLoaded()) {
-			for (String element : this.getDataSource().getDynamicElements()) {
-				pQuery = pQuery.replaceAll(element, "null");
-			}
-		}
-		
-		return pQuery;
-		
-	}
-	
-	public List<Object> generateQueryParameters() {
-		List<Object> queryParams = new ArrayList<>();
+		String pQuery = query;
 		
 		if (hasQueryParams()) {
+			
 			for (QueryParameter param : this.getQueryParams()) {
 				
-				if (param.getContextType().compareClause() || param.getContextType().selectField()) {
-					queryParams.add(param.getValue());
-				} else if (param.getContextType().inClause()) {
+				Object paramValue = param.retrieveParamValue(processor, srcObject, dstObject, avaliableSrcObjects, conn);
+				
+				if (param.getContextType().compareClause() || param.getContextType().selectField()
+				        || param.getContextType().inClause()) {
 					
-					if (param.getValue() == null)
-						throw new EtlExceptionImpl("No value was provided to parameter " + param.getName());
+					params.add(paramValue);
 					
-					String parts[] = param.getValue().toString().split(",");
+					pQuery = SQLUtilities.replaceFirstParameterOccurrence(pQuery, param.getName());
 					
-					for (String part : parts) {
-						queryParams.add(part);
-					}
 				} else if (param.getContextType().dbResource()) {
-					continue;
+					
+					if (paramValue == null) {
+						throw new ForbiddenOperationException("The parameter '" + param.getName()
+						        + "' has no value and is needed to generate prepared query.");
+					}
+					
+					pQuery = SQLUtilities.replaceParameterWithValue(pQuery, param.getName(), paramValue);
 				}
 			}
 		}
 		
-		return queryParams;
+		return new PreparedQueryInfo(pQuery, params);
 	}
 	
-	public static PreparedQuery prepare(EtlDataSource queryDs, List<EtlDatabaseObject> srcObject,
+	public static PreparedQuery prepare(EtlDataSource queryDs, List<EtlDataSource> avaliableDataSource,
 	        EtlConfiguration configuration, DbmsType dbmsType) {
 		
-		return new PreparedQuery(queryDs, srcObject, configuration, false, dbmsType);
+		return new PreparedQuery(queryDs, avaliableDataSource, configuration, false, dbmsType);
 	}
 	
 	public static PreparedQuery prepare(EtlAdditionalDataSource queryDs, EtlConfiguration etlConfig,
-	        List<EtlDatabaseObject> auxLoadObjects, boolean ignoreMissingParameters, DbmsType dbmsType)
+	        List<EtlDataSource> avaliableDataSource, boolean ignoreMissingParameters, DbmsType dbmsType)
 	        throws ForbiddenOperationException {
-		return new PreparedQuery(queryDs, auxLoadObjects, etlConfig, ignoreMissingParameters, dbmsType);
-	}
-	
-	public PreparedQuery cloneAndLoadValues(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDatabaseObject dstObject,
-	        List<EtlDatabaseObject> srcObjects, Connection srcConn) throws EtlTransformationException, DBException {
 		
-		PreparedQuery cloned = new PreparedQuery();
-		cloned.setSqlFunctionLoaded(this.isSqlFunctionLoaded());
-		cloned.setDataSource(this.getDataSource());
-		cloned.setQuery(this.getQuery());
-		cloned.setEtlConfig(this.getEtlConfig());
-		cloned.setSrcObject(srcObjects);
-		cloned.setCountFunctionInfo(this.getCountFunctionInfo());
-		
-		if (this.hasQueryParams()) {
-			cloned.setQueryParams(QueryParameter.cloneAll(this.getQueryParams()));
-			
-			cloned.loadQueryParamValues();
-		}
-		
-		if (hasDynamicElements()) {
-			cloned.ensureDynamicElementsLoaded(processor, srcObject, dstObject, srcObjects, srcConn);
-		}
-		
-		if (utilities.listHasNoElement(srcObjects) && srcObject != null) {
-			srcObjects = utilities.parseToList(srcObject);
-		}
-		
-		if (utilities.listHasElement(srcObjects)) {
-			cloned.setQuery(SQLUtilities.ensureDataSourceElementsReplaced(cloned.getQuery(), srcObjects, srcConn));
-		}
-		
-		return cloned;
-		
-	}
-	
-	private void ensureDynamicElementsLoaded(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> srcObjects, Connection srcConn)
-	        throws EtlTransformationException, DBException {
-		
-		if (!this.hasDynamicElements()) {
-			return;
-		}
-		
-		if (isOriginal()) {
-			throw new EtlExceptionImpl("Only cloned query can be loaded with dynamic elements");
-		}
-		
-		for (String element : this.getDataSource().getDynamicElements()) {
-			FieldsMapping map = FieldsMapping.fastCreate(element, srcConn);
-			
-			FieldTransformingInfo f = map.getTransformerInstance().transform(processor, srcObject, dstObject, srcObjects,
-			    map, srcConn, srcConn);
-			
-			if (f != null && f.getTransformedValue() != null) {
-				try {
-					for (QueryParameter p : this.getQueryParam(parseToDynamicParameter(element))) {
-						p.setValue(f.getTransformedValue());
-					}
-				}
-				catch (MissingParameterException e) {}
-			} else {
-				throw new EtlTransformationException(
-				        "The transformation of dynamic element '" + element + "' resulted on an empty value!!!", srcObject,
-				        ActionOnEtlIssue.ABORT_PROCESS);
-			}
-		}
-		
-		this.ensuredDynamicElementsLoaded = true;
-	}
-	
-	private String parseToDynamicParameter(String element) {
-		return "(" + element + ")";
-	}
-	
-	private List<QueryParameter> getQueryParam(String name) {
-		if (hasQueryParams()) {
-			
-			List<QueryParameter> list = new ArrayList<>();
-			
-			for (QueryParameter p : this.getQueryParams()) {
-				if (p.getName().equals(name)) {
-					list.add(p);
-				}
-			}
-			
-			return list;
-		}
-		
-		throw new MissingParameterException("Query parameter '" + name + "' not found!");
+		return new PreparedQuery(queryDs, avaliableDataSource, etlConfig, ignoreMissingParameters, dbmsType);
 	}
 	
 	private boolean hasDynamicElements() {
@@ -506,13 +295,17 @@ public class PreparedQuery {
 			
 			if (utilities.listHasExactlyOneElement(this.getDataSource().getFields())
 			        && utilities.listHasExactlyOneElement(avaliableFunction)) {
+				
 				if (avaliableFunction.get(0).isCountFunction()) {
+					
+					utilities.throwForbiddenMethodException();
+					
 					this.setCountFunctionInfo(avaliableFunction.get(0));
 					
 					String mainTableName = SQLUtilities.extractFirstTableFromSelectQuery(this.getMainQuery());
 					
 					if (mainTableName.startsWith("@")) {
-						mainTableName = retrieveParamValue(utilities.removeFirsChar(mainTableName)).toString();
+						//mainTableName = retrieveParamValue(utilities.removeFirsChar(mainTableName)).toString();
 					}
 					
 					this.getCountFunctionInfo().setMainTable(new GenericTableConfiguration(mainTableName));
@@ -545,37 +338,6 @@ public class PreparedQuery {
 		return paramValue;
 	}
 	
-	Object getParamValueFromSourceMainObject(String paramName) throws ForbiddenOperationException {
-		if (this.getSrcObjects() == null)
-			throw new ForbiddenOperationException("The main object is not defined");
-		
-		Object paramValue = null;
-		
-		boolean paramExists = false;
-		
-		for (EtlDatabaseObject obj : this.getSrcObjects()) {
-			try {
-				paramValue = obj.getFieldValue(paramName);
-				
-				paramExists = true;
-				
-				if (paramValue != null) {
-					break;
-				}
-				
-			}
-			catch (ForbiddenOperationException e) {
-				//Ignore if the object does not contain the parameter
-			}
-		}
-		
-		if (!paramExists) {
-			throw new MissingParameterException(paramName);
-		}
-		
-		return paramValue;
-	}
-	
 	/**
 	 * Extract all the parameters presents in a dump query. This assume that the parameter will
 	 * start with @
@@ -600,6 +362,81 @@ public class PreparedQuery {
 		}
 		
 		return parameters;
+	}
+	
+	private String ensureDynamicElementsLoadedAsParameteres(String query) {
+		if (hasDynamicElements()) {
+			for (String element : this.getDataSource().getDynamicElements()) {
+				query = query.replaceAll(element, "@(" + element + ")");
+			}
+		}
+		
+		return query;
+	}
+	
+	private String autoDefineDataSourceParameters(String query) {
+		
+		if (query == null || query.isBlank()) {
+			return query;
+		}
+		
+		if (!this.hasAvaliableDataSources()) {
+			return query;
+		}
+		
+		Map<String, Set<String>> dataSourceFields = buildDataSourceFieldsMap(avaliableDataSources);
+		
+		Pattern pattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\.([a-zA-Z_][a-zA-Z0-9_]*)\\b");
+		
+		Matcher matcher = pattern.matcher(query);
+		
+		StringBuffer sb = new StringBuffer();
+		
+		while (matcher.find()) {
+			
+			String dataSourceName = matcher.group(1);
+			String fieldName = matcher.group(2);
+			String fullToken = matcher.group(0);
+			
+			Set<String> fields = dataSourceFields.get(dataSourceName);
+			
+			if (fields != null && fields.contains(fieldName)) {
+				matcher.appendReplacement(sb, Matcher.quoteReplacement("@(" + fullToken + ")"));
+			} else {
+				matcher.appendReplacement(sb, Matcher.quoteReplacement(fullToken));
+			}
+		}
+		
+		matcher.appendTail(sb);
+		
+		return sb.toString();
+	}
+	
+	private Map<String, Set<String>> buildDataSourceFieldsMap(List<EtlDataSource> avaliableDataSources) {
+		
+		Map<String, Set<String>> result = new HashMap<>();
+		
+		for (EtlDataSource ds : avaliableDataSources) {
+			
+			if (ds == null || ds.getName() == null || ds.getFields() == null) {
+				continue;
+			}
+			
+			Set<String> fieldNames = new HashSet<>();
+			
+			for (Field field : ds.getFields()) {
+				
+				if (field == null || field.getName() == null) {
+					continue;
+				}
+				
+				fieldNames.add(field.getName());
+			}
+			
+			result.put(ds.getName(), fieldNames);
+		}
+		
+		return result;
 	}
 	
 	private List<QueryParameter> extractQueryParametersInSubQuery(String subQuery) {
@@ -855,24 +692,25 @@ public class PreparedQuery {
 		return this.getCountFunctionInfo() != null;
 	}
 	
-	public void detemineLimits(Engine<? extends EtlDatabaseObject> engine, Connection conn) throws DBException {
+	public IntervalExtremeRecord detemineLimits(Engine<? extends EtlDatabaseObject> engine, Connection conn)
+	        throws DBException {
 		if (!this.isCountQuery()) {
 			throw new ForbiddenOperationException("The query does not use count function!");
 		}
 		
-		this.getCountFunctionInfo().detemineLimits(engine, conn);
+		return this.getCountFunctionInfo().detemineLimits(engine, conn);
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<EtlDatabaseObject> query(Engine<? extends EtlDatabaseObject> engine, Connection conn) throws DBException {
+	public List<EtlDatabaseObject> query(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDatabaseObject dstObject,
+	        List<EtlDatabaseObject> srcObjects, Connection conn) throws DBException {
 		
 		if (this.isCountQuery()) {
-			this.detemineLimits(engine, conn);
+			IntervalExtremeRecord limits = this.detemineLimits(processor.getEngine(), conn);
 			
-			PreparedCountQuerySearchParams searchParams = new PreparedCountQuerySearchParams(this);
+			PreparedCountQuerySearchParams searchParams = new PreparedCountQuerySearchParams(this, limits);
 			
-			long count = searchParams.countAllRecords(this.getCountFunctionInfo().getMinRecordId(),
-			    this.getCountFunctionInfo().getMaxRecordId(), conn);
+			long count = searchParams.countAllRecords(limits.getMinRecordId(), limits.getMaxRecordId(), conn);
 			
 			EtlDatabaseObject obj = this.getDataSource().newInstance();
 			obj.setRelatedConfiguration(this.getDataSource());
@@ -882,12 +720,14 @@ public class PreparedQuery {
 			return utilities.parseToList(obj);
 		}
 		
-		List<Object> paramsAsList = this.generateQueryParameters();
+		PreparedQueryInfo pq = generatePreparedQuery(processor, srcObject, dstObject, srcObjects, mainQuery, conn);
+		
+		List<Object> paramsAsList = pq.getParameters();
 		
 		Object[] params = paramsAsList != null ? paramsAsList.toArray() : null;
 		
 		return (List<EtlDatabaseObject>) DatabaseObjectDAO.search(this.getDataSource().getLoadHealper(),
-		    this.getDataSource().getSyncRecordClass(), this.generatePreparedQuery(), params, conn);
+		    this.getDataSource().getSyncRecordClass(), pq.getQuery(), params, conn);
 	}
 	
 	@Override

@@ -14,9 +14,11 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
+import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.OperationController;
@@ -117,19 +119,16 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		}
 		
 		if (extraCondition != null) {
-			
 			List<EtlDatabaseObject> ds = (List<EtlDatabaseObject>) collectDataSourceObjects(parentObject, dataSourceObjects);
 			
 			PreparedQuery pQ = PreparedQuery.prepare(QueryDataSourceConfig.fastCreate(extraCondition, this.getSrcConf()),
-			    this.getRelatedEtlConf(), ds, true, dbmsType);
+			    this.getRelatedEtlConf(), EtlDataSource.extractDataSourceFromObjects(ds), true, dbmsType);
 			
-			pQ = pQ.cloneAndLoadValues(null, parentObject, null, ds, null);
+			PreparedQueryInfo pq = pQ.generatePreparedQuery(null, parentObject, parentObject, ds, null);
 			
-			List<Object> paramsAsList = pQ.generateQueryParameters();
+			Object[] params = pq.getParametersAsArray();
 			
-			Object[] params = paramsAsList != null ? paramsAsList.toArray() : null;
-			
-			searchClauses.addToClauses(pQ.generatePreparedQuery());
+			searchClauses.addToClauses(pq.getQuery());
 			
 			searchClauses.addToParameters(params);
 		}

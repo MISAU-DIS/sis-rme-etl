@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -239,7 +240,9 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 			
 			getRelatedEtlConf().logTrace("Determining fields for query...");
 			
-			setFields(SQLUtilities.determineFieldsFromQuery(query.generatePreparedQuery(), null, conn));
+			PreparedQueryInfo pq = query.generatePreparedQuery(null, null, null, null, name, conn);
+			
+			setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), pq.getParametersAsArray(), conn));
 			
 			getRelatedEtlConf().logDebug("QueryDataSourceConfig [" + this.getName() + "] full loaded!");
 			
@@ -261,18 +264,18 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 		}
 		
 		synchronized (stringLock) {
-			PreparedQuery query = PreparedQuery.prepare(this, avaliableSrcObjects, getRelatedEtlConf(),
+			PreparedQuery query = PreparedQuery.prepare(this,
+			    EtlDataSource.extractDataSourceFromObjects(avaliableSrcObjects), getRelatedEtlConf(),
 			    DbmsType.determineFromConnection(conn));
 			
 			if (!isDoNotLoadFields()) {
 				
-				List<Object> paramsAsList = query.generateQueryParameters();
+				PreparedQueryInfo pq = query.generatePreparedQuery(null, null, null, avaliableSrcObjects, conn);
 				
-				Object[] params = paramsAsList != null ? paramsAsList.toArray() : null;
+				Object[] params = pq.getParametersAsArray();
 				
 				try {
-					setFields(SQLUtilities.determineFieldsFromQuery(SQLUtilities.ensureDataSourceElementsReplaced(
-					    query.generatePreparedQuery(), avaliableSrcObjects, conn), params, conn));
+					setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), params, conn));
 				}
 				catch (DBException e) {
 					throw new DBException("Error computing the query " + this.getName(), e);
@@ -475,9 +478,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 			prepare(avaliableSrcObjects, srcConn);
 		}
 		
-		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery()
-		        .cloneAndLoadValues(processor, srcObject, dstObject, avaliableSrcObjects, srcConn)
-		        .query(processor != null ? processor.getEngine() : null, srcConn);
+		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject,
+		    avaliableSrcObjects, srcConn);
 		
 		if (utilities.listHasNoElement(list)) {
 			return null;

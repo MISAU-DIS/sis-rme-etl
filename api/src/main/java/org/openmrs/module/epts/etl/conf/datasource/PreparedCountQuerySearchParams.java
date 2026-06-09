@@ -20,7 +20,7 @@ public class PreparedCountQuerySearchParams extends AbstractEtlSearchParams<EtlD
 	
 	PreparedQuery preparedQuery;
 	
-	public PreparedCountQuerySearchParams(PreparedQuery preparedQuery) {
+	public PreparedCountQuerySearchParams(PreparedQuery preparedQuery, IntervalExtremeRecord a) {
 		super(null, null);
 		
 		this.preparedQuery = preparedQuery;
@@ -36,19 +36,16 @@ public class PreparedCountQuerySearchParams extends AbstractEtlSearchParams<EtlD
 	
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> cloneMe() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	protected VOLoaderHelper getLoaderHealper() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public String generateDestinationExclusionClause(Connection srcConn, Connection dstConn) throws DBException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
@@ -61,17 +58,18 @@ public class PreparedCountQuerySearchParams extends AbstractEtlSearchParams<EtlD
 		
 		searchClauses.addColumnToSelect("1");
 		
-		searchClauses.addToClauseFrom(
-		    SQLUtilities.extractFromClauseOnSqlSelectQuery(this.getPreparedQuery().generatePreparedQuery()));
-		searchClauses.addToClauses(
-		    SQLUtilities.extractWhereClauseInASelectQuery(this.getPreparedQuery().generatePreparedQuery()));
+		PreparedQueryInfo pq = this.getPreparedQuery().generatePreparedQuery(null, parentObject, parentObject,
+		    auxDataSourceObjects, srcConn);
+		
+		searchClauses.addToClauseFrom(SQLUtilities.extractFromClauseOnSqlSelectQuery(pq.getQuery()));
+		searchClauses.addToClauses(SQLUtilities.extractWhereClauseInASelectQuery(pq.getQuery()));
 		
 		TableConfiguration tabConf = this.getPreparedQuery().getCountFunctionInfo().getMainTable();
 		
 		searchClauses.addToClauses(
 		    tabConf.getTableAlias() + "." + tabConf.getPrimaryKey().retrieveSimpleKeyColumnName() + " between ? and ?");
 		
-		searchClauses.addToParameters(this.getPreparedQuery().generateQueryParameters());
+		searchClauses.addToParameters(pq.getParameters());
 		
 		searchClauses.addToParameters(intervalExtremeRecord.getMinRecordId());
 		searchClauses.addToParameters(intervalExtremeRecord.getMaxRecordId());

@@ -10,7 +10,6 @@ import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -44,11 +43,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	
 	private String overrideFieldsStr;
 	
-	private List<SqlConditionElement> onDemandCondtionElements;
-	
 	private String onDemandCheckCondition;
-	
-	private String parametrizedOnDemandCheckCondition;
 	
 	private String templateName;
 	
@@ -310,28 +305,12 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		this.overrideFieldsStr = overrideFieldsStr;
 	}
 	
-	public List<SqlConditionElement> getOnDemandCondtionElements() {
-		return onDemandCondtionElements;
-	}
-	
-	public void setOnDemandCondtionElements(List<SqlConditionElement> onDemandCondtionElements) {
-		this.onDemandCondtionElements = onDemandCondtionElements;
-	}
-	
 	public String getOnDemandCheckCondition() {
 		return onDemandCheckCondition;
 	}
 	
 	public void setOnDemandCheckCondition(String onDemandCheckCondition) {
 		this.onDemandCheckCondition = onDemandCheckCondition;
-	}
-	
-	public String getParametrizedOnDemandCheckCondition() {
-		return parametrizedOnDemandCheckCondition;
-	}
-	
-	public void setParametrizedOnDemandCheckCondition(String parametrizedOnDemandCheckCondition) {
-		this.parametrizedOnDemandCheckCondition = parametrizedOnDemandCheckCondition;
 	}
 	
 	public String getTemplateName() {

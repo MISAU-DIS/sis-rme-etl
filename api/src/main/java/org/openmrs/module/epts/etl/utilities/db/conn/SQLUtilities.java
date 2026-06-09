@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
+import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.datasource.SqlFunctionInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
@@ -1978,6 +1979,52 @@ public class SQLUtilities {
 		return columnDef.matches(regex);
 	}
 	
+	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
+	        List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+	        throws FieldAvaliableInMultipleDataSources, DBException {
+		
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString();
+		
+		List<Object> resolvedValues = new ArrayList<>();
+		
+		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
+		
+		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
+		
+		for (String element : srcObjectConditionElements) {
+			
+			try {
+				String adjustedElement = element.replace(")", "").replace("(", "").strip().trim();
+				
+				if (!isValidQueryColumnDefinition(adjustedElement)) {
+					continue;
+				}
+				
+				FieldsMapping map = FieldsMapping.fastCreate(adjustedElement,
+				    FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+				
+				if (!map.hasDataSourceName()) {
+					continue;
+				}
+				
+				FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
+				    avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
+				
+				Object resolvedValue = valueInfo.getTransformedValue();
+				
+				query = replaceFirstLiteralTokenWithQuestionMark(query, adjustedElement);
+				
+				resolvedValues.add(resolvedValue);
+				
+			}
+			catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
+				continue;
+			}
+		}
+		
+		return new PreparedQueryInfo(query, resolvedValues);
+	}
+	
 	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
 	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		
@@ -2009,6 +2056,63 @@ public class SQLUtilities {
 				continue;
 			}
 			
+		}
+		
+		return query;
+	}
+	
+	private static String replaceFirstLiteralTokenWithQuestionMark(String query, String token) {
+		
+		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token) + "(?![a-zA-Z0-9_\\.])");
+		
+		Matcher matcher = pattern.matcher(query);
+		
+		if (matcher.find()) {
+			return matcher.replaceFirst("?");
+		}
+		
+		return query;
+	}
+	
+	public static String replaceFirstParameterOccurrence(String query, String paramName) {
+		
+		String token = "@(" + paramName + ")";
+		
+		int idx = query.indexOf(token);
+		
+		if (idx >= 0) {
+			return query.substring(0, idx) + "?" + query.substring(idx + token.length());
+		}
+		
+		token = "@" + paramName;
+		
+		idx = query.indexOf(token);
+		
+		if (idx >= 0) {
+			return query.substring(0, idx) + "?" + query.substring(idx + token.length());
+		}
+		
+		return query;
+	}
+	
+	public static String replaceParameterWithValue(String query, String paramName, Object value) {
+		
+		String replacement = value.toString();
+		
+		String token = "@(" + paramName + ")";
+		
+		int idx = query.indexOf(token);
+		
+		if (idx >= 0) {
+			return query.substring(0, idx) + replacement + query.substring(idx + token.length());
+		}
+		
+		token = "@" + paramName;
+		
+		idx = query.indexOf(token);
+		
+		if (idx >= 0) {
+			return query.substring(0, idx) + replacement + query.substring(idx + token.length());
 		}
 		
 		return query;

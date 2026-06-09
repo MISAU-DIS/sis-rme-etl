@@ -177,9 +177,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration implements
 			prepare(avaliableSrcObjects, srcConn);
 		}
 		
-		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery()
-		        .cloneAndLoadValues(processor, srcObject, dstObject, avaliableSrcObjects, srcConn)
-		        .query(processor.getEngine(), srcConn);
+		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject,
+		    avaliableSrcObjects, srcConn);
 		
 		if (utilities.listHasNoElement(list)) {
 			return null;

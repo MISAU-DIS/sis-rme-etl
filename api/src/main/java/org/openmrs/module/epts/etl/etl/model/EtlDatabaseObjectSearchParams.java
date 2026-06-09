@@ -7,8 +7,10 @@ import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
+import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -111,14 +113,15 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		
 		if (utilities.stringHasValue(extraJoinQuery)) {
 			PreparedQuery pQ = PreparedQuery.prepare(QueryDataSourceConfig.fastCreate(extraJoinQuery, getSrcConf()),
-			    getConfig().getRelatedEtlConf(), collectDataSourceObjects(parentObject, auxDataSourceObjects), true,
-			    DbmsType.determineFromConnection(srcConn));
+			    getConfig().getRelatedEtlConf(),
+			    EtlDataSource.extractDataSourceFromObjects(collectDataSourceObjects(parentObject, auxDataSourceObjects)),
+			    true, DbmsType.determineFromConnection(srcConn));
 			
-			List<Object> paramsAsList = pQ.generateQueryParameters();
+			PreparedQueryInfo pq = pQ.generatePreparedQuery(null, parentObject, parentObject, auxDataSourceObjects, srcConn);
 			
-			Object[] params = paramsAsList != null ? paramsAsList.toArray() : null;
+			Object[] params = pq.getParametersAsArray();
 			
-			extraJoinQuery = pQ.generatePreparedQuery();
+			extraJoinQuery = pQ.getQuery();
 			
 			searchClauses.addToParameters(params);
 		}
