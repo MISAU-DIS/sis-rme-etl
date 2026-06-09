@@ -73,6 +73,10 @@ The process configuration file is the core element of the application. Each proc
   - *LOG* – The exception is logged and processing continues with the next record.
   - *MARK_RECORD_AS_FAILED* – The record is marked as failed and processing continues.
   - *ABORT_PROCESS* – The exception is propagated and the ETL process is interrupted.
+- *defaultSourceTable*: Defines the source table that should be used as the default source context when the ETL engine needs to create or transform records that do not originate from an actual source table.
+
+  This property is primarily used by on-demand mechanisms such as *PARENT_ON_DEMAND_TRANSFORMER* and *DEFAULT_PARENT_ON_DEMAND_TRANSFORMER*. When an on-demand record must be created and no corresponding source record exists in the source database, the ETL engine uses the table specified in *defaultSourceTable* as the source configuration for the generated record.
+  The default source table provides the transformation context required by the ETL engine, including access to available data sources, parameters, relationship resolution, and field mappings.
        
 ## The Database configuration
 This section defines the database connection settings used by the ETL process. It supports configuration for both the source database (*srcConnConf*) and the destination database (*dstConnConf*).
