@@ -423,7 +423,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	}
 	
 	@Override
-	public ActionOnEtlIssue onMissingMapping() {
+	public ActionOnEtlIssue unmappedFieldBehavior() {
 		return ActionOnEtlIssue.ABORT_PROCESS;
 	}
 }

@@ -374,7 +374,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 	
 	@Override
-	public ActionOnEtlIssue onMissingMapping() {
+	public ActionOnEtlIssue unmappedFieldBehavior() {
 		return ActionOnEtlIssue.IGNORE;
 	}
 	
