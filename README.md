@@ -56,6 +56,7 @@ The process configuration file is the core element of the application. Each proc
   - *AS_SCHEMA_DEFINED* – The ETL process respects the auto-increment behavior defined in the schema (default).
   - *IGNORE_SCHEMA_DEFINITION* – The ETL process ignores the schema definition and manually controls primary key generation.
   This value can be overridden at the ETL item configuration level.
+- defaultFieldValues*: Defines a global set of default values to be applied when the ETL engine needs to create default records in the destination database;
 - *primaryKeyInitialIncrementValue*: A numeric value added to the primary key of the first destination record across all configured tables. This property cannot be used when *autoIncrementHandlingType* is set to *AS_SCHEMA_DEFINED*. If provided without explicitly setting *autoIncrementHandlingType*, the value will default to *IGNORE_SCHEMA_DEFINITION*. This setting can be overridden at the *EtlItemConfiguration* or *DstConf* level.
 - *dynamicSrcConf*: Enables dynamic configuration generation based on data stored in a database table. This allows a single configuration file to act as a template that is expanded into multiple configurations using table records. This is particularly useful when processing multiple source databases or environments dynamically.
 - *finalizer*: Defines additional tasks to be executed after the process has completed.
@@ -218,6 +219,28 @@ Validators allow dynamic validation of data, configuration values, or database s
     }
   ]
 ```
+## Default Fields Values
+Defines a global set of default values to be applied when the ETL engine needs to create default records in the destination database.
+
+These default records are typically created when a record being transformed depends on a parent record that does not yet exist in the destination database. In such cases, the ETL engine may create a placeholder parent record to preserve referential integrity and allow the transformation process to continue.
+
+Records created using these default values are usually considered inconsistent or non-authoritative and should not be treated as reliable business data. Therefore, the configured values should explicitly mark them as inactive, voided, retired, or otherwise invalid according to the destination data model.
+
+### Example:
+```
+{
+   "defaultFieldValues":{
+      "voided":1,
+      "date_voided":"1975-01-01",
+      "void_reason":"Default Record",
+      "retired":1,
+      "date_retired":"1975-01-01",
+      "retire_reason":"Default Record"
+   }
+}
+```
+
+In this example, any default record created by the ETL process will be marked as voided or retired, ensuring that it is not interpreted as valid production data.
 
 
 ## The Operation configuration
@@ -780,7 +803,17 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
 		  - The field *visit_type_id* receives the constant value *42*
 		  - The field *location_id* uses the dynamic parameter *@migration_location_id*
 		  - The fields *date_stopped* and *indication_concept_id* are set to null
+    - **PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(...)**: Specialized version of **PARENT_ON_DEMAND_TRANSFORMER** that enables the use of global default field values when creating parent records on demand.
 
+      This transformer follows the same configuration format and behavior as **PARENT_ON_DEMAND_TRANSFORMER**, but automatically enables the use of default values for destination fields that are not explicitly mapped.
+
+      Internally, it applies: unmapped_field_behavior:USE_DEFAULT
+ 
+      This allows the ETL engine to populate missing parent fields using values defined in the global *defaultFieldValues* configuration.
+
+      This transformer is especially useful when creating default or placeholder parent records in the destination database, where some required fields may not be explicitly provided but must still receive predefined values.
+
+      For full parameter details, refer to **PARENT_ON_DEMAND_TRANSFORMER**.
     - **DATE_TRANSFORMER(input:valueOrTransformer,operation:operationName,input_format:format,output_format:format,amount:number,unit:unitName,on_invalid:behavior)**  
   		Performs date and datetime transformations. It can parse string values into dates, format dates as strings, and apply basic date operations such as adding or subtracting days, months, years, hours, minutes, or seconds.
   
@@ -864,8 +897,8 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
          "prefferredDataSource":[
             
          ],
-         "ignoreUnmappedFields":"",
-		 "srcObjectCondition":""
+         "unmappedFieldBehavior":"",
+         "srcObjectCondition":"",
          "dstType":"",
          "includeAllFieldsFromDataSource":"",
          "autoIncrementHandlingType":"",
@@ -876,12 +909,12 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
                "srcField":"",
                "dstField":"",
                "defaultValue":"",
-			   "mapToNullValue":"",
-               "dataType": "",
-               "overrideTriggerValue": "",
- 			   "nullValueBehavior":"",
+               "mapToNullValue":"",
+               "dataType":"",
+               "overrideTriggerValue":"",
+               "nullValueBehavior":"",
                "skipRelationshipResolution":"",
-               "transformer": "",	
+               "transformer":""
             }
          ],
          "joinFields":[
@@ -904,7 +937,17 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
 Bellow is the explanation for each field:
 - **tableName** the destination table name;
 - **prefferredDataSource** a comma separated list of tokens representing the data sources names from the "srcConf" in order of preference.  This is important when it comes to auto-mapping, if a certain dst field is present in multiple datasources. If there is only one datasource or if each field in the dst table appears only in one datasource, then this element could be omitted.
-- **ignoreUnmappedFields** if there are fields on the dst that were not configured manually and could  not be resolved automatically then the application will fail. To avoid that, then set this field to true;
+- **unmappedFieldBehavior**: Defines the behavior to be applied when a destination field cannot be populated because no explicit mapping exists and the ETL engine is unable to automatically determine a suitable source field.
+
+  This setting is evaluated during the transformation phase whenever a destination field remains unmapped after all configured mappings and automatic field resolution rules have been applied.
+
+  Supported values:
+
+  - *ABORT_PROCESS* – The ETL process is interrupted and an exception is raised. This option is recommended when all destination fields are considered mandatory and any missing mapping should be treated as a configuration error.
+
+  - *IGNORE* – The unmapped field is ignored. No value is assigned to the field and the ETL process continues normally.
+
+  - *USE_DEFAULT* – The ETL engine attempts to populate the field using the values defined in the global *defaultFieldValues* configuration. If a matching default value exists for the destination field, that value will be used; otherwise the field will remain unset.
 - **srcObjectCondition**: An optional condition used to select the appropriate source object(s) from the data source. If present, the src objects returned from the SrcConf will be filtered. Only the objects that satisfy this condition will be processed within the etl process.
 -  **dstType** the destination type for this specific dstConf. If not present will be applied the "dstType" from operationConfiguration;
 - **includeAllFieldsFromDataSource** If true, all the fields from all the data sources in "srcConf" will be included on the destination table (if it is automatically generated by the application); in contrast, only the mapped fields will be included on the destination table.
