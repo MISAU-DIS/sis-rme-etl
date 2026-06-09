@@ -15,7 +15,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.JavaObjectFieldsValuesGenerator;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -26,6 +26,7 @@ import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -35,7 +36,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
-public class ObjectDataSource extends AbstractEtlDataConfiguration implements EtlAdditionalDataSource, EtlSrcConf, EtlTranformTarget {
+public class ObjectDataSource extends AbstractEtlDataConfiguration implements EtlAdditionalDataSource, EtlSrcConf, EtlTransformTarget {
 	
 	private String name;
 	
@@ -67,15 +68,31 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	
 	private List<FieldsMapping> allMapping;
 	
-	private Boolean ignoreUnmappedFields;
-	
 	private ActionOnEtlIssue onMultipleDataSourceForSameMapping;
 	
 	private Boolean loadedDataSourceInfo;
 	
+	private ActionOnEtlIssue unmappedFieldBehavior;
+	
 	public ObjectDataSource() {
-		this.ignoreUnmappedFields = true;
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
+	}
+	
+	public void setUnmappedFieldBehavior(ActionOnEtlIssue unmappedFieldBehavior) {
+		if (unmappedFieldBehavior != null && !unmappedFieldBehavior.allowedOnMissingFieldsMapping()) {
+			throw new EtlConfException("Value not allowed unmappedFieldBehavior [" + unmappedFieldBehavior + "]");
+		}
+		
+		this.unmappedFieldBehavior = unmappedFieldBehavior;
+	}
+	
+	public ActionOnEtlIssue getUnmappedFieldBehavior() {
+		return unmappedFieldBehavior;
+	}
+	
+	@Override
+	public ActionOnEtlIssue unmappedFieldBehavior() {
+		return getUnmappedFieldBehavior();
 	}
 	
 	@Override
@@ -164,6 +181,10 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	public synchronized void fullLoad(Connection conn) throws DBException {
 		if (isFullLoaded()) {
 			return;
+		}
+		
+		if (!this.hasUnmappedFieldBehavior()) {
+			this.setUnmappedFieldBehavior(ActionOnEtlIssue.IGNORE);
 		}
 		
 		this.loadDataSourceInfo(conn);
@@ -481,11 +502,6 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	}
 	
 	@Override
-	public Boolean isIgnoreUnmappedFields() {
-		return ignoreUnmappedFields;
-	}
-	
-	@Override
 	public SrcConf getSrcConf() {
 		return this.relatedSrcConf;
 	}
@@ -544,14 +560,6 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	@Override
 	public void setAllMapping(List<FieldsMapping> allMapping) {
 		this.allMapping = allMapping;
-	}
-	
-	public Boolean getIgnoreUnmappedFields() {
-		return ignoreUnmappedFields;
-	}
-	
-	public void setIgnoreUnmappedFields(Boolean ignoreUnmappedFields) {
-		this.ignoreUnmappedFields = ignoreUnmappedFields;
 	}
 	
 	public ActionOnEtlIssue getOnMultipleDataSourceForSameMapping() {

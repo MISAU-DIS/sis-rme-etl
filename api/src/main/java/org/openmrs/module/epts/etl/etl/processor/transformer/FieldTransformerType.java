@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -24,6 +24,9 @@ public enum FieldTransformerType {
 	PARENT_ON_DEMAND_TRANSFORMER(
 	        ParentOnDemandLoadTransformer.class.getCanonicalName(),
 	        ParentOnDemandLoadTransformer::getInstance),
+	PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(
+	        ParentOnDemandLoadWithDefaultsTransformer.class.getCanonicalName(),
+	        ParentOnDemandLoadWithDefaultsTransformer::getInstance),
 	DATE_TRANSFORMER(DateFieldTransformer.class.getCanonicalName(), DateFieldTransformer::getInstance),
 	CUSTOM_TRANSFORMER(null, null);
 	
@@ -74,6 +77,10 @@ public enum FieldTransformerType {
 		return this == PARENT_ON_DEMAND_TRANSFORMER;
 	}
 	
+	public boolean isParentOnDemandWithDefaults() {
+		return this == PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER;
+	}
+	
 	public boolean isCustom() {
 		return this == CUSTOM_TRANSFORMER;
 	}
@@ -86,7 +93,8 @@ public enum FieldTransformerType {
 		
 		return METHOD_CACHE.computeIfAbsent(clazz.getName(), k -> {
 			try {
-				return clazz.getDeclaredMethod("getInstance", List.class, EtlTranformTarget.class, TransformableField.class);
+				return clazz.getDeclaredMethod("getInstance", List.class, EtlTransformTarget.class,
+				    TransformableField.class);
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
@@ -94,7 +102,7 @@ public enum FieldTransformerType {
 		});
 	}
 	
-	public EtlFieldTransformer create(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	public EtlFieldTransformer create(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
 	        TransformableField field, Connection conn) {
 		
 		if (this.isCustom()) {
@@ -173,7 +181,7 @@ public enum FieldTransformerType {
 		throw new IllegalArgumentException("Unknown transformer: " + def);
 	}
 	
-	public static void tryToLoadTransformerToField(TransformableField field, EtlTranformTarget EtlTransformTarget,
+	public static void tryToLoadTransformerToField(TransformableField field, EtlTransformTarget EtlTransformTarget,
 	        Connection conn) {
 		
 		if (field.getTransformerInstance() != null)

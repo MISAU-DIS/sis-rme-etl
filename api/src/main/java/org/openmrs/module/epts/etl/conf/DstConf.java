@@ -12,7 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransf
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ParentOnDemandLoadTransformer;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
@@ -37,7 +38,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class DstConf extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf, EtlTranformTarget, EtlItemConfigurationComponent {
+public class DstConf extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf, EtlTransformTarget, EtlItemConfigurationComponent {
 	
 	/*
 	 * The user defined joinFields with #getSrcConf()
@@ -70,7 +71,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	private List<EtlDataSource> allPrefferredDataSource;
 	
-	private Boolean ignoreUnmappedFields;
+	private ActionOnEtlIssue onMissingMapping;
 	
 	private Boolean automaticalyGenerated;
 	
@@ -128,6 +129,23 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		this.ensureTargetDefaultObjectInitialized(srcConn, dstConn);
 		
 		return this.targetDefaultObject;
+	}
+	
+	public ActionOnEtlIssue getUnmappedFieldBehavior() {
+		return onMissingMapping;
+	}
+	
+	public void setUnmappedFieldBehavior(ActionOnEtlIssue onMissingMapping) {
+		if (onMissingMapping != null && !onMissingMapping.allowedOnMissingFieldsMapping()) {
+			throw new EtlConfException("Value not allowed unmappedFieldBehavior [" + onMissingMapping + "]");
+		}
+		
+		this.onMissingMapping = onMissingMapping;
+	}
+	
+	@Override
+	public ActionOnEtlIssue unmappedFieldBehavior() {
+		return getUnmappedFieldBehavior();
 	}
 	
 	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {
@@ -292,15 +310,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	public void setAutomaticalyGenerated(Boolean automaticalyGenerated) {
 		this.automaticalyGenerated = automaticalyGenerated;
-	}
-	
-	@Override
-	public Boolean isIgnoreUnmappedFields() {
-		return isTrue(ignoreUnmappedFields);
-	}
-	
-	public void setIgnoreUnmappedFields(Boolean ignoreUnmappedFields) {
-		this.ignoreUnmappedFields = ignoreUnmappedFields;
 	}
 	
 	public List<String> getPrefferredDataSource() {
@@ -698,6 +707,10 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		super.loadOwnElements(schemaInfo, conn);
 		
+		if (!this.hasUnmappedFieldBehavior()) {
+			this.setUnmappedFieldBehavior(ActionOnEtlIssue.ABORT_PROCESS);
+		}
+		
 		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
 		
 		loadJoinFields(conn);
@@ -1092,7 +1105,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		this.setJoinFields(toCloneFrom.getJoinFields());
 		this.setMapping(toCloneFrom.getMapping());
 		this.setPrefferredDataSource(toCloneFrom.getPrefferredDataSource());
-		this.setIgnoreUnmappedFields(toCloneFrom.isIgnoreUnmappedFields());
+		this.setUnmappedFieldBehavior(toCloneFrom.unmappedFieldBehavior());
 		this.setIgnorableFields(toCloneFrom.getIgnorableFields());
 		this.setDstType(toCloneFrom.getDstType());
 		this.setTransformer(toCloneFrom.getTransformer());
@@ -1228,5 +1241,4 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			super.tryToLoadSchemaInfo(schemaInfoSrc, conn);
 		}
 	}
-	
 }

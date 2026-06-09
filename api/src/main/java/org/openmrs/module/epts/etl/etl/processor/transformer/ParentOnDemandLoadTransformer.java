@@ -16,7 +16,7 @@ import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
@@ -193,7 +193,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 	
 	public static ParentOnDemandLoadTransformer getInstance(List<Object> parameters,
-	        EtlTranformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+	        EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
 		
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 		
@@ -735,9 +735,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 		
 		for (DstConf dstC : conf.getDstConf()) {
-			if (this.onDemandInfo.ignoreUnmappedFields()) {
-				dstC.setIgnoreUnmappedFields(true);
-			}
+			dstC.setUnmappedFieldBehavior(this.onDemandInfo.unmappedFieldBehavior());
 			
 			dstC.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.USE_LAST);
 		}

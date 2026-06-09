@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
@@ -75,7 +75,7 @@ public class FieldsMapping extends Field implements TransformableField {
 	
 	private EtlDataSource dataSource;
 	
-	private EtlTranformTarget targetObject;
+	private EtlTransformTarget targetObject;
 	
 	private Boolean manuallyConfigured;
 	
@@ -142,11 +142,11 @@ public class FieldsMapping extends Field implements TransformableField {
 		this.nullValueBehavior = nullValueBehavior;
 	}
 	
-	public EtlTranformTarget getTargetObject() {
+	public EtlTransformTarget getTargetObject() {
 		return targetObject;
 	}
 	
-	public void setTargetObject(EtlTranformTarget targetObject) {
+	public void setTargetObject(EtlTransformTarget targetObject) {
 		this.targetObject = targetObject;
 	}
 	
@@ -204,8 +204,8 @@ public class FieldsMapping extends Field implements TransformableField {
 		FieldsMapping f = null;
 		
 		if (dsF.hasTransformer()) {
-			if (dsF.getParent() instanceof EtlTranformTarget) {
-				f = FieldsMapping.fastCreateWithTransformer((EtlTranformTarget) dsF.getParent(), dsF.getDstField(),
+			if (dsF.getParent() instanceof EtlTransformTarget) {
+				f = FieldsMapping.fastCreateWithTransformer((EtlTransformTarget) dsF.getParent(), dsF.getDstField(),
 				    dsF.getTransformer(), conn);
 			} else {
 				throw new ForbiddenOperationException("Only a targed parent is accepted!!");
@@ -244,7 +244,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		
 	}
 	
-	private static FieldsMapping fastCreateWithTransformer(EtlTranformTarget target, String dstField, String transformer,
+	private static FieldsMapping fastCreateWithTransformer(EtlTransformTarget target, String dstField, String transformer,
 	        Connection conn) {
 		FieldsMapping fm = FieldsMapping.fastCreate(dstField, conn);
 		
@@ -301,7 +301,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		return fastCreate(fieldName, fieldName, loadTransformer, conn);
 	}
 	
-	public static FieldsMapping createSimpleFieldsMapping(String fieldName, Object value, EtlTranformTarget target,
+	public static FieldsMapping createSimpleFieldsMapping(String fieldName, Object value, EtlTransformTarget target,
 	        Connection conn) {
 		FieldsMapping map = FieldsMapping.fastCreate(fieldName, conn);
 		
@@ -313,7 +313,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		return map;
 	}
 	
-	public static FieldsMapping fastCreate(String fullFieldName, String dstField, EtlTranformTarget target, Connection conn)
+	public static FieldsMapping fastCreate(String fullFieldName, String dstField, EtlTransformTarget target, Connection conn)
 	        throws FieldAvaliableInMultipleDataSources, DBException {
 		FieldsMapping fieldMap = FieldsMapping.fastCreate(fullFieldName, dstField, false, conn);
 		
@@ -323,13 +323,13 @@ public class FieldsMapping extends Field implements TransformableField {
 		
 	}
 	
-	public static FieldsMapping fastCreate(String fullFieldName, EtlTranformTarget target, Connection conn)
+	public static FieldsMapping fastCreate(String fullFieldName, EtlTransformTarget target, Connection conn)
 	        throws FieldAvaliableInMultipleDataSources, DBException {
 		return fastCreate(fullFieldName, null, target, conn);
 		
 	}
 	
-	private void tryToLoadDataSourceAndTransformer(String dataSourceName, EtlTranformTarget target, Connection conn)
+	private void tryToLoadDataSourceAndTransformer(String dataSourceName, EtlTransformTarget target, Connection conn)
 	        throws FieldAvaliableInMultipleDataSources, DBException {
 		
 		if (dataSourceName != null) {
@@ -356,7 +356,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		this.tryToLoadTransformer(target, conn);
 	}
 	
-	public void fullLoad(EtlTranformTarget target, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public void fullLoad(EtlTransformTarget target, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		this.copyFrom(fastCreate(this.srcField, this.dstField, target, conn));
 		
 	}
@@ -487,7 +487,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		return f;
 	}
 	
-	public static List<Field> parseAllToField(List<FieldsMapping> toParse, EtlTranformTarget target,
+	public static List<Field> parseAllToField(List<FieldsMapping> toParse, EtlTransformTarget target,
 	        List<EtlDataSource> dataSource, Connection conn) {
 		List<Field> parsed = new ArrayList<>(toParse.size());
 		
@@ -560,7 +560,7 @@ public class FieldsMapping extends Field implements TransformableField {
 		
 	}
 	
-	public static FieldsMapping converteFromEtlField(EtlField field, EtlTranformTarget target, Connection conn) {
+	public static FieldsMapping converteFromEtlField(EtlField field, EtlTransformTarget target, Connection conn) {
 		
 		if (field.getSrcDataSource() == null) {
 			throw new ForbiddenOperationException("The EtlField " + field.getName() + " has no datasource!");

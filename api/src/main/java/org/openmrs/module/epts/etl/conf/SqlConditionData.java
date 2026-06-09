@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
@@ -43,7 +43,7 @@ public class SqlConditionData {
 		this.conditionElements = conditionElements;
 	}
 	
-	public static SqlConditionData initializeDynamicSqlConditionElements(EtlTranformTarget transformTarget, String sql,
+	public static SqlConditionData initializeDynamicSqlConditionElements(EtlTransformTarget transformTarget, String sql,
 	        Connection srcConn, Connection dstConn) throws DBException {
 		
 		String parametrizedOnDemandCheckCondition = sql;

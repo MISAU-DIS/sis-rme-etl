@@ -11,7 +11,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -30,7 +30,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
-public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlAdditionalDataSource, EtlSrcConf, EtlTranformTarget {
+public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlAdditionalDataSource, EtlSrcConf, EtlTransformTarget {
 	
 	private final Object LOCK = new Object();
 	
@@ -359,11 +359,6 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	}
 	
 	@Override
-	public Boolean isIgnoreUnmappedFields() {
-		return false;
-	}
-	
-	@Override
 	public SrcConf getSrcConf() {
 		return this.relatedSrcConf;
 	}
@@ -425,5 +420,10 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 	@Override
 	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
 		throw new ForbiddenOperationException("Default Target Object is not Allowed!");
+	}
+	
+	@Override
+	public ActionOnEtlIssue onMissingMapping() {
+		return ActionOnEtlIssue.ABORT_PROCESS;
 	}
 }

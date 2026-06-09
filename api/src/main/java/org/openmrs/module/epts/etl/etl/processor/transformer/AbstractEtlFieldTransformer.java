@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -20,7 +20,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	
 	protected List<Object> parameters;
 	
-	protected EtlTranformTarget relatedEtlTransformTarget;
+	protected EtlTransformTarget relatedEtlTransformTarget;
 	
 	protected TransformableField field;
 	
@@ -28,14 +28,14 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	
 	protected FieldsMapping input;
 	
-	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTargedConf,
+	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 	    TransformableField field) {
 		this.parameters = parameters;
 		this.relatedEtlTransformTarget = relatedEtlTargedConf;
 		this.field = field;
 	}
 	
-	public static String buildCacheKey(EtlTranformTarget dstConf, TransformableField field, List<Object> parameters) {
+	public static String buildCacheKey(EtlTransformTarget dstConf, TransformableField field, List<Object> parameters) {
 		String params = parameters != null && !parameters.isEmpty()
 		        ? ("|" + parameters.stream().map(Object::toString).collect(Collectors.joining("|")))
 		        : null;
@@ -55,7 +55,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		this.input = input;
 	}
 	
-	public EtlTranformTarget getRelatedEtlTransformTarget() {
+	public EtlTransformTarget getRelatedEtlTransformTarget() {
 		return relatedEtlTransformTarget;
 	}
 	

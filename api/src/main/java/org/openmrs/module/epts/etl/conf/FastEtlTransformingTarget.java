@@ -8,7 +8,7 @@ import java.util.Map;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -20,7 +20,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class FastEtlTransformingTarget implements EtlTranformTarget {
+public class FastEtlTransformingTarget implements EtlTransformTarget {
 	
 	private List<EtlDataSource> allAvaliableDataSource;
 	
@@ -202,11 +202,6 @@ public class FastEtlTransformingTarget implements EtlTranformTarget {
 	}
 	
 	@Override
-	public Boolean isIgnoreUnmappedFields() {
-		return false;
-	}
-	
-	@Override
 	public List<FieldsMapping> getAllMapping() {
 		return null;
 	}
@@ -288,6 +283,11 @@ public class FastEtlTransformingTarget implements EtlTranformTarget {
 	@Override
 	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
 		return null;
+	}
+	
+	@Override
+	public ActionOnEtlIssue unmappedFieldBehavior() {
+		return ActionOnEtlIssue.IGNORE;
 	}
 	
 }

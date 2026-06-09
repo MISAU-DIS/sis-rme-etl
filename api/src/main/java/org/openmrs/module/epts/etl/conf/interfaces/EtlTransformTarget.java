@@ -19,7 +19,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfigura
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
-public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
+public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration {
 	
 	void loadDataSourceInfo(Connection conn) throws DBException;
 	
@@ -32,8 +32,6 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 	void setAllAvaliableDataSource(List<EtlDataSource> ds);
 	
 	ActionOnEtlIssue onMultipleDataSourceForSameMapping();
-	
-	Boolean isIgnoreUnmappedFields();
 	
 	SrcConf getSrcConf();
 	
@@ -53,13 +51,10 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 	
 	EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException;
 	
-	default Boolean ignoreUnmappedFields() {
-		try {
-			return this.isIgnoreUnmappedFields();
-		}
-		catch (NullPointerException e) {
-			return false;
-		}
+	ActionOnEtlIssue unmappedFieldBehavior();
+	
+	default Boolean hasUnmappedFieldBehavior() {
+		return this.unmappedFieldBehavior() != null;
 	}
 	
 	default Boolean hasSrcObjectCondition() {
@@ -364,11 +359,15 @@ public interface EtlTranformTarget extends EtlDatabaseObjectConfiguration {
 		}
 		
 		if (qtyOccurences == 0 && !hasTransformer) {
-			if (ignoreUnmappedFields()) {
-				EtlDatabaseObject defaultObject = getTargetDefaultObject(conn, conn);
-				
-				if (defaultObject != null) {
-					fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+			if (hasUnmappedFieldBehavior()) {
+				if (unmappedFieldBehavior().useDefaultOnMissingMapping()) {
+					EtlDatabaseObject defaultObject = getTargetDefaultObject(conn, conn);
+					
+					if (defaultObject != null) {
+						fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+					}
+				} else if (!unmappedFieldBehavior().ignore()) {
+					throw new FieldNotAvaliableInAnyDataSource(fm.getSrcField());
 				}
 			} else {
 				throw new FieldNotAvaliableInAnyDataSource(fm.getSrcField());

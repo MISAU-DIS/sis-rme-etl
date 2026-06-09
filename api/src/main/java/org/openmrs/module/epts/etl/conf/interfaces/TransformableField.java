@@ -152,7 +152,7 @@ public interface TransformableField {
 		return utilities.stringHasValue(this.getDataType());
 	}
 	
-	default void loadType(EtlTranformTarget dstConf, EtlDataSource dataSource, Connection conn) {
+	default void loadType(EtlTransformTarget dstConf, EtlDataSource dataSource, Connection conn) {
 		tryToLoadTransformer(dstConf, conn);
 		
 		if (this.hasDataType()) {
@@ -209,7 +209,7 @@ public interface TransformableField {
 		return utilities.stringHasValue(getTransformer());
 	}
 	
-	default void tryToLoadTransformer(EtlTranformTarget dstConf, Connection conn) {
+	default void tryToLoadTransformer(EtlTransformTarget dstConf, Connection conn) {
 		FieldTransformerType.tryToLoadTransformerToField(this, dstConf, conn);
 	}
 	

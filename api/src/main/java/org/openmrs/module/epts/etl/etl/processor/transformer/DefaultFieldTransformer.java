@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -43,12 +43,12 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private static DefaultFieldTransformer INSTANCE;
 	
-	private DefaultFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	private DefaultFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
 	    TransformableField field) {
 		super(parameters, relatedEtlTransformTarget, field);
 	}
 	
-	public static DefaultFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	public static DefaultFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
 	        TransformableField field, Connection conn) {
 		
 		if (INSTANCE == null) {

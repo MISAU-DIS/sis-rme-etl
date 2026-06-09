@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -58,7 +59,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	
 	private List<Object> originalParameters;
 	
-	private Boolean ignoreUnmappedFields;
+	private ActionOnEtlIssue unmappedFieldBehavior;
 	
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
 	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
@@ -128,12 +129,12 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 						
 						this.templateName = srcFieldOrValue;
-					} else if (dstField.equals("ignore_unmapped_fields")) {
+					} else if (dstField.equals("unmapped_field_behavior")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
-							throw new ForbiddenOperationException("The template has no value");
+							throw new ForbiddenOperationException("The unmapped_field_behavior has no value");
 						}
 						
-						this.ignoreUnmappedFields = utilities.parseBoolean(srcFieldOrValue);
+						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue);
 					} else if (dstField.startsWith("template_param_")) {
 						
 						String paramName = dstField.substring("template_param_".length());
@@ -175,16 +176,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		}
 	}
 	
-	public Boolean getIgnoreUnmappedFields() {
-		return ignoreUnmappedFields;
-	}
-	
-	public void setIgnoreUnmappedFields(Boolean ignoreUnmappedFields) {
-		this.ignoreUnmappedFields = ignoreUnmappedFields;
-	}
-	
-	public Boolean ignoreUnmappedFields() {
-		return isTrue(ignoreUnmappedFields);
+	public ActionOnEtlIssue unmappedFieldBehavior() {
+		return unmappedFieldBehavior;
 	}
 	
 	private boolean isOverrideField(String fieldData) {

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -41,7 +41,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private List<String> rawParameterDefinitions;
 	
-	public DateFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTargedConf, TransformableField field,
+	public DateFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf, TransformableField field,
 	    Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		
 		super(parameters, relatedEtlTargedConf, field);
@@ -135,7 +135,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 	}
 	
-	public static DateFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTargedConf,
+	public static DateFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 	        TransformableField field, Connection conn) {
 		
 		String key = buildCacheKey(relatedEtlTargedConf, field, parameters);

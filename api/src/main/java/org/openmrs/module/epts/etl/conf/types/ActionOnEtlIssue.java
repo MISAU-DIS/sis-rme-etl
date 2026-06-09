@@ -33,6 +33,8 @@ public enum ActionOnEtlIssue {
 	
 	public static final ActionOnEtlIssue[] ON_MISSING_MAPPING = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, USE_INPUT, IGNORE };
 	
+	public static final ActionOnEtlIssue[] ON_MISSING_FIELDS_MAPPING = { ABORT_PROCESS, IGNORE, USE_DEFAULT };
+	
 	public static final ActionOnEtlIssue[] IN_SAME_LEVEL = { USE_DEFAULT, USE_INPUT, SET_TO_NULL, USE_LAST, USE_FIRST,
 	        CREATE_ON_DST };
 	
@@ -102,6 +104,10 @@ public enum ActionOnEtlIssue {
 	
 	public boolean allowedOnMissingMapping() {
 		return utilities.existOnArray(ON_MISSING_MAPPING, this);
+	}
+	
+	public boolean allowedOnMissingFieldsMapping() {
+		return utilities.existOnArray(ON_MISSING_FIELDS_MAPPING, this);
 	}
 	
 	public boolean comparable(ActionOnEtlIssue otherAction) {

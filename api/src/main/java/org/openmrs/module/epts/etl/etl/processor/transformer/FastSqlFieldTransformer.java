@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -59,7 +59,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private volatile QueryDataSourceConfig dataSourceConfig;
 	
-	public FastSqlFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	public FastSqlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
 	    TransformableField field, Connection conn) {
 		
 		super(parameters, relatedEtlTransformTarget, field);
@@ -79,7 +79,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		return sqlQuery;
 	}
 	
-	public static FastSqlFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	public static FastSqlFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
 	        TransformableField field, Connection conn) {
 		
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);

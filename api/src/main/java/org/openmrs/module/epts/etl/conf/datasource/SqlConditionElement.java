@@ -2,7 +2,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -41,7 +41,7 @@ public class SqlConditionElement {
 	}
 	
 	public void fullLoad(
-	        EtlTranformTarget transformTarget, Connection conn)
+	        EtlTransformTarget transformTarget, Connection conn)
 	        throws FieldAvaliableInMultipleDataSources, DBException {
 		this.mappig = FieldsMapping.fastCreate(value, field, transformTarget, conn);
 	}

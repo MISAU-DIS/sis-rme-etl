@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -64,7 +64,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private final List<FieldsMapping> coalesceFields;
 	
-	public CoalesceFieldTransformer(List<Object> parameters, EtlTranformTarget EtlTransformTarget, TransformableField field,
+	public CoalesceFieldTransformer(List<Object> parameters, EtlTransformTarget EtlTransformTarget, TransformableField field,
 	    Connection conn) throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 		
 		super(parameters, EtlTransformTarget, field);
@@ -117,7 +117,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 		return coalesceFields;
 	}
 	
-	public static CoalesceFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget EtlTransformTarget,
+	public static CoalesceFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget EtlTransformTarget,
 	        TransformableField field, Connection conn) {
 		
 		if (parameters == null || parameters.size() < 2) {

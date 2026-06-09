@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -57,7 +57,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 	
 	private StringTranformerElements transformerElements;
 	
-	public StringTranformer(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget, TransformableField field,
+	public StringTranformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget, TransformableField field,
 	    Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		super(parameters, relatedEtlTransformTarget, field);
 		
@@ -96,7 +96,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		return transformationString;
 	}
 	
-	public static StringTranformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTransformTarget,
+	public static StringTranformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
 	        TransformableField field, Connection conn) {
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 		

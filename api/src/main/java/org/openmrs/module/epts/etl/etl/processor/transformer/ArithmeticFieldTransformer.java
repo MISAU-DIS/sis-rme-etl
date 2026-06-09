@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.interfaces.EtlTranformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -52,12 +52,12 @@ public class ArithmeticFieldTransformer extends AbstractEtlFieldTransformer {
 	
 	private static final Map<String, Expression> CACHE = new ConcurrentHashMap<>();
 	
-	public ArithmeticFieldTransformer(List<Object> parameters, EtlTranformTarget relatedEtlTargedConf,
+	public ArithmeticFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 	    TransformableField field) {
 		super(parameters, relatedEtlTargedConf, field);
 	}
 	
-	public static ArithmeticFieldTransformer getInstance(List<Object> parameters, EtlTranformTarget relatedEtlTargedConf,
+	public static ArithmeticFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 	        TransformableField field, Connection conn) {
 		
 		String key = buildCacheKey(relatedEtlTargedConf, field, parameters);
