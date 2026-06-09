@@ -803,7 +803,17 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
 		  - The field *visit_type_id* receives the constant value *42*
 		  - The field *location_id* uses the dynamic parameter *@migration_location_id*
 		  - The fields *date_stopped* and *indication_concept_id* are set to null
+    - **PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(...)**: Specialized version of **PARENT_ON_DEMAND_TRANSFORMER** that enables the use of global default field values when creating parent records on demand.
 
+      This transformer follows the same configuration format and behavior as **PARENT_ON_DEMAND_TRANSFORMER**, but automatically enables the use of default values for destination fields that are not explicitly mapped.
+
+      Internally, it applies: unmapped_field_behavior:USE_DEFAULT
+ 
+      This allows the ETL engine to populate missing parent fields using values defined in the global *defaultFieldValues* configuration.
+
+      This transformer is especially useful when creating default or placeholder parent records in the destination database, where some required fields may not be explicitly provided but must still receive predefined values.
+
+      For full parameter details, refer to **PARENT_ON_DEMAND_TRANSFORMER**.
     - **DATE_TRANSFORMER(input:valueOrTransformer,operation:operationName,input_format:format,output_format:format,amount:number,unit:unitName,on_invalid:behavior)**  
   		Performs date and datetime transformations. It can parse string values into dates, format dates as strings, and apply basic date operations such as adding or subtracting days, months, years, hours, minutes, or seconds.
   
