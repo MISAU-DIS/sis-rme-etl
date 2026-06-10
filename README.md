@@ -1106,6 +1106,41 @@ When a template is applied, its configuration is merged into the target element,
 
 This mechanism is especially useful for scenarios where multiple ETL items share similar configurations, differing only in specific parameters such as extraction conditions, field mappings, or filters.
 
+
+## "includeFragments" 
+
+includeFragments Allows external configuration fragments to be included at the point where they are declared.
+
+This feature is useful for splitting large ETL configuration files into smaller, independently maintained files. It is especially helpful when multiple team members need to work on different parts of the same ETL process, such as different *childItemConf* entries under a shared parent ETL item.
+
+Each fragment may define either a single configuration object or a list of configuration objects. During configuration loading, the ETL engine reads the referenced fragments and injects their content into the current configuration element.
+
+### Example:
+
+```
+{
+   "srcConf":{
+      "tableName":"my_favorite_tab"
+   },
+   "dstConf":[
+      {
+         "tableName":"main_dst_tab"
+      }
+   ],
+   "include":[
+      {
+         "target":"childItemConf",
+         "srcPath":"sync-child/*.json"
+      }
+   ]
+}
+```
+
+
+In this example, all JSON files under **sync-child/*.json** will be loaded and inserted as child item configurations.
+
+This mechanism differs from templates. Templates are intended for reusable and parameterized configuration blocks, while fragments are intended to split a large configuration into smaller files for better organization and team collaboration.
+
 ## Default configuration files templates
 In this section are listed some templates for configuration files for specific etl processes. For demo please check [this session](https://github.com/csaude/openmrs-module-epts-etl/blob/master/docs/demo/README.md#etl-quick-examples).
 
