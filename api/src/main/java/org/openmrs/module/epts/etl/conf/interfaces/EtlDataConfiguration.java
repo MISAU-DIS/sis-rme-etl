@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.DefaultEtlValidator;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlFragmentInclude;
 import org.openmrs.module.epts.etl.conf.EtlTemplateConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -50,6 +51,12 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	void setTemplate(EtlTemplateInfo template);
 	
 	List<String> getDynamicElements();
+	
+	List<EtlFragmentInclude> getInclude();
+	
+	default boolean hasInclude() {
+		return utilities.listHasElement(this.getInclude());
+	}
 	
 	default boolean hasDynamicElements() {
 		return utilities.listHasElement(this.getDynamicElements());
@@ -152,6 +159,14 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		copyFieldsFromTemplate(toCopyFrom, errorSufix);
 		
 		applyDynamicElementsIfMissing(this, templateInfo, errorSufix);
+	}
+	
+	default void applyIncludes() {
+		if (hasInclude()) {
+			for (EtlFragmentInclude i : this.getInclude()) {
+				i.include(this);
+			}
+		}
 	}
 	
 	@SuppressWarnings("unchecked")

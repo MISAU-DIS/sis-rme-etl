@@ -68,6 +68,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private String etlTemplatesFilePath;
 	
+	private String etlConfDir;
+	
 	private String originAppLocationCode;
 	
 	private EtlConfigurationSrcConf dynamicSrcConf;
@@ -198,6 +200,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	private Map<String, String> defaultFieldValues;
 	
+	private List<EtlFragmentInclude> include;
+	
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 		
@@ -215,6 +219,15 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 		this.defaultInconsistencyBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.disableDefaultObjectCreation = false;
+	}
+	
+	@Override
+	public List<EtlFragmentInclude> getInclude() {
+		return this.include;
+	}
+	
+	public void setInclude(List<EtlFragmentInclude> include) {
+		this.include = include;
 	}
 	
 	public Map<String, String> getDefaultFieldValues() {
@@ -291,6 +304,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	
 	public void setEtlTemplatesFilePath(String etlTemplatesFilePath) {
 		this.etlTemplatesFilePath = etlTemplatesFilePath;
+	}
+	
+	public String getEtlConfDir() {
+		return etlConfDir;
+	}
+	
+	public void setEtlConfDir(String etlConfDir) {
+		this.etlConfDir = etlConfDir;
 	}
 	
 	public Integer getPrimaryKeyInitialIncrementValue() {
@@ -791,6 +812,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			OpenConnection dstConn = null;
 			
 			try {
+				
+				this.applyIncludes();
+				
 				this.defaultGeneratedObjectKeyTabConf = new EtlConfigurationTableConf(
 				        EtlConfiguration.DEFAULT_GENERATED_OBJECT_KEY_TABLE_NAME, this);
 				
@@ -831,6 +855,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				if (this.etlTemplatesFilePath == null) {
 					etlTemplatesFilePath = this.getRelatedConfFile().getParent() + File.separator
 					        + DEFAULT_ETL_ELEMENTS_TEMPLATE_FILE;
+				}
+				
+				if (this.etlConfDir == null) {
+					etlConfDir = this.getRelatedConfFile().getParent();
 				}
 				
 				for (EtlOperationConfig operation : this.getOperations()) {

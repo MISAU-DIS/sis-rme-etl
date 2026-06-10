@@ -290,4 +290,9 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 		return ActionOnEtlIssue.IGNORE;
 	}
 	
+	@Override
+	public List<EtlFragmentInclude> getInclude() {
+		return null;
+	}
+	
 }

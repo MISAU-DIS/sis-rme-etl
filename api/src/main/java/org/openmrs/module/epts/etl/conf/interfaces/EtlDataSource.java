@@ -127,6 +127,8 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 	default void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
 	        Connection dstConn) throws DBException {
 		
+		this.applyIncludes();
+		
 		if (relatedParent == null)
 			throw new EtlExceptionImpl("RelatedParent cannot be null!");
 		

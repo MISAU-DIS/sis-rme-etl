@@ -86,6 +86,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	}
 	
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
+		this.applyIncludes();
 		
 		this.setRelatedEtlConfig(relatedItemConf.getRelatedEtlConf());
 		this.setParentConf(relatedItemConf);

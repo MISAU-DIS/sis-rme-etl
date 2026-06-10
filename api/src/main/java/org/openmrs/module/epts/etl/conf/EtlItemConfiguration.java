@@ -243,6 +243,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	public void init(EtlConfiguration relatedEtlConf, boolean testing, Connection srcConn, Connection dstConn)
 	        throws DBException {
 		
+		this.applyIncludes();
+		
 		this.tryToLoadFromTemplate();
 		this.setRelatedEtlConfig(relatedEtlConf);
 		this.setTesting(testing);

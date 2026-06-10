@@ -11,10 +11,21 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 	
 	private EtlTemplateInfo template;
 	
+	private List<EtlFragmentInclude> include;
+	
 	private List<String> dynamicElements;
 	
 	public EtlConfiguration getRelatedEtlConf() {
 		return relatedEtlConf;
+	}
+	
+	@Override
+	public List<EtlFragmentInclude> getInclude() {
+		return this.include;
+	}
+	
+	public void setInclude(List<EtlFragmentInclude> include) {
+		this.include = include;
 	}
 	
 	@Override
