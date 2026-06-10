@@ -175,7 +175,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration implements EtlA
 		EtlAdditionalDataSource.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 		
 		if (this.getOutputDataSource() != null) {
-			this.getOutputDataSource().init(this, etlSchemaObject, srcConn, dstConn);
+			this.getOutputDataSource().init(relatedParent, etlSchemaObject, srcConn, dstConn);
 		}
 	}
 	

@@ -106,40 +106,9 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 			tryToGenerateTableAlias(getRelatedEtlConf());
 		}
 		
-		List<EtlAdditionalDataSource> allAvaliableDataSources = this.getAvaliableExtraDataSource();
+		initAllAvaliableExtraDataSource(srcConn, dstConn);
 		
-		for (EtlAdditionalDataSource t : allAvaliableDataSources) {
-			t.init(this, getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
-			
-			if (t instanceof AbstractTableConfiguration) {
-				TableConfiguration tAsTabConf = (TableConfiguration) t;
-				
-				if (tAsTabConf.hasAlias()) {
-					tAsTabConf.setUsingManualDefinedAlias(true);
-					getRelatedEtlConf().tryToAddToBusyTableAliasName(tAsTabConf.getTableAlias());
-				} else {
-					tAsTabConf.tryToGenerateTableAlias(getRelatedEtlConf());
-				}
-				
-				getRelatedEtlConf().addConfiguredTable((AbstractTableConfiguration) t);
-			}
-		}
-		
-		if (this.hasAuxExtractTable()) {
-			for (AuxExtractTable t : this.getAuxExtractTable()) {
-				t.setRelatedEtlConfig(getRelatedEtlConf());
-				
-				t.init(this, getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
-				
-				if (t.hasAlias()) {
-					t.setUsingManualDefinedAlias(true);
-					
-					getRelatedEtlConf().tryToAddToBusyTableAliasName(t.getTableAlias());
-				} else {
-					t.tryToGenerateTableAlias(getRelatedEtlConf());
-				}
-			}
-		}
+		setInitialized(true);
 	}
 	
 	@Override
@@ -475,6 +444,9 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	@JsonIgnore
 	public List<EtlAdditionalDataSource> getAvaliableExtraDataSource() {
+		if (!isInitialized())
+			throw new EtlExceptionImpl("The SrcConf is not yet initialized!! ");
+		
 		List<EtlAdditionalDataSource> ds = new ArrayList<>();
 		
 		if (useSharedPKKey() && isFullLoaded()) {
@@ -505,6 +477,53 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		}
 		
 		return ds;
+	}
+	
+	private void initAdditionalDataSource(EtlAdditionalDataSource t, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		t.init(this, getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
+		
+		if (t instanceof AbstractTableConfiguration) {
+			TableConfiguration tAsTabConf = (TableConfiguration) t;
+			
+			if (tAsTabConf.hasAlias()) {
+				tAsTabConf.setUsingManualDefinedAlias(true);
+				getRelatedEtlConf().tryToAddToBusyTableAliasName(tAsTabConf.getTableAlias());
+			} else {
+				tAsTabConf.tryToGenerateTableAlias(getRelatedEtlConf());
+			}
+			
+			getRelatedEtlConf().addConfiguredTable((AbstractTableConfiguration) t);
+		}
+	}
+	
+	private void initAdditionalAllDataSource(List<EtlAdditionalDataSource> ds, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		
+		if (ds == null)
+			return;
+		
+		for (EtlAdditionalDataSource t : ds) {
+			initAdditionalDataSource(t, srcConn, dstConn);
+		}
+	}
+	
+	private void initAllAvaliableExtraDataSource(Connection srcConn, Connection dstConn) throws DBException {
+		if (useSharedPKKey() && isFullLoaded()) {
+			initAdditionalDataSource((EtlAdditionalDataSource) getSharedKeyRefInfo(null), srcConn, dstConn);
+		}
+		
+		initAdditionalAllDataSource(utilities.parseList(this.getExtraTableDataSource(), EtlAdditionalDataSource.class),
+		    srcConn, dstConn);
+		
+		initAdditionalAllDataSource(utilities.parseList(this.getExtraQueryDataSource(), EtlAdditionalDataSource.class),
+		    srcConn, dstConn);
+		
+		initAdditionalAllDataSource(utilities.parseList(this.getExtraObjectDataSource(), EtlAdditionalDataSource.class),
+		    srcConn, dstConn);
+		
+		initAdditionalAllDataSource(utilities.parseList(this.getExtraJsonDataSource(), EtlAdditionalDataSource.class),
+		    srcConn, dstConn);
 	}
 	
 	/**
@@ -913,19 +932,19 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> joined = new HashMap<>();
-
-	    Map<String, Object> p2 = getParentConf().retrieveAllAvailableTemplateParameters();
-
-	    if (p2 != null) {
-	        joined.putAll(p2);
-	    }
-
-	    Map<String, Object> p = EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
-
-	    if (p != null) {
-	        joined.putAll(p);
-	    }
-
-	    return joined;
+		
+		Map<String, Object> p2 = getParentConf().retrieveAllAvailableTemplateParameters();
+		
+		if (p2 != null) {
+			joined.putAll(p2);
+		}
+		
+		Map<String, Object> p = EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
+		
+		if (p != null) {
+			joined.putAll(p);
+		}
+		
+		return joined;
 	}
 }

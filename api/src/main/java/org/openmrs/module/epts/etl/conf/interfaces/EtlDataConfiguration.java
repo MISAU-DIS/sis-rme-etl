@@ -351,7 +351,9 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	}
 	
 	static String[] SAFE_FIELDS = { "joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper",
-	        "onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult" };
+	        "onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult",
+	        "relationshipResolutionStrategy", "nullValueBehavior", "manuallyConfigured", "possibleSrc", "manuallyConfigured",
+	        "loadedDataSourceInfo" };
 	
 	public static boolean canBeOverriten(Object value, Field field) {
 		

@@ -8,6 +8,7 @@ import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
@@ -365,6 +366,7 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration {
 					
 					if (defaultObject != null) {
 						fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+						fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER, conn);
 					}
 				} else if (!unmappedFieldBehavior().ignore()) {
 					throw new FieldNotAvaliableInAnyDataSource(fm.getSrcField());

@@ -213,6 +213,12 @@ public interface TransformableField {
 		FieldTransformerType.tryToLoadTransformerToField(this, dstConf, conn);
 	}
 	
+	default void resetAndLoadTransformer(EtlTransformTarget dstConf, FieldTransformerType newTransformer, Connection conn) {
+		this.setTransformer(newTransformer.getClassName());
+		this.setTransformerInstance(null);
+		this.tryToLoadTransformer(dstConf, conn);
+	}
+	
 	EtlDataSource getDataSource();
 	
 }

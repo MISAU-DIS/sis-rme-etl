@@ -15,8 +15,22 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 	
 	private List<String> dynamicElements;
 	
+	private Boolean initialized;
+	
 	public EtlConfiguration getRelatedEtlConf() {
 		return relatedEtlConf;
+	}
+	
+	public Boolean isInitialized() {
+		return isTrue(initialized);
+	}
+	
+	public Boolean getInitialized() {
+		return isTrue(initialized);
+	}
+	
+	public void setInitialized(Boolean initialized) {
+		this.initialized = initialized;
 	}
 	
 	@Override

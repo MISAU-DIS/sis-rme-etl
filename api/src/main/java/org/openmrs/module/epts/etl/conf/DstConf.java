@@ -426,8 +426,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	}
 	
 	public void generateAllFieldsMapping(Connection conn) throws DBException, FieldsMappingException {
-		stepIntoBreakpoint(getRelatedEtlConf(), getTableName().equals("person"));
-		
 		if (this.fieldsMappingAlredyGenerated()) {
 			return;
 		}
@@ -1166,6 +1164,13 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 				this.setUsingManualDefinedAlias(true);
 				
 				this.getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
+			}
+			
+			if (hasMapping()) {
+				for (FieldsMapping map : this.getMapping()) {
+					map.setRelatedEtlConfig(getRelatedEtlConf());
+					map.tryToLoadFromTemplate();
+				}
 			}
 			
 			getRelatedEtlConf().addConfiguredTable(this);
