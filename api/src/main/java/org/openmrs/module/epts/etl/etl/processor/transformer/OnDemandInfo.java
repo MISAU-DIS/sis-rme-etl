@@ -168,6 +168,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 						
 						this.onDemandParentFieldMappings.add(fm);
+						
 					}
 				}
 				

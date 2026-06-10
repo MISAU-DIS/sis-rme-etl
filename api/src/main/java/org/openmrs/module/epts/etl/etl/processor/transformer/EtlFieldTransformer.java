@@ -102,6 +102,10 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 		if (!(srcValue instanceof String) || srcValue == null || srcValue.toString().isBlank())
 			return srcValue;
 		
+		if (!utilities.listHasElement(srcObjects)) {
+			return srcValue;
+		}
+		
 		String srcValueAsString = srcValue.toString();
 		
 		if (!srcValueAsString.contains("@")) {

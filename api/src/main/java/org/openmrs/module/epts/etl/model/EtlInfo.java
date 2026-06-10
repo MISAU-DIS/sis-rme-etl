@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.dbquickmerge.model.ParentInfo;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
@@ -80,6 +81,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		if (this.transformedObject != null) {
 			this.transformedObject.loadUniqueKeyValues();
 		}
+		
+		this.setRelatedEtlConfig(getDstConf().getRelatedEtlConf());
 		
 		this.resultItem = new EtlOperationItemResult<EtlDatabaseObject>(this.relatedSrcObject);
 		
@@ -267,6 +270,10 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			return;
 		}
 		
+		if (this.relationshipResolutionStrategy().skip()) {
+			return;
+		}
+		
 		for (ParentTable refInfo : getDstConf().getParentRefInfo()) {
 			
 			FieldTransformingInfo tinfo = this.getTransformedObject().getField(refInfo).getTransformingInfo();
@@ -275,81 +282,97 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 				throw new EtlExceptionImpl("DstField for parent does not have FieldTransformingInfo: " + refInfo);
 			}
 			
-			//We check if this parent is same to the parent dstConf
-			//The FK for parent dstConf is already loaded with the dst PK
-			boolean parentIsDstParentConf = this.getDstConf().hasParentDstConf()
-			        && this.getDstConf().getTableName().equals(refInfo.getTableName());
-			
-			boolean skipDstParentLoad = false;
-			
-			skipDstParentLoad = tinfo.skipRelationshipResolution() || parentIsDstParentConf;
-			
-			if (!skipDstParentLoad) {
-				performeParentInfoInitialization(srcConn, refInfo);
+			if (this.relationshipResolutionStrategy().validateOnly()) {
+				Oid prentOid = refInfo.generateParentOidFromChild(this.getTransformedObject());
 				
-				if (!getTransformedObject().hasAllPerentFieldsFilled(refInfo)) {
-					continue;
+				EtlDatabaseObject parent = DatabaseObjectDAO.getByOid(refInfo, prentOid, dstConn);
+				
+				if (parent == null) {
+					this.getResultItem().addInconsistence(InconsistenceInfo.generate(getTransformedObject(), refInfo,
+					    this.getDstConf().getOriginAppLocationCode()));
 				}
+			} else {
 				
-				if (refInfo.isMetadata()) {
-					tryToLoadMissingMetadataInfo(refInfo, srcConn, dstConn);
+				//We check if this parent is same to the parent dstConf
+				//The FK for parent dstConf is already loaded with the dst PK
+				boolean parentIsDstParentConf = this.getDstConf().hasParentDstConf()
+				        && this.getDstConf().getTableName().equals(refInfo.getTableName());
+				
+				boolean skipDstParentLoad = false;
+				
+				skipDstParentLoad = tinfo.skipRelationshipResolution() || parentIsDstParentConf;
+				
+				if (!skipDstParentLoad) {
+					performeParentInfoInitialization(srcConn, refInfo);
 					
-					continue;
-				}
-				
-				if (!checkIfParentMustBeLoaded(refInfo)) {
-					continue;
-				}
-				
-				EtlDatabaseObject parentInSrc = this.getTransformedObject().retrieveParentInSrcUsingDstParentInfo(refInfo,
-				    this.getSrcConf(), srcConn);
-				
-				EtlDatabaseObject parentInDst = null;
-				
-				if (parentInSrc != null) {
-					parentInDst = this.getTransformedObject().retrieveParentInDestination(refInfo, parentInSrc, dstConn);
-				} else {
+					if (!getTransformedObject().hasAllPerentFieldsFilled(refInfo)) {
+						continue;
+					}
 					
-					try {
-						if (refInfo.hasDefaultValueDueInconsistency()) {
-							
-							Oid key = refInfo.generateParentOidFromChild(getTransformedObject());
-							
-							if (refInfo.useSimplePk()) {
-								key.asSimpleKey().setValue(refInfo.getDefaultValueDueInconsistency());
-							} else
-								throw new ForbiddenOperationException(
-								        "There is a defaultValueDueInconsistency but the key is not simple on table "
-								                + refInfo.getTableName());
-							
-							parentInDst = getTransformedObject().retrieveParentByOid(refInfo, dstConn);
-						} else {
-							continue;
+					if (refInfo.isMetadata()) {
+						tryToLoadMissingMetadataInfo(refInfo, srcConn, dstConn);
+						
+						continue;
+					}
+					
+					if (!checkIfParentMustBeLoaded(refInfo)) {
+						continue;
+					}
+					
+					EtlDatabaseObject parentInSrc = this.getTransformedObject()
+					        .retrieveParentInSrcUsingDstParentInfo(refInfo, this.getSrcConf(), srcConn);
+					
+					EtlDatabaseObject parentInDst = null;
+					
+					if (parentInSrc != null) {
+						parentInDst = this.getTransformedObject().retrieveParentInDestination(refInfo, parentInSrc, dstConn);
+					} else {
+						
+						try {
+							if (refInfo.hasDefaultValueDueInconsistency()) {
+								
+								Oid key = refInfo.generateParentOidFromChild(getTransformedObject());
+								
+								if (refInfo.useSimplePk()) {
+									key.asSimpleKey().setValue(refInfo.getDefaultValueDueInconsistency());
+								} else
+									throw new ForbiddenOperationException(
+									        "There is a defaultValueDueInconsistency but the key is not simple on table "
+									                + refInfo.getTableName());
+								
+								parentInDst = getTransformedObject().retrieveParentByOid(refInfo, dstConn);
+							} else {
+								continue;
+							}
+						}
+						finally {
+							this.getResultItem().addInconsistence(InconsistenceInfo.generate(getTransformedObject(), refInfo,
+							    this.getDstConf().getOriginAppLocationCode()));
 						}
 					}
-					finally {
-						this.getResultItem().addInconsistence(InconsistenceInfo.generate(getTransformedObject(), refInfo,
-						    this.getDstConf().getOriginAppLocationCode()));
-					}
-				}
-				
-				if (parentInDst == null) {
-					parentInDst = refInfo.getDefaultObject(dstConn);
 					
 					if (parentInDst == null) {
-						parentInDst = refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
+						parentInDst = refInfo.getDefaultObject(dstConn);
+						
+						if (parentInDst == null) {
+							parentInDst = refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
+						}
+						
+						//The parentInSrc will be null if it does not exists and were used default parent
+						if (parentInSrc != null) {
+							this.getParentsWithDefaultValues().add(new ParentInfo(refInfo, parentInSrc));
+						}
 					}
 					
-					//The parentInSrc will be null if it does not exists and were used default parent
-					if (parentInSrc != null) {
-						this.getParentsWithDefaultValues().add(new ParentInfo(refInfo, parentInSrc));
-					}
+					getTransformedObject().changeParentValue(refInfo, parentInDst);
 				}
-				
-				getTransformedObject().changeParentValue(refInfo, parentInDst);
 			}
 		}
 		
+	}
+	
+	private RelationshipResolutionStrategy relationshipResolutionStrategy() {
+		return this.getRelatedEtlConf().getRelationshipResolutionStrategy();
 	}
 	
 	/**

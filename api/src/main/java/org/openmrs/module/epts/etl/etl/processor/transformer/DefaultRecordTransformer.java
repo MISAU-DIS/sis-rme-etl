@@ -81,7 +81,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		
 		applyFieldTransformations(processor, transformedRec, collectedSrcObjects, srcConn, dstConn);
 		
-		resolvePrimaryKeyAndParent(processor, srcObject, transformedRec, migratedDstParent, srcConn, dstConn);
+		resolvePrimaryKeyAndParent(processor, srcObject, transformedRec, migratedDstParent, collectedSrcObjects, srcConn,
+		    dstConn);
 		
 		if (transformationType.onDemand()) {
 			transformedRec.setUuid(UUID.randomUUID().toString());
@@ -95,8 +96,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 	
 	private void resolvePrimaryKeyAndParent(EtlProcessor processor, EtlDatabaseObject srcRecord,
-	        EtlDatabaseObject transformedRec, EtlDatabaseObject migratedDstParent, Connection srcConn, Connection dstConn)
-	        throws EtlTransformationException, DBException {
+	        EtlDatabaseObject transformedRec, EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> avaliableSrcObjs,
+	        Connection srcConn, Connection dstConn) throws EtlTransformationException, DBException {
 		
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
 		
@@ -108,18 +109,31 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				transformedRec.getObjectId().asSimpleKey().setValue(dstConf.retriveNextRecordId(processor));
 			}
 		} else {
+			Field pk = transformedRec.getField(transformedRec.getObjectId().asSimpleKey().getName());
+			
+			FieldsMapping pkMapping = dstConf.getMappingUsingDstField(pk.getName());
+			FieldTransformingInfo fi = null;
 			
 			if (migratedDstParent == null) {
-				srcRecord.loadObjectIdData();
 				
-				Field pk = transformedRec.getField(transformedRec.getObjectId().asSimpleKey().getName());
-				
-				pk.setValue(srcRecord.getObjectId().asSimpleKey().getValue());
-				
-				FieldTransformingInfo fi = new FieldTransformingInfo(dstConf.getMappingUsingDstField(pk.getName()),
-				        pk.getValue(), (EtlDataSource) srcRecord.getRelatedConfiguration());
-				
-				pk.setTransformingInfo(fi);
+				//We are assumning that the src and dst structure are the same
+				if (srcRecord.getRelatedConfiguration().getObjectName()
+				        .equals(transformedRec.getRelatedConfiguration().getObjectName())) {
+					
+					srcRecord.loadObjectIdData();
+					
+					pk.setValue(srcRecord.getObjectId().asSimpleKey().getValue());
+					
+					fi = new FieldTransformingInfo(pkMapping, pk.getValue(),
+					        (EtlDataSource) srcRecord.getRelatedConfiguration());
+					
+					pk.setTransformingInfo(fi);
+				} else {
+					fi = pkMapping.transform(processor, srcRecord, transformedRec, avaliableSrcObjs, srcConn,
+					    dstConn);
+					
+					transformedRec.setFieldValue(pk.getName(), fi.getTransformedValue());
+				}
 			}
 		}
 		

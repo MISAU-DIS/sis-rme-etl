@@ -71,7 +71,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	private List<EtlDataSource> allPrefferredDataSource;
 	
-	private ActionOnEtlIssue onMissingMapping;
+	private ActionOnEtlIssue unmappedFieldBehavior;
 	
 	private Boolean automaticalyGenerated;
 	
@@ -132,7 +132,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	}
 	
 	public ActionOnEtlIssue getUnmappedFieldBehavior() {
-		return onMissingMapping;
+		return unmappedFieldBehavior;
 	}
 	
 	public void setUnmappedFieldBehavior(ActionOnEtlIssue onMissingMapping) {
@@ -140,7 +140,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			throw new EtlConfException("Value not allowed unmappedFieldBehavior [" + onMissingMapping + "]");
 		}
 		
-		this.onMissingMapping = onMissingMapping;
+		this.unmappedFieldBehavior = onMissingMapping;
 	}
 	
 	@Override
@@ -426,6 +426,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	}
 	
 	public void generateAllFieldsMapping(Connection conn) throws DBException, FieldsMappingException {
+		stepIntoBreakpoint(getRelatedEtlConf(), getTableName().equals("person"));
 		
 		if (this.fieldsMappingAlredyGenerated()) {
 			return;

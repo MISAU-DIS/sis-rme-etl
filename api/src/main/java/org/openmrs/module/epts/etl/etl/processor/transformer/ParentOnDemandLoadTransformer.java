@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
@@ -274,8 +275,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					srcParent = recs.get(0);
 				}
 				
-				dstParent = createParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects, field,
-				    srcConn, dstConn);
+				dstParent = this.createParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
+				    field, srcConn, dstConn);
 				
 			}
 			
@@ -421,9 +422,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		List<EtlDatabaseObject> allObjs = srcObjects != null ? srcObjects
 		        : (srcObject != null ? utilities.parseToList(srcObject) : null);
 		
-		String condition = SQLUtilities.ensureDataSourceElementsReplaced(this.getOnDemandCheckCondition(), allObjs, dstConn);
+		PreparedQueryInfo p = SQLUtilities
+		        .prepareQueryReplacingDataSourceElementsWithParams(this.getOnDemandCheckCondition(), allObjs, dstConn);
 		
-		return dstConf.find(condition, null, dstConn);
+		return dstConf.find(p.getQuery(), p.getParametersAsArray(), dstConn);
 	}
 	
 	DstConf getEtlTransformTargetForExistingSrcParent(Connection srcConn, Connection dstConn) throws DBException {

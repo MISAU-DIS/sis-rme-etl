@@ -76,16 +76,18 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
-		super.retrieveAllAvailableTemplateParameters();
-		
 		Map<String, Object> allParameters = new HashMap<>();
 		
-		if (hasParentItemConf()) {
-			Map<String, Object> parentParameters = this.getParentItemConf().retrieveAllAvailableTemplateParameters();
-			
-			if (parentParameters != null && !parentParameters.isEmpty()) {
-				allParameters.putAll(parentParameters);
-			}
+		Map<String, Object> superParams = super.retrieveAllAvailableTemplateParameters();
+		
+		if (superParams != null && !superParams.isEmpty()) {
+			allParameters.putAll(superParams);
+		}
+		
+		Map<String, Object> parentParameters = this.getParentItemConf().retrieveAllAvailableTemplateParameters();
+		
+		if (parentParameters != null && !parentParameters.isEmpty()) {
+			allParameters.putAll(parentParameters);
 		}
 		
 		return allParameters;

@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -911,7 +912,20 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
-		return EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
+		Map<String, Object> joined = new HashMap<>();
+
+	    Map<String, Object> p2 = getParentConf().retrieveAllAvailableTemplateParameters();
+
+	    if (p2 != null) {
+	        joined.putAll(p2);
+	    }
+
+	    Map<String, Object> p = EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
+
+	    if (p != null) {
+	        joined.putAll(p);
+	    }
+
+	    return joined;
 	}
-	
 }
