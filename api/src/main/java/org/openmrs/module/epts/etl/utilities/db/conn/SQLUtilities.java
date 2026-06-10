@@ -2037,6 +2037,8 @@ public class SQLUtilities {
 		for (String element : srcObjectConditionElements) {
 			try {
 				
+				element = element.replace("(", "").replace(")", "");
+				
 				if (!isValidQueryColumnDefinition(element)) {
 					continue;
 				}

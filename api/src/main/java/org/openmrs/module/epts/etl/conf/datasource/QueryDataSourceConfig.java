@@ -240,7 +240,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration implemen
 			
 			getRelatedEtlConf().logTrace("Determining fields for query...");
 			
-			PreparedQueryInfo pq = query.generatePreparedQuery(null, null, null, null, name, conn);
+			PreparedQueryInfo pq = query.generatePreparedQuery(null, null, null, null, this.getQuery(), conn);
 			
 			setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), pq.getParametersAsArray(), conn));
 			

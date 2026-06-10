@@ -277,4 +277,9 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration imp
 		
 		return null;
 	}
+	
+	@Override
+	public String toString() {
+		return this.name;
+	}
 }
