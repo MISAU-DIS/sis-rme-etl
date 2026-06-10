@@ -1107,37 +1107,45 @@ When a template is applied, its configuration is merged into the target element,
 This mechanism is especially useful for scenarios where multiple ETL items share similar configurations, differing only in specific parameters such as extraction conditions, field mappings, or filters.
 
 
-## "includeFragments" 
+## "includeFragments"
 
-includeFragments Allows external configuration fragments to be included at the point where they are declared.
+*includeFragments* allows external configuration fragments to be included at the point where they are declared.
 
 This feature is useful for splitting large ETL configuration files into smaller, independently maintained files. It is especially helpful when multiple team members need to work on different parts of the same ETL process, such as different *childItemConf* entries under a shared parent ETL item.
 
 Each fragment may define either a single configuration object or a list of configuration objects. During configuration loading, the ETL engine reads the referenced fragments and injects their content into the current configuration element.
 
+Fragment files are referenced using *srcPath*. The path is resolved relative to the global *etlConfDir* configuration, which defines the directory where ETL configuration files are stored. The *etlConfDir* must point to a real filesystem directory. If it is not specified, the ETL engine will use the directory where the main configuration file is located.
+
 ### Example:
 
 ```
 {
-   "srcConf":{
-      "tableName":"my_favorite_tab"
-   },
-   "dstConf":[
+   "etlConfDir":"/opt/etl/config",
+   "etlItemConfiguration":[
       {
-         "tableName":"main_dst_tab"
-      }
-   ],
-   "include":[
-      {
-         "target":"childItemConf",
-         "srcPath":"sync-child/*.json"
+         "srcConf":{
+            "tableName":"my_favorite_tab"
+         },
+         "dstConf":[
+            {
+               "tableName":"main_dst_tab"
+            }
+         ],
+         "include":[
+            {
+               "target":"childItemConf",
+               "srcPath":"sync-child/*.json"
+            }
+         ]
       }
    ]
 }
 ```
 
+In this example, all JSON files matching **/opt/etl/config/sync-child/*.json** will be loaded and inserted as *childItemConf* entries.
 
-In this example, all JSON files under **sync-child/*.json** will be loaded and inserted as child item configurations.
+If *etlConfDir* is omitted, the same relative *srcPath* will be resolved from the directory where the main ETL configuration file is located.
 
 This mechanism differs from templates. Templates are intended for reusable and parameterized configuration blocks, while fragments are intended to split a large configuration into smaller files for better organization and team collaboration.
 
