@@ -1983,11 +1983,11 @@ public class SQLUtilities {
 	        List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
 	        throws FieldAvaliableInMultipleDataSources, DBException {
 		
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString();
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString().toLowerCase();
 		
 		List<Object> resolvedValues = new ArrayList<>();
 		
-		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
+		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ", " join ", " where " };
 		
 		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
 		

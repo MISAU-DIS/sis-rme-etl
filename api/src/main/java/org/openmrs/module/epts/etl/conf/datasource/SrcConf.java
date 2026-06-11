@@ -453,6 +453,18 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 			ds.add((EtlAdditionalDataSource) getSharedKeyRefInfo(null));
 		}
 		
+		//We intentional give the jsonDatasource high priority because usual them do not depends on other datasources
+		if (hasExtraJsonSourceConfig()) {
+			
+			for (JsonDataSource d : this.getExtraJsonDataSource()) {
+				ds.add(d.getOutputDataSource());
+				
+				if (d.getOutputDataSource().hasParents()) {
+					ds.addAll(d.getOutputDataSource().getParentOutputDataSource());
+				}
+			}
+		}
+		
 		if (hasExtraTableDataSourceConfig()) {
 			ds.addAll(this.getExtraTableDataSource());
 		}
@@ -463,17 +475,6 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		
 		if (hasExtraObjectDataSourceConfig()) {
 			ds.addAll(this.getExtraObjectDataSource());
-		}
-		
-		if (hasExtraJsonSourceConfig()) {
-			
-			for (JsonDataSource d : this.getExtraJsonDataSource()) {
-				ds.add(d.getOutputDataSource());
-				
-				if (d.getOutputDataSource().hasParents()) {
-					ds.addAll(d.getOutputDataSource().getParentOutputDataSource());
-				}
-			}
 		}
 		
 		return ds;

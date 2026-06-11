@@ -129,8 +129,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					
 					pk.setTransformingInfo(fi);
 				} else {
-					fi = pkMapping.transform(processor, srcRecord, transformedRec, avaliableSrcObjs, srcConn,
-					    dstConn);
+					fi = pkMapping.transform(processor, srcRecord, transformedRec, avaliableSrcObjs, srcConn, dstConn);
 					
 					transformedRec.setFieldValue(pk.getName(), fi.getTransformedValue());
 				}
@@ -176,19 +175,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			addParentObjects(result, srcObject, migratedDstParent);
 			addExtraDataSources(processor, result, srcObject, dstObject, transformationType, srcConn);
 			
-			Set<EtlDatabaseObject> finalList = new LinkedHashSet<>();
-			
-			for (EtlDatabaseObject primaryDs : result) {
-				finalList.add(primaryDs);
-				
-				List<EtlDatabaseObject> aux = retrieveAuxLoadObjects(primaryDs);
-				
-				if (utilities.listHasElement(aux)) {
-					finalList.addAll(aux);
-				}
-			}
-			
-			return new ArrayList<>(finalList);
+			return new ArrayList<>(result);
 		}
 		catch (MissingRequiredTransformationObject e) {
 			return null;
@@ -202,39 +189,17 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		
 		for (FieldsMapping fieldsMapping : dstConf.getAllMapping()) {
 			if (!fieldsMapping.getName().equals(dstConf.getPrimaryKey().asSimpleKey().getName())) {
+				
+				dstConf.getRelatedEtlConf().logTrace("Transforming field " + fieldsMapping);
+				
 				fieldsMapping.getTransformerInstance().performFieldTransformation(processor, srcObjects.get(0),
 				    transformedRec, srcObjects, fieldsMapping, srcConn, dstConn);
+				
+				dstConf.getRelatedEtlConf().logTrace("Field " + fieldsMapping + " Transformed to: "
+				        + transformedRec.getFieldValue(fieldsMapping.getDstField()));
+				
 			}
 		}
-	}
-	
-	private List<EtlDatabaseObject> retrieveAuxLoadObjects(EtlDatabaseObject srcObject) {
-		if (srcObject.hasAuxLoadObject()) {
-			
-			List<EtlDatabaseObject> aux = new ArrayList<>();
-			
-			for (EtlDatabaseObject auxObject : srcObject.getAuxLoadObject()) {
-				aux.add(auxObject);
-				
-				if (auxObject.hasSharedPkObj()) {
-					aux.add(auxObject.getSharedPkObj());
-				}
-				
-				if (auxObject.hasAuxLoadObject()) {
-					for (EtlDatabaseObject innerObject : auxObject.getAuxLoadObject()) {
-						aux.add(innerObject);
-						
-						if (innerObject.hasSharedPkObj()) {
-							aux.add(innerObject.getSharedPkObj());
-						}
-					}
-				}
-			}
-			
-			return aux;
-		}
-		
-		return null;
 	}
 	
 	private void addSharedObjects(Set<EtlDatabaseObject> srcObjects, EtlDatabaseObject srcObject) {
@@ -295,7 +260,42 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				
 				if (relatedSrcObject != null) {
 					srcObjects.add(relatedSrcObject);
+					
+					retrieveAuxLoadObjects(relatedSrcObject, srcObjects);
 				}
+			}
+		}
+	}
+	
+	private void retrieveAuxLoadObjects(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> currentList) {
+		
+		if (currentList == null)
+			throw new EtlExceptionImpl("The currentList cannot be null");
+		
+		if (srcObject.hasAuxLoadObject()) {
+			
+			List<EtlDatabaseObject> aux = new ArrayList<>();
+			
+			for (EtlDatabaseObject auxObject : srcObject.getAuxLoadObject()) {
+				aux.add(auxObject);
+				
+				if (auxObject.hasSharedPkObj()) {
+					aux.add(auxObject.getSharedPkObj());
+				}
+				
+				if (auxObject.hasAuxLoadObject()) {
+					for (EtlDatabaseObject innerObject : auxObject.getAuxLoadObject()) {
+						aux.add(innerObject);
+						
+						if (innerObject.hasSharedPkObj()) {
+							aux.add(innerObject.getSharedPkObj());
+						}
+					}
+				}
+			}
+			
+			if (utilities.listHasElement(aux)) {
+				currentList.addAll(aux);
 			}
 		}
 	}

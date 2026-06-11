@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
@@ -108,6 +109,20 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	private Boolean ignoreNoDstIssue;
 	
 	private EtlDatabaseObject targetDefaultObject;
+	
+	/**
+	 * Defines how field mappings should be resolved for this destination configuration.
+	 * <p>
+	 * The ETL engine supports both manually configured mappings and automatically inferred
+	 * mappings. This strategy determines whether the engine should use only manual mappings, only
+	 * automatic mappings, or manual mappings followed by automatic inference for unmapped fields.
+	 * </p>
+	 * <p>
+	 * If not specified, the default strategy is
+	 * {@link FieldMappingResolutionStrategy#MANUAL_THEN_AUTO}.
+	 * </p>
+	 */
+	private FieldMappingResolutionStrategy mappingResolutionStrategy;
 	
 	public DstConf() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.ABORT_PROCESS;
@@ -368,6 +383,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			mappingProblem = new FieldsMappingIssues();
 			
 			for (FieldsMapping fm : this.getMapping()) {
+				fm.setTargetObject(this);
 				
 				if (!utilities.stringHasValue(fm.getDstField())) {
 					throw new ForbiddenOperationException("One or more mapping on dstTable '" + this.getTableName()
@@ -375,9 +391,9 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 					        + "' configuration does not have dstField: [" + fm + "]");
 				}
 				
-				fm.tryToLoadTransformer(this, conn);
-				
 				fm.tryToLoadDataSourceInfoFromSrcField();
+				
+				fm.tryToLoadTransformer(this, conn);
 				
 				if (fm.hasTransformer() && fm.isSetToNullValue()) {
 					fm.setSrcValue(null);
@@ -434,74 +450,80 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		
 		FieldsMappingIssues mappingProblem = null;
 		
-		if (this.hasMapping()) {
-			mappingProblem = loadConfiguredMappingAdditionalInfo(conn);
+		if (!getMappingResolutionStrategy().autoOnly()) {
 			
-			for (FieldsMapping fm : this.getMapping()) {
-				fm.setManuallyConfigured(true);
+			if (this.hasMapping()) {
+				mappingProblem = loadConfiguredMappingAdditionalInfo(conn);
 				
-				if (!mappingProblem.contains(fm)) {
-					addMapping(fm);
+				for (FieldsMapping fm : this.getMapping()) {
+					fm.setManuallyConfigured(true);
+					
+					if (!mappingProblem.contains(fm)) {
+						addMapping(fm);
+					}
 				}
 			}
 		}
 		
-		if (mappingProblem == null) {
-			mappingProblem = new FieldsMappingIssues();
-		}
-		
-		List<Field> myFields = this.getFields();
-		
-		for (Field field : myFields) {
-			
-			if (isIgnorableField(field)) {
-				continue;
+		if (!this.getMappingResolutionStrategy().manualOnly()) {
+			if (mappingProblem == null) {
+				mappingProblem = new FieldsMappingIssues();
 			}
 			
-			FieldsMapping fm = null;
+			List<Field> myFields = this.getFields();
 			
-			EtlField etlField = this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
-			
-			if (etlField != null) {
-				fm = FieldsMapping.fastCreate(etlField.getSrcField().getName(), field.getName(), true, conn);
-				fm.setDataSourceName(etlField.getSrcDataSource().getName());
-			} else {
-				fm = FieldsMapping.fastCreate(field.getName(), field.getName(), true, conn);
-			}
-			
-			if (!this.getAllMapping().contains(fm)) {
-				try {
-					
-					if (this.hasMapping() && this.getMapping().contains(fm)) {
-						fm = utilities.findOnList(this.getMapping(), fm);
-					} else {
-						fm.tryToLoadTransformer(this, conn);
+			for (Field field : myFields) {
+				
+				if (isIgnorableField(field)) {
+					continue;
+				}
+				
+				FieldsMapping fm = null;
+				
+				EtlField etlField = this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
+				
+				if (etlField != null) {
+					fm = FieldsMapping.fastCreate(etlField.getSrcField().getName(), field.getName(), true, conn);
+					fm.setDataSourceName(etlField.getSrcDataSource().getName());
+				} else {
+					fm = FieldsMapping.fastCreate(field.getName(), field.getName(), true, conn);
+				}
+				
+				if (!this.getAllMapping().contains(fm)) {
+					try {
 						
-						tryToLoadDataSourceToFieldMapping(fm, conn);
+						if (this.hasMapping() && this.getMapping().contains(fm)) {
+							fm = utilities.findOnList(this.getMapping(), fm);
+						} else {
+							fm.tryToLoadTransformer(this, conn);
+							
+							tryToLoadDataSourceToFieldMapping(fm, conn);
+						}
+						
+						addMapping(fm);
 					}
-					
-					addMapping(fm);
-				}
-				catch (FieldNotAvaliableInAnyDataSource e) {
-					
-					Field f = getField(fm.getDstField());
-					
-					Boolean problem = !f.getAttDefinedElements().isPartOfObjectId();
-					
-					problem = problem ? problem : !this.useAutoIncrementId(conn);
-					
-					if (problem) {
-						mappingProblem.getNotAvaliableInAnyDataSource().add(fm);
+					catch (FieldNotAvaliableInAnyDataSource e) {
+						
+						Field f = getField(fm.getDstField());
+						
+						Boolean problem = !f.getAttDefinedElements().isPartOfObjectId();
+						
+						problem = problem ? problem : !this.useAutoIncrementId(conn);
+						
+						if (problem) {
+							mappingProblem.getNotAvaliableInAnyDataSource().add(fm);
+						}
+						
 					}
-					
-				}
-				catch (FieldAvaliableInMultipleDataSources e) {
-					mappingProblem.getAvaliableInMultiDataSources().add(fm);
+					catch (FieldAvaliableInMultipleDataSources e) {
+						mappingProblem.getAvaliableInMultiDataSources().add(fm);
+					}
 				}
 			}
+			
 		}
 		
-		if (mappingProblem.hasIssue()) {
+		if (mappingProblem != null && mappingProblem.hasIssue()) {
 			throw new FieldsMappingException(this, mappingProblem);
 		}
 		
@@ -518,6 +540,14 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	
 	private boolean fieldsMappingAlredyGenerated() {
 		return !this.useDefaultTransformer() || isTrue(this.getFieldsMappingAlredyGenerated());
+	}
+	
+	public FieldMappingResolutionStrategy getMappingResolutionStrategy() {
+		return mappingResolutionStrategy;
+	}
+	
+	public void setMappingResolutionStrategy(FieldMappingResolutionStrategy mappingResolutionStrategy) {
+		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
 	
 	public FieldsMapping getMappingUsingDstField(String dstFieldName) {
@@ -708,6 +738,10 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		
 		if (!this.hasUnmappedFieldBehavior()) {
 			this.setUnmappedFieldBehavior(ActionOnEtlIssue.ABORT_PROCESS);
+		}
+		
+		if (getMappingResolutionStrategy() == null) {
+			setMappingResolutionStrategy(FieldMappingResolutionStrategy.MANUAL_THEN_AUTO);
 		}
 		
 		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);

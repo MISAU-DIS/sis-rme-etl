@@ -33,6 +33,10 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 		this.initialized = initialized;
 	}
 	
+	public void markAsInitialized() {
+		setInitialized(true);
+	}
+	
 	@Override
 	public List<EtlFragmentInclude> getInclude() {
 		return this.include;

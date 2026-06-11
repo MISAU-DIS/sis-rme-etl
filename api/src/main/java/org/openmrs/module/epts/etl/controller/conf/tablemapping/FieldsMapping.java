@@ -79,6 +79,8 @@ public class FieldsMapping extends Field implements TransformableField {
 	
 	private Boolean manuallyConfigured;
 	
+	private Boolean srcValueSwitchedToSrcField;
+	
 	public FieldsMapping() {
 		this.nullValueBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
@@ -583,7 +585,45 @@ public class FieldsMapping extends Field implements TransformableField {
 		return fm;
 	}
 	
+	public Boolean getSrcValueSwitchedToSrcField() {
+		return srcValueSwitchedToSrcField;
+	}
+	
+	public Boolean srcValueSwitchedToSrcField() {
+		return isTrue(srcValueSwitchedToSrcField);
+	}
+	
+	public void setSrcValueSwitchedToSrcField(Boolean srcValueSwitchedToSrcField) {
+		this.srcValueSwitchedToSrcField = srcValueSwitchedToSrcField;
+	}
+	
+	private void init() {
+		if (!hasSrcField() && hasSrcValue()) {
+			//Try to switch from srcValue to srcField.
+			//We force switch if there is no srcField but srcValue follow the pattern srcField
+			String[] srcFieldParts = this.getSrcValue().toString().split("\\.");
+			
+			if (srcFieldParts.length == 2) {
+				if (SQLUtilities.isValidQueryColumnDefinition(this.getSrcValue().toString())) {
+					if (!this.hasDataSourceName()) {
+						this.setDataSourceName(srcFieldParts[0]);
+					}
+					
+					this.setSrcField(srcFieldParts[1]);
+					this.setSrcValue(null);
+					
+					this.setSrcValueSwitchedToSrcField(true);
+				}
+			}
+		}
+		
+		this.markAsInitialized();
+	}
+	
 	public void tryToLoadDataSourceInfoFromSrcField() {
+		if (!isInitialized()) {
+			this.init();
+		}
 		
 		if (this.hasSrcField()) {
 			String[] srcFieldParts = this.getSrcField().split("\\.");
