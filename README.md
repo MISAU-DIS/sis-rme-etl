@@ -807,15 +807,32 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
 		  - The field *visit_type_id* receives the constant value *42*
 		  - The field *location_id* uses the dynamic parameter *@migration_location_id*
 		  - The fields *date_stopped* and *indication_concept_id* are set to null
-    - **PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(...)**: Specialized version of **PARENT_ON_DEMAND_TRANSFORMER** that enables the use of global default field values when creating parent records on demand.
+       
+	   - **PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(...)**: Specialized version of **PARENT_ON_DEMAND_TRANSFORMER** that enables the use of default values when creating parent records on demand.
 
-      This transformer follows the same configuration format and behavior as **PARENT_ON_DEMAND_TRANSFORMER**, but automatically enables the use of default values for destination fields that are not explicitly mapped.
+          This transformer follows the same configuration format and behavior as **PARENT_ON_DEMAND_TRANSFORMER**, but automatically configures the generated destination mapping to use the *MANUAL_WITH_DEFAULTS* mapping resolution strategy.
 
-      Internally, it applies: unmapped_field_behavior:USE_DEFAULT
- 
-      This allows the ETL engine to populate missing parent fields using values defined in the global *defaultFieldValues* configuration.
+          Internally, it applies:
 
-      This transformer is especially useful when creating default or placeholder parent records in the destination database, where some required fields may not be explicitly provided but must still receive predefined values.
+          ```
+             mapping_resolution_strategy:MANUAL_WITH_DEFAULTS
+          ```
+
+          This causes the ETL engine to:
+
+          1. Apply all field mappings explicitly defined in the transformer configuration.
+          2. Populate any remaining unmapped destination fields using their configured default values.
+
+          Default values may originate from:
+           - field-level default values;
+           - destination table schema defaults;
+           - global *defaultFieldValues* defined in the ETL configuration.
+
+           No automatic field mapping is performed for unmapped fields.
+
+           This transformer is especially useful when creating default or placeholder parent records in the destination database, where only a subset of fields needs to be explicitly defined while the remaining fields should automatically receive their default values.
+
+           For full parameter details and behavior, refer to **PARENT_ON_DEMAND_TRANSFORMER**.
 
       For full parameter details, refer to **PARENT_ON_DEMAND_TRANSFORMER**.
     - **DATE_TRANSFORMER(input:valueOrTransformer,operation:operationName,input_format:format,output_format:format,amount:number,unit:unitName,on_invalid:behavior)**  
