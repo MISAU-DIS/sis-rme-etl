@@ -1001,6 +1001,16 @@ Bellow is the explanation for each field:
   - *MANUAL_ONLY* – Uses only mappings explicitly defined in the *mapping* section. Automatically inferred mappings are ignored.
   - *AUTO_ONLY* – Uses only mappings automatically inferred by the ETL engine. Manually configured mappings are ignored.
   - *MANUAL_THEN_AUTO* – Uses manually configured mappings first, then automatically infers mappings for destination fields that were not manually mapped. This is the default behavior.
+  - *MANUAL_WITH_DEFAULTS* – Uses only mappings explicitly defined in the *mapping* section. After all manual mappings have been applied, any destination fields that remain unmapped are automatically populated using their configured default values.
+
+    No automatic field mapping is performed in this mode.
+
+    Default values may originate from:
+     - field-level default values;
+     - destination table schema defaults;
+     - global *defaultFieldValues* defined in the ETL configuration, when applicable.
+
+       This strategy is particularly useful when creating records that must contain predefined values for all mandatory fields, while still maintaining full control over the fields explicitly mapped by the ETL configuration.
 
 -  **winningRecordFieldsInfo** optional list indicating the fields to be checked when there is conflict between an record with existing one on the etl process. When merge existing record, the incoming dstRecord will win if the listed fields have the specified values. Below is an example of winningRecordFieldsInfo.
   
