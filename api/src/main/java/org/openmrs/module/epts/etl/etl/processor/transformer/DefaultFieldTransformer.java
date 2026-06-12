@@ -105,8 +105,14 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 		
 		if (!found) {
-			String msg = "The field '" + field.getName()
-			        + "' was transformed to null, but it is not configured to accept null values. "
+			
+			String objectname = transformedRecord != null ? transformedRecord.getRelatedConfiguration().getObjectName()
+			        : null;
+			
+			String fieldName = objectname != null ? objectname + "(" + field.getName() + ")" : "'" + field.getName() + "'";
+			
+			String msg = "The field " + fieldName
+			        + " was transformed to null, but it is not configured to accept null values. "
 			        + "To avoid process interruption, explicitly allow null values for this field or ensure the transformation produces a valid value.";
 			
 			if (field.nullValueBehavior().markRecordAsFailed()) {

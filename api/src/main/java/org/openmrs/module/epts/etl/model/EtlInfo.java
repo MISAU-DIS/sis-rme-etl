@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
@@ -59,7 +60,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	
 	protected List<ParentInfo> parentsWithDefaultValues;
 	
-	protected List<EtlDatabaseObject> avaliableSrcObjects;
+	protected Set<EtlDatabaseObject> avaliableSrcObjects;
 	
 	protected EtlProcessor processor;
 	
@@ -275,8 +276,13 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		}
 		
 		for (ParentTable refInfo : getDstConf().getParentRefInfo()) {
+			Field field = this.getTransformedObject().getField(refInfo);
 			
-			FieldTransformingInfo tinfo = this.getTransformedObject().getField(refInfo).getTransformingInfo();
+			if (!field.hasValue()) {
+				continue;
+			}
+			
+			FieldTransformingInfo tinfo = field.getTransformingInfo();
 			
 			if (tinfo == null) {
 				throw new EtlExceptionImpl("DstField for parent does not have FieldTransformingInfo: " + refInfo);
@@ -653,11 +659,11 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		this.parentsWithDefaultValues = parentsWithDefaultValues;
 	}
 	
-	public List<EtlDatabaseObject> getAvaliableSrcObjects() {
+	public Set<EtlDatabaseObject> getAvaliableSrcObjects() {
 		return avaliableSrcObjects;
 	}
 	
-	public void setAvaliableSrcObjects(List<EtlDatabaseObject> avaliableSrcObjects) {
+	public void setAvaliableSrcObjects(Set<EtlDatabaseObject> avaliableSrcObjects) {
 		this.avaliableSrcObjects = avaliableSrcObjects;
 	}
 	
@@ -709,11 +715,11 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		return this.getExceptionOnEtl() != null;
 	}
 	
-	public List<EtlDatabaseObject> getTransformationSrcObject() {
+	public Set<EtlDatabaseObject> getTransformationSrcObject() {
 		return this.avaliableSrcObjects;
 	}
 	
-	public void setTransformationSrcObject(List<EtlDatabaseObject> avaliableSrcObjects) {
+	public void setTransformationSrcObject(Set<EtlDatabaseObject> avaliableSrcObjects) {
 		this.avaliableSrcObjects = avaliableSrcObjects;
 	}
 	

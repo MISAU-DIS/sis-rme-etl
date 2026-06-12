@@ -103,7 +103,7 @@ public class FieldsMapping extends Field implements TransformableField {
 				this.setSrcField(fieldParts[1]);
 			} else {
 				if (utilities.isNumeric(fieldParts[0])) {
-					this.setSrcField(fieldParts[0]);
+					this.setSrcValue(fieldParts[0]);
 				} else {
 					this.setSrcField(fieldParts[0]);
 				}

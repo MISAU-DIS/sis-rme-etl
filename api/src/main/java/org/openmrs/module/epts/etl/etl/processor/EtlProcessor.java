@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.etl.processor;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -80,13 +81,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				}
 				
 				try {
-					List<EtlDatabaseObject> avaliableSrcObjects = mappingInfo.getTransformerInstance().collectSourceObjects(this,
-					    srcRecord, mappingInfo.createRecordInstance(), parentMigratedRec, mappingInfo,
-					    TransformationType.PRINCIPAL, srcConn);
+					List<EtlDatabaseObject> avaliableSrcObjects = mappingInfo.getTransformerInstance().collectSourceObjects(
+					    this, srcRecord, null, parentMigratedRec, mappingInfo, TransformationType.PRINCIPAL, srcConn);
 					
 					if (mappingInfo.checkIfSrcObjectCanBeLoaded(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
 						EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this, srcRecord,
-						    avaliableSrcObjects, mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL, srcConn, dstConn);
+						    avaliableSrcObjects, mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL, srcConn,
+						    dstConn);
 						
 						if (dstObject != null) {
 							record.addDestinationRecord(dstObject);
@@ -187,8 +188,9 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		        : transformedParent.getEtlInfo().getRelatedSrcObject();
 		
 		if (itemConf.checkIfSrcObjectCanBeLoaded(srcObject, null, srcConn, dstConn)) {
+			
 			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
-			        : transformedParent.getEtlInfo().getAvaliableSrcObjects();
+			        : new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
 			
 			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
 			    avaliableSrcObjects, srcConn);

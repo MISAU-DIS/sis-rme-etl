@@ -64,7 +64,7 @@ public class ParentOnDemandLoadWithDefaultsTransformer extends ParentOnDemandLoa
 			}
 		}
 		
-		effectiveParameters.add("unmapped_field_behavior:USE_DEFAULT");
+		effectiveParameters.add("mapping_resolution_strategy:MANUAL_WITH_DEFAULTS");
 		
 		String key = buildCacheKey(relatedEtlTransformTarget, field, effectiveParameters);
 		

@@ -42,10 +42,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	        EtlDatabaseObject migratedDstParent, TransformationType transformationType, Connection srcConn,
 	        Connection dstConn) throws DBException, EtlTransformationException {
 		
-		EtlDatabaseObject transformedRec = dstConf.createRecordInstance();
-		
-		List<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, transformedRec, migratedDstParent,
-		    dstConf, transformationType, srcConn);
+		List<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, migratedDstParent, dstConf,
+		    transformationType, srcConn);
 		
 		try {
 			if (srcObjects == null || srcObjects.isEmpty()) {
@@ -79,16 +77,24 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		
 		transformedRec.setEtlInfo(EtlInfo.initEtlRecord(processor, srcObject, transformedRec));
 		
-		applyFieldTransformations(processor, transformedRec, collectedSrcObjects, srcConn, dstConn);
+		Set<EtlDatabaseObject> transformationRecords = new LinkedHashSet<>();
 		
-		resolvePrimaryKeyAndParent(processor, srcObject, transformedRec, migratedDstParent, collectedSrcObjects, srcConn,
+		if (utilities.listHasElement(collectedSrcObjects)) {
+			transformationRecords.addAll(collectedSrcObjects);
+		}
+		
+		collectToSrcObjects(transformedRec, transformationRecords);
+		
+		transformedRec.getEtlInfo().setTransformationSrcObject(transformationRecords);
+		
+		applyFieldTransformations(processor, srcObject, transformedRec, transformationRecords, srcConn, dstConn);
+		
+		resolvePrimaryKeyAndParent(processor, srcObject, transformedRec, migratedDstParent, transformationRecords, srcConn,
 		    dstConn);
 		
 		if (transformationType.onDemand()) {
 			transformedRec.setUuid(UUID.randomUUID().toString());
 		}
-		
-		transformedRec.getEtlInfo().setTransformationSrcObject(collectedSrcObjects);
 		
 		processor.logTrace("Record " + srcObject + " transformed to " + transformedRec);
 		
@@ -96,7 +102,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 	
 	private void resolvePrimaryKeyAndParent(EtlProcessor processor, EtlDatabaseObject srcRecord,
-	        EtlDatabaseObject transformedRec, EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> avaliableSrcObjs,
+	        EtlDatabaseObject transformedRec, EtlDatabaseObject migratedDstParent, Set<EtlDatabaseObject> avaliableSrcObjs,
 	        Connection srcConn, Connection dstConn) throws EtlTransformationException, DBException {
 		
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
@@ -127,12 +133,14 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					fi = new FieldTransformingInfo(pkMapping, pk.getValue(),
 					        (EtlDataSource) srcRecord.getRelatedConfiguration());
 					
-					pk.setTransformingInfo(fi);
 				} else {
-					fi = pkMapping.transform(processor, srcRecord, transformedRec, avaliableSrcObjs, srcConn, dstConn);
+					fi = pkMapping.transform(processor, srcRecord, transformedRec, new ArrayList<>(avaliableSrcObjs),
+					    srcConn, dstConn);
 					
 					transformedRec.setFieldValue(pk.getName(), fi.getTransformedValue());
 				}
+				
+				pk.setTransformingInfo(fi);
 			}
 		}
 		
@@ -168,12 +176,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		try {
 			Set<EtlDatabaseObject> result = new LinkedHashSet<>();
 			
-			result.add(srcObject);
-			
-			addDstObject(result, dstObject);
-			addSharedObjects(result, srcObject);
-			addParentObjects(result, srcObject, migratedDstParent);
-			addExtraDataSources(processor, result, srcObject, dstObject, transformationType, srcConn);
+			collectToSrcObjects(srcObject, result);
+			collectToSrcObjects(dstObject, result);
+			collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType, srcConn);
 			
 			return new ArrayList<>(result);
 		}
@@ -182,18 +187,18 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 	}
 	
-	private void applyFieldTransformations(EtlProcessor processor, EtlDatabaseObject transformedRec,
-	        List<EtlDatabaseObject> srcObjects, Connection srcConn, Connection dstConn) throws DBException {
+	private void applyFieldTransformations(EtlProcessor processor, EtlDatabaseObject srcObject,
+	        EtlDatabaseObject transformedRec, Set<EtlDatabaseObject> srcObjects, Connection srcConn, Connection dstConn)
+	        throws DBException {
 		
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
 		
 		for (FieldsMapping fieldsMapping : dstConf.getAllMapping()) {
 			if (!fieldsMapping.getName().equals(dstConf.getPrimaryKey().asSimpleKey().getName())) {
-				
 				dstConf.getRelatedEtlConf().logTrace("Transforming field " + fieldsMapping);
 				
-				fieldsMapping.getTransformerInstance().performFieldTransformation(processor, srcObjects.get(0),
-				    transformedRec, srcObjects, fieldsMapping, srcConn, dstConn);
+				fieldsMapping.getTransformerInstance().performFieldTransformation(processor, srcObject, transformedRec,
+				    new ArrayList<>(srcObjects), fieldsMapping, srcConn, dstConn);
 				
 				dstConf.getRelatedEtlConf().logTrace("Field " + fieldsMapping + " Transformed to: "
 				        + transformedRec.getFieldValue(fieldsMapping.getDstField()));
@@ -202,36 +207,19 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 	}
 	
-	private void addSharedObjects(Set<EtlDatabaseObject> srcObjects, EtlDatabaseObject srcObject) {
-		if (srcObject.hasSharedPkObj()) {
-			srcObjects.add(srcObject.getSharedPkObj());
+	private void collectToSrcObjects(EtlDatabaseObject toCollectFrom, Set<EtlDatabaseObject> srcObjects) {
+		if (toCollectFrom != null) {
+			Set<EtlDatabaseObject> avaliable = toCollectFrom.collectAllAvaliableSrcObjects();
+			
+			if (utilities.setHasElement(avaliable)) {
+				srcObjects.addAll(avaliable);
+			}
 		}
 	}
 	
-	private void addDstObject(Set<EtlDatabaseObject> srcObjects, EtlDatabaseObject dstObject) {
-		if (((DstConf) dstObject.getRelatedConfiguration()).useAsDataSource()) {
-			srcObjects.add(dstObject);
-		}
-	}
-	
-	private void addParentObjects(Set<EtlDatabaseObject> srcObjects, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject migratedDstParent) {
-		
-		if (migratedDstParent != null) {
-			srcObjects.add(migratedDstParent);
-		}
-		
-		if (srcObject.isInEtlProcess()) {
-			srcObjects.addAll(srcObject.getEtlInfo().getTransformationSrcObject());
-		}
-		
-		if (migratedDstParent != null) {
-			srcObjects.addAll(migratedDstParent.getEtlInfo().getTransformationSrcObject());
-		}
-	}
-	
-	private void addExtraDataSources(EtlProcessor processor, Set<EtlDatabaseObject> srcObjects, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject dstObject, TransformationType transformationType, Connection srcConn) throws DBException {
+	private void collectToSrcObjectsFromExtraDataSources(EtlProcessor processor, Set<EtlDatabaseObject> srcObjects,
+	        EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, TransformationType transformationType,
+	        Connection srcConn) throws DBException {
 		
 		if (srcObject.getRelatedConfiguration() instanceof SrcConf) {
 			SrcConf srcConf = (SrcConf) srcObject.getRelatedConfiguration();
@@ -258,46 +246,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					}
 				}
 				
-				if (relatedSrcObject != null) {
-					srcObjects.add(relatedSrcObject);
-					
-					retrieveAuxLoadObjects(relatedSrcObject, srcObjects);
-				}
+				collectToSrcObjects(relatedSrcObject, srcObjects);
 			}
 		}
 	}
-	
-	private void retrieveAuxLoadObjects(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> currentList) {
-		
-		if (currentList == null)
-			throw new EtlExceptionImpl("The currentList cannot be null");
-		
-		if (srcObject.hasAuxLoadObject()) {
-			
-			List<EtlDatabaseObject> aux = new ArrayList<>();
-			
-			for (EtlDatabaseObject auxObject : srcObject.getAuxLoadObject()) {
-				aux.add(auxObject);
-				
-				if (auxObject.hasSharedPkObj()) {
-					aux.add(auxObject.getSharedPkObj());
-				}
-				
-				if (auxObject.hasAuxLoadObject()) {
-					for (EtlDatabaseObject innerObject : auxObject.getAuxLoadObject()) {
-						aux.add(innerObject);
-						
-						if (innerObject.hasSharedPkObj()) {
-							aux.add(innerObject.getSharedPkObj());
-						}
-					}
-				}
-			}
-			
-			if (utilities.listHasElement(aux)) {
-				currentList.addAll(aux);
-			}
-		}
-	}
-	
 }

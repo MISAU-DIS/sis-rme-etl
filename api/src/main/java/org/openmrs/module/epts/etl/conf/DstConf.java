@@ -450,7 +450,7 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		
 		FieldsMappingIssues mappingProblem = null;
 		
-		if (!getMappingResolutionStrategy().autoOnly()) {
+		if (getMappingResolutionStrategy().allowManual()) {
 			
 			if (this.hasMapping()) {
 				mappingProblem = loadConfiguredMappingAdditionalInfo(conn);
@@ -465,7 +465,8 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			}
 		}
 		
-		if (!this.getMappingResolutionStrategy().manualOnly()) {
+		if (this.getMappingResolutionStrategy().allowAuto() || this.getMappingResolutionStrategy().allowDefault()) {
+			
 			if (mappingProblem == null) {
 				mappingProblem = new FieldsMappingIssues();
 			}
@@ -520,7 +521,6 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 					}
 				}
 			}
-			
 		}
 		
 		if (mappingProblem != null && mappingProblem.hasIssue()) {
@@ -1220,13 +1220,15 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		
 		if (hasMapping()) {
 			for (FieldsMapping map : this.getMapping()) {
+				
 				if (map.hasTransformer()) {
 					map.tryToLoadTransformer(this, srcConn);
 					map.getTransformerInstance().init(srcConn, dstConn);
 					
 					map.getTransformerInstance().determineTransformerType();
 					
-					if (map.getTransformerType().isParentOnDemand()) {
+					if (map.getTransformerType().isParentOnDemand()
+					        || map.getTransformerType().isParentOnDemandWithDefaults()) {
 						ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) map
 						        .getTransformerInstance();
 						
@@ -1280,5 +1282,10 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		if (!isInMemoryTable()) {
 			super.tryToLoadSchemaInfo(schemaInfoSrc, conn);
 		}
+	}
+	
+	@Override
+	public FieldMappingResolutionStrategy mappingResolutionStrategy() {
+		return this.mappingResolutionStrategy;
 	}
 }

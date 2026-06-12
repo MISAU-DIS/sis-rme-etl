@@ -20,6 +20,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.JavaObjectFieldsValuesGenerat
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.conf.types.ObjectLanguageType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -73,6 +74,20 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	private Boolean loadedDataSourceInfo;
 	
 	private ActionOnEtlIssue unmappedFieldBehavior;
+	
+	/**
+	 * Defines how field mappings should be resolved for this destination configuration.
+	 * <p>
+	 * The ETL engine supports both manually configured mappings and automatically inferred
+	 * mappings. This strategy determines whether the engine should use only manual mappings, only
+	 * automatic mappings, or manual mappings followed by automatic inference for unmapped fields.
+	 * </p>
+	 * <p>
+	 * If not specified, the default strategy is
+	 * {@link FieldMappingResolutionStrategy#MANUAL_THEN_AUTO}.
+	 * </p>
+	 */
+	private FieldMappingResolutionStrategy mappingResolutionStrategy;
 	
 	public ObjectDataSource() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
@@ -574,6 +589,14 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 		return required;
 	}
 	
+	public FieldMappingResolutionStrategy getMappingResolutionStrategy() {
+		return mappingResolutionStrategy;
+	}
+	
+	public void setMappingResolutionStrategy(FieldMappingResolutionStrategy mappingResolutionStrategy) {
+		this.mappingResolutionStrategy = mappingResolutionStrategy;
+	}
+	
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
 		this.addToAvaliableDataSource(this.getSrcConf());
@@ -608,6 +631,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	@Override
 	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
 		throw new ForbiddenOperationException("Default Target Object is not Allowed!");
+	}
+	
+	@Override
+	public FieldMappingResolutionStrategy mappingResolutionStrategy() {
+		return this.mappingResolutionStrategy;
 	}
 	
 }

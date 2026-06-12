@@ -90,4 +90,8 @@ public abstract class JsonEtlAbctractObject extends AbstractEtlDataConfiguration
 		return JsonEtlColumnInfo.toEtlField(this.columns);
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		return this == obj;
+	}
 }

@@ -691,7 +691,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		
 		for (DstConf dstC : conf.getDstConf()) {
 			dstC.setUnmappedFieldBehavior(this.onDemandInfo.unmappedFieldBehavior());
-			
+			dstC.setMappingResolutionStrategy(this.onDemandInfo.getMappingResolutionStrategy());
 			dstC.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.USE_LAST);
 		}
 		

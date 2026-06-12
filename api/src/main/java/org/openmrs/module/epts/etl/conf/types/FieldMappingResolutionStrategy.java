@@ -34,6 +34,28 @@ public enum FieldMappingResolutionStrategy {
 	AUTO_ONLY,
 	
 	/**
+	 * Uses manually configured mappings and automatically assigns default values to destination
+	 * fields that were not explicitly mapped.
+	 * <p>
+	 * The ETL engine applies all mappings defined in the {@code mapping} section. After that, any
+	 * remaining destination fields that do not have a mapped value are populated using their
+	 * configured default values.
+	 * </p>
+	 * <p>
+	 * Default values may originate from:
+	 * </p>
+	 * <ul>
+	 * <li>field-level default values;</li>
+	 * <li>table-level default values defined in the destination schema;</li>
+	 * <li>global ETL {@code defaultFieldValues} configuration, when applicable.</li>
+	 * </ul>
+	 * <p>
+	 * No automatic field mapping is performed in this mode.
+	 * </p>
+	 */
+	MANUAL_WITH_DEFAULTS,
+	
+	/**
 	 * Uses manually declared mappings first, then automatically infers mappings for destination
 	 * fields that were not manually mapped.
 	 * <p>
@@ -51,7 +73,26 @@ public enum FieldMappingResolutionStrategy {
 		return this == AUTO_ONLY;
 	}
 	
-	public boolean isManualThenOnly() {
+	public boolean manualThenAuto() {
 		return this == MANUAL_THEN_AUTO;
 	}
+	
+	public boolean manualWithDefault() {
+		return this == MANUAL_WITH_DEFAULTS;
+	}
+	
+	public boolean allowAuto() {
+		return manualThenAuto() || autoOnly();
+	}
+	
+	public boolean allowManual() {
+		return manualOnly() || manualThenAuto() || manualWithDefault();
+	}
+	
+	public boolean allowDefault() {
+		return manualWithDefault();
+	}
+	
+	
+	
 }

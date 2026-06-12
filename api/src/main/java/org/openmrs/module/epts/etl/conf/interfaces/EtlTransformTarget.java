@@ -7,6 +7,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -54,8 +55,14 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration {
 	
 	ActionOnEtlIssue unmappedFieldBehavior();
 	
+	FieldMappingResolutionStrategy mappingResolutionStrategy();
+	
 	default Boolean hasUnmappedFieldBehavior() {
 		return this.unmappedFieldBehavior() != null;
+	}
+	
+	default Boolean hasMappingResolutionStrategy() {
+		return this.mappingResolutionStrategy() != null;
 	}
 	
 	default Boolean hasSrcObjectCondition() {
@@ -300,6 +307,21 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration {
 		
 		if (fm.getSrcValue() != null || fm.isMapToNullValue()) {
 			return;
+		}
+		
+		if (hasMappingResolutionStrategy()) {
+			if (!mappingResolutionStrategy().allowAuto() && mappingResolutionStrategy().allowDefault()) {
+				EtlDatabaseObject defaultObject = getTargetDefaultObject(conn, conn);
+				
+				if (defaultObject != null) {
+					fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+					fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER, conn);
+				} else {
+					throw new ForbiddenOperationException("The default object was not generated...!");
+				}
+				
+				return;
+			}
 		}
 		
 		if (utilities.listHasElement(this.getAllPrefferredDataSource())) {

@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -56,6 +57,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	private List<Object> originalParameters;
 	
 	private ActionOnEtlIssue unmappedFieldBehavior;
+	
+	private FieldMappingResolutionStrategy mappingResolutionStrategy;
 	
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
 	        Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
@@ -136,6 +139,12 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 						
 						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue);
+					} else if (dstField.equals("mapping_resolution_strategy")) {
+						if (!utilities.stringHasValue(srcFieldOrValue)) {
+							throw new ForbiddenOperationException("The mapping_resolution_strategy has no value");
+						}
+						
+						this.mappingResolutionStrategy = FieldMappingResolutionStrategy.valueOf(srcFieldOrValue);
 					} else if (dstField.startsWith("template_param_")) {
 						
 						String paramName = dstField.substring("template_param_".length());
@@ -352,6 +361,14 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	
 	public void setOriginalParameters(List<Object> originalParameters) {
 		this.originalParameters = originalParameters;
+	}
+	
+	public FieldMappingResolutionStrategy getMappingResolutionStrategy() {
+		return mappingResolutionStrategy;
+	}
+	
+	public void setMappingResolutionStrategy(FieldMappingResolutionStrategy mappingResolutionStrategy) {
+		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
 	
 	@Override

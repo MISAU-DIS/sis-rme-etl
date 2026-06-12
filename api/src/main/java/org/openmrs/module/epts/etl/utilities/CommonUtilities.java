@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Stack;
 import java.util.UUID;
 import java.util.Vector;
@@ -583,6 +584,10 @@ public class CommonUtilities implements Serializable {
 	
 	public boolean listHasElement(List<?> list) {
 		return FuncoesGenericas.arrayHasElement(list);
+	}
+	
+	public boolean setHasElement(Set<?> set) {
+		return set != null && !set.isEmpty();
 	}
 	
 	public boolean listHasNoElement(List<?> list) {

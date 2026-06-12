@@ -4,8 +4,10 @@ import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
 import org.openmrs.module.epts.etl.conf.DstConf;
@@ -15,6 +17,7 @@ import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -880,18 +883,29 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 	
 	default boolean isSrcObject() {
-		return this.getRelatedConfiguration() instanceof SrcConf;
+		return this.getRelatedConfiguration() instanceof EtlSrcConf;
 	}
 	
 	default boolean isDstObject() {
 		return this.getRelatedConfiguration() instanceof DstConf;
 	}
 	
-	default List<EtlDatabaseObject> collectAllAvaliableSrcObjects() {
-		List<EtlDatabaseObject> avaliableSrcOjects = new ArrayList<>();
+	default Set<EtlDatabaseObject> collectAllAvaliableSrcObjects() {
+		Set<EtlDatabaseObject> avaliableSrcOjects = new LinkedHashSet<>();
 		
 		if (this.getEtlInfo() != null) {
-			return this.getEtlInfo().getAvaliableSrcObjects();
+			if (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource()) {
+				avaliableSrcOjects.add(this);
+			}
+			
+			Set<EtlDatabaseObject> avaliable = this.getEtlInfo().getAvaliableSrcObjects();
+			
+			if (utils.setHasElement(avaliable)) {
+				avaliableSrcOjects.addAll(avaliable);
+			}
+			
+			return avaliableSrcOjects;
+			
 		} else if (this.isSrcObject()
 		        || (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource())) {
 			avaliableSrcOjects.add(this);
@@ -900,8 +914,18 @@ public interface EtlDatabaseObject extends EtlObject {
 		if (this.hasDestinationRecords()) {
 			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
 				
-				if (utils.listHasElement(obj.collectAllAvaliableSrcObjects())) {
+				if (utils.setHasElement(obj.collectAllAvaliableSrcObjects())) {
 					avaliableSrcOjects.addAll(obj.collectAllAvaliableSrcObjects());
+				}
+			}
+		}
+		
+		if (hasAuxLoadObject()) {
+			for (EtlDatabaseObject a : this.getAuxLoadObject()) {
+				Set<EtlDatabaseObject> colectedFromAux = a.collectAllAvaliableSrcObjects();
+				
+				if (utils.setHasElement(colectedFromAux)) {
+					avaliableSrcOjects.addAll(colectedFromAux);
 				}
 			}
 		}

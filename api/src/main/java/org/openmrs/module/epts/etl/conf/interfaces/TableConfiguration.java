@@ -2653,7 +2653,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default EtlConfigurationTableConf generateRelatedDstStageTableConf(Connection conn) throws DBException {
 		if (!existRelatedDstStageTable(conn)) {
 			throw new ForbiddenOperationException("The table " + this.generateRelatedDstStageTableName()
-			        + " does not exists! Ensure that the DB_PREPARATION operation was executed!");
+			        + " does not exists! Ensure that the DB_PREPARATION operation was full executed!");
 		}
 		
 		return this.generateRelatedStageTabConf(this.generateRelatedDstStageTableName(), this.getSyncStageSchema(), conn);
