@@ -936,6 +936,7 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
                "overrideTriggerValue":"",
                "nullValueBehavior":"",
                "skipRelationshipResolution":"",
+               "applyCondition":"", 
                "transformer":""
             }
          ],
@@ -996,8 +997,29 @@ Bellow is the explanation for each field:
        - relationship resolution is not required during the ETL process
          
      ⚠️ Warning:
-         Disabling relationship resolution may result in invalid foreign key references if the value does not correspond to an existing record in the destination database.      
-   - (10) **transformer**: defines a transformation applied to the evaluated field value. Transformers allow complex processing such as expression evaluation, string manipulation, database lookups, or value mapping. Refere to [field transformers](#field-transformers) for more details,
+         Disabling relationship resolution may result in invalid foreign key references if the value does not correspond to an existing record in the destination database.
+   - (10) **applyCondition**: Optional SQL-like condition that determines whether a mapping should be executed.
+
+     The condition is evaluated immediately before the mapping is applied. If the condition evaluates to *true*, the mapping is executed normally. If it evaluates to *false*, the mapping is ignored and no transformation is performed for the corresponding destination field.
+     
+     When a mapping is ignored:
+       - the source value is not evaluated;
+       - transformers are not executed;
+       - the destination field remains unmapped;
+       - the final value of the field will depend on the configured *mappingResolutionStrategy* and any applicable default values.
+
+       Example:
+     
+       ```
+       {
+          "srcField":"void_user_dst.user_id",
+          "dstField":"voided_by",
+          "applyCondition":"main_src_ds.voided = 1"
+       }
+      ```
+     In this example, the *voided_by* field will only be populated when the source record is marked as voided. For records where *main_src_ds.voided = 0*, the mapping will be skipped.       
+   
+   - (11) **transformer**: defines a transformation applied to the evaluated field value. Transformers allow complex processing such as expression evaluation, string manipulation, database lookups, or value mapping. Refere to [field transformers](#field-transformers) for more details,
    -  **joinFields** allow the specification of the joining fields to the srcConf. Usually the joining fields can be automatically generated if the src and dst use the same unique keys. The joining fields are important when it comes to determining if all the src records were processed. If the joining fields are not present then the final verification of the process will be skipped for that specific table. (See [The Joining Fields](#joinFields)) 
 - **autoIncrementHandlingType**: define how the schema defined auto-increment will be handled. The possible values: (1) AS_SCHEMA_DEFINED meaning that the Etl process will respect the Auto-Increment as defined on table Schema definition. This is the default behavior of the Etl Configuration (2) IGNORE_SCHEMA_DEFINITION meaning that the auto-increment defined by table schema will be ignored and the application itself will handle the key values.
 - *primaryKeyInitialIncrementValue*: this override the same property defined on Etl Item Configuration.
