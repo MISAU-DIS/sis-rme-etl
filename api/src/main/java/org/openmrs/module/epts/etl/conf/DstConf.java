@@ -39,83 +39,86 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class DstConf extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf, EtlTransformTarget, EtlItemConfigurationComponent {
-	
+public class DstConf extends AbstractTableConfiguration
+		implements EtlDataSource, EtlDstConf, EtlTransformTarget, EtlItemConfigurationComponent {
+
 	/*
 	 * The user defined joinFields with #getSrcConf()
 	 */
 	private List<FieldsMapping> joinFields;
-	
+
 	private List<List<FieldsMapping>> generatedJoinFields;
-	
+
 	private List<FieldsMapping> allMapping;
-	
+
 	private List<String> excludedFields;
-	
+
 	private List<FieldsMapping> mapping;
-	
+
 	private DBConnectionInfo relatedConnInfo;
-	
+
 	private static final int DEFAULT_NEXT_TREAD_ID = -1;
-	
+
 	private int currThreadStartId;
-	
+
 	private int currQtyRecords;
-	
+
 	private final String stringLock = new String("LOCK_STRING");
-	
+
 	private List<String> prefferredDataSource;
-	
+
 	private List<EtlDataSource> allAvaliableDataSource;
-	
+
 	private List<EtlDataSource> allNotPrefferredDataSource;
-	
+
 	private List<EtlDataSource> allPrefferredDataSource;
-	
+
 	private ActionOnEtlIssue unmappedFieldBehavior;
-	
+
 	private Boolean automaticalyGenerated;
-	
+
 	private EtlDstType dstType;
-	
+
 	private String csvDelimiter;
-	
+
 	private String transformer;
-	
+
 	private EtlRecordTransformer transformerInstance;
-	
+
 	private Boolean inMemoryTable;
-	
+
 	/**
-	 * If true, when the table does not exists, it will be created with all fields from datasource +
-	 * the fields defined on mapping
+	 * If true, when the table does not exists, it will be created with all fields
+	 * from datasource + the fields defined on mapping
 	 */
 	private Boolean includeAllFieldsFromDataSource;
-	
+
 	private String srcObjectCondition;
-	
+
 	private Boolean doNotUseSrcConfAsDataSource;
-	
+
 	private Boolean loadedDataSourceInfo;
-	
+
 	private ActionOnEtlIssue onMultipleDataSourceForSameMapping;
-	
+
 	private ActionOnEtlIssue onMultipleDataSourceWithSameName;
-	
+
 	private Boolean useAsDataSource;
-	
+
 	private Boolean fieldsMappingAlredyGenerated;
-	
+
 	private Boolean ignoreNoDstIssue;
-	
+
 	private EtlDatabaseObject targetDefaultObject;
-	
+
 	/**
-	 * Defines how field mappings should be resolved for this destination configuration.
+	 * Defines how field mappings should be resolved for this destination
+	 * configuration.
 	 * <p>
-	 * The ETL engine supports both manually configured mappings and automatically inferred
-	 * mappings. This strategy determines whether the engine should use only manual mappings, only
-	 * automatic mappings, or manual mappings followed by automatic inference for unmapped fields.
+	 * The ETL engine supports both manually configured mappings and automatically
+	 * inferred mappings. This strategy determines whether the engine should use
+	 * only manual mappings, only automatic mappings, or manual mappings followed by
+	 * automatic inference for unmapped fields.
 	 * </p>
 	 * <p>
 	 * If not specified, the default strategy is
@@ -123,542 +126,544 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 	 * </p>
 	 */
 	private FieldMappingResolutionStrategy mappingResolutionStrategy;
-	
+
 	public DstConf() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.ABORT_PROCESS;
 		this.onMultipleDataSourceWithSameName = ActionOnEtlIssue.ABORT_PROCESS;
 		this.useAsDataSource = false;
 	}
-	
+
 	private void ensureTargetDefaultObjectInitialized(Connection srcConn, Connection dstConn) throws DBException {
 		if (this.targetDefaultObject == null) {
-			
+
 			this.targetDefaultObject = createRecordInstance();
-			
+
 			this.targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
 		}
 	}
-	
+
 	@Override
 	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
 		this.ensureTargetDefaultObjectInitialized(srcConn, dstConn);
-		
+
 		return this.targetDefaultObject;
 	}
-	
+
 	public ActionOnEtlIssue getUnmappedFieldBehavior() {
 		return unmappedFieldBehavior;
 	}
-	
+
 	public void setUnmappedFieldBehavior(ActionOnEtlIssue onMissingMapping) {
 		if (onMissingMapping != null && !onMissingMapping.allowedOnMissingFieldsMapping()) {
 			throw new EtlConfException("Value not allowed unmappedFieldBehavior [" + onMissingMapping + "]");
 		}
-		
+
 		this.unmappedFieldBehavior = onMissingMapping;
 	}
-	
+
 	@Override
 	public ActionOnEtlIssue unmappedFieldBehavior() {
 		return getUnmappedFieldBehavior();
 	}
-	
+
+	@Override
+	public String getCondition() {
+		return this.getSrcObjectCondition();
+	}
+
 	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {
 		this.ignoreNoDstIssue = ignoreNoDstIssue;
 	}
-	
+
 	public Boolean getIgnoreNoDstIssue() {
 		return ignoreNoDstIssue;
 	}
-	
+
 	public Boolean ignoreNoDstIssue() {
 		return isTrue(ignoreNoDstIssue);
 	}
-	
+
 	public Boolean getUseAsDataSource() {
 		return useAsDataSource;
 	}
-	
+
 	public void setUseAsDataSource(Boolean useAsDataSource) {
 		this.useAsDataSource = useAsDataSource;
 	}
-	
+
 	public DstConf(String tableName) {
 		setTableName(tableName);
 	}
-	
+
 	public Boolean useAsDataSource() {
 		return isTrue(useAsDataSource);
 	}
-	
+
 	public ActionOnEtlIssue onMultipleDataSourceWithSameName() {
 		return onMultipleDataSourceWithSameName;
 	}
-	
+
 	public ActionOnEtlIssue getOnMultipleDataSourceWithSameName() {
 		return onMultipleDataSourceWithSameName;
 	}
-	
+
 	public void setOnMultipleDataSourceWithSameName(ActionOnEtlIssue onMultipleDataSourceWithSameName) {
 		this.onMultipleDataSourceWithSameName = onMultipleDataSourceWithSameName;
 	}
-	
+
 	public ActionOnEtlIssue getOnMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
 	}
-	
+
 	public void setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue onMultipleDataSourceForSameMapping) {
 		this.onMultipleDataSourceForSameMapping = onMultipleDataSourceForSameMapping;
 	}
-	
+
 	public ActionOnEtlIssue onMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
 	}
-	
+
 	public DstConf getParentDstConf() {
 		if (hasParentDstConf()) {
 			return ((EtlChildItemConfiguration) this.getSrcConf().getParentConf()).getRelatedParentDstConf();
 		}
-		
+
 		return null;
 	}
-	
+
 	public Boolean isLoadedDataSourceInfo() {
 		return isTrue(this.loadedDataSourceInfo);
 	}
-	
+
 	public Boolean getLoadedDataSourceInfo() {
 		return loadedDataSourceInfo;
 	}
-	
+
 	public void setLoadedDataSourceInfo(Boolean loadedDataSourceInfo) {
 		this.loadedDataSourceInfo = loadedDataSourceInfo;
 	}
-	
+
 	public Boolean isDoNotUseSrcConfAsDataSource() {
 		return isTrue(doNotUseSrcConfAsDataSource);
 	}
-	
+
 	public void setDoNotUseSrcConfAsDataSource(Boolean doNotUseSrcConfAsDataSource) {
 		this.doNotUseSrcConfAsDataSource = doNotUseSrcConfAsDataSource;
 	}
-	
+
 	public Boolean hasParentDstConf() {
 		return this.getSrcConf().getParentConf() instanceof EtlChildItemConfiguration;
 	}
-	
+
 	public String getSrcObjectCondition() {
 		return srcObjectCondition;
 	}
-	
+
 	public void setSrcObjectCondition(String srcObjectCondition) {
 		this.srcObjectCondition = srcObjectCondition;
 	}
-	
+
 	public Boolean isIncludeAllFieldsFromDataSource() {
 		return isTrue(includeAllFieldsFromDataSource);
 	}
-	
+
 	public void setIncludeAllFieldsFromDataSource(Boolean includeAllFieldsFromDataSource) {
 		this.includeAllFieldsFromDataSource = includeAllFieldsFromDataSource;
 	}
-	
+
 	public Boolean includeAllFieldsFromDataSource() {
 		return isIncludeAllFieldsFromDataSource();
 	}
-	
+
 	public Boolean isInMemoryTable() {
 		return isTrue(inMemoryTable);
 	}
-	
+
 	public void setInMemoryTable(Boolean inMemoryTable) {
 		this.inMemoryTable = inMemoryTable;
 	}
-	
+
 	public String getCsvDelimiter() {
 		return csvDelimiter;
 	}
-	
+
 	public void setCsvDelimiter(String csvDelimiter) {
 		this.csvDelimiter = csvDelimiter;
 	}
-	
+
 	public EtlRecordTransformer getTransformerInstance() {
 		return transformerInstance;
 	}
-	
+
 	public void setTransformerInstance(EtlRecordTransformer transformerInstance) {
 		this.transformerInstance = transformerInstance;
 	}
-	
+
 	public String getTransformer() {
 		return transformer;
 	}
-	
+
 	public void setTransformer(String transformer) {
 		this.transformer = transformer;
 	}
-	
+
 	public Boolean hasTransformer() {
 		return getTransformer() != null;
 	}
-	
+
 	public EtlDstType getDstType() {
 		return dstType;
 	}
-	
+
 	public void setDstType(EtlDstType dstType) {
 		this.dstType = dstType;
 	}
-	
+
 	public List<List<FieldsMapping>> getGeneratedJoinFields() {
 		return generatedJoinFields;
 	}
-	
+
 	public void setGeneratedJoinFields(List<List<FieldsMapping>> generatedJoinFields) {
 		this.generatedJoinFields = generatedJoinFields;
 	}
-	
+
 	public Boolean isAutomaticalyGenerated() {
 		return isTrue(automaticalyGenerated);
 	}
-	
+
 	public void setAutomaticalyGenerated(Boolean automaticalyGenerated) {
 		this.automaticalyGenerated = automaticalyGenerated;
 	}
-	
+
 	public List<String> getPrefferredDataSource() {
 		return prefferredDataSource;
 	}
-	
+
 	public void setPrefferredDataSource(List<String> prefferredDataSource) {
 		this.prefferredDataSource = prefferredDataSource;
 	}
-	
+
 	public List<FieldsMapping> getJoinFields() {
 		return joinFields;
 	}
-	
+
 	public void setJoinFields(List<FieldsMapping> joinFields) {
 		this.joinFields = joinFields;
 	}
-	
+
 	@Override
 	public Boolean isGeneric() {
 		return Boolean.FALSE;
 	}
-	
+
 	public List<FieldsMapping> getMapping() {
 		return mapping;
 	}
-	
+
 	public void setMapping(List<FieldsMapping> manualFieldsMapping) {
 		this.mapping = manualFieldsMapping;
 	}
-	
+
 	public List<FieldsMapping> getAllMapping() {
 		return allMapping;
 	}
-	
+
 	public void setAllMapping(List<FieldsMapping> allMapping) {
 		this.allMapping = allMapping;
 	}
-	
+
 	public List<String> getExcludedFields() {
 		return excludedFields;
 	}
-	
+
 	public void setExcludedFields(List<String> excludedFields) {
 		this.excludedFields = excludedFields;
 	}
-	
+
 	public Boolean useDefaultTransformer() {
 		return getTransformerInstance() instanceof DefaultRecordTransformer;
 	}
-	
+
 	private FieldsMappingIssues loadConfiguredMappingAdditionalInfo(Connection conn) throws DBException {
 		FieldsMappingIssues mappingProblem = null;
-		
+
 		if (utilities.listHasElement(this.getMapping())) {
 			mappingProblem = new FieldsMappingIssues();
-			
+
 			for (FieldsMapping fm : this.getMapping()) {
 				fm.setTargetObject(this);
-				
+
 				if (!utilities.stringHasValue(fm.getDstField())) {
 					throw new ForbiddenOperationException("One or more mapping on dstTable '" + this.getTableName()
-					        + "' on Etl Configuration '" + this.getParentConf().getConfigCode()
-					        + "' configuration does not have dstField: [" + fm + "]");
+							+ "' on Etl Configuration '" + this.getParentConf().getConfigCode()
+							+ "' configuration does not have dstField: [" + fm + "]");
 				}
-				
+
 				fm.tryToLoadDataSourceInfoFromSrcField();
-				
+
 				fm.tryToLoadTransformer(this, conn);
-				
+
 				if (fm.hasTransformer() && fm.isSetToNullValue()) {
 					fm.setSrcValue(null);
 				}
-				
+
 				if (!fm.hasDataSourceName()) {
 					try {
 						tryToLoadDataSourceToFieldMapping(fm, conn);
-					}
-					catch (FieldNotAvaliableInAnyDataSource e) {
+					} catch (FieldNotAvaliableInAnyDataSource e) {
 						Field f = getField(fm.getDstField());
-						
+
 						Boolean problem = !f.getAttDefinedElements().isPartOfObjectId();
-						
+
 						problem = problem ? problem : !this.useAutoIncrementId(conn);
-						
+
 						if (problem) {
 							mappingProblem.getNotAvaliableInAnyDataSource().add(fm);
 						}
-					}
-					catch (FieldAvaliableInMultipleDataSources e) {
+					} catch (FieldAvaliableInMultipleDataSources e) {
 						mappingProblem.getAvaliableInMultiDataSources().add(fm);
 					}
-					
+
 				} else {
 					EtlDataSource ds = findDataSource(fm.getDataSourceName());
-					
+
 					stepIntoBreakpoint(null, ds == null);
-					
+
 					if (ds == null) {
 						throw new NoSuchElementException("Error when preparing the fm:" + fm + "> The DataSource '"
-						        + fm.getDataSourceName() + "' cannot be found ");
+								+ fm.getDataSourceName() + "' cannot be found ");
 					}
-					
+
 					if (ds.containsField(fm.getSrcField())) {
 						fm.setDataSourceName(ds.getAlias());
 					} else {
 						mappingProblem.getNotAvaliableInSpecifiedDataSource().add(fm);
 					}
 				}
-				
+
 			}
 		}
-		
+
 		return mappingProblem;
 	}
-	
+
 	public void generateAllFieldsMapping(Connection conn) throws DBException, FieldsMappingException {
 		if (this.fieldsMappingAlredyGenerated()) {
 			return;
 		}
-		
+
 		this.allMapping = new ArrayList<>();
-		
+
 		FieldsMappingIssues mappingProblem = null;
-		
+
 		if (getMappingResolutionStrategy().allowManual()) {
-			
+
 			if (this.hasMapping()) {
 				mappingProblem = loadConfiguredMappingAdditionalInfo(conn);
-				
+
 				for (FieldsMapping fm : this.getMapping()) {
 					fm.setManuallyConfigured(true);
-					
+
 					if (!mappingProblem.contains(fm)) {
 						addMapping(fm);
 					}
 				}
 			}
 		}
-		
+
 		if (this.getMappingResolutionStrategy().allowAuto() || this.getMappingResolutionStrategy().allowDefault()) {
-			
+
 			if (mappingProblem == null) {
 				mappingProblem = new FieldsMappingIssues();
 			}
-			
+
 			List<Field> myFields = this.getFields();
-			
+
 			for (Field field : myFields) {
-				
+
 				if (isIgnorableField(field)) {
 					continue;
 				}
-				
+
 				FieldsMapping fm = null;
-				
-				EtlField etlField = this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
-				
+
+				EtlField etlField = this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(),
+						true);
+
 				if (etlField != null) {
 					fm = FieldsMapping.fastCreate(etlField.getSrcField().getName(), field.getName(), true, conn);
 					fm.setDataSourceName(etlField.getSrcDataSource().getName());
 				} else {
 					fm = FieldsMapping.fastCreate(field.getName(), field.getName(), true, conn);
 				}
-				
+
 				if (!this.getAllMapping().contains(fm)) {
 					try {
-						
+
 						if (this.hasMapping() && this.getMapping().contains(fm)) {
 							fm = utilities.findOnList(this.getMapping(), fm);
 						} else {
 							fm.tryToLoadTransformer(this, conn);
-							
+
 							tryToLoadDataSourceToFieldMapping(fm, conn);
 						}
-						
+
 						addMapping(fm);
-					}
-					catch (FieldNotAvaliableInAnyDataSource e) {
-						
+					} catch (FieldNotAvaliableInAnyDataSource e) {
+
 						Field f = getField(fm.getDstField());
-						
+
 						Boolean problem = !f.getAttDefinedElements().isPartOfObjectId();
-						
+
 						problem = problem ? problem : !this.useAutoIncrementId(conn);
-						
+
 						if (problem) {
 							mappingProblem.getNotAvaliableInAnyDataSource().add(fm);
 						}
-						
-					}
-					catch (FieldAvaliableInMultipleDataSources e) {
+
+					} catch (FieldAvaliableInMultipleDataSources e) {
 						mappingProblem.getAvaliableInMultiDataSources().add(fm);
 					}
 				}
 			}
 		}
-		
+
 		if (mappingProblem != null && mappingProblem.hasIssue()) {
 			throw new FieldsMappingException(this, mappingProblem);
 		}
-		
+
 		this.setFieldsMappingAlredyGenerated(true);
 	}
-	
+
 	public void setFieldsMappingAlredyGenerated(Boolean fieldsMappingAlredyGenerated) {
 		this.fieldsMappingAlredyGenerated = fieldsMappingAlredyGenerated;
 	}
-	
+
 	public Boolean getFieldsMappingAlredyGenerated() {
 		return fieldsMappingAlredyGenerated;
 	}
-	
+
 	private boolean fieldsMappingAlredyGenerated() {
 		return !this.useDefaultTransformer() || isTrue(this.getFieldsMappingAlredyGenerated());
 	}
-	
+
 	public FieldMappingResolutionStrategy getMappingResolutionStrategy() {
 		return mappingResolutionStrategy;
 	}
-	
+
 	public void setMappingResolutionStrategy(FieldMappingResolutionStrategy mappingResolutionStrategy) {
 		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
-	
+
 	public FieldsMapping getMappingUsingDstField(String dstFieldName) {
 		List<FieldsMapping> matchedFields = new ArrayList<FieldsMapping>();
-		
+
 		for (FieldsMapping field : this.allMapping) {
 			if (field.getDstField() == null) {
 				continue;
 			}
-			
+
 			if (field.getDstField().equals(dstFieldName)) {
 				matchedFields.add(field);
-				
+
 				if (matchedFields.size() > 1) {
 					throw new ForbiddenOperationException("Cannot determine the mapping field for '" + dstFieldName
-					        + "' since it has multiple matching fields");
+							+ "' since it has multiple matching fields");
 				}
 			}
 		}
-		
+
 		if (matchedFields.isEmpty()) {
 			throw new ForbiddenOperationException("Cannot determine the mapping field for '" + dstFieldName + "'");
 		}
-		
+
 		return matchedFields.get(0);
 	}
-	
+
 	public String getMappedField(String srcField) {
 		List<FieldsMapping> machedFields = new ArrayList<FieldsMapping>();
-		
+
 		for (FieldsMapping field : this.allMapping) {
 			if (field.getSrcField().equals(srcField)) {
 				machedFields.add(field);
-				
+
 				if (machedFields.size() > 1) {
 					throw new ForbiddenOperationException("Cannot determine the mapping field for '" + srcField
-					        + "' since it has multiple matching fields");
+							+ "' since it has multiple matching fields");
 				}
 			}
 		}
-		
+
 		if (machedFields.isEmpty()) {
 			throw new ForbiddenOperationException("Cannot determine the mapping field for '" + srcField + "'");
 		}
-		
+
 		return machedFields.get(0).getDstField();
 	}
-	
+
 	public DBConnectionInfo getRelatedConnInfo() {
 		return relatedConnInfo;
 	}
-	
+
 	public void setRelatedConnInfo(DBConnectionInfo relatedConnInfo) {
 		this.relatedConnInfo = relatedConnInfo;
 	}
-	
+
 	@Override
 	public synchronized void fullLoad() throws DBException {
 		OpenConnection conn = this.relatedConnInfo.openConnection(this);
-		
+
 		try {
 			this.fullLoad(conn);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn, this);
 		}
 	}
-	
+
 	private List<EtlDataSource> avaliableDataSources() {
 		List<EtlDataSource> dataSource = new ArrayList<>();
-		
+
 		dataSource.add(this.getSrcConf());
-		
+
 		if (this.getSrcConf().hasExtraDataSource()) {
 			dataSource.addAll(this.getSrcConf().getAvaliableExtraDataSource());
 		}
-		
+
 		return dataSource;
 	}
-	
+
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
-		
+
 		if (!isInMemoryTable()) {
 			this.tryToGenerateTableAlias(getRelatedEtlConf());
-			
+
 			if (!hasManualMapPrimaryKeyOnField()) {
 				setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 			}
-			
+
 			super.fullLoad(conn);
 		} else {
 			try {
 				this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
-				
+
 				this.setFieldsLoaded(true);
-				
+
 				loadDataSourceInfo(conn);
-				
+
 				if (this.hasMapping()) {
-					
+
 					FieldsMappingIssues mappingProblem = loadConfiguredMappingAdditionalInfo(conn);
-					
+
 					if (mappingProblem.hasIssue()) {
 						throw new FieldsMappingException(this, mappingProblem);
 					}
-					
-					this.setFields(FieldsMapping.parseAllToField(this.getMapping(), this, avaliableDataSources(), conn));
-					
+
+					this.setFields(
+							FieldsMapping.parseAllToField(this.getMapping(), this, avaliableDataSources(), conn));
+
 					this.setAllMapping(this.getMapping());
-					
+
 					if (this.includeAllFieldsFromDataSource()) {
 						for (EtlField field : this.getSrcConf().getEtlFields()) {
 							if (!this.containsField(field.getName())) {
@@ -670,16 +675,16 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 				} else {
 					this.setFields(EtlField.convertToSimpleFiled(this.getSrcConf().getEtlFields()));
 				}
-				
+
 				if (this.getSrcConf().hasPK()) {
 					if (this.containsAllFields(
-					    utilities.parseList(this.getSrcConf().getPrimaryKey().getFields(), Field.class))) {
+							utilities.parseList(this.getSrcConf().getPrimaryKey().getFields(), Field.class))) {
 						this.setPrimaryKey((PrimaryKey) this.getSrcConf().getPrimaryKey().clone());
 					}
 				}
-				
+
 				this.setPrimaryKeyInfoLoaded(true);
-				
+
 				if (this.getSrcConf().hasUniqueKeys()) {
 					for (UniqueKeyInfo uk : this.getSrcConf().getUniqueKeys()) {
 						if (this.containsAllFields(utilities.parseList(uk.getFields(), Field.class))) {
@@ -689,239 +694,239 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 						}
 					}
 				}
-				
+
 				this.setUniqueKeyInfoLoaded(true);
-				
+
 				tryToLoadTransformer(conn);
-				
+
 				this.generateAllFieldsMapping(conn);
-				
+
 				this.setFullLoaded(true);
-			}
-			catch (CloneNotSupportedException e) {
+			} catch (CloneNotSupportedException e) {
 				throw new EtlExceptionImpl(e);
 			}
-			
+
 		}
-		
+
 	}
-	
+
 	/**
 	 * Find a parent which with same name in src
 	 * 
 	 * @param dstParent the parent to find the correspondent one in the src
 	 * @return the related parent in src
-	 * @throws ForbiddenOperationException if the @param dstParent is not a parent of this table or
-	 *             if it is not in the src
+	 * @throws ForbiddenOperationException if the @param dstParent is not a parent
+	 *                                     of this table or if it is not in the src
 	 */
 	public ParentTable findCorrespondentSrcParentConf(ParentTable dstParent) throws ForbiddenOperationException {
 		List<ParentTable> parents = findAllRefToParent(dstParent.getTableName());
-		
+
 		if (!utilities.listHasElement(parents)) {
 			throw new ForbiddenOperationException(
-			        "The table " + dstParent.getTableName() + " is not parent of " + this.getTableName());
+					"The table " + dstParent.getTableName() + " is not parent of " + this.getTableName());
 		}
-		
+
 		parents = getSrcConf().findAllRefToParent(dstParent.getTableName());
-		
+
 		if (!utilities.listHasElement(parents)) {
-			throw new ForbiddenOperationException(
-			        "The table " + dstParent.getTableName() + " is not parent of " + this.getTableName() + " in the src");
+			throw new ForbiddenOperationException("The table " + dstParent.getTableName() + " is not parent of "
+					+ this.getTableName() + " in the src");
 		}
-		
+
 		return parents.get(0);
 	}
-	
+
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		super.loadOwnElements(schemaInfo, conn);
-		
+
 		if (!this.hasUnmappedFieldBehavior()) {
 			this.setUnmappedFieldBehavior(ActionOnEtlIssue.ABORT_PROCESS);
 		}
-		
+
 		if (getMappingResolutionStrategy() == null) {
 			setMappingResolutionStrategy(FieldMappingResolutionStrategy.MANUAL_THEN_AUTO);
 		}
-		
+
 		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
-		
+
 		loadJoinFields(conn);
-		
+
 		loadDataSourceInfo(conn);
-		
+
 		tryToLoadTransformer(conn);
-		
+
 		this.generateAllFieldsMapping(conn);
-		
+
 		if (this.getDstType().isCsv()) {
 			if (this.getCsvDelimiter() == null) {
 				this.setCsvDelimiter(";");
 			}
 		}
 	}
-	
+
 	@Override
 	public List<EtlDataSource> getAllPrefferredDataSource() {
 		return allPrefferredDataSource;
 	}
-	
+
 	@Override
 	public List<EtlDataSource> getAllNotPrefferredDataSource() {
 		return allNotPrefferredDataSource;
 	}
-	
+
 	public Boolean useSrcConfAsDataSource() {
 		return !this.isDoNotUseSrcConfAsDataSource();
 	}
-	
+
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
 		if (isLoadedDataSourceInfo())
 			return;
-		
+
 		this.addAllToAvaliableDataSource(this.getParentConf().collectAllAvaliableDataSources(conn));
-		
+
 		this.fullLoadAllRelatedTables(getRelatedEtlConf(), null, conn);
-		
+
 		if (useAsDataSource()) {
 			addToAvaliableDataSource(this);
 		}
-		
+
 		determinePrefferredDataSources();
-		
+
 		this.setLoadedDataSourceInfo(true);
 	}
-	
+
 	@SuppressWarnings({ "unchecked", "deprecation" })
 	private void tryToLoadTransformer(Connection conn) {
 		if (this.hasTransformer() && !this.getTransformer().equals(DefaultRecordTransformer.class.getCanonicalName())) {
-			
+
 			try {
 				ClassLoader loader = EtlRecordTransformer.class.getClassLoader();
-				
+
 				Class<? extends EtlRecordTransformer> transformerClazz = (Class<? extends EtlRecordTransformer>) loader
-				        .loadClass(this.getTransformer());
-				
+						.loadClass(this.getTransformer());
+
 				this.setTransformerInstance(transformerClazz.newInstance());
+			} catch (Exception e) {
+				throw new ForbiddenOperationException("Error loading transformer class [" + this.getTransformer()
+						+ "]!!! " + e.getLocalizedMessage());
 			}
-			catch (Exception e) {
-				throw new ForbiddenOperationException(
-				        "Error loading transformer class [" + this.getTransformer() + "]!!! " + e.getLocalizedMessage());
-			}
-			
+
 		} else {
 			this.setTransformer(DefaultRecordTransformer.class.getCanonicalName());
-			
+
 			this.setTransformerInstance(DefaultRecordTransformer.getInstance());
 		}
 	}
-	
+
 	public List<EtlDataSource> getAllAvaliableDataSource() {
 		return allAvaliableDataSource;
 	}
-	
+
 	private void determinePrefferredDataSources() {
 		if (utilities.listHasNoElement(this.getPrefferredDataSource())) {
 			String prefferredDs = null;
-			
+
 			this.prefferredDataSource = new ArrayList<>();
-			
+
 			for (EtlDataSource tDs : this.getAllAvaliableDataSource()) {
 				if (tDs.getName().equals(this.getTableName())) {
 					prefferredDs = tDs.getName();
-					
+
 					break;
 				}
 			}
-			
+
 			if (prefferredDs != null) {
 				this.prefferredDataSource.add(prefferredDs);
 			}
-			
+
 			if (!this.prefferredDataSource.contains(getSrcConf().getName()) && useSrcConfAsDataSource()) {
 				this.prefferredDataSource.add(getSrcConf().getAlias());
 			}
 		}
-		
-		//Change the ds name to aliases
+
+		// Change the ds name to aliases
 		if (utilities.listHasElement(this.getPrefferredDataSource())) {
 			List<String> aliasedDs = new ArrayList<>(this.getPrefferredDataSource().size());
-			
+
 			for (String originalDsName : this.getPrefferredDataSource()) {
 				int occur = 0;
-				
+
 				String aliasedName = originalDsName;
-				
+
 				for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
 					if (ds.getName().equals(originalDsName)) {
 						occur++;
-						
+
 						if (occur > 1 && !this.onMultipleDataSourceWithSameName().useLast()) {
 							throw new ForbiddenOperationException("The preferred datasource '" + ds.getName()
-							        + "' occurs more than once. Please use alias instead of name or rename the datasource name");
+									+ "' occurs more than once. Please use alias instead of name or rename the datasource name");
 						}
-						
+
 						aliasedName = ds.getAlias();
 					}
 				}
-				
+
 				aliasedDs.add(aliasedName);
 			}
 		}
-		
+
 		if (utilities.listHasElement(this.getPrefferredDataSource())) {
 			for (String dsName : this.getPrefferredDataSource()) {
 				addToPrefferedDataSource(findDataSource(dsName));
 			}
 		}
-		
+
 		for (EtlDataSource ds : getAllAvaliableDataSource()) {
 			if (this.getPrefferredDataSource().contains(ds.getName())
-			        || this.getPrefferredDataSource().contains(ds.getAlias())) {
+					|| this.getPrefferredDataSource().contains(ds.getAlias())) {
 				addToPrefferedDataSource(ds);
 			} else {
 				addToNotPrefferedDataSource(ds);
 			}
 		}
 	}
-	
+
 	private void addToGeneratedJoinFields(List<FieldsMapping> toAdd) {
 		if (!hasJoinFields()) {
 			this.setGeneratedJoinFields(new ArrayList<>());
 		}
-		
+
 		this.getGeneratedJoinFields().add(toAdd);
 	}
-	
+
 	private void loadJoinFields(Connection conn) {
 		if (this.getJoinFields() != null) {
 			addToGeneratedJoinFields(getJoinFields());
 		}
-		
+
 		if (this.hasUniqueKeys()) {
-			//If no joinField is defined but the dst table has uk, tries to map the uk with src fields
+			// If no joinField is defined but the dst table has uk, tries to map the uk with
+			// src fields
 			tryToAutoGenerateJoinFields(this, this.getSrcConf(), conn);
-			
+
 			if (!hasJoinFields() && this.getSrcConf().hasUniqueKeys()) {
 				tryToAutoGenerateJoinFields(this.getSrcConf(), this, conn);
 			}
 		} else if (this.getSrcConf().hasUniqueKeys()) {
-			//If no joinField is defined but the src table has uk, tries to map the uk with dst fields
+			// If no joinField is defined but the src table has uk, tries to map the uk with
+			// dst fields
 			tryToAutoGenerateJoinFields(this.getSrcConf(), this, conn);
 		}
 	}
-	
+
 	/**
 	 * @param uk
 	 */
 	public void tryToAutoGenerateJoinFields(AbstractTableConfiguration ukTable, AbstractTableConfiguration targetTable,
-	        Connection conn) {
-		
+			Connection conn) {
+
 		for (UniqueKeyInfo uk : ukTable.getUniqueKeys()) {
-			
+
 			UniqueKeyInfo fakeSrcUk = new UniqueKeyInfo(targetTable);
-			
+
 			for (Key key : uk.getFields()) {
 				if (targetTable.containsField(key.getName())) {
 					fakeSrcUk.addKey(key);
@@ -929,57 +934,57 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 					fakeSrcUk.addKey(key);
 				}
 			}
-			
+
 			if (fakeSrcUk.hasFields() && uk.equals(fakeSrcUk)) {
 				List<FieldsMapping> joinFieldsFromUniqueKey = new ArrayList<>();
-				
+
 				for (Key key : uk.getFields()) {
 					joinFieldsFromUniqueKey.add(FieldsMapping.fastCreate(key.getName(), conn));
 				}
-				
+
 				addToGeneratedJoinFields(joinFieldsFromUniqueKey);
 			}
 		}
 	}
-	
+
 	public SrcConf getSrcConf() {
 		return this.getParentConf().getSrcConf();
 	}
-	
+
 	public long retriveNextRecordId(TaskProcessor<EtlDatabaseObject> processor) {
 		return processor.findIdGenerator(this).retriveNextIdForRecord();
 	}
-	
+
 	@Override
 	public void setParentConf(EtlDataConfiguration parent) {
 		super.setParentConf((EtlItemConfiguration) parent);
 	}
-	
+
 	@Override
 	public EtlItemConfiguration getParentConf() {
 		return (EtlItemConfiguration) super.getParentConf();
 	}
-	
+
 	public IdGeneratorManager initIdGenerator(TaskProcessor<? extends EtlDatabaseObject> processor,
-	        List<? extends EtlObject> etlObjects, Connection conn) throws DBException, ForbiddenOperationException {
-		
+			List<? extends EtlObject> etlObjects, Connection conn) throws DBException, ForbiddenOperationException {
+
 		return IdGeneratorManager.init(processor, this, etlObjects, conn);
-		
+
 	}
-	
+
 	private void setCurrThreadStartId(int currThreadStartId) {
 		this.currThreadStartId = currThreadStartId;
 	}
-	
+
 	private int getCurrThreadStartId() {
 		return currThreadStartId;
 	}
-	
+
 	public long determineNextStartId(IdGeneratorManager idGeneratorMgt, Connection conn)
-	        throws DBException, ForbiddenOperationException {
+			throws DBException, ForbiddenOperationException {
 		synchronized (stringLock) {
 			if (this.getCurrThreadStartId() == DEFAULT_NEXT_TREAD_ID) {
-				
+
 				if (isInMemoryTable()) {
 					this.setCurrThreadStartId(0);
 					if (this.getPrimaryKeyInitialIncrementValue() == null) {
@@ -989,115 +994,113 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 					this.setCurrThreadStartId(DatabaseObjectDAO.getLastRecord(this, conn));
 				}
 			}
-			
-			//This mean that the table is empty so let try to add the increase 
+
+			// This mean that the table is empty so let try to add the increase
 			if (this.getCurrThreadStartId() == 0) {
 				this.setCurrThreadStartId(this.getCurrThreadStartId() + this.getPrimaryKeyInitialIncrementValue() - 1);
 			}
-			
+
 			this.setCurrThreadStartId(this.getCurrThreadStartId() + 1);
 		}
-		
+
 		this.setCurrThreadStartId(this.getCurrThreadStartId() + this.currQtyRecords);
 		this.currQtyRecords = idGeneratorMgt.getEtlObjects().size();
-		
+
 		return this.getCurrThreadStartId();
 	}
-	
+
 	/**
-	 * Generates SQL join condition between this destination table and its src table using the
-	 * {@link #joinField}
+	 * Generates SQL join condition between this destination table and its src table
+	 * using the {@link #joinField}
 	 * 
-	 * @param sourceTableAlias alias name for source table
+	 * @param sourceTableAlias      alias name for source table
 	 * @param destinationTableAlias alias name for destination table
 	 * @return the generated join condition based on {@link #joinField}
 	 */
 	@JsonIgnore
 	public String generateJoinConditionWithSrc() {
 		String fullCondition = "";
-		
+
 		String ownAlias = getTableAlias();
 		String relatedTableAlias = getSrcConf().getTableAlias();
-		
+
 		for (int outerConter = 0; outerConter < this.getGeneratedJoinFields().size(); outerConter++) {
 			List<FieldsMapping> joindFields = this.getGeneratedJoinFields().get(outerConter);
-			
+
 			String currJoinCondition = "";
-			
+
 			for (int innerCounter = 0; innerCounter < joindFields.size(); innerCounter++) {
-				
+
 				if (innerCounter > 0)
 					currJoinCondition += " AND ";
-				
-				//Force the alias to be from the sharedPk table
+
+				// Force the alias to be from the sharedPk table
 				if (useSharedPKKey() && !containsField(joindFields.get(innerCounter).getDstField())) {
 					ownAlias = getSharedKeyRefInfo(null).getAlias();
 				}
-				
+
 				if (getSrcConf().useSharedPKKey()
-				        && !getSrcConf().containsField(joindFields.get(innerCounter).getSrcField())) {
+						&& !getSrcConf().containsField(joindFields.get(innerCounter).getSrcField())) {
 					relatedTableAlias = getSrcConf().getSharedKeyRefInfo(null).getAlias();
 				}
-				
-				currJoinCondition += ownAlias + "." + joindFields.get(innerCounter).getDstField() + " = " + relatedTableAlias
-				        + "." + joindFields.get(innerCounter).getSrcField();
+
+				currJoinCondition += ownAlias + "." + joindFields.get(innerCounter).getDstField() + " = "
+						+ relatedTableAlias + "." + joindFields.get(innerCounter).getSrcField();
 			}
-			
+
 			if (outerConter > 0) {
 				fullCondition = "(" + fullCondition + ") OR (" + currJoinCondition + ")";
 			} else {
 				fullCondition = "(" + currJoinCondition + ")";
 			}
-			
+
 		}
-		
+
 		if (!utilities.stringHasValue(fullCondition) && this.isMetadata()) {
 			fullCondition = getTableAlias() + "." + getPrimaryKey().retrieveSimpleKeyColumnName() + " = "
-			        + getSrcConf().getTableAlias() + "." + getPrimaryKey().retrieveSimpleKeyColumnName();
+					+ getSrcConf().getTableAlias() + "." + getPrimaryKey().retrieveSimpleKeyColumnName();
 		}
-		
+
 		return fullCondition;
 	}
-	
+
 	public Boolean hasJoinFields() {
 		return utilities.listHasElement(this.getGeneratedJoinFields());
 	}
-	
+
 	public static List<DstConf> generateDefaultDstConf(final EtlItemConfiguration itemConf) throws DBException {
-		
+
 		synchronized (itemConf) {
-			
+
 			OpenConnection dstConn;
-			
+
 			if (!itemConf.hasDstConf()) {
-				
+
 				dstConn = itemConf.getRelatedEtlConf().openDstConn(itemConf);
-				
+
 				try {
 					DstConf map = new DstConf();
-					
+
 					map.setTableName(itemConf.getSrcConf().getTableName());
 					map.setSchema(dstConn.getSchema());
 					map.setDstType(itemConf.getSrcConf().getDstType());
-					
+
 					map.setObservationDateFields(itemConf.getSrcConf().getObservationDateFields());
 					map.setRemoveForbidden(itemConf.getSrcConf().isRemoveForbidden());
 					map.setOnConflict(itemConf.getSrcConf().onConflict());
 					map.setWinningRecordFieldsInfo(itemConf.getSrcConf().getWinningRecordFieldsInfo());
 					map.setManualMapPrimaryKeyOnField(itemConf.getSrcConf().getManualMapPrimaryKeyOnField());
-					
+
 					map.setRelatedConnInfo(itemConf.getRelatedEtlConf().getDstConnInfo());
 					map.setAutomaticalyGenerated(true);
 					map.setRelatedEtlConfig(itemConf.getRelatedEtlConf());
 					map.setParentConf(itemConf);
 					map.setDstType(itemConf.getSrcConf().getDstType());
-					
+
 					return utilities.parseToList(map);
-				}
-				catch (SQLException e) {
+				} catch (SQLException e) {
 					throw new DBException(e);
-				}
-				finally {
+				} finally {
 					dstConn.finalizeConnection(itemConf);
 				}
 			} else {
@@ -1105,34 +1108,34 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 			}
 		}
 	}
-	
+
 	public Boolean hasMapping() {
 		return utilities.listHasElement(this.getMapping());
 	}
-	
+
 	public static List<DstConf> cloneAll(List<DstConf> allToCloneFrom, EtlItemConfiguration relatedItemConf,
-	        EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
-		
+			EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+
 		List<DstConf> allCloned = null;
-		
+
 		if (utilities.listHasElement(allToCloneFrom)) {
 			allCloned = new ArrayList<>(allToCloneFrom.size());
-			
+
 			for (DstConf aux : allToCloneFrom) {
 				DstConf cloned = new DstConf();
 				cloned.setIgnoreMissingParameters(true);
 				cloned.clone(aux, relatedItemConf, schemaInfoSrc, conn);
-				
+
 				allCloned.add(cloned);
 			}
 		}
-		
+
 		return allCloned;
 	}
-	
+
 	public void clone(DstConf toCloneFrom, EtlItemConfiguration relatedItemConf, EtlDatabaseObject schemaInfoSrc,
-	        Connection conn) throws DBException {
-		
+			Connection conn) throws DBException {
+
 		super.clone(toCloneFrom, relatedItemConf, schemaInfoSrc, conn);
 		this.setRelatedEtlConfig(relatedItemConf.getRelatedEtlConf());
 		this.setJoinFields(toCloneFrom.getJoinFields());
@@ -1146,144 +1149,145 @@ public class DstConf extends AbstractTableConfiguration implements EtlDataSource
 		this.setIncludeAllFieldsFromDataSource(toCloneFrom.includeAllFieldsFromDataSource());
 		this.setExcludedFields(toCloneFrom.getExcludedFields());
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
 		FieldsMapping.tryToReplacePlaceholders(this.getJoinFields(), schemaInfoSrc);
 		FieldsMapping.tryToReplacePlaceholders(this.getMapping(), schemaInfoSrc);
 	}
-	
+
 	@Override
 	public String getName() {
 		return this.getTableAlias() != null ? this.getTableAlias() : this.getTableName();
 	}
-	
+
 	@Override
 	public String getQuery() {
 		return null;
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		boolean se = super.equals(obj);
-		
+
 		if (obj instanceof DstConf && se) {
 			DstConf thisDstConf = (DstConf) this;
 			DstConf otherDstConf = (DstConf) obj;
-			
+
 			if (thisDstConf.hasAlias()) {
 				return thisDstConf.getTableAlias().equals(otherDstConf.getTableAlias());
 			} else if (otherDstConf.hasAlias()) {
 				return otherDstConf.getTableAlias().equals(thisDstConf.getTableAlias());
 			}
-			
-			if (thisDstConf.hasSrcObjectCondition()) {
+
+			if (thisDstConf.hasCondition()) {
 				return thisDstConf.getSrcObjectCondition().equals(otherDstConf.getSrcObjectCondition());
 			}
-			
-			if (otherDstConf.hasSrcObjectCondition()) {
+
+			if (otherDstConf.hasCondition()) {
 				return otherDstConf.getSrcObjectCondition().equals(thisDstConf.getSrcObjectCondition());
 			}
 		}
-		
+
 		return se;
 	}
-	
+
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
-		
+
 		if (!isInMemoryTable()) {
 			super.init(relatedItemConf, relatedItemConf.getRelatedEtlSchemaObject(), srcConn, dstConn);
-			
+
 			if (this.hasAlias()) {
 				this.setUsingManualDefinedAlias(true);
-				
+
 				this.getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
 			}
-			
+
 			if (hasMapping()) {
 				for (FieldsMapping map : this.getMapping()) {
 					map.setRelatedEtlConfig(getRelatedEtlConf());
 					map.tryToLoadFromTemplate();
 				}
 			}
-			
+
 			getRelatedEtlConf().addConfiguredTable(this);
 		}
 	}
-	
-	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn) throws DBException {
+
+	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn)
+			throws DBException {
 		this.fullLoad(dstConn);
-		
+
 		this.createRelatedDstSyncStage(srcConn);
-		
+
 		this.createRelatedSyncStageAreaDstUniqueKeysTable(srcConn);
-		
+
 		if (hasMapping()) {
 			for (FieldsMapping map : this.getMapping()) {
-				
+
 				if (map.hasTransformer()) {
 					map.tryToLoadTransformer(this, srcConn);
 					map.getTransformerInstance().init(srcConn, dstConn);
-					
+
 					map.getTransformerInstance().determineTransformerType();
-					
+
 					if (map.getTransformerType().isParentOnDemand()
-					        || map.getTransformerType().isParentOnDemandWithDefaults()) {
+							|| map.getTransformerType().isParentOnDemandWithDefaults()) {
 						ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) map
-						        .getTransformerInstance();
-						
+								.getTransformerInstance();
+
 						onDemand.init(srcConn, dstConn);
-						
+
 						if (onDemand.getExistingParentItemConf() != null) {
 							onDemand.getExistingParentItemConf().ensureEtlStageTableExists(counter,
-							    getParentConf().getRelatedEtlConf().getDefaultOperation(), srcConn, dstConn);
+									getParentConf().getRelatedEtlConf().getDefaultOperation(), srcConn, dstConn);
 						}
-						
+
 						EtlItemConfiguration onDemandEtlConf = onDemand.getOnDemandCreateParentItemConf();
 						EtlOperationConfig defaultOperation = getParentConf().getRelatedEtlConf().getDefaultOperation();
-						
+
 						onDemandEtlConf.ensureEtlStageTableExists(counter, defaultOperation, srcConn, dstConn);
-						
+
 					}
 				}
 			}
 		}
 	}
-	
+
 	@Override
 	public void setAllNotPrefferredDataSource(List<EtlDataSource> ds) {
 		this.allNotPrefferredDataSource = ds;
 	}
-	
+
 	@Override
 	public void setAllAvaliableDataSource(List<EtlDataSource> ds) {
 		this.allAvaliableDataSource = ds;
 	}
-	
+
 	@Override
 	public void setAllPrefferredDataSource(List<EtlDataSource> ds) {
 		this.allPrefferredDataSource = ds;
 	}
-	
+
 	@Override
 	public EtlItemConfiguration getParentEtlItemConf() {
 		return this.getParentConf();
 	}
-	
+
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		return EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
 	}
-	
+
 	@Override
 	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
-	        throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
-		
+			throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
+
 		if (!isInMemoryTable()) {
 			super.tryToLoadSchemaInfo(schemaInfoSrc, conn);
 		}
 	}
-	
+
 	@Override
 	public FieldMappingResolutionStrategy mappingResolutionStrategy() {
 		return this.mappingResolutionStrategy;
