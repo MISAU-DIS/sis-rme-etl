@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.etl.processor;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
@@ -30,90 +31,90 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * @author jpboane
  */
 public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
-	
+
 	public EtlProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> getSearchParams() {
 		return (EtlDatabaseObjectSearchParams) super.getSearchParams();
 	}
-	
+
 	public DBConnectionInfo getDstConnInfo() {
 		return this.getRelatedOperationController().getDstConnInfo();
 	}
-	
+
 	public DBConnectionInfo getSrcConnInfo() {
 		return this.getRelatedOperationController().getSrcConnInfo();
 	}
-	
+
 	@Override
 	public EtlController getRelatedOperationController() {
 		return (EtlController) super.getRelatedOperationController();
 	}
-	
+
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
+			throws DBException {
 		try {
 			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
 			logError(e.getLocalizedMessage());
 			logError(this.getEngine().getEngineId() + ": " + e.getMessage());
-			
+
 			getTaskResultInfo().setFatalException(e);
 		}
 	}
-	
+
 	public EtlLoadHelper perform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-	        EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
-	        throws DBException {
-		
+			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+			throws DBException {
+
 		for (EtlDatabaseObject record : etlObjects) {
 			EtlDatabaseObject srcRecord = (EtlDatabaseObject) record;
 			srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
-			
+
 			for (DstConf mappingInfo : etlItemConf.getDstConf()) {
 				if (mappingInfo.isDisabled()) {
 					continue;
 				}
-				
+
 				try {
-					List<EtlDatabaseObject> avaliableSrcObjects = mappingInfo.getTransformerInstance().collectSourceObjects(
-					    this, srcRecord, null, parentMigratedRec, mappingInfo, TransformationType.PRINCIPAL, srcConn);
-					
-					if (mappingInfo.checkIfSrcObjectCanBeLoaded(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
+					Set<EtlDatabaseObject> avaliableSrcObjects = mappingInfo.getTransformerInstance()
+							.collectSourceObjects(this, srcRecord, null, parentMigratedRec, mappingInfo,
+									TransformationType.PRINCIPAL, srcConn);
+
+					if (mappingInfo.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
 						EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this, srcRecord,
-						    avaliableSrcObjects, mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL, srcConn,
-						    dstConn);
-						
+								avaliableSrcObjects, mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL,
+								srcConn, dstConn);
+
 						if (dstObject != null) {
 							record.addDestinationRecord(dstObject);
-							
+
 							logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
 						} else {
 							dstObject = mappingInfo.createRecordInstance();
 							dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, record, dstObject));
 							dstObject.getEtlInfo().setExceptionOnEtl(new EtlExceptionImpl(
-							        "Not generated because one or more required related src object was not found!"));
-							
+									"Not generated because one or more required related src object was not found!"));
+
 							record.addDestinationRecord(dstObject);
-							
+
 							logTrace("The dstRecord " + srcRecord + " could not be transformed");
 						}
 					}
-				}
-				catch (EtlTransformationException e) {
+				} catch (EtlTransformationException e) {
 					if (getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().log()
-					        || getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().markRecordAsFailed()) {
+							|| getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().markRecordAsFailed()) {
 						EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
-						
+
 						dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, dstObject, dstObject));
-						
+
 						dstObject.getEtlInfo().setExceptionOnEtl(e);
-						
+
 						record.addDestinationRecord(dstObject);
 					} else {
 						throw e;
@@ -121,96 +122,98 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				}
 			}
 		}
-		
-		logDebug("Initializing the loading of " + etlObjects.size() + " " + etlItemConf.getSrcConf().getFullTableName());
-		
+
+		logDebug(
+				"Initializing the loading of " + etlObjects.size() + " " + etlItemConf.getSrcConf().getFullTableName());
+
 		EtlLoadHelper loadHelper = null;
-		
+
 		loadHelper = new EtlLoadHelper(this, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
-		
+
 		if (loadHelper.hasDstConf()) {
 			loadHelper.load(srcConn, dstConn);
-			
+
 			tryToPerfomeEtlOnChild(etlItemConf, loadHelper, srcConn, dstConn);
-			
+
 			logInfo("ETL OPERATION [" + etlItemConf.getConfigCode() + "] DONE ON " + etlObjects.size() + "' RECORDS");
 		} else {
 			logWarn("NO DST OBJECT WAS FOUND FOR ETL[" + etlItemConf.getConfigCode() + "] ON '" + etlObjects.size()
-			        + "' RECORDS");
-			
+					+ "' RECORDS");
+
 			tryToPerfomeEtlOnChild(etlItemConf, etlObjects, srcConn, dstConn);
 		}
-		
+
 		return loadHelper;
 	}
-	
+
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf, EtlLoadHelper loadHelper, Connection srcConn,
-	        Connection dstConn) throws DBException {
-		
+			Connection dstConn) throws DBException {
+
 		tryToPerfomeEtlOnChild(itemConf,
-		    childItemConf -> loadHelper.getAllSuccedTransformedObjects(childItemConf.getRelatedParentDstConf()), srcConn,
-		    dstConn);
+				childItemConf -> loadHelper.getAllSuccedTransformedObjects(childItemConf.getRelatedParentDstConf()),
+				srcConn, dstConn);
 	}
-	
+
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf,
-	        Function<EtlChildItemConfiguration, List<EtlDatabaseObject>> objectsProvider, Connection srcConn,
-	        Connection dstConn) throws DBException {
-		
+			Function<EtlChildItemConfiguration, List<EtlDatabaseObject>> objectsProvider, Connection srcConn,
+			Connection dstConn) throws DBException {
+
 		if (!itemConf.hasChildItemConf()) {
 			return;
 		}
-		
+
 		for (EtlChildItemConfiguration childItemConf : itemConf.getChildItemConf()) {
 			childItemConf.fullLoad(this.getRelatedEtlOperationConfig());
-			
+
 			List<EtlDatabaseObject> records = objectsProvider.apply(childItemConf);
-			
+
 			if (records == null || records.isEmpty()) {
 				continue;
 			}
-			
+
 			for (EtlDatabaseObject rec : records) {
 				performeEtlOnChildItem(childItemConf, rec, srcConn, dstConn);
 			}
 		}
 	}
-	
+
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-	        Connection srcConn, Connection dstConn) throws DBException {
-		
+			Connection srcConn, Connection dstConn) throws DBException {
+
 		tryToPerfomeEtlOnChild(etlItemConf, childItemConf -> etlObjects, srcConn, dstConn);
 	}
-	
+
 	private void performeEtlOnChildItem(EtlChildItemConfiguration itemConf, EtlDatabaseObject transformedParent,
-	        Connection srcConn, Connection dstConn) throws DBException {
-		
+			Connection srcConn, Connection dstConn) throws DBException {
+
 		EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
-		        : transformedParent.getEtlInfo().getRelatedSrcObject();
-		
-		if (itemConf.checkIfSrcObjectCanBeLoaded(srcObject, null, srcConn, dstConn)) {
-			
+				: transformedParent.getEtlInfo().getRelatedSrcObject();
+
+		if (itemConf.shouldBeProcessed(srcObject, null, srcConn, dstConn)) {
+
 			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
-			        : new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
-			
+					: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
+
 			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
-			    avaliableSrcObjects, srcConn);
-			
+					avaliableSrcObjects, srcConn);
+
 			if (!etlObjects.isEmpty()) {
-				perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null, LoadingType.INNER,
-				    srcConn, dstConn);
+				perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null,
+						LoadingType.INNER, srcConn, dstConn);
 			}
 		}
 	}
-	
+
 	@Override
-	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
+	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(
+			IntervalExtremeRecord limits) {
 		ReloadRecordsWithDefaultParentProcessor p = new ReloadRecordsWithDefaultParentProcessor(
-		        (Engine<EtlDatabaseObject>) this.getEngine(), limits, false);
-		
+				(Engine<EtlDatabaseObject>) this.getEngine(), limits, false);
+
 		p.setRelatedEtlProcessor(this);
-		
-		//return null;
-		
+
+		// return null;
+
 		return p;
 	}
 }

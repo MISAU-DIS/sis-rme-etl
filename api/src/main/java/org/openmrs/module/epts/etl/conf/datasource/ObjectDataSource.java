@@ -37,50 +37,53 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
-public class ObjectDataSource extends AbstractEtlDataConfiguration implements EtlAdditionalDataSource, EtlSrcConf, EtlTransformTarget {
-	
+public class ObjectDataSource extends AbstractEtlDataConfiguration
+		implements EtlAdditionalDataSource, EtlSrcConf, EtlTransformTarget {
+
 	private String name;
-	
+
 	private ObjectLanguageType objectLanguage;
-	
+
 	private List<DataSourceField> objectFields;
-	
+
 	private Boolean fullLoaded;
-	
+
 	private SrcConf relatedSrcConf;
-	
+
 	private Boolean required;
-	
+
 	private String fieldsValuesGenerator;
-	
+
 	private JavaObjectFieldsValuesGenerator fieldsValuesGeneratorInstance;
-	
+
 	private EtlTemplateInfo template;
-	
+
 	private List<String> dynamicElements;
-	
+
 	private List<String> prefferredDataSource;
-	
+
 	private List<EtlDataSource> allAvaliableDataSource;
-	
+
 	private List<EtlDataSource> allNotPrefferredDataSource;
-	
+
 	private List<EtlDataSource> allPrefferredDataSource;
-	
+
 	private List<FieldsMapping> allMapping;
-	
+
 	private ActionOnEtlIssue onMultipleDataSourceForSameMapping;
-	
+
 	private Boolean loadedDataSourceInfo;
-	
+
 	private ActionOnEtlIssue unmappedFieldBehavior;
-	
+
 	/**
-	 * Defines how field mappings should be resolved for this destination configuration.
+	 * Defines how field mappings should be resolved for this destination
+	 * configuration.
 	 * <p>
-	 * The ETL engine supports both manually configured mappings and automatically inferred
-	 * mappings. This strategy determines whether the engine should use only manual mappings, only
-	 * automatic mappings, or manual mappings followed by automatic inference for unmapped fields.
+	 * The ETL engine supports both manually configured mappings and automatically
+	 * inferred mappings. This strategy determines whether the engine should use
+	 * only manual mappings, only automatic mappings, or manual mappings followed by
+	 * automatic inference for unmapped fields.
 	 * </p>
 	 * <p>
 	 * If not specified, the default strategy is
@@ -88,554 +91,570 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration implements Et
 	 * </p>
 	 */
 	private FieldMappingResolutionStrategy mappingResolutionStrategy;
-	
+
+	private String applyCondition;
+
 	public ObjectDataSource() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
 	}
-	
+
 	public void setUnmappedFieldBehavior(ActionOnEtlIssue unmappedFieldBehavior) {
 		if (unmappedFieldBehavior != null && !unmappedFieldBehavior.allowedOnMissingFieldsMapping()) {
 			throw new EtlConfException("Value not allowed unmappedFieldBehavior [" + unmappedFieldBehavior + "]");
 		}
-		
+
 		this.unmappedFieldBehavior = unmappedFieldBehavior;
 	}
-	
+
 	public ActionOnEtlIssue getUnmappedFieldBehavior() {
 		return unmappedFieldBehavior;
 	}
-	
+
 	@Override
 	public ActionOnEtlIssue unmappedFieldBehavior() {
 		return getUnmappedFieldBehavior();
 	}
-	
+
 	@Override
 	public List<String> getDynamicElements() {
 		return dynamicElements;
 	}
-	
+
 	public void setDynamicElements(List<String> dynamicElements) {
 		this.dynamicElements = dynamicElements;
 	}
-	
+
 	@Override
 	public EtlTemplateInfo getTemplate() {
 		return template;
 	}
-	
+
 	@Override
 	public void setTemplate(EtlTemplateInfo template) {
 		this.template = template;
 	}
-	
+
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		return this.relatedSrcConf.getRelatedEtlConf();
 	}
-	
+
 	public String getFieldsValuesGenerator() {
 		return fieldsValuesGenerator;
 	}
-	
+
 	public void setFieldsValuesGenerator(String fieldsValuesGenerator) {
 		this.fieldsValuesGenerator = fieldsValuesGenerator;
 	}
-	
+
 	public JavaObjectFieldsValuesGenerator getFieldsValuesGeneratorInstance() {
 		return fieldsValuesGeneratorInstance;
 	}
-	
+
 	public void setFieldsValuesGeneratorInstance(JavaObjectFieldsValuesGenerator fieldsValuesGeneratorInstance) {
 		this.fieldsValuesGeneratorInstance = fieldsValuesGeneratorInstance;
 	}
-	
+
 	public ObjectLanguageType getObjectLanguage() {
 		return objectLanguage;
 	}
-	
+
 	public void setObjectLanguage(ObjectLanguageType objectLanguage) {
 		this.objectLanguage = objectLanguage;
 	}
-	
+
 	public void setName(String name) {
 		this.name = name;
 	}
-	
+
 	public void setRequired(Boolean required) {
 		this.required = required;
 	}
-	
+
 	@Override
 	public String getName() {
 		return this.name;
 	}
-	
+
 	@Override
 	public Boolean isFullLoaded() {
 		return isTrue(this.fullLoaded);
 	}
-	
+
 	@Override
 	public synchronized void fullLoad() throws DBException {
 		OpenConnection mainConn = getRelatedEtlConf().getSrcConnInfo().openConnection(this);
-		
+
 		try {
 			fullLoad(mainConn);
-		}
-		finally {
+		} finally {
 			mainConn.finalizeConnection(this);
 		}
 	}
-	
+
 	public Boolean hasObjectFields() {
 		return utilities.listHasElement(this.getObjectFields());
 	}
-	
+
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
 		if (isFullLoaded()) {
 			return;
 		}
-		
+
 		if (!this.hasUnmappedFieldBehavior()) {
 			this.setUnmappedFieldBehavior(ActionOnEtlIssue.IGNORE);
 		}
-		
+
 		this.loadDataSourceInfo(conn);
-		
+
 		this.tryToLoadFieldValueGenerator();
-		
+
 		if (hasObjectFields()) {
 			for (DataSourceField field : this.getObjectFields()) {
 				field.setParent(this);
-				
+
 				FieldsMapping auxFieldMapping = FieldsMapping.fastCreate(field, conn);
-				
+
 				if (auxFieldMapping.hasDataSourceName()) {
 					field.setValue(null);
 					field.setSrcField(null);
-					
+
 					field.setAuxFieldMapping(auxFieldMapping);
-					
+
 					field.setTransformer(SimpleValueTransformer.class.getCanonicalName());
 					field.setTransformerInstance(SimpleValueTransformer.getInstance(null, this, field, conn));
 				}
-				
+
 				field.loadType(this, this, conn);
 			}
 		} else {
 			throw new ForbiddenOperationException(
-			        "You must specify the 'objectFields' on extraObjectDataSource configuration (" + this.getName() + ")");
+					"You must specify the 'objectFields' on extraObjectDataSource configuration (" + this.getName()
+							+ ")");
 		}
 	}
-	
+
 	@Override
 	public String generateClassName() {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}
-	
+
 	@Override
 	public EtlDataConfiguration getParentConf() {
 		return this.relatedSrcConf;
 	}
-	
+
 	@Override
 	public String getObjectName() {
 		return this.name;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<? extends Field> getFields() {
 		return this.objectFields;
 	}
-	
+
 	public List<DataSourceField> getObjectFields() {
 		return this.objectFields;
 	}
-	
+
 	public void setObjectFields(List<DataSourceField> objectFields) {
 		this.objectFields = objectFields;
 	}
-	
+
 	@Override
 	public UniqueKeyInfo getPrimaryKey() {
 		return null;
 	}
-	
+
 	@Override
 	public String getSharePkWith() {
 		return null;
 	}
-	
+
 	@Override
 	public Boolean hasPK() {
 		return false_();
 	}
-	
+
 	@Override
 	public Boolean hasPK(Connection conn) throws DBException {
 		return false_();
 	}
-	
+
 	@Override
 	public Boolean isMetadata() {
 		return false_();
 	}
-	
+
 	@Override
 	public Boolean isAutoIncrementId() {
 		return true;
 	}
-	
+
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		return this.relatedSrcConf.getRelatedConnInfo();
 	}
-	
+
 	@Override
 	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}
-	
+
 	@Override
 	public Boolean isDestinationInstallationType() {
 		return false_();
 	}
-	
+
 	@Override
 	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 	}
-	
+
 	@Override
 	public List<ParentTable> getParentRefInfo() {
 		return null;
 	}
-	
+
 	@Override
 	public List<ChildTable> getChildRefInfo() {
 		return null;
 	}
-	
+
 	@Override
 	public DatabaseObjectLoaderHelper getLoadHealper() {
 		return null;
 	}
-	
+
 	@Override
 	public Boolean isMustLoadChildrenInfo() {
 		return false_();
 	}
-	
+
 	@Override
 	public String getAlias() {
 		return this.getName();
 	}
-	
+
 	@Override
 	public String generateSelectFromQuery() {
 		return null;
 	}
-	
+
 	@Override
 	public void setRelatedEtlConfig(EtlConfiguration relatedSyncConfiguration) {
 	}
-	
+
 	@Override
 	public List<Extension> getExtension() {
 		return null;
 	}
-	
+
 	@Override
 	public void setExtension(List<Extension> extension) {
 	}
-	
+
 	@Override
 	public SrcConf getRelatedSrcConf() {
 		return this.relatedSrcConf;
 	}
-	
+
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		this.relatedSrcConf = relatedSrcConf;
 	}
-	
+
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
-		
-		Map<String, FieldTransformingInfo> values = this.getFieldsValuesGeneratorInstance().generateObjectFields(processor,
-		    srcObject, dstObject, this, avaliableSrcObjects, conn, conn);
-		
+			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			throws DBException {
+
+		Map<String, FieldTransformingInfo> values = this.getFieldsValuesGeneratorInstance()
+				.generateObjectFields(processor, srcObject, dstObject, this, avaliableSrcObjects, conn, conn);
+
 		EtlDatabaseObject obj = this.newInstance();
-		
+
 		for (DataSourceField field : this.getObjectFields()) {
 			FieldTransformingInfo valueInfo = values.get(field.getName());
-			
+
 			obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());
-			
+
 			obj.getField(field.getName()).setTransformingInfo(valueInfo);
 			valueInfo.setTransformationDatasource(this);
 		}
-		
+
 		return obj;
 	}
-	
+
 	@Override
 	public Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
 		return GenericDatabaseObject.class;
 	}
-	
+
 	@Override
 	public Boolean isRequired() {
 		return isTrue(required);
 	}
-	
+
 	@Override
 	public Boolean allowMultipleSrcObjectsForLoading() {
 		return true_();
 	}
-	
+
 	@Override
 	public String getQuery() {
 		return null;
 	}
-	
+
 	public Boolean hasFieldsValuesGenerator() {
 		return utilities.stringHasValue(fieldsValuesGenerator);
 	}
-	
+
 	@SuppressWarnings({ "unchecked", "deprecation" })
 	public void tryToLoadFieldValueGenerator() {
 		if (this.hasFieldsValuesGenerator()) {
-			
+
 			try {
 				ClassLoader loader = JavaObjectFieldsValuesGenerator.class.getClassLoader();
-				
+
 				Class<? extends JavaObjectFieldsValuesGenerator> transformerClazz = (Class<? extends JavaObjectFieldsValuesGenerator>) loader
-				        .loadClass(this.getFieldsValuesGenerator());
-				
+						.loadClass(this.getFieldsValuesGenerator());
+
 				this.setFieldsValuesGeneratorInstance(transformerClazz.newInstance());
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				throw new ForbiddenOperationException("Error loading fields generator class ["
-				        + this.getFieldsValuesGenerator() + "]!!! " + e.getLocalizedMessage());
+						+ this.getFieldsValuesGenerator() + "]!!! " + e.getLocalizedMessage());
 			}
 		} else {
 			this.setFieldsValuesGenerator((DefaultObjectFieldsValuesGenerator.class.getCanonicalName()));
-			
+
 			this.setFieldsValuesGeneratorInstance(DefaultObjectFieldsValuesGenerator.getInstance());
 		}
 	}
-	
+
 	@Override
 	public TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName, List<Integer> a) {
 		return null;
 	}
-	
+
 	public static List<ObjectDataSource> cloneAll(List<ObjectDataSource> allToCloneFrom, SrcConf relatedSrcConf,
-	        Connection conn) throws DBException {
-		
+			Connection conn) throws DBException {
+
 		List<ObjectDataSource> allCloned = null;
-		
+
 		if (utilities.listHasElement(allToCloneFrom)) {
 			allCloned = new ArrayList<>(allToCloneFrom.size());
-			
+
 			for (ObjectDataSource aux : allToCloneFrom) {
 				ObjectDataSource cloned = new ObjectDataSource();
 				cloned.clone(aux, relatedSrcConf, conn);
-				
+
 				allCloned.add(cloned);
 			}
 		}
-		
+
 		return allCloned;
 	}
-	
+
 	public void clone(ObjectDataSource toCloneFrom, SrcConf relatedSrcConf, Connection conn) throws DBException {
 		this.setName(toCloneFrom.getName());
 		this.setRelatedSrcConf(relatedSrcConf);
 		this.setRequired(toCloneFrom.isRequired());
-		
+
 		this.setObjectLanguage(toCloneFrom.getObjectLanguage());
-		
+
 		this.setObjectFields(DataSourceField.cloneAll(toCloneFrom.getObjectFields(), this));
 		this.setRelatedSrcConf(relatedSrcConf);
 		this.setRequired(toCloneFrom.isRequired());
 		this.setFieldsValuesGenerator(toCloneFrom.getFieldsValuesGenerator());
 		this.setFieldsValuesGeneratorInstance(toCloneFrom.getFieldsValuesGeneratorInstance());
 	}
-	
+
 	public static void tryToReplacePlaceholders(List<ObjectDataSource> extraObjectDataSource,
-	        EtlDatabaseObject schemaInfoSrc) {
+			EtlDatabaseObject schemaInfoSrc) {
 		if (utilities.listHasElement(extraObjectDataSource)) {
 			for (ObjectDataSource a : extraObjectDataSource) {
 				a.tryToReplacePlaceholders(schemaInfoSrc);
 			}
 		}
-		
+
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 		DataSourceField.tryToReplacePlaceholders(this.getObjectFields(), schemaInfoSrc);
 	}
-	
+
 	@Override
 	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
 		return this.getRelatedEtlConf().getGeneralBehaviourOnEtlException();
 	}
-	
+
 	@Override
 	public PreparedQuery getDefaultPreparedQuery() {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}
-	
+
 	@Override
 	public void setDefaultPreparedQuery(PreparedQuery defaultPreparedQuery) {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}
-	
+
 	@Override
 	public String toString() {
 		String fields = this.objectFields != null ? this.objectFields.toString() : "";
-		
+
 		fields = utilities.stringHasValue(fields) ? "(" + fields + ")" : "";
-		
+
 		return this.getName() + fields;
 	}
-	
+
 	@Override
 	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
-	        throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
+			throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
 	}
-	
+
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
 		this.relatedSrcConf = (SrcConf) relatedParent;
 	}
-	
+
 	@Override
 	public SrcConf getSrcConf() {
 		return this.relatedSrcConf;
 	}
-	
+
 	public Boolean getFullLoaded() {
 		return fullLoaded;
 	}
-	
+
 	public void setFullLoaded(Boolean fullLoaded) {
 		this.fullLoaded = fullLoaded;
 	}
-	
+
 	public List<String> getPrefferredDataSource() {
 		return prefferredDataSource;
 	}
-	
+
 	public void setPrefferredDataSource(List<String> prefferredDataSource) {
 		this.prefferredDataSource = prefferredDataSource;
 	}
-	
+
 	@Override
 	public List<EtlDataSource> getAllAvaliableDataSource() {
 		return allAvaliableDataSource;
 	}
-	
+
 	@Override
 	public void setAllAvaliableDataSource(List<EtlDataSource> allAvaliableDataSource) {
 		this.allAvaliableDataSource = allAvaliableDataSource;
 	}
-	
+
 	@Override
 	public List<EtlDataSource> getAllNotPrefferredDataSource() {
 		return allNotPrefferredDataSource;
 	}
-	
+
 	@Override
 	public void setAllNotPrefferredDataSource(List<EtlDataSource> allNotPrefferredDataSource) {
 		this.allNotPrefferredDataSource = allNotPrefferredDataSource;
 	}
-	
+
 	@Override
 	public List<EtlDataSource> getAllPrefferredDataSource() {
 		return allPrefferredDataSource;
 	}
-	
+
 	@Override
 	public void setAllPrefferredDataSource(List<EtlDataSource> allPrefferredDataSource) {
 		this.allPrefferredDataSource = allPrefferredDataSource;
 	}
-	
+
 	@Override
 	public List<FieldsMapping> getAllMapping() {
 		return allMapping;
 	}
-	
+
 	@Override
 	public void setAllMapping(List<FieldsMapping> allMapping) {
 		this.allMapping = allMapping;
 	}
-	
+
 	public ActionOnEtlIssue getOnMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
 	}
-	
+
 	public void setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue onMultipleDataSourceForSameMapping) {
 		this.onMultipleDataSourceForSameMapping = onMultipleDataSourceForSameMapping;
 	}
-	
+
 	public Boolean getRequired() {
 		return required;
 	}
-	
+
 	public FieldMappingResolutionStrategy getMappingResolutionStrategy() {
 		return mappingResolutionStrategy;
 	}
-	
+
 	public void setMappingResolutionStrategy(FieldMappingResolutionStrategy mappingResolutionStrategy) {
 		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
-	
+
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
 		this.addToAvaliableDataSource(this.getSrcConf());
 		this.addAllToAvaliableDataSource(this.getSrcConf().getAvaliableExtraDataSource());
-		
+
 		if (this.getSrcConf().hasParentItemConf()) {
-			this.addAllToAvaliableDataSource(this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
+			this.addAllToAvaliableDataSource(
+					this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
 		}
-		
+
 		this.setAllNotPrefferredDataSource(this.getAllAvaliableDataSource());
 	}
-	
+
 	@Override
 	public Boolean isLoadedDataSourceInfo() {
 		return isTrue(loadedDataSourceInfo);
 	}
-	
+
 	@Override
 	public ActionOnEtlIssue onMultipleDataSourceForSameMapping() {
 		return this.onMultipleDataSourceForSameMapping;
 	}
-	
+
 	@Override
 	public void setMapping(List<FieldsMapping> mapping) {
 	}
-	
+
 	@Override
 	public String getSrcObjectCondition() {
 		return null;
 	}
-	
+
 	@Override
 	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
 		throw new ForbiddenOperationException("Default Target Object is not Allowed!");
 	}
-	
+
 	@Override
 	public FieldMappingResolutionStrategy mappingResolutionStrategy() {
 		return this.mappingResolutionStrategy;
 	}
-	
+
+	public String getApplyCondition() {
+		return applyCondition;
+	}
+
+	public void setApplyCondition(String applyCondition) {
+		this.applyCondition = applyCondition;
+	}
+
+	@Override
+	public String getCondition() {
+		return this.getApplyCondition();
+	}
+
 }

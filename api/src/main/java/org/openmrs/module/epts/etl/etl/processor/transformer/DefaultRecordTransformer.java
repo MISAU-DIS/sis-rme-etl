@@ -42,8 +42,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject migratedDstParent, TransformationType transformationType, Connection srcConn,
 			Connection dstConn) throws DBException, EtlTransformationException {
 
-		List<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, migratedDstParent,
-				dstConf, transformationType, srcConn);
+		Set<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, migratedDstParent, dstConf,
+				transformationType, srcConn);
 
 		try {
 			if (srcObjects == null || srcObjects.isEmpty()) {
@@ -59,7 +59,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	@Override
 	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-			List<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
+			Set<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
 			TransformationType transformationType, Connection srcConn, Connection dstConn)
 			throws DBException, EtlTransformationException {
 
@@ -79,7 +79,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 		Set<EtlDatabaseObject> transformationRecords = new LinkedHashSet<>();
 
-		if (utilities.listHasElement(collectedSrcObjects)) {
+		if (utilities.setHasElement(collectedSrcObjects)) {
 			transformationRecords.addAll(collectedSrcObjects);
 		}
 
@@ -170,7 +170,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 	}
 
-	public List<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
+	public Set<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent, DstConf dstConf,
 			TransformationType transformationType, Connection srcConn) throws DBException {
 
@@ -182,7 +182,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType,
 					srcConn);
 
-			return new ArrayList<>(result);
+			return result;
 		} catch (MissingRequiredTransformationObject e) {
 			return null;
 		}
