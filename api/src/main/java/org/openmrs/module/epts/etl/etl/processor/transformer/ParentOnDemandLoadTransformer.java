@@ -700,6 +700,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		} else if (useMainEtlTable) {
 			DstConf EtlTransformTarget = new DstConf(getParentTableName());
 
+			EtlTransformTarget.setTableAlias(this.onDemandInfo.getTableAlias());
+
 			conf.setDstConf(utilities.parseToList(EtlTransformTarget));
 		}
 

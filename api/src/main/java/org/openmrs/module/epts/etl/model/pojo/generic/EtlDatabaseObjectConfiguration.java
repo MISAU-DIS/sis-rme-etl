@@ -21,154 +21,156 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents a data base which can be represented by a Pojo. The
- * {@link EtlDatabaseObjectConfiguration} can be a database table or a query result
+ * {@link EtlDatabaseObjectConfiguration} can be a database table or a query
+ * result
  */
 public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
-	
+
 	Boolean isFullLoaded();
-	
+
 	void fullLoad() throws DBException;
-	
+
 	void fullLoad(Connection conn) throws DBException;
-	
-	TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName, List<Integer> alreadyCheckedObjects);
-	
+
+	TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName,
+			List<Integer> alreadyCheckedObjects);
+
 	@JsonIgnore
 	default File getPOJOCopiledFilesDirectory() {
 		return getRelatedEtlConf().getPOJOCompiledFilesDirectory();
 	}
-	
+
 	@JsonIgnore
 	default File getPOJOSourceFilesDirectory() {
 		return getRelatedEtlConf().getPOJOSourceFilesDirectory();
 	}
-	
+
 	default DBConnectionInfo getSrcConnInfo() {
 		return getRelatedEtlConf().getSrcConnInfo();
 	}
-	
+
 	@JsonIgnore
 	default String generateFullPackageName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
-		
+
 		String packageName = getClasspackage(connInfo);
-		
+
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
-		
+
 		return fullPackageName;
 	}
-	
+
 	@JsonIgnore
 	default String getOriginAppLocationCode() {
 		return getRelatedEtlConf().getOriginAppLocationCode();
 	}
-	
+
 	@JsonIgnore
 	default String getClasspackage(DBConnectionInfo connInfo) {
 		return connInfo.getPojoPackageName();
 	}
-	
+
 	@JsonIgnore
 	default String generateFullClassName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
-		
+
 		String packageName = getClasspackage(connInfo);
-		
+
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
-		
+
 		return utilities.concatStringsWithSeparator(fullPackageName, generateClassName(), ".");
 	}
-	
+
 	@JsonIgnore
 	default File getClassPath() {
 		return new File(this.getParentConf().getRelatedEtlConf().getClassPath());
 	}
-	
+
 	String generateClassName();
-	
+
 	EtlDataConfiguration getParentConf();
-	
+
 	String getObjectName();
-	
+
 	<T extends Field> List<T> getFields();
-	
+
 	UniqueKeyInfo getPrimaryKey();
-	
+
 	String getSharePkWith();
-	
+
 	Boolean hasPK();
-	
+
 	Boolean hasPK(Connection conn) throws DBException;
-	
+
 	Boolean isMetadata();
-	
+
 	DBConnectionInfo getRelatedConnInfo();
-	
+
 	void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
-	
+
 	default EtlConfiguration getRelatedEtlConf() {
-		return this.getParentConf().getRelatedEtlConf();
+		return this.getParentConf() != null ? this.getParentConf().getRelatedEtlConf() : null;
 	}
-	
+
 	default Boolean hasDateFields() {
 		for (Field t : this.getFields()) {
 			if (t.isDateField()) {
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
 		return this.getSyncRecordClass(getRelatedConnInfo());
 	}
-	
+
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> getSyncRecordClass(DBConnectionInfo connInfo)
-	        throws ForbiddenOperationException {
-		
+			throws ForbiddenOperationException {
+
 		if (getSyncRecordClass() == null) {
 			Class<? extends EtlDatabaseObject> syncRecordClass = GenericDatabaseObject.class;
-			
+
 			this.setSyncRecordClass(syncRecordClass);
 		}
 		return getSyncRecordClass();
 	}
-	
+
 	Boolean isDestinationInstallationType();
-	
+
 	void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass);
-	
+
 	List<ParentTable> getParentRefInfo();
-	
+
 	List<ChildTable> getChildRefInfo();
-	
+
 	DatabaseObjectLoaderHelper getLoadHealper();
-	
+
 	default List<String> getParentRefInfoAsString() {
 		List<String> parents = new ArrayList<>();
-		
+
 		if (hasParentRefInfo()) {
 			for (ParentTable p : this.getParentRefInfo()) {
 				parents.add(p.getTableName());
 			}
 		}
-		
+
 		return parents;
 	}
-	
+
 	default Boolean hasParentRefInfo() {
 		return utilities.listHasElement(this.getParentRefInfo());
 	}
-	
+
 	default Boolean hasChildRefInfo() {
 		return isMustLoadChildrenInfo() && utilities.listHasElement(this.getChildRefInfo());
 	}
-	
+
 	Boolean isMustLoadChildrenInfo();
-	
+
 	default Boolean containsField(String fieldName) {
 		if (this.hasFields()) {
 			for (Field f : this.getFields()) {
@@ -179,7 +181,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		}
 		return false;
 	}
-	
+
 	default Field getField(String fieldName) {
 		if (this.hasFields()) {
 			for (Field f : this.getFields()) {
@@ -188,29 +190,29 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 				}
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	String getAlias();
-	
+
 	default List<Field> cloneFields(EtlDatabaseObject originalObject) {
 		return Field.cloneFields(this.getFields(), originalObject);
 	}
-	
+
 	default Boolean hasFields() {
 		return utilities.listHasElement(this.getFields());
 	}
-	
+
 	default Boolean hasCompositeKey() {
 		return this.getPrimaryKey() != null && this.getPrimaryKey().isCompositeKey();
 	}
-	
+
 	/**
 	 * Generates a full dump select from query.
 	 * 
 	 * @return the generated select dump query
 	 */
 	String generateSelectFromQuery();
-	
+
 }

@@ -128,9 +128,15 @@ public class DstConf extends AbstractTableConfiguration
 	private FieldMappingResolutionStrategy mappingResolutionStrategy;
 
 	public DstConf() {
-		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.ABORT_PROCESS;
-		this.onMultipleDataSourceWithSameName = ActionOnEtlIssue.ABORT_PROCESS;
+		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
+		this.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.ABORT_PROCESS);
 		this.useAsDataSource = false;
+	}
+
+	public DstConf(String tableName) {
+		this();
+
+		setTableName(tableName);
 	}
 
 	private void ensureTargetDefaultObjectInitialized(Connection srcConn, Connection dstConn) throws DBException {
@@ -189,10 +195,6 @@ public class DstConf extends AbstractTableConfiguration
 
 	public void setUseAsDataSource(Boolean useAsDataSource) {
 		this.useAsDataSource = useAsDataSource;
-	}
-
-	public DstConf(String tableName) {
-		setTableName(tableName);
 	}
 
 	public Boolean useAsDataSource() {
@@ -394,7 +396,7 @@ public class DstConf extends AbstractTableConfiguration
 				fm.setTargetObject(this);
 
 				if (!utilities.stringHasValue(fm.getDstField())) {
-					throw new ForbiddenOperationException("One or more mapping on dstTable '" + this.getTableName()
+					throw new FieldsMappingException("One or more mapping on dstTable '" + this.getTableAlias()
 							+ "' on Etl Configuration '" + this.getParentConf().getConfigCode()
 							+ "' configuration does not have dstField: [" + fm + "]");
 				}
@@ -634,6 +636,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
+		stepIntoBreakpoint(getRelatedEtlConf(), utilities.isStringIn(this.getTableAlias(), "obs_10"));
 
 		if (!isInMemoryTable()) {
 			this.tryToGenerateTableAlias(getRelatedEtlConf());
