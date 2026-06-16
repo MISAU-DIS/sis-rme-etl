@@ -271,7 +271,9 @@ Each operation can be configured using the following fields:
   - *CREATE* – Inserts new records (default)
   - *UPDATE* – Updates existing records
   - *DELETE* – Deletes records
-- *afterEtlActionType*: Defines the action to be applied to the source record after processing. Currently, only *DELETE* has an effect.
+- *afterEtlActionType*: Defines the action to be applied to the source record after it has been processed by the ETL.
+  - *DELETE*: Permanently removes the record from the source table.
+  - *MOVE_TO_STAGE_AREA*: Transfers the record to the ETL processing stage area. Records stored in the stage area are marked with a processing status and may be reprocessed later if necessary.
 - *dstType*: Specifies the output destination type:
   - *db* – Stores transformed records in the database
   - *json* – Writes records to a JSON file
