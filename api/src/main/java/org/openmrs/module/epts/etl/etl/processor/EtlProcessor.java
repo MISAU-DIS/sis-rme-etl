@@ -9,6 +9,7 @@ import java.util.function.Function;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
@@ -22,6 +23,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
+import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -59,6 +61,23 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			throws DBException {
 		try {
 			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
+
+			if (getRelatedEtlOperationConfig().getAfterEtlActionType() != null) {
+				EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
+
+				for (EtlDatabaseObject obj : etlObjects) {
+					if (action.moveToStageArea()) {
+						DatabaseObjectDAO.insert(obj.getEtlStageObjectInfo().getProcessedRecord(),
+								obj.getEtlStageObjectInfo().getProcessedRecord().getRelatedConfiguration(), dstConn);
+					}
+
+					if (action.isDelete() || action.moveToStageArea()) {
+						DatabaseObjectDAO.remove(obj, srcConn);
+					} else {
+						throw new EtlExceptionImpl("Unsupported afterEtlActionType (" + action + ")");
+					}
+				}
+			}
 		} catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
 			logError(e.getLocalizedMessage());

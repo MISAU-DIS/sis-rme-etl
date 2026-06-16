@@ -60,8 +60,6 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 	private FieldMappingResolutionStrategy mappingResolutionStrategy;
 
-	private String tableAlias;
-
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget,
 			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
@@ -102,8 +100,9 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					if (isOverrideField(prev)) {
 						this.overrideFieldsStr += "," + mapping[0];
 					} else
-						throw new EtlExceptionImpl("Wrong format for newObjectData within the " + getTransformerDsc()
-								+ "\n" + "Each object param must be specified as filedName:srcFieldOrValue");
+						throw new EtlExceptionImpl(
+								"Wrong format for newObjectData(" + fieldData + ") within the " + getTransformerDsc()
+										+ "\n" + "Each object param must be specified as filedName:srcFieldOrValue");
 				} else {
 					String dstField = mapping[0];
 					String srcFieldOrValue = mapping[1];
@@ -142,12 +141,6 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 
 						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue);
-					} else if (dstField.equals("table_alias")) {
-						if (!utilities.stringHasValue(srcFieldOrValue)) {
-							throw new ForbiddenOperationException("The table_alias has no value");
-						}
-
-						this.tableAlias = srcFieldOrValue;
 					} else if (dstField.equals("mapping_resolution_strategy")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The mapping_resolution_strategy has no value");
@@ -206,14 +199,6 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					"Template parameters specified but no templated was defined with transformer: \n"
 							+ getTransformerDsc());
 		}
-	}
-
-	public String getTableAlias() {
-		return tableAlias;
-	}
-
-	public void setTableAlias(String tableAlias) {
-		this.tableAlias = tableAlias;
 	}
 
 	@Override

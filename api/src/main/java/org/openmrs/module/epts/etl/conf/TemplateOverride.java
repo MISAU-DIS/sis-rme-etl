@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -90,51 +91,69 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 			Object currentFieldValue = targetField.get(parentObject);
 
 			if (!this.type.isOverride() && List.class.isAssignableFrom(targetField.getType())) {
+
 				List targetList = (List) currentFieldValue;
 
 				if (targetList == null) {
-					throw new EtlExceptionImpl("List field '" + targetField.getName()
-							+ "' is null. Initialize it before applying override.");
+					targetList = new ArrayList<>();
+					targetField.set(parentObject, targetList);
 				}
 
 				Class<?> itemType = resolveListItemType(targetField);
 
-				Object itemValue = prepareValue(templateInfo, itemType);
-
 				if (this.type.isAddToList()) {
+
 					if (this.value == null || this.value.isNull()) {
 						throw new EtlExceptionImpl(
 								"ADD_TO_LIST override requires a non-null value for path: " + this.path);
 					}
 
+					Object itemValue = prepareValue(templateInfo, itemType);
+
 					targetList.add(itemValue);
-				} else {
 
-					int matchedIndex = findMatchingElementIndex(targetList, this.match);
-
-					if (matchedIndex < 0) {
-						throw new EtlExceptionImpl(
-								"No matching element found in list '" + targetField.getName() + "' for override path: '"
-										+ this.path + "' within the template " + this.getParentConf());
-					}
-
-					if (this.type.isUpdateOnList()) {
-						if (this.value == null || this.value.isNull()) {
-							throw new EtlExceptionImpl(
-									"UPDATE override requires a non-null value for path: " + this.path);
-						}
-
-						targetList.set(matchedIndex, itemValue);
-						return;
-					}
-
-					if (this.type.isDeleteOnList()) {
-						targetList.remove(matchedIndex);
-						return;
-					}
-
-					throw new EtlExceptionImpl("Unsupported override type: " + this.type + " on List element!!!");
+					return;
 				}
+
+				if (this.type.isAddAllToList()) {
+
+					List<?> valuesToAdd = prepareListValue(templateInfo, targetField);
+
+					if (valuesToAdd == null || valuesToAdd.isEmpty()) {
+						return;
+					}
+
+					targetList.addAll(valuesToAdd);
+
+					return;
+				}
+
+				int matchedIndex = findMatchingElementIndex(targetList, this.match);
+
+				if (matchedIndex < 0) {
+					throw new EtlExceptionImpl("No matching element found in list '" + targetField.getName()
+							+ "' for override path: '" + this.path + "' within the template " + this.getParentConf());
+				}
+
+				if (this.type.isUpdateOnList()) {
+
+					if (this.value == null || this.value.isNull()) {
+						throw new EtlExceptionImpl("UPDATE override requires a non-null value for path: " + this.path);
+					}
+
+					Object itemValue = prepareValue(templateInfo, itemType);
+
+					targetList.set(matchedIndex, itemValue);
+
+					return;
+				}
+
+				if (this.type.isDeleteOnList()) {
+					targetList.remove(matchedIndex);
+					return;
+				}
+
+				throw new EtlExceptionImpl("Unsupported override type: " + this.type + " on List element.");
 			} else if (this.type.isEmpty()) {
 				targetField.set(parentObject, null);
 			} else if (this.type.isOverride()) {
@@ -156,6 +175,29 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 		} catch (Exception e) {
 			throw new EtlExceptionImpl("Error applying override on path '" + this.path + "'", e);
 		}
+	}
+
+	private List<?> prepareListValue(EtlTemplateInfo templateInfo, Field targetField) throws IOException {
+
+		if (this.value == null || this.value.isNull()) {
+			return null;
+		}
+
+		if (!this.value.isArray()) {
+			throw new EtlExceptionImpl(
+					"ADD_ALL_TO_LIST override requires value to be a JSON array for path: " + this.path);
+		}
+
+		String json = EtlDataConfiguration.resolvePlaceholders(this.value.toString(), null,
+				templateInfo.getAllAvailableParameters());
+
+		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
+
+		Class<?> itemType = resolveListItemType(targetField);
+
+		JavaType listType = mapper.getTypeFactory().constructCollectionType(List.class, itemType);
+
+		return mapper.readValue(json, listType);
 	}
 
 	private Object prepareValue(EtlTemplateInfo templateInfo, Class<?> type) throws IOException {

@@ -429,8 +429,6 @@ public class DstConf extends AbstractTableConfiguration
 				} else {
 					EtlDataSource ds = findDataSource(fm.getDataSourceName());
 
-					stepIntoBreakpoint(null, ds == null);
-
 					if (ds == null) {
 						throw new NoSuchElementException("Error when preparing the fm:" + fm + "> The DataSource '"
 								+ fm.getDataSourceName() + "' cannot be found ");
@@ -636,7 +634,6 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
-		stepIntoBreakpoint(getRelatedEtlConf(), utilities.isStringIn(this.getTableAlias(), "obs_10"));
 
 		if (!isInMemoryTable()) {
 			this.tryToGenerateTableAlias(getRelatedEtlConf());

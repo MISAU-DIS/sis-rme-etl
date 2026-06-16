@@ -40,257 +40,268 @@ import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class SrcConf extends AbstractTableConfiguration implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent {
-	
+public class SrcConf extends AbstractTableConfiguration
+		implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent {
+
 	private List<AuxExtractTable> auxExtractTable;
-	
+
 	private List<TableDataSourceConfig> extraTableDataSource;
-	
+
 	private List<QueryDataSourceConfig> extraQueryDataSource;
-	
+
 	private List<ObjectDataSource> extraObjectDataSource;
-	
+
 	private List<JsonDataSource> extraJsonDataSource;
-	
+
 	private EtlDstType dstType;
-	
+
 	private List<FieldsMapping> joinFields;
-	
+
 	private ConditionClauseScope joinExtraConditionScope;
-	
+
 	/**
-	 * The fields involved in ETL process for this srcConf. Note that when the dstConf is not
-	 * configured on related {@link EtlItemConfiguration}, then this fields will automatically
-	 * mapped to target table
+	 * The fields involved in ETL process for this srcConf. Note that when the
+	 * dstConf is not configured on related {@link EtlItemConfiguration}, then this
+	 * fields will automatically mapped to target table
 	 */
 	private List<EtlField> etlFields;
-	
+
 	private String joinExtraCondition;
-	
+
 	private Boolean limitToOneResult;
-	
+
+	private Boolean doNotUseAsDatasource;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
 	}
-	
+
 	public Boolean getLimitToOneResult() {
 		return limitToOneResult;
 	}
-	
+
 	public void setLimitToOneResult(Boolean limitToOneResult) {
 		this.limitToOneResult = limitToOneResult;
 	}
-	
+
 	public Boolean limitToOneResult() {
 		return isTrue(this.getLimitToOneResult());
 	}
-	
+
+	public Boolean getDoNotUseAsDatasource() {
+		return doNotUseAsDatasource;
+	}
+
+	public void setDoNotUseAsDatasource(Boolean doNotUseAsDatasource) {
+		this.doNotUseAsDatasource = doNotUseAsDatasource;
+	}
+
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
 		this.applyIncludes();
-		
+
 		this.setRelatedEtlConfig(relatedItemConf.getRelatedEtlConf());
 		this.setParentConf(relatedItemConf);
-		
+
 		super.init(this.getParentConf(), getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
-		
+
 		if (!this.hasDstType()) {
-			//We start with the first operation dst type. Eventual this should be changed if the nested operation has different dstType
+			// We start with the first operation dst type. Eventual this should be changed
+			// if the nested operation has different dstType
 			this.setDstType(getRelatedEtlConf().getOperations().get(0).getDstType());
 		}
-		
+
 		if (this.hasAlias()) {
 			this.setUsingManualDefinedAlias(true);
 			getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
 		} else {
 			tryToGenerateTableAlias(getRelatedEtlConf());
 		}
-		
+
 		initAllAvaliableExtraDataSource(srcConn, dstConn);
-		
+
 		setInitialized(true);
 	}
-	
+
 	@Override
 	public Boolean doNotUseAsDatasource() {
-		return false;
+		return isTrue(doNotUseAsDatasource);
 	}
-	
+
 	public List<JsonDataSource> getExtraJsonDataSource() {
 		return extraJsonDataSource;
 	}
-	
+
 	public void setExtraJsonDataSource(List<JsonDataSource> extraJsonDataSOurce) {
 		this.extraJsonDataSource = extraJsonDataSOurce;
 	}
-	
+
 	public List<ObjectDataSource> getExtraObjectDataSource() {
 		return extraObjectDataSource;
 	}
-	
+
 	public void setExtraObjectDataSource(List<ObjectDataSource> extraObjectDataSource) {
 		this.extraObjectDataSource = extraObjectDataSource;
 	}
-	
+
 	public List<EtlField> getEtlFields() {
 		return etlFields;
 	}
-	
+
 	public void setEtlFields(List<EtlField> etlFields) {
 		this.etlFields = etlFields;
 	}
-	
+
 	public EtlDstType getDstType() {
 		return dstType;
 	}
-	
+
 	public void setDstType(EtlDstType dstType) {
 		this.dstType = dstType;
 	}
-	
+
 	public List<AuxExtractTable> getAuxExtractTable() {
 		return auxExtractTable;
 	}
-	
+
 	public void setAuxExtractTable(List<AuxExtractTable> auxExtractTable) {
 		this.auxExtractTable = (List<AuxExtractTable>) auxExtractTable;
 	}
-	
+
 	@Override
 	public List<? extends JoinableEntity> getJoiningTable() {
 		return this.getAuxExtractTable();
 	}
-	
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public void setJoiningTable(List<? extends JoinableEntity> joiningTable) {
 		setAuxExtractTable((List<AuxExtractTable>) joiningTable);
 	}
-	
+
 	public List<QueryDataSourceConfig> getExtraQueryDataSource() {
 		return extraQueryDataSource;
 	}
-	
+
 	public void setExtraQueryDataSource(List<QueryDataSourceConfig> extraQueryDataSource) {
 		this.extraQueryDataSource = extraQueryDataSource;
 	}
-	
+
 	public List<TableDataSourceConfig> getExtraTableDataSource() {
 		return extraTableDataSource;
 	}
-	
+
 	public void setExtraTableDataSource(List<TableDataSourceConfig> extraTableDataSource) {
 		this.extraTableDataSource = extraTableDataSource;
 	}
-	
+
 	@Override
 	public String getName() {
 		return getTableName();
 	}
-	
+
 	@Override
 	public Boolean isGeneric() {
 		return false;
 	}
-	
+
 	public Boolean hasDstType() {
 		return getDstType() != null;
 	}
-	
+
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
 		if (!hasManualMapPrimaryKeyOnField()) {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
-		
+
 		super.fullLoad(conn);
 	}
-	
+
 	@Override
 	public void loadParents(Connection conn) throws DBException {
 		super.loadParents(conn);
-		
+
 		if (useSharedPKKey()) {
-			
+
 			ParentTable shrd = this.getSharedKeyRefInfo(conn);
-			
-			//Parse the shared parent to data source
+
+			// Parse the shared parent to data source
 			ParentAsSrcDataSource sharedAsSrcConf = ParentAsSrcDataSource.generateFromSrcConfSharedPkParent(this, shrd,
-			    conn);
-			
+					conn);
+
 			utilities.updateOnArray(this.getParentRefInfo(), shrd, sharedAsSrcConf);
 		}
 	}
-	
+
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
-		
+
 		super.loadOwnElements(schemaInfo, conn);
-		
+
 		if (hasJoinExtraCondition()) {
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getJoinExtraCondition(), null)) {
 				throw new EtlConfException("Invalid joinExtraCondition \n" + this.getJoinExtraCondition());
 			}
 		}
-		
+
 		this.tryToLoadParentRefInfo(conn);
-		
+
 		this.tryToLoadAuxExtraJoinTable(schemaInfo, conn);
-		
+
 		this.tryToLoadExtraDatasource(schemaInfo, conn);
-		
+
 		this.loadEtlFields();
-		
+
 		this.setFullLoaded(true);
-		
+
 		if (isJoinable()) {
 			this.loadJoinElements(schemaInfo, conn);
 		}
 	}
-	
+
 	@Override
 	public void loadJoinElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		try {
 			JoinableEntity.super.loadJoinElements(schemaInfo, conn);
-		}
-		catch (MissingJoiningElementsException e) {
+		} catch (MissingJoiningElementsException e) {
 			if (this.hasParentItemConf() && this.getPrimaryKey().equals(this.getParentSrcConf().getPrimaryKey())) {
 				this.setJoinFields(new ArrayList<>());
-				
+
 				this.getJoinFields().add(FieldsMapping.fastCreate(this.getPrimaryKey().asSimpleKey().getName(), conn));
 			}
 		}
 	}
-	
+
 	public SrcConf getParentSrcConf() {
 		if (hasParentItemConf()) {
 			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
 		}
-		
+
 		return null;
 	}
-	
+
 	public Boolean hasParentItemConf() {
 		return this.getParentConf() instanceof EtlChildItemConfiguration;
 	}
-	
+
 	private void loadEtlFields() {
 		if (hasExtraDataSource() || hasAuxExtractTable()) {
 			this.setEtlFields(new ArrayList<>());
-			
+
 			this.loadOwnFieldsToEtlFields(this.getEtlFields(), false);
-			
+
 			for (EtlDataSource ds : this.getAvaliableExtraDataSource()) {
 				ds.loadOwnFieldsToEtlFields(this.getEtlFields(), false);
 			}
 		} else {
 			this.setEtlFields(new ArrayList<>());
-			
-			//Preserve the original names if there is only the main ds
+
+			// Preserve the original names if there is only the main ds
 			this.loadOwnFieldsToEtlFields(this.getEtlFields(), true);
 		}
 	}
-	
+
 	/**
 	 * @param conn
 	 * @param srcConn
@@ -298,31 +309,31 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	 */
 	private void tryToLoadExtraDatasource(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		OpenConnection srcConn = this.getRelatedConnInfo().openConnection(this);
-		
+
 		try {
-			
+
 			if (hasExtraTableDataSourceConfig()) {
 				for (TableDataSourceConfig t : this.getExtraTableDataSource()) {
-					
+
 					TableConfiguration fullLoadedTab = findFullConfiguredConfInAllRelatedTable(t.getFullTableName(),
-					    new ArrayList<>());
-					
+							new ArrayList<>());
+
 					t.tryToGenerateTableAlias(getRelatedEtlConf());
-					
+
 					if (fullLoadedTab != null) {
 						t.clone(fullLoadedTab, this, null, conn);
 					} else {
 						t.fullLoad(srcConn);
 					}
-					
+
 					t.setRelatedSrcConf(this);
-					
+
 					if (t.useSharedPKKey()) {
 						t.getSharedKeyRefInfo(conn).tryToGenerateTableAlias(getRelatedEtlConf());
-						
+
 						fullLoadedTab = findFullConfiguredConfInAllRelatedTable(
-						    t.getSharedKeyRefInfo(conn).getFullTableName(), new ArrayList<>());
-						
+								t.getSharedKeyRefInfo(conn).getFullTableName(), new ArrayList<>());
+
 						if (fullLoadedTab != null) {
 							t.getSharedKeyRefInfo(conn).clone(fullLoadedTab, this, null, conn);
 						} else {
@@ -331,45 +342,44 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 					}
 				}
 			}
-			
+
 			if (hasExtraQueryDataSourceConfig()) {
 				for (QueryDataSourceConfig query : this.getExtraQueryDataSource()) {
 					query.setRelatedSrcConf(this);
 					query.fullLoad(srcConn);
 				}
 			}
-			
+
 			if (hasExtraObjectDataSourceConfig()) {
 				for (ObjectDataSource ds : this.getExtraObjectDataSource()) {
 					ds.setRelatedSrcConf(this);
-					
+
 					if (ds.hasObjectFields()) {
 						for (DataSourceField f : ds.getObjectFields()) {
 							f.setName(SQLUtilities.tryToReplaceParamsInQuery(f.getName().toString(), schemaInfo));
-							
+
 							if (f.hasValue() && schemaInfo != null) {
 								f.setValue(SQLUtilities.tryToReplaceParamsInQuery(f.getValue().toString(), schemaInfo));
 							}
 						}
 					}
-					
+
 					ds.fullLoad(srcConn);
 				}
 			}
-			
+
 			if (hasExtraJsonSourceConfig()) {
 				for (JsonDataSource jDs : this.getExtraJsonDataSource()) {
 					jDs.setRelatedSrcConf(this);
 					jDs.fullLoad(srcConn);
 				}
 			}
-			
-		}
-		finally {
+
+		} finally {
 			srcConn.finalizeConnection(this);
 		}
 	}
-	
+
 	/**
 	 * @param conn
 	 * @throws DBException
@@ -378,20 +388,20 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		if (this.hasParentRefInfo()) {
 			for (ParentTable ref : this.getParentRefInfo()) {
 				TableConfiguration fullLoadedTab = findFullConfiguredConfInAllRelatedTable(ref.getFullTableName(),
-				    new ArrayList<>());
-				
+						new ArrayList<>());
+
 				ref.tryToGenerateTableAlias(getRelatedEtlConf());
-				
+
 				if (fullLoadedTab != null) {
 					ref.clone(fullLoadedTab, this, null, conn);
 				} else {
 					ref.fullLoad();
 				}
-				
+
 				if (ref.useSharedPKKey()) {
-					fullLoadedTab = findFullConfiguredConfInAllRelatedTable(ref.getSharedKeyRefInfo(conn).getFullTableName(),
-					    new ArrayList<>());
-					
+					fullLoadedTab = findFullConfiguredConfInAllRelatedTable(
+							ref.getSharedKeyRefInfo(conn).getFullTableName(), new ArrayList<>());
+
 					if (!ref.getSharedKeyRefInfo(conn).hasAlias()) {
 						ref.getSharedKeyRefInfo(conn).tryToGenerateTableAlias(getRelatedEtlConf());
 					}
@@ -401,179 +411,183 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 						ref.getSharedKeyRefInfo(conn).fullLoad();
 					}
 				}
-				
+
 			}
 		}
 	}
-	
+
 	public QueryDataSourceConfig findAdditionalDataSrc(String dsName) {
 		if (!hasExtraQueryDataSourceConfig()) {
 			return null;
 		}
-		
+
 		for (QueryDataSourceConfig src : this.getExtraQueryDataSource()) {
 			if (src.getName().equals(dsName)) {
 				return src;
 			}
 		}
-		
+
 		throw new ForbiddenOperationException("The table '" + dsName + "'cannot be foud on the mapping src tables");
 	}
-	
-	public static SrcConf fastCreate(AbstractTableConfiguration tableConfig, EtlItemConfiguration itemConf, Connection conn)
-	        throws DBException {
+
+	public static SrcConf fastCreate(AbstractTableConfiguration tableConfig, EtlItemConfiguration itemConf,
+			Connection conn) throws DBException {
 		SrcConf src = new SrcConf();
-		
+
 		src.copyFromOther(tableConfig, null, itemConf, conn);
-		
+
 		return src;
 	}
-	
+
 	@Override
 	public void setParentConf(EtlDataConfiguration parent) {
-		/*if (!(parent instanceof EtlItemConfiguration))
-			throw new ForbiddenOperationException("Only 'EtlItemConfiguration' is allowed to be a parent of an SrcConf");
-		*/
+		/*
+		 * if (!(parent instanceof EtlItemConfiguration)) throw new
+		 * ForbiddenOperationException("Only 'EtlItemConfiguration' is allowed to be a parent of an SrcConf"
+		 * );
+		 */
 		super.setParentConf(parent);
 	}
-	
+
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		return getSrcConnInfo();
 	}
-	
+
 	@JsonIgnore
 	public List<EtlAdditionalDataSource> getAvaliableExtraDataSource() {
 		if (!isInitialized())
 			throw new EtlExceptionImpl("The SrcConf is not yet initialized!! ");
-		
+
 		List<EtlAdditionalDataSource> ds = new ArrayList<>();
-		
+
 		if (useSharedPKKey() && isFullLoaded()) {
 			ds.add((EtlAdditionalDataSource) getSharedKeyRefInfo(null));
 		}
-		
-		//We intentional give the jsonDatasource high priority because usual them do not depends on other datasources
+
+		// We intentional give the jsonDatasource high priority because usual them do
+		// not depends on other datasources
 		if (hasExtraJsonSourceConfig()) {
-			
+
 			for (JsonDataSource d : this.getExtraJsonDataSource()) {
 				ds.add(d.getOutputDataSource());
-				
+
 				if (d.getOutputDataSource().hasParents()) {
 					ds.addAll(d.getOutputDataSource().getParentOutputDataSource());
 				}
 			}
 		}
-		
+
 		if (hasExtraTableDataSourceConfig()) {
 			ds.addAll(this.getExtraTableDataSource());
 		}
-		
+
 		if (hasExtraQueryDataSourceConfig()) {
 			ds.addAll(this.getExtraQueryDataSource());
 		}
-		
+
 		if (hasExtraObjectDataSourceConfig()) {
 			ds.addAll(this.getExtraObjectDataSource());
 		}
-		
+
 		return ds;
 	}
-	
+
 	private void initAdditionalDataSource(EtlAdditionalDataSource t, Connection srcConn, Connection dstConn)
-	        throws DBException {
+			throws DBException {
 		t.init(this, getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
-		
+
 		if (t instanceof AbstractTableConfiguration) {
 			TableConfiguration tAsTabConf = (TableConfiguration) t;
-			
+
 			if (tAsTabConf.hasAlias()) {
 				tAsTabConf.setUsingManualDefinedAlias(true);
 				getRelatedEtlConf().tryToAddToBusyTableAliasName(tAsTabConf.getTableAlias());
 			} else {
 				tAsTabConf.tryToGenerateTableAlias(getRelatedEtlConf());
 			}
-			
+
 			getRelatedEtlConf().addConfiguredTable((AbstractTableConfiguration) t);
 		}
 	}
-	
+
 	private void initAdditionalAllDataSource(List<EtlAdditionalDataSource> ds, Connection srcConn, Connection dstConn)
-	        throws DBException {
-		
+			throws DBException {
+
 		if (ds == null)
 			return;
-		
+
 		for (EtlAdditionalDataSource t : ds) {
 			initAdditionalDataSource(t, srcConn, dstConn);
 		}
 	}
-	
+
 	private void initAllAvaliableExtraDataSource(Connection srcConn, Connection dstConn) throws DBException {
 		if (useSharedPKKey() && isFullLoaded()) {
 			initAdditionalDataSource((EtlAdditionalDataSource) getSharedKeyRefInfo(null), srcConn, dstConn);
 		}
-		
+
 		initAdditionalAllDataSource(utilities.parseList(this.getExtraTableDataSource(), EtlAdditionalDataSource.class),
-		    srcConn, dstConn);
-		
+				srcConn, dstConn);
+
 		initAdditionalAllDataSource(utilities.parseList(this.getExtraQueryDataSource(), EtlAdditionalDataSource.class),
-		    srcConn, dstConn);
-		
+				srcConn, dstConn);
+
 		initAdditionalAllDataSource(utilities.parseList(this.getExtraObjectDataSource(), EtlAdditionalDataSource.class),
-		    srcConn, dstConn);
-		
+				srcConn, dstConn);
+
 		initAdditionalAllDataSource(utilities.parseList(this.getExtraJsonDataSource(), EtlAdditionalDataSource.class),
-		    srcConn, dstConn);
+				srcConn, dstConn);
 	}
-	
+
 	/**
-	 * Generate all avaliable fields on this srcConf, this fields will include all field from
-	 * {@link #getFields()} and the fields from all {@link #extraTableDataSource} Note that the
-	 * duplicated fields will only be included once
+	 * Generate all avaliable fields on this srcConf, this fields will include all
+	 * field from {@link #getFields()} and the fields from all
+	 * {@link #extraTableDataSource} Note that the duplicated fields will only be
+	 * included once
 	 * 
 	 * @return
 	 */
 	public List<Field> generateAllAvaliableFields() {
 		List<Field> fields = new ArrayList<>();
-		
+
 		for (Field f : this.getFields()) {
 			fields.add(f);
 		}
-		
+
 		if (hasExtraTableDataSourceConfig()) {
-			
+
 			for (EtlAdditionalDataSource ds : this.getExtraTableDataSource()) {
 				for (Field f : ds.getFields()) {
-					
+
 					if (!fields.contains(f)) {
 						fields.add(f);
 					}
 				}
 			}
 		}
-		
+
 		return fields;
 	}
-	
+
 	public Boolean hasExtraTableDataSourceConfig() {
 		return utilities.listHasElement(this.getExtraTableDataSource());
 	}
-	
+
 	public Boolean hasExtraQueryDataSourceConfig() {
 		return utilities.listHasElement(this.getExtraQueryDataSource());
-		
+
 	}
-	
+
 	public Boolean hasExtraJsonSourceConfig() {
 		return utilities.listHasElement(this.getExtraJsonDataSource());
-		
+
 	}
-	
+
 	public Boolean hasExtraObjectDataSourceConfig() {
 		return utilities.listHasElement(this.getExtraObjectDataSource());
 	}
-	
+
 	public Boolean hasRequiredExtraDataSource() {
 		if (hasExtraDataSource()) {
 			return false;
@@ -584,19 +598,19 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 				}
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	public Boolean hasEtlFields() {
 		return utilities.listHasElement(this.getEtlFields());
 	}
-	
+
 	public EtlField getEtlField(String fieldName, List<EtlDataSource> preferredDataSource, Boolean deepCheck) {
 		if (utilities.listHasElement(preferredDataSource)) {
 			for (EtlDataSource ds : preferredDataSource) {
 				EtlField f = getEtlField(fieldName, deepCheck, ds);
-				
+
 				if (f != null) {
 					return f;
 				}
@@ -604,21 +618,21 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		} else {
 			return getEtlField(fieldName, deepCheck, null);
 		}
-		
+
 		return null;
 	}
-	
+
 	private EtlField getEtlField(String fieldName, Boolean deepCheck, EtlDataSource preferredDataSource) {
-		
+
 		EtlField found = null;
-		
+
 		if (this.hasEtlFields()) {
 			for (EtlField f : this.getEtlFields()) {
-				
+
 				if (f.getName().equals(fieldName)) {
 					found = f;
 				}
-				
+
 				if (f.hasSrcField()) {
 					if (f.getSrcField().getName().equals(fieldName)) {
 						found = f;
@@ -626,326 +640,332 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 				}
 			}
 		}
-		
+
 		if (found != null && (preferredDataSource == null || found.checkIfUsesSameDataSouce(preferredDataSource))) {
 			return found;
 		}
-		
+
 		if (deepCheck) {
-			
+
 			List<EtlDataSource> allDs = new ArrayList<>();
-			
+
 			allDs.add(this);
-			
+
 			if (this.hasExtraDataSource()) {
 				allDs.addAll(this.getAvaliableExtraDataSource());
 			}
-			
+
 			if (this.hasExtraDataSource()) {
 				for (EtlDataSource ds : allDs) {
 					EtlField f = this.getEtlField(EtlField.fastCreate(fieldName, ds, false).getName(), false,
-					    preferredDataSource);
-					
+							preferredDataSource);
+
 					if (f != null)
 						found = f;
-					
+
 					if (found != null
-					        && (preferredDataSource == null || found.checkIfUsesSameDataSouce(preferredDataSource))) {
+							&& (preferredDataSource == null || found.checkIfUsesSameDataSouce(preferredDataSource))) {
 						return found;
 					}
 				}
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	public Boolean hasExtraDataSource() {
 		return utilities.listHasElement(getAvaliableExtraDataSource());
 	}
-	
+
 	public Boolean isComplex() {
 		return hasRequiredExtraDataSource();
 	}
-	
+
 	public void copyFromOther(TableConfiguration toClone, EtlDatabaseObject schemaInfoSrc,
-	        EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
-		
+			EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
+
 		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
-		
+
 		this.setRelatedEtlConfig(relatedItemConf.getRelatedEtlConf());
-		
+
 		if (toClone instanceof SrcConf) {
 			SrcConf toCloneFrom = (SrcConf) toClone;
 			if (utilities.listHasElement(toCloneFrom.getAuxExtractTable())) {
 				this.setAuxExtractTable(
-				    AuxExtractTable.cloneAll(toCloneFrom.getAuxExtractTable(), this, schemaInfoSrc, conn));
-				
+						AuxExtractTable.cloneAll(toCloneFrom.getAuxExtractTable(), this, schemaInfoSrc, conn));
+
 				for (AuxExtractTable aux : this.getAuxExtractTable()) {
-					
+
 					if (!aux.isUsingManualDefinedAlias()) {
-						aux.setJoinExtraCondition(
-						    aux.getJoinExtraCondition().replaceAll(aux.getTableName() + "\\.", aux.getTableAlias() + "\\."));
+						aux.setJoinExtraCondition(aux.getJoinExtraCondition().replaceAll(aux.getTableName() + "\\.",
+								aux.getTableAlias() + "\\."));
 					}
-					
+
 					if (schemaInfoSrc != null) {
 						aux.setJoinExtraCondition(
-						    SQLUtilities.tryToReplaceParamsInQuery(aux.getJoinExtraCondition(), schemaInfoSrc));
+								SQLUtilities.tryToReplaceParamsInQuery(aux.getJoinExtraCondition(), schemaInfoSrc));
 					}
-					
+
 					if (!aux.hasJoinFields()) {
 						throw new ForbiddenOperationException("No join fields were difined between "
-						        + aux.getJoiningEntity().getTableName() + " And " + this.getTableName());
+								+ aux.getJoiningEntity().getTableName() + " And " + this.getTableName());
 					} else {
-						
+
 						if (schemaInfoSrc != null) {
 							for (FieldsMapping joiningField : aux.getJoinFields()) {
-								joiningField.setSrcField(
-								    SQLUtilities.tryToReplaceParamsInQuery(joiningField.getSrcField(), schemaInfoSrc));
-								joiningField.setDstField(
-								    SQLUtilities.tryToReplaceParamsInQuery(joiningField.getDstField(), schemaInfoSrc));
+								joiningField.setSrcField(SQLUtilities
+										.tryToReplaceParamsInQuery(joiningField.getSrcField(), schemaInfoSrc));
+								joiningField.setDstField(SQLUtilities
+										.tryToReplaceParamsInQuery(joiningField.getDstField(), schemaInfoSrc));
 							}
 						}
 					}
 				}
 			}
-			
+
 			if (toCloneFrom.hasExtraTableDataSourceConfig()) {
-				this.setExtraTableDataSource(
-				    TableDataSourceConfig.cloneAll(toCloneFrom.getExtraTableDataSource(), this, schemaInfoSrc, conn));
+				this.setExtraTableDataSource(TableDataSourceConfig.cloneAll(toCloneFrom.getExtraTableDataSource(), this,
+						schemaInfoSrc, conn));
 			}
-			
+
 			if (toCloneFrom.hasExtraQueryDataSourceConfig()) {
 				this.setExtraQueryDataSource(
-				    QueryDataSourceConfig.cloneAll(toCloneFrom.getExtraQueryDataSource(), this, conn));
+						QueryDataSourceConfig.cloneAll(toCloneFrom.getExtraQueryDataSource(), this, conn));
 			}
-			
+
 			if (toCloneFrom.hasExtraObjectDataSourceConfig()) {
-				this.setExtraObjectDataSource(ObjectDataSource.cloneAll(toCloneFrom.getExtraObjectDataSource(), this, conn));
-				
+				this.setExtraObjectDataSource(
+						ObjectDataSource.cloneAll(toCloneFrom.getExtraObjectDataSource(), this, conn));
+
 				if (hasExtraObjectDataSourceConfig()) {
 					for (ObjectDataSource query : this.getExtraObjectDataSource()) {
 						query.setRelatedSrcConf(this);
-						
+
 						if (query.hasObjectFields() && schemaInfoSrc != null) {
 							for (DataSourceField f : query.getObjectFields()) {
 								try {
-									f.setName(SQLUtilities.tryToReplaceParamsInQuery(f.getName().toString(), schemaInfoSrc));
+									f.setName(SQLUtilities.tryToReplaceParamsInQuery(f.getName().toString(),
+											schemaInfoSrc));
+								} catch (ForbiddenOperationException e) {
 								}
-								catch (ForbiddenOperationException e) {}
-								
+
 								if (f.hasValue()) {
 									try {
-										f.setValue(
-										    SQLUtilities.tryToReplaceParamsInQuery(f.getValue().toString(), schemaInfoSrc));
+										f.setValue(SQLUtilities.tryToReplaceParamsInQuery(f.getValue().toString(),
+												schemaInfoSrc));
+									} catch (ForbiddenOperationException e) {
 									}
-									catch (ForbiddenOperationException e) {}
 								}
 							}
 						}
-						
+
 					}
 				}
-				
+
 			}
-			
+
 			this.setDstType(toCloneFrom.getDstType());
 		}
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
 		if (hasAuxExtractTable()) {
 			AuxExtractTable.tryToReplacePlaceholders(this.getAuxExtractTable(), schemaInfoSrc);
 		}
-		
+
 		if (hasExtraTableDataSourceConfig()) {
 			TableDataSourceConfig.tryToReplacePlaceholders(this.getExtraTableDataSource(), schemaInfoSrc);
 		}
-		
+
 		if (hasExtraQueryDataSourceConfig()) {
 			QueryDataSourceConfig.tryToReplacePlaceholders(this.getExtraQueryDataSource(), schemaInfoSrc);
 		}
-		
+
 		if (hasExtraObjectDataSourceConfig()) {
 			ObjectDataSource.tryToReplacePlaceholders(this.getExtraObjectDataSource(), schemaInfoSrc);
 		}
 	}
-	
+
 	@Override
 	public EtlItemConfiguration getParentConf() {
 		return (EtlItemConfiguration) super.getParentConf();
 	}
-	
+
 	@Override
 	public Boolean isJoinable() {
 		return hasParentItemConf();
 	}
-	
+
 	@Override
 	public JoinableEntity parseToJoinable() throws ForbiddenOperationException {
 		return this;
 	}
-	
+
 	@Override
 	public List<FieldsMapping> getJoinFields() {
 		return this.joinFields;
 	}
-	
+
 	@Override
 	public TableConfiguration getJoiningEntity() {
 		if (!isJoinable()) {
 			throw new ForbiddenOperationException("Only a srcConf with a child EtlItemConf can have a joining entity");
 		}
-		
+
 		return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
 	}
-	
+
 	@Override
 	public String getJoinExtraCondition() {
 		return this.joinExtraCondition;
 	}
-	
+
 	@Override
 	public JoinType getJoinType() {
 		return JoinType.INNER;
 	}
-	
+
 	@Override
 	public ConditionClauseScope getJoinExtraConditionScope() {
 		return this.joinExtraConditionScope;
 	}
-	
+
 	@Override
 	public void setJoinExtraConditionScope(ConditionClauseScope joinExtraConditionScope) {
 		this.joinExtraConditionScope = joinExtraConditionScope;
 	}
-	
+
 	@Override
 	public void setJoinFields(List<FieldsMapping> joinFields) {
 		this.joinFields = joinFields;
 	}
-	
+
 	@Override
 	public void setJoinType(JoinType joinType) {
 	}
-	
+
 	@Override
 	public void setJoinExtraCondition(String joinExtraCondition) {
 		this.joinExtraCondition = joinExtraCondition;
 	}
-	
+
 	@Override
 	public void setMainExtractTable(MainJoiningEntity mainJoiningTable) {
 	}
-	
+
 	@Override
 	public Boolean isMainJoiningEntity() {
 		return !isJoinable();
 	}
-	
+
 	@Override
 	public MainJoiningEntity parseToJoining() throws ForbiddenOperationException {
 		return this;
 	}
-	
+
 	@Override
 	public MainJoiningEntity getMainExtractTable() {
 		if (!isJoinable()) {
-			throw new ForbiddenOperationException("Only a srcConf with a child EtlItemConf can have a mainExtractTable");
+			throw new ForbiddenOperationException(
+					"Only a srcConf with a child EtlItemConf can have a mainExtractTable");
 		}
-		
+
 		return getParentConf().getSrcConf();
 	}
-	
+
 	@Override
 	public String getQuery() {
 		String condition = super.generateConditionsFields(null, this.joinFields, this.joinExtraCondition);
-		
+
 		return this.generateSelectFromQuery() + " WHERE " + condition;
 	}
-	
+
 	public EtlDataSource findDataSourceOnAllAvaliabeDatasources(String dsName) {
 		if (dsName.equals(this.getName()) || dsName.equals(this.getTableAlias())) {
 			return this;
 		}
-		
+
 		if (this.hasAuxExtractTable()) {
 			for (JoinableEntity auxExtractTable : this.getJoiningTable()) {
 				if (auxExtractTable.doNotUseAsDatasource()) {
 					continue;
 				}
-				
+
 				if (dsName.equals(auxExtractTable.getName()) || dsName.equals(auxExtractTable.getTableAlias())) {
 					return auxExtractTable;
 				}
-				
+
 				if (auxExtractTable.isMainJoiningEntity() && auxExtractTable.parseToJoining().hasAuxExtractTable()) {
 					for (JoinableEntity innerAuxExtractTable : auxExtractTable.parseToJoining().getJoiningTable()) {
 						if (innerAuxExtractTable.doNotUseAsDatasource()) {
 							continue;
 						}
-						
+
 						if (dsName.equals(innerAuxExtractTable.getName())
-						        || dsName.equals(innerAuxExtractTable.getTableAlias())) {
+								|| dsName.equals(innerAuxExtractTable.getTableAlias())) {
 							return innerAuxExtractTable;
 						}
-						
+
 					}
 				}
 			}
 		}
-		
+
 		throw new EtlExceptionImpl("Datasource not found within the srcConf " + this);
 	}
-	
+
 	@Override
 	public List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
-	        EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
-	        throws DBException {
-		
+			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
+			throws DBException {
+
 		EtlDatabaseObjectSearchParams searchParams = new EtlDatabaseObjectSearchParams(this, null);
-		
+
 		return searchParams.search(null, parentSrcObject, auxDataSourceObjects, srcConn, srcConn);
 	}
-	
-	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn) throws DBException {
+
+	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn)
+			throws DBException {
 		this.fullLoad(srcConn);
-		
+
 		this.createRelatedSrcStageAreaTable(srcConn);
-		
+
 		this.createRelatedStageAreaSrcUniqueKeysTable(srcConn);
+
+		this.createRelatedProcessedRecordStageAreaTable(srcConn);
 	}
-	
+
 	public EtlItemConfiguration getParentItemConf() {
 		if (this.hasParentItemConf()) {
 			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf();
 		}
-		
+
 		return null;
 	}
-	
+
 	@Override
 	public EtlItemConfiguration getParentEtlItemConf() {
 		return this.getParentConf();
 	}
-	
+
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> joined = new HashMap<>();
-		
+
 		Map<String, Object> p2 = getParentConf().retrieveAllAvailableTemplateParameters();
-		
+
 		if (p2 != null) {
 			joined.putAll(p2);
 		}
-		
+
 		Map<String, Object> p = EtlItemConfigurationComponent.super.retrieveAllAvailableTemplateParameters();
-		
+
 		if (p != null) {
 			joined.putAll(p);
 		}
-		
+
 		return joined;
 	}
 }

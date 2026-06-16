@@ -282,15 +282,17 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn, dstConn);
 					}
 
-					List<EtlDatabaseObject> recs;
+					if (!srcConf.doNotUseAsDatasource()) {
+						List<EtlDatabaseObject> recs;
 
-					recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects, srcConn);
+						recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects, srcConn);
 
-					if (recs.isEmpty()) {
-						throw new EtlExceptionImpl("No src record was returned with " + this);
+						if (recs.isEmpty()) {
+							throw new EtlExceptionImpl("No src record was returned with " + this);
+						}
+
+						srcParent = recs.get(0);
 					}
-
-					srcParent = recs.get(0);
 				}
 
 				dstParent = this.createParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
@@ -700,8 +702,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		} else if (useMainEtlTable) {
 			DstConf EtlTransformTarget = new DstConf(getParentTableName());
 
-			EtlTransformTarget.setTableAlias(this.onDemandInfo.getTableAlias());
-
 			conf.setDstConf(utilities.parseToList(EtlTransformTarget));
 		}
 
@@ -709,7 +709,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		conf.setRelatedParentDstConfName(this.getRelatedEtlTransformTarget().getTableAlias());
 
 		conf.setDoNotFullLoadDstConf(true);
-
 		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
 
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));

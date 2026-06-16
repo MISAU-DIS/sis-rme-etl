@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -357,5 +358,17 @@ public class DatabasePreparationRecord implements EtlDatabaseObject {
 	@Override
 	public void tryToReplaceFieldWithKey(Key k) {
 		
+	}
+
+	@Override
+	public void setEtlStageObjectInfo(EtlStageObjectInfo etlStageObjectInfo) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public EtlStageObjectInfo getEtlStageObjectInfo() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

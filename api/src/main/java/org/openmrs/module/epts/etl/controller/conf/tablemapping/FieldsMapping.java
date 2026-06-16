@@ -15,12 +15,14 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
+import org.openmrs.module.epts.etl.etl.processor.transformer.AbstractEtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
+import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingMetadataException;
 import org.openmrs.module.epts.etl.exceptions.NoFieldWithFieldsMapping;
@@ -640,13 +642,44 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		if (this.hasSrcField() && !this.hasSrcValue()) {
 			String[] srcFieldParts = this.getSrcField().toString().split("\\.");
 
-			if (srcFieldParts.length == 1 && this.getSrcField().startsWith("@")) {
-				this.setSrcValue(this.getSrcField());
-				this.setSrcField(null);
+			if (srcFieldParts.length == 1) {
+				if (this.getSrcField().startsWith("@") || utilities.isNumeric(this.getSrcField())) {
+					this.setSrcValue(this.getSrcField());
+					this.setSrcField(null);
+				} else if (this.getSrcField().equals("null")) {
+					this.setMapToNullValue(true);
+					this.setSrcField(null);
+				}
 			}
 		}
 
+		boolean srcFieldIsTransformer = hasSrcField()
+				&& AbstractEtlFieldTransformer.isTransformerExpression(this.getSrcField());
+
+		boolean srcValueIsTransformer = hasSrcValue() && this.getSrcValue() != null
+				&& AbstractEtlFieldTransformer.isTransformerExpression(this.getSrcValue().toString());
+
+		if (srcFieldIsTransformer && srcValueIsTransformer) {
+			throw new EtlExceptionImpl("Only one of srcField or srcValue can define a transformer expression.");
+		} else if (srcFieldIsTransformer) {
+			initTransformerFromField(this.getSrcField());
+			this.setSrcField(null);
+		} else if (srcValueIsTransformer) {
+			initTransformerFromField(this.getSrcValue().toString());
+
+			this.setSrcValue(null);
+		}
+
 		this.markAsInitialized();
+	}
+
+	public void initTransformerFromField(String transformer) {
+		if (hasTransformer()) {
+			throw new FieldsMappingException("The dstField: " + this.getDstField()
+					+ " is already using a transformer. You cannot use a dynamic transformer from srcField or srcValue!");
+		}
+
+		this.setTransformer(transformer);
 	}
 
 	public void tryToLoadDataSourceInfoFromSrcField() {

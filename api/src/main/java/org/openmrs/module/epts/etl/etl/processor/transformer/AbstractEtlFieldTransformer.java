@@ -17,119 +17,119 @@ import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfiguration implements EtlFieldTransformer {
-	
+
 	protected List<Object> parameters;
-	
+
 	protected EtlTransformTarget relatedEtlTransformTarget;
-	
+
 	protected TransformableField field;
-	
+
 	protected Connection overrideConnection;
-	
+
 	protected FieldsMapping input;
-	
+
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
-	    TransformableField field) {
+			TransformableField field) {
 		this.parameters = parameters;
 		this.relatedEtlTransformTarget = relatedEtlTargedConf;
 		this.field = field;
 	}
-	
+
 	public static String buildCacheKey(EtlTransformTarget dstConf, TransformableField field, List<Object> parameters) {
 		String params = parameters != null && !parameters.isEmpty()
-		        ? ("|" + parameters.stream().map(Object::toString).collect(Collectors.joining("|")))
-		        : null;
-		
+				? ("|" + parameters.stream().map(Object::toString).collect(Collectors.joining("|")))
+				: null;
+
 		return (dstConf != null ? dstConf.toString() : "No EtlTransformTarget") + "|" + field.toString() + params;
 	}
-	
+
 	public boolean hasInput() {
 		return this.input != null;
 	}
-	
+
 	public FieldsMapping getInput() {
 		return input;
 	}
-	
+
 	public void setInput(FieldsMapping input) {
 		this.input = input;
 	}
-	
+
 	public EtlTransformTarget getRelatedEtlTransformTarget() {
 		return relatedEtlTransformTarget;
 	}
-	
+
 	public String getTransformerDsc() {
 		return field.getTransformer();
 	}
-	
+
 	@Override
 	public Connection getOverrideConnection() {
 		return overrideConnection;
 	}
-	
+
 	@Override
 	public void setOverrideConnection(Connection overrideConnection) {
 		this.overrideConnection = overrideConnection;
 	}
-	
+
 	protected void logTrace(String msg) {
 		this.relatedEtlTransformTarget.getRelatedEtlConf().logTrace(msg);
 	}
-	
+
 	@Override
 	public String toString() {
 		return this.getTransformerDsc();
 	}
-	
-	public boolean isTransformerExpression(String value) {
+
+	public static boolean isTransformerExpression(String value) {
 		return value != null && value.contains("(") && value.endsWith(")");
 	}
-	
+
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		return this.relatedEtlTransformTarget.getRelatedEtlConf();
 	}
-	
+
 	@Override
 	public EtlDataConfiguration getParentConf() {
 		return this.relatedEtlTransformTarget;
 	}
-	
+
 	@Override
 	public List<DefaultEtlValidator> getValidators() {
 		return null;
 	}
-	
+
 	@Override
 	public void setRelatedEtlConfig(EtlConfiguration relatedSyncConfiguration) {
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 	}
-	
+
 	@Override
 	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
 		return null;
 	}
-	
+
 	@Override
 	public EtlTemplateInfo getTemplate() {
 		return null;
 	}
-	
+
 	@Override
 	public void setTemplate(EtlTemplateInfo template) {
 	}
-	
+
 	@Override
 	public List<Extension> getExtension() {
 		return null;
 	}
-	
+
 	@Override
 	public void setExtension(List<Extension> extension) {
 	}
-	
+
 }

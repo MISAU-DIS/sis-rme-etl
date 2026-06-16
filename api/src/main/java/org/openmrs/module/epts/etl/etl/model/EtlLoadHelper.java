@@ -136,12 +136,6 @@ public class EtlLoadHelper {
 			EtlStageAreaObjectDAO.saveAll(generateStageInfoForAll(srcConn, dstConn), srcConn);
 			
 		}
-		
-		if (getEtlOperationConfig().getAfterEtlActionType().isDelete()) {
-			for (EtlDatabaseObject obj : this.getSrcObjects()) {
-				DatabaseObjectDAO.remove(obj, srcConn);
-			}
-		}
 	}
 	
 	private boolean hasUnresolvedError(DstConf dst) {
