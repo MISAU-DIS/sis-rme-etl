@@ -2050,7 +2050,7 @@ public class SQLUtilities {
 					FieldTransformingInfo v = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
 					    avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
 					
-					query = query.replaceAll(element.strip().trim(), v.getTransformedValue().toString());
+					query = query.replaceAll(element.strip().trim(), v.getTransformedValue() == null ? "null" : v.getTransformedValue().toString());
 					
 				}
 			}
