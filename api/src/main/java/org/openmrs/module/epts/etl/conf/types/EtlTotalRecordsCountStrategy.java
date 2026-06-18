@@ -1,7 +1,8 @@
 package org.openmrs.module.epts.etl.conf.types;
 
 public enum EtlTotalRecordsCountStrategy {
-	
+	// @formatter:off
+
 	/**
 	 * When the count is provided, it will not be calculated through the database but insted will be
 	 * picked up from related configuration propriety
@@ -22,18 +23,20 @@ public enum EtlTotalRecordsCountStrategy {
 	 */
 	COUNT_ALWAYS;
 	
+	// @formatter:on
+
 	public boolean isUseMaxRecordIdAsCount() {
 		return this.equals(USE_MAX_RECORD_ID_AS_COUNT);
 	}
-	
+
 	public boolean isCountOnce() {
 		return this.equals(COUNT_ONCE);
 	}
-	
+
 	public boolean isCountAlways() {
 		return this.equals(COUNT_ALWAYS);
 	}
-	
+
 	public boolean isUseProvided() {
 		return this.equals(USE_PROVIDED_COUNT);
 	}

@@ -524,4 +524,16 @@ public class TransportRecord extends BaseVO implements EtlDatabaseObject {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public List<EtlDatabaseObject> getChildObjects() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setChildObjects(List<EtlDatabaseObject> childObjs) {
+		// TODO Auto-generated method stub
+		
+	}
 }

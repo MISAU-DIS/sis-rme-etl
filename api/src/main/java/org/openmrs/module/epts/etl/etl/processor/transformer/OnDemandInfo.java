@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -59,6 +60,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	private ActionOnEtlIssue unmappedFieldBehavior;
 
 	private FieldMappingResolutionStrategy mappingResolutionStrategy;
+
+	private AutoIncrementHandlingType autoIncrementHandlingType;
 
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget,
 			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
@@ -158,6 +161,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						templateParams.put(paramName, srcFieldOrValue);
 					} else if (dstField.equals("override_fields")) {
 						this.overrideFieldsStr = srcFieldOrValue;
+					} else if (dstField.equals("include_primary_key_on_insert")) {
+						this.autoIncrementHandlingType = AutoIncrementHandlingType.valueOf(srcFieldOrValue);
 					} else {
 						if (!utilities.stringHasValue(srcFieldOrValue)
 								|| srcFieldOrValue.toLowerCase().equals("null")) {
@@ -199,6 +204,10 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					"Template parameters specified but no templated was defined with transformer: \n"
 							+ getTransformerDsc());
 		}
+	}
+
+	public AutoIncrementHandlingType getAutoIncrementHandlingType() {
+		return autoIncrementHandlingType;
 	}
 
 	@Override

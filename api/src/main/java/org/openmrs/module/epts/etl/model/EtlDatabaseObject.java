@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadStatus;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
+import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordAlreadyLoadedRecordException;
 import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordNotYetAvaliableException;
@@ -58,6 +59,10 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	void refreshLastSyncDateOnDestination(TableConfiguration tableConfiguration, String recordOriginLocationCode,
 			Connection conn);
+
+	List<EtlDatabaseObject> getChildObjects();
+
+	void setChildObjects(List<EtlDatabaseObject> childObjs);
 
 	List<EtlDatabaseObject> getDestinationObjects();
 
@@ -851,8 +856,50 @@ public interface EtlDatabaseObject extends EtlObject {
 		return null;
 	}
 
+	default boolean hasChildObjects() {
+		return utils.listHasElement(this.getChildObjects());
+	}
+
 	default boolean hasDestinationRecords() {
 		return utils.listHasElement(this.getDestinationObjects());
+	}
+
+	default boolean hasDestinationRecordsRecursively() {
+		if (hasDestinationRecords()) {
+			return true;
+		}
+
+		if (hasChildObjects()) {
+			for (EtlDatabaseObject obj : this.getChildObjects()) {
+				if (obj.hasDestinationRecordsRecursively()) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	default List<EtlDatabaseObject> getDestinationObjectsRecursively() {
+		List<EtlDatabaseObject> destinationRecords = new ArrayList<>();
+
+		if (hasDestinationRecords()) {
+			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
+				destinationRecords.add(obj);
+			}
+		}
+
+		if (hasChildObjects()) {
+			for (EtlDatabaseObject obj : this.getChildObjects()) {
+				List<EtlDatabaseObject> childs = obj.getDestinationObjectsRecursively();
+
+				if (utils.listHasElement(childs)) {
+					destinationRecords.addAll(childs);
+				}
+			}
+		}
+
+		return destinationRecords;
 	}
 
 	default boolean isInEtlProcess() {
@@ -860,18 +907,18 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default EtlLoadStatus getLoadStatus() {
-		if (!hasDestinationRecords()) {
+		if (!hasDestinationRecordsRecursively()) {
 			throw new EtlExceptionImpl("No destination found for this object " + this);
 		}
 
 		List<EtlDatabaseObject> succed = filterDestinationRecords(EtlStatus.SUCCESS);
-		List<EtlDatabaseObject> faild = filterDestinationRecords(EtlStatus.SUCCESS);
+		List<EtlDatabaseObject> faild = filterDestinationRecords(EtlStatus.FAIL);
 
-		if (succed.size() == this.getDestinationObjects().size()) {
+		if (succed.size() == this.getDestinationObjectsRecursively().size()) {
 			return EtlLoadStatus.FULL_LOADED;
 		}
 
-		if (faild.size() == this.getDestinationObjects().size()) {
+		if (faild.size() == this.getDestinationObjectsRecursively().size()) {
 			return EtlLoadStatus.NOT_LOADED_DUE_ERRORS;
 		}
 
@@ -884,18 +931,30 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default List<EtlDatabaseObject> filterDestinationRecords(EtlStatus status) {
 
-		if (!hasDestinationRecords())
+		if (!hasDestinationRecordsRecursively())
 			throw new EtlExceptionImpl("No destination found for this object " + this);
 
-		List<EtlDatabaseObject> succed = new ArrayList<>();
+		List<EtlDatabaseObject> dstOfStatus = new ArrayList<>();
 
-		for (EtlDatabaseObject obj : this.getDestinationObjects()) {
-			if (obj.getEtlInfo().getStatus().equals(status)) {
-				succed.add(obj);
+		if (hasDestinationRecords()) {
+			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
+				if (obj.getEtlInfo().getStatus().equals(status)) {
+					dstOfStatus.add(obj);
+				}
 			}
 		}
 
-		return succed;
+		if (hasChildObjects()) {
+			for (EtlDatabaseObject obj : this.getChildObjects()) {
+				List<EtlDatabaseObject> childs = obj.filterDestinationRecords(status);
+
+				if (utils.listHasElement(childs)) {
+					dstOfStatus.addAll(childs);
+				}
+			}
+		}
+
+		return dstOfStatus;
 	}
 
 	default void loadValuesToUniqueKeyFields(EtlDatabaseObject srcRecord) {
@@ -961,6 +1020,18 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		return avaliableSrcOjects;
+	}
+
+	default EtlStageAreaObject generateProcessedRecord(Connection srcConn, Connection dstConn) throws DBException {
+		return EtlStageAreaObject.generateProcessedRecord(this, srcConn, dstConn);
+	}
+
+	default void addChildObject(EtlDatabaseObject obj) {
+		if (this.getChildObjects() == null) {
+			this.setChildObjects(new ArrayList<>());
+		}
+
+		this.getChildObjects().add(obj);
 	}
 
 }

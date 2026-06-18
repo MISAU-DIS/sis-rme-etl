@@ -18,12 +18,9 @@ public class EtlStageObjectInfo {
 
 	private List<EtlStageAreaObject> dstStageInfoObject;
 
-	private EtlStageAreaObject processedRecord;
-
 	private EtlStageObjectInfo(EtlDatabaseObject srcObj, Connection srcConn, Connection dstConn) throws DBException {
 
 		this.setSrcStageInfoObject(EtlStageAreaObject.generateSrc(srcObj, srcConn, dstConn));
-		this.setProcessedRecord(EtlStageAreaObject.generateProcessedRecord(srcObj, srcConn, dstConn));
 
 		if (!srcObj.hasDestinationRecords()) {
 			throw new EtlExceptionImpl("No dst objects found with src object: " + srcObj, srcObj,
@@ -42,14 +39,6 @@ public class EtlStageObjectInfo {
 		EtlStageObjectInfo recInfo = new EtlStageObjectInfo(rec, srcConn, dstConn);
 
 		return recInfo;
-	}
-
-	public EtlStageAreaObject getProcessedRecord() {
-		return processedRecord;
-	}
-
-	public void setProcessedRecord(EtlStageAreaObject processedRecord) {
-		this.processedRecord = processedRecord;
 	}
 
 	public EtlStageAreaObject getSrcStageInfoObject() {

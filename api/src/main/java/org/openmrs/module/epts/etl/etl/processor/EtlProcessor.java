@@ -18,6 +18,7 @@ import org.openmrs.module.epts.etl.etl.controller.EtlController;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
+import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
@@ -67,8 +68,9 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 				for (EtlDatabaseObject obj : etlObjects) {
 					if (action.moveToStageArea()) {
-						DatabaseObjectDAO.insert(obj.getEtlStageObjectInfo().getProcessedRecord(),
-								obj.getEtlStageObjectInfo().getProcessedRecord().getRelatedConfiguration(), dstConn);
+						EtlStageAreaObject processedRec = obj.generateProcessedRecord(srcConn, dstConn);
+
+						processedRec.save(processedRec.getRelatedConfiguration(), srcConn);
 					}
 
 					if (action.isDelete() || action.moveToStageArea()) {
@@ -217,6 +219,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 					avaliableSrcObjects, srcConn);
 
 			if (!etlObjects.isEmpty()) {
+				for (EtlDatabaseObject obj : etlObjects) {
+					srcObject.addChildObject(obj);
+				}
+				
 				perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null,
 						LoadingType.INNER, srcConn, dstConn);
 			}

@@ -214,5 +214,4 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	 * @return the generated select dump query
 	 */
 	String generateSelectFromQuery();
-
 }

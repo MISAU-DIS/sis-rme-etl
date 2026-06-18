@@ -111,17 +111,28 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		transformedRec.loadObjectIdData(dstConf);
 		transformedRec.loadUniqueKeyValues();
 
+		boolean pkResolved = false;
+
+		Field pk = transformedRec.getField(transformedRec.getObjectId().asSimpleKey().getName());
+
+		FieldsMapping pkMapping = dstConf.getMappingUsingDstField(pk.getName());
+		FieldTransformingInfo fi = null;
+
 		if (!dstConf.useSharedPKKey()) {
-			if (dstConf.useManualGeneratedObjectId() && !dstConf.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
+			if (!pkMapping.useDefaultTransformer()) {
+				fi = pkMapping.transform(processor, srcRecord, transformedRec, new ArrayList<>(avaliableSrcObjs),
+						srcConn, dstConn);
+
+				transformedRec.setFieldValue(pk.getName(), fi.getTransformedValue());
+				pk.setTransformingInfo(fi);
+			} else if (dstConf.useManualGeneratedObjectId()
+					&& !dstConf.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
 				transformedRec.getObjectId().asSimpleKey().setValue(dstConf.retriveNextRecordId(processor));
 			}
+
+			pkResolved = true;
 		} else {
-			Field pk = transformedRec.getField(transformedRec.getObjectId().asSimpleKey().getName());
-
-			FieldsMapping pkMapping = dstConf.getMappingUsingDstField(pk.getName());
-			FieldTransformingInfo fi = null;
-
-			if (migratedDstParent == null) {
+			if (migratedDstParent == null || !pkMapping.useDefaultTransformer()) {
 
 				// We are assumning that the src and dst structure are the same
 				if (srcRecord.getRelatedConfiguration().getObjectName()
@@ -142,11 +153,13 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				}
 
 				pk.setTransformingInfo(fi);
+
+				pkResolved = true;
 			}
 		}
 
 		// Force the related child field to be mapped to the dstPK
-		if (migratedDstParent != null) {
+		if (!pkResolved && migratedDstParent != null) {
 			for (ParentTable refInfo : dstConf.getParentRefInfo()) {
 				if (refInfo.getTableName().equals(migratedDstParent.getRelatedConfiguration().getObjectName())) {
 					Field fk = transformedRec.getField(refInfo);

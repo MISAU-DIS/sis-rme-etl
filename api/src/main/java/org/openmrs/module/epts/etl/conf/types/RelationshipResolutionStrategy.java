@@ -9,6 +9,7 @@ package org.openmrs.module.epts.etl.conf.types;
  * </p>
  */
 public enum RelationshipResolutionStrategy {
+	// @formatter:off
 	
 	/**
 	 * Default behavior.
@@ -44,6 +45,8 @@ public enum RelationshipResolutionStrategy {
 	 * </p>
 	 */
 	VALIDATE_ONLY;
+	
+	// @formatter:on
 	
 	public boolean resolve() {
 		return this.equals(RESOLVE);

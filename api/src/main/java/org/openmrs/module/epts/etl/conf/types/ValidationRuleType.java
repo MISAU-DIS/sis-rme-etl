@@ -1,6 +1,8 @@
 package org.openmrs.module.epts.etl.conf.types;
 
 public enum ValidationRuleType {
+	// @formatter:off
+
 	EQUALS,
 	NOT_EQUALS,
 	IS_NULL,
@@ -9,4 +11,6 @@ public enum ValidationRuleType {
 	LESS_THAN,
 	EXISTS,
 	IN
+
+	// @formatter:on
 }

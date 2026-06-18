@@ -124,10 +124,6 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			this.status = obj.getEtlInfo().hasExceptionOnEtl() ? EtlLoadStatus.NOT_LOADED_DUE_ERRORS
 					: EtlLoadStatus.FULL_LOADED;
 
-			for (Field f : obj.getFields()) {
-				this.setFieldValue(f.getName(), f.getValue());
-			}
-
 			this.setFieldValue("last_sync_try_err",
 					!status.isFullLoaded() ? obj.getEtlInfo().getExceptionOnEtl().getLocalizedMessage() : null);
 
@@ -146,6 +142,8 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			}
 
 		} else if (type.isProcessedRecord()) {
+			this.alreadyExistOnDB = false;
+
 			EtlConfigurationTableConf processedRecordStageTable = etlTable
 					.generateRelatedProcessedRecordStageTableConf(srcConn);
 
@@ -155,13 +153,17 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 			this.status = EtlLoadStatus.NOT_LOADED;
 
-			if (obj.hasDestinationRecords()) {
+			if (obj.hasDestinationRecordsRecursively()) {
 				status = obj.getLoadStatus();
 			}
 
-			this.setFieldValue("retry_count ", 0);
+			for (Field f : obj.getFields()) {
+				this.setFieldValue(f.getName(), f.getValue());
+			}
+
+			this.setFieldValue("retry_count", 0);
 			this.setFieldValue("processing_status", this.status.name());
-			this.setFieldValue("processing_date ", DateAndTimeUtilities.getCurrentSystemDate(srcConn));
+			this.setFieldValue("processing_date", DateAndTimeUtilities.getCurrentSystemDate(srcConn));
 			this.setFieldValue("processing_error",
 					etlDefaultException != null ? etlDefaultException.getLocalizedMessage() : null);
 

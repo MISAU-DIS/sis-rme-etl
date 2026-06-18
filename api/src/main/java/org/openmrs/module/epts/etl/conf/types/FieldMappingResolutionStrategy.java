@@ -1,19 +1,21 @@
 package org.openmrs.module.epts.etl.conf.types;
 
 /**
- * Defines how field mappings should be resolved for a destination configuration.
+ * Defines how field mappings should be resolved for a destination
+ * configuration.
  * <p>
- * A destination configuration may contain mappings explicitly declared in the configuration file,
- * and the ETL engine may also infer additional mappings dynamically based on source and destination
- * field names.
+ * A destination configuration may contain mappings explicitly declared in the
+ * configuration file, and the ETL engine may also infer additional mappings
+ * dynamically based on source and destination field names.
  * </p>
  * <p>
- * This strategy controls whether manual mappings, automatically inferred mappings, or both should
- * be used during transformation.
+ * This strategy controls whether manual mappings, automatically inferred
+ * mappings, or both should be used during transformation.
  * </p>
  */
 public enum FieldMappingResolutionStrategy {
-	
+	// @formatter:off
+
 	/**
 	 * Uses only mappings explicitly declared in the destination configuration.
 	 * <p>
@@ -65,34 +67,34 @@ public enum FieldMappingResolutionStrategy {
 	 */
 	MANUAL_THEN_AUTO;
 	
+	// @formatter:on
+
 	public boolean manualOnly() {
 		return this == MANUAL_ONLY;
 	}
-	
+
 	public boolean autoOnly() {
 		return this == AUTO_ONLY;
 	}
-	
+
 	public boolean manualThenAuto() {
 		return this == MANUAL_THEN_AUTO;
 	}
-	
+
 	public boolean manualWithDefault() {
 		return this == MANUAL_WITH_DEFAULTS;
 	}
-	
+
 	public boolean allowAuto() {
 		return manualThenAuto() || autoOnly();
 	}
-	
+
 	public boolean allowManual() {
 		return manualOnly() || manualThenAuto() || manualWithDefault();
 	}
-	
+
 	public boolean allowDefault() {
 		return manualWithDefault();
 	}
-	
-	
-	
+
 }

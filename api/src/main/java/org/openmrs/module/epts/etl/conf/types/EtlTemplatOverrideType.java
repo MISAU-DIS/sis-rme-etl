@@ -4,7 +4,7 @@ package org.openmrs.module.epts.etl.conf.types;
  * The ETL action type
  */
 public enum EtlTemplatOverrideType {
-
+	// @formatter:off
 	ADD_TO_LIST,
 
 	DELETE_ON_LIST,
@@ -16,6 +16,7 @@ public enum EtlTemplatOverrideType {
 	EMPTY,
 
 	ADD_ALL_TO_LIST;
+	// @formatter:on
 
 	public boolean isAddToList() {
 		return this.equals(ADD_TO_LIST);

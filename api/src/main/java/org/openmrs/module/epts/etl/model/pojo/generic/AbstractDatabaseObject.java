@@ -50,6 +50,8 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	protected List<EtlDatabaseObjectUniqueKeyInfo> uniqueKeysInfo;
 
+	protected List<EtlDatabaseObject> childObjects;
+
 	protected List<EtlDatabaseObject> destinationObjects;
 
 	protected EtlStageObjectInfo etlStageObjectInfo;
@@ -68,6 +70,16 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	@Override
 	public void setEtlStageObjectInfo(EtlStageObjectInfo etlStageObjectInfo) {
 		this.etlStageObjectInfo = etlStageObjectInfo;
+	}
+
+	@Override
+	public List<EtlDatabaseObject> getChildObjects() {
+		return childObjects;
+	}
+
+	@Override
+	public void setChildObjects(List<EtlDatabaseObject> childObjects) {
+		this.childObjects = childObjects;
 	}
 
 	public void load(ResultSet rs) throws SQLException {

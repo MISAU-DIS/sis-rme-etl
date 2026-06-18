@@ -6,28 +6,29 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
 
 public enum DbmsType {
-	
+	// @formatter:off
 	ORACLE,
 	MYSQL,
 	POSTGRESQL,
 	SQLSERVER;
-	
+	// @formatter:on
+
 	public boolean isOracle() {
 		return this.equals(ORACLE);
 	}
-	
+
 	public boolean isMysql() {
 		return this.equals(MYSQL);
 	}
-	
+
 	public boolean isPostgres() {
 		return this.equals(POSTGRESQL);
 	}
-	
+
 	public boolean issSqlServer() {
 		return this.equals(SQLSERVER);
 	}
-	
+
 	public static DbmsType determineFromConnection(Connection conn) throws DBException {
 		return DbmsType.valueOf(DBUtilities.determineDataBaseFromConnection(conn));
 	}

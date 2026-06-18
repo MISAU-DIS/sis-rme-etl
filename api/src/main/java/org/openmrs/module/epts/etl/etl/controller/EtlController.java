@@ -25,100 +25,90 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  * @author jpboane
  */
 public class EtlController extends SiteOperationController<EtlDatabaseObject> {
-	
+
 	public EtlController(ProcessController processController, EtlOperationConfig operationConfig,
-	    String originLocationCode) {
+			String originLocationCode) {
 		super(processController, operationConfig, originLocationCode);
 	}
-	
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public TaskProcessor<EtlDatabaseObject> initRelatedTaskProcessor(Engine<EtlDatabaseObject> monitor,
-	        IntervalExtremeRecord limits, boolean runningInConcurrency) {
+			IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		if (getOperationConfig().getProcessorClazz() != null) {
-			
+
 			Class[] parameterTypes = { Engine.class, IntervalExtremeRecord.class, Boolean.class };
-			
+
 			try {
 				Constructor<TaskProcessor<? extends EtlDatabaseObject>> a = getOperationConfig().getProcessorClazz()
-				        .getConstructor(parameterTypes);
-				
+						.getConstructor(parameterTypes);
+
 				return (TaskProcessor<EtlDatabaseObject>) a.newInstance(monitor, limits, runningInConcurrency);
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				throw new ForbiddenOperationException(e);
 			}
 		} else {
 			return new EtlProcessor(monitor, limits, runningInConcurrency);
 		}
 	}
-	
+
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		OpenConnection conn = null;
-		
+
 		try {
 			conn = openSrcConnection(this);
-			
+
 			return engine.getSrcConf().getMinRecordId(engine, conn);
-		}
-		catch (DBException e) {
+		} catch (DBException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn, this);
 		}
 	}
-	
+
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		OpenConnection conn = null;
-		
+
 		try {
 			conn = openSrcConnection(this);
-			
+
 			return engine.getSrcConf().getMaxRecordId(engine, conn);
-		}
-		catch (DBException e) {
+		} catch (DBException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn, this);
 		}
 	}
-	
-	@Override
-	public boolean mustRestartInTheEnd() {
-		return false;
-	}
-	
+
 	@Override
 	public boolean canBeRunInMultipleEngines() {
 		return true;
 	}
-	
+
 	public AbstractEtlSearchParams<EtlDatabaseObject> initMainSearchParams(
-	        ThreadRecordIntervalsManager<EtlDatabaseObject> intervalsMgt, Engine<EtlDatabaseObject> engine) {
-		
+			ThreadRecordIntervalsManager<EtlDatabaseObject> intervalsMgt, Engine<EtlDatabaseObject> engine) {
+
 		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new EtlDatabaseObjectSearchParams(engine.getSrcConf(),
-		        intervalsMgt);
+				intervalsMgt);
 		searchParams.setQtdRecordPerSelected(getQtyRecordsPerProcessing());
 		searchParams.setSyncStartDate(getEtlConfiguration().getStartDate());
-		
+
 		return searchParams;
 	}
-	
+
 	@Override
 	public void afterEtl(List<EtlDatabaseObject> objs, Connection srcConn, Connection dstConn) throws DBException {
 	}
-	
+
 	@Override
 	public boolean isDisabled() {
 		return false;
 	}
-	
+
 }
