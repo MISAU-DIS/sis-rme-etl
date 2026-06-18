@@ -445,7 +445,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void prepareAndInitializeRerun() {
+	private void prepareAndInitializeRerun() throws DBException {
 		if (!mustRestartInTheEnd()) {
 			throw new ForbiddenOperationException("The operation is not set to mustRestartInTheEnd");
 		}
@@ -467,6 +467,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				limits.remove(this);
 			}
 		}
+
+		getProgressMeter().setMinRecordId(getController().getMinRecordId(this));
+		getProgressMeter().setMaxRecordId(getController().getMaxRecordId(this));
+
+		this.calculateStatistics();
 
 		run();
 	}

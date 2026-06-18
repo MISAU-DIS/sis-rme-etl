@@ -574,7 +574,7 @@ public class DstConf extends AbstractTableConfiguration
 		}
 
 		if (matchedFields.isEmpty()) {
-			throw new ForbiddenOperationException("Cannot determine the mapping field for '" + dstFieldName + "'");
+			throw new FieldsMappingException("Cannot determine the mapping field for '" + dstFieldName + "'");
 		}
 
 		return matchedFields.get(0);

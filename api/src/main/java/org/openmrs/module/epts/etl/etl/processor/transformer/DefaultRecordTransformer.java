@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.MissingRequiredTransformationObject;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
@@ -103,7 +104,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	private void resolvePrimaryKeyAndParent(EtlProcessor processor, EtlDatabaseObject srcRecord,
 			EtlDatabaseObject transformedRec, EtlDatabaseObject migratedDstParent,
-			Set<EtlDatabaseObject> avaliableSrcObjs, Connection srcConn, Connection dstConn)
+			Set<EtlDatabaseObject> availableSrcObjs, Connection srcConn, Connection dstConn)
 			throws EtlTransformationException, DBException {
 
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
@@ -111,75 +112,181 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		transformedRec.loadObjectIdData(dstConf);
 		transformedRec.loadUniqueKeyValues();
 
-		boolean pkResolved = false;
+		Field pkField = resolvePrimaryKeyField(transformedRec);
 
-		Field pk = transformedRec.getField(transformedRec.getObjectId().asSimpleKey().getName());
+		FieldsMapping pkMapping = null;
 
-		FieldsMapping pkMapping = dstConf.getMappingUsingDstField(pk.getName());
-		FieldTransformingInfo fi = null;
+		try {
+			pkMapping = dstConf.getMappingUsingDstField(pkField.getName());
 
-		if (!dstConf.useSharedPKKey()) {
-			if (!pkMapping.useDefaultTransformer()) {
-				fi = pkMapping.transform(processor, srcRecord, transformedRec, new ArrayList<>(avaliableSrcObjs),
-						srcConn, dstConn);
+		} catch (FieldsMappingException e) {
+			pkMapping = FieldsMapping.fastCreate(pkField.getName(), dstConn);
 
-				transformedRec.setFieldValue(pk.getName(), fi.getTransformedValue());
-				pk.setTransformingInfo(fi);
-			} else if (dstConf.useManualGeneratedObjectId()
-					&& !dstConf.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
-				transformedRec.getObjectId().asSimpleKey().setValue(dstConf.retriveNextRecordId(processor));
-			}
-
-			pkResolved = true;
-		} else {
-			if (migratedDstParent == null || !pkMapping.useDefaultTransformer()) {
-
-				// We are assumning that the src and dst structure are the same
-				if (srcRecord.getRelatedConfiguration().getObjectName()
-						.equals(transformedRec.getRelatedConfiguration().getObjectName())) {
-
-					srcRecord.loadObjectIdData();
-
-					pk.setValue(srcRecord.getObjectId().asSimpleKey().getValue());
-
-					fi = new FieldTransformingInfo(pkMapping, pk.getValue(),
-							(EtlDataSource) srcRecord.getRelatedConfiguration());
-
-				} else {
-					fi = pkMapping.transform(processor, srcRecord, transformedRec, new ArrayList<>(avaliableSrcObjs),
-							srcConn, dstConn);
-
-					transformedRec.setFieldValue(pk.getName(), fi.getTransformedValue());
-				}
-
-				pk.setTransformingInfo(fi);
-
-				pkResolved = true;
-			}
+			pkMapping.tryToLoadTransformer(dstConf, dstConn);
 		}
 
-		// Force the related child field to be mapped to the dstPK
+		List<EtlDatabaseObject> availableSrcList = availableSrcObjs != null ? new ArrayList<>(availableSrcObjs)
+				: new ArrayList<>();
+
+		boolean pkResolved = resolvePrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
+				migratedDstParent, availableSrcList, srcConn, dstConn);
+
 		if (!pkResolved && migratedDstParent != null) {
-			for (ParentTable refInfo : dstConf.getParentRefInfo()) {
-				if (refInfo.getTableName().equals(migratedDstParent.getRelatedConfiguration().getObjectName())) {
-					Field fk = transformedRec.getField(refInfo);
+			resolveParentForeignKey(transformedRec, dstConf, migratedDstParent);
+		}
+	}
 
-					FieldsMapping definedMapping = dstConf.getMappingUsingDstField(fk.getName());
+	private Field resolvePrimaryKeyField(EtlDatabaseObject transformedRec) throws EtlTransformationException {
 
-					if (transformedRec.getFieldValue(fk.getName()) == null || definedMapping.overridable()) {
-						FieldsMapping f = ((DstConf) transformedRec.getRelatedConfiguration())
-								.getMappingUsingDstField(fk.getName());
+		if (transformedRec.getObjectId() == null || transformedRec.getObjectId().asSimpleKey() == null) {
+			throw new EtlTransformationException(
+					"Unable to resolve primary key. ObjectId is not loaded for " + transformedRec, null,
+					ActionOnEtlIssue.ABORT_PROCESS);
+		}
 
-						fk.setTransformingInfo(
-								new FieldTransformingInfo(f, migratedDstParent.getObjectId().asSimpleNumericValue(),
-										(EtlDataSource) migratedDstParent.getRelatedConfiguration()));
+		String pkName = transformedRec.getObjectId().asSimpleKey().getName();
 
-						transformedRec.setFieldValue(fk.getName(), fk.getTransformingInfo().getTransformedValue());
+		Field pkField = transformedRec.getField(pkName);
 
-						break;
-					}
-				}
+		if (pkField == null) {
+			throw new EtlTransformationException(
+					"Primary key field '" + pkName + "' not found on transformed record " + transformedRec, null,
+					ActionOnEtlIssue.ABORT_PROCESS);
+		}
+
+		return pkField;
+	}
+
+	private boolean resolvePrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
+			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
+			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs, Connection srcConn,
+			Connection dstConn) throws EtlTransformationException, DBException {
+
+		if (!dstConf.useSharedPKKey()) {
+			return resolveNonSharedPrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
+					availableSrcObjs, srcConn, dstConn);
+		}
+
+		return resolveSharedPrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
+				migratedDstParent, availableSrcObjs, srcConn, dstConn);
+	}
+
+	private boolean resolveNonSharedPrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
+			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
+			List<EtlDatabaseObject> availableSrcObjs, Connection srcConn, Connection dstConn)
+			throws EtlTransformationException, DBException {
+
+		if (!pkMapping.useDefaultTransformer()) {
+
+			FieldTransformingInfo info = pkMapping.transform(processor, srcRecord, transformedRec, availableSrcObjs,
+					srcConn, dstConn);
+
+			transformedRec.setFieldValue(pkField.getName(), info.getTransformedValue());
+			pkField.setTransformingInfo(info);
+
+			return true;
+		}
+
+		if (dstConf.useManualGeneratedObjectId() && !dstConf.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
+
+			Object nextId = dstConf.retriveNextRecordId(processor);
+
+			transformedRec.getObjectId().asSimpleKey().setValue(nextId);
+			transformedRec.setFieldValue(pkField.getName(), nextId);
+
+			return true;
+		}
+
+		return true;
+	}
+
+	private boolean resolveSharedPrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
+			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
+			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs, Connection srcConn,
+			Connection dstConn) throws EtlTransformationException, DBException {
+
+		if (migratedDstParent != null && pkMapping.useDefaultTransformer()) {
+			return false;
+		}
+
+		FieldTransformingInfo info;
+
+		if (sourceAndDestinationHaveSameObjectName(srcRecord, transformedRec)) {
+
+			srcRecord.loadObjectIdData();
+
+			Object srcPkValue = srcRecord.getObjectId().asSimpleKey().getValue();
+
+			pkField.setValue(srcPkValue);
+			transformedRec.setFieldValue(pkField.getName(), srcPkValue);
+
+			info = new FieldTransformingInfo(pkMapping, srcPkValue,
+					(EtlDataSource) srcRecord.getRelatedConfiguration());
+
+		} else {
+
+			info = pkMapping.transform(processor, srcRecord, transformedRec, availableSrcObjs, srcConn, dstConn);
+
+			transformedRec.setFieldValue(pkField.getName(), info.getTransformedValue());
+		}
+
+		pkField.setTransformingInfo(info);
+
+		return true;
+	}
+
+	private boolean sourceAndDestinationHaveSameObjectName(EtlDatabaseObject srcRecord,
+			EtlDatabaseObject transformedRec) {
+
+		if (srcRecord == null || transformedRec == null || srcRecord.getRelatedConfiguration() == null
+				|| transformedRec.getRelatedConfiguration() == null) {
+			return false;
+		}
+
+		return srcRecord.getRelatedConfiguration().getObjectName()
+				.equals(transformedRec.getRelatedConfiguration().getObjectName());
+	}
+
+	private void resolveParentForeignKey(EtlDatabaseObject transformedRec, DstConf dstConf,
+			EtlDatabaseObject migratedDstParent) throws EtlTransformationException {
+
+		for (ParentTable refInfo : dstConf.getParentRefInfo()) {
+
+			if (!refInfo.getTableName().equals(migratedDstParent.getRelatedConfiguration().getObjectName())) {
+				continue;
 			}
+
+			Field fkField = transformedRec.getField(refInfo);
+
+			if (fkField == null) {
+				throw new EtlTransformationException("Foreign key field for parent '" + refInfo.getTableName()
+						+ "' not found on transformed record.", null, ActionOnEtlIssue.ABORT_PROCESS);
+			}
+
+			FieldsMapping fkMapping = dstConf.getMappingUsingDstField(fkField.getName());
+
+			if (fkMapping == null) {
+				throw new EtlTransformationException(
+						"No mapping found for foreign key field '" + fkField.getName() + "'.", null,
+						ActionOnEtlIssue.ABORT_PROCESS);
+			}
+
+			Object currentValue = transformedRec.getFieldValue(fkField.getName());
+
+			if (currentValue != null && !fkMapping.overridable()) {
+				return;
+			}
+
+			Object parentPkValue = migratedDstParent.getObjectId().asSimpleNumericValue();
+
+			FieldTransformingInfo info = new FieldTransformingInfo(fkMapping, parentPkValue,
+					(EtlDataSource) migratedDstParent.getRelatedConfiguration());
+
+			fkField.setTransformingInfo(info);
+
+			transformedRec.setFieldValue(fkField.getName(), info.getTransformedValue());
+
+			return;
 		}
 	}
 
