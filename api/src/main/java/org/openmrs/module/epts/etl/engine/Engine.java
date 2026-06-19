@@ -52,7 +52,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 
-	private static final Object LOCK = new Object();
+	private final Object LOCK = new Object();
 
 	private OperationController<T> controller;
 
@@ -60,7 +60,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	private String engineId;
 
-	private EtlOperationStatus operationStatus;
+	private volatile EtlOperationStatus operationStatus;
 
 	private volatile boolean stopRequested;
 
@@ -274,7 +274,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@Override
 	public void changeStatusToStopping() {
-		MonitoredOperation.super.changeStatusToRunning();
+		MonitoredOperation.super.changeStatusToStopping();
 
 		updateProgressInfo(EtlOperationStatus.STOPPING);
 	}
@@ -321,128 +321,134 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	@Override
 	public void run() {
 		try {
+			boolean restart;
 
-			logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase()
-					+ "]");
+			do {
+				restart = runIteration();
 
-			long minRecId = tableOperationProgressInfo.getProgressMeter().getMinRecordId();
-
-			if (minRecId == 0) {
-				logDebug("DETERMINING MIN RECORD FOR " + getSrcConf().getTableName());
-
-				minRecId = getController().getMinRecordId(this);
-
-				logDebug("FOUND MIN RECORD " + getEtlItemConfiguration() + " = " + minRecId);
-
-				tableOperationProgressInfo.getProgressMeter().setMinRecordId(minRecId);
-
-			} else {
-				logDebug("USING SAVED MIN RECORD " + getEtlItemConfiguration() + " = " + minRecId);
-			}
-
-			long maxRecId = 0;
-
-			if (minRecId != 0) {
-				maxRecId = tableOperationProgressInfo.getProgressMeter().getMaxRecordId();
-
-				if (maxRecId == 0) {
-					logDebug("DETERMINING MAX RECORD FOR CONFIG '" + getEtlItemConfiguration().getConfigCode() + "'");
-
-					maxRecId = getController().getMaxRecordId(this);
-
-					tableOperationProgressInfo.getProgressMeter().setMaxRecordId(maxRecId);
-
-					logDebug("FOUND MAX RECORD " + getEtlItemConfiguration() + " = " + maxRecId);
-				} else {
-					logDebug("USING SAVED MAX RECORD " + getEtlItemConfiguration() + " = " + maxRecId);
-				}
-			} else {
-				logWarn("MIN RECORD IS ZERO! SKIPING MAX RECORD VERIFICATION...");
-			}
-
-			if (maxRecId == 0 && minRecId == 0) {
-				String msg = "NO RECORD TO PROCESS FOR ETL CONFIG '" + getSrcConf().getTableName().toUpperCase()
-						+ "' NO ENGINE WILL BE CRIETED BY NOW!";
-
-				if (mustRestartInTheEnd()) {
-					msg += " GOING SLEEP....";
-				} else {
-					msg += " FINISHING....";
-
-					changeStatusToFinished();
-
-					getRelatedOperationController().markTableOperationAsFinished(getEtlItemConfiguration());
-				}
-
-				logWarn(msg);
-
-				if (mustRestartInTheEnd() && !stopRequested()) {
+				if (restart) {
 					prepareAndInitializeRerun();
 				}
-
-			} else {
-
-				if (getController().getOperationConfig().getMaxSupportedProcessors() > getMaxRecordsPerProcessing()) {
-					setMaxRecordsPerProcessing(getController().getOperationConfig().getMaxSupportedProcessors());
-				}
-
-				ThreadRecordIntervalsManager<T> t = null;
-
-				if (getRelatedOperationController().isResumable()) {
-					t = ThreadRecordIntervalsManager.tryToLoadFromFile(getEngineId(), this);
-				}
-
-				if (getEtlConfiguration().hasTestingItem()) {
-					this.getRelatedEtlOperationConfig()
-							.setProcessingBatch((int) tableOperationProgressInfo.getProgressMeter().getMaxRecordId());
-				}
-
-				if (t == null) {
-					t = new ThreadRecordIntervalsManager<>(this);
-				}
-
-				this.setSearchParams(controller.initMainSearchParams(t, this));
-				this.getSearchParams().setThreadRecordIntervalsManager(t);
-
-				changeStatusToRunning();
-
-				calculateStatistics();
-
-				doFirstSaveAllLimits();
-
-				logDebug("CREATING DEFAULT PARENT OBJECTS");
-
-				getEtlItemConfiguration().tryToCreateDefaultRecordsForAllTables();
-
-				logTrace("DEFAULT PARENT OBJECTS CREATED");
-
-				ThreadingMode threadingMode = this.getRelatedEtlOperationConfig().getThreadingMode();
-
-				if (this.getEtlItemConfiguration().hasThreadingMode()) {
-					threadingMode = this.getEtlItemConfiguration().getThreadingMode();
-				}
-
-				if (threadingMode.isMultiThread() && this.getMaxSupportedProcessors() > 1) {
-					performeTaskInMultiProcessors();
-				} else {
-					this.performeTaskInSingleProcessor();
-				}
-
-				performeEngineFinalization();
-
-				if (mustRestartInTheEnd() && !stopRequested()) {
-					prepareAndInitializeRerun();
-				}
-
-			}
+			} while (restart && !stopRequested());
 		} catch (Exception e) {
 			this.stopOperationDueError(e);
-
-			e.printStackTrace();
 
 			logErr(e.getLocalizedMessage());
 			logErr(e.getMessage());
 		}
+	}
+
+	private boolean runIteration() throws DBException, Exception {
+		logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase()
+				+ "]");
+
+		long minRecId = tableOperationProgressInfo.getProgressMeter().getMinRecordId();
+
+		if (minRecId == 0) {
+			logDebug("DETERMINING MIN RECORD FOR " + getSrcConf().getTableName());
+
+			minRecId = getController().getMinRecordId(this);
+
+			logDebug("FOUND MIN RECORD " + getEtlItemConfiguration() + " = " + minRecId);
+
+			tableOperationProgressInfo.getProgressMeter().setMinRecordId(minRecId);
+
+		} else {
+			logDebug("USING SAVED MIN RECORD " + getEtlItemConfiguration() + " = " + minRecId);
+		}
+
+		long maxRecId = 0;
+
+		if (minRecId != 0) {
+			maxRecId = tableOperationProgressInfo.getProgressMeter().getMaxRecordId();
+
+			if (maxRecId == 0) {
+				logDebug("DETERMINING MAX RECORD FOR CONFIG '" + getEtlItemConfiguration().getConfigCode() + "'");
+
+				maxRecId = getController().getMaxRecordId(this);
+
+				tableOperationProgressInfo.getProgressMeter().setMaxRecordId(maxRecId);
+
+				logDebug("FOUND MAX RECORD " + getEtlItemConfiguration() + " = " + maxRecId);
+			} else {
+				logDebug("USING SAVED MAX RECORD " + getEtlItemConfiguration() + " = " + maxRecId);
+			}
+		} else {
+			logWarn("MIN RECORD IS ZERO! SKIPING MAX RECORD VERIFICATION...");
+		}
+
+		if (maxRecId == 0 && minRecId == 0) {
+			String msg = "NO RECORD TO PROCESS FOR ETL CONFIG '" + getSrcConf().getTableName().toUpperCase()
+					+ "' NO ENGINE WILL BE CRIETED BY NOW!";
+
+			if (mustRestartInTheEnd()) {
+				msg += " GOING SLEEP....";
+			} else {
+				msg += " FINISHING....";
+
+				changeStatusToFinished();
+
+				getRelatedOperationController().markTableOperationAsFinished(getEtlItemConfiguration());
+			}
+
+			logWarn(msg);
+
+			return mustRestartInTheEnd() && !stopRequested();
+		}
+
+		if (getController().getOperationConfig().getMaxSupportedProcessors() > getMaxRecordsPerProcessing()) {
+			setMaxRecordsPerProcessing(getController().getOperationConfig().getMaxSupportedProcessors());
+		}
+
+		ensureSearchParamInitialized();
+
+		changeStatusToRunning();
+
+		calculateStatistics();
+
+		doFirstSaveAllLimits();
+
+		logDebug("CREATING DEFAULT PARENT OBJECTS");
+
+		getEtlItemConfiguration().tryToCreateDefaultRecordsForAllTables();
+
+		logTrace("DEFAULT PARENT OBJECTS CREATED");
+
+		ThreadingMode threadingMode = this.getRelatedEtlOperationConfig().getThreadingMode();
+
+		if (this.getEtlItemConfiguration().hasThreadingMode()) {
+			threadingMode = this.getEtlItemConfiguration().getThreadingMode();
+		}
+
+		if (threadingMode.isMultiThread() && this.getMaxSupportedProcessors() > 1) {
+			performeTaskInMultiProcessors();
+		} else {
+			this.performeTaskInSingleProcessor();
+		}
+
+		performeEngineFinalization();
+
+		return mustRestartInTheEnd() && !stopRequested();
+	}
+
+	private void ensureSearchParamInitialized() {
+		ThreadRecordIntervalsManager<T> t = null;
+
+		if (getRelatedOperationController().isResumable()) {
+			t = ThreadRecordIntervalsManager.tryToLoadFromFile(getEngineId(), this);
+		}
+
+		if (getEtlConfiguration().hasTestingItem()) {
+			this.getRelatedEtlOperationConfig()
+					.setProcessingBatch((int) tableOperationProgressInfo.getProgressMeter().getMaxRecordId());
+		}
+
+		if (t == null) {
+			t = new ThreadRecordIntervalsManager<>(this);
+		}
+
+		this.setSearchParams(controller.initMainSearchParams(t, this));
+		this.getSearchParams().setThreadRecordIntervalsManager(t);
 	}
 
 	private void prepareAndInitializeRerun() throws DBException {
@@ -471,9 +477,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		getProgressMeter().setMinRecordId(getController().getMinRecordId(this));
 		getProgressMeter().setMaxRecordId(getController().getMaxRecordId(this));
 
-		this.calculateStatistics();
-
-		run();
 	}
 
 	private void performeEngineFinalization() throws DBException, Exception {
@@ -510,12 +513,16 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void displayResultInConsole(List<EtlDatabaseObject> objs) {
-		String header = utilities.generateTabDelimitedHeader(objs.get(0));
-		String separator = utilities.maskToken(header, header, '#');
-		System.out.println(separator);
-		System.out.println(header);
-		System.out.println(utilities.parseToTabDelimitedWithoutHeader(objs));
-		System.out.println(separator);
+		if (utilities.listHasElement(objs)) {
+			String header = utilities.generateTabDelimitedHeader(objs.get(0));
+			String separator = utilities.maskToken(header, header, '#');
+			System.out.println(separator);
+			System.out.println(header);
+			System.out.println(utilities.parseToTabDelimitedWithoutHeader(objs));
+			System.out.println(separator);
+		} else {
+			System.out.println("No result");
+		}
 	}
 
 	/**
@@ -592,36 +599,41 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			String originalExtraCondition = getSearchParams().getExtraCondition();
 			String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
 
-			getSrcConf().setExtraConditionForExtract(null);
+			try {
+				getSrcConf().setExtraConditionForExtract(null);
 
-			getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
+				getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
 
-			taskProcessor.setProcessorId(this.getEngineId());
+				taskProcessor.setProcessorId(this.getEngineId());
 
-			boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
-			boolean useMultiThreadSearch = true;
+				boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
+				boolean useMultiThreadSearch = true;
 
-			performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this),
-					tryToOpenDstConn(this));
+				performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this),
+						tryToOpenDstConn(this));
 
-			getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
-			getSearchParams().setExtraCondition(originalExtraCondition);
+				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+				getSearchParams().setExtraCondition(originalExtraCondition);
 
-			if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-				stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
-			} else {
-				OpenConnection srcConn = openSrcConn(this);
+				if (taskProcessor.getTaskResultInfo().hasFatalError()) {
+					stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
+				} else {
+					OpenConnection srcConn = openSrcConn(this);
 
-				try {
-					RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
+					try {
+						RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
 
-					srcConn.markAsSuccessifullyTerminated();
-				} finally {
-					srcConn.finalizeConnection(this);
+						srcConn.markAsSuccessifullyTerminated();
+					} finally {
+						srcConn.finalizeConnection(this);
+					}
+
+					iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+					iManager.save();
 				}
-
-				iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
-				iManager.save();
+			} finally {
+				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+				getSearchParams().setExtraCondition(originalExtraCondition);
 			}
 		} else {
 			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
