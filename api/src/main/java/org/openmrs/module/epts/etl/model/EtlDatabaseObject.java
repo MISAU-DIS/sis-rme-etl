@@ -709,6 +709,20 @@ public interface EtlDatabaseObject extends EtlObject {
 				throw new ConflictWithRecordNotYetAvaliableException(this, exception);
 			} else if (onConflict.updateExisting()) {
 				existingRecordIsOutdated = true;
+			} else if (onConflict.patchExisting()) {
+				
+				if (!tableConfiguration.hasPatchFields())
+					throw new EtlExceptionImpl(
+							"Conflict resolution is set to PATCH_EXISTING but no patchFields is empty!");
+				
+				for (Field field: tableConfiguration.getFields()) {
+					if (!tableConfiguration.getPatchFields().contains(field.getName())) {
+						this.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()) );
+					}
+				}
+				
+				existingRecordIsOutdated = true;
+
 			} else if (utils.listHasElement(tableConfiguration.getWinningRecordFieldsInfo())) {
 				for (List<org.openmrs.module.epts.etl.model.Field> fields : tableConfiguration
 						.getWinningRecordFieldsInfo()) {
@@ -778,7 +792,7 @@ public interface EtlDatabaseObject extends EtlObject {
 			}
 
 			if (existingRecordIsOutdated) {
-				this.getEtlInfo().setConflictResolutionType(ConflictResolutionType.UPDATED_EXISTING);
+				this.getEtlInfo().setConflictResolutionType(onConflict.patchExisting() ? ConflictResolutionType.PATCHED_EXISTING : ConflictResolutionType.UPDATED_EXISTING);
 
 				this.setObjectId(recordOnDB.getObjectId());
 				this.update(tableConfiguration, conn);

@@ -79,6 +79,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	String getAlias();
 
+	List<String> getPatchFields();
+
 	/**
 	 * @return the initial increment to be done on the table ID for the first record
 	 *         when the ID is manually generated
@@ -222,6 +224,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@Override
 	PrimaryKey getPrimaryKey();
+
+	default Boolean hasPatchFields() {
+		return utilities.listHasElement(this.getPatchFields());
+	}
 
 	@Override
 	default Boolean hasPK(Connection conn) throws DBException {

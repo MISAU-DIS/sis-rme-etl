@@ -161,7 +161,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						templateParams.put(paramName, srcFieldOrValue);
 					} else if (dstField.equals("override_fields")) {
 						this.overrideFieldsStr = srcFieldOrValue;
-					} else if (dstField.equals("include_primary_key_on_insert")) {
+					} else if (dstField.equals("auto_increment_handling_type")) {
 						this.autoIncrementHandlingType = AutoIncrementHandlingType.valueOf(srcFieldOrValue);
 					} else {
 						if (!utilities.stringHasValue(srcFieldOrValue)
