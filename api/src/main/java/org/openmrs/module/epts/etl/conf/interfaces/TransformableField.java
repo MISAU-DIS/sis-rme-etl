@@ -17,98 +17,104 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * In an ETL a {@link TransformableField} represents a field which can have its value (src-value)
- * transformed
+ * In an ETL a {@link TransformableField} represents a field which can have its
+ * value (src-value) transformed
  */
 public interface TransformableField {
-	
+
 	static CommonUtilities utilities = CommonUtilities.getInstance();
-	
+
 	String getName();
-	
+
 	EtlFieldTransformer getTransformerInstance();
-	
+
 	void setTransformerInstance(EtlFieldTransformer transformer);
-	
+
 	String getTransformer();
-	
+
 	Object getValueToTransform();
-	
+
 	String getDataSourceName();
-	
+
 	String getDataType();
-	
+
 	void setDataType(String dataType);
-	
+
 	void setTransformer(String transformer);
-	
+
 	void setDataTypeLoaded(Boolean dataTypeLoaded);
-	
+
 	String getDstField();
-	
+
 	String getSrcField();
-	
+
 	Object getDefaultValue();
-	
+
 	default FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
-	        Connection dstConn) throws DBException, EtlTransformationException {
-		
-		return this.getTransformerInstance().transform(processor, srcObject, transformedRecord, additionalSrcObjects, this,
-		    srcConn, dstConn);
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
+			Connection dstConn) throws DBException, EtlTransformationException {
+
+		return this.getTransformerInstance().transform(processor, srcObject, transformedRecord, additionalSrcObjects,
+				this, srcConn, dstConn);
 	}
-	
+
 	default FieldTransformerType getTransformerType() {
 		if (this.hasTransformerInstance()) {
-			
+
 			Class<?> clazz = this.getTransformerInstance().getClass();
-			
+
 			for (FieldTransformerType type : FieldTransformerType.values()) {
 				if (type.getClassName() != null && type.getClassName().equals(clazz.getCanonicalName())) {
 					return type;
 				}
 			}
-			
+
 			return FieldTransformerType.CUSTOM_TRANSFORMER;
 		}
-		
+
 		return null;
 	}
-	
+
 	ActionOnEtlIssue nullValueBehavior();
-	
+
 	RelationshipResolutionStrategy relationshipResolutionStrategy();
-	
+
 	void setRelationshipResolutionStrategy(RelationshipResolutionStrategy strategy);
-	
+
 	default Boolean hasTypeClass() {
 		return this.getTypeClass() != null;
 	}
-	
+
 	/**
-	 * Returns the value that triggers the override mechanism. If the source field value equals this
-	 * value, the field value will be replaced by the configured {@code defaultValue}. Example:
+	 * Returns the value that triggers the override mechanism. If the source field
+	 * value equals this value, the field value will be replaced by the configured
+	 * {@code defaultValue}. Example:
+	 * 
 	 * <pre>
 	 * overrideTriggerValue = ""
 	 * defaultValue = "UNKNOWN"
-	 * </pre> If the source value is an empty string, the resulting value will be "UNKNOWN".
+	 * </pre>
+	 * 
+	 * If the source value is an empty string, the resulting value will be
+	 * "UNKNOWN".
 	 *
-	 * @return the value that triggers overriding the source value with the default value
+	 * @return the value that triggers overriding the source value with the default
+	 *         value
 	 */
 	Object getOverrideTriggerValue();
-	
+
 	/**
 	 * Sets the value that should trigger the override mechanism.
 	 *
-	 * @param obj the value that, when matched against the source value, causes the default value to
-	 *            be used instead
+	 * @param obj the value that, when matched against the source value, causes the
+	 *            default value to be used instead
 	 */
 	void setOverrideTriggerValue(Object obj);
-	
+
 	default Boolean hasSrcField() {
 		return utilities.stringHasValue(this.getSrcField());
 	}
-	
+
 	/**
 	 * Determines whether the provided value should be overridden by the configured
 	 * {@code defaultValue}. The override happens only if:
@@ -119,47 +125,47 @@ public interface TransformableField {
 	 * </ul>
 	 *
 	 * @param obj the source field value to evaluate
-	 * @return {@code true} if the value should be replaced by {@code defaultValue}, {@code false}
-	 *         otherwise
-	 * @throws ForbiddenOperationException if an override value is defined but no default value is
-	 *             configured
+	 * @return {@code true} if the value should be replaced by {@code defaultValue},
+	 *         {@code false} otherwise
+	 * @throws ForbiddenOperationException if an override value is defined but no
+	 *                                     default value is configured
 	 */
 	default Boolean shouldOverrideValue(Object obj) throws ForbiddenOperationException {
-		
+
 		if (this.getOverrideTriggerValue() != null) {
-			
+
 			if (this.getDefaultValue() == null) {
 				throw new ForbiddenOperationException("Cannot override!! No defaultValue is set to this field.");
 			}
-			
+
 			if (obj instanceof Boolean) {
 				if (this.getOverrideTriggerValue() instanceof Boolean) {
 					return this.getOverrideTriggerValue().equals(obj);
 				}
 				if (this.getOverrideTriggerValue() instanceof String) {
 					Boolean true_ = utilities.isStringIn(this.getOverrideTriggerValue().toString(), "true", "1");
-					
+
 					return true_.equals(obj);
 				}
 			} else
 				return this.getOverrideTriggerValue().equals(obj);
 		}
-		
+
 		return false;
 	}
-	
+
 	default Boolean hasDataType() {
 		return utilities.stringHasValue(this.getDataType());
 	}
-	
+
 	default void loadType(EtlTransformTarget dstConf, EtlDataSource dataSource, Connection conn) {
 		tryToLoadTransformer(dstConf, conn);
-		
+
 		if (this.hasDataType()) {
-			if (!utilities.isStringIn(this.getDataType().toLowerCase(), "int", "double", "string", "date", "long", "boolean",
-			    "varchar", "char")) {
-				throw new ForbiddenOperationException(
-				        "Unsupported dataType for field " + this.getDstField() + ">" + this.getDataType().toLowerCase());
+			if (!utilities.isStringIn(this.getDataType().toLowerCase(), "int", "double", "string", "date", "long",
+					"boolean", "varchar", "char")) {
+				throw new ForbiddenOperationException("Unsupported dataType for field " + this.getDstField() + ">"
+						+ this.getDataType().toLowerCase());
 			}
 		} else if (dstConf != null && dstConf.containsField(this.getDstField())) {
 			this.setDataType(dstConf.getField(this.getDstField()).getDataType());
@@ -169,19 +175,19 @@ public interface TransformableField {
 					this.setDataType(dataSource.getField(this.getSrcField()).getDataType());
 				} else {
 					throw new ForbiddenOperationException(
-					        "The Datasource (" + dataSource.getName() + ") does not contain the src field "
-					                + this.getSrcField() + " for dstField " + this.getDstField());
+							"The Datasource (" + dataSource.getName() + ") does not contain the src field "
+									+ this.getSrcField() + " for dstField " + this.getDstField());
 				}
 			} else {
 				throw new ForbiddenOperationException("There is no datasource for " + this.getSrcField());
 			}
 		} else if (this.hasTransformer()) {
-			
+
 			if (!this.hasTransformerInstance()) {
 				throw new ForbiddenOperationException("The transformer instance for dstField " + this.getDstField()
-				        + " was not loaded! Please load the transformer instance before!!!");
+						+ " was not loaded! Please load the transformer instance before!!!");
 			}
-			
+
 			if (this.getTransformerInstance() instanceof ArithmeticFieldTransformer) {
 				this.setDataType("double");
 			} else {
@@ -193,32 +199,39 @@ public interface TransformableField {
 			}
 		}
 		this.determineTypeClass();
-		
+
 		this.setDataTypeLoaded(true);
 	}
-	
+
 	void determineTypeClass();
-	
+
 	Class<?> getTypeClass();
-	
+
 	default Boolean hasTransformerInstance() {
 		return this.getTransformerInstance() != null;
 	}
-	
+
 	default Boolean hasTransformer() {
 		return utilities.stringHasValue(getTransformer());
 	}
-	
+
 	default void tryToLoadTransformer(EtlTransformTarget dstConf, Connection conn) {
 		FieldTransformerType.tryToLoadTransformerToField(this, dstConf, conn);
 	}
-	
-	default void resetAndLoadTransformer(EtlTransformTarget dstConf, FieldTransformerType newTransformer, Connection conn) {
+
+	default void resetAndLoadTransformer(EtlTransformTarget dstConf, FieldTransformerType newTransformer,
+			Connection conn) {
 		this.setTransformer(newTransformer.getClassName());
 		this.setTransformerInstance(null);
 		this.tryToLoadTransformer(dstConf, conn);
 	}
-	
+
+	default void resetAndLoadTransformer(EtlTransformTarget dstConf, String newTransformer, Connection conn) {
+		this.setTransformer(newTransformer);
+		this.setTransformerInstance(null);
+		this.tryToLoadTransformer(dstConf, conn);
+	}
+
 	EtlDataSource getDataSource();
-	
+
 }

@@ -11,6 +11,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 public enum FieldTransformerType {
 
@@ -156,7 +157,7 @@ public enum FieldTransformerType {
 
 			String selector = extractClassName(def);
 
-			if (selector.contains(".")) {
+			if (selector.contains(".") && isNotSqlQueryColumnDefinitionDefinition(def)) {
 				try {
 					transformer = fromClassName(def);
 				} catch (Exception e) {
@@ -179,6 +180,10 @@ public enum FieldTransformerType {
 		}
 
 		throw new IllegalArgumentException("Unknown transformer: " + def);
+	}
+
+	static boolean isNotSqlQueryColumnDefinitionDefinition(String def) {
+		return !SQLUtilities.isValidQueryColumnDefinition(def);
 	}
 
 	public static void tryToLoadTransformerToField(TransformableField field, EtlTransformTarget EtlTransformTarget,

@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class DateFieldTransformer extends AbstractEtlFieldTransformer {
@@ -243,7 +244,14 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 	private Date parseDate(String value) throws ParseException {
 		
 		if (inputFormat == null) {
-			throw new EtlExceptionImpl("input_format required");
+			try {
+				inputFormat = DateAndTimeFormat.resolve(DateAndTimeUtilities.determineDateFormat(value));
+			} catch (Exception e) {
+			}
+		}
+		
+		if (inputFormat == null) {
+			throw new EtlExceptionImpl("Unable to determine the date input_format for value '" + value + "'. Please define the input_format manualy.");
 		}
 		
 		SimpleDateFormat sdf = new SimpleDateFormat(inputFormat.getFormat());

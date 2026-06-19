@@ -341,6 +341,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		fieldMap.tryToLoadDataSourceAndTransformer(fieldMap.getDataSourceName(), target, conn);
 
+		fieldMap.setTargetObject(target);
 		return fieldMap;
 
 	}
