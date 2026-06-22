@@ -14,7 +14,6 @@ import org.openmrs.module.epts.etl.conf.types.ParameterContextType;
 import org.openmrs.module.epts.etl.conf.types.ParameterValueType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -227,28 +226,36 @@ public class QueryParameter extends Field {
 		return this.getName().replace("(", "").replace(")", "");
 	}
 
-	public Object retrieveParamValue(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDatabaseObject dstObject,
-			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+	public FieldTransformingInfo transformParam(EtlProcessor processor, EtlDatabaseObject srcObject,
+			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
+		EtlDatabaseObject fakeSrcObject = srcObject != null ? srcObject
+				: (avaliableSrcObjects != null ? avaliableSrcObjects.get(0) : null);
+
+		FieldsMapping map;
+
+		FastEtlTransformingTarget target = FastEtlTransformingTarget.fastCreate(this.getRelatedEtlConf(),
+				avaliableSrcObjects, conn);
+		target.setRelatedEtlConfig(getRelatedEtlConf());
+
 		if (this.isComposite()) {
-			FieldsMapping map = FieldsMapping.fastCreate(this.getAjustedName(),
-					FastEtlTransformingTarget.fastCreate(this.getRelatedEtlConf(), avaliableSrcObjects, conn), conn);
+			map = FieldsMapping.fastCreate(this.getAjustedName(), target, conn);
 
 			if (!map.hasDataSourceName()) {
 				throw new EtlExceptionImpl("The field " + this.getAjustedName()
 						+ " cannot be transformed as it does not occure in any datasource");
 			}
 
-			FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
-					avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
-
-			return valueInfo.getTransformedValue();
 		} else {
-			return EtlFieldTransformer.tryToReplaceParametersOnSrcValue(this.getRelatedEtlConf(), avaliableSrcObjects,
-					"@" + this.getName()).toString();
+			map = FieldsMapping.fastCreate("@" + this.getName(), this.getName(), true, conn);
+
+			map.setTransformationTargetObject(target);
+
 		}
 
+		return map.getTransformerInstance().transform(null, fakeSrcObject, fakeSrcObject, avaliableSrcObjects, map,
+				conn, conn);
 	}
 
 }

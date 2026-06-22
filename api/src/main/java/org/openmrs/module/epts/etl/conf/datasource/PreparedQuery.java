@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
+import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -217,11 +218,17 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		return generatePreparedQuery(processor, srcObject, dstObject, avaliableSrcObjects, this.query, conn);
 	}
 
+	public PreparedQueryInfo generatePreparedQuery(String query, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+
+		return this.generatePreparedQuery(null, null, null, null, conn);
+	}
+
 	public PreparedQueryInfo generatePreparedQuery(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, String query, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
-		List<Object> params = new ArrayList<>();
+		List<FieldTransformingInfo> params = new ArrayList<>();
 
 		String pQuery = query;
 
@@ -229,24 +236,24 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 			for (QueryParameter param : this.getQueryParams()) {
 
-				Object paramValue = param.retrieveParamValue(processor, srcObject, dstObject, avaliableSrcObjects,
-						conn);
+				FieldTransformingInfo paramTransformInfo = param.transformParam(processor, srcObject, dstObject,
+						avaliableSrcObjects, conn);
 
 				if (param.getContextType().compareClause() || param.getContextType().selectField()
 						|| param.getContextType().inClause()) {
 
-					params.add(paramValue);
+					params.add(paramTransformInfo);
 
 					pQuery = SQLUtilities.replaceFirstParameterOccurrence(pQuery, param.getName());
 
 				} else if (param.getContextType().dbResource()) {
 
-					if (paramValue == null) {
+					if (paramTransformInfo == null) {
 						throw new ForbiddenOperationException("The parameter '" + param.getName()
 								+ "' has no value and is needed to generate prepared query.");
 					}
 
-					pQuery = SQLUtilities.replaceParameterWithValue(pQuery, param.getName(), paramValue);
+					pQuery = SQLUtilities.replaceParameterWithValue(pQuery, param.getName(), paramTransformInfo.getTransformedValue());
 				}
 			}
 		}
@@ -270,6 +277,11 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	@Override
 	public boolean hasDynamicElements() {
 		return this.getDataSource().hasDynamicElements();
+	}
+
+	@Override
+	public List<String> getDynamicElements() {
+		return this.getDataSource().getDynamicElements();
 	}
 
 	private void setCountFunctionInfo(SqlFunctionInfo countFunctionInfo) {
@@ -384,7 +396,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			return query;
 		}
 
-		Map<String, Set<String>> dataSourceFields = buildDataSourceFieldsMap(avaliableDataSources);
+		Map<String, Set<String>> dataSourceFields = buildDataSourceFieldsMap();
 
 		Pattern pattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\.([a-zA-Z_][a-zA-Z0-9_]*)\\b");
 
@@ -398,12 +410,16 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			String fieldName = matcher.group(2);
 			String fullToken = matcher.group(0);
 
-			Set<String> fields = dataSourceFields.get(dataSourceName);
+			if (hasDynamicElements() && this.isDynamicToken(fullToken)) {
 
-			if (fields != null && fields.contains(fieldName)) {
-				matcher.appendReplacement(sb, Matcher.quoteReplacement("@(" + fullToken + ")"));
 			} else {
-				matcher.appendReplacement(sb, Matcher.quoteReplacement(fullToken));
+				Set<String> fields = dataSourceFields.get(dataSourceName);
+
+				if (fields != null && fields.contains(fieldName)) {
+					matcher.appendReplacement(sb, Matcher.quoteReplacement("@(" + fullToken + ")"));
+				} else {
+					matcher.appendReplacement(sb, Matcher.quoteReplacement(fullToken));
+				}
 			}
 		}
 
@@ -412,13 +428,21 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		return sb.toString();
 	}
 
-	private Map<String, Set<String>> buildDataSourceFieldsMap(List<EtlDataSource> avaliableDataSources) {
+	private boolean isDynamicToken(String fullToken) {
+		if (hasDynamicElements()) {
+			return this.getDynamicElements().contains(fullToken);
+		}
+
+		return false;
+	}
+
+	private Map<String, Set<String>> buildDataSourceFieldsMap() {
 
 		Map<String, Set<String>> result = new HashMap<>();
 
-		for (EtlDataSource ds : avaliableDataSources) {
+		for (EtlDataSource ds : this.getAvaliableDataSources()) {
 
-			if (ds == null || ds.getName() == null || ds.getFields() == null) {
+			if (ds == null || ds.getAlias() == null || ds.getFields() == null) {
 				continue;
 			}
 
@@ -433,7 +457,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 				fieldNames.add(field.getName());
 			}
 
-			result.put(ds.getName(), fieldNames);
+			result.put(ds.getAlias(), fieldNames);
 		}
 
 		return result;
@@ -722,9 +746,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 		PreparedQueryInfo pq = generatePreparedQuery(processor, srcObject, dstObject, srcObjects, mainQuery, conn);
 
-		List<Object> paramsAsList = pq.getParameters();
-
-		Object[] params = paramsAsList != null ? paramsAsList.toArray() : null;
+		Object[] params = pq.extractParametersValueToArray();
 
 		return (List<EtlDatabaseObject>) DatabaseObjectDAO.search(this.getDataSource().getLoadHealper(),
 				this.getDataSource().getSyncRecordClass(), pq.getQuery(), params, conn);

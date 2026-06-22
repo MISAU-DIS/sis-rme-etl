@@ -209,6 +209,8 @@ public interface TransformableField {
 
 	Class<?> getTypeClass();
 
+	void init();
+
 	default Boolean hasTransformerInstance() {
 		return this.getTransformerInstance() != null;
 	}
@@ -218,6 +220,8 @@ public interface TransformableField {
 	}
 
 	default void tryToLoadTransformer(EtlTransformTarget dstConf, Connection conn) {
+		this.init();
+		
 		FieldTransformerType.tryToLoadTransformerToField(this, dstConf, conn);
 	}
 

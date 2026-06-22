@@ -29,6 +29,7 @@ import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
@@ -76,6 +77,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	private Boolean doNotLoadFields;
 
 	private RelationshipResolutionStrategy relationshipResolutionStrategy;
+	private ActionOnEtlIssue onMultipleSrcObjectsFound;
 
 	public QueryDataSourceConfig() {
 		this.loadHealper = new DatabaseObjectLoaderHelper(this);
@@ -89,6 +91,20 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		setRelatedSrcConf(relatedSrcVonf);
 
 		setQuery(query);
+	}
+
+	public ActionOnEtlIssue getOnMultipleSrcObjectsFound() {
+		return onMultipleSrcObjectsFound;
+	}
+
+	public void setOnMultipleSrcObjectsFound(ActionOnEtlIssue onMultipleSrcObjectsFound) {
+		this.onMultipleSrcObjectsFound = onMultipleSrcObjectsFound;
+	}
+
+	@Override
+	public ActionOnEtlIssue onMultipleSrcObjectsFound() {
+		return this.onMultipleSrcObjectsFound != null ? this.onMultipleSrcObjectsFound
+				: EtlAdditionalDataSource.super.onMultipleSrcObjectsFound();
 	}
 
 	public RelationshipResolutionStrategy getRelationshipResolutionStrategy() {
@@ -241,14 +257,14 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 			getRelatedEtlConf().logTrace("Determining fields for query...");
 
-			PreparedQueryInfo pq = query.generatePreparedQuery(null, null, null, null, this.getQuery(), conn);
+			PreparedQueryInfo pq = query.generatePreparedQuery(this.getQuery(), conn);
 
-			setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), pq.getParametersAsArray(), conn));
+			setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), pq.extractParametersValueToArray(), conn));
 
 			getRelatedEtlConf().logDebug("QueryDataSourceConfig [" + this.getName() + "] full loaded!");
 
 			this.fullLoaded = true;
-		} catch (ForbiddenOperationException | DBException e) {
+		} catch (ForbiddenOperationException | InvalidDataSourceOnFieldDefifitionException | DBException e) {
 			// Mean that there are missing parameters. Lets try to load the minimal
 			// information of fields
 			// Note that we are not marking the record as fullLoaded as there will be
@@ -274,7 +290,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 				PreparedQueryInfo pq = query.generatePreparedQuery(null, null, null, avaliableSrcObjects, conn);
 
-				Object[] params = pq.getParametersAsArray();
+				Object[] params = pq.extractParametersValueToArray();
 
 				try {
 					setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), params, conn));
@@ -470,7 +486,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			throws DBException {
 
 		if (!isPrepared()) {
-			prepare(avaliableSrcObjects, srcConn);
+			this.prepare(avaliableSrcObjects, srcConn);
 		}
 
 		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject,
@@ -478,7 +494,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 		if (utilities.listHasNoElement(list)) {
 			return null;
-		} else if (utilities.arrayHasMoreThanOneElements(list)) {
+		} else if (utilities.arrayHasMoreThanOneElements(list) && onMultipleSrcObjectsFound().abort()) {
 			List<EtlDatabaseObject> objs = new ArrayList<>();
 
 			objs.add(srcObject);
@@ -491,7 +507,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 					+ ") returned more than one src objects for src objects: " + objs);
 		}
 
-		EtlDatabaseObject result = list.get(0);
+		EtlDatabaseObject result = this.onMultipleSrcObjectsFound().useLast() ? list.get(list.size() - 1) : list.get(0);
 
 		if (relationshipResolutionStrategy.skip()) {
 			for (Field f : result.getFields()) {
@@ -543,7 +559,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	public String getAlias() {
 		return getName();
 	}
-	
+
 	@Override
 	public Boolean hasPK(Connection conn) {
 		return Boolean.FALSE;

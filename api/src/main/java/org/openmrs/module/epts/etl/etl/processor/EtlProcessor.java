@@ -183,6 +183,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			return;
 		}
 
+		logDebug("Starting the load of child within the conf: " + itemConf.getConfigCode());
+
 		for (EtlChildItemConfiguration childItemConf : itemConf.getChildItemConf()) {
 			childItemConf.fullLoad(this.getRelatedEtlOperationConfig());
 
@@ -222,7 +224,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				for (EtlDatabaseObject obj : etlObjects) {
 					srcObject.addChildObject(obj);
 				}
-				
+
 				perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null,
 						LoadingType.INNER, srcConn, dstConn);
 			}

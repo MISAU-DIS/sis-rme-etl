@@ -214,4 +214,10 @@ public class TransformableDataSourceField extends DataSourceField implements Tra
 	public TransformableDataSource getDataSource() {
 		return this.getParent();
 	}
+
+	@Override
+	public void init() {
+		// TODO Auto-generated method stub
+
+	}
 }

@@ -152,15 +152,26 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	public static FastEtlTransformingTarget fastCreate(EtlConfiguration relatedEtlCOnf,
 			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
 
-		if (utilities.listHasNoElement(avaliableSrcObjects)) {
-			throw new ForbiddenOperationException("You cannot create a FastEtlTransformingTarget withount srcObjects!");
+		if (relatedEtlCOnf == null) {
+			throw new ForbiddenOperationException("relatedEtlConf cannot be null");
 		}
 
-		List<EtlDataSource> ds = new ArrayList<>();
+		List<EtlDataSource> ds = null;
 
-		for (EtlDatabaseObject obj : avaliableSrcObjects) {
-			if (obj.getRelatedConfiguration() instanceof EtlDataSource) {
-				ds.add((EtlDataSource) obj.getRelatedConfiguration());
+		if (utilities.listHasElement(avaliableSrcObjects)) {
+
+			/*
+			 * if (utilities.listHasNoElement(avaliableSrcObjects)) { throw new
+			 * ForbiddenOperationException("You cannot create a FastEtlTransformingTarget withount srcObjects!"
+			 * ); }
+			 */
+
+			ds = new ArrayList<>();
+
+			for (EtlDatabaseObject obj : avaliableSrcObjects) {
+				if (obj.getRelatedConfiguration() instanceof EtlDataSource) {
+					ds.add((EtlDataSource) obj.getRelatedConfiguration());
+				}
 			}
 		}
 

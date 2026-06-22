@@ -75,18 +75,14 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 	}
 
 	default EtlDataSource findDataSource(String dsName) {
-		for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
-			if (ds.getAlias().trim().equals(dsName.trim())) {
-				return ds;
+
+		if (this.getAllAvaliableDataSource() != null) {
+			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
+				if (ds.getAlias().trim().equals(dsName.trim())) {
+					return ds;
+				}
 			}
 		}
-
-		for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
-			if (ds.getName().equals(dsName)) {
-				return ds;
-			}
-		}
-
 		return null;
 	}
 

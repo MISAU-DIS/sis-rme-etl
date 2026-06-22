@@ -109,6 +109,12 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 			return srcValueAsString;
 		}
 
+		if (utilities.listHasNoElement(srcObjects) && etlConf == null) {
+			throw new EtlTransformationException(
+					"SimpleValueTransformer requires at least one source object or a relatedEtlConf!!", null,
+					ActionOnEtlIssue.ABORT_PROCESS);
+		}
+
 		String expression = srcValueAsString;
 
 		Matcher matcher = PARAM_PATTERN.matcher(expression);
@@ -122,11 +128,13 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 
 			boolean found = false;
 
-			paramValue = etlConf.getParamValue(paramName);
+			paramValue = etlConf != null ? etlConf.getParamValue(paramName) : null;
 
 			if (paramValue != null) {
 				found = true;
 			} else
+
+			if (utilities.listHasElement(srcObjects)) {
 				for (EtlDatabaseObject srcObject : srcObjects) {
 
 					try {
@@ -136,16 +144,6 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 					} catch (ForbiddenOperationException e) {
 						// continue
 					}
-				}
-
-			if (!found) {
-
-				EtlConfiguration conf = srcObjects.get(0).getRelatedConfiguration().getRelatedEtlConf();
-
-				paramValue = conf.getParamValue(paramName);
-
-				if (paramValue != null) {
-					found = true;
 				}
 			}
 

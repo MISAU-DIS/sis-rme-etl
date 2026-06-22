@@ -119,7 +119,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 			
 			PreparedQueryInfo pq = pQ.generatePreparedQuery(null, parentObject, parentObject, auxDataSourceObjects, srcConn);
 			
-			Object[] params = pq.getParametersAsArray();
+			Object[] params = pq.extractParametersValueToArray();
 			
 			extraJoinQuery = pQ.getQuery();
 			

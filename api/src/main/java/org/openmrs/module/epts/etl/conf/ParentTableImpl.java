@@ -17,161 +17,168 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Represents a parent table.
  */
 public class ParentTableImpl extends AbstractRelatedTable implements ParentTable {
-	
+
 	private TableConfiguration childTableConf;
-	
+
 	private List<Field> conditionalFields;
-	
+
 	/*
-	 * Generic defaultValueDueInconsistency value which will be applied to all auto mapped field if the ref is not specified
+	 * Generic defaultValueDueInconsistency value which will be applied to all auto
+	 * mapped field if the ref is not specified
 	 */
 	private Object defaultValueDueInconsistency;
-	
+
 	/*
-	 * Generic setNullDueInconsistency value which will be applied to all auto mapped field if the ref is not specified
+	 * Generic setNullDueInconsistency value which will be applied to all auto
+	 * mapped field if the ref is not specified
 	 */
 	private Boolean setNullDueInconsistency;
-	
+
 	public ParentTableImpl() {
 	}
-	
+
 	public ParentTableImpl(String tableName, String refCode) {
 		super(tableName, refCode);
 	}
-	
+
 	public static ParentTableImpl init(String tableName, String refCode) {
 		ParentTableImpl p = new ParentTableImpl(tableName, refCode);
-		
+
 		return p;
 	}
-	
+
 	public TableConfiguration getChildTableConf() {
 		return childTableConf;
 	}
-	
+
 	public void setChildTableConf(TableConfiguration childTableConf) {
 		this.childTableConf = childTableConf;
 	}
-	
+
 	public List<Field> getConditionalFields() {
 		return conditionalFields;
 	}
-	
+
 	public void setConditionalFields(List<Field> conditionalFields) {
 		this.conditionalFields = conditionalFields;
 	}
-	
+
 	@Override
 	public Boolean isGeneric() {
 		return false_();
 	}
-	
+
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		return this.childTableConf.getRelatedConnInfo();
 	}
-	
+
 	public Object getDefaultValueDueInconsistency() {
 		return defaultValueDueInconsistency;
 	}
-	
+
 	public void setDefaultValueDueInconsistency(Object defaultValueDueInconsistency) {
 		this.defaultValueDueInconsistency = defaultValueDueInconsistency;
 	}
-	
+
 	public Boolean isSetNullDueInconsistency() {
 		return isTrue(setNullDueInconsistency);
 	}
-	
+
 	public void setSetNullDueInconsistency(Boolean setNullDueInconsistency) {
 		this.setNullDueInconsistency = setNullDueInconsistency;
 	}
-	
+
 	@Override
 	public UniqueKeyInfo parseRelationshipToSelfKey() {
 		UniqueKeyInfo uk = new UniqueKeyInfo(this);
-		
+
 		for (RefMapping map : this.getRefMapping()) {
 			uk.addKey(new Key(map.getParentFieldName()));
 		}
-		
+
 		return uk;
 	}
-	
+
 	@Override
 	public String generateJoinCondition() {
 		String conditionFields = "";
-		
+
 		for (int i = 0; i < this.getRefMapping().size(); i++) {
 			if (i > 0)
 				conditionFields += " AND ";
-			
+
 			RefMapping field = this.getRefMapping().get(i);
-			
+
 			conditionFields += getRelatedTabConf().getTableAlias() + "." + field.getChildFieldName() + " = "
-			        + this.getTableAlias() + "." + field.getParentFieldName();
+					+ this.getTableAlias() + "." + field.getParentFieldName();
 		}
-		
+
 		return conditionFields;
 	}
-	
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.getChildTableConf() != null ? this.getChildTableConf().getRelatedEtlConf() : null;
+	}
+
 	@Override
 	public TableConfiguration getRelatedTabConf() {
 		return this.childTableConf;
 	}
-	
+
 	@Override
 	public void setRelatedTabConf(TableConfiguration relatedTabConf) {
 		this.childTableConf = (TableConfiguration) relatedTabConf;
 	}
-	
+
 	public Boolean hasConditionalFields() {
 		return utilities.listHasElement(this.conditionalFields);
 	}
-	
+
 	@Override
 	@JsonIgnore
 	public String toString() {
 		String str = super.toString();
-		
+
 		if (this.hasRelated()) {
 			str += " Parent of " + this.getRelatedTabConf().getFullTableDescription();
 		}
-		
+
 		String mappingStr = "";
-		
+
 		if (hasMapping()) {
-			
+
 			for (RefMapping map : this.getRefMapping()) {
 				if (utilities.stringHasValue(mappingStr)) {
 					mappingStr += ",";
 				}
-				
+
 				mappingStr += map.toString();
 			}
-			
+
 			str += ": " + mappingStr;
 		}
-		
+
 		return str;
-		
+
 	}
-	
+
 	@Override
 	public Oid generateParentOidFromChild(EtlDatabaseObject obj) {
 		Oid oid = super.generateParentOidFromChild(obj);
-		
+
 		oid.setTabConf(this);
-		
+
 		return oid;
 	}
-	
+
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
 		Field.tryToReplacePlaceholders(this.getConditionalFields(), schemaInfoSrc);

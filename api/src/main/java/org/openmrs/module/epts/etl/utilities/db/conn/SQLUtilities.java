@@ -1999,7 +1999,7 @@ public class SQLUtilities {
 		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
 				.toString().toLowerCase();
 
-		List<Object> resolvedValues = new ArrayList<>();
+		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
 				" join ", " where " };
@@ -2041,11 +2041,9 @@ public class SQLUtilities {
 				FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null,
 						avaliableSrcObjects.get(0), avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
 
-				Object resolvedValue = valueInfo.getTransformedValue();
-
 				query = replaceFirstLiteralTokenWithQuestionMark(query, adjustedElement);
 
-				resolvedValues.add(resolvedValue);
+				resolvedValues.add(valueInfo);
 
 			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
 				continue;

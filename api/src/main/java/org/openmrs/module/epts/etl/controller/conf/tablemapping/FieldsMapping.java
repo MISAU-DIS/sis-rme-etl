@@ -25,7 +25,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.exceptions.MissingMetadataException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.NoFieldWithFieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -128,8 +128,9 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			dstField = this.getDstField().toString().split("\\.")[0];
 		}
 
-		if (tryToLoadTransformer)
+		if (tryToLoadTransformer) {
 			tryToLoadTransformer(null, conn);
+		}
 	}
 
 	public String getApplyCondition() {
@@ -358,7 +359,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	}
 
 	private void tryToLoadDataSourceAndTransformer(String dataSourceName, EtlTransformTarget target, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+			throws FieldAvaliableInMultipleDataSources, InvalidDataSourceOnFieldDefifitionException, DBException {
 
 		if (dataSourceName != null) {
 			EtlDataSource ds = target.findDataSource(dataSourceName);
@@ -366,10 +367,9 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			if (ds != null) {
 				this.setDataSourceName(ds.getAlias());
 			} else {
-				throw new MissingMetadataException("Invalid datasource '" + dataSourceName + "' on field definition '"
-						+ this.getOriginalSrcFieldDefinition() + "'");
+				throw new InvalidDataSourceOnFieldDefifitionException(this.getOriginalSrcFieldDefinition(),
+						dataSourceName);
 			}
-
 		} else {
 			try {
 				target.tryToLoadDataSourceToFieldMapping(this, conn);
@@ -624,7 +624,8 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		this.srcValueSwitchedToSrcField = srcValueSwitchedToSrcField;
 	}
 
-	private void init() {
+	@Override
+	public void init() {
 		if (!this.hasSrcField() && this.hasSrcValue()) {
 			// Try to switch from srcValue to srcField.
 			// We force switch if there is no srcField but srcValue follow the pattern
