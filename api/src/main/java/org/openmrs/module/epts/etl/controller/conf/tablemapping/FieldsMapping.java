@@ -8,6 +8,7 @@ import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.interfaces.ConditionalEtlElement;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -79,7 +80,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 	private EtlDataSource dataSource;
 
-	private EtlTransformTarget targetObject;
+	private EtlTransformTarget transformTargetObject;
 
 	private Boolean manuallyConfigured;
 
@@ -164,12 +165,13 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		this.nullValueBehavior = nullValueBehavior;
 	}
 
-	public EtlTransformTarget getTargetObject() {
-		return targetObject;
+	@Override
+	public EtlTransformTarget getTransformationTargetObject() {
+		return transformTargetObject;
 	}
 
-	public void setTargetObject(EtlTransformTarget targetObject) {
-		this.targetObject = targetObject;
+	public void setTransformationTargetObject(EtlTransformTarget targetObject) {
+		this.transformTargetObject = targetObject;
 	}
 
 	@Override
@@ -225,16 +227,19 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	public static FieldsMapping fastCreate(DataSourceField dsF, Connection conn) {
 		FieldsMapping f = null;
 
-		if (dsF.hasTransformer()) {
-			if (dsF.getParent() instanceof EtlTransformTarget) {
-				f = FieldsMapping.fastCreateWithTransformer((EtlTransformTarget) dsF.getParent(), dsF.getDstField(),
-						dsF.getTransformer(), conn);
+		if (dsF instanceof TransformableDataSourceField)
+
+			if (((TransformableDataSourceField) dsF).hasTransformer()) {
+				if (dsF.getParent() instanceof EtlTransformTarget) {
+					f = FieldsMapping.fastCreateWithTransformer((EtlTransformTarget) dsF.getParent(),
+							((TransformableDataSourceField) dsF).getDstField(),
+							((TransformableDataSourceField) dsF).getTransformer(), conn);
+				} else {
+					throw new ForbiddenOperationException("Only a targed parent is accepted!!");
+				}
 			} else {
-				throw new ForbiddenOperationException("Only a targed parent is accepted!!");
+				f = FieldsMapping.fastCreate(dsF.getValue().toString(), dsF.getName(), true, conn);
 			}
-		} else {
-			f = FieldsMapping.fastCreate(dsF.getValue().toString(), dsF.getDstField(), true, conn);
-		}
 
 		if (dsF.getValue() != null && dsF.getValue().toString().startsWith("@")) {
 
@@ -341,7 +346,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		fieldMap.tryToLoadDataSourceAndTransformer(fieldMap.getDataSourceName(), target, conn);
 
-		fieldMap.setTargetObject(target);
+		fieldMap.setTransformationTargetObject(target);
 		return fieldMap;
 
 	}

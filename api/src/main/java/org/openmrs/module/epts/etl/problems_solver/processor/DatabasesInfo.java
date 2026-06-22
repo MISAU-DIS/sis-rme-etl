@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionService;
@@ -333,6 +334,12 @@ public class DatabasesInfo extends AbstractBaseConfiguration {
 				System.out.println("Found");
 			}
 		}
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }

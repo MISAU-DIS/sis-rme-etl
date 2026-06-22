@@ -37,14 +37,14 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
-public class ObjectDataSource extends AbstractEtlDataConfiguration
+public class TransformableDataSource extends AbstractEtlDataConfiguration
 		implements EtlAdditionalDataSource, EtlSrcConf, EtlTransformTarget {
 
 	private String name;
 
 	private ObjectLanguageType objectLanguage;
 
-	private List<DataSourceField> objectFields;
+	private List<TransformableDataSourceField> objectFields;
 
 	private Boolean fullLoaded;
 
@@ -94,7 +94,7 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration
 
 	private String applyCondition;
 
-	public ObjectDataSource() {
+	public TransformableDataSource() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
 	}
 
@@ -211,7 +211,7 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration
 		this.tryToLoadFieldValueGenerator();
 
 		if (hasObjectFields()) {
-			for (DataSourceField field : this.getObjectFields()) {
+			for (TransformableDataSourceField field : this.getObjectFields()) {
 				field.setParent(this);
 
 				FieldsMapping auxFieldMapping = FieldsMapping.fastCreate(field, conn);
@@ -256,11 +256,11 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration
 		return this.objectFields;
 	}
 
-	public List<DataSourceField> getObjectFields() {
+	public List<TransformableDataSourceField> getObjectFields() {
 		return this.objectFields;
 	}
 
-	public void setObjectFields(List<DataSourceField> objectFields) {
+	public void setObjectFields(List<TransformableDataSourceField> objectFields) {
 		this.objectFields = objectFields;
 	}
 
@@ -341,10 +341,6 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration
 	@Override
 	public String generateSelectFromQuery() {
 		return null;
-	}
-
-	@Override
-	public void setRelatedEtlConfig(EtlConfiguration relatedSyncConfiguration) {
 	}
 
 	@Override
@@ -439,16 +435,16 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration
 		return null;
 	}
 
-	public static List<ObjectDataSource> cloneAll(List<ObjectDataSource> allToCloneFrom, SrcConf relatedSrcConf,
-			Connection conn) throws DBException {
+	public static List<TransformableDataSource> cloneAll(List<TransformableDataSource> allToCloneFrom,
+			SrcConf relatedSrcConf, Connection conn) throws DBException {
 
-		List<ObjectDataSource> allCloned = null;
+		List<TransformableDataSource> allCloned = null;
 
 		if (utilities.listHasElement(allToCloneFrom)) {
 			allCloned = new ArrayList<>(allToCloneFrom.size());
 
-			for (ObjectDataSource aux : allToCloneFrom) {
-				ObjectDataSource cloned = new ObjectDataSource();
+			for (TransformableDataSource aux : allToCloneFrom) {
+				TransformableDataSource cloned = new TransformableDataSource();
 				cloned.clone(aux, relatedSrcConf, conn);
 
 				allCloned.add(cloned);
@@ -458,24 +454,24 @@ public class ObjectDataSource extends AbstractEtlDataConfiguration
 		return allCloned;
 	}
 
-	public void clone(ObjectDataSource toCloneFrom, SrcConf relatedSrcConf, Connection conn) throws DBException {
+	public void clone(TransformableDataSource toCloneFrom, SrcConf relatedSrcConf, Connection conn) throws DBException {
 		this.setName(toCloneFrom.getName());
 		this.setRelatedSrcConf(relatedSrcConf);
 		this.setRequired(toCloneFrom.isRequired());
 
 		this.setObjectLanguage(toCloneFrom.getObjectLanguage());
 
-		this.setObjectFields(DataSourceField.cloneAll(toCloneFrom.getObjectFields(), this));
+		this.setObjectFields(TransformableDataSourceField.cloneAll_(toCloneFrom.getObjectFields(), this));
 		this.setRelatedSrcConf(relatedSrcConf);
 		this.setRequired(toCloneFrom.isRequired());
 		this.setFieldsValuesGenerator(toCloneFrom.getFieldsValuesGenerator());
 		this.setFieldsValuesGeneratorInstance(toCloneFrom.getFieldsValuesGeneratorInstance());
 	}
 
-	public static void tryToReplacePlaceholders(List<ObjectDataSource> extraObjectDataSource,
+	public static void tryToReplacePlaceholders(List<TransformableDataSource> extraObjectDataSource,
 			EtlDatabaseObject schemaInfoSrc) {
 		if (utilities.listHasElement(extraObjectDataSource)) {
-			for (ObjectDataSource a : extraObjectDataSource) {
+			for (TransformableDataSource a : extraObjectDataSource) {
 				a.tryToReplacePlaceholders(schemaInfoSrc);
 			}
 		}

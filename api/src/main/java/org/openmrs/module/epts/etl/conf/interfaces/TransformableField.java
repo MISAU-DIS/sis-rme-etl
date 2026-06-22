@@ -50,6 +50,8 @@ public interface TransformableField {
 
 	Object getDefaultValue();
 
+	EtlTransformTarget getTransformationTargetObject();
+
 	default FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
 			Connection dstConn) throws DBException, EtlTransformationException {

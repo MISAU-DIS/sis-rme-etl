@@ -1993,11 +1993,11 @@ public class SQLUtilities {
 	}
 
 	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
-			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString()
-				.toLowerCase();
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
+				.toString().toLowerCase();
 
 		List<Object> resolvedValues = new ArrayList<>();
 
@@ -2006,7 +2006,7 @@ public class SQLUtilities {
 
 		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
 
-		for (String  element : srcObjectConditionElements) {
+		for (String element : srcObjectConditionElements) {
 
 			try {
 
@@ -2017,11 +2017,11 @@ public class SQLUtilities {
 					adjustedElement = element;
 
 					map = FieldsMapping.fastCreate("tmp_field",
-							FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+							FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
 
-					map.resetAndLoadTransformer(map.getTargetObject(), adjustedElement, conn);
-					
-					map.tryToLoadTransformer(map.getTargetObject(), conn);
+					map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
+
+					map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
 
 				} else {
 					adjustedElement = element.replace(")", "").replace("(", "").strip().trim();
@@ -2031,7 +2031,7 @@ public class SQLUtilities {
 					}
 
 					map = FieldsMapping.fastCreate(adjustedElement,
-							FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+							FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
 				}
 
 				if (!map.hasDataSourceName()) {
@@ -2057,9 +2057,10 @@ public class SQLUtilities {
 	}
 
 	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString();
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
+				.toString();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
 
@@ -2075,7 +2076,7 @@ public class SQLUtilities {
 				}
 
 				FieldsMapping map = FieldsMapping.fastCreate(element.strip().trim(),
-						FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+						FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
 
 				if (map.hasDataSourceName()) {
 					FieldTransformingInfo v = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),

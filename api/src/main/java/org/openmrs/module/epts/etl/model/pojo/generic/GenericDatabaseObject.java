@@ -501,7 +501,6 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 	public static GenericDatabaseObject fastCreate(String tableName, List<Field> fields, EtlConfiguration etlConf) {
 		TableConfiguration tabConf = new GenericTableConfiguration(tableName);
-		tabConf.setRelatedEtlConfig(etlConf);
 
 		tabConf.tryToGenerateTableAlias(etlConf);
 
@@ -631,5 +630,11 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		if (this.hasFields()) {
 			utilities.updateOnArray(this.getFields(), k, k);
 		}
+	}
+
+	public static List<EtlDatabaseObject> createDefaultObjectListUsingConfParams(EtlConfiguration etlConf) {
+		GenericDatabaseObject g = new GenericDatabaseObject();
+
+		return utilities.parseToList(g);
 	}
 }

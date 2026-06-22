@@ -109,6 +109,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	private Boolean mustRestartInTheEnd;
 
+	private EtlConfiguration relatedEtlConf;
+
 	public EtlOperationConfig() {
 		this.dstType = EtlDstType.db;
 		this.actionType = EtlActionType.CREATE;
@@ -120,6 +122,15 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		this.fisicalCpuMultiplier = 1;
 		this.threadingMode = ThreadingMode.MULTI_THREAD;
 		this.totalCountStrategy = EtlTotalRecordsCountStrategy.COUNT_ONCE;
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.relatedEtlConf;
+	}
+
+	public void setRelatedEtlConf(EtlConfiguration relatedEtlConf) {
+		this.relatedEtlConf = relatedEtlConf;
 	}
 
 	public Boolean getMustRestartInTheEnd() {

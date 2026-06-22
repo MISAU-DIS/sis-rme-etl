@@ -25,8 +25,10 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 
 	private List<EtlDataSource> allAvaliableDataSource;
 	private String condition;
+	private EtlConfiguration relatedEtlConf;
 
-	private FastEtlTransformingTarget(List<EtlDataSource> allAvaliableDataSource) {
+	private FastEtlTransformingTarget(EtlConfiguration relatedEtlConf, List<EtlDataSource> allAvaliableDataSource) {
+		this.relatedEtlConf = relatedEtlConf;
 		this.allAvaliableDataSource = allAvaliableDataSource;
 	}
 
@@ -147,8 +149,8 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	public void loadDataSourceInfo(Connection conn) throws DBException {
 	}
 
-	public static FastEtlTransformingTarget fastCreate(List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
-			throws DBException {
+	public static FastEtlTransformingTarget fastCreate(EtlConfiguration relatedEtlCOnf,
+			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
 
 		if (utilities.listHasNoElement(avaliableSrcObjects)) {
 			throw new ForbiddenOperationException("You cannot create a FastEtlTransformingTarget withount srcObjects!");
@@ -162,7 +164,12 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 			}
 		}
 
-		return new FastEtlTransformingTarget(ds);
+		return new FastEtlTransformingTarget(relatedEtlCOnf, ds);
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.relatedEtlConf;
 	}
 
 	@Override
@@ -236,8 +243,8 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 		return null;
 	}
 
-	@Override
-	public void setRelatedEtlConfig(EtlConfiguration relatedSyncConfiguration) {
+	public void setRelatedEtlConfig(EtlConfiguration relatedEtlConf) {
+		this.relatedEtlConf = relatedEtlConf;
 	}
 
 	@Override

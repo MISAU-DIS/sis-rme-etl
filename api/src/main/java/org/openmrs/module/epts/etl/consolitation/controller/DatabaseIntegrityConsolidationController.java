@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.consolitation.controller;
 import java.sql.Connection;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.consolitation.model.DatabaseIntegrityConsolidationSearchParams;
@@ -123,6 +124,12 @@ public class DatabaseIntegrityConsolidationController extends OperationControlle
 	public boolean isDisabled() {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }

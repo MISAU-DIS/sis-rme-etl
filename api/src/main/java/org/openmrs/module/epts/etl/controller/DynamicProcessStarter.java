@@ -38,7 +38,6 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 			}
 			
 			etlConfig.getDynamicSrcConf().setParentConf(etlConfig);
-			etlConfig.getDynamicSrcConf().setRelatedEtlConfig(etlConfig);
 			etlConfig.getDynamicSrcConf().fullLoad(conn);
 			
 			EtlDynamicSearchParams searchParams = new EtlDynamicSearchParams(etlConfig.getDynamicSrcConf());
@@ -111,7 +110,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		ProcessController controller = (ProcessController) c;
 		
 		if (c.isFinished()) {
-			if (controller.getEtlConf().getChildConfigFilePath() != null) {
+			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
 				throw new ForbiddenOperationException(
 				        "You cannot configure childConfigFilePath on dynamic etl configuration!!!!");
 			} else {

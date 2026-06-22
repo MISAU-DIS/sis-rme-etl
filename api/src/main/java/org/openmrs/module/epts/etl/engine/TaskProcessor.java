@@ -65,6 +65,11 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return monitor.getRelatedEtlConf();
+	}
+
+	@Override
 	public String getOperationId() {
 		return getProcessorId();
 	}

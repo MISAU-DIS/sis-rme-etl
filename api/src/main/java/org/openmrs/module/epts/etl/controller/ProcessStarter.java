@@ -94,7 +94,7 @@ public class ProcessStarter implements ControllerStarter {
 			
 			ProcessController controller = this.currentController;
 			
-			if (controller.getEtlConf().isDisabled()) {
+			if (controller.getRelatedEtlConf().isDisabled()) {
 				logger.info("Operation " + controller.getControllerId() + " is disabled. Skipping...");
 				controller.markAsFinished();
 				handleControllerFinalization(controller);
@@ -126,10 +126,10 @@ public class ProcessStarter implements ControllerStarter {
 		ProcessController controller = (ProcessController) controllerToFinalize;
 		
 		if (controllerToFinalize.isFinished()) {
-			if (controller.getEtlConf().getChildConfigFilePath() != null) {
+			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
 				try {
 					EtlConfiguration childConfig = EtlConfiguration
-					        .loadFromFile(new File(controller.getEtlConf().getChildConfigFilePath()));
+					        .loadFromFile(new File(controller.getRelatedEtlConf().getChildConfigFilePath()));
 					
 					ProcessController child = new ProcessController(this, childConfig);
 					

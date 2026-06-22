@@ -441,8 +441,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		List<EtlDatabaseObject> allObjs = srcObjects != null ? srcObjects
 				: (srcObject != null ? utilities.parseToList(srcObject) : null);
 
-		PreparedQueryInfo p = SQLUtilities
-				.prepareQueryReplacingDataSourceElementsWithParams(this.getOnDemandCheckCondition(), allObjs, dstConn);
+		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
+				this.getOnDemandCheckCondition(), allObjs, getRelatedEtlConf(), dstConn);
 
 		try {
 			return dstConf.find(p.getQuery(), p.getParametersAsArray(), dstConn);
@@ -686,8 +686,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						+ "] cannot be found on the srcDb and no defaultEtlTable was configred with the EtlConfiguration. Error when loading transformer: "
 						+ this);
 		}
-
-		parentConf.setRelatedEtlConfig(this.relatedEtlTransformTarget.getRelatedEtlConf());
 
 		EtlChildItemConfiguration conf = EtlChildItemConfiguration.fastCreate(parentConf, srcConn);
 

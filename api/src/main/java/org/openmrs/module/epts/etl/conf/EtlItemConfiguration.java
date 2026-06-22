@@ -76,7 +76,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private String shortCode;
 
+	private EtlConfiguration relatedEtlConf;
+
 	public EtlItemConfiguration() {
+	}
+
+	public void setRelatedEtlConf(EtlConfiguration relatedEtlConf) {
+		this.relatedEtlConf = relatedEtlConf;
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.relatedEtlConf;
 	}
 
 	public String getShortCode() {
@@ -242,6 +253,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	public void init(EtlConfiguration relatedEtlConf, boolean testing, Connection srcConn, Connection dstConn)
 			throws DBException {
+
+		this.setRelatedEtlConf(relatedEtlConf);
 
 		this.applyIncludes();
 
@@ -419,8 +432,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 					map.setRelatedConnInfo(getRelatedEtlConf().getDstConnInfo());
 
-					map.setRelatedEtlConfig(getRelatedEtlConf());
-
 					map.setParentConf(this);
 					map.setDstType(this.getSrcConf().getDstType());
 
@@ -515,18 +526,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return utilities.listHasElement(this.childItemConf);
 	}
 
-	@Override
-	public void setRelatedEtlConfig(EtlConfiguration relatedSyncConfiguration) {
-		super.setRelatedEtlConfig(relatedSyncConfiguration);
+	public void setRelatedEtlConfig(EtlConfiguration relatedEtlConf) {
+		if (this.hasChildItemConf()) {
 
-		if (this.srcConf != null) {
-			this.srcConf.setRelatedEtlConfig(relatedSyncConfiguration);
-		}
-
-		if (this.dstConf != null) {
-
-			for (DstConf conf : this.dstConf) {
-				conf.setRelatedEtlConfig(relatedSyncConfiguration);
+			for (EtlChildItemConfiguration child : this.getChildItemConf()) {
+				child.setRelatedEtlConf(relatedEtlConf);
 			}
 		}
 	}
@@ -647,8 +651,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					"This item [" + this.getConfigCode() + " Is not dynamic!!! You cannot generate Dynamic Items");
 		}
 
+		this.setRelatedEtlConf(relatedEtlConf);
 		this.getEtlItemSrcConf().setRelatedItemConf(this);
-		this.getEtlItemSrcConf().setRelatedEtlConfig(this.getRelatedEtlConf());
 
 		this.getEtlItemSrcConf().fullLoad(conn);
 

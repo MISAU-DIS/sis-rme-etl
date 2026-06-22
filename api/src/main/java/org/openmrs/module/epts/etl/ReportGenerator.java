@@ -144,4 +144,10 @@ public class ReportGenerator extends AbstractBaseConfiguration {
 		
 		return syncConfigs;
 	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

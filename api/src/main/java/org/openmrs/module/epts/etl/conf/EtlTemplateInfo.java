@@ -33,6 +33,8 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 
 	private EtlTemplateInfo childTemplate;
 
+	private EtlConfiguration relatedEtlConf;
+
 	public EtlTemplateInfo() {
 	}
 
@@ -46,6 +48,15 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 		this(name);
 
 		this.parameters = parameters;
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.relatedEtlConf;
+	}
+
+	public void setRelatedEtlConf(EtlConfiguration relatedEtlConf) {
+		this.relatedEtlConf = relatedEtlConf;
 	}
 
 	public EtlTemplateInfo cloneAndEnsureParametersAndOverridePlaceholdersReplacement(Map<String, Object> inputParams) {
@@ -88,14 +99,14 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 
 					clonedOverride.setValue(resolved);
 				}
-				
+
 				if (clonedOverride.getMatch() != null) {
 
 					JsonNode resolved = resolveJsonNodePlaceholders(clonedOverride.getMatch(), inputParams);
 
 					clonedOverride.setMatch(resolved);
 				}
-				
+
 				clonedOverrides.add(clonedOverride);
 			}
 

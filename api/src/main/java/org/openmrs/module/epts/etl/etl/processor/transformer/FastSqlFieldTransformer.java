@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -19,130 +20,141 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * Field transformer that retrieves the destination field value by executing a SQL query against the
- * source database.
+ * Field transformer that retrieves the destination field value by executing a
+ * SQL query against the source database.
  * <p>
- * The SQL query is executed through a {@link QueryDataSourceConfig}, which loads the result as a
- * temporary data source during the ETL execution. The query must return at least one column; only
- * the value of the first column of the first returned row will be used as the destination field
- * value.
+ * The SQL query is executed through a {@link QueryDataSourceConfig}, which
+ * loads the result as a temporary data source during the ETL execution. The
+ * query must return at least one column; only the value of the first column of
+ * the first returned row will be used as the destination field value.
  * </p>
  * <p>
- * The SQL query is executed lazily: the {@link QueryDataSourceConfig} is created and fully loaded
- * only once, during the first invocation of the transformer. Subsequent transformations reuse the
- * previously loaded configuration.
+ * The SQL query is executed lazily: the {@link QueryDataSourceConfig} is
+ * created and fully loaded only once, during the first invocation of the
+ * transformer. Subsequent transformations reuse the previously loaded
+ * configuration.
  * </p>
  * <p>
- * If the query returns no result or the resulting value is {@code null}, the transformer behaves as
- * follows:
+ * If the query returns no result or the resulting value is {@code null}, the
+ * transformer behaves as follows:
  * <ul>
- * <li>If the destination field defines a default value, the transformer returns {@code null} so
- * that the default value can be applied later by the ETL processing pipeline.</li>
- * <li>If no default value is defined, an {@link EmptyTransformedValueException} is thrown.</li>
+ * <li>If the destination field defines a default value, the transformer returns
+ * {@code null} so that the default value can be applied later by the ETL
+ * processing pipeline.</li>
+ * <li>If no default value is defined, an {@link EmptyTransformedValueException}
+ * is thrown.</li>
  * </ul>
  * </p>
  * <p>
  * Example usage:
  * </p>
+ * 
  * <pre>
  * FastSqlFieldTransformer("SELECT uuid()")
- * </pre> In this example the transformer executes the SQL query and assigns the resulting UUID
- * value to the destination field.
+ * </pre>
+ * 
+ * In this example the transformer executes the SQL query and assigns the
+ * resulting UUID value to the destination field.
  */
 public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
-	
+
 	private static final Map<String, FastSqlFieldTransformer> INSTANCES = new ConcurrentHashMap<>();
-	
+
 	private static final Object LOCK = new Object();
-	
+
 	private String sqlQuery;
-	
+
 	private volatile QueryDataSourceConfig dataSourceConfig;
-	
+
 	public FastSqlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
-	    TransformableField field, Connection conn) {
-		
+			TransformableField field, Connection conn) {
+
 		super(parameters, relatedEtlTransformTarget, field);
-		
+
 		this.sqlQuery = retrieveSqlQueryFromParameters(parameters);
-		
+
 		try {
 			this.tryToLoadDumpScriptContentToFieldAndValidate("sqlQuery",
-			    relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
-		}
-		catch (DBException e) {
+					relatedEtlTransformTarget != null
+							? relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters()
+							: null,
+					conn);
+		} catch (DBException e) {
 			throw new EtlConfException(e);
 		}
 	}
-	
+
 	public String getSqlQuery() {
 		return sqlQuery;
 	}
-	
-	public static FastSqlFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
-	        TransformableField field, Connection conn) {
-		
+
+	public static FastSqlFieldTransformer getInstance(List<Object> parameters,
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
-		
+
 		return INSTANCES.computeIfAbsent(key,
-		    k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field, conn));
+				k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field, conn));
 	}
-	
+
 	private static String retrieveSqlQueryFromParameters(List<Object> parameters) {
 		if (parameters == null || parameters.isEmpty()) {
 			throw new EtlExceptionImpl("A FastSqlFieldTransformer needs a sqlQuery as parameter.\n"
-			        + "ex: org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer(select uuid())");
+					+ "ex: org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer(select uuid())");
 		}
-		
+
 		if (parameters.size() > 1) {
 			throw new EtlExceptionImpl("A FastSqlFieldTransformer supports only one parameter, the sqlQuery");
 		}
-		
+
 		String sqlQuery = parameters.get(0).toString();
 		return sqlQuery;
 	}
-	
+
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-	        Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
-		
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
+			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
+
 		if (dataSourceConfig == null) {
 			synchronized (LOCK) {
 				if (dataSourceConfig == null) {
+					SrcConf ds = field.getDataSource() instanceof SrcConf ? (SrcConf) field.getDataSource()
+							: ((EtlAdditionalDataSource) field.getDataSource()).getRelatedSrcConf();
 					
-					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery, (SrcConf) field.getDataSource());
-					
+					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery,
+							ds);
+
 					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
-					
+
 					dataSourceConfig = conf;
 				}
 			}
 		}
-		
+
 		EtlDatabaseObject srcObj = dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
-		    additionalSrcObjects, hasOverrideConnection() ? getOverrideConnection() : srcConn);
-		
+				additionalSrcObjects, hasOverrideConnection() ? getOverrideConnection() : srcConn);
+
 		Object dstValue = null;
-		
+
 		if (srcObj != null && srcObj.getFields() != null && !srcObj.getFields().isEmpty()) {
-			
+
 			dstValue = srcObj.getFields().get(0).getValue();
 		}
-		
+
 		if (dstValue != null) {
 			return new FieldTransformingInfo(field, dstValue, null);
 		}
-		
+
 		if (field.getDefaultValue() == null) {
 			EtlDatabaseObject obj = utilities.listHasElement(additionalSrcObjects) ? additionalSrcObjects.get(0) : null;
-			
+
 			throw new EmptyTransformedValueException(obj,
-			        field.getSrcField() != null ? field.getSrcField() : field.getDstField(), this,
-			        ActionOnEtlIssue.ABORT_PROCESS);
+					field.getSrcField() != null ? field.getSrcField() : field.getDstField(), this,
+					ActionOnEtlIssue.ABORT_PROCESS);
 		}
-		
+
 		return null;
 	}
-	
+
 }

@@ -838,7 +838,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 									parentTabConf.setParentConf(this.getParentConf());
 									parentTabConf.setChildTableConf(this);
-									parentTabConf.setRelatedEtlConfig(getRelatedEtlConf());
 									parentTabConf.setSchema(foreignKeyRS.getString("PKTABLE_SCHEM"));
 
 									if (!parentTabConf.hasSchema()) {
@@ -1028,7 +1027,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 						childTabConf.setParentTableConf(this);
 						childTabConf.setParentConf(this.getParentConf());
-						childTabConf.setRelatedEtlConfig(getRelatedEtlConf());
 						childTabConf.setSchema(foreignKeyRS.getString("FKTABLE_SCHEM"));
 
 						if (!childTabConf.hasSchema()) {
@@ -2538,7 +2536,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				clonedParent.setTableName(parentToCloneFrom.getTableName());
 				clonedParent.setSchema(tableToCloneTo.getSchema());
-				clonedParent.setRelatedEtlConfig(getRelatedEtlConf());
 				clonedParent.loadFields(conn);
 				clonedParent.setChildTableConf(tableToCloneTo);
 				clonedParent.setConditionalFields(parentToCloneFrom.getConditionalFields());
