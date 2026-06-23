@@ -808,6 +808,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		logger.error(msg);
 	}
 
+	public void logErr(String msg, Exception e) {
+		if (logger == null)
+			initLogger();
+
+		logger.error(msg, e);
+	}
+
 	/**
 	 * Loads the code for each
 	 * 

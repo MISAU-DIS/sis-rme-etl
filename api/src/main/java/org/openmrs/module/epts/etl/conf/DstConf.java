@@ -624,7 +624,7 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public DBConnectionInfo getRelatedConnInfo() {
-		return relatedConnInfo;
+		return relatedConnInfo != null ? this.relatedConnInfo : getRelatedEtlConf().getDstConnInfo();
 	}
 
 	public void setRelatedConnInfo(DBConnectionInfo relatedConnInfo) {
@@ -633,7 +633,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public synchronized void fullLoad() throws DBException {
-		OpenConnection conn = this.relatedConnInfo.openConnection(this);
+		OpenConnection conn = this.getRelatedConnInfo().openConnection(this);
 
 		try {
 			this.fullLoad(conn);
