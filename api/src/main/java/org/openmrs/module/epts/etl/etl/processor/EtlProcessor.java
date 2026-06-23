@@ -63,7 +63,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		try {
 			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
 
-			if (getRelatedEtlOperationConfig().getAfterEtlActionType() != null) {
+			if (getRelatedEtlOperationConfig().getAfterEtlActionType() != null
+					&& !getRelatedEtlOperationConfig().getAfterEtlActionType().isUndefined()) {
 				EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
 
 				for (EtlDatabaseObject obj : etlObjects) {

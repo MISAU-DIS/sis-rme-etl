@@ -931,7 +931,7 @@ public class SrcConf extends AbstractTableConfiguration
 
 		this.createRelatedStageAreaSrcUniqueKeysTable(srcConn);
 
-		if (this.getRelatedEtlConf().arquiveProcessedRecords()) {
+		if (this.getRelatedEtlConf().mustCreateArquiveTables()) {
 			this.createRelatedProcessedRecordStageAreaTable(srcConn);
 		}
 	}

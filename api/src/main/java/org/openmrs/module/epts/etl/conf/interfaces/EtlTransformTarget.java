@@ -83,6 +83,15 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 				}
 			}
 		}
+
+		if (this.getAllAvaliableDataSource() != null) {
+			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
+				if (ds.getName().trim().equals(dsName.trim())) {
+					return ds;
+				}
+			}
+		}
+
 		return null;
 	}
 

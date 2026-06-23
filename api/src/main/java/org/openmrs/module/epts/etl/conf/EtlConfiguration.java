@@ -206,8 +206,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private List<EtlFragmentInclude> include;
 
-	private Boolean arquiveProcessedRecords;
-
 	private EtlItemConfiguration defaultEtlItemConf;
 
 	public EtlConfiguration() {
@@ -2451,15 +2449,16 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return utilities.stringHasValue(this.getDefaultSourceTable());
 	}
 
-	public boolean arquiveProcessedRecords() {
-		return isTrue(this.arquiveProcessedRecords);
+	public Boolean mustCreateArquiveTables() {
+		if (this.hasOperation()) {
+			for (EtlOperationConfig op : this.getOperations()) {
+				if (op.moveProcessedRecordsToStageArea()) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
-	public Boolean getArquiveProcessedRecords() {
-		return arquiveProcessedRecords;
-	}
-
-	public void setArquiveProcessedRecords(Boolean arquiveProcessedRecords) {
-		this.arquiveProcessedRecords = arquiveProcessedRecords;
-	}
 }

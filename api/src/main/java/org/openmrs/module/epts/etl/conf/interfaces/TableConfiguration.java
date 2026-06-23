@@ -2533,11 +2533,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		for (ParentTable parentToCloneFrom : this.getParents()) {
 			if (DBUtilities.isTableExists(tableToCloneTo.getSchema(), parentToCloneFrom.getTableName(), conn)) {
 				ParentTable clonedParent = new ParentTableImpl();
-
+				clonedParent.setChildTableConf(tableToCloneTo);
 				clonedParent.setTableName(parentToCloneFrom.getTableName());
 				clonedParent.setSchema(tableToCloneTo.getSchema());
 				clonedParent.loadFields(conn);
-				clonedParent.setChildTableConf(tableToCloneTo);
 				clonedParent.setConditionalFields(parentToCloneFrom.getConditionalFields());
 				clonedParent.setDefaultValueDueInconsistency(parentToCloneFrom.getDefaultValueDueInconsistency());
 				clonedParent.setSetNullDueInconsistency(parentToCloneFrom.isSetNullDueInconsistency());

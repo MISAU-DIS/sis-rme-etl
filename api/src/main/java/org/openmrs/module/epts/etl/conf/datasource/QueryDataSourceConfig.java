@@ -30,6 +30,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingIn
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
+import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
@@ -264,7 +265,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			getRelatedEtlConf().logDebug("QueryDataSourceConfig [" + this.getName() + "] full loaded!");
 
 			this.fullLoaded = true;
-		} catch (ForbiddenOperationException | InvalidDataSourceOnFieldDefifitionException | DBException e) {
+		} catch (ForbiddenOperationException | InvalidDataSourceOnFieldDefifitionException
+				| MissingParameterOnEtlTransformationException | DBException e) {
 			// Mean that there are missing parameters. Lets try to load the minimal
 			// information of fields
 			// Note that we are not marking the record as fullLoaded as there will be
