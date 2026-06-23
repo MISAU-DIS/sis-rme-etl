@@ -1443,8 +1443,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			return issues;
 		}
 
-		if (getDefaultExceptionBehavior().abort()) {
+		if (!getDefaultExceptionBehavior().log()) {
+			DBConnectionInfo connInfo = hasDstConnInfo() ? getDstConnInfo() : getSrcConnInfo();
 
+			if (!connInfo.isAutoCommit()) {
+				return "DefaultAutoCommit is set to true. You must set defaultExceptionBehavior to LOG!";
+			}
 		}
 
 		return null;

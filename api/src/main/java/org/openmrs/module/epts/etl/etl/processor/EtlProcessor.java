@@ -182,6 +182,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	 */
 	private void createDefaultFailedDstObject(EtlDatabaseObject record, DstConf mappingInfo,
 			EtlTransformationException e) {
+
+		logWarn("Issues found when transforming record " + record + ". The issue will be logged: "
+				+ e.getLocalizedMessage());
+
 		EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
 
 		dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, dstObject, dstObject));
