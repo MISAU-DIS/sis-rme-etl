@@ -1599,6 +1599,8 @@ public class SQLUtilities {
 					fieldName = parts[parts.length - 1];
 				}
 
+				fieldName = fieldName.split("\\.")[fieldName.split("\\.").length - 1];
+
 				fields.add(new Field(fieldName.trim()));
 			}
 		}

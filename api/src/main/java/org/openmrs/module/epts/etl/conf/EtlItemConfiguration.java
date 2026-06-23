@@ -367,7 +367,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 							try {
 								refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
-							} catch (DBException e) {
+							} catch (Exception e) {
 								getRelatedEtlConf().logErr(
 										"Error creating default record for table: " + refInfo.getTableAlias(), e);
 							}
