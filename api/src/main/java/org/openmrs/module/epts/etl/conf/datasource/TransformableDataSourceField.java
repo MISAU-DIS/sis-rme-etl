@@ -217,6 +217,5 @@ public class TransformableDataSourceField extends DataSourceField implements Tra
 
 	@Override
 	public void init(EtlTransformTarget target) {
-		this.setParent((EtlDataSource) target);
 	}
 }
