@@ -998,7 +998,13 @@ public interface EtlDatabaseObject extends EtlObject {
 		Set<EtlDatabaseObject> avaliableSrcOjects = new LinkedHashSet<>();
 
 		if (this.getEtlInfo() != null) {
-			if (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource()) {
+			boolean isDataSourceDstObject = this.isDstObject()
+					&& ((DstConf) this.getRelatedConfiguration()).useAsDataSource();
+			
+			boolean isParentDstConf = this.isDstObject()
+					&& ((DstConf) this.getRelatedConfiguration()).hasChildDstConf();
+
+			if (isDataSourceDstObject || isParentDstConf) {
 				avaliableSrcOjects.add(this);
 			}
 

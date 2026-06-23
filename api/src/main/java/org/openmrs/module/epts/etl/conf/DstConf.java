@@ -257,6 +257,10 @@ public class DstConf extends AbstractTableConfiguration
 		return this.getSrcConf().getParentConf() instanceof EtlChildItemConfiguration;
 	}
 
+	public Boolean hasChildDstConf() {
+		return this.getParentConf().hasChildItemConf();
+	}
+
 	public String getSrcObjectCondition() {
 		return srcObjectCondition;
 	}

@@ -253,7 +253,8 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 								+ "' has no value and is needed to generate prepared query.");
 					}
 
-					pQuery = SQLUtilities.replaceParameterWithValue(pQuery, param.getName(), paramTransformInfo.getTransformedValue());
+					pQuery = SQLUtilities.replaceParameterWithValue(pQuery, param.getName(),
+							paramTransformInfo.getTransformedValue());
 				}
 			}
 		}
@@ -744,7 +745,8 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			return utilities.parseToList(obj);
 		}
 
-		PreparedQueryInfo pq = generatePreparedQuery(processor, srcObject, dstObject, srcObjects, mainQuery, conn);
+		PreparedQueryInfo pq = generatePreparedQuery(processor, srcObject, dstObject, srcObjects, this.getQuery(),
+				conn);
 
 		Object[] params = pq.extractParametersValueToArray();
 
