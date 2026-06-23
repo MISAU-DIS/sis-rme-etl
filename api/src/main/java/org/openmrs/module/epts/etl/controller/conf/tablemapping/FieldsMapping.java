@@ -625,7 +625,9 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	}
 
 	@Override
-	public void init() {
+	public void init(EtlTransformTarget target) {
+		this.setTransformationTargetObject(target);
+
 		if (!this.hasSrcField() && this.hasSrcValue()) {
 			// Try to switch from srcValue to srcField.
 			// We force switch if there is no srcField but srcValue follow the pattern
@@ -689,9 +691,9 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		this.setTransformer(transformer);
 	}
 
-	public void tryToLoadDataSourceInfoFromSrcField() {
+	public void tryToLoadDataSourceInfoFromSrcField(EtlTransformTarget dstConf) {
 		if (!isInitialized()) {
-			this.init();
+			this.init(dstConf);
 		}
 
 		if (this.hasSrcField()) {

@@ -401,7 +401,7 @@ public class DstConf extends AbstractTableConfiguration
 							+ "' configuration does not have dstField: [" + fm + "]");
 				}
 
-				fm.tryToLoadDataSourceInfoFromSrcField();
+				fm.tryToLoadDataSourceInfoFromSrcField(this);
 
 				fm.tryToLoadTransformer(this, conn);
 

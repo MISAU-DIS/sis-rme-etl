@@ -216,8 +216,7 @@ public class TransformableDataSourceField extends DataSourceField implements Tra
 	}
 
 	@Override
-	public void init() {
-		// TODO Auto-generated method stub
-
+	public void init(EtlTransformTarget target) {
+		this.setParent((EtlDataSource) target);
 	}
 }
