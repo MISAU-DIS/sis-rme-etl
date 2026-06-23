@@ -127,6 +127,8 @@ public class DstConf extends AbstractTableConfiguration
 	 */
 	private FieldMappingResolutionStrategy mappingResolutionStrategy;
 
+	private ActionOnEtlIssue onMissingRequiredSrcObject;
+
 	public DstConf() {
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
 		this.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.ABORT_PROCESS);
@@ -146,6 +148,22 @@ public class DstConf extends AbstractTableConfiguration
 
 			this.targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
 		}
+	}
+
+	public ActionOnEtlIssue getOnMissingRequiredSrcObject() {
+		return onMissingRequiredSrcObject;
+	}
+
+	public void setOnMissingRequiredSrcObject(ActionOnEtlIssue onMissingRequiredSrcObject) {
+		this.onMissingRequiredSrcObject = onMissingRequiredSrcObject;
+	}
+
+	public ActionOnEtlIssue onMissingRequiredSrcObject() {
+		if (this.getOnMissingRequiredSrcObject() != null) {
+			return this.getOnMissingRequiredSrcObject();
+		}
+
+		return getRelatedEtlConf().getGeneralBehaviourOnEtlException();
 	}
 
 	@Override
