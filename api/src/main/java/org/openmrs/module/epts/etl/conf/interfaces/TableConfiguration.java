@@ -816,7 +816,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 									String parentFieldName = foreignKeyRS.getString("PKCOLUMN_NAME");
 									String parentTableName = foreignKeyRS.getString("PKTABLE_NAME");
 
-									ParentTableImpl parentTabConf = ParentTableImpl.init(parentTableName, refCode);
+									ParentTableImpl parentTabConf = ParentTableImpl.init(parentTableName, refCode,
+											this);
 
 									if (childFieldName.equals(this.getPrimaryKey().asSimpleKey().getName())) {
 										this.setSharePkWith(parentTableName);
@@ -837,7 +838,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 									}
 
 									parentTabConf.setParentConf(this.getParentConf());
-									parentTabConf.setChildTableConf(this);
 									parentTabConf.setSchema(foreignKeyRS.getString("PKTABLE_SCHEM"));
 
 									if (!parentTabConf.hasSchema()) {
@@ -874,7 +874,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 													// create default refInfo to force the copy of shared ref info
 
 													mixedConfiguredRef = ParentTableImpl
-															.init(manualConfiguredRefInfo.getTableName(), "");
+															.init(manualConfiguredRefInfo.getTableName(), "", this);
 
 													mixedConfiguredRef.setConditionalFields(
 															manualConfiguredRefInfo.getConditionalFields());
@@ -1023,7 +1023,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 						String parentFieldName = foreignKeyRS.getString("PKCOLUMN_NAME");
 
-						ChildTable childTabConf = ChildTable.init(childTableName, refCode);
+						ChildTable childTabConf = ChildTable.init(childTableName, refCode, this);
 
 						childTabConf.setParentTableConf(this);
 						childTabConf.setParentConf(this.getParentConf());

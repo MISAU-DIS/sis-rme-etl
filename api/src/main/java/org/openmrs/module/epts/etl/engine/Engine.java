@@ -1003,7 +1003,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			if (stopNow) {
-				logWarn("No task is running, stopping the Engune now: " + this.getEngineId());
+				logWarn("No task is running, stopping the Engine now: " + this.getEngineId());
 
 				changeStatusToStopped();
 			}

@@ -25,8 +25,12 @@ public class ChildTable extends AbstractRelatedTable {
 		super(tableName, refCode);
 	}
 
-	public static ChildTable init(String tableName, String refCoString) {
-		return new ChildTable(tableName, refCoString);
+	public static ChildTable init(String tableName, String refCoString, TableConfiguration parent) {
+		ChildTable c = new ChildTable(tableName, refCoString);
+
+		c.setParentTableConf(parent);
+
+		return c;
 	}
 
 	@Override

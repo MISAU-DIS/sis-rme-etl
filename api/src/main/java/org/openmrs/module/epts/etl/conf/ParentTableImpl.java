@@ -41,8 +41,10 @@ public class ParentTableImpl extends AbstractRelatedTable implements ParentTable
 		super(tableName, refCode);
 	}
 
-	public static ParentTableImpl init(String tableName, String refCode) {
+	public static ParentTableImpl init(String tableName, String refCode, TableConfiguration child) {
 		ParentTableImpl p = new ParentTableImpl(tableName, refCode);
+
+		p.setChildTableConf(child);
 
 		return p;
 	}

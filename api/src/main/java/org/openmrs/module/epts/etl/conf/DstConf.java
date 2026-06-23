@@ -1225,6 +1225,7 @@ public class DstConf extends AbstractTableConfiguration
 
 			if (hasMapping()) {
 				for (FieldsMapping map : this.getMapping()) {
+					map.setTransformationTargetObject(this);
 					map.tryToLoadFromTemplate();
 				}
 			}

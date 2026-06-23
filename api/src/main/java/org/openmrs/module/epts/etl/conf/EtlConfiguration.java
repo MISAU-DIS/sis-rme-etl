@@ -1446,7 +1446,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (!getDefaultExceptionBehavior().log()) {
 			DBConnectionInfo connInfo = hasDstConnInfo() ? getDstConnInfo() : getSrcConnInfo();
 
-			if (!connInfo.isAutoCommit()) {
+			if (connInfo.isAutoCommit()) {
 				return "DefaultAutoCommit is set to true. You must set defaultExceptionBehavior to LOG!";
 			}
 		}

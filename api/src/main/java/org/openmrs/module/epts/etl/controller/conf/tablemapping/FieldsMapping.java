@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
@@ -131,6 +132,12 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		if (tryToLoadTransformer) {
 			tryToLoadTransformer(null, conn);
 		}
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.getTransformationTargetObject() != null ? this.getTransformationTargetObject().getRelatedEtlConf()
+				: null;
 	}
 
 	public String getApplyCondition() {
