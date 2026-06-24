@@ -120,14 +120,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 								logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
 							} else {
-								dstObject = mappingInfo.createRecordInstance();
-								dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, record, dstObject));
-								dstObject.getEtlInfo().setExceptionOnEtl(new EtlExceptionImpl(
-										"Not generated because one or more required related src object was not found!"));
-
-								record.addDestinationRecord(dstObject);
-
-								logTrace("The dstRecord " + srcRecord + " could not be transformed");
+								throw new MissingTransformationSrcObjectException(srcRecord,
+										getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException());
 							}
 						}
 					} else {

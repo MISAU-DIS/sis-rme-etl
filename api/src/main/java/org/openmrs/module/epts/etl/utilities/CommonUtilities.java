@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,60 +40,61 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class CommonUtilities implements Serializable {
-	
+
 	private static final long serialVersionUID = 1L;
-	
+
 	protected static CommonUtilities utilities;
-	
+
 	protected CommonUtilities() {
-		//if (utilities != null) throw new OperacaoProibidaException("Ja foi criada uma instancia Utilitarios! Use o metodo Utilitarios.getInstance()!!!!");
+		// if (utilities != null) throw new OperacaoProibidaException("Ja foi criada uma
+		// instancia Utilitarios! Use o metodo Utilitarios.getInstance()!!!!");
 	}
-	
+
 	public static synchronized CommonUtilities getInstance() {
 		if (utilities == null)
 			utilities = new CommonUtilities();
-		
+
 		return utilities;
 	}
-	
+
 	public String removeNewline(String str) {
 		return str.replaceAll("[\\r\\n]+$", "");
 	}
-	
+
 	public String garantirXCaracterOnNumber(long number, int x) {
 		return FuncoesGenericas.garantirXCaracterOnNumber(number, x);
 	}
-	
+
 	public String garantirXCaracteres(String str, int x) {
 		if (!stringHasValue(str) || str.length() <= x)
 			return str;
-		
+
 		return str.substring(0, x) + "...";
 	}
-	
+
 	public String ident(String str, int totalSize) {
 		int numberOfCharacterToIncrise = 0;
-		
+
 		numberOfCharacterToIncrise = totalSize - str.length();
-		
+
 		for (int i = 0; i < numberOfCharacterToIncrise; i++)
 			str = " " + str;
-		
+
 		return str;
 	}
-	
+
 	public String addAtributeToValidationString(String currentString, long field, String scapeStr) {
 		return concatStringsWithSeparator(currentString, "" + field, scapeStr);
 	}
-	
+
 	public String addAtributeToValidationString(String currentString, char field, String scapeStr) {
 		return concatStringsWithSeparator(currentString, "" + field, scapeStr);
 	}
-	
+
 	public String addAtributeToValidationString(String currentString, Object field, String scapeStr) {
 		return concatStringsWithSeparator(currentString, "" + field, scapeStr);
 	}
-	
+
 	/**
 	 * Concatena duas strings com String de separacao
 	 * 
@@ -105,40 +107,40 @@ public class CommonUtilities implements Serializable {
 	public String concatStringsWithSeparator(String currentString, String toConcant, String scapeStr) {
 		return FuncoesGenericas.concatStringsWithSeparator(currentString, toConcant, scapeStr);
 	}
-	
+
 	public boolean isStringStartWithAlphabeticalChar(String str) {
 		return FuncoesGenericas.isStringStartWithAlphabeticalChar(str);
 	}
-	
+
 	public List<?> parseObjectToList(Object obj) {
 		return FuncoesGenericas.parseObjectToList(obj);
 	}
-	
+
 	public <T> List<T> parseObjectToList_(Object obj, Class<T> objClass_) {
 		if (obj == null)
 			return null;
-		
+
 		List<Object> list = new ArrayList<Object>();
-		
+
 		list.add(obj);
-		
+
 		return parseList(list, objClass_);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public <T> T[] parseObjectToArray(T... objts) {
 		T[] array = (T[]) Array.newInstance(objts[0].getClass(), objts.length);
-		
+
 		for (int i = 0; i < objts.length; i++) {
 			array[i] = objts[i];
 		}
-		
+
 		return array;
 	}
-	
+
 	/**
-	 * Verifica se a String 'value' encontra se na lista especificada em 'inValue'. Nao ignora o a
-	 * caixa ('case'), Case sensitive
+	 * Verifica se a String 'value' encontra se na lista especificada em 'inValue'.
+	 * Nao ignora o a caixa ('case'), Case sensitive
 	 * 
 	 * @param value
 	 * @param inValue
@@ -147,50 +149,51 @@ public class CommonUtilities implements Serializable {
 	public boolean isStringIn(String value, String... inValues) {
 		return FuncoesGenericas.isStringIn(value, inValues);
 	}
-	
+
 	@SuppressWarnings("removal")
 	public Character parseToCharacter(char chr) {
 		return new Character(chr);
 	}
-	
+
 	public Character[] parseToCharacter(char... toParse) {
 		Character[] parsed = new Character[toParse.length];
-		
+
 		int i = 0;
-		
+
 		for (char chr : toParse) {
 			parsed[i] = parseToCharacter(chr);
 			i++;
 		}
-		
+
 		return parsed;
 	}
-	
+
 	/**
-	 * Verifica se uma determinada {@link List} contem todos os elementos passados pelo parametro
+	 * Verifica se uma determinada {@link List} contem todos os elementos passados
+	 * pelo parametro
 	 * 
 	 * @param list lista cujo elementos se pretende verificar
-	 * @param o elementos a verificar
+	 * @param o    elementos a verificar
 	 * @return true se a lista contem todos os elementos ou false no caso contrario
 	 */
 	public <T> boolean containsAll(List<T> list, @SuppressWarnings("unchecked") T... o) {
 		if (utilities.listHasElement(list)) {
-			
+
 			for (T t : o) {
 				if (!list.contains(t))
 					return false;
 			}
-			
+
 			return true;
 		}
-		
+
 		return false;
 	}
-	
+
 	public String concatStrings(String value, String... inValues) {
 		return FuncoesGenericas.concatStrings(value, inValues);
 	}
-	
+
 	/**
 	 * @param qtdObjects
 	 * @param params
@@ -200,23 +203,23 @@ public class CommonUtilities implements Serializable {
 	public Object[] addToParams(int qtdObjects, Object[] paramsCorrentes, Object paramAAdicionar) {
 		return FuncoesGenericas.setParam(qtdObjects, paramsCorrentes, paramAAdicionar);
 	}
-	
+
 	public Object[] setParam(Object[] paramsCorrentes, Object[] paramAAdicionar) {
 		return FuncoesGenericas.setParam(paramsCorrentes, paramAAdicionar);
 	}
-	
+
 	public void printParams(Object[] params) {
 		FuncoesGenericas.printParams(params);
 	}
-	
+
 	public String[] trimAll(String[] params) {
 		return FuncoesGenericas.trimAll(params);
 	}
-	
+
 	public void printParams(List<?> params) {
 		FuncoesGenericas.printParams(params);
 	}
-	
+
 	/**
 	 * Remove a primeira ocorrencia do caracter espa�o
 	 * 
@@ -226,24 +229,24 @@ public class CommonUtilities implements Serializable {
 	public String removeFirstEmptyCharacter(String text) {
 		return FuncoesGenericas.removeFirstEmptyCharacter(text);
 	}
-	
+
 	public String removeAllEmptySpace(String text) {
 		return FuncoesGenericas.removeAllEmptySpace(text);
 	}
-	
+
 	public String replaceAllEmptySpace(String text, char replacement) {
 		return FuncoesGenericas.replaceAllEmptySpace(text, replacement);
 	}
-	
+
 	public String replaceNthOccurrenceWithString(String str, String targetStr, String replacementStr, int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n must be greater than 0");
 		}
-		
+
 		int occurrenceIndex = -1;
 		int currentOccurrence = 0;
 		int targetLength = targetStr.length();
-		
+
 		for (int i = 0; i <= str.length() - targetLength; i++) {
 			if (str.substring(i, i + targetLength).equals(targetStr)) {
 				currentOccurrence++;
@@ -253,20 +256,20 @@ public class CommonUtilities implements Serializable {
 				}
 			}
 		}
-		
+
 		if (occurrenceIndex == -1) {
 			return str; // If the nth occurrence is not found
 		}
-		
+
 		// Replace the target substring at the occurrenceIndex with the replacementStr
 		StringBuilder sb = new StringBuilder();
 		sb.append(str, 0, occurrenceIndex);
 		sb.append(replacementStr);
 		sb.append(str.substring(occurrenceIndex + targetLength));
-		
+
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Remove todas as ocorrencias de espa�o superiores a 1
 	 * 
@@ -276,7 +279,7 @@ public class CommonUtilities implements Serializable {
 	public String removeDuplicatedEmptySpace(String text) {
 		return FuncoesGenericas.removeDuplicatedEmptySpace(text);
 	}
-	
+
 	/**
 	 * Forca a aproximacao por excesso do numero recebido pelo parametro
 	 * 
@@ -286,7 +289,7 @@ public class CommonUtilities implements Serializable {
 	public long forcarAproximacaoPorExcesso(String numero) {
 		return FuncoesGenericas.forcarAproximacaoPorExcesso(numero);
 	}
-	
+
 	/**
 	 * Forca a aproximacao por defeito do numero recebido pelo parametro
 	 * 
@@ -296,7 +299,7 @@ public class CommonUtilities implements Serializable {
 	public long forcarAproximacaoPorDefeito(String numero) {
 		return FuncoesGenericas.forcarAproximacaoPorDefeito(numero);
 	}
-	
+
 	/**
 	 * Forca a aproximacao por excesso do numero recebido pelo parametro
 	 * 
@@ -306,25 +309,26 @@ public class CommonUtilities implements Serializable {
 	public long forcarAproximacaoPorExcesso(double numero) {
 		return FuncoesGenericas.forcarAproximacaoPorExcesso("" + numero);
 	}
-	
+
 	public long aprox(double numero) {
 		return FuncoesGenericas.aprox("" + numero);
 	}
-	
+
 	public String getNumberInXPrecision(double number, int precision) {
 		return FuncoesGenericas.getNumberInXPrecision(number, precision);
 	}
-	
+
 	public String formatDateToDDMMYYYY(Date date) {
 		return DateAndTimeUtilities.formatToDDMMYYYY(date);
 	}
-	
+
 	public String formatDateToDDMMYYYY_HHMISS(Date date) {
 		return DateAndTimeUtilities.formatToDDMMYYYY_HHMISS(date);
 	}
-	
+
 	/**
-	 * Faz o Split de um double, dividindo-o em duas partes atraves do ponto ou virgula
+	 * Faz o Split de um double, dividindo-o em duas partes atraves do ponto ou
+	 * virgula
 	 * 
 	 * @param numero
 	 * @return
@@ -332,54 +336,55 @@ public class CommonUtilities implements Serializable {
 	public long[] splitDoubleNumber(String numero) {
 		return FuncoesGenericas.splitDoubleNumber(numero);
 	}
-	
+
 	public String[] splitByEmptySpace(String str) {
-		
+
 		if (str == null) {
 			return new String[0];
 		}
-		
+
 		str = str.trim();
-		
+
 		if (str.isEmpty()) {
 			return new String[0];
 		}
-		
+
 		return str.split("\\s+");
 	}
-	
+
 	public String[] splitByAny(String str, String... tokens) {
-		
+
 		if (str == null) {
 			return new String[0];
 		}
-		
+
 		str = str.trim();
-		
+
 		if (str.isEmpty()) {
 			return new String[0];
 		}
-		
+
 		StringBuilder regex = new StringBuilder();
-		
+
 		for (String token : tokens) {
-			
+
 			if (token == null || token.isEmpty()) {
 				continue;
 			}
-			
+
 			if (regex.length() > 0) {
 				regex.append("|");
 			}
-			
+
 			regex.append(Pattern.quote(token));
 		}
-		
+
 		return str.split(regex.toString());
 	}
-	
+
 	/**
-	 * Gera o selfId concatenando o id da reparticao (prefixo) com o numero sequencial.
+	 * Gera o selfId concatenando o id da reparticao (prefixo) com o numero
+	 * sequencial.
 	 * 
 	 * @param numSequencial
 	 * @param idReparticao
@@ -388,39 +393,40 @@ public class CommonUtilities implements Serializable {
 	public long generateSelfId(long numSequencial, long idReparticao) {
 		return FuncoesGenericas.generateSelfId(numSequencial, idReparticao);
 	}
-	
+
 	public UUID generateUUID() {
 		return UUID.randomUUID();
 	}
-	
+
 	/**
-	 * Verifica se o selfId tem a quantidade permitida de digitos e possui o mesmo prefixo que o
-	 * reparicaoId
+	 * Verifica se o selfId tem a quantidade permitida de digitos e possui o mesmo
+	 * prefixo que o reparicaoId
 	 * 
 	 * @param selfId
 	 * @param reparicaoId: reparticao onde foi gerado o id
-	 * @param qtdDigitos: Quantidade de digitos permitidos
+	 * @param qtdDigitos:  Quantidade de digitos permitidos
 	 * @return
 	 */
 	public boolean isValidSelfId(long selfId, int qtdDigitos, long reparicaoId) {
 		return FuncoesGenericas.isValidSelfId(selfId, qtdDigitos, reparicaoId);
 	}
-	
+
 	/**
 	 * Verifica se o selfId tem a quantidade permitida de digitos
 	 * 
 	 * @param selfId
 	 * @param reparicaoId: reparticao onde foi gerado o id
-	 * @param qtdDigitos: Quantidade de digitos permitidos
+	 * @param qtdDigitos:  Quantidade de digitos permitidos
 	 * @return
 	 */
 	public boolean isValidSelfId(long selfId, int qtdDigitos) {
 		return FuncoesGenericas.isValidSelfId(selfId, qtdDigitos);
 	}
-	
+
 	/**
-	 * Transforma uma String para o formato de elemento de um array multi-dimensional. Exemplo:
-	 * String s = "name.parent"; s = parseStringToArgArray(s);//s=[name][parent]
+	 * Transforma uma String para o formato de elemento de um array
+	 * multi-dimensional. Exemplo: String s = "name.parent"; s =
+	 * parseStringToArgArray(s);//s=[name][parent]
 	 * 
 	 * @param strToParse
 	 * @return
@@ -428,10 +434,10 @@ public class CommonUtilities implements Serializable {
 	public String parseStringToArgArray(String strToParse) {
 		return FuncoesGenericas.parseStringToArgArray(strToParse);
 	}
-	
+
 	/**
-	 * Transforma uma String para um array de double. Exemplo: String s = "14.3,11.4"; double[] d =
-	 * parseStringToArgArray(s, ",");//d=[14.3][11.4]
+	 * Transforma uma String para um array de double. Exemplo: String s =
+	 * "14.3,11.4"; double[] d = parseStringToArgArray(s, ",");//d=[14.3][11.4]
 	 * 
 	 * @param strToParse
 	 * @param separator
@@ -440,11 +446,11 @@ public class CommonUtilities implements Serializable {
 	public double[] parseStringToArrayOfDouble(String strToParse, String separator) {
 		return FuncoesGenericas.parseStringToArrayOfDouble(strToParse, separator);
 	}
-	
+
 	public String parseArrayToString(String[] array) {
 		return FuncoesGenericas.parseArrayToString(array);
 	}
-	
+
 	/**
 	 * Convert uma lista de objectos em lista
 	 * 
@@ -454,47 +460,47 @@ public class CommonUtilities implements Serializable {
 	public <T> List<T> parseToList(@SuppressWarnings("unchecked") T... obj) {
 		return FuncoesGenericas.parseToList(obj);
 	}
-	
+
 	public <T> List<T> parseArrayToList(T[] array) {
 		return FuncoesGenericas.parseArrayToList(array);
 	}
-	
+
 	public List<Integer> fillListByInts(int start, int end) {
 		return FuncoesGenericas.fillListByInts(start, end);
 	}
-	
+
 	public <T> boolean existOnArray(List<T> list, T obj) {
 		return FuncoesGenericas.findOnArray(list, obj) != null;
 	}
-	
+
 	public <T> boolean existOnArray(T[] array, T obj) {
 		return FuncoesGenericas.findOnArray(array, obj) != null;
 	}
-	
+
 	public <T> int countQtdOcorrenciaDoRegistoOnList(List<T> list, T obj) {
 		return FuncoesGenericas.countQtdOcorrenciaDoRegistoOnList(list, obj);
 	}
-	
+
 	public int arraySize(List<?> list) {
 		return FuncoesGenericas.arraySize(list);
 	}
-	
+
 	public boolean listHasExactlyOneElement(List<?> list) {
 		return FuncoesGenericas.arrayHasExactlyOneElement(list);
 	}
-	
+
 	public boolean arrayHasMoreThanOneElements(List<?> list) {
 		return FuncoesGenericas.arrayHasMoreThanOneElements(list);
 	}
-	
+
 	public <T> T getFirstRecordOnArray(List<T> list) {
 		return FuncoesGenericas.getFirstRecordOnArray(list);
 	}
-	
+
 	public <T> T getLastRecordOnArray(List<T> list) {
 		return FuncoesGenericas.getLastRecordOnArray(list);
 	}
-	
+
 	/**
 	 * Fun��o auxiliar usada para gerar o id do checkbox na tag listcheckbox.tag
 	 * 
@@ -503,33 +509,35 @@ public class CommonUtilities implements Serializable {
 	public String generateIdForCheckBox(String name, int pos) {
 		return FuncoesGenericas.generateIdForCheckBox(name, pos);
 	}
-	
+
 	/**
 	 * Concatena duas condicoes dump
 	 * 
 	 * @param condition
 	 * @param otherCondition
-	 * @return Condicao SQL composta pela condi��o inicial concatenada a nova condi��o
+	 * @return Condicao SQL composta pela condi��o inicial concatenada a nova
+	 *         condi��o
 	 */
 	public String concatCondition(String condition, String otherCondition) {
 		return FuncoesGenericas.concatCondition(condition, otherCondition);
 	}
-	
+
 	/**
 	 * Concatena duas condicoes dump
 	 * 
 	 * @param condition
 	 * @param otherCondition
-	 * @return Condicao SQL composta pela condi��o inicial concatenada a nova condi��o
+	 * @return Condicao SQL composta pela condi��o inicial concatenada a nova
+	 *         condi��o
 	 */
 	public String concatCondition(String condition, String otherCondition, String connector) {
 		return FuncoesGenericas.concatCondition(condition, otherCondition, connector);
 	}
-	
+
 	public String generateCommaSeparetedNumber(double number) {
 		return FuncoesGenericas.generateCommaSeparetedNumber(number);
 	}
-	
+
 	/**
 	 * /** Verifica se uma determinada String � num�rica ou n�o
 	 * 
@@ -539,7 +547,7 @@ public class CommonUtilities implements Serializable {
 	public boolean isNumeric(String str) {
 		return FuncoesGenericas.isNumeric(str);
 	}
-	
+
 	/**
 	 * Permite formatar um numero para a visualizacao
 	 * 
@@ -548,7 +556,7 @@ public class CommonUtilities implements Serializable {
 	public String displayNumberOnStringFormat(double number) {
 		return FuncoesGenericas.displayNumberOnStringFormat(number);
 	}
-	
+
 	/**
 	 * Permite formatar um numero para a visualizacao
 	 * 
@@ -557,149 +565,150 @@ public class CommonUtilities implements Serializable {
 	public String displayDoubleOnIntegerFormat(double number) {
 		return FuncoesGenericas.displayDoubleOnIntegerFormat(number);
 	}
-	
+
 	public double dateDiff(String dataMaior, String dataMenor, String format) throws ParseException {
 		return FuncoesGenericas.dateDiff(dataMaior, dataMenor, format);
 	}
-	
+
 	public double calculaIdade(String dataMenor, String format) throws ParseException {
 		return FuncoesGenericas.calculaIdade(dataMenor, format);
 	}
-	
+
 	public double calculaSomaNPrimeirosTermosSerieHarmonica(int n) {
 		double soma = 0;
-		
+
 		for (int i = 1; i <= n; i++) {
 			double j = i;
-			
+
 			soma += 1 / j;
 		}
-		
+
 		return soma;
 	}
-	
+
 	public boolean stringHasValue(String string) {
 		return FuncoesGenericas.stringHasValue(string);
 	}
-	
+
 	public boolean listHasElement(List<?> list) {
 		return FuncoesGenericas.arrayHasElement(list);
 	}
-	
+
 	public boolean setHasElement(Set<?> set) {
 		return set != null && !set.isEmpty();
 	}
-	
+
 	public boolean listHasNoElement(List<?> list) {
 		return !listHasElement(list);
 	}
-	
+
 	public boolean listHasElement(ArrayList<?> list) {
 		return FuncoesGenericas.arrayHasElement(list);
 	}
-	
+
 	public boolean arrayHasElement(Object[] array) {
 		return array != null && array.length > 0;
 	}
-	
+
 	public int getPosOfElementOnList(List<?> list, Object toFind) {
 		if (!listHasElement(list))
 			return -1;
-		
+
 		return list.indexOf(toFind);
 	}
-	
+
 	public <T> T findOnList(List<T> list, Object toFind) {
 		if (!listHasElement(list))
 			return null;
-		
+
 		int pos = getPosOfElementOnList(list, toFind);
-		
+
 		return pos >= 0 ? list.get(pos) : null;
 	}
-	
+
 	public <T> int getPosOnArray(T[] array, T toFind) {
 		return FuncoesGenericas.getPosOnArray(array, toFind);
 	}
-	
+
 	public String valorPorExtenso(double num) {
 		return FuncoesGenericas.valorPorExtenso(num);
 	}
-	
+
 	public ArrayList<String> parseToList(String[] array) {
 		return FuncoesGenericas.parseToList(array);
 	}
-	
+
 	/**
-	 * Procura um elemento na lista passada pelo parametro e retorna a posicao deste na lista. Se o
-	 * elemento nao existir na lista, retorna -1;
+	 * Procura um elemento na lista passada pelo parametro e retorna a posicao deste
+	 * na lista. Se o elemento nao existir na lista, retorna -1;
 	 * 
-	 * @param list [Lista contendo todos os elementos]
+	 * @param list   [Lista contendo todos os elementos]
 	 * @param toFind
-	 * @return posicao do elemento 'toFind' na lista 'list' ou -1 se o elemento nao estiver na lista
+	 * @return posicao do elemento 'toFind' na lista 'list' ou -1 se o elemento nao
+	 *         estiver na lista
 	 */
 	public int getPosOnArray(List<?> list, Object toFind) throws NoSuchElementException {
 		if (list == null)
 			return -1;
-		
+
 		for (int i = 0; i < list.size(); i++)
 			if (list.get(i).equals(toFind))
 				return i;
-			
+
 		throw new NoSuchElementException("O registo não foi encontrado");
 	}
-	
+
 	public void removeOnArray(List<?> list, Object toRemove) throws NoSuchElementException {
 		if (!FuncoesGenericas.arrayHasElement(list))
 			throw new NoSuchElementException();
 		int pos = getPosOnArray(list, toRemove);
-		
+
 		list.remove(pos);
 	}
-	
+
 	public void removeOnArray(List<?> list, List<?> toRemove) throws NoSuchElementException {
 		if (toRemove == null)
 			return;
-		
+
 		for (Object obj : toRemove) {
 			int pos = getPosOnArray(list, obj);
 			list.remove(pos);
 		}
 	}
-	
+
 	public <E> void updateOnArray(List<E> list, E toUpdate, E newReg) throws NoSuchElementException {
 		int pos = getPosOnArray(list, toUpdate);
-		
+
 		list.set(pos, newReg);
 	}
-	
+
 	/**
 	 * Localiza um objecto de uma {@link List}
 	 * 
-	 * @param list da qual se pretende recuperar o registo
+	 * @param list   da qual se pretende recuperar o registo
 	 * @param toFind registo a recuperar
 	 * @return registo recuperado
 	 */
 	public <T> T findOnArray(List<T> list, Object toFind) {
 		if (list == null || toFind == null)
 			return null;
-		
+
 		for (T current : list)
 			if (toFind.equals(current))
 				return current;
-			
+
 		return null;
 	}
-	
+
 	public <T extends Comparable<? super T>> T getMaxOnList(List<T> list) {
 		if (!listHasElement(list))
 			return null;
-		
+
 		Collections.sort(list);
-		
+
 		return list.get(list.size() - 1);
 	}
-	
+
 	/**
 	 * Converte valores clobs para String
 	 * 
@@ -710,7 +719,7 @@ public class CommonUtilities implements Serializable {
 	public String convertClobToString(java.sql.Clob data) throws RuntimeException {
 		return FuncoesGenericas.convertClobToString(data);
 	}
-	
+
 	/**
 	 * @param data
 	 * @param conn
@@ -720,10 +729,10 @@ public class CommonUtilities implements Serializable {
 	public Clob convertStringToClob(String data, Connection conn) throws RuntimeException, SQLException {
 		return FuncoesGenericas.convertStringToClob(data, conn);
 	}
-	
+
 	/**
-	 * Retorna o caracter na pos-esima posicao no alfabeto portugues A primeira posicao � a posi��o
-	 * 1
+	 * Retorna o caracter na pos-esima posicao no alfabeto portugues A primeira
+	 * posicao � a posi��o 1
 	 * 
 	 * @param pos
 	 * @return
@@ -731,10 +740,10 @@ public class CommonUtilities implements Serializable {
 	public char getAlphabeticalCharAt(int pos) {
 		return FuncoesGenericas.getAlphabeticalCharAt(pos);
 	}
-	
+
 	/**
-	 * Retorna o caracter na pos-esima posicao no alfabeto portugues A primeira posicao � a posi��o
-	 * 1
+	 * Retorna o caracter na pos-esima posicao no alfabeto portugues A primeira
+	 * posicao � a posi��o 1
 	 * 
 	 * @param pos
 	 * @return
@@ -742,55 +751,55 @@ public class CommonUtilities implements Serializable {
 	public int getPosAlphabeticalChar(char chr) {
 		return FuncoesGenericas.getPosAlphabeticalChar(chr);
 	}
-	
+
 	public String getFirstCharactersOfString(String originString) {
 		originString = originString.toUpperCase();
-		
+
 		String destinationString = "" + originString.charAt(0);
-		
+
 		for (int i = 1; i < originString.length() - 1; i++) {
 			if (originString.charAt(i) == ' ') {
 				destinationString += originString.charAt(i + 1);
 			}
 		}
-		
+
 		return destinationString;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public <T extends Object, S extends Object> List<S> parseList(List<T> list, Class<S> classe) {
 		if (list == null)
 			return null;
-		
+
 		List<S> parsedList = new ArrayList<S>();
-		
+
 		for (T t : list) {
 			parsedList.add((S) t);
 		}
-		
+
 		return parsedList;
 	}
-	
+
 	public <T extends Object> T[] parseListToArray(List<T> list) {
 		if (!listHasElement(list))
 			return null;
-		
+
 		@SuppressWarnings("unchecked")
 		T[] parsedList = (T[]) Array.newInstance(list.get(0).getClass(), list.size());
-		
+
 		for (int i = 0; i < list.size(); i++) {
 			parsedList[i] = list.get(i);
 		}
-		
+
 		return parsedList;
 	}
-	
+
 	public <T> List<T> cloneList(List<T> list) {
 		if (list == null)
 			return null;
-		
+
 		List<T> parsedList = null;
-		
+
 		if (list instanceof ArrayList)
 			parsedList = new ArrayList<T>();
 		else if (list instanceof LinkedList)
@@ -805,28 +814,28 @@ public class CommonUtilities implements Serializable {
 			parsedList = new CopyOnWriteArrayList<T>();
 		else
 			throw new IllegalArgumentException("List not suppotted");
-		
+
 		for (T t : list) {
 			parsedList.add((T) t);
 		}
-		
+
 		return parsedList;
 	}
-	
+
 	public double max(double... num) {
 		return FuncoesGenericas.max(num);
 	}
-	
+
 	public double min(double... num) {
 		return FuncoesGenericas.min(num);
 	}
-	
+
 	public <T> List<T> copyList(List<T> list, int start, int end) {
 		if (list == null)
 			return null;
-		
+
 		List<T> parsedList = null;
-		
+
 		if (list instanceof ArrayList)
 			parsedList = new ArrayList<T>();
 		else if (list instanceof LinkedList)
@@ -841,84 +850,83 @@ public class CommonUtilities implements Serializable {
 			parsedList = new CopyOnWriteArrayList<T>();
 		else
 			throw new IllegalArgumentException("List not suppotted");
-		
+
 		for (int i = start; i <= end; i++) {
 			parsedList.add((T) list.get(i));
 		}
-		
+
 		return parsedList;
 	}
-	
+
 	public boolean isBetween(double number, double interval_1, double interval_N) {
 		return FuncoesGenericas.isBetween(number, interval_1, interval_N);
 	}
-	
+
 	public boolean isValidAno(int ano) {
 		return DateAndTimeUtilities.isValidAno(ano);
 	}
-	
+
 	public boolean isValidAno(int ano, int minAno, int maxAno) {
 		return DateAndTimeUtilities.isValidAno(ano, minAno, maxAno);
 	}
-	
+
 	public String formatDateToYYYY(Date date) {
 		return "" + DateAndTimeUtilities.getYear(date);
 	}
-	
+
 	public int extractYear(Date date) {
 		return DateAndTimeUtilities.getYear(date);
 	}
-	
+
 	public int extractHours(Date date) {
 		return DateAndTimeUtilities.getHours(date);
 	}
-	
+
 	public int extractMinutes(Date date) {
 		return DateAndTimeUtilities.getMinutes(date);
 	}
-	
+
 	public Date getCurrentDate() {
 		return DateAndTimeUtilities.getCurrentDate();
 	}
-	
+
 	public int getCurrentYear() {
 		return extractYear(DateAndTimeUtilities.getCurrentDate());
 	}
-	
+
 	public String capitalize(String str) {
 		if (str.startsWith("unknown")) {
 			System.out.println("Stop");
 		}
-		
+
 		if (!stringHasValue(str))
 			return str;
-		
+
 		return str.toUpperCase().charAt(0) + str.toLowerCase().substring(1);
 	}
-	
+
 	public String deCapitalize(String str) {
 		if (!stringHasValue(str))
 			return str;
-		
+
 		return str.toLowerCase().charAt(0) + str.substring(1);
 	}
-	
+
 	/**
 	 * Converte um Json em objecto
 	 * 
 	 * @param clazz Classe do objecto
-	 * @param json a converter
+	 * @param json  a converter
 	 * @return objecto convertido
 	 */
 	public <T> T loadObjectFormJSON(Class<T> clazz, String json) {
 		try {
 			return new ObjectMapperProvider().getContext(clazz).readValue(json, clazz);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	/**
 	 * Converte um objecto em Json
 	 * 
@@ -928,12 +936,11 @@ public class CommonUtilities implements Serializable {
 	public String parseToJSON(Object objecto) {
 		try {
 			return new ObjectMapperProvider().getContext(objecto.getClass()).writeValueAsString(objecto);
-		}
-		catch (JsonProcessingException e) {
+		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	/**
 	 * Converte um objecto em Json
 	 * 
@@ -943,56 +950,53 @@ public class CommonUtilities implements Serializable {
 	public String parseListToJSON(List<? extends Object> objecto) {
 		try {
 			return new ObjectMapperProvider().getContext(List.class).writeValueAsString(objecto);
-		}
-		catch (JsonProcessingException e) {
+		} catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public String parseToJSON(Map<String, Object> map) {
 		List<Map<String, Object>> mapers = new ArrayList<Map<String, Object>>();
 		mapers.add(map);
-		
+
 		return parseToJSON(mapers);
 	}
-	
+
 	private JsonNode parseToArrayNode(List<Map<String, Object>> maps) {
 		ObjectMapper mapper = new ObjectMapper();
-		
+
 		if (maps.size() == 1) {
 			return createJSONNode(mapper, maps.get(0));
 		} else {
 			ArrayNode arrayNode = mapper.createArrayNode();
 			for (Map<String, Object> map : maps) {
-				
+
 				ObjectNode objectNode = createJSONNode(mapper, map);
 				arrayNode.add(objectNode);
 			}
 			return arrayNode;
 		}
 	}
-	
+
 	@SuppressWarnings("deprecation")
 	public <T extends Object> T createInstance(Class<T> instanceClass) {
 		try {
 			return instanceClass.newInstance();
-		}
-		catch (InstantiationException e) {
+		} catch (InstantiationException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		catch (IllegalAccessException e) {
+		} catch (IllegalAccessException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private ObjectNode createJSONNode(ObjectMapper mapper, Map<String, Object> map) {
 		ObjectNode objectNode = mapper.createObjectNode();
-		
+
 		for (Map.Entry<String, Object> entry : map.entrySet()) {
 			if (entry.getValue() instanceof List) {
 				objectNode.putPOJO(entry.getKey(), parseToArrayNode((List<Map<String, Object>>) entry.getValue()));
@@ -1003,24 +1007,25 @@ public class CommonUtilities implements Serializable {
 		}
 		return objectNode;
 	}
-	
+
 	private JsonNode parseToArrayNode(Map<String, Object> map) {
 		List<Map<String, Object>> mapers = new ArrayList<Map<String, Object>>();
 		mapers.add(map);
 		return parseToArrayNode(mapers);
 	}
-	
+
 	public String parseToJSON(List<Map<String, Object>> maps) {
 		return parseToArrayNode(maps).toString();
-		/*ObjectMapper mapper = new ObjectMapper();
-		try {
-			
-			return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parseToArrayNode(maps));
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}*/
+		/*
+		 * ObjectMapper mapper = new ObjectMapper(); try {
+		 * 
+		 * return
+		 * mapper.writerWithDefaultPrettyPrinter().writeValueAsString(parseToArrayNode(
+		 * maps)); } catch (JsonProcessingException e) { throw new RuntimeException(e);
+		 * }
+		 */
 	}
-	
+
 	private void putObjectOnNode(ObjectNode objectNode, Map.Entry<String, Object> entry) {
 		if (entry.getValue() instanceof String) {
 			objectNode.put(entry.getKey(), entry.getValue().toString());
@@ -1032,354 +1037,351 @@ public class CommonUtilities implements Serializable {
 			throw new ForbiddenOperationException("Tipo de dado nao suportado");
 		}
 	}
-	
+
 	public JsonNode parseToJSONObject(String json) {
 		try {
 			return new ObjectMapper().readTree(json);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public <T extends VO> String generateCsvHeader(T firstObj, List<String> excludedFields, String delimiter) {
 		StringBuilder csvBuilder = new StringBuilder();
-		
+
 		List<org.openmrs.module.epts.etl.model.Field> allFields = firstObj.getFields();
-		
+
 		List<org.openmrs.module.epts.etl.model.Field> fieldsToInclude;
-		
+
 		if (excludedFields != null) {
 			fieldsToInclude = new ArrayList<>();
-			
+
 			for (org.openmrs.module.epts.etl.model.Field field : allFields) {
 				if (utilities.containsAll(excludedFields, field.getName())) {
 					continue;
 				}
-				
+
 				fieldsToInclude.add(field);
 			}
 		} else {
 			fieldsToInclude = allFields;
 		}
-		
+
 		List<String> headers = org.openmrs.module.epts.etl.model.Field.parseAllToListOfName(fieldsToInclude);
-		
+
 		csvBuilder.append(String.join(delimiter, headers)).append("\n");
-		
+
 		return csvBuilder.toString();
 	}
-	
+
 	public String parseToCSVWithoutHeader(List<? extends VO> objs, List<String> excludedFields, String delimiter) {
 		if (objs == null || objs.isEmpty()) {
 			return "";
 		}
-		
+
 		StringBuilder csvBuilder = new StringBuilder();
-		
+
 		for (VO obj : objs) {
 			List<String> values = obj.getFieldValuesAsString(excludedFields);
-			
+
 			csvBuilder.append(String.join(delimiter, values)).append("\n");
 		}
-		
+
 		return csvBuilder.toString();
 	}
-	
+
 	public <T extends VO> String generateTabDelimitedHeader(T firstObj) {
 		StringBuilder csvBuilder = new StringBuilder();
-		
+
 		List<String> headers = org.openmrs.module.epts.etl.model.Field.parseAllToListOfName(firstObj.getFields());
-		
+
 		csvBuilder.append(String.join("\t\t\t\t", headers)).append("\n");
-		
+
 		return csvBuilder.toString();
 	}
-	
+
 	public String parseToTabDelimitedWithoutHeader(List<? extends VO> objs) {
 		if (objs == null || objs.isEmpty()) {
 			return "";
 		}
-		
+
 		StringBuilder tabBuilder = new StringBuilder();
-		
+
 		for (VO obj : objs) {
 			List<String> values = obj.getFieldValuesAsString();
-			
+
 			// Join the values with tabs and append to the StringBuilder with a newline
 			tabBuilder.append(String.join("\t\t\t\t", values)).append("\n");
 		}
-		
+
 		return tabBuilder.toString();
 	}
-	
+
 	public String toUpperCase(String str) {
 		if (stringHasValue(str))
 			return str.toUpperCase();
-		
+
 		return str;
 	}
-	
+
 	public String toLowerCase(String str) {
 		if (stringHasValue(str))
 			return str.toLowerCase();
-		
+
 		return str;
 	}
-	
+
 	public String convertTableAttNameToClassAttName(String tableAttName) {
 		String[] attParts = tableAttName.split("_");
-		
+
 		String attName = attParts[0];
-		
+
 		for (int i = 1; i < attParts.length; i++) {
 			attName += utilities.capitalize(attParts[i]);
 		}
-		
+
 		return attName;
 	}
-	
+
 	public boolean isValidUUID(String str) {
 		try {
 			UUID.fromString(str);
 			return true;
-		}
-		catch (IllegalArgumentException ex) {
+		} catch (IllegalArgumentException ex) {
 			return false;
 		}
 	}
-	
+
 	public String scapeQuotationMarks(String str) {
 		if (str == null)
 			return null;
-		
+
 		str = new String(str.replaceAll("\"", "\\\\\""));
-		
+
 		str = str.replaceAll("\\\\\\\\", "\\\\\\\\\\\\");
-		
+
 		return str;
 	}
-	
+
 	public String delemeterWithCotationMarks(String str) {
 		return quote(str);
 	}
-	
+
 	public String removeLastChar(String str) {
 		return str.substring(0, str.length() - 1);
 	}
-	
+
 	public String removeFirsChar(String str) {
 		return str.substring(1, str.length());
 	}
-	
+
 	public String removeCharactersOnString(String str, String... characters) {
 		if (!stringHasValue(str) || characters == null)
 			return str;
-		
+
 		for (String c : characters) {
 			str = str.replaceAll(c, "");
 		}
-		
+
 		return str;
 	}
-	
+
 	public String resolveScapeCharacter(String str) {
 		if (!stringHasValue(str))
 			return str;
-		
+
 		char scapeCaracter = '\\';
-		
+
 		String resolved = "";
-		
+
 		for (int i = 0; i < str.length(); i++) {
 			if (str.charAt(i) == scapeCaracter) {
 				if (i + 1 < str.length()) {
 					if (!isSpecialCharacter(str.charAt(i + 1))) {
-						//Force to be scaped
+						// Force to be scaped
 						resolved += str.charAt(i) + "\\";
 					} else {
 						resolved += str.charAt(i);
 					}
 				} else {
-					//Force to be scaped
+					// Force to be scaped
 					resolved += str.charAt(i) + "\\";
 				}
 			} else
 				resolved += str.charAt(i);
 		}
-		
+
 		return resolved;
 	}
-	
+
 	private boolean isSpecialCharacter(char charAt) {
 		char[] spectials = { '\\', '\"' };
-		
+
 		return getPosOnArray(spectials, charAt) >= 0;
 	}
-	
+
 	private int getPosOnArray(char[] array, char toFind) {
 		for (int i = 0; i < array.length; i++) {
 			if (array[i] == toFind)
 				return i;
 		}
-		
+
 		return -1;
 	}
-	
+
 	public String quote(String strToQuote) {
 		if (strToQuote == null)
 			return strToQuote;
-		
+
 		return "\"" + strToQuote + "\"";
 	}
-	
+
 	/**
 	 * Create a map populated with an initial entries passed by parameter
 	 * 
-	 * @param params the entries which will populate the map. It's an array which emulate a map
-	 *            entries in this format [key1, val1, key2, val2, key3, val3, ..]
+	 * @param params the entries which will populate the map. It's an array which
+	 *               emulate a map entries in this format [key1, val1, key2, val2,
+	 *               key3, val3, ..]
 	 * @return the generated map
 	 * @throws ForbiddenOperationException when the params array length is not odd
 	 */
 	public Map<String, Object> fastCreateMap(Object... params) throws ForbiddenOperationException {
 		if (params.length % 2 != 0)
 			throw new ForbiddenOperationException("The parameters for fastCreatMap must be pars <K1, V1>, <K2, V2>");
-		
+
 		Map<String, Object> map = new HashMap<>();
-		
+
 		int paramsSize = params.length / 2;
-		
+
 		for (int set = 1; set <= paramsSize; set++) {
 			int pos = set * 2 - 1;
-			
+
 			map.put(((String) params[pos - 1]), params[pos]);
 		}
-		
+
 		return map;
 	}
-	
+
 	public Object getFieldValueOnFieldList(List<org.openmrs.module.epts.etl.model.Field> fields, String fieldName)
-	        throws ForbiddenOperationException {
-		
+			throws ForbiddenOperationException {
+
 		if (!utilities.listHasElement(fields))
 			return null;
-		
+
 		for (int i = 0; i < fields.size(); i++) {
 			org.openmrs.module.epts.etl.model.Field field = fields.get(i);
-			
+
 			if (field.getName().equals(fieldName)) {
 				return field.getValue();
 			}
 		}
-		
+
 		throw new ForbiddenOperationException("The field '" + fieldName + "' was not found on list of fields");
-		
+
 	}
-	
+
 	public Object getFieldValue(EtlObject obj, String fieldName) throws ForbiddenOperationException {
 		return getFieldValue(obj.getObjectName(), obj, fieldName);
 	}
-	
+
 	public Object getFieldValue(Object obj, String fieldName) throws ForbiddenOperationException {
 		return getFieldValue(obj.getClass().getName(), obj, fieldName);
 	}
-	
+
 	private Object getFieldValue(String objectName, Object obj, String fieldName) throws ForbiddenOperationException {
-		
+
 		for (Field field : getInstanceFields(obj)) {
-			
+
 			if (field.getName().equals(fieldName)) {
 				try {
 					return field.get(obj);
-				}
-				catch (IllegalArgumentException e) {
+				} catch (IllegalArgumentException e) {
 					throw new RuntimeException(e);
-				}
-				catch (IllegalAccessException e) {
+				} catch (IllegalAccessException e) {
 					throw new RuntimeException(e);
 				}
 			}
 		}
-		
-		throw new ForbiddenOperationException("The field '" + fieldName + "' was not found on object '" + objectName + "'");
+
+		throw new ForbiddenOperationException(
+				"The field '" + fieldName + "' was not found on object '" + objectName + "'");
 	}
-	
+
 	public void setFieldValue(Object obj, String fieldName, Object fieldValue) {
 		Field f = getField(obj, fieldName);
-		
+
 		if (f != null) {
 			try {
 				f.set(obj, fieldValue);
-			}
-			catch (IllegalArgumentException | IllegalAccessException e) {
+			} catch (IllegalArgumentException | IllegalAccessException e) {
 				throw new EtlExceptionImpl(e);
 			}
 		} else {
 			throw new EtlExceptionImpl("Field '" + fieldName + "' not found on object " + obj);
 		}
-		
+
 	}
-	
+
 	public Field getField(Object obj, String fieldName) throws ForbiddenOperationException {
 		for (Field field : getInstanceFields(obj)) {
-			
+
 			if (field.getName().equals(fieldName)) {
 				return field;
 			}
 		}
-		
+
 		throw new ForbiddenOperationException(
-		        "The field '" + fieldName + "' was not found on object '" + obj.getClass().getName() + "'");
-		
+				"The field '" + fieldName + "' was not found on object '" + obj.getClass().getName() + "'");
+
 	}
-	
+
 	public Class<?> getFieldType(Object obj, String fieldName) {
 		return getField(obj, fieldName).getType();
 	}
-	
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public Object parseValue(Object value, Class<?> destinationType) {
-		
+
 		if (value == null) {
 			return null;
 		}
-		
+
 		// 🔹 já compatível
 		if (destinationType.isAssignableFrom(value.getClass())) {
 			return value;
 		}
-		
+
 		String str = value.toString().trim();
-		
+
 		// 🔹 String
 		if (destinationType == String.class) {
 			return str;
 		}
-		
+
 		// 🔹 Integer
 		if (destinationType == Integer.class || destinationType == int.class) {
 			Double d = Double.parseDouble(str);
-			
+
 			return d.intValue();
 		}
-		
+
 		// 🔹 Long
 		if (destinationType == Long.class || destinationType == long.class) {
 			Double d = Double.parseDouble(str);
-			
+
 			return d.longValue();
 		}
-		
+
 		// 🔹 Double
 		if (destinationType == Double.class || destinationType == double.class) {
 			return Double.parseDouble(str);
 		}
-		
+
 		// 🔹 Boolean
 		if (destinationType == Boolean.class || destinationType == boolean.class) {
 			return parseBoolean(str);
 		}
-		
+
 		// 🔹 Character
 		if (destinationType == Character.class || destinationType == char.class) {
 			if (str.length() != 1) {
@@ -1387,60 +1389,60 @@ public class CommonUtilities implements Serializable {
 			}
 			return str.charAt(0);
 		}
-		
+
 		// 🔹 Enum
 		if (destinationType.isEnum()) {
 			return Enum.valueOf((Class<Enum>) destinationType, str);
 		}
-		
+
 		// 🔹 LocalDate
 		if (destinationType == java.time.LocalDate.class) {
 			return java.time.LocalDate.parse(str);
 		}
-		
+
 		// 🔹 LocalDateTime
 		if (destinationType == java.time.LocalDateTime.class) {
 			return java.time.LocalDateTime.parse(str);
 		}
-		
+
 		// 🔹 Date (java.util.Date)
 		if (destinationType == java.util.Date.class) {
 			try {
 				String format = DateAndTimeUtilities.determineDateFormat(str);
 				java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(format);
 				return sdf.parse(str);
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				throw new RuntimeException("Error parsing date: " + str, e);
 			}
 		}
-		
+
 		// 🔹 fallback
-		throw new IllegalArgumentException("Unsupported conversion from " + value.getClass() + " to " + destinationType);
+		throw new IllegalArgumentException(
+				"Unsupported conversion from " + value.getClass() + " to " + destinationType);
 	}
-	
+
 	public Boolean parseBoolean(Object obj) {
-		
+
 		if (obj instanceof Boolean) {
 			return (Boolean) obj;
 		}
-		
+
 		Boolean true_ = utilities.isStringIn(obj.toString().toLowerCase(), "true", "1");
-		
+
 		return true_.equals(obj);
 	}
-	
+
 	/**
-	 * Retorna todos os atributos de instancia de da classe de um objecto independentemento do
-	 * modificador de acesso
+	 * Retorna todos os atributos de instancia de da classe de um objecto
+	 * independentemento do modificador de acesso
 	 * 
-	 * @return todos os atributos de instancia de da classe de um objecto independentemento do
-	 *         modificador de acesso
+	 * @return todos os atributos de instancia de da classe de um objecto
+	 *         independentemento do modificador de acesso
 	 */
 	public List<Field> getInstanceFields(Object obj) {
 		List<Field> fields = new ArrayList<Field>();
 		Class<?> cl = obj.getClass();
-		
+
 		while (cl != null) {
 			Field[] in = cl.getDeclaredFields();
 			for (int i = 0; i < in.length; i++) {
@@ -1454,23 +1456,24 @@ public class CommonUtilities implements Serializable {
 		}
 		return fields;
 	}
-	
+
 	public void throwReviewMethodException() {
 		throw new ForbiddenOperationException("Review the method calling me");
 	}
-	
+
 	public void throwForbiddenMethodException() {
 		throw new ForbiddenOperationException("This method is forbidden");
 	}
-	
+
 	public int getAvailableProcessors() {
 		Runtime runtime = Runtime.getRuntime();
-		
+
 		return runtime.availableProcessors();
 	}
-	
+
 	/**
-	 * Converte o atributo para uma coluna na BD Por exemplo: imageFile => image_file
+	 * Converte o atributo para uma coluna na BD Por exemplo: imageFile =>
+	 * image_file
 	 * 
 	 * @param fieldName nome do atributo
 	 * @return nome da coluna correspondente ao atributo
@@ -1478,25 +1481,25 @@ public class CommonUtilities implements Serializable {
 	public String parsetoSnakeCase(String fieldName) {
 		return fieldName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
 	}
-	
+
 	public String parsetoCamelCase(String snakeCase) {
 		StringBuilder camelCase = new StringBuilder();
-		
+
 		// Split the string on underscores
 		String[] parts = snakeCase.split("_");
-		
+
 		// Append the first word as is (in lowercase)
 		camelCase.append(parts[0].toLowerCase());
-		
+
 		// Capitalize the first letter of each subsequent word and append
 		for (int i = 1; i < parts.length; i++) {
 			camelCase.append(parts[i].substring(0, 1).toUpperCase());
 			camelCase.append(parts[i].substring(1).toLowerCase());
 		}
-		
+
 		return camelCase.toString();
 	}
-	
+
 	/**
 	 * Removes spaces between the next word and the previous within a "."
 	 * 
@@ -1509,7 +1512,7 @@ public class CommonUtilities implements Serializable {
 		// Remove spaces after the period
 		return noSpaceBeforePeriod.replaceAll("\\.\\s+", ".");
 	}
-	
+
 	/**
 	 * Masks the ocurrence of token by a given mask E.g <br>
 	 * String input = "love is blind";<br>
@@ -1517,8 +1520,8 @@ public class CommonUtilities implements Serializable {
 	 * char maskChar = '#';<br>
 	 * result="#### is blind"
 	 * 
-	 * @param input the input to mask
-	 * @param token the token to be masked
+	 * @param input    the input to mask
+	 * @param token    the token to be masked
 	 * @param maskChar the mask
 	 * @return the input which masked token
 	 */
@@ -1526,103 +1529,114 @@ public class CommonUtilities implements Serializable {
 		if (input == null || token == null || token.isEmpty()) {
 			return input;
 		}
-		
+
 		String mask = new String(new char[token.length()]).replace('\0', maskChar);
-		
+
 		return input.replace(token, mask);
 	}
-	
+
 	public boolean isNumericType(Class<?> fieldType) {
 		return Number.class.isAssignableFrom(fieldType) || fieldType == int.class || fieldType == long.class
-		        || fieldType == double.class || fieldType == float.class || fieldType == short.class
-		        || fieldType == byte.class;
+				|| fieldType == double.class || fieldType == float.class || fieldType == short.class
+				|| fieldType == byte.class;
 	}
-	
+
 	public boolean isBooleanType(Class<?> fieldType) {
 		return Boolean.class.isAssignableFrom(fieldType) || fieldType == boolean.class;
 	}
-	
+
 	public boolean isDateType(Class<?> fieldType) {
 		return Date.class.isAssignableFrom(fieldType) || fieldType == Date.class;
 	}
-	
+
 	public <T> T tryToReplacePlaceholders(T toReplace, EtlDatabaseObject src) {
 		if (src != null) {
 			return SQLUtilities.tryToReplaceParamsInQuery(toReplace, src);
 		}
-		
+
 		return toReplace;
 	}
-	
+
 	public <T> List<T> tryToReplacePlaceholdersAll(List<T> toReplace, EtlDatabaseObject src) {
-		
+
 		if (toReplace == null)
 			return null;
-		
+
 		List<T> replaced = new ArrayList<>(toReplace.size());
-		
+
 		for (T r : toReplace) {
 			replaced.add(utilities.tryToReplacePlaceholders(r, src));
 		}
-		
+
 		return replaced;
 	}
-	
+
 	public boolean objectHasValue(Object obj) {
 		return obj != null && this.stringHasValue(obj.toString());
 	}
-	
+
 	public <T> List<T> fastCreateList() {
 		return new ArrayList<>();
 	}
-	
+
 	public List<org.openmrs.module.epts.etl.model.Field> generateObjectFields(Object obj) {
 		List<org.openmrs.module.epts.etl.model.Field> fields = new ArrayList<>();
 		Class<?> cl = obj.getClass();
-		
+
 		while (cl != null) {
 			java.lang.reflect.Field[] in = cl.getDeclaredFields();
 			for (int i = 0; i < in.length; i++) {
 				java.lang.reflect.Field instanceField = in[i];
 				if (Modifier.isStatic(instanceField.getModifiers()))
 					continue;
-				
+
 				instanceField.setAccessible(true);
-				
+
 				org.openmrs.module.epts.etl.model.Field f = org.openmrs.module.epts.etl.model.Field
-				        .fastCreateWithType(instanceField.getName(), instanceField.getType().getTypeName());
-				
+						.fastCreateWithType(instanceField.getName(), instanceField.getType().getTypeName());
+
 				f.setAttDefinedElements(null);
 				fields.add(f);
 			}
 			cl = cl.getSuperclass();
 		}
-		
+
 		return fields;
 	}
-	
+
 	public Properties toProperties(Map<String, ?> map) {
-		
+
 		Properties props = new Properties();
-		
+
 		if (map == null || map.isEmpty()) {
 			return props;
 		}
-		
+
 		for (Map.Entry<String, ?> entry : map.entrySet()) {
-			
+
 			if (entry.getKey() == null) {
 				continue;
 			}
-			
+
 			props.setProperty(entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
 		}
-		
+
 		return props;
 	}
-	
+
 	public boolean containsSpace(String name) {
 		return name != null && name.contains(" ");
 	}
-	
+
+	public boolean contains(Collection<String> avaliableTableAliases, String str) {
+		return hasElement(avaliableTableAliases) && avaliableTableAliases.contains(str);
+	}
+
+	public boolean hasElement(Collection<String> avaliableTableAliases) {
+		return avaliableTableAliases != null && !avaliableTableAliases.isEmpty();
+	}
+
+	public boolean hasNoElement(Collection<String> avaliableTableAliases) {
+		return !hasElement(avaliableTableAliases);
+	}
 }

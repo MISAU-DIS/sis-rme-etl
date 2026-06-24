@@ -81,7 +81,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 						this.input = FieldsMapping.fastCreate(paramValue, paramValue, relatedEtlTransformTarget, conn);
 					}
 				} else if (paramName.equals("operation")) {
-					this.operation = DateTransformOperation.valueOf(paramValue);
+					this.operation = DateTransformOperation.valueOf(paramValue.toUpperCase());
 				} else if (paramName.equals("on_invalid")) {
 					try {
 						this.onInvalid = ActionOnEtlIssue.valueOf(paramValue);

@@ -6,90 +6,92 @@ import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 public class FieldTransformingInfo {
-	
+
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
-	
+
 	private EtlDataSource transformationDatasource;
-	
+
 	private TransformableField srcField;
-	
+
 	private Object transformedValue;
-	
+
 	private boolean loadedWithDefaultValue;
-	
+
 	public FieldTransformingInfo(TransformableField srcField, Object transformedValue,
-	    EtlDataSource transformationDatasource) {
-		
+			EtlDataSource transformationDatasource) {
+
 		this.srcField = srcField;
 		this.transformationDatasource = transformationDatasource;
 		this.transformedValue = transformedValue;
-		
+
 		tryToParseValue();
 	}
-	
+
 	void tryToParseValue() {
 		if (!this.srcField.hasDataType()) {
 			return;
 		}
-		
+
 		if (!this.srcField.hasTypeClass()) {
 			this.srcField.determineTypeClass();
 		}
-		
+
 		if (this.transformedValue != null) {
 			this.transformedValue = utilities.parseValue(transformedValue, srcField.getTypeClass());
 		}
 	}
-	
+
 	public EtlDataSource getTransformationDatasource() {
 		return transformationDatasource;
 	}
-	
+
 	public void setTransformationDatasource(EtlDataSource transformationDatasource) {
 		this.transformationDatasource = transformationDatasource;
 	}
-	
+
 	public TransformableField getSrcField() {
 		return srcField;
 	}
-	
+
 	public void setSrcField(TransformableField srcField) {
 		this.srcField = srcField;
 	}
-	
+
 	public Object getTransformedValue() {
 		return transformedValue;
 	}
-	
+
 	public void setTransformedValue(Object transformedValue) {
 		this.transformedValue = transformedValue;
-		
+
 		tryToParseValue();
 	}
-	
+
 	public boolean loadedWithDefaultValue() {
 		return loadedWithDefaultValue;
 	}
-	
+
 	public boolean isLoadedWithDefaultValue() {
 		return loadedWithDefaultValue;
 	}
-	
+
 	public void setLoadedWithDefaultValue(boolean loadedWithDefaultValue) {
 		this.loadedWithDefaultValue = loadedWithDefaultValue;
 	}
-	
+
 	public boolean isLoadedWithDstValue() {
-		return this.loadedWithDefaultValue
-		        || (this.getTransformationDatasource() != null && this.getTransformationDatasource() instanceof DstConf);
+		return this.loadedWithDefaultValue || (this.getTransformationDatasource() != null
+				&& this.getTransformationDatasource() instanceof DstConf);
 	}
-	
+
 	public boolean skipRelationshipResolution() {
 		return isLoadedWithDefaultValue() || isLoadedWithDstValue() || srcField.relationshipResolutionStrategy().skip();
 	}
-	
+
 	@Override
 	public String toString() {
-		return this.srcField.getSrcField() + " = " + this.getTransformedValue() + ". Ds: " + this.transformationDatasource;
+		return this.srcField.getSrcField() + " = " + this.getTransformedValue() + ". Ds: "
+				+ this.transformationDatasource;
 	}
+
 }
