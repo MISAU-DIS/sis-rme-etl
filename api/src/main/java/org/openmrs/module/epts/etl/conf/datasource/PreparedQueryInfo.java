@@ -21,14 +21,61 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 		this.parameters = parameters;
 
 		if (utilities.listHasElement(parameters)) {
-			this.parametersValues = new Object[parameters.size()];
+			this.parametersValues = new Object[this.determineQtyOfFullParams()];
 
+			int j = 0;
 			for (int i = 0; i < parameters.size(); i++) {
-				this.parametersValues[i] = parameters.get(i).getTransformedValue();
+
+				Object[] paramsWithinParam = determineParamsWithinParam(parameters.get(i).getTransformedValue());
+
+				for (int k = 0; k < paramsWithinParam.length; k++, j++) {
+					this.parametersValues[j] = paramsWithinParam[k];
+				}
 			}
 		} else
 			this.parametersValues = null;
 
+	}
+
+	private int determineQtyOfFullParams() {
+		if (!this.hasParams())
+			return 0;
+
+		int qty = 0;
+
+		for (FieldTransformingInfo p : this.parameters) {
+			qty += determineQtyElementsWithinTheParamValue(p.getTransformedValue());
+		}
+
+		return qty;
+	}
+
+	private boolean hasParams() {
+		return utilities.listHasElement(this.parameters);
+	}
+
+	public static int determineQtyElementsWithinTheParamValue(Object paramValue) {
+		if (paramValue == null || !(paramValue instanceof String))
+			return 1;
+
+		String[] valueParts = paramValue.toString().split("\\,");
+
+		for (String p : valueParts) {
+			if (!utilities.isNumeric(p)) {
+				return 1;
+			}
+		}
+
+		return valueParts.length;
+	}
+
+	private Object[] determineParamsWithinParam(Object transformedValue) {
+
+		if (determineQtyElementsWithinTheParamValue(transformedValue) > 1) {
+			return transformedValue.toString().split("\\,");
+		}
+
+		return utilities.parseObjectToArray(transformedValue);
 	}
 
 	public String getQuery() {

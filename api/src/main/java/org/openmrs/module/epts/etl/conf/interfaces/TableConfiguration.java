@@ -29,6 +29,7 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.DuplicateMappingException;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
@@ -1435,11 +1436,13 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void createDefaultOrderingInfo() {
+		if (!hasAlias())
+			throw new EtlConfException("You cannot generate orderingInfo before alias is generated!");
 
 		List<String> fields = new ArrayList<>();
 
 		for (Key f : this.getPrimaryKey().getFields()) {
-			fields.add(f.getName());
+			fields.add(f.generateAliasedColumn(this));
 		}
 
 		EtlQueryOrderingInfo oInfo = new EtlQueryOrderingInfo(fields, SqlOrderingType.ASC);

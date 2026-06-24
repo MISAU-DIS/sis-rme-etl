@@ -244,8 +244,8 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 					params.add(paramTransformInfo);
 
-					pQuery = SQLUtilities.replaceFirstParameterOccurrence(pQuery, param.getName(),
-							determineQtyElementsWithinTheParamValue(paramTransformInfo.getTransformedValue()));
+					pQuery = SQLUtilities.replaceFirstParameterOccurrence(pQuery, param.getName(), PreparedQueryInfo
+							.determineQtyElementsWithinTheParamValue(paramTransformInfo.getTransformedValue()));
 
 				} else if (param.getContextType().dbResource()) {
 
@@ -261,21 +261,6 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		}
 
 		return new PreparedQueryInfo(pQuery, params);
-	}
-
-	private int determineQtyElementsWithinTheParamValue(Object paramValue) {
-		if (paramValue == null || !(paramValue instanceof String))
-			return 1;
-
-		String[] valueParts = paramValue.toString().split("\\,");
-
-		for (String p: valueParts) {
-			if (!utilities.isNumeric(p)) {
-				return 1;
-			}
-		}
-		
-		return valueParts.length;
 	}
 
 	public static PreparedQuery prepare(EtlDataSource queryDs, List<EtlDataSource> avaliableDataSource,
