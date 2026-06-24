@@ -443,14 +443,19 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				this.getOnDemandCheckCondition(), allObjs, getRelatedEtlConf(), dstConn);
 
 		try {
-			return dstConf.find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn), dstConn);
+			return dstConf.find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
+					dstConn);
 		} catch (Exception e) {
-				throw e;
+
+			p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(this.getOnDemandCheckCondition(),
+					allObjs, getRelatedEtlConf(), dstConn);
+
+			throw e;
 		}
 	}
 
-	private Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params, Connection srcConn,
-			Connection dstConn) throws DBException {
+	private Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
+			Connection srcConn, Connection dstConn) throws DBException {
 
 		this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
 
@@ -493,7 +498,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				}
 			} else {
 				resolvedParams[i] = paramValueInfo.getTransformedValue();
-			}	
+			}
 		}
 
 		return resolvedParams;

@@ -128,6 +128,10 @@ public class ProcessStarter implements ControllerStarter {
 		if (controllerToFinalize.isFinished()) {
 			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
 				try {
+
+					logger.warn(
+							"Loading next child conf file " + controller.getRelatedEtlConf().getChildConfigFilePath());
+
 					EtlConfiguration childConfig = EtlConfiguration
 							.loadFromFile(new File(controller.getRelatedEtlConf().getChildConfigFilePath()));
 

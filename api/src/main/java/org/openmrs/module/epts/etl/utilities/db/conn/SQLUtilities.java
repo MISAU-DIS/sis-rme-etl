@@ -1998,7 +1998,9 @@ public class SQLUtilities {
 	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
 			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
-
+		
+		query = normalizeQuery(query);
+		
 		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
 				.toString().toLowerCase();
 
