@@ -18,92 +18,103 @@ import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 
 /**
- * Field transformer that evaluates arithmetic expressions to produce the destination field value.
+ * Field transformer that evaluates arithmetic expressions to produce the
+ * destination field value.
  * <p>
- * The arithmetic expression is defined in the source value of the field configuration and may
- * contain numeric literals and mathematical operators supported by the
- * {@link net.objecthunter.exp4j} expression engine.
+ * The arithmetic expression is defined in the source value of the field
+ * configuration and may contain numeric literals and mathematical operators
+ * supported by the {@link net.objecthunter.exp4j} expression engine.
  * </p>
  * <p>
- * Before evaluation, any dynamic parameters present in the expression are resolved using
- * {@link EtlFieldTransformer#tryToReplaceParametersOnSrcValue}.
+ * Before evaluation, any dynamic parameters present in the expression are
+ * resolved using {@link EtlFieldTransformer#tryToReplaceParametersOnSrcValue}.
  * </p>
  * <p>
- * The resulting expression is evaluated using the {@code exp4j} library and the computed numeric
- * result is returned as the destination field value.
+ * The resulting expression is evaluated using the {@code exp4j} library and the
+ * computed numeric result is returned as the destination field value.
  * </p>
  * <p>
- * If the expression cannot be evaluated due to syntax errors or invalid values, an
- * {@link EtlTransformationException} is thrown and the ETL processing behavior will follow the
- * configured exception handling policy.
+ * If the expression cannot be evaluated due to syntax errors or invalid values,
+ * an {@link EtlTransformationException} is thrown and the ETL processing
+ * behavior will follow the configured exception handling policy.
  * </p>
  * <p>
  * Example:
  * </p>
+ * 
  * <pre>
  * valueToTransform = "(weight / (height * height))"
- * </pre> If {@code weight=70} and {@code height=1.75}, the evaluated result will be: <pre>
+ * </pre>
+ * 
+ * If {@code weight=70} and {@code height=1.75}, the evaluated result will be:
+ * 
+ * <pre>
  * 22.857142857142858
- * </pre> which will be assigned to the destination field.
+ * </pre>
+ * 
+ * which will be assigned to the destination field.
  */
 public class ArithmeticFieldTransformer extends AbstractEtlFieldTransformer {
-	
+
 	private static final Map<String, ArithmeticFieldTransformer> INSTANCES = new ConcurrentHashMap<>();
-	
+
 	private static final Map<String, Expression> CACHE = new ConcurrentHashMap<>();
-	
+
 	public ArithmeticFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
-	    TransformableField field) {
+			TransformableField field) {
 		super(parameters, relatedEtlTargedConf, field);
 	}
-	
-	public static ArithmeticFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
-	        TransformableField field, Connection conn) {
-		
+
+	public static ArithmeticFieldTransformer getInstance(List<Object> parameters,
+			EtlTransformTarget relatedEtlTargedConf, TransformableField field, Connection conn) {
+
 		String key = buildCacheKey(relatedEtlTargedConf, field, parameters);
-		
-		return INSTANCES.computeIfAbsent(key, k -> new ArithmeticFieldTransformer(parameters, relatedEtlTargedConf, field));
+
+		return INSTANCES.computeIfAbsent(key,
+				k -> new ArithmeticFieldTransformer(parameters, relatedEtlTargedConf, field));
 	}
-	
+
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-	        Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
-		
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
+			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
+
 		if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
 			throw new EtlExceptionImpl("ArithmeticFieldTransformer requires at least one source object.");
 		}
 		if (field.getValueToTransform() == null) {
-			throw new EtlTransformationException("Source value must be provided for arithmetic transformation.", srcObject,
-			        ActionOnEtlIssue.ABORT_PROCESS);
+			throw new EtlTransformationException("Source value must be provided for arithmetic transformation.",
+					srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		}
-		
+
 		String srcValueWithParamsReplaced = EtlFieldTransformer
-		        .tryToReplaceParametersOnSrcValue(additionalSrcObjects, field.getValueToTransform()).toString();
-		
+				.tryToReplaceParametersOnSrcValue(field.getTransformationTargetObject().getRelatedEtlConf(),
+						additionalSrcObjects, field.getValueToTransform())
+				.toString();
+
 		try {
-			
+
 			Double result = evaluateExpression(srcValueWithParamsReplaced);
-			
+
 			FieldTransformingInfo transformingInfo = new FieldTransformingInfo(field, result, null);
-			
+
 			transformingInfo.setLoadedWithDefaultValue(true);
-			
+
 			return transformingInfo;
-			
-		}
-		catch (Exception e) {
-			
-			throw new EtlTransformationException("Failed to evaluate arithmetic expression: " + field.getValueToTransform(),
-			        e, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
+
+		} catch (Exception e) {
+
+			throw new EtlTransformationException(
+					"Failed to evaluate arithmetic expression: " + field.getValueToTransform(), e, srcObject,
+					ActionOnEtlIssue.ABORT_PROCESS);
 		}
 	}
-	
+
 	private Double evaluateExpression(String expression) {
-		
+
 		Expression expr = CACHE.computeIfAbsent(expression, e -> new ExpressionBuilder(e).build());
-		
+
 		return expr.evaluate();
 	}
-	
+
 }

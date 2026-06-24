@@ -102,6 +102,11 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return processController.getRelatedEtlConf();
+	}
+
+	@Override
 	public EtlOperationStatus getOperationStatus() {
 		return operationStatus;
 	}
@@ -204,7 +209,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 			try {
 				if (getEtlConfiguration().hasEtlItemsConf()) {
-					for (EtlItemConfiguration config : getProcessController().getEtlConf().getEtlItemConfiguration()) {
+					for (EtlItemConfiguration config : getProcessController().getRelatedEtlConf().getEtlItemConfiguration()) {
 						config.doMinimalTableInitialization(srcConn, dstConn);
 					}
 				}
@@ -230,7 +235,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 			logInfo("Working on testing item");
 		} else {
-			allSync = getProcessController().getEtlConf().getEtlItemConfiguration();
+			allSync = getProcessController().getRelatedEtlConf().getEtlItemConfiguration();
 		}
 
 		this.enginesActivititieMonitor = new ArrayList<Engine<T>>();
@@ -425,7 +430,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 			logInfo("Working on testing item");
 		} else {
-			List<EtlItemConfiguration> allSync = getProcessController().getEtlConf().getEtlItemConfiguration();
+			List<EtlItemConfiguration> allSync = getProcessController().getRelatedEtlConf().getEtlItemConfiguration();
 
 			logDebug("Determine finalized operations...");
 
@@ -682,7 +687,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public EtlConfiguration getEtlConfiguration() {
-		return this.getProcessController().getEtlConf();
+		return this.getProcessController().getRelatedEtlConf();
 	}
 
 	public List<EtlItemConfiguration> getEtlItemConfiguration() {

@@ -29,6 +29,7 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.DuplicateMappingException;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
@@ -816,7 +817,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 									String parentFieldName = foreignKeyRS.getString("PKCOLUMN_NAME");
 									String parentTableName = foreignKeyRS.getString("PKTABLE_NAME");
 
-									ParentTableImpl parentTabConf = ParentTableImpl.init(parentTableName, refCode);
+									ParentTableImpl parentTabConf = ParentTableImpl.init(parentTableName, refCode,
+											this);
 
 									if (childFieldName.equals(this.getPrimaryKey().asSimpleKey().getName())) {
 										this.setSharePkWith(parentTableName);
@@ -837,8 +839,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 									}
 
 									parentTabConf.setParentConf(this.getParentConf());
-									parentTabConf.setChildTableConf(this);
-									parentTabConf.setRelatedEtlConfig(getRelatedEtlConf());
 									parentTabConf.setSchema(foreignKeyRS.getString("PKTABLE_SCHEM"));
 
 									if (!parentTabConf.hasSchema()) {
@@ -875,7 +875,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 													// create default refInfo to force the copy of shared ref info
 
 													mixedConfiguredRef = ParentTableImpl
-															.init(manualConfiguredRefInfo.getTableName(), "");
+															.init(manualConfiguredRefInfo.getTableName(), "", this);
 
 													mixedConfiguredRef.setConditionalFields(
 															manualConfiguredRefInfo.getConditionalFields());
@@ -1024,11 +1024,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 						String parentFieldName = foreignKeyRS.getString("PKCOLUMN_NAME");
 
-						ChildTable childTabConf = ChildTable.init(childTableName, refCode);
+						ChildTable childTabConf = ChildTable.init(childTableName, refCode, this);
 
 						childTabConf.setParentTableConf(this);
 						childTabConf.setParentConf(this.getParentConf());
-						childTabConf.setRelatedEtlConfig(getRelatedEtlConf());
 						childTabConf.setSchema(foreignKeyRS.getString("FKTABLE_SCHEM"));
 
 						if (!childTabConf.hasSchema()) {
@@ -1437,11 +1436,13 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void createDefaultOrderingInfo() {
+		if (!hasAlias())
+			throw new EtlConfException("You cannot generate orderingInfo before alias is generated!");
 
 		List<String> fields = new ArrayList<>();
 
 		for (Key f : this.getPrimaryKey().getFields()) {
-			fields.add(f.getName());
+			fields.add(f.generateAliasedColumn(this));
 		}
 
 		EtlQueryOrderingInfo oInfo = new EtlQueryOrderingInfo(fields, SqlOrderingType.ASC);
@@ -2535,12 +2536,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		for (ParentTable parentToCloneFrom : this.getParents()) {
 			if (DBUtilities.isTableExists(tableToCloneTo.getSchema(), parentToCloneFrom.getTableName(), conn)) {
 				ParentTable clonedParent = new ParentTableImpl();
-
+				clonedParent.setChildTableConf(tableToCloneTo);
 				clonedParent.setTableName(parentToCloneFrom.getTableName());
 				clonedParent.setSchema(tableToCloneTo.getSchema());
-				clonedParent.setRelatedEtlConfig(getRelatedEtlConf());
 				clonedParent.loadFields(conn);
-				clonedParent.setChildTableConf(tableToCloneTo);
 				clonedParent.setConditionalFields(parentToCloneFrom.getConditionalFields());
 				clonedParent.setDefaultValueDueInconsistency(parentToCloneFrom.getDefaultValueDueInconsistency());
 				clonedParent.setSetNullDueInconsistency(parentToCloneFrom.isSetNullDueInconsistency());

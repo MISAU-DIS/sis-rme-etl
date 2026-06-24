@@ -8,7 +8,9 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -28,6 +30,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerTyp
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingMetadataException;
 import org.openmrs.module.epts.etl.exceptions.NoFieldWithFieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -1578,12 +1581,10 @@ public class SQLUtilities {
 
 			String selectClause = selectMatcher.group(1).trim();
 
-			// 🔥 NOVA VALIDAÇÃO
 			if (containsSelectWildcard(selectClause)) {
 				throw new IllegalArgumentException("Query contains a wildcard '*' in the SELECT clause");
 			}
 
-			// 🔥 split seguro (respeitando parênteses)
 			List<String> fieldsName = splitSelectFields(selectClause);
 
 			for (String s : fieldsName) {
@@ -1598,6 +1599,8 @@ public class SQLUtilities {
 					String[] parts = s.split("\\s+");
 					fieldName = parts[parts.length - 1];
 				}
+
+				fieldName = fieldName.split("\\.")[fieldName.split("\\.").length - 1];
 
 				fields.add(new Field(fieldName.trim()));
 			}
@@ -1993,20 +1996,22 @@ public class SQLUtilities {
 	}
 
 	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
-			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString()
-				.toLowerCase();
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
+				.toString().toLowerCase();
 
-		List<Object> resolvedValues = new ArrayList<>();
+		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
 				" join ", " where " };
 
+		Set<String> avaliableTableAliases = retrieveTableAliases(query);
+
 		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
 
-		for (String  element : srcObjectConditionElements) {
+		for (String element : srcObjectConditionElements) {
 
 			try {
 
@@ -2017,11 +2022,11 @@ public class SQLUtilities {
 					adjustedElement = element;
 
 					map = FieldsMapping.fastCreate("tmp_field",
-							FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+							FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
 
-					map.resetAndLoadTransformer(map.getTargetObject(), adjustedElement, conn);
-					
-					map.tryToLoadTransformer(map.getTargetObject(), conn);
+					map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
+
+					map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
 
 				} else {
 					adjustedElement = element.replace(")", "").replace("(", "").strip().trim();
@@ -2030,22 +2035,33 @@ public class SQLUtilities {
 						continue;
 					}
 
-					map = FieldsMapping.fastCreate(adjustedElement,
-							FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+					try {
+						map = FieldsMapping.fastCreate(adjustedElement,
+								FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
+
+						// Do not transform if datasource is a alias
+						if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
+							continue;
+						}
+
+					} catch (InvalidDataSourceOnFieldDefifitionException e) {
+						if (utilities.contains(avaliableTableAliases, e.getDataSourceName())) {
+							continue;
+						} else
+							throw e;
+					}
 				}
 
-				if (!map.hasDataSourceName()) {
+				if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
 					continue;
 				}
 
 				FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null,
 						avaliableSrcObjects.get(0), avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
 
-				Object resolvedValue = valueInfo.getTransformedValue();
-
 				query = replaceFirstLiteralTokenWithQuestionMark(query, adjustedElement);
 
-				resolvedValues.add(resolvedValue);
+				resolvedValues.add(valueInfo);
 
 			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
 				continue;
@@ -2057,9 +2073,10 @@ public class SQLUtilities {
 	}
 
 	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(avaliableSrcObjects, query).toString();
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
+				.toString();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
 
@@ -2075,7 +2092,7 @@ public class SQLUtilities {
 				}
 
 				FieldsMapping map = FieldsMapping.fastCreate(element.strip().trim(),
-						FastEtlTransformingTarget.fastCreate(avaliableSrcObjects, conn), conn);
+						FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
 
 				if (map.hasDataSourceName()) {
 					FieldTransformingInfo v = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
@@ -2107,14 +2124,20 @@ public class SQLUtilities {
 		return query;
 	}
 
-	public static String replaceFirstParameterOccurrence(String query, String paramName) {
+	public static String replaceFirstParameterOccurrence(String query, String paramName, int qtyQuestionMarks) {
+
+		if (qtyQuestionMarks <= 0) {
+			throw new IllegalArgumentException("qtyQuestionMarks must be greater than zero");
+		}
+
+		String replacement = String.join(",", Collections.nCopies(qtyQuestionMarks, "?"));
 
 		String token = "@(" + paramName + ")";
 
 		int idx = query.indexOf(token);
 
 		if (idx >= 0) {
-			return query.substring(0, idx) + "?" + query.substring(idx + token.length());
+			return query.substring(0, idx) + replacement + query.substring(idx + token.length());
 		}
 
 		token = "@" + paramName;
@@ -2122,7 +2145,7 @@ public class SQLUtilities {
 		idx = query.indexOf(token);
 
 		if (idx >= 0) {
-			return query.substring(0, idx) + "?" + query.substring(idx + token.length());
+			return query.substring(0, idx) + replacement + query.substring(idx + token.length());
 		}
 
 		return query;
@@ -2151,4 +2174,32 @@ public class SQLUtilities {
 		return query;
 	}
 
+	public static Set<String> retrieveTableAliases(String query) {
+
+		Set<String> aliases = new LinkedHashSet<>();
+
+		if (query == null || query.isBlank()) {
+			return aliases;
+		}
+
+		Pattern pattern = Pattern.compile("(?i)(?:from|join)\\s+" + // FROM ou JOIN
+				"[a-zA-Z_][a-zA-Z0-9_\\.]*\\s+" + // nome da tabela
+				"(?:as\\s+)?" + // AS opcional
+				"([a-zA-Z_][a-zA-Z0-9_]*)" // alias
+		);
+
+		Matcher matcher = pattern.matcher(query);
+
+		while (matcher.find()) {
+			aliases.add(matcher.group(1));
+		}
+
+		return aliases;
+	}
+
+	public static void main(String[] args) {
+		String sql = "select p.person_id as patient_id from person as pr inner join patient pt on pr.person_id = pt.patient_id where p.uuid = person_complex_attribute_detail_patient_src_ds.uuid";
+
+		System.out.println(retrieveTableAliases(sql));
+	}
 }

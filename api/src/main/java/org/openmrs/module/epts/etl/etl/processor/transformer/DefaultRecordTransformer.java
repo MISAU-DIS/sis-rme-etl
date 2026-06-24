@@ -299,6 +299,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 			collectToSrcObjects(srcObject, result);
 			collectToSrcObjects(dstObject, result);
+			collectToSrcObjects(migratedDstParent, result);
 			collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType,
 					srcConn);
 

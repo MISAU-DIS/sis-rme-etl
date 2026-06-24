@@ -3,6 +3,7 @@ package fgh.sp.openmrs_changed_records_action.eip;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -86,5 +87,11 @@ public class EipChangedRecordDetectedAction implements DetectedRecordAction {
 	@Override
 	public void performeAction(List<ChangedRecord> record, AbstractTableConfiguration abstractTableConfiguration) {
 		throw new ForbiddenOperationException("Not supported batch performing");
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

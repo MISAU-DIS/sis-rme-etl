@@ -253,7 +253,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return this.tableOperationProgressInfo != null ? this.tableOperationProgressInfo.getProgressMeter() : null;
 	}
 
-	public EtlConfiguration getEtlConfiguration() {
+	public EtlConfiguration getRelatedEtlConf() {
 		return this.getEtlItemConfiguration().getRelatedEtlConf();
 	}
 
@@ -438,7 +438,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			t = ThreadRecordIntervalsManager.tryToLoadFromFile(getEngineId(), this);
 		}
 
-		if (getEtlConfiguration().hasTestingItem()) {
+		if (getRelatedEtlConf().hasTestingItem()) {
 			this.getRelatedEtlOperationConfig()
 					.setProcessingBatch((int) tableOperationProgressInfo.getProgressMeter().getMaxRecordId());
 		}
@@ -562,7 +562,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					TaskProcessor<T> taskProcessor = getController().initRelatedTaskProcessor(this, i, false);
 					taskProcessor.setProcessorId(this.getEngineId());
 
-					boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
+					boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
 					boolean useMultiThreadSearch = true;
 
 					performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this),
@@ -606,7 +606,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 				taskProcessor.setProcessorId(this.getEngineId());
 
-				boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false : true;
+				boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
 				boolean useMultiThreadSearch = true;
 
 				performeTask(taskProcessor, useMultiThreadSearch, persistTheWork, openSrcConn(this),
@@ -765,7 +765,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 									taskProcessor.changeStatusToFinished();
 								} else {
 									try {
-										boolean persistTheWork = this.getEtlConfiguration().hasTestingItem() ? false
+										boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false
 												: true;
 
 										performeTask(taskProcessor, useMultiThreadSearch, persistTheWork,
@@ -811,7 +811,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 							stopOperationDueError(r.getFatalException());
 						} else {
 
-							if (useSharedConnection && !this.getEtlConfiguration().hasTestingItem()) {
+							if (useSharedConnection && !this.getRelatedEtlConf().hasTestingItem()) {
 								OpenConnection.markAllAsSuccessifullyTerminected(sharedSrcConn, sharedDstConn);
 
 								getThreadRecordIntervalsManager().getCurrentLimits().markAsProcessed();
@@ -1003,7 +1003,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			if (stopNow) {
-				logWarn("No task is running, stopping the Engune now: " + this.getEngineId());
+				logWarn("No task is running, stopping the Engine now: " + this.getEngineId());
 
 				changeStatusToStopped();
 			}
@@ -1041,11 +1041,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public File getDataDir() {
-		String subFolder = getEtlConfiguration().getEtlRootDirectory();
+		String subFolder = getRelatedEtlConf().getEtlRootDirectory();
 
 		subFolder += FileUtilities.getPathSeparator() + "data";
 
-		subFolder += FileUtilities.getPathSeparator() + getEtlConfiguration().getOriginAppLocationCode();
+		subFolder += FileUtilities.getPathSeparator() + getRelatedEtlConf().getOriginAppLocationCode();
 
 		return new File(subFolder);
 	}

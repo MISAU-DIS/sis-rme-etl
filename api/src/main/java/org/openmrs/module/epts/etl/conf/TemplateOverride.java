@@ -66,6 +66,11 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 		this.type = type;
 	}
 
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.templateInfo.getRelatedEtlConf();
+	}
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void apply(EtlDataConfiguration etlDataConfiguration) {
 

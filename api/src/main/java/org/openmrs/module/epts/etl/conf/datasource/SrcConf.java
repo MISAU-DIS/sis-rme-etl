@@ -49,7 +49,7 @@ public class SrcConf extends AbstractTableConfiguration
 
 	private List<QueryDataSourceConfig> extraQueryDataSource;
 
-	private List<ObjectDataSource> extraObjectDataSource;
+	private List<TransformableDataSource> extraObjectDataSource;
 
 	private List<JsonDataSource> extraJsonDataSource;
 
@@ -100,7 +100,6 @@ public class SrcConf extends AbstractTableConfiguration
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
 		this.applyIncludes();
 
-		this.setRelatedEtlConfig(relatedItemConf.getRelatedEtlConf());
 		this.setParentConf(relatedItemConf);
 
 		super.init(this.getParentConf(), getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
@@ -136,11 +135,11 @@ public class SrcConf extends AbstractTableConfiguration
 		this.extraJsonDataSource = extraJsonDataSOurce;
 	}
 
-	public List<ObjectDataSource> getExtraObjectDataSource() {
+	public List<TransformableDataSource> getExtraObjectDataSource() {
 		return extraObjectDataSource;
 	}
 
-	public void setExtraObjectDataSource(List<ObjectDataSource> extraObjectDataSource) {
+	public void setExtraObjectDataSource(List<TransformableDataSource> extraObjectDataSource) {
 		this.extraObjectDataSource = extraObjectDataSource;
 	}
 
@@ -351,7 +350,7 @@ public class SrcConf extends AbstractTableConfiguration
 			}
 
 			if (hasExtraObjectDataSourceConfig()) {
-				for (ObjectDataSource ds : this.getExtraObjectDataSource()) {
+				for (TransformableDataSource ds : this.getExtraObjectDataSource()) {
 					ds.setRelatedSrcConf(this);
 
 					if (ds.hasObjectFields()) {
@@ -687,8 +686,6 @@ public class SrcConf extends AbstractTableConfiguration
 
 		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
 
-		this.setRelatedEtlConfig(relatedItemConf.getRelatedEtlConf());
-
 		if (toClone instanceof SrcConf) {
 			SrcConf toCloneFrom = (SrcConf) toClone;
 			if (utilities.listHasElement(toCloneFrom.getAuxExtractTable())) {
@@ -736,10 +733,10 @@ public class SrcConf extends AbstractTableConfiguration
 
 			if (toCloneFrom.hasExtraObjectDataSourceConfig()) {
 				this.setExtraObjectDataSource(
-						ObjectDataSource.cloneAll(toCloneFrom.getExtraObjectDataSource(), this, conn));
+						TransformableDataSource.cloneAll(toCloneFrom.getExtraObjectDataSource(), this, conn));
 
 				if (hasExtraObjectDataSourceConfig()) {
-					for (ObjectDataSource query : this.getExtraObjectDataSource()) {
+					for (TransformableDataSource query : this.getExtraObjectDataSource()) {
 						query.setRelatedSrcConf(this);
 
 						if (query.hasObjectFields() && schemaInfoSrc != null) {
@@ -784,7 +781,7 @@ public class SrcConf extends AbstractTableConfiguration
 		}
 
 		if (hasExtraObjectDataSourceConfig()) {
-			ObjectDataSource.tryToReplacePlaceholders(this.getExtraObjectDataSource(), schemaInfoSrc);
+			TransformableDataSource.tryToReplacePlaceholders(this.getExtraObjectDataSource(), schemaInfoSrc);
 		}
 	}
 
@@ -934,7 +931,9 @@ public class SrcConf extends AbstractTableConfiguration
 
 		this.createRelatedStageAreaSrcUniqueKeysTable(srcConn);
 
-		this.createRelatedProcessedRecordStageAreaTable(srcConn);
+		if (this.getRelatedEtlConf().mustCreateArquiveTables()) {
+			this.createRelatedProcessedRecordStageAreaTable(srcConn);
+		}
 	}
 
 	public EtlItemConfiguration getParentItemConf() {

@@ -30,6 +30,11 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 			TransformableField field) {
+		/*
+		 * if (relatedEtlTargedConf == null) throw new
+		 * EtlConfException("The target conf cannot be null!");
+		 */
+
 		this.parameters = parameters;
 		this.relatedEtlTransformTarget = relatedEtlTargedConf;
 		this.field = field;
@@ -88,7 +93,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
-		return this.relatedEtlTransformTarget.getRelatedEtlConf();
+		return this.relatedEtlTransformTarget != null ? this.relatedEtlTransformTarget.getRelatedEtlConf() : null;
 	}
 
 	@Override
@@ -99,10 +104,6 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	@Override
 	public List<DefaultEtlValidator> getValidators() {
 		return null;
-	}
-
-	@Override
-	public void setRelatedEtlConfig(EtlConfiguration relatedSyncConfiguration) {
 	}
 
 	@Override

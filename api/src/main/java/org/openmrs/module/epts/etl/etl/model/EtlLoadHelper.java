@@ -18,6 +18,8 @@ import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObjectDAO;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
+import org.openmrs.module.epts.etl.exceptions.EtlException;
+import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
 import org.openmrs.module.epts.etl.exceptions.NoDstForGivenSrcException;
@@ -152,11 +154,19 @@ public class EtlLoadHelper {
 					continue;
 				}
 
+				if (isIgnorableException(dstObject.getEtlInfo().getExceptionOnEtl())) {
+					continue;
+				}
+
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	private boolean isIgnorableException(EtlException e) {
+		return e instanceof EtlTransformationException;
 	}
 
 	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)

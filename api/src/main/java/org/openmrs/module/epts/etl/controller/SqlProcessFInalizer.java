@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.controller;
 
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -11,17 +12,17 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 public class SqlProcessFInalizer extends AbstractProcessFinalizer implements BaseConfiguration {
-	
+
 	public SqlProcessFInalizer(ProcessController relatedProcessController) {
 		super(relatedProcessController);
 	}
-	
+
 	@Override
 	public void performeFinalizationTasks() {
-		String sql = getRelatedProcessController().getEtlConf().getFinalizer().getSqlFinalizerQuery();
-		
+		String sql = getRelatedProcessController().getRelatedEtlConf().getFinalizer().getSqlFinalizerQuery();
+
 		OpenConnection conn = null;
-		
+
 		try {
 			if (getRelatedFinalizerConf().getConnectionToUse().isMain()) {
 				conn = getRelatedProcessController().tryToOpenMainConnection(this);
@@ -30,20 +31,18 @@ public class SqlProcessFInalizer extends AbstractProcessFinalizer implements Bas
 			} else {
 				conn = getRelatedProcessController().openConnection(this);
 			}
-			
+
 			if (getRelatedProcessController().getSchemaInfoSrc() != null) {
 				sql = SQLUtilities.tryToReplaceParamsInQuery(sql, getRelatedProcessController().getSchemaInfoSrc())
-				        .toString();
+						.toString();
 			}
-			
+
 			BaseDAO.executeQueryWithRetryOnError(sql, null, conn);
-			
+
 			conn.markAsSuccessifullyTerminated();
-		}
-		catch (DBException e) {
+		} catch (DBException e) {
 			throw new EtlExceptionImpl(e);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn, this);
 		}
 	}
@@ -57,7 +56,13 @@ public class SqlProcessFInalizer extends AbstractProcessFinalizer implements Bas
 	@Override
 	public void setExtension(List<Extension> extension) {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

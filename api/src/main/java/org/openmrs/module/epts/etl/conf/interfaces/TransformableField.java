@@ -50,6 +50,8 @@ public interface TransformableField {
 
 	Object getDefaultValue();
 
+	EtlTransformTarget getTransformationTargetObject();
+
 	default FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
 			Connection dstConn) throws DBException, EtlTransformationException {
@@ -207,6 +209,8 @@ public interface TransformableField {
 
 	Class<?> getTypeClass();
 
+	void init(EtlTransformTarget target);
+
 	default Boolean hasTransformerInstance() {
 		return this.getTransformerInstance() != null;
 	}
@@ -216,6 +220,8 @@ public interface TransformableField {
 	}
 
 	default void tryToLoadTransformer(EtlTransformTarget dstConf, Connection conn) {
+		this.init(dstConf);
+
 		FieldTransformerType.tryToLoadTransformerToField(this, dstConf, conn);
 	}
 

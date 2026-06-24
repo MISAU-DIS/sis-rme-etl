@@ -35,7 +35,7 @@ public class JsonEtlMainObject extends JsonEtlAbctractObject implements EtlDataC
 	
 	private JsonEtlMainObject() {
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public <T extends Field> List<T> getConverterStructrureFields() {
 		return (List<T>) converterStructrureFields;

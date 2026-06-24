@@ -615,7 +615,6 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		if (tabConfInSrc == null) {
 			tabConfInSrc = new GenericTableConfiguration(refInfo.getTableName(), src);
-			tabConfInSrc.setRelatedEtlConfig(src.getRelatedEtlConf());
 
 			tabConfInSrc.fullLoad(srcConn);
 		}
@@ -710,17 +709,17 @@ public interface EtlDatabaseObject extends EtlObject {
 			} else if (onConflict.updateExisting()) {
 				existingRecordIsOutdated = true;
 			} else if (onConflict.patchExisting()) {
-				
+
 				if (!tableConfiguration.hasPatchFields())
 					throw new EtlExceptionImpl(
 							"Conflict resolution is set to PATCH_EXISTING but no patchFields is empty!");
-				
-				for (Field field: tableConfiguration.getFields()) {
+
+				for (Field field : tableConfiguration.getFields()) {
 					if (!tableConfiguration.getPatchFields().contains(field.getName())) {
-						this.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()) );
+						this.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()));
 					}
 				}
-				
+
 				existingRecordIsOutdated = true;
 
 			} else if (utils.listHasElement(tableConfiguration.getWinningRecordFieldsInfo())) {
@@ -792,7 +791,9 @@ public interface EtlDatabaseObject extends EtlObject {
 			}
 
 			if (existingRecordIsOutdated) {
-				this.getEtlInfo().setConflictResolutionType(onConflict.patchExisting() ? ConflictResolutionType.PATCHED_EXISTING : ConflictResolutionType.UPDATED_EXISTING);
+				this.getEtlInfo()
+						.setConflictResolutionType(onConflict.patchExisting() ? ConflictResolutionType.PATCHED_EXISTING
+								: ConflictResolutionType.UPDATED_EXISTING);
 
 				this.setObjectId(recordOnDB.getObjectId());
 				this.update(tableConfiguration, conn);
@@ -997,7 +998,13 @@ public interface EtlDatabaseObject extends EtlObject {
 		Set<EtlDatabaseObject> avaliableSrcOjects = new LinkedHashSet<>();
 
 		if (this.getEtlInfo() != null) {
-			if (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource()) {
+			boolean isDataSourceDstObject = this.isDstObject()
+					&& ((DstConf) this.getRelatedConfiguration()).useAsDataSource();
+			
+			boolean isParentDstConf = this.isDstObject()
+					&& ((DstConf) this.getRelatedConfiguration()).hasChildDstConf();
+
+			if (isDataSourceDstObject || isParentDstConf) {
 				avaliableSrcOjects.add(this);
 			}
 

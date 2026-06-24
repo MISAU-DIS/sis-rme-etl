@@ -127,6 +127,8 @@ public class DstConf extends AbstractTableConfiguration
 	 */
 	private FieldMappingResolutionStrategy mappingResolutionStrategy;
 
+	private ActionOnEtlIssue onMissingRequiredSrcObject;
+
 	public DstConf() {
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
 		this.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.ABORT_PROCESS);
@@ -146,6 +148,22 @@ public class DstConf extends AbstractTableConfiguration
 
 			this.targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
 		}
+	}
+
+	public ActionOnEtlIssue getOnMissingRequiredSrcObject() {
+		return onMissingRequiredSrcObject;
+	}
+
+	public void setOnMissingRequiredSrcObject(ActionOnEtlIssue onMissingRequiredSrcObject) {
+		this.onMissingRequiredSrcObject = onMissingRequiredSrcObject;
+	}
+
+	public ActionOnEtlIssue onMissingRequiredSrcObject() {
+		if (this.getOnMissingRequiredSrcObject() != null) {
+			return this.getOnMissingRequiredSrcObject();
+		}
+
+		return getRelatedEtlConf().getGeneralBehaviourOnEtlException();
 	}
 
 	@Override
@@ -255,6 +273,10 @@ public class DstConf extends AbstractTableConfiguration
 
 	public Boolean hasParentDstConf() {
 		return this.getSrcConf().getParentConf() instanceof EtlChildItemConfiguration;
+	}
+
+	public Boolean hasChildDstConf() {
+		return this.getParentConf().hasChildItemConf();
 	}
 
 	public String getSrcObjectCondition() {
@@ -393,7 +415,7 @@ public class DstConf extends AbstractTableConfiguration
 			mappingProblem = new FieldsMappingIssues();
 
 			for (FieldsMapping fm : this.getMapping()) {
-				fm.setTargetObject(this);
+				fm.setTransformationTargetObject(this);
 
 				if (!utilities.stringHasValue(fm.getDstField())) {
 					throw new FieldsMappingException("One or more mapping on dstTable '" + this.getTableAlias()
@@ -401,7 +423,7 @@ public class DstConf extends AbstractTableConfiguration
 							+ "' configuration does not have dstField: [" + fm + "]");
 				}
 
-				fm.tryToLoadDataSourceInfoFromSrcField();
+				fm.tryToLoadDataSourceInfoFromSrcField(this);
 
 				fm.tryToLoadTransformer(this, conn);
 
@@ -602,7 +624,7 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public DBConnectionInfo getRelatedConnInfo() {
-		return relatedConnInfo;
+		return relatedConnInfo != null ? this.relatedConnInfo : getRelatedEtlConf().getDstConnInfo();
 	}
 
 	public void setRelatedConnInfo(DBConnectionInfo relatedConnInfo) {
@@ -611,7 +633,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public synchronized void fullLoad() throws DBException {
-		OpenConnection conn = this.relatedConnInfo.openConnection(this);
+		OpenConnection conn = this.getRelatedConnInfo().openConnection(this);
 
 		try {
 			this.fullLoad(conn);
@@ -1093,7 +1115,6 @@ public class DstConf extends AbstractTableConfiguration
 
 					map.setRelatedConnInfo(itemConf.getRelatedEtlConf().getDstConnInfo());
 					map.setAutomaticalyGenerated(true);
-					map.setRelatedEtlConfig(itemConf.getRelatedEtlConf());
 					map.setParentConf(itemConf);
 					map.setDstType(itemConf.getSrcConf().getDstType());
 
@@ -1137,7 +1158,6 @@ public class DstConf extends AbstractTableConfiguration
 			Connection conn) throws DBException {
 
 		super.clone(toCloneFrom, relatedItemConf, schemaInfoSrc, conn);
-		this.setRelatedEtlConfig(relatedItemConf.getRelatedEtlConf());
 		this.setJoinFields(toCloneFrom.getJoinFields());
 		this.setMapping(toCloneFrom.getMapping());
 		this.setPrefferredDataSource(toCloneFrom.getPrefferredDataSource());
@@ -1205,7 +1225,7 @@ public class DstConf extends AbstractTableConfiguration
 
 			if (hasMapping()) {
 				for (FieldsMapping map : this.getMapping()) {
-					map.setRelatedEtlConfig(getRelatedEtlConf());
+					map.setTransformationTargetObject(this);
 					map.tryToLoadFromTemplate();
 				}
 			}

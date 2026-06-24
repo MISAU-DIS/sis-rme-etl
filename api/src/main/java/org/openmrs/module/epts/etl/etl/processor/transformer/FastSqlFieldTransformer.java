@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -74,7 +75,10 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		try {
 			this.tryToLoadDumpScriptContentToFieldAndValidate("sqlQuery",
-					relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
+					relatedEtlTransformTarget != null
+							? relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters()
+							: null,
+					conn);
 		} catch (DBException e) {
 			throw new EtlConfException(e);
 		}
@@ -115,14 +119,11 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		if (dataSourceConfig == null) {
 			synchronized (LOCK) {
 				if (dataSourceConfig == null) {
-
-					SrcConf src = field.getDataSource() != null ? (SrcConf) field.getDataSource()
-							: getRelatedEtlTransformTarget().getSrcConf();
-
-					if (src == null)
-						throw new EtlConfException("Unable to determine the srcConf for this FastSqlFieldTransformer");
-
-					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery, src);
+					SrcConf ds = field.getDataSource() instanceof SrcConf ? (SrcConf) field.getDataSource()
+							: ((EtlAdditionalDataSource) field.getDataSource()).getRelatedSrcConf();
+					
+					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery,
+							ds);
 
 					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
 

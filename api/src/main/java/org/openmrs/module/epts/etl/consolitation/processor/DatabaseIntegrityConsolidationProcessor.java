@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.consolitation.processor;
 import java.sql.Connection;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.consolitation.controller.DatabaseIntegrityConsolidationController;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
@@ -44,5 +45,11 @@ public class DatabaseIntegrityConsolidationProcessor extends TaskProcessor<EtlDa
 	@Override
 	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
 		throw new ForbiddenOperationException("Forbiden Method");
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

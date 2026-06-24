@@ -58,7 +58,7 @@ public class PojoGenerationController extends OperationController<PojoGeneration
 	}
 	
 	public EtlConfiguration getEtlConfiguration() {
-		return getProcessController().getEtlConf();
+		return getProcessController().getRelatedEtlConf();
 	}
 	
 	@Override

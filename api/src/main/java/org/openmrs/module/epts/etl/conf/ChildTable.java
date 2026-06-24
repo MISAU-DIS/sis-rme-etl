@@ -5,9 +5,9 @@ import java.sql.Connection;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -15,120 +15,127 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Represents a child table
  */
 public class ChildTable extends AbstractRelatedTable {
-	
+
 	private TableConfiguration parentTableConf;
-	
+
 	public ChildTable() {
 	}
-	
+
 	public ChildTable(String tableName, String refCode) {
 		super(tableName, refCode);
 	}
-	
-	public static ChildTable init(String tableName, String refCoString) {
-		return new ChildTable(tableName, refCoString);
+
+	public static ChildTable init(String tableName, String refCoString, TableConfiguration parent) {
+		ChildTable c = new ChildTable(tableName, refCoString);
+
+		c.setParentTableConf(parent);
+
+		return c;
 	}
-	
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return parentTableConf.getRelatedEtlConf();
+	}
+
 	public TableConfiguration getParentTableConf() {
 		return parentTableConf;
 	}
-	
+
 	public void setParentTableConf(TableConfiguration parentTableConf) {
 		this.parentTableConf = parentTableConf;
-		
-		this.setRelatedEtlConfig(parentTableConf.getRelatedEtlConf());
 	}
-	
+
 	@Override
 	public Boolean isGeneric() {
 		return false_();
 	}
-	
+
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		return this.parentTableConf.getRelatedConnInfo();
 	}
-	
+
 	public Boolean isSharedPk() {
 		if (this.getSharePkWith() == null) {
 			return false_();
 		} else if (utilities.listHasElement(this.getParentRefInfo())) {
-			
+
 			for (ParentTable parent : this.getParentRefInfo()) {
 				if (parent.equals(this.parentTableConf.getSharedKeyRefInfo(null))) {
 					return true_();
 				}
 			}
 		}
-		
+
 		throw new ForbiddenOperationException("The related table of shared pk " + this.parentTableConf.getSharePkWith()
-		        + " of table " + this.parentTableConf.getTableName() + " is not listed inparents!");
+				+ " of table " + this.parentTableConf.getTableName() + " is not listed inparents!");
 	}
-	
+
 	@Override
 	public UniqueKeyInfo parseRelationshipToSelfKey() {
 		UniqueKeyInfo uk = new UniqueKeyInfo(this);
-		
+
 		for (RefMapping map : this.getRefMapping()) {
 			uk.addKey(new Key(map.getChildFieldName()));
 		}
-		
+
 		return uk;
 	}
-	
+
 	@Override
 	public String generateJoinCondition() {
 		String conditionFields = "";
-		
+
 		for (int i = 0; i < this.getRefMapping().size(); i++) {
 			if (i > 0)
 				conditionFields += " AND ";
-			
+
 			RefMapping field = this.getRefMapping().get(i);
-			
+
 			conditionFields += this.getTableAlias() + "." + field.getChildFieldName() + " = "
-			        + getRelatedTabConf().getTableAlias() + "." + field.getParentFieldName();
+					+ getRelatedTabConf().getTableAlias() + "." + field.getParentFieldName();
 		}
-		
+
 		return conditionFields;
 	}
-	
+
 	@Override
 	public TableConfiguration getRelatedTabConf() {
 		return this.parentTableConf;
 	}
-	
+
 	@Override
 	public void setRelatedTabConf(TableConfiguration relatedTabConf) {
 		this.parentTableConf = relatedTabConf;
 	}
-	
+
 	@Override
 	@JsonIgnore
 	public String toString() {
 		String str = super.toString();
-		
+
 		str += this.hasRelated() ? " Child of " + this.getRelatedTabConf().getFullTableDescription() : "";
-		
+
 		if (hasMapping()) {
 			str += ": ";
-			
+
 			for (RefMapping map : this.getRefMapping()) {
 				if (utilities.stringHasValue(str)) {
 					str += ",";
 				}
-				
+
 				str += map.toString();
 			}
 		}
-		
+
 		return str;
 	}
-	
+
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
 	}

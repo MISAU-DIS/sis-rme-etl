@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.MissingTransformationSrcObjectException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -63,7 +64,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		try {
 			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
 
-			if (getRelatedEtlOperationConfig().getAfterEtlActionType() != null) {
+			if (getRelatedEtlOperationConfig().getAfterEtlActionType() != null
+					&& !getRelatedEtlOperationConfig().getAfterEtlActionType().isUndefined()) {
 				EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
 
 				for (EtlDatabaseObject obj : etlObjects) {
@@ -107,36 +109,36 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							.collectSourceObjects(this, srcRecord, null, parentMigratedRec, mappingInfo,
 									TransformationType.PRINCIPAL, srcConn);
 
-					if (mappingInfo.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
-						EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this, srcRecord,
-								avaliableSrcObjects, mappingInfo, parentMigratedRec, TransformationType.PRINCIPAL,
-								srcConn, dstConn);
+					if (utilities.setHasElement(avaliableSrcObjects)) {
+						if (mappingInfo.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
+							EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this,
+									srcRecord, avaliableSrcObjects, mappingInfo, parentMigratedRec,
+									TransformationType.PRINCIPAL, srcConn, dstConn);
 
-						if (dstObject != null) {
-							record.addDestinationRecord(dstObject);
+							if (dstObject != null) {
+								record.addDestinationRecord(dstObject);
 
-							logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
-						} else {
-							dstObject = mappingInfo.createRecordInstance();
-							dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, record, dstObject));
-							dstObject.getEtlInfo().setExceptionOnEtl(new EtlExceptionImpl(
-									"Not generated because one or more required related src object was not found!"));
-
-							record.addDestinationRecord(dstObject);
-
-							logTrace("The dstRecord " + srcRecord + " could not be transformed");
+								logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
+							} else {
+								throw new MissingTransformationSrcObjectException(srcRecord,
+										getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException());
+							}
 						}
+					} else {
+						throw new MissingTransformationSrcObjectException(srcRecord,
+								getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException());
+					}
+				} catch (MissingTransformationSrcObjectException e) {
+					if (mappingInfo.onMissingRequiredSrcObject().markRecordAsFailed()
+							|| mappingInfo.onMissingRequiredSrcObject().log()) {
+						createDefaultFailedDstObject(record, mappingInfo, e);
+					} else {
+						throw e;
 					}
 				} catch (EtlTransformationException e) {
 					if (getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().log()
 							|| getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().markRecordAsFailed()) {
-						EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
-
-						dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, dstObject, dstObject));
-
-						dstObject.getEtlInfo().setExceptionOnEtl(e);
-
-						record.addDestinationRecord(dstObject);
+						createDefaultFailedDstObject(record, mappingInfo, e);
 					} else {
 						throw e;
 					}
@@ -167,6 +169,26 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		return loadHelper;
 	}
 
+	/**
+	 * @param record
+	 * @param mappingInfo
+	 * @param e
+	 */
+	private void createDefaultFailedDstObject(EtlDatabaseObject record, DstConf mappingInfo,
+			EtlTransformationException e) {
+
+		logWarn("Issues found when transforming record " + record + ". The issue will be logged: "
+				+ e.getLocalizedMessage());
+
+		EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
+
+		dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, dstObject, dstObject));
+
+		dstObject.getEtlInfo().setExceptionOnEtl(e);
+
+		record.addDestinationRecord(dstObject);
+	}
+
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf, EtlLoadHelper loadHelper, Connection srcConn,
 			Connection dstConn) throws DBException {
 
@@ -182,6 +204,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		if (!itemConf.hasChildItemConf()) {
 			return;
 		}
+
+		logDebug("Starting the load of child within the conf: " + itemConf.getConfigCode());
 
 		for (EtlChildItemConfiguration childItemConf : itemConf.getChildItemConf()) {
 			childItemConf.fullLoad(this.getRelatedEtlOperationConfig());
@@ -222,7 +246,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				for (EtlDatabaseObject obj : etlObjects) {
 					srcObject.addChildObject(obj);
 				}
-				
+
 				perform(itemConf, etlObjects, transformedParent.isDstObject() ? transformedParent : null,
 						LoadingType.INNER, srcConn, dstConn);
 			}

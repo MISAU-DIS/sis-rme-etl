@@ -126,7 +126,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 			
 			PreparedQueryInfo pq = pQ.generatePreparedQuery(null, parentObject, parentObject, ds, null);
 			
-			Object[] params = pq.getParametersAsArray();
+			Object[] params = pq.extractParametersValueToArray();
 			
 			searchClauses.addToClauses(pq.getQuery());
 			

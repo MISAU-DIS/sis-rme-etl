@@ -29,7 +29,7 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 						: utilities.parseToList(srcObject);
 
 				String preparedCondition = SQLUtilities.ensureDataSourceElementsReplaced(this.getCondition(), list,
-						dstConn);
+						this.getRelatedEtlConf(), dstConn);
 
 				return matchesCondition(srcObject, preparedCondition);
 			} catch (MissingParameterOnEtlTransformationException e) {

@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -75,15 +75,20 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 	}
 
 	default EtlDataSource findDataSource(String dsName) {
-		for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
-			if (ds.getAlias().trim().equals(dsName.trim())) {
-				return ds;
+
+		if (this.getAllAvaliableDataSource() != null) {
+			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
+				if (ds.getAlias().trim().equals(dsName.trim())) {
+					return ds;
+				}
 			}
 		}
 
-		for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
-			if (ds.getName().equals(dsName)) {
-				return ds;
+		if (this.getAllAvaliableDataSource() != null) {
+			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
+				if (ds.getName().trim().equals(dsName.trim())) {
+					return ds;
+				}
 			}
 		}
 
@@ -143,8 +148,8 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 						Field f = pref.getField(fm.getSrcField());
 
-						if (f instanceof DataSourceField) {
-							DataSourceField prefField = (DataSourceField) f;
+						if (f instanceof TransformableDataSourceField) {
+							TransformableDataSourceField prefField = (TransformableDataSourceField) f;
 
 							if (prefField.getDefaultValue() != null) {
 								fm.setDefaultValue(prefField.getDefaultValue());
