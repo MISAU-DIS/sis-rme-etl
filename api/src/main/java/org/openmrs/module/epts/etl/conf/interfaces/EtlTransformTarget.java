@@ -98,6 +98,14 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
 			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 
+		if (fm.hasTransformer()) {
+			fm.tryToLoadTransformer(this, conn);
+
+			if (!fm.useDefaultTransformer()) {
+				return;
+			}
+		}
+
 		if (getPrimaryKey() != null && getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField())
 				&& isAutoIncrementId()) {
 			return;

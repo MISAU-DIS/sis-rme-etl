@@ -323,7 +323,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public EtlConfiguration getRelatedEtlConf() {
-		return this.relatedSrcConf.getRelatedEtlConf();
+		return this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedEtlConf() : null;
 	}
 
 	@JsonIgnore
