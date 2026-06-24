@@ -75,6 +75,12 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 			return transformedValue.toString().split("\\,");
 		}
 
+		if (transformedValue == null) {
+			Object[] params = { transformedValue };
+
+			return params;
+		}
+
 		return utilities.parseObjectToArray(transformedValue);
 	}
 

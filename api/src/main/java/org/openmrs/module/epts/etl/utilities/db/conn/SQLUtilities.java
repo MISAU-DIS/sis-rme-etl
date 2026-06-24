@@ -2052,7 +2052,7 @@ public class SQLUtilities {
 					}
 				}
 
-				if (!map.hasDataSourceName()) {
+				if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
 					continue;
 				}
 

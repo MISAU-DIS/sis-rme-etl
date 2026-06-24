@@ -129,6 +129,9 @@ public class CommonUtilities implements Serializable {
 
 	@SuppressWarnings("unchecked")
 	public <T> T[] parseObjectToArray(T... objts) {
+		if (objts == null)
+			return null;
+
 		T[] array = (T[]) Array.newInstance(objts[0].getClass(), objts.length);
 
 		for (int i = 0; i < objts.length; i++) {

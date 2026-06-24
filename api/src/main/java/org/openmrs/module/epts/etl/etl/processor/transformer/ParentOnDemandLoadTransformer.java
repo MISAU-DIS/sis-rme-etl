@@ -445,7 +445,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		try {
 			return dstConf.find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn), dstConn);
 		} catch (Exception e) {
-			throw e;
+				throw e;
 		}
 	}
 
