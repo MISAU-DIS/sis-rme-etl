@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
@@ -89,7 +88,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 			this.setRelatedConfiguration(dstStageTable);
 
-			EtlConfigurationTableConf srcStageTable = ((DstConf) etlTable).getSrcConf()
+			EtlConfigurationTableConf srcStageTable = this.getRelatedEtlObject().getEtlInfo().getSrcConf()
 					.generateRelatedSrcStageTableConf(srcConn);
 
 			keyInfoTabConf = etlTable.generateRelatedStageDstUniqueKeysTableConf(srcConn);

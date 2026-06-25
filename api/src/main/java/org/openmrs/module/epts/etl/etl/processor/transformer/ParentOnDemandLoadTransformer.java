@@ -387,8 +387,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 
 			if (srcParent == null) {
-				//srcParent = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn).createRecordInstance();
-				
+				// srcParent = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn,
+				// dstConn).createRecordInstance();
+
 				srcParent = srcObject;
 			}
 
@@ -418,6 +419,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 			} else
 				throw e;
+		} catch (ForbiddenOperationException e) {
+			e.printStackTrace();
+
+			throw e;
 		}
 
 		if (utilities.listHasElement(migratedRecs)) {

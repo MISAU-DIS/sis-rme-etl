@@ -779,8 +779,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		this.fullLoad(operationConfig, srcConn, dstConn);
 
-		this.getSrcConf().ensureEtlStageTableExists(counter, srcConn, dstConn);
-
+		if (!this.getSrcConf().doNotUseAsDatasource()) {
+			this.getSrcConf().ensureEtlStageTableExists(counter, srcConn, dstConn);
+		}
+		
 		if (hasDstConf()) {
 			for (DstConf dstConf : this.getDstConf()) {
 
