@@ -324,12 +324,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			boolean restart;
 
 			do {
-				restart = runIteration();
+				restart = this.runIteration();
 
 				if (restart) {
-					prepareAndInitializeRerun();
+					this.prepareAndInitializeRerun();
 				}
-			} while (restart && !stopRequested());
+			} while (restart && !this.stopRequested());
 		} catch (Exception e) {
 			this.stopOperationDueError(e);
 

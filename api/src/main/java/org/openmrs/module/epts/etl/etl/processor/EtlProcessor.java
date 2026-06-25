@@ -97,7 +97,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		for (EtlDatabaseObject record : etlObjects) {
 			EtlDatabaseObject srcRecord = (EtlDatabaseObject) record;
-			srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
+
+			if (!etlItemConf.getSrcConf().doNotUseAsDatasource()) {
+				srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
+			}
 
 			for (DstConf mappingInfo : etlItemConf.getDstConf()) {
 				if (mappingInfo.isDisabled()) {
@@ -109,7 +112,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							.collectSourceObjects(this, srcRecord, null, parentMigratedRec, mappingInfo,
 									TransformationType.PRINCIPAL, srcConn);
 
-					if (utilities.setHasElement(avaliableSrcObjects)) {
+					if (utilities.setHasElement(avaliableSrcObjects) || mappingInfo.isDoNotUseSrcConfAsDataSource()) {
 						if (mappingInfo.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
 							EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this,
 									srcRecord, avaliableSrcObjects, mappingInfo, parentMigratedRec,

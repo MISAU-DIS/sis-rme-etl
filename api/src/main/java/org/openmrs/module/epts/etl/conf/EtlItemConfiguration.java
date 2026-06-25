@@ -262,9 +262,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.setRelatedEtlConfig(relatedEtlConf);
 		this.setTesting(testing);
 
-		this.getSrcConf().init(this, srcConn, dstConn);
+		if (!this.getSrcConf().doNotUseAsDatasource()) {
+			this.getSrcConf().init(this, srcConn, dstConn);
 
-		relatedEtlConf.addConfiguredTable(this.getSrcConf());
+			relatedEtlConf.addConfiguredTable(this.getSrcConf());
+		}
 
 		String codeElements = "";
 
@@ -418,7 +420,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			this.srcConf.setDstType(operationConfig.getDstType());
 		}
 
-		this.srcConf.fullLoad(srcConn);
+		if (!this.getSrcConf().doNotUseAsDatasource()) {
+			this.getSrcConf().fullLoad(srcConn);
+		}
 
 		try {
 
@@ -489,7 +493,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			if (operationConfig.writeOperationHistory()
 					|| operationConfig.getRelatedEtlConfig().getGeneralBehaviourOnEtlException().log()) {
 
-				this.getSrcConf().generateStagingTables(srcConn);
+				if (!this.getSrcConf().doNotUseAsDatasource()) {
+					this.getSrcConf().generateStagingTables(srcConn);
+				}
 			}
 
 			this.setFullLoaded(true);

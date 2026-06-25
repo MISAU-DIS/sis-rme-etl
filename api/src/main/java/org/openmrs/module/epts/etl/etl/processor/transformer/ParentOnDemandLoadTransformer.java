@@ -292,6 +292,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						}
 
 						srcParent = recs.get(0);
+					} else {
+						System.err.println();
 					}
 				}
 
@@ -529,9 +531,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			Connection dstConn) throws DBException {
 
 		synchronized (lock) {
-			ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
+			this.ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
 
-			DstConf etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
+			DstConf etlTransformTarget = this.getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 
 			if (skipFullLoad && !etlTransformTarget.isFullLoaded()) {
 				etlTransformTarget.tryToGenerateTableAlias(etlTransformTarget.getRelatedEtlConf());
@@ -548,7 +550,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				if (!etlTransformTarget.isFullLoaded()) {
 
 					if (!usesTemplate()) {
-						etlTransformTarget.setDoNotUseSrcConfAsDataSource(true);
+						etlTransformTarget.getSrcConf().setDoNotUseAsDatasource(true);
 						etlTransformTarget.setMapping(this.getOnDemandParentFieldMappings());
 					}
 
@@ -711,7 +713,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			synchronized (lock) {
 				if (getOnDemandCreateParentItemConf() == null) {
 
-					EtlItemConfiguration conf = generateEtlItemConf(srcConn, dstConn);
+					EtlItemConfiguration conf = this.generateEtlItemConf(srcConn, dstConn);
 
 					this.onDemandInfo.setOnDemandCreateParentItemConf(conf);
 				}
@@ -761,7 +763,11 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		conf.setRelatedParentDstConfName(this.getRelatedEtlTransformTarget().getTableAlias());
 
 		conf.setDoNotFullLoadDstConf(true);
-		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
+		try {
+			conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
+		} catch (DatabaseResourceDoesNotExists e) {
+			throw e;
+		}
 
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 

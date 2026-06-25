@@ -349,30 +349,32 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		if (srcObject.getRelatedConfiguration() instanceof SrcConf) {
 			SrcConf srcConf = (SrcConf) srcObject.getRelatedConfiguration();
 
-			for (EtlAdditionalDataSource mappingInfo : srcConf.getAvaliableExtraDataSource()) {
+			if (!srcConf.doNotUseAsDatasource()) {
+				for (EtlAdditionalDataSource mappingInfo : srcConf.getAvaliableExtraDataSource()) {
 
-				List<EtlDatabaseObject> avaliableObjects = mappingInfo.allowMultipleSrcObjectsForLoading()
-						? srcObjects.stream().toList()
-						: utilities.parseToList(srcObject);
+					List<EtlDatabaseObject> avaliableObjects = mappingInfo.allowMultipleSrcObjectsForLoading()
+							? srcObjects.stream().toList()
+							: utilities.parseToList(srcObject);
 
-				EtlDatabaseObject relatedSrcObject = mappingInfo.loadRelatedSrcObject(processor, srcObject, dstObject,
-						avaliableObjects, srcConn);
+					EtlDatabaseObject relatedSrcObject = mappingInfo.loadRelatedSrcObject(processor, srcObject,
+							dstObject, avaliableObjects, srcConn);
 
-				if (relatedSrcObject == null) {
+					if (relatedSrcObject == null) {
 
-					/*
-					 * If the transformation is not principal, then mean the record is being
-					 * transformed as parent of other record. So we force the tranformation
-					 */
-					if (mappingInfo.isRequired() && transformationType.isPrincipal()) {
-						throw new MissingRequiredTransformationObject();
-					} else if (!transformationType.isPrincipal()) {
-						relatedSrcObject = mappingInfo.newInstance();
-						relatedSrcObject.setRelatedConfiguration(mappingInfo);
+						/*
+						 * If the transformation is not principal, then mean the record is being
+						 * transformed as parent of other record. So we force the tranformation
+						 */
+						if (mappingInfo.isRequired() && transformationType.isPrincipal()) {
+							throw new MissingRequiredTransformationObject();
+						} else if (!transformationType.isPrincipal()) {
+							relatedSrcObject = mappingInfo.newInstance();
+							relatedSrcObject.setRelatedConfiguration(mappingInfo);
+						}
 					}
-				}
 
-				collectToSrcObjects(relatedSrcObject, srcObjects);
+					collectToSrcObjects(relatedSrcObject, srcObjects);
+				}
 			}
 		}
 	}

@@ -1000,7 +1000,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		if (this.getEtlInfo() != null) {
 			boolean isDataSourceDstObject = this.isDstObject()
 					&& ((DstConf) this.getRelatedConfiguration()).useAsDataSource();
-			
+
 			boolean isParentDstConf = this.isDstObject()
 					&& ((DstConf) this.getRelatedConfiguration()).hasChildDstConf();
 
@@ -1018,7 +1018,13 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		} else if (this.isSrcObject()
 				|| (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource())) {
-			avaliableSrcOjects.add(this);
+
+			EtlDatabaseObjectConfiguration conf = this.getRelatedConfiguration();
+
+			if (conf instanceof SrcConf && ((SrcConf) conf).doNotUseAsDatasource()) {
+			} else {
+				avaliableSrcOjects.add(this);
+			}
 		}
 
 		if (this.hasDestinationRecords()) {

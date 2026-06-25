@@ -65,7 +65,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	private final String stringLock = new String("LOCK_STRING");
 
-	private List<String> prefferredDataSource;
+	private List<String> preferredDataSource;
 
 	private List<EtlDataSource> allAvaliableDataSource;
 
@@ -94,8 +94,6 @@ public class DstConf extends AbstractTableConfiguration
 	private Boolean includeAllFieldsFromDataSource;
 
 	private String srcObjectCondition;
-
-	private Boolean doNotUseSrcConfAsDataSource;
 
 	private Boolean loadedDataSourceInfo;
 
@@ -264,11 +262,7 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public Boolean isDoNotUseSrcConfAsDataSource() {
-		return isTrue(doNotUseSrcConfAsDataSource);
-	}
-
-	public void setDoNotUseSrcConfAsDataSource(Boolean doNotUseSrcConfAsDataSource) {
-		this.doNotUseSrcConfAsDataSource = doNotUseSrcConfAsDataSource;
+		return this.getSrcConf().doNotUseAsDatasource();
 	}
 
 	public Boolean hasParentDstConf() {
@@ -359,12 +353,12 @@ public class DstConf extends AbstractTableConfiguration
 		this.automaticalyGenerated = automaticalyGenerated;
 	}
 
-	public List<String> getPrefferredDataSource() {
-		return prefferredDataSource;
+	public List<String> getPreferredDataSource() {
+		return preferredDataSource;
 	}
 
-	public void setPrefferredDataSource(List<String> prefferredDataSource) {
-		this.prefferredDataSource = prefferredDataSource;
+	public void setPreferredDataSource(List<String> preferredDataSource) {
+		this.preferredDataSource = preferredDataSource;
 	}
 
 	public List<FieldsMapping> getJoinFields() {
@@ -509,8 +503,8 @@ public class DstConf extends AbstractTableConfiguration
 
 				FieldsMapping fm = null;
 
-				EtlField etlField = this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(),
-						true);
+				EtlField etlField = this.getSrcConf().doNotUseAsDatasource() ? null
+						: this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
 
 				if (etlField != null) {
 					fm = FieldsMapping.fastCreate(etlField.getSrcField().getName(), field.getName(), true, conn);
@@ -847,12 +841,16 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	private void determinePrefferredDataSources() {
-		if (utilities.listHasNoElement(this.getPrefferredDataSource())) {
+		if (utilities.listHasNoElement(this.getPreferredDataSource())) {
 			String prefferredDs = null;
 
-			this.prefferredDataSource = new ArrayList<>();
+			this.preferredDataSource = new ArrayList<>();
 
 			for (EtlDataSource tDs : this.getAllAvaliableDataSource()) {
+				if (tDs instanceof SrcConf && ((SrcConf) tDs).doNotUseAsDatasource()) {
+					continue;
+				}
+
 				if (tDs.getName().equals(this.getTableName())) {
 					prefferredDs = tDs.getName();
 
@@ -861,19 +859,19 @@ public class DstConf extends AbstractTableConfiguration
 			}
 
 			if (prefferredDs != null) {
-				this.prefferredDataSource.add(prefferredDs);
+				this.preferredDataSource.add(prefferredDs);
 			}
 
-			if (!this.prefferredDataSource.contains(getSrcConf().getName()) && useSrcConfAsDataSource()) {
-				this.prefferredDataSource.add(getSrcConf().getAlias());
+			if (!this.preferredDataSource.contains(getSrcConf().getName()) && useSrcConfAsDataSource()) {
+				this.preferredDataSource.add(getSrcConf().getAlias());
 			}
 		}
 
 		// Change the ds name to aliases
-		if (utilities.listHasElement(this.getPrefferredDataSource())) {
-			List<String> aliasedDs = new ArrayList<>(this.getPrefferredDataSource().size());
+		if (utilities.listHasElement(this.getPreferredDataSource())) {
+			List<String> aliasedDs = new ArrayList<>(this.getPreferredDataSource().size());
 
-			for (String originalDsName : this.getPrefferredDataSource()) {
+			for (String originalDsName : this.getPreferredDataSource()) {
 				int occur = 0;
 
 				String aliasedName = originalDsName;
@@ -895,15 +893,15 @@ public class DstConf extends AbstractTableConfiguration
 			}
 		}
 
-		if (utilities.listHasElement(this.getPrefferredDataSource())) {
-			for (String dsName : this.getPrefferredDataSource()) {
+		if (utilities.listHasElement(this.getPreferredDataSource())) {
+			for (String dsName : this.getPreferredDataSource()) {
 				addToPrefferedDataSource(findDataSource(dsName));
 			}
 		}
 
 		for (EtlDataSource ds : getAllAvaliableDataSource()) {
-			if (this.getPrefferredDataSource().contains(ds.getName())
-					|| this.getPrefferredDataSource().contains(ds.getAlias())) {
+			if (this.getPreferredDataSource().contains(ds.getName())
+					|| this.getPreferredDataSource().contains(ds.getAlias())) {
 				addToPrefferedDataSource(ds);
 			} else {
 				addToNotPrefferedDataSource(ds);
@@ -1160,7 +1158,7 @@ public class DstConf extends AbstractTableConfiguration
 		super.clone(toCloneFrom, relatedItemConf, schemaInfoSrc, conn);
 		this.setJoinFields(toCloneFrom.getJoinFields());
 		this.setMapping(toCloneFrom.getMapping());
-		this.setPrefferredDataSource(toCloneFrom.getPrefferredDataSource());
+		this.setPreferredDataSource(toCloneFrom.getPreferredDataSource());
 		this.setUnmappedFieldBehavior(toCloneFrom.unmappedFieldBehavior());
 		this.setIgnorableFields(toCloneFrom.getIgnorableFields());
 		this.setDstType(toCloneFrom.getDstType());

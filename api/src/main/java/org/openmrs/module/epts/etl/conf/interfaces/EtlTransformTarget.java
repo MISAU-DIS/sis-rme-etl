@@ -78,6 +78,12 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 		if (this.getAllAvaliableDataSource() != null) {
 			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
+				if (ds instanceof SrcConf && ((SrcConf) ds).doNotUseAsDatasource()) {
+					continue;
+				}
+
+				stepIntoBreakpoint(getRelatedEtlConf(), dsName == null);
+				
 				if (ds.getAlias().trim().equals(dsName.trim())) {
 					return ds;
 				}
@@ -86,6 +92,10 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 		if (this.getAllAvaliableDataSource() != null) {
 			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
+				if (ds instanceof SrcConf && ((SrcConf) ds).doNotUseAsDatasource()) {
+					continue;
+				}
+
 				if (ds.getName().trim().equals(dsName.trim())) {
 					return ds;
 				}
