@@ -387,7 +387,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 
 			if (srcParent == null) {
-				srcParent = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn).createRecordInstance();
+				//srcParent = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn).createRecordInstance();
+				
+				srcParent = srcObject;
 			}
 
 			transformationType = TransformationType.ON_DEMAND;

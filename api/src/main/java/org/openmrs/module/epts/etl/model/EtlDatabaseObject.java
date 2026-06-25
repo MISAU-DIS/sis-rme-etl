@@ -1038,6 +1038,12 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		if (hasAuxLoadObject()) {
 			for (EtlDatabaseObject a : this.getAuxLoadObject()) {
+
+				if (this == a) {
+					// Prevent recursion when the object is auxLoadObject to it self
+					continue;
+				}
+
 				Set<EtlDatabaseObject> colectedFromAux = a.collectAllAvaliableSrcObjects();
 
 				if (utils.setHasElement(colectedFromAux)) {
