@@ -9,7 +9,6 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 public interface ConditionalEtlElement extends EtlDataConfiguration {
 
@@ -28,8 +27,8 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 						? new ArrayList<>(avaliableSrcObjects)
 						: utilities.parseToList(srcObject);
 
-				String preparedCondition = SQLUtilities.ensureDataSourceElementsReplaced(this.getCondition(), list,
-						this.getRelatedEtlConf(), dstConn);
+				String preparedCondition = org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities
+						.ensureDataSourceElementsReplaced(this.getCondition(), list, this.getRelatedEtlConf(), dstConn);
 
 				return matchesCondition(srcObject, preparedCondition);
 			} catch (MissingParameterOnEtlTransformationException e) {
@@ -169,10 +168,16 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 		valuesPart = valuesPart.replaceAll("[()]", "");
 
-		Object value = obj.getFieldValue(field);
+		Object value = null;
 
-		if (value == null)
-			return false;
+		try {
+			value = obj.getFieldValue(field);
+		} catch (ForbiddenOperationException e) {
+		}
+
+		if (value == null) {
+			value = field;
+		}
 
 		String actual = value.toString();
 
@@ -195,8 +200,9 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 		Object value = obj.getFieldValue(field);
 
-		if (value == null)
-			return false;
+		if (value == null) {
+			value = field;
+		}
 
 		String actual = value.toString();
 

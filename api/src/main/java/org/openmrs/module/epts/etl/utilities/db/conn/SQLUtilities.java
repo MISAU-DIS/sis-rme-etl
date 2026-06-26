@@ -1995,124 +1995,6 @@ public class SQLUtilities {
 		return type != null;
 	}
 
-	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
-			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
-		
-		query = normalizeQuery(query);
-		
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
-				.toString().toLowerCase();
-
-		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
-
-		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
-				" join ", " where " };
-
-		Set<String> avaliableTableAliases = retrieveTableAliases(query);
-
-		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
-
-		for (String element : srcObjectConditionElements) {
-
-			try {
-
-				FieldsMapping map = null;
-				String adjustedElement = null;
-
-				if (isTransformerExpression(element)) {
-					adjustedElement = element;
-
-					map = FieldsMapping.fastCreate("tmp_field",
-							FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
-
-					map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
-
-					map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
-
-				} else {
-					adjustedElement = element.replace(")", "").replace("(", "").strip().trim();
-
-					if (!isValidQueryColumnDefinition(adjustedElement)) {
-						continue;
-					}
-
-					try {
-						map = FieldsMapping.fastCreate(adjustedElement,
-								FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
-
-						// Do not transform if datasource is a alias
-						if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
-							continue;
-						}
-
-					} catch (InvalidDataSourceOnFieldDefifitionException e) {
-						if (utilities.contains(avaliableTableAliases, e.getDataSourceName())) {
-							continue;
-						} else
-							throw e;
-					}
-				}
-
-				if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
-					continue;
-				}
-
-				FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null,
-						avaliableSrcObjects.get(0), avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
-
-				query = replaceFirstLiteralTokenWithQuestionMark(query, adjustedElement);
-
-				resolvedValues.add(valueInfo);
-
-			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
-				continue;
-			}
-		}
-
-		return new PreparedQueryInfo(query, resolvedValues);
-
-	}
-
-	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
-			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
-				.toString();
-
-		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<" };
-
-		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
-
-		for (String element : srcObjectConditionElements) {
-			try {
-
-				element = element.replace("(", "").replace(")", "");
-
-				if (!isValidQueryColumnDefinition(element)) {
-					continue;
-				}
-
-				FieldsMapping map = FieldsMapping.fastCreate(element.strip().trim(),
-						FastEtlTransformingTarget.fastCreate(relatedEtlConf, avaliableSrcObjects, conn), conn);
-
-				if (map.hasDataSourceName()) {
-					FieldTransformingInfo v = map.getTransformerInstance().transform(null, avaliableSrcObjects.get(0),
-							avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
-
-					query = query.replaceAll(element.strip().trim(),
-							v.getTransformedValue() == null ? "null" : v.getTransformedValue().toString());
-
-				}
-			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
-				continue;
-			}
-
-		}
-
-		return query;
-	}
-
 	private static String replaceFirstLiteralTokenWithQuestionMark(String query, String token) {
 
 		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token) + "(?![a-zA-Z0-9_\\.])");
@@ -2199,9 +2081,181 @@ public class SQLUtilities {
 		return aliases;
 	}
 
-	public static void main(String[] args) {
-		String sql = "select p.person_id as patient_id from person as pr inner join patient pt on pr.person_id = pt.patient_id where p.uuid = person_complex_attribute_detail_patient_src_ds.uuid";
+	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
+			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
-		System.out.println(retrieveTableAliases(sql));
+		query = normalizeQuery(query);
+
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
+				.toString().toLowerCase();
+
+		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
+
+		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, avaliableSrcObjects,
+				relatedEtlConf, conn);
+
+		for (ResolvedQueryElement element : resolvedElements) {
+
+			query = replaceFirstLiteralTokenWithQuestionMark(query, element.getToken());
+
+			resolvedValues.add(element.getValueInfo());
+		}
+
+		return new PreparedQueryInfo(query, resolvedValues);
+	}
+
+	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
+			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+
+		query = normalizeQuery(query);
+
+		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
+				.toString().toLowerCase();
+
+		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, avaliableSrcObjects,
+				relatedEtlConf, conn);
+
+		for (ResolvedQueryElement element : resolvedElements) {
+
+			String replacement = toSqlLiteral(element.getValue());
+
+			query = replaceFirstLiteralTokenWithValue(query, element.getToken(), replacement);
+		}
+
+		return query;
+	}
+
+	private static String replaceFirstLiteralTokenWithValue(String query, String token, String value) {
+
+		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token) + "(?![a-zA-Z0-9_\\.])");
+
+		Matcher matcher = pattern.matcher(query);
+
+		if (matcher.find()) {
+			return matcher.replaceFirst(Matcher.quoteReplacement(value));
+		}
+
+		return query;
+	}
+
+	private static String toSqlLiteral(Object value) {
+
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Number || value instanceof Boolean) {
+			return value.toString();
+		}
+
+		String str = value.toString();
+
+		str = str.replace("'", "''");
+
+		return "'" + str + "'";
+	}
+
+	private static List<ResolvedQueryElement> resolveTransformableQueryElements(String query,
+			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+
+		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
+
+		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
+				" join ", " where ", " in " };
+
+		Set<String> avaliableTableAliases = retrieveTableAliases(query);
+
+		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
+
+		FastEtlTransformingTarget transformingTarget = FastEtlTransformingTarget.fastCreate(relatedEtlConf,
+				avaliableSrcObjects, conn);
+
+		for (String element : srcObjectConditionElements) {
+
+			try {
+
+				if (element == null || element.isBlank()) {
+					continue;
+				}
+
+				FieldsMapping map;
+				String adjustedElement;
+
+				if (isTransformerExpression(element)) {
+
+					adjustedElement = element.strip().trim();
+
+					map = FieldsMapping.fastCreate("tmp_field", transformingTarget, conn);
+
+					map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
+
+					map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
+
+				} else {
+
+					adjustedElement = element.replace(")", "").replace("(", "").strip().trim();
+
+					if (!isValidQueryColumnDefinition(adjustedElement)) {
+						continue;
+					}
+
+					try {
+						map = FieldsMapping.fastCreate(adjustedElement, transformingTarget, conn);
+
+						// Do not transform if datasource is actually a SQL alias
+						if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
+							continue;
+						}
+
+					} catch (InvalidDataSourceOnFieldDefifitionException e) {
+
+						if (utilities.contains(avaliableTableAliases, e.getDataSourceName())) {
+							continue;
+						}
+
+						throw e;
+					}
+				}
+
+				if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
+					continue;
+				}
+
+				FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null,
+						avaliableSrcObjects.get(0), avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
+
+				resolvedElements.add(new ResolvedQueryElement(adjustedElement, valueInfo));
+
+			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
+				continue;
+			}
+		}
+
+		return resolvedElements;
+	}
+
+	private static class ResolvedQueryElement {
+
+		private final String token;
+		private final FieldTransformingInfo valueInfo;
+
+		private ResolvedQueryElement(String token, FieldTransformingInfo valueInfo) {
+			this.token = token;
+			this.valueInfo = valueInfo;
+		}
+
+		public String getToken() {
+			return token;
+		}
+
+		public FieldTransformingInfo getValueInfo() {
+			return valueInfo;
+		}
+
+		public Object getValue() {
+			return valueInfo != null ? valueInfo.getTransformedValue() : null;
+		}
 	}
 }

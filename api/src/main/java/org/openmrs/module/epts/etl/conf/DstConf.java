@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -29,6 +28,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
@@ -446,8 +446,7 @@ public class DstConf extends AbstractTableConfiguration
 					EtlDataSource ds = findDataSource(fm.getDataSourceName());
 
 					if (ds == null) {
-						throw new NoSuchElementException("Error when preparing the fm:" + fm + "> The DataSource '"
-								+ fm.getDataSourceName() + "' cannot be found ");
+						throw new InvalidDataSourceOnFieldDefifitionException(fm.getName(), fm.getDataSourceName());
 					}
 
 					if (ds.containsField(fm.getSrcField())) {
