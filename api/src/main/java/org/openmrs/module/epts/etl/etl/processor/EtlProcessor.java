@@ -20,7 +20,6 @@ import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
-import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.MissingTransformationSrcObjectException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -69,16 +68,14 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
 
 				for (EtlDatabaseObject obj : etlObjects) {
-					if (action.moveToStageArea()) {
-						EtlStageAreaObject processedRec = obj.generateProcessedRecord(srcConn, dstConn);
+					EtlStageAreaObject processedRec = obj.generateProcessedRecord(srcConn, dstConn);
 
+					if (action.moveToStageArea()) {
 						processedRec.save(processedRec.getRelatedConfiguration(), srcConn);
 					}
 
-					if (action.isDelete() || action.moveToStageArea()) {
+					if ((action.isDelete() || action.moveToStageArea()) && processedRec.isLoadedSuccessifuly()) {
 						DatabaseObjectDAO.remove(obj, srcConn);
-					} else {
-						throw new EtlExceptionImpl("Unsupported afterEtlActionType (" + action + ")");
 					}
 				}
 			}

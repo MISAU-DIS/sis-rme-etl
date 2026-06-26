@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
@@ -456,6 +457,8 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 			setValue(DEFAULT_INT_VALUE + 1);
 		} else if (isBooleanColumnType()) {
 			setValue(DEFAULT_BOOLEAN_VALUE);
+		} else if (this.getName().equals("uuid")) {
+			setValue(UUID.randomUUID().toString());
 		} else {
 			setValue(DEFAULT_STRING_VALUE);
 		}

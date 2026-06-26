@@ -457,6 +457,12 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 	@Override
 	public void setChildObjects(List<EtlDatabaseObject> childObjs) {
 		// TODO Auto-generated method stub
-		
+
+	}
+
+	@Override
+	public EtlDatabaseObject createACopy() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

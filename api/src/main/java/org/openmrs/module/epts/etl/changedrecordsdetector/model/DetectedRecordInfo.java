@@ -458,4 +458,10 @@ public class DetectedRecordInfo extends BaseVO implements ChangedRecord {
 		// TODO Auto-generated method stub
 
 	}
+
+	@Override
+	public EtlDatabaseObject createACopy() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -637,4 +637,18 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 		return utilities.parseToList(g);
 	}
+
+	@Override
+	public EtlDatabaseObject createACopy() {
+		GenericDatabaseObject copy = new GenericDatabaseObject(this.relatedConfiguration);
+
+		copy.sharedPkObj = this.sharedPkObj;
+		copy.auxLoadObject = this.auxLoadObject;
+		copy.loadedFromDb = this.loadedFromDb;
+
+
+		copy.copyFrom(this);
+		
+		return copy;
+	}
 }

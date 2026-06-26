@@ -383,4 +383,10 @@ public class DatabasePreparationRecord implements EtlDatabaseObject {
 		// TODO Auto-generated method stub
 
 	}
+
+	@Override
+	public EtlDatabaseObject createACopy() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

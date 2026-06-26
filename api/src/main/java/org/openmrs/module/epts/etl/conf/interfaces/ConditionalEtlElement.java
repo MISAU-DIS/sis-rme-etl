@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -31,7 +32,12 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 						.ensureDataSourceElementsReplaced(this.getCondition(), list, this.getRelatedEtlConf(), dstConn);
 
 				return matchesCondition(srcObject, preparedCondition);
-			} catch (MissingParameterOnEtlTransformationException e) {
+			} catch (MissingParameterOnEtlTransformationException | InvalidDataSourceOnFieldDefifitionException e) {
+
+				if (e instanceof InvalidDataSourceOnFieldDefifitionException) {
+					throw e;
+				}
+
 				return false;
 			}
 

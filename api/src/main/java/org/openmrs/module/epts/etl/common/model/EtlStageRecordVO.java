@@ -705,4 +705,10 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 
 	}
 
+	@Override
+	public EtlDatabaseObject createACopy() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

@@ -66,6 +66,8 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	List<EtlDatabaseObject> getDestinationObjects();
 
+	EtlDatabaseObject createACopy();
+	
 	void setEtlStageObjectInfo(EtlStageObjectInfo etlStageObjectInfo);
 
 	EtlStageObjectInfo getEtlStageObjectInfo();
