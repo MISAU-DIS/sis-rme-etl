@@ -187,6 +187,11 @@ public class EtlTemplateConfiguration {
 			throw new EtlExceptionImpl("Templates file path is not defined.");
 		}
 		
+		if (templateName == null || templateName.isBlank()) {
+			throw new EtlExceptionImpl("Missing template name in one or more template invocation.");
+		}
+		
+		
 		List<EtlTemplateConfiguration> templates = CACHE.computeIfAbsent(templatesFileLocation, path -> {
 			try {
 				ObjectMapper mapper = new ObjectMapperProvider().getContext(EtlTemplateConfiguration.class);
