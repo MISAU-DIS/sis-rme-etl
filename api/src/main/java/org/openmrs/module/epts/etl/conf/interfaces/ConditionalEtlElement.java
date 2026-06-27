@@ -78,9 +78,14 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 	default Boolean evaluateCondition(EtlDatabaseObject obj, String condition) {
 
+		// NOT IN
+		if (condition.matches("(?i).+\\s+not\\s+in\\s*\\(.+\\)")) {
+			return evaluateIn(obj, condition, true);
+		}
+
 		// IN
 		if (condition.matches("(?i).+\\s+in\\s*\\(.+\\)")) {
-			return evaluateIn(obj, condition);
+			return evaluateIn(obj, condition, false);
 		}
 
 		// LIKE
@@ -165,9 +170,9 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 		}
 	}
 
-	default Boolean evaluateIn(EtlDatabaseObject obj, String condition) {
+	default Boolean evaluateIn(EtlDatabaseObject obj, String condition, boolean negated) {
 
-		String[] parts = condition.split("(?i)in");
+		String[] parts = condition.split(negated ? "(?i)not\\s+in" : "(?i)in");
 
 		String field = parts[0].trim();
 		String valuesPart = parts[1].trim();
@@ -187,14 +192,17 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 		String actual = value.toString();
 
+		boolean found = false;
+
 		for (String v : valuesPart.split(",")) {
 
 			if (actual.equals(stripQuotes(v.trim()))) {
-				return true;
+				found = true;
+				break;
 			}
 		}
 
-		return false;
+		return negated ? !found : found;
 	}
 
 	default Boolean evaluateLike(EtlDatabaseObject obj, String condition) {
