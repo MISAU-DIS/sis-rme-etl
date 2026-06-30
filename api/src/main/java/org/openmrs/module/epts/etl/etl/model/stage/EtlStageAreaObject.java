@@ -124,7 +124,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 					: EtlLoadStatus.FULL_LOADED;
 
 			this.setFieldValue("last_sync_try_err",
-					!status.isFullLoaded() ? obj.getEtlInfo().getExceptionOnEtl().getLocalizedMessage() : null);
+					!status.isFullLoaded() ? utilities.garantirXCaracteres(obj.getEtlInfo().getExceptionOnEtl().getLocalizedMessage(), 499) : null);
 
 			this.setFieldValue("etl_confing_id", operation_id);
 			this.setFieldValue("src_stage_table_name", srcStageTable.getTableName());

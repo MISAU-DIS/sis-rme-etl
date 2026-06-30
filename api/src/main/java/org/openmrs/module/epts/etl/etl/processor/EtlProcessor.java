@@ -183,7 +183,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
 
-		dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, dstObject, dstObject));
+		dstObject.setEtlInfo(EtlInfo.initEtlRecord(this, record, dstObject));
 
 		dstObject.getEtlInfo().setExceptionOnEtl(e);
 

@@ -28,6 +28,7 @@ public enum FieldTransformerType {
 	PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(ParentOnDemandLoadWithDefaultsTransformer.class.getCanonicalName(),
 			ParentOnDemandLoadWithDefaultsTransformer::getInstance),
 	DATE_TRANSFORMER(DateFieldTransformer.class.getCanonicalName(), DateFieldTransformer::getInstance),
+	UUID_ON_DEMAND_TRANSFORMER(UuidOnDemanTransformer.class.getCanonicalName(), UuidOnDemanTransformer::getInstance),
 	NULL_VALUE_TRANSFORMER(NullValueTransformer.class.getCanonicalName(), NullValueTransformer::getInstance),
 	CUSTOM_TRANSFORMER(null, null);
 
@@ -44,6 +45,10 @@ public enum FieldTransformerType {
 
 	public String getClassName() {
 		return className;
+	}
+
+	public boolean isUuidOnDemand() {
+		return this == UUID_ON_DEMAND_TRANSFORMER;
 	}
 
 	public boolean isDefault() {

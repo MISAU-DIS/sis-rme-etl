@@ -66,19 +66,6 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 			final TransformableField field, Connection srcConn, Connection dstConn)
 			throws DBException, EtlTransformationException {
 
-		if (srcObject == null) {
-			throw new EtlTransformationException(
-					"Source object cannot be null while transforming field '" + field.getName() + "'.", null,
-					ActionOnEtlIssue.ABORT_PROCESS);
-		}
-
-		if (transformedRecord == null || transformedRecord.getRelatedConfiguration() == null) {
-			throw new EtlTransformationException(
-					"Transformed record or its related configuration cannot be null while transforming field '"
-							+ field.getName() + "'.",
-					srcObject, ActionOnEtlIssue.ABORT_PROCESS);
-		}
-
 		List<EtlDatabaseObject> availableObjects = new ArrayList<>();
 
 		if (additionalSrcObjects != null) {
@@ -101,7 +88,8 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 
 		List<EtlDatabaseObject> result = new ArrayList<>();
 
-		if (srcObject.getDestinationObjects() == null || srcObject.getDestinationObjects().isEmpty()) {
+		if (srcObject == null || srcObject.getDestinationObjects() == null || srcObject.getDestinationObjects().isEmpty()
+				|| transformedRecord == null || transformedRecord.getRelatedConfiguration() == null) {
 			return result;
 		}
 
@@ -196,7 +184,7 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 	private FieldTransformingInfo handleValueNotFound(EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
 			TransformableField field) throws EtlTransformationException {
 
-		String objectName = transformedRecord.getRelatedConfiguration() != null
+		String objectName = transformedRecord != null && transformedRecord.getRelatedConfiguration() != null
 				? transformedRecord.getRelatedConfiguration().getObjectName()
 				: null;
 

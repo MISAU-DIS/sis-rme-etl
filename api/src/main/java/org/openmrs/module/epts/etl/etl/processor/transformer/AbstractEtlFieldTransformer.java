@@ -40,6 +40,10 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		this.field = field;
 	}
 
+	public List<Object> getParameters() {
+		return parameters;
+	}
+
 	public static String buildCacheKey(EtlTransformTarget dstConf, TransformableField field, List<Object> parameters) {
 		String params = parameters != null && !parameters.isEmpty()
 				? ("|" + parameters.stream().map(Object::toString).collect(Collectors.joining("|")))

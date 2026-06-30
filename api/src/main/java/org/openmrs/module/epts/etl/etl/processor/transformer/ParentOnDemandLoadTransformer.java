@@ -449,16 +449,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
 				this.getOnDemandCheckCondition(), allObjs, getRelatedEtlConf(), dstConn);
 
-		try {
-			return dstConf.find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
-					dstConn);
-		} catch (Exception e) {
-
-			p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(this.getOnDemandCheckCondition(),
-					allObjs, getRelatedEtlConf(), dstConn);
-
-			throw e;
-		}
+		return dstConf.find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn), dstConn);
 	}
 
 	private Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
