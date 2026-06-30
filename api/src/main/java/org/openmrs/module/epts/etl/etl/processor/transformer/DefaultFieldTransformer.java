@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -65,68 +66,171 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 			final TransformableField field, Connection srcConn, Connection dstConn)
 			throws DBException, EtlTransformationException {
 
-		Object dstValue = null;
-		EtlDataSource ds = null;
-
-		boolean found = false;
-
-		for (EtlDatabaseObject srcObj : additionalSrcObjects) {
-
-			if (field.getDataSourceName() != null
-					&& field.getDataSourceName().equals(srcObj.getRelatedConfiguration().getAlias())) {
-
-				found = true;
-
-				String fieldNameSnake = utilities.parsetoSnakeCase(field.getName());
-				String fieldNameCamel = utilities.parsetoCamelCase(field.getName());
-
-				Field srcField = null;
-
-				try {
-					srcField = srcObj.getField(fieldNameSnake);
-
-					dstValue = srcObj.getFieldValue(fieldNameSnake);
-				} catch (ForbiddenOperationException e) {
-					srcField = srcObj.getField(fieldNameCamel);
-
-					dstValue = srcObj.getFieldValue(fieldNameCamel);
-				}
-
-				if (srcField.getTransformingInfo() != null
-						&& srcField.getTransformingInfo().getTransformedValue() != null) {
-					if (srcField.getTransformingInfo().getTransformedValue().equals(dstValue)) {
-						return srcField.getTransformingInfo();
-					}
-				}
-
-				ds = (EtlDataSource) srcObj.getRelatedConfiguration();
-
-				break;
-			}
+		if (srcObject == null) {
+			throw new EtlTransformationException(
+					"Source object cannot be null while transforming field '" + field.getName() + "'.", null,
+					ActionOnEtlIssue.ABORT_PROCESS);
 		}
 
-		if (!found) {
-
-			String objectname = transformedRecord != null ? transformedRecord.getRelatedConfiguration().getObjectName()
-					: null;
-
-			String fieldName = objectname != null ? objectname + "(" + field.getName() + ")"
-					: "'" + field.getName() + "'";
-
-			String msg = "The field " + fieldName
-					+ " was transformed to null, but it is not configured to accept null values. "
-					+ "To avoid process interruption, explicitly allow null values for this field or ensure the transformation produces a valid value.";
-
-			if (field.nullValueBehavior().markRecordAsFailed()) {
-				throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
-			} else if (field.nullValueBehavior().abort()) {
-				throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
-			} else if (field.nullValueBehavior().ignore()) {
-				return null;
-			}
+		if (transformedRecord == null || transformedRecord.getRelatedConfiguration() == null) {
+			throw new EtlTransformationException(
+					"Transformed record or its related configuration cannot be null while transforming field '"
+							+ field.getName() + "'.",
+					srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		}
 
-		return new FieldTransformingInfo(field, dstValue, ds);
+		List<EtlDatabaseObject> availableObjects = new ArrayList<>();
+
+		if (additionalSrcObjects != null) {
+			availableObjects.addAll(additionalSrcObjects);
+		}
+
+		availableObjects.addAll(retrievePreviousDestinationRecordsUsableAsDataSource(srcObject, transformedRecord));
+
+		FieldTransformingInfo transformingInfo = tryResolveFromAvailableObjects(field, availableObjects);
+
+		if (transformingInfo != null) {
+			return transformingInfo;
+		}
+
+		return handleValueNotFound(srcObject, transformedRecord, field);
 	}
 
+	private List<EtlDatabaseObject> retrievePreviousDestinationRecordsUsableAsDataSource(EtlDatabaseObject srcObject,
+			EtlDatabaseObject transformedRecord) {
+
+		List<EtlDatabaseObject> result = new ArrayList<>();
+
+		if (srcObject.getDestinationObjects() == null || srcObject.getDestinationObjects().isEmpty()) {
+			return result;
+		}
+
+		if (transformedRecord.getRelatedConfiguration() instanceof EtlTransformTarget
+				&& ((EtlTransformTarget) transformedRecord.getRelatedConfiguration()).hasPreviousDataSourceTargets()) {
+			EtlTransformTarget targetConf = (EtlTransformTarget) transformedRecord.getRelatedConfiguration();
+
+			List<EtlTransformTarget> previousDataSourceTargets = targetConf.retrievePreviousDataSourceTargets();
+
+			for (EtlDatabaseObject dstObj : srcObject.getDestinationObjects()) {
+
+				if (dstObj == null || dstObj.getRelatedConfiguration() == null) {
+					continue;
+				}
+
+				for (EtlTransformTarget previousTarget : previousDataSourceTargets) {
+
+					if (dstObj.getRelatedConfiguration() == previousTarget
+							|| dstObj.getRelatedConfiguration().getAlias().equals(previousTarget.getAlias()) || dstObj
+									.getRelatedConfiguration().getObjectName().equals(previousTarget.getObjectName())) {
+
+						result.add(dstObj);
+						break;
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+
+	private FieldTransformingInfo tryResolveFromAvailableObjects(TransformableField field,
+			List<EtlDatabaseObject> availableObjects) {
+
+		if (availableObjects == null || availableObjects.isEmpty()) {
+			return null;
+		}
+
+		for (EtlDatabaseObject obj : availableObjects) {
+
+			if (obj == null || obj.getRelatedConfiguration() == null) {
+				continue;
+			}
+
+			if (field.getDataSourceName() != null
+					&& !field.getDataSourceName().equals(obj.getRelatedConfiguration().getAlias())) {
+				continue;
+			}
+
+			FieldValueResolution resolved = tryResolveFieldValue(obj, field);
+
+			if (resolved == null) {
+				continue;
+			}
+
+			Field srcField = resolved.field;
+			Object value = resolved.value;
+
+			if (srcField.getTransformingInfo() != null && srcField.getTransformingInfo().getTransformedValue() != null
+					&& srcField.getTransformingInfo().getTransformedValue().equals(value)) {
+				return srcField.getTransformingInfo();
+			}
+
+			return new FieldTransformingInfo(field, value, (EtlDataSource) obj.getRelatedConfiguration());
+		}
+
+		return null;
+	}
+
+	private FieldValueResolution tryResolveFieldValue(EtlDatabaseObject obj, TransformableField field) {
+
+		String originalName = field.getName();
+		String snakeName = utilities.parsetoSnakeCase(originalName);
+		String camelName = utilities.parsetoCamelCase(originalName);
+
+		String[] candidateNames = { originalName, snakeName, camelName };
+
+		for (String candidate : candidateNames) {
+			try {
+				Field srcField = obj.getField(candidate);
+				Object value = obj.getFieldValue(candidate);
+
+				return new FieldValueResolution(srcField, value);
+
+			} catch (ForbiddenOperationException e) {
+			}
+		}
+
+		return null;
+	}
+
+	private FieldTransformingInfo handleValueNotFound(EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
+			TransformableField field) throws EtlTransformationException {
+
+		String objectName = transformedRecord.getRelatedConfiguration() != null
+				? transformedRecord.getRelatedConfiguration().getObjectName()
+				: null;
+
+		String fieldName = objectName != null ? objectName + "(" + field.getName() + ")" : "'" + field.getName() + "'";
+
+		String msg = "The field " + fieldName
+				+ " could not be resolved from the available source objects or previous destination records. "
+				+ "The transformation would produce a null value, but this field is not configured to accept null values. "
+				+ "Configure an explicit mapping, allow null values, or ensure that a previous destination record is available as a data source.";
+
+		if (field.nullValueBehavior().markRecordAsFailed()) {
+			throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
+		}
+
+		if (field.nullValueBehavior().abort()) {
+			throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
+		}
+
+		if (field.nullValueBehavior().ignore()) {
+			return null;
+		}
+
+		return new FieldTransformingInfo(field, null, null);
+	}
+
+	private static class FieldValueResolution {
+
+		private final Field field;
+
+		private final Object value;
+
+		private FieldValueResolution(Field field, Object value) {
+			this.field = field;
+			this.value = value;
+		}
+	}
 }

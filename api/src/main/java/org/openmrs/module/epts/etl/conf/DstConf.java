@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -213,6 +214,7 @@ public class DstConf extends AbstractTableConfiguration
 		this.useAsDataSource = useAsDataSource;
 	}
 
+	@Override
 	public Boolean useAsDataSource() {
 		return isTrue(useAsDataSource);
 	}
@@ -239,6 +241,41 @@ public class DstConf extends AbstractTableConfiguration
 
 	public ActionOnEtlIssue onMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
+	}
+
+	/**
+	 * Returns all destination configurations that:
+	 * <ul>
+	 * <li>belong to the same parent ETL item configuration;</li>
+	 * <li>appear before this destination configuration;</li>
+	 * <li>are configured to be used as transformation data sources.</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * The returned list preserves the declaration order in the ETL configuration,
+	 * allowing subsequent destination mappings to reference records produced by
+	 * previously executed destination configurations.
+	 *
+	 * @param conn the database connection (currently unused)
+	 * @return all preceding destination configurations that can be used as data
+	 *         sources
+	 */
+	@Override
+	public List<EtlTransformTarget> retrievePreviousDataSourceTargets() {
+		List<EtlTransformTarget> previousTargets = new ArrayList<>();
+
+		for (DstConf dstConf : this.getParentConf().getDstConf()) {
+
+			if (dstConf == this) {
+				break;
+			}
+
+			if (dstConf.useAsDataSource()) {
+				previousTargets.add(dstConf);
+			}
+		}
+
+		return Collections.unmodifiableList(previousTargets);
 	}
 
 	public DstConf getParentDstConf() {

@@ -55,6 +55,10 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 	FieldMappingResolutionStrategy mappingResolutionStrategy();
 
+	default Boolean useAsDataSource() {
+		return false;
+	}
+
 	default Boolean hasUnmappedFieldBehavior() {
 		return this.unmappedFieldBehavior() != null;
 	}
@@ -96,6 +100,20 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 				if (ds.getName().trim().equals(dsName.trim())) {
 					return ds;
+				}
+			}
+		}
+
+		if (this.hasPreviousDataSourceTargets()) {
+			for (EtlTransformTarget ds : this.retrievePreviousDataSourceTargets()) {
+				if (((EtlDataSource) ds).getAlias().trim().equals(dsName.trim())) {
+					return (EtlDataSource) ds;
+				}
+			}
+
+			for (EtlTransformTarget ds : this.retrievePreviousDataSourceTargets()) {
+				if (((EtlDataSource) ds).getName().trim().equals(dsName.trim())) {
+					return (EtlDataSource) ds;
 				}
 			}
 		}
@@ -191,6 +209,26 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			}
 		}
 
+		List<EtlTransformTarget> previousDataSourceTarget = this.retrievePreviousDataSourceTargets();
+
+		if (qtyOccurences == 0 && utilities.listHasElement(previousDataSourceTarget)) {
+			for (EtlTransformTarget ds : previousDataSourceTarget) {
+				if (ds.containsField(fm.getSrcField())) {
+					qtyOccurences++;
+
+					if (qtyOccurences > 1) {
+						fm.getPossibleSrc().add(ds.getAlias());
+
+						break;
+					} else {
+						fm.setDataSourceName(ds.getAlias());
+						fm.setDataSource((EtlDataSource) ds);
+						fm.loadType(this, (EtlDataSource) ds, conn);
+					}
+				}
+			}
+		}
+
 		Boolean hasTransformer = fm.hasTransformer() && !fm.useDefaultTransformer();
 
 		if (hasTransformer) {
@@ -222,6 +260,31 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			throw new FieldAvaliableInMultipleDataSources(fm.getSrcField());
 		}
 
+	}
+
+	/**
+	 * Returns all destination configurations that:
+	 * <ul>
+	 * <li>belong to the same parent ETL item configuration;</li>
+	 * <li>appear before this destination configuration;</li>
+	 * <li>are configured to be used as transformation data sources.</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * The returned list preserves the declaration order in the ETL configuration,
+	 * allowing subsequent destination mappings to reference records produced by
+	 * previously executed destination configurations.
+	 *
+	 * @param conn the database connection (currently unused)
+	 * @return all preceding destination configurations that can be used as data
+	 *         sources
+	 */
+	default List<EtlTransformTarget> retrievePreviousDataSourceTargets() {
+		return null;
+	}
+
+	default Boolean hasPreviousDataSourceTargets() {
+		return utilities.listHasElement(this.retrievePreviousDataSourceTargets());
 	}
 
 	default void addToPrefferedDataSource(EtlDataSource ds) {
