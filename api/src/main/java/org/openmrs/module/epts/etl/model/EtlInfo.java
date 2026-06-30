@@ -83,6 +83,10 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			this.transformedObject.loadUniqueKeyValues();
 		}
 
+		if (!(this.relatedSrcObject.getRelatedConfiguration() instanceof SrcConf)) {
+			throw new EtlExceptionImpl("Attempt to transform not SrcConf Objecrt " + this.relatedSrcObject);
+		}
+
 		this.resultItem = new EtlOperationItemResult<EtlDatabaseObject>(this.relatedSrcObject);
 	}
 
