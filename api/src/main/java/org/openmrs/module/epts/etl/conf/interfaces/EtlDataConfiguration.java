@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.conf.interfaces;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +30,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
 public interface EtlDataConfiguration extends BaseConfiguration {
 
@@ -482,4 +484,11 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			System.err.println("Steped into the breakpoint");
 	}
 
+	static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
+		try {
+			return resolvePlaceholders(FileUtilities.realAllFileAsString(file), null, null);
+		} catch (IOException e) {
+			throw new EtlConfException(e);
+		}
+	}
 }

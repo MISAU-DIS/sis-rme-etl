@@ -297,8 +297,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					}
 				}
 
-				stepIntoBreakpoint(getRelatedEtlConf(), this.getParentTableName().equals("encounter"));
-
 				dstParent = this.createParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
 						field, srcConn, dstConn);
 

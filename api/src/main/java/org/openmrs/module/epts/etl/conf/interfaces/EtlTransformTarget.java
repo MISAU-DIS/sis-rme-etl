@@ -82,8 +82,6 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 					continue;
 				}
 
-				stepIntoBreakpoint(getRelatedEtlConf(), dsName == null);
-				
 				if (ds.getAlias().trim().equals(dsName.trim())) {
 					return ds;
 				}

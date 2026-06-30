@@ -318,8 +318,6 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		for (FieldsMapping fieldsMapping : dstConf.getAllMapping()) {
 			if (!fieldsMapping.getName().equals(dstConf.getPrimaryKey().asSimpleKey().getName())) {
 				if (fieldsMapping.shouldBeProcessed(srcObject, srcObjects, srcConn, dstConn)) {
-					dstConf.stepIntoBreakpoint(null, fieldsMapping.getDstField().equals("encounter_id"));
-
 					dstConf.getRelatedEtlConf().logTrace("Transforming field " + fieldsMapping);
 
 					fieldsMapping.getTransformerInstance().performFieldTransformation(processor, srcObject,

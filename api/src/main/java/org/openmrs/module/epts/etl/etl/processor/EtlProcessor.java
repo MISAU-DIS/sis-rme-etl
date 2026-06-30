@@ -61,6 +61,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
 			throws DBException {
 		try {
+
 			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
 
 			if (getRelatedEtlOperationConfig().getAfterEtlActionType() != null

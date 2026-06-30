@@ -593,9 +593,6 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 				logger.trace("Inserted " + objects.size() + " " + tabConf.getTableName());
 			} catch (DBException e) {
-
-				tabConf.stepIntoBreakpoint(tabConf.getRelatedEtlConf(), e.isIntegrityConstraintViolationException());
-
 				if (!tryToResolveException && objects.size() > 1) {
 					throw new ForbiddenOperationException(
 							"For multiple records you must explicity indicate that the exception must be resolved");

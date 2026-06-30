@@ -612,8 +612,6 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			getProcessor().logDebug("Recursive relationship found reloading parents for record "
 					+ this.getTransformedObject() + " with parent: " + defaultParentInfo);
 
-			stepIntoBreakpoint(getEtlConfiguration(), defaultParentInfo.getDstRecId() == null);
-
 			defaultParentInfo.save((TableConfiguration) defaultParentInfo.getRelatedConfiguration(),
 					ConflictResolutionType.KEEP_EXISTING, srcConn);
 		}

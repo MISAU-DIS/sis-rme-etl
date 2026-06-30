@@ -103,7 +103,8 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
-		Object value = mapper.readValue(file, targetField.getType());
+		Object value = mapper.readValue(EtlDataConfiguration.resolvePlaceholders(file, null, null),
+				targetField.getType());
 
 		targetField.set(dc, value);
 	}
@@ -131,7 +132,7 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		}
 
 		for (File file : files) {
-			Object item = mapper.readValue(file, itemType);
+			Object item = mapper.readValue(EtlDataConfiguration.resolvePlaceholders(file, null, null), itemType);
 			targetList.add(item);
 		}
 	}
