@@ -171,29 +171,40 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
 	private List<File> resolveFiles(String confRootDir, String path) throws IOException {
 
-		if (!utilities.stringHasValue(confRootDir)) {
+		if (confRootDir == null || confRootDir.isBlank()) {
 			throw new EtlConfException("The confRootDir was not specified!");
 		}
 
-		if (!utilities.stringHasValue(path)) {
+		if (path == null || path.isBlank()) {
 			throw new EtlConfException("The include path was not specified!");
 		}
 
 		Path rootPath = Paths.get(confRootDir).normalize();
 
-		// Resolve o path relativamente ao directório raiz da configuração
-		Path resolvedPath = rootPath.resolve(path).normalize();
-
-		// wildcard: includes/sync/child/sync*.json
 		if (path.contains("*")) {
 
-			Path parentDir = resolvedPath.getParent();
+			int lastSeparator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
 
-			if (parentDir == null) {
-				throw new EtlConfException("Unable to determine parent directory for wildcard path: " + path);
+			String parentPart;
+			String pattern;
+
+			if (lastSeparator >= 0) {
+				parentPart = path.substring(0, lastSeparator);
+				pattern = path.substring(lastSeparator + 1);
+			} else {
+				parentPart = "";
+				pattern = path;
 			}
 
-			String pattern = resolvedPath.getFileName().toString();
+			Path parentDir = parentPart.isEmpty() ? rootPath : rootPath.resolve(parentPart).normalize();
+
+			if (!parentDir.startsWith(rootPath)) {
+				throw new EtlConfException("Invalid include path outside configuration root: " + path);
+			}
+
+			if (!Files.exists(parentDir) || !Files.isDirectory(parentDir)) {
+				throw new EtlExceptionImpl("Include directory not found: " + parentDir);
+			}
 
 			try (DirectoryStream<Path> stream = Files.newDirectoryStream(parentDir, pattern)) {
 
@@ -211,11 +222,15 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 			}
 		}
 
+		Path resolvedPath = rootPath.resolve(path).normalize();
+
+		if (!resolvedPath.startsWith(rootPath)) {
+			throw new EtlConfException("Invalid include path outside configuration root: " + path);
+		}
+
 		File file = resolvedPath.toFile();
 
-		// directório
 		if (file.exists() && file.isDirectory()) {
-
 			File[] files = file.listFiles((dir, name) -> name.toLowerCase().endsWith(".json"));
 
 			if (files == null) {
@@ -223,15 +238,15 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 			}
 
 			List<File> result = new ArrayList<>(Arrays.asList(files));
-
 			result.sort(Comparator.comparing(File::getName));
 
 			return result;
 		}
 
-		// ficheiro único
 		if (file.exists() && file.isFile()) {
-			return List.of(file);
+			List<File> result = new ArrayList<>();
+			result.add(file);
+			return result;
 		}
 
 		throw new EtlExceptionImpl("Include path not found: " + resolvedPath);

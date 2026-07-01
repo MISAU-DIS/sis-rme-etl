@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
+import org.openmrs.module.epts.etl.conf.interfaces.ConditionalEtlElement;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -49,7 +51,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * source and destination table
  */
 public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
-		implements EtlDatabaseObjectConfiguration, EtlAdditionalDataSource, EtlSrcConf {
+		implements EtlDatabaseObjectConfiguration, EtlAdditionalDataSource, EtlSrcConf, ConditionalEtlElement {
 
 	private final String stringLock = new String("LOCK_STRING");
 
@@ -79,6 +81,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	private RelationshipResolutionStrategy relationshipResolutionStrategy;
 	private ActionOnEtlIssue onMultipleSrcObjectsFound;
+
+	private String applyCondition;
 
 	public QueryDataSourceConfig() {
 		this.loadHealper = new DatabaseObjectLoaderHelper(this);
@@ -487,6 +491,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
 			throws DBException {
 
+		if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), srcConn, srcConn)) {
+			return null;
+		}
+
 		if (!isPrepared()) {
 			this.prepare(avaliableSrcObjects, srcConn);
 		}
@@ -667,6 +675,19 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		return EtlAdditionalDataSource.super.retrieveAllAvailableTemplateParameters();
+	}
+
+	@Override
+	public String getCondition() {
+		return this.applyCondition;
+	}
+
+	public String getApplyCondition() {
+		return applyCondition;
+	}
+
+	public void setApplyCondition(String applyCondition) {
+		this.applyCondition = applyCondition;
 	}
 
 }

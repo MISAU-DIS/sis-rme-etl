@@ -98,6 +98,10 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
+		if (isInitialized()) {
+			return;
+		}
+		
 		this.applyIncludes();
 
 		this.setParentConf(relatedItemConf);
@@ -210,6 +214,8 @@ public class SrcConf extends AbstractTableConfiguration
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
+		init(getParentConf(), conn, conn);
+
 		if (!hasManualMapPrimaryKeyOnField()) {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}

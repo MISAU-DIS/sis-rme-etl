@@ -1,8 +1,10 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -107,19 +109,24 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 	private SrcConf defaultSrcConf;
 
+	private Map<String, Object> dynamicElements;
+
 	public UuidOnDemanTransformer(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		super(parameters, relatedEtlTransformTarget, field);
+
+		init(conn);
 	}
 
-	public void init(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public void init(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		if (parameters == null || parameters.size() < 1) {
+		if (parameters == null || parameters.size() < 2) {
 			throw new ForbiddenOperationException("A UuidOnDemanTransformer needs at least 2 parameters.\n"
 					+ "UuidOnDemanTransformer(table:table_name,condition:sql_condition)");
 		}
+
+		this.dynamicElements = new HashMap<>();
 
 		for (Object fieldData : this.getParameters()) {
 			String[] mapping = fieldData.toString().split(":", 2);
@@ -136,23 +143,40 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The table field has no value");
 					}
+
+					this.tableName = srcFieldOrValue;
 				} else if (dstField.equals("lookup_condition")) {
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The lookup_condition has no value");
 					}
 
 					this.onDemandCheckCondition = srcFieldOrValue;
+				}
 
-					this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition",
-							relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
+				else {
+					if (!utilities.stringHasValue(srcFieldOrValue) || srcFieldOrValue.toLowerCase().equals("null")) {
+						srcFieldOrValue = null;
+					}
+
+					this.dynamicElements.put(dstField, srcFieldOrValue);
 				}
 			}
 		}
 
-		if (!utilities.stringHasValue(this.onDemandCheckCondition) && !utilities.stringHasValue(this.tableName)) {
+		if (!utilities.stringHasValue(this.onDemandCheckCondition) || !utilities.stringHasValue(this.tableName)) {
 			throw new ForbiddenOperationException(
 					"At least 'table' and 'lookup_condition' parameters must be specified");
 		}
+
+		Map<String, Object> params = relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters();
+
+		if (params != null && !params.isEmpty()) {
+			for (Entry<String, Object> p : params.entrySet()) {
+				this.dynamicElements.put(p.getKey(), p.getValue());
+			}
+		}
+
+		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.dynamicElements, conn);
 	}
 
 	@Override
@@ -210,14 +234,6 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		if (this.getTableConf() == null) {
 			synchronized (lock) {
 				if (this.getTableConf() == null) {
-					TableConfiguration conf = new GenericTableConfiguration(this.getTable(),
-							this.getRelatedEtlTransformTarget());
-
-					conf.fullLoad(dstConn);
-
-					if (conf.containsField("uuid")) {
-						throw new EtlConfException("The table '" + this.getTable() + "' does not have uuid.");
-					}
 
 					AbstractTableConfiguration defaultTable = new GenericTableConfiguration(this.getTable());
 
@@ -238,6 +254,17 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					this.defaultSrcConf = SrcConf.fastCreate(defaultTable,
 							this.getRelatedEtlTransformTarget().getParentConf(), srcConn);
 
+					this.defaultSrcConf.fullLoad(srcConn);
+
+					TableConfiguration conf = new GenericTableConfiguration(this.getTable(),
+							this.getRelatedEtlTransformTarget());
+
+					conf.fullLoad(dstConn);
+
+					if (!conf.containsField("uuid")) {
+						throw new EtlConfException("The table '" + this.getTable() + "' does not have uuid.");
+					}
+
 					this.tableConf = conf;
 				}
 			}
@@ -247,10 +274,6 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 	private String retrieveExistingOnDemandUuid(EtlProcessor processor, EtlDatabaseObject srcObject,
 			List<EtlDatabaseObject> srcObjects, Connection srcConn, Connection dstConn)
 			throws DBException, ForbiddenOperationException {
-
-		if (!utilities.stringHasValue(this.getOnDemandCheckCondition())) {
-			return null;
-		}
 
 		this.ensureTableInitialized(srcConn, dstConn);
 
@@ -290,6 +313,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 							this.getDefaultSrcConf(), srcConn);
 
 					EtlDatabaseObject parentInDst = null;
+
+					refInfo.fullLoad(dstConn);
 
 					if (parentInSrc != null) {
 						parentInDst = auxObject.retrieveParentInDestination(refInfo, parentInSrc, dstConn);

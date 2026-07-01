@@ -128,6 +128,8 @@ public class DstConf extends AbstractTableConfiguration
 
 	private ActionOnEtlIssue onMissingRequiredSrcObject;
 
+	private Boolean allowDuplicateDestinationMappings;
+
 	public DstConf() {
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
 		this.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.ABORT_PROCESS);
@@ -147,6 +149,19 @@ public class DstConf extends AbstractTableConfiguration
 
 			this.targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
 		}
+	}
+
+	public Boolean getAllowDuplicateDestinationMappings() {
+		return allowDuplicateDestinationMappings;
+	}
+
+	public void setAllowDuplicateDestinationMappings(Boolean allowDuplicateDestinationMappings) {
+		this.allowDuplicateDestinationMappings = allowDuplicateDestinationMappings;
+	}
+
+	@Override
+	public Boolean allowDuplicateDestinationMappings() {
+		return isTrue(this.allowDuplicateDestinationMappings);
 	}
 
 	public ActionOnEtlIssue getOnMissingRequiredSrcObject() {

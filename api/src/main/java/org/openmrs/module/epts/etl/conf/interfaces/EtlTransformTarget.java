@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.SimpleCondition;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -72,10 +73,93 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			this.setAllMapping(new ArrayList<FieldsMapping>());
 		}
 
-		if (this.getAllMapping().contains(fm))
-			throw new ForbiddenOperationException("The field [" + fm + "] already exists on mapping");
+		List<FieldsMapping> duplicates = findMappingsByDstField(fm.getDstField());
+
+		if (duplicates.isEmpty()) {
+			this.getAllMapping().add(fm);
+			return;
+		}
+
+		if (!allowDuplicateDestinationMappings()) {
+			throw new ForbiddenOperationException("Duplicate mapping for destination field '" + fm.getDstField()
+					+ "' is not allowed. Enable allowDuplicateDestinationMappings "
+					+ "only when duplicate mappings are controlled by mutually exclusive applyCondition values.");
+		}
+
+		for (FieldsMapping existing : duplicates) {
+			validateDuplicateMapping(existing, fm);
+		}
 
 		this.getAllMapping().add(fm);
+	}
+
+	default List<FieldsMapping> findMappingsByDstField(String dstField) {
+
+		List<FieldsMapping> result = new ArrayList<>();
+
+		if (this.getAllMapping() == null || dstField == null) {
+			return result;
+		}
+
+		for (FieldsMapping mapping : this.getAllMapping()) {
+			if (dstField.equals(mapping.getDstField())) {
+				result.add(mapping);
+			}
+		}
+
+		return result;
+	}
+
+	default FieldsMapping findMappingByDstField(String dstField) {
+
+		if (this.getAllMapping() == null || dstField == null) {
+			return null;
+		}
+
+		for (FieldsMapping mapping : this.getAllMapping()) {
+			if (dstField.equals(mapping.getDstField())) {
+				return mapping;
+			}
+		}
+
+		return null;
+	}
+
+	default void validateDuplicateMapping(FieldsMapping existing, FieldsMapping candidate) {
+
+		if (!hasCondition(existing) || !hasCondition(candidate)) {
+			throw new ForbiddenOperationException("Duplicate mappings for destination field '" + candidate.getDstField()
+					+ "' are only allowed when all duplicated mappings define an applyCondition.");
+		}
+
+		if (!areMutuallyExclusive(existing.getCondition(), candidate.getCondition())) {
+			throw new ForbiddenOperationException("Duplicate mappings for destination field '" + candidate.getDstField()
+					+ "' must have mutually exclusive applyCondition values. " + "Existing condition: ["
+					+ existing.getCondition() + "], " + "new condition: [" + candidate.getCondition() + "]");
+		}
+	}
+
+	default boolean hasCondition(FieldsMapping mapping) {
+		return mapping != null && mapping.getCondition() != null && !mapping.getCondition().trim().isEmpty();
+	}
+
+	default Boolean allowDuplicateDestinationMappings() {
+		return false;
+	}
+
+	default boolean areMutuallyExclusive(String conditionA, String conditionB) {
+
+		SimpleCondition a = SimpleCondition.parse(conditionA);
+		SimpleCondition b = SimpleCondition.parse(conditionB);
+
+		if (a == null || b == null) {
+			throw new ForbiddenOperationException(
+					"Unable to verify whether applyCondition values are mutually exclusive. "
+							+ "Only simple conditions are supported for duplicate mappings, such as "
+							+ "'field = null', 'field != null', 'field = value', or 'field != value'.");
+		}
+
+		return a.isMutuallyExclusiveWith(b);
 	}
 
 	default EtlDataSource findDataSource(String dsName) {
