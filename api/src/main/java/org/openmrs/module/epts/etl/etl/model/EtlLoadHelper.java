@@ -355,6 +355,8 @@ public class EtlLoadHelper {
 							etlInfo.getResultItem().getInconsistenceInfo());
 
 					if (getEtlConfiguration().getDefaultInconsistencyBehavior().abortProcess()) {
+						logError("Error while processing record: " + obj, e);
+						
 						throw e;
 					} else {
 						etlInfo.setExceptionOnEtl(e);
@@ -444,6 +446,11 @@ public class EtlLoadHelper {
 
 	void logError(String msg) {
 		getProcessor().logError(msg);
+	}
+
+
+	void logError(String msg, Exception e) {
+		getProcessor().logError(msg, e);
 	}
 
 	public static void performeParentLoading(EtlDatabaseObject srcObject, Connection srcConn, Connection dstConn)

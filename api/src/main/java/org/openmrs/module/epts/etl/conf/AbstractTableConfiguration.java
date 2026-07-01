@@ -219,6 +219,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 		if (this.onConflict == null) {
 			this.onConflict = ConflictResolutionType.MAKE_YOUR_DECISION;
+		} else {
+			if (!this.onConflict.isAllowedForConfiguration()) {
+				throw new EtlConfException("The value for onConflict " + this.onConflict
+						+ " is not allowed for table configuration [" + this.getTableAlias() + "]");
+			}
 		}
 	}
 

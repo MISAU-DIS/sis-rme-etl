@@ -256,6 +256,10 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return getProcessorId() + " Limits [" + getSearchParams().getThreadRecordIntervalsManager() + "]";
 	}
 
+	public void logError(String msg, Exception e) {
+		monitor.logErr(msg, e);
+	}
+
 	public void logError(String msg) {
 		monitor.logErr(msg);
 	}

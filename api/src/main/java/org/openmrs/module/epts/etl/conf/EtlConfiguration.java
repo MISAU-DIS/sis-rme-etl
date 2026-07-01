@@ -1088,8 +1088,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 							continue;
 						}
 
-						DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
-						markScriptAsExecuted(EtlSide.DST, script);
+						try {
+							DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
+							markScriptAsExecuted(EtlSide.DST, script);
+						} catch (Exception e) {
+							logErr("Error found while executing script ''" + script + "'", e);
+
+							throw e;
+						}
 					} else {
 						logWarn("Script was already executed: " + script);
 					}

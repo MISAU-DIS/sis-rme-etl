@@ -7,8 +7,10 @@ import java.util.UUID;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.SearchClauses;
@@ -622,17 +624,27 @@ public class DatabaseObjectDAO extends BaseDAO {
 									result.addToRecordsWithUnresolvedErrors(record.getEtlInfo().getRelatedSrcObject(),
 											e1);
 								} else {
-									tryToLoadObjToException(e, objects.get(0));
 
-									throw e;
+									EtlExceptionImpl exc = new EtlExceptionImpl(e1, objects.get(0),
+											ActionOnEtlIssue.ABORT_PROCESS);
+
+									tryToLoadObjToException(exc, objects.get(0));
+
+									throw exc;
 								}
 							}
 						}
 					}
 				} else {
+
 					if (objects.size() == 1) {
-						tryToLoadObjToException(e, objects.get(0));
+						EtlExceptionImpl exc = new EtlExceptionImpl(e, objects.get(0), ActionOnEtlIssue.ABORT_PROCESS);
+
+						tryToLoadObjToException(exc, objects.get(0));
+
+						throw exc;
 					}
+
 					throw e;
 				}
 			}
@@ -641,7 +653,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		return result;
 	}
 
-	static void tryToLoadObjToException(DBException e, EtlDatabaseObject obj) {
+	static void tryToLoadObjToException(EtlExceptionImpl e, EtlDatabaseObject obj) {
 		obj = obj.isInEtlProcess() ? obj.getEtlInfo().getRelatedSrcObject() : obj;
 
 		e.setEtlObject(obj);

@@ -339,8 +339,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private boolean runIteration() throws DBException, Exception {
-		logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase()
-				+ "]");
+		logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase() + "]");
 
 		long minRecId = tableOperationProgressInfo.getProgressMeter().getMinRecordId();
 
@@ -1230,6 +1229,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		log.append(
 				"------------------------------------------------------------------------------------------------------\n");
+
+		log.append(formatReportLine("OPERATION", this.getEngineId()));
+		log.append("\n");
 
 		long diff = globalProgressMeter.getTotalToAnalyze() - globalProgressMeter.getTotal();
 

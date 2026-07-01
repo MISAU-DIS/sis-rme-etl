@@ -1,5 +1,7 @@
 package org.openmrs.module.epts.etl.conf.types;
 
+import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+
 public enum ConflictResolutionType {
 	// @formatter:off
 	
@@ -60,6 +62,8 @@ public enum ConflictResolutionType {
 	
 	REJECT;
 	
+	static final ConflictResolutionType[] ALLOWED_FOR_TABLE_CONF = {KEEP_EXISTING, UPDATE_EXISTING, PATCH_EXISTING, MAKE_YOUR_DECISION, REJECT};
+	
 	// @formatter:on
 	public boolean keepExisting() {
 		return this.equals(KEEP_EXISTING);
@@ -87,5 +91,9 @@ public enum ConflictResolutionType {
 
 	public boolean isReject() {
 		return this.equals(REJECT);
+	}
+
+	public boolean isAllowedForConfiguration() {
+		return CommonUtilities.getInstance().existOnArray(ALLOWED_FOR_TABLE_CONF, this);
 	}
 }
