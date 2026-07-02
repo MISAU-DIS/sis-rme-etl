@@ -2477,5 +2477,4 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		return false;
 	}
-
 }

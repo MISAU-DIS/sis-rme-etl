@@ -2,9 +2,18 @@ package org.openmrs.module.epts.etl.conf.interfaces;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.openmrs.module.epts.etl.conf.EtlConfCheckEvaluator;
+import org.openmrs.module.epts.etl.conf.EtlConfCheckExpression;
+import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
@@ -47,7 +56,12 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 	}
 
-	default Boolean matchesCondition(EtlDatabaseObject obj, String condition) {
+	default Boolean matchesCondition(EtlDatabaseObject obj, String condition)
+			throws EtlTransformationException, DBException {
+
+		if (condition == null || condition.isBlank()) {
+			return true;
+		}
 
 		condition = condition.replaceAll("(?i)\\s+or\\s+", "||");
 		condition = condition.replaceAll("(?i)\\s+and\\s+", "&&");
@@ -56,13 +70,23 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 		for (String orCond : orConditions) {
 
-			Boolean andResult = true;
+			boolean andResult = true;
 
 			String[] andConditions = orCond.split("&&");
 
 			for (String andCond : andConditions) {
 
-				if (!evaluateCondition(obj, andCond.trim())) {
+				andCond = andCond.trim();
+
+				boolean result;
+
+				if (isEtlConfCheckExpression(andCond)) {
+					result = evaluateEtlConfCheck(andCond);
+				} else {
+					result = evaluateCondition(obj, andCond);
+				}
+
+				if (!result) {
 					andResult = false;
 					break;
 				}
@@ -74,6 +98,87 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 		}
 
 		return false;
+	}
+
+	default boolean isEtlConfCheckExpression(String condition) {
+		return condition != null && condition.trim().matches("(?i)^ETL_CONF_CHECK\\s*\\(.*\\)$");
+	}
+
+	default boolean evaluateEtlConfCheck(String expressionText) throws EtlTransformationException, DBException {
+
+		EtlConfCheckExpression expression = parseEtlConfCheckExpression(expressionText);
+
+		Object result = new EtlConfCheckEvaluator().evaluate(expression);
+
+		if (!(result instanceof Boolean)) {
+			throw new EtlConfException("ETL_CONF_CHECK must return a boolean value when used as a condition. "
+					+ "Expression: " + expressionText + ", returned: " + result);
+		}
+
+		return (Boolean) result;
+	}
+
+	default EtlConfCheckExpression parseEtlConfCheckExpression(String expressionText) {
+
+		String text = expressionText.trim();
+
+		Pattern pattern = Pattern.compile("(?i)^ETL_CONF_CHECK\\s*\\((.*)\\)$");
+
+		Matcher matcher = pattern.matcher(text);
+
+		if (!matcher.find()) {
+			throw new EtlConfException("Invalid ETL_CONF_CHECK expression: " + expressionText);
+		}
+
+		String body = matcher.group(1).trim();
+
+		Map<String, String> params = parseEtlConfCheckParams(body);
+
+		String confName = params.get("confName");
+		String operation = params.get("operation");
+		String field = params.get("field");
+
+		if (confName == null || confName.isBlank()) {
+			throw new EtlConfException("ETL_CONF_CHECK requires parameter 'confName'.");
+		}
+
+		if (operation == null || operation.isBlank()) {
+			throw new EtlConfException("ETL_CONF_CHECK requires parameter 'operation'.");
+		}
+
+		EtlConfCheckExpression expression = new EtlConfCheckExpression();
+
+		expression.setConfName(confName);
+		expression.setOperation(EtlConfCheckType.valueOf(operation.trim().toUpperCase()));
+		expression.setField(field);
+
+		expression.init(this);
+
+		return expression;
+	}
+
+	default Map<String, String> parseEtlConfCheckParams(String body) {
+
+		Map<String, String> params = new LinkedHashMap<>();
+
+		if (body == null || body.isBlank()) {
+			return params;
+		}
+
+		String[] parts = body.split("\\s*,\\s*");
+
+		for (String part : parts) {
+
+			String[] keyValue = part.split("\\s*:\\s*", 2);
+
+			if (keyValue.length != 2) {
+				throw new EtlConfException("Invalid ETL_CONF_CHECK parameter: " + part);
+			}
+
+			params.put(keyValue[0].trim(), stripQuotes(keyValue[1].trim()));
+		}
+
+		return params;
 	}
 
 	default Boolean evaluateCondition(EtlDatabaseObject obj, String condition) {

@@ -155,4 +155,8 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 
 	void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
 			throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists;
+
+	default Boolean hasAlias() {
+		return utilities.stringHasValue(this.getAlias());
+	}
 }

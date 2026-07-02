@@ -62,5 +62,4 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 	public void setDynamicElements(List<String> dynamicElements) {
 		this.dynamicElements = dynamicElements;
 	}
-
 }

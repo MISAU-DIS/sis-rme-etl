@@ -27,6 +27,7 @@ import org.openmrs.module.epts.etl.conf.types.JoinType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
+import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -101,7 +102,7 @@ public class SrcConf extends AbstractTableConfiguration
 		if (isInitialized()) {
 			return;
 		}
-		
+
 		this.applyIncludes();
 
 		this.setParentConf(relatedItemConf);
@@ -885,7 +886,7 @@ public class SrcConf extends AbstractTableConfiguration
 		return this.generateSelectFromQuery() + " WHERE " + condition;
 	}
 
-	public EtlDataSource findDataSourceOnAllAvaliabeDatasources(String dsName) {
+	public EtlDataSource findDataSourceOnAllAvaliabeDatasources(String dsName) throws DatabaseResourceDoesNotExists {
 		if (dsName.equals(this.getName()) || dsName.equals(this.getTableAlias())) {
 			return this;
 		}
@@ -916,7 +917,7 @@ public class SrcConf extends AbstractTableConfiguration
 			}
 		}
 
-		throw new EtlExceptionImpl("Datasource not found within the srcConf " + this);
+		throw new DatabaseResourceDoesNotExists(dsName);
 	}
 
 	@Override
