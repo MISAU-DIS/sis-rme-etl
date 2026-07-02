@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfCheckExpression;
 import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
@@ -32,72 +33,48 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 			Connection srcConn, Connection dstConn) throws DBException {
 
 		if (this.hasCondition()) {
-			try {
-				List<EtlDatabaseObject> list = utilities.setHasElement(avaliableSrcObjects)
-						? new ArrayList<>(avaliableSrcObjects)
-						: utilities.parseToList(srcObject);
+			String condition = this.getCondition();
 
-				String preparedCondition = org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities
-						.ensureDataSourceElementsReplaced(this.getCondition(), list, this.getRelatedEtlConf(), dstConn);
+			condition = condition.replaceAll("(?i)\\s+or\\s+", "||");
+			condition = condition.replaceAll("(?i)\\s+and\\s+", "&&");
 
-				return matchesCondition(srcObject, preparedCondition);
-			} catch (MissingParameterOnEtlTransformationException | InvalidDataSourceOnFieldDefifitionException e) {
+			String[] orConditions = condition.split("\\|\\|");
 
-				if (e instanceof InvalidDataSourceOnFieldDefifitionException) {
-					throw e;
+			for (String orCond : orConditions) {
+
+				boolean andResult = true;
+
+				String[] andConditions = orCond.split("&&");
+
+				for (String andCond : andConditions) {
+
+					andCond = andCond.trim();
+
+					boolean result;
+
+					if (isEtlConfCheckExpression(andCond)) {
+						result = evaluateEtlConfCheck(andCond);
+					} else {
+						result = evaluateCondition(srcObject, avaliableSrcObjects, andCond, srcConn, dstConn);
+					}
+
+					if (!result) {
+						andResult = false;
+						break;
+					}
 				}
 
-				return false;
+				if (andResult) {
+					return true;
+				}
 			}
+
+			return false;
 
 		} else {
 			return true;
 		}
 
-	}
-
-	default Boolean matchesCondition(EtlDatabaseObject obj, String condition)
-			throws EtlTransformationException, DBException {
-
-		if (condition == null || condition.isBlank()) {
-			return true;
-		}
-
-		condition = condition.replaceAll("(?i)\\s+or\\s+", "||");
-		condition = condition.replaceAll("(?i)\\s+and\\s+", "&&");
-
-		String[] orConditions = condition.split("\\|\\|");
-
-		for (String orCond : orConditions) {
-
-			boolean andResult = true;
-
-			String[] andConditions = orCond.split("&&");
-
-			for (String andCond : andConditions) {
-
-				andCond = andCond.trim();
-
-				boolean result;
-
-				if (isEtlConfCheckExpression(andCond)) {
-					result = evaluateEtlConfCheck(andCond);
-				} else {
-					result = evaluateCondition(obj, andCond);
-				}
-
-				if (!result) {
-					andResult = false;
-					break;
-				}
-			}
-
-			if (andResult) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	default boolean isEtlConfCheckExpression(String condition) {
@@ -134,7 +111,7 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 		Map<String, String> params = parseEtlConfCheckParams(body);
 
-		String confName = params.get("confName");
+		String confName = params.get("conf_name");
 		String operation = params.get("operation");
 		String field = params.get("field");
 
@@ -181,8 +158,26 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 		return params;
 	}
 
-	default Boolean evaluateCondition(EtlDatabaseObject obj, String condition) {
+	default Boolean evaluateCondition(EtlDatabaseObject obj, Set<EtlDatabaseObject> avaliableSrcObjects,
+			String condition, Connection srcConn, Connection dstConn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
+		List<EtlDatabaseObject> list = utilities.setHasElement(avaliableSrcObjects)
+				? new ArrayList<>(avaliableSrcObjects)
+				: utilities.parseToList(obj);
+
+		try {
+			condition = org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities
+					.ensureDataSourceElementsReplaced(condition, list, this.getRelatedEtlConf(), dstConn);
+		} catch (MissingParameterOnEtlTransformationException | InvalidDataSourceOnFieldDefifitionException e) {
+
+			if (e instanceof InvalidDataSourceOnFieldDefifitionException) {
+				throw e;
+			}
+
+			return false;
+		}
+		
 		// NOT IN
 		if (condition.matches("(?i).+\\s+not\\s+in\\s*\\(.+\\)")) {
 			return evaluateIn(obj, condition, true);

@@ -102,6 +102,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 	protected static final Map<String, UuidOnDemanTransformer> INSTANCES = new ConcurrentHashMap<>();
 
 	private String tableName;
+	private String tableAlias;
 
 	private String onDemandCheckCondition;
 
@@ -141,10 +142,17 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 				if (dstField.equals("table_name")) {
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
-						throw new ForbiddenOperationException("The table field has no value");
+						throw new ForbiddenOperationException("The table_name field has no value");
 					}
 
 					this.tableName = srcFieldOrValue;
+				}
+				if (dstField.equals("table_alias")) {
+					if (!utilities.stringHasValue(srcFieldOrValue)) {
+						throw new ForbiddenOperationException("The table_alias field has no value");
+					}
+
+					this.tableAlias = srcFieldOrValue;
 				} else if (dstField.equals("lookup_condition")) {
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The lookup_condition has no value");
@@ -237,6 +245,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 					AbstractTableConfiguration defaultTable = new GenericTableConfiguration(this.getTable());
 
+					stepIntoBreakpoint(getRelatedEtlConf(), this.getTable().equals("encounter_program"));
+
 					try {
 						defaultTable.tryToLoadSchemaInfo(null, srcConn);
 					} catch (DatabaseResourceDoesNotExists e) {
@@ -245,7 +255,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 									this.getRelatedEtlTransformTarget().getRelatedEtlConf().getDefaultSourceTable());
 						} else
 							throw new EtlConfException(
-									"The transformer failed while trying to create defaultSrcConf for ["
+									"The transformer failed while trying to create defaultSourceTable for ["
 											+ this.getTable()
 											+ "] and no defaultEtlTable was configred with the EtlConfiguration. Error when loading transformer: "
 											+ this);
@@ -258,6 +268,10 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 					TableConfiguration conf = new GenericTableConfiguration(this.getTable(),
 							this.getRelatedEtlTransformTarget());
+
+					if (this.tableAlias != null) {
+						conf.setTableAlias(this.tableAlias);
+					}
 
 					conf.fullLoad(dstConn);
 
@@ -301,7 +315,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		for (int i = 0; i < params.size(); i++) {
 			FieldTransformingInfo paramValueInfo = params.get(i);
 
-			if (!paramValueInfo.isLoadedWithDstValue()) {
+			if (!paramValueInfo.skipRelationshipResolution()) {
 				ParentTable refInfo = this.getTableConf()
 						.findParentRefInfoByField(paramValueInfo.getSrcField().getName());
 
@@ -321,6 +335,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					}
 
 					if (parentInDst == null) {
+						srcObject.loadObjectIdData();
+
 						throw new EtlTransformationException("The " + refInfo.getTableName() + "("
 								+ paramValueInfo.getTransformedValue() + ") of " + this.getTableConf().getTableName()
 								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on src db",

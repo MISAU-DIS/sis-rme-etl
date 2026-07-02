@@ -422,20 +422,6 @@ public class SrcConf extends AbstractTableConfiguration
 		}
 	}
 
-	public QueryDataSourceConfig findAdditionalDataSrc(String dsName) {
-		if (!hasExtraQueryDataSourceConfig()) {
-			return null;
-		}
-
-		for (QueryDataSourceConfig src : this.getExtraQueryDataSource()) {
-			if (src.getName().equals(dsName)) {
-				return src;
-			}
-		}
-
-		throw new ForbiddenOperationException("The table '" + dsName + "'cannot be foud on the mapping src tables");
-	}
-
 	public static SrcConf fastCreate(AbstractTableConfiguration tableConfig, EtlItemConfiguration itemConf,
 			Connection conn) throws DBException {
 		SrcConf src = new SrcConf();
@@ -913,6 +899,16 @@ public class SrcConf extends AbstractTableConfiguration
 						}
 
 					}
+				}
+			}
+		}
+
+		List<EtlAdditionalDataSource> avaliableDataSources = getAvaliableExtraDataSource();
+
+		if (utilities.listHasElement(avaliableDataSources)) {
+			for (EtlAdditionalDataSource ds : avaliableDataSources) {
+				if (ds.getAlias().equals(dsName)) {
+					return ds;
 				}
 			}
 		}

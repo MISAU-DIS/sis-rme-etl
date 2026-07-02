@@ -829,6 +829,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		synchronized (LOCK_READ) {
 
 			OpenConnection srcConn = null;
+			
 			OpenConnection dstConn = null;
 
 			try {
