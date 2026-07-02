@@ -168,7 +168,7 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 		try {
 			condition = org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities
-					.ensureDataSourceElementsReplaced(condition, list, this.getRelatedEtlConf(), dstConn);
+					.ensureDataSourceElementsReplaced(condition, null, list, this.getRelatedEtlConf(), dstConn);
 		} catch (MissingParameterOnEtlTransformationException | InvalidDataSourceOnFieldDefifitionException e) {
 
 			if (e instanceof InvalidDataSourceOnFieldDefifitionException) {
@@ -177,7 +177,7 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 			return false;
 		}
-		
+
 		// NOT IN
 		if (condition.matches("(?i).+\\s+not\\s+in\\s*\\(.+\\)")) {
 			return evaluateIn(obj, condition, true);

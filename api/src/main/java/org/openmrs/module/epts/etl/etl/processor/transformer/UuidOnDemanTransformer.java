@@ -146,8 +146,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					}
 
 					this.tableName = srcFieldOrValue;
-				}
-				if (dstField.equals("table_alias")) {
+				} else if (dstField.equals("table_alias")) {
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The table_alias field has no value");
 					}
@@ -183,6 +182,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 				this.dynamicElements.put(p.getKey(), p.getValue());
 			}
 		}
+
+		stepIntoBreakpoint(getRelatedEtlConf(), this.getTable().equals("person_complex_attribute_detail"));
 
 		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.dynamicElements, conn);
 	}
@@ -245,8 +246,6 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 					AbstractTableConfiguration defaultTable = new GenericTableConfiguration(this.getTable());
 
-					stepIntoBreakpoint(getRelatedEtlConf(), this.getTable().equals("encounter_program"));
-
 					try {
 						defaultTable.tryToLoadSchemaInfo(null, srcConn);
 					} catch (DatabaseResourceDoesNotExists e) {
@@ -295,10 +294,17 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 				: (srcObject != null ? utilities.parseToList(srcObject) : null);
 
 		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
-				this.getOnDemandCheckCondition(), allObjs, getRelatedEtlConf(), dstConn);
+				this.getOnDemandCheckCondition(), utilities.parseToList(this.getTableConf().getAlias()), allObjs,
+				getRelatedEtlConf(), dstConn);
 
-		EtlDatabaseObject obj = getTableConf().find(p.getQuery(),
-				resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn), dstConn);
+		EtlDatabaseObject obj;
+
+		try {
+			obj = getTableConf().find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
+					dstConn);
+		} catch (DBException e) {
+			throw e;
+		}
 
 		return obj != null ? obj.getFieldValue("uuid").toString() : null;
 	}

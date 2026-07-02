@@ -2082,8 +2082,8 @@ public class SQLUtilities {
 	}
 
 	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
-			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
+			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		query = normalizeQuery(query);
 
@@ -2092,8 +2092,8 @@ public class SQLUtilities {
 
 		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
 
-		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, avaliableSrcObjects,
-				relatedEtlConf, conn);
+		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, knownTableAliases,
+				avaliableSrcObjects, relatedEtlConf, conn);
 
 		for (ResolvedQueryElement element : resolvedElements) {
 
@@ -2105,16 +2105,17 @@ public class SQLUtilities {
 		return new PreparedQueryInfo(query, resolvedValues);
 	}
 
-	public static String ensureDataSourceElementsReplaced(String query, List<EtlDatabaseObject> avaliableSrcObjects,
-			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public static String ensureDataSourceElementsReplaced(String query, List<String> knownTableAliases,
+			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		query = normalizeQuery(query);
 
 		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
 				.toString().toLowerCase();
 
-		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, avaliableSrcObjects,
-				relatedEtlConf, conn);
+		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, knownTableAliases,
+				avaliableSrcObjects, relatedEtlConf, conn);
 
 		for (ResolvedQueryElement element : resolvedElements) {
 
@@ -2157,8 +2158,8 @@ public class SQLUtilities {
 	}
 
 	private static List<ResolvedQueryElement> resolveTransformableQueryElements(String query,
-			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
+			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
@@ -2166,6 +2167,12 @@ public class SQLUtilities {
 				" join ", " where ", " in " };
 
 		Set<String> avaliableTableAliases = retrieveTableAliases(query);
+
+		if (utilities.listHasElement(knownTableAliases)) {
+			for (String alias : knownTableAliases) {
+				avaliableTableAliases.add(alias);
+			}
+		}
 
 		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
 
