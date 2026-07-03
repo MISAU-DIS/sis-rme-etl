@@ -183,7 +183,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			}
 		}
 
-		stepIntoBreakpoint(getRelatedEtlConf(), this.getTable().equals("person_complex_attribute_detail"));
+		stepIntoBreakpoint(getRelatedEtlConf(), this.toString().equals(
+				"UUID_ON_DEMAND_TRANSFORMER(table_name:person_complex_attribute_detail,lookup_condition:lookup_condition_for_person_complex_attribute_detail.sql,person_attribute_type_id:112,person_id:person_complex_attribute_dst_ds.person_id,date_created:person_complex_attribute_dst_ds.date_created)"));
 
 		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.dynamicElements, conn);
 	}
@@ -216,7 +217,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		String uuid = retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn, dstConn);
+		String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn, dstConn);
 
 		if (uuid == null) {
 			uuid = UUID.randomUUID().toString();

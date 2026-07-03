@@ -100,7 +100,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
 
 				queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
-						templateParameters);
+						templateParameters, false);
 
 				utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 			}
@@ -403,7 +403,8 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		return props;
 	}
 
-	public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env) {
+	public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env,
+			boolean escapeJsonValues) {
 
 		Properties prefProps = utilities.toProperties(env);
 		Properties appProps = loadProperties(System.getProperty("etl.env.file"));
@@ -451,8 +452,10 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 			String replacement = value.toString();
 
-			replacement = escapeJsonString(replacement);
-
+			if (escapeJsonValues) {
+				replacement = escapeJsonString(replacement);
+			}
+			
 			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
 		}
 
@@ -486,7 +489,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 	static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
 		try {
-			return resolvePlaceholders(FileUtilities.realAllFileAsString(file), null, null);
+			return resolvePlaceholders(FileUtilities.realAllFileAsString(file), null, null, true);
 		} catch (IOException e) {
 			throw new EtlConfException(e);
 		}

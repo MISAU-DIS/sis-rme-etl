@@ -9,6 +9,7 @@ import java.util.function.Function;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -20,6 +21,7 @@ import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.MissingTransformationSrcObjectException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -106,9 +108,19 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				}
 
 				try {
+
+					EtlDatabaseObject transitionalTransformedObject = mappingInfo.createRecordInstance();
+
+					transitionalTransformedObject
+							.setEtlInfo(EtlInfo.initEtlRecord(this, srcRecord, transitionalTransformedObject));
+
 					Set<EtlDatabaseObject> avaliableSrcObjects = mappingInfo.getTransformerInstance()
-							.collectSourceObjects(this, srcRecord, null, parentMigratedRec, mappingInfo,
-									TransformationType.PRINCIPAL, srcConn);
+							.collectSourceObjects(this, srcRecord, transitionalTransformedObject, parentMigratedRec,
+									mappingInfo, TransformationType.PRINCIPAL, srcConn);
+
+					if (transitionalTransformedObject.getEtlDefaultEtlException() != null) {
+						throw (EtlExceptionImpl) transitionalTransformedObject.getEtlDefaultEtlException();
+					}
 
 					if (utilities.setHasElement(avaliableSrcObjects) || mappingInfo.isDoNotUseSrcConfAsDataSource()) {
 						if (mappingInfo.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
@@ -130,19 +142,9 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 								getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException());
 					}
 				} catch (MissingTransformationSrcObjectException e) {
-					if (mappingInfo.onMissingRequiredSrcObject().markRecordAsFailed()
-							|| mappingInfo.onMissingRequiredSrcObject().log()) {
-						createDefaultFailedDstObject(record, mappingInfo, e);
-					} else {
-						throw e;
-					}
+					tryToLogOrThrowException(record, mappingInfo, e);
 				} catch (EtlTransformationException e) {
-					if (getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().log()
-							|| getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException().markRecordAsFailed()) {
-						createDefaultFailedDstObject(record, mappingInfo, e);
-					} else {
-						throw e;
-					}
+					tryToLogOrThrowException(record, mappingInfo, e);
 				}
 			}
 		}
@@ -168,6 +170,27 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 
 		return loadHelper;
+	}
+
+	private void tryToLogOrThrowException(EtlDatabaseObject record, DstConf mappingInfo, EtlTransformationException e) {
+		ActionOnEtlIssue defaultBehavior = mappingInfo.getRelatedEtlConf().getDefaultExceptionBehavior();
+		ActionOnEtlIssue exceptionBehavior = e.getAction();
+
+		if (defaultBehavior.abort()) {
+			throw e;
+		}
+
+		if (defaultBehavior.useExceptionBehavior()) {
+			if (exceptionBehavior == null) {
+				throw e;
+			}
+
+			if (exceptionBehavior.logging()) {
+				createDefaultFailedDstObject(record, mappingInfo, e);
+			} else {
+				throw e;
+			}
+		}
 	}
 
 	/**

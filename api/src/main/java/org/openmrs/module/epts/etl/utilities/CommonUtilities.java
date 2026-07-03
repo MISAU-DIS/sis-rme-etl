@@ -385,6 +385,119 @@ public class CommonUtilities implements Serializable {
 		return str.split(regex.toString());
 	}
 
+	public String[] splitByAnyAtTopLevel(String str, String... tokens) {
+
+		if (str == null) {
+			return new String[0];
+		}
+
+		str = str.trim();
+
+		if (str.isEmpty()) {
+			return new String[0];
+		}
+
+		List<String> result = new ArrayList<>();
+		StringBuilder current = new StringBuilder();
+
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+		int parenthesesLevel = 0;
+
+		for (int i = 0; i < str.length(); i++) {
+
+			char c = str.charAt(i);
+
+			if (c == '\'' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote;
+				current.append(c);
+				continue;
+			}
+
+			if (c == '"' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote;
+				current.append(c);
+				continue;
+			}
+
+			if (!inSingleQuote && !inDoubleQuote) {
+
+				if (c == '(') {
+					parenthesesLevel++;
+					current.append(c);
+					continue;
+				}
+
+				if (c == ')') {
+					parenthesesLevel--;
+
+					if (parenthesesLevel < 0) {
+						throw new IllegalArgumentException("Unbalanced parentheses in expression: " + str);
+					}
+
+					current.append(c);
+					continue;
+				}
+
+				if (parenthesesLevel == 0) {
+
+					String matchedToken = matchTokenAt(str, i, tokens);
+
+					if (matchedToken != null) {
+						addIfNotBlank(result, current.toString());
+						current.setLength(0);
+
+						i += matchedToken.length() - 1;
+						continue;
+					}
+				}
+			}
+
+			current.append(c);
+		}
+
+		if (parenthesesLevel != 0) {
+			throw new IllegalArgumentException("Unbalanced parentheses in expression: " + str);
+		}
+
+		addIfNotBlank(result, current.toString());
+
+		return result.toArray(new String[0]);
+	}
+
+	private void addIfNotBlank(List<String> result, String value) {
+
+		if (value == null) {
+			return;
+		}
+
+		value = value.trim();
+
+		if (!value.isEmpty()) {
+			result.add(value);
+		}
+	}
+
+	private String matchTokenAt(String str, int index, String... tokens) {
+
+		if (tokens == null || tokens.length == 0) {
+			return null;
+		}
+
+		for (String token : tokens) {
+
+			if (token == null || token.isEmpty()) {
+				continue;
+			}
+
+			if (str.regionMatches(true, index, token, 0, token.length())) {
+				return token;
+			}
+		}
+
+		return null;
+	}
+
 	/**
 	 * Gera o selfId concatenando o id da reparticao (prefixo) com o numero
 	 * sequencial.

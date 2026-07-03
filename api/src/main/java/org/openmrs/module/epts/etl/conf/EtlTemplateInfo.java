@@ -75,7 +75,7 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 			Object value = e.getValue();
 
 			if (e.getValue() instanceof String) {
-				value = EtlDataConfiguration.resolvePlaceholders(e.getValue().toString(), null, inputParams);
+				value = EtlDataConfiguration.resolvePlaceholders(e.getValue().toString(), null, inputParams, true);
 			}
 
 			clonedParametes.put(e.getKey(), value);
@@ -132,7 +132,7 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 
 		// STRING
 		if (node.isTextual()) {
-			String resolved = EtlDataConfiguration.resolvePlaceholders(node.asText(), null, params);
+			String resolved = EtlDataConfiguration.resolvePlaceholders(node.asText(), null, params, true);
 
 			return new TextNode(resolved);
 		}
@@ -161,6 +161,19 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 
 		// outros tipos (number, boolean, etc)
 		return node;
+	}
+
+	public static String jsonNodeToRawText(JsonNode node) {
+
+		if (node == null || node.isNull()) {
+			return null;
+		}
+
+		if (node.isTextual()) {
+			return node.asText();
+		}
+
+		return node.toString();
 	}
 
 	public boolean hasParentTemplate() {

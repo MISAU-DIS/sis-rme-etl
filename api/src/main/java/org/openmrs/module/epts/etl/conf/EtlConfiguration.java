@@ -750,7 +750,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		String json = FileUtilities.realAllFileAsString(file);
 
 		EtlConfiguration conf = EtlConfiguration
-				.loadFromJSON(EtlDataConfiguration.resolvePlaceholders(json, null, null), file);
+				.loadFromJSON(EtlDataConfiguration.resolvePlaceholders(json, null, null, true), file);
 
 		conf.setConfigFilePath(file.getAbsolutePath());
 
@@ -829,7 +829,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		synchronized (LOCK_READ) {
 
 			OpenConnection srcConn = null;
-			
+
 			OpenConnection dstConn = null;
 
 			try {

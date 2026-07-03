@@ -194,7 +194,7 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 		}
 
 		String json = EtlDataConfiguration.resolvePlaceholders(this.value.toString(), null,
-				templateInfo.getAllAvailableParameters());
+				templateInfo.getAllAvailableParameters(), true);
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
@@ -212,7 +212,7 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 		}
 
 		String json = EtlDataConfiguration.resolvePlaceholders(this.value.toString(), null,
-				templateInfo.getAllAvailableParameters());
+				templateInfo.getAllAvailableParameters(), true);
 
 		return new ObjectMapperProvider().getContext(type).readValue(json, type);
 	}
@@ -224,7 +224,7 @@ public class TemplateOverride extends AbstractEtlDataConfiguration {
 		}
 
 		String json = EtlDataConfiguration.resolvePlaceholders(this.value.toString(), null,
-				templateInfo.getAllAvailableParameters());
+				templateInfo.getAllAvailableParameters(), true);
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 

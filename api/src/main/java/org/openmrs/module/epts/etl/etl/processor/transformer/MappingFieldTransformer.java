@@ -166,9 +166,9 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 					this.extraCondition = paramValue;
 				} else if (paramName.equals("on_missing")) {
 					try {
-						this.onMissing = ActionOnEtlIssue.valueOf(paramValue);
+						this.onMissing = ActionOnEtlIssue.valueOf(paramValue.toUpperCase());
 					} catch (Exception e) {
-						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
+						throw new EtlExceptionImpl("Unsupported value (" + paramValue + ") for parameter " + paramName
 								+ " on transformer:  " + getTransformerDsc());
 					}
 
@@ -304,11 +304,18 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 		if (field.getDefaultValue() == null) {
 
 			MissingMappingException e = new MissingMappingException(additionalSrcObjects.get(0), field.getSrcField(),
-					srcValueWithParamsReplaced, this,
-					additionalSrcObjects.get(0).getRelatedConfiguration().getGeneralBehaviourOnEtlException());
+					srcValueWithParamsReplaced, this, this.onMissing());
 
 			if (onMissing().abortProcess()) {
 				throw e;
+			}
+
+			if (onMissing().setToNull()) {
+				transformingInfo = new FieldTransformingInfo(field, dstValue, null);
+
+				transformingInfo.setLoadedWithDefaultValue(true);
+
+				return transformingInfo;
 			}
 
 			if (onMissing().markRecordAsFailed()) {

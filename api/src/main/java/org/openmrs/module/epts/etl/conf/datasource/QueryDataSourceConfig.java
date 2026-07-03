@@ -214,7 +214,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 			String query = new String(Files.readAllBytes(Paths.get(pathToScript)));
 
-			query = EtlDataConfiguration.resolvePlaceholders(query, null, retrieveAllAvailableTemplateParameters());
+			query = EtlDataConfiguration.resolvePlaceholders(query, null, retrieveAllAvailableTemplateParameters(),
+					false);
 
 			this.setQuery(query);
 
@@ -496,7 +497,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				return null;
 			}
 		}
-		
+
 		if (!isPrepared()) {
 			this.prepare(avaliableSrcObjects, srcConn);
 		}

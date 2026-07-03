@@ -143,13 +143,14 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 							throw new ForbiddenOperationException("The unmapped_field_behavior has no value");
 						}
 
-						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue);
+						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("mapping_resolution_strategy")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The mapping_resolution_strategy has no value");
 						}
 
-						this.mappingResolutionStrategy = FieldMappingResolutionStrategy.valueOf(srcFieldOrValue);
+						this.mappingResolutionStrategy = FieldMappingResolutionStrategy
+								.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.startsWith("template_param_")) {
 
 						String paramName = dstField.substring("template_param_".length());
@@ -162,7 +163,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					} else if (dstField.equals("override_fields")) {
 						this.overrideFieldsStr = srcFieldOrValue;
 					} else if (dstField.equals("auto_increment_handling_type")) {
-						this.autoIncrementHandlingType = AutoIncrementHandlingType.valueOf(srcFieldOrValue);
+						this.autoIncrementHandlingType = AutoIncrementHandlingType
+								.valueOf(srcFieldOrValue.toUpperCase());
 					} else {
 						if (!utilities.stringHasValue(srcFieldOrValue)
 								|| srcFieldOrValue.toLowerCase().equals("null")) {

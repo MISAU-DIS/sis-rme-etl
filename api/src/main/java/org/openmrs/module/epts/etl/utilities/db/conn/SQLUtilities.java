@@ -2084,9 +2084,7 @@ public class SQLUtilities {
 	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
 			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-		if (knownTableAliases != null && knownTableAliases.get(0).contains("person_complex_attribute_detail")) {
-			String str = "a";
-		}
+
 		query = normalizeQuery(query);
 
 		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
@@ -2163,6 +2161,10 @@ public class SQLUtilities {
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
 			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
+		if (query.contains("health-facility")) {
+			query.contains("health-facility");
+		}
+		
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
@@ -2171,12 +2173,10 @@ public class SQLUtilities {
 		Set<String> avaliableTableAliases = retrieveTableAliases(query);
 
 		if (utilities.listHasElement(knownTableAliases)) {
-			for (String alias : knownTableAliases) {
-				avaliableTableAliases.add(alias);
-			}
+			avaliableTableAliases.addAll(knownTableAliases);
 		}
 
-		String[] srcObjectConditionElements = utilities.splitByAny(query, arithmeticOperators);
+		String[] srcObjectConditionElements = utilities.splitByAnyAtTopLevel(query, arithmeticOperators);
 
 		FastEtlTransformingTarget transformingTarget = FastEtlTransformingTarget.fastCreate(relatedEtlConf,
 				avaliableSrcObjects, conn);
@@ -2189,12 +2189,14 @@ public class SQLUtilities {
 					continue;
 				}
 
+				element = element.strip().trim();
+
 				FieldsMapping map;
 				String adjustedElement;
 
 				if (isTransformerExpression(element)) {
 
-					adjustedElement = element.strip().trim();
+					adjustedElement = element;
 
 					map = FieldsMapping.fastCreate("tmp_field", transformingTarget, conn);
 
@@ -2204,28 +2206,48 @@ public class SQLUtilities {
 
 				} else {
 
-					adjustedElement = element.replace(")", "").replace("(", "").strip().trim();
+					List<String> candidateElements = extractCandidateQueryElements(element, arithmeticOperators);
 
-					if (!isValidQueryColumnDefinition(adjustedElement)) {
-						continue;
-					}
+					for (String candidate : candidateElements) {
 
-					try {
-						map = FieldsMapping.fastCreate(adjustedElement, transformingTarget, conn);
-
-						// Do not transform if datasource is actually a SQL alias
-						if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
+						if (candidate == null || candidate.isBlank()) {
 							continue;
 						}
 
-					} catch (InvalidDataSourceOnFieldDefifitionException e) {
+						adjustedElement = candidate.strip().trim();
 
-						if (utilities.contains(avaliableTableAliases, e.getDataSourceName())) {
+						if (!isValidQueryColumnDefinition(adjustedElement)) {
 							continue;
 						}
 
-						throw e;
+						try {
+							map = FieldsMapping.fastCreate(adjustedElement, transformingTarget, conn);
+
+							if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
+								continue;
+							}
+
+						} catch (InvalidDataSourceOnFieldDefifitionException e) {
+
+							if (utilities.contains(avaliableTableAliases, e.getDataSourceName())) {
+								continue;
+							}
+
+							throw e;
+						}
+
+						if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
+							continue;
+						}
+
+						FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null,
+								avaliableSrcObjects.get(0), avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn,
+								conn);
+
+						resolvedElements.add(new ResolvedQueryElement(adjustedElement, valueInfo));
 					}
+
+					continue;
 				}
 
 				if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
@@ -2243,6 +2265,78 @@ public class SQLUtilities {
 		}
 
 		return resolvedElements;
+	}
+
+	private static List<String> extractCandidateQueryElements(String element, String[] arithmeticOperators) {
+
+		List<String> result = new ArrayList<>();
+
+		if (element == null || element.isBlank()) {
+			return result;
+		}
+
+		element = element.strip().trim();
+
+		if (isWrappedByOuterParentheses(element)) {
+
+			String inner = element.substring(1, element.length() - 1).strip().trim();
+
+			String[] innerElements = utilities.splitByAnyAtTopLevel(inner, arithmeticOperators);
+
+			for (String innerElement : innerElements) {
+				result.addAll(extractCandidateQueryElements(innerElement, arithmeticOperators));
+			}
+
+			return result;
+		}
+
+		result.add(element);
+
+		return result;
+	}
+
+	private static boolean isWrappedByOuterParentheses(String value) {
+
+		if (value == null) {
+			return false;
+		}
+
+		value = value.strip().trim();
+
+		if (!value.startsWith("(") || !value.endsWith(")")) {
+			return false;
+		}
+
+		int level = 0;
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+
+		for (int i = 0; i < value.length(); i++) {
+
+			char c = value.charAt(i);
+
+			if (c == '\'' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote;
+			} else if (c == '"' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote;
+			}
+
+			if (inSingleQuote || inDoubleQuote) {
+				continue;
+			}
+
+			if (c == '(') {
+				level++;
+			} else if (c == ')') {
+				level--;
+			}
+
+			if (level == 0 && i < value.length() - 1) {
+				return false;
+			}
+		}
+
+		return level == 0;
 	}
 
 	private static class ResolvedQueryElement {

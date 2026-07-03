@@ -8,6 +8,7 @@ import java.util.Map;
 import org.openmrs.module.epts.etl.conf.interfaces.JavaObjectFieldsValuesGenerator;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -20,8 +21,9 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 
 	@Override
 	public Map<String, FieldTransformingInfo> generateObjectFields(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, TransformableDataSource dataSource, List<EtlDatabaseObject> avaliableSrcObjects,
-			Connection srcConn, Connection dstConn) throws DBException, ForbiddenOperationException {
+			EtlDatabaseObject dstObject, TransformableDataSource dataSource,
+			List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn, Connection dstConn)
+			throws DBException, ForbiddenOperationException {
 
 		Map<String, FieldTransformingInfo> map = new HashMap<>();
 
@@ -48,6 +50,10 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 
 			FieldTransformingInfo fieldInfo = field.getTransformerInstance().transform(processor, srcObject, dstObject,
 					avaliableSrcObjects, field, srcConn, dstConn);
+
+			if (dstObject.getEtlDefaultEtlException() != null) {
+				throw (EtlExceptionImpl) dstObject.getEtlDefaultEtlException();
+			}
 
 			map.put(field.getName(), fieldInfo != null ? fieldInfo : null);
 		}
