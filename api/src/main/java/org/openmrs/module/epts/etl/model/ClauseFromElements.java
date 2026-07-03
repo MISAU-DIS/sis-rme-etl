@@ -183,20 +183,6 @@ public class ClauseFromElements {
 		return c;
 	}
 	
-	
-	public static void main(String[] args) {
-		List<ClauseFromElements> list = new ArrayList<ClauseFromElements>();
-		
-		ClauseFromElements.generateAllFromClauseFromString("PESSOA P INNER JOIN CLIENTE C ON CLIENTE.PESSOA_ID = PESSOA.SELF_ID " +
-																	"INNER JOIN DOCUMENTO_IDENTIFICACAO DOC ON DOCUMENTO_IDENTIFICACAO.PESSOA_ID = PESSOA.SELF_ID " +
-																	"LEFT JOIN PESSOA_SINGULAR ON PESSOA_SINGULAR.PESSOA_ID = P.SELF_ID", list);
-		
-		for (ClauseFromElements c : list)
-		System.out.println(c);
-		//e.changeTablePositions();
-		//System.out.println(e);
-	}
-	
 	public String getFirstTab() {
 		return firstTab;
 	}

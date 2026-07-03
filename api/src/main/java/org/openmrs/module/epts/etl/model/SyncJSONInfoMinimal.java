@@ -90,10 +90,5 @@ public class SyncJSONInfoMinimal {
 			
 			throw new RuntimeException(e);
 		}
-		finally {
-			if (ex != null) {
-				//System.out.println(json);
-			}
-		}
 	}
 }

@@ -491,10 +491,12 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
 			throws DBException {
 
-		if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), srcConn, srcConn)) {
-			return null;
+		if (avaliableSrcObjects != null) {
+			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), srcConn, srcConn)) {
+				return null;
+			}
 		}
-
+		
 		if (!isPrepared()) {
 			this.prepare(avaliableSrcObjects, srcConn);
 		}

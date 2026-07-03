@@ -583,10 +583,6 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	private static String tryToExtractParameterContaingSubQuery(String sqlQuery, int paramStart, DbmsType dbmsType) {
 		String subQuery = "";
 
-		if (paramStart == 533) {
-			System.out.println();
-		}
-
 		Stack<Integer> parenthesisStack = new Stack<>();
 
 		boolean foundPossibleSubQueryStarting = false;

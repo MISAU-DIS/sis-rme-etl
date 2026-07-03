@@ -2084,7 +2084,9 @@ public class SQLUtilities {
 	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
 			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-
+		if (knownTableAliases != null && knownTableAliases.get(0).contains("person_complex_attribute_detail")) {
+			String str = "a";
+		}
 		query = normalizeQuery(query);
 
 		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
