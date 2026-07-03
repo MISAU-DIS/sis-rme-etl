@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -366,6 +367,12 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
 			throws DBException {
+
+		if (avaliableSrcObjects != null) {
+			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), conn, conn)) {
+				return null;
+			}
+		}
 
 		Map<String, FieldTransformingInfo> values = this.getFieldsValuesGeneratorInstance()
 				.generateObjectFields(processor, srcObject, dstObject, this, avaliableSrcObjects, conn, conn);

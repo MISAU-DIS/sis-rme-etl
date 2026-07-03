@@ -195,7 +195,13 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 							(TableConfiguration) additionalSrcObjects.get(0).getRelatedConfiguration());
 
 					this.tableConfig.setExtraConditionForExtract(this.extraCondition);
-					this.tableConfig.fullLoad(srcConn);
+					
+					try {
+						this.tableConfig.fullLoad(srcConn);
+					} catch (DBException e) {
+						this.tableConfig.fullLoad(srcConn);
+						throw e;
+					}
 
 					List<EtlDatabaseObject> rows = this.tableConfig.searchRecords(null, null, null, srcConn);
 

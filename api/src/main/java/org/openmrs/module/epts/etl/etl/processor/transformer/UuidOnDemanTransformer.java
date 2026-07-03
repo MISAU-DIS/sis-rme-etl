@@ -182,10 +182,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 				this.dynamicElements.put(p.getKey(), p.getValue());
 			}
 		}
-
-		stepIntoBreakpoint(getRelatedEtlConf(), this.toString().equals(
-				"UUID_ON_DEMAND_TRANSFORMER(table_name:person_complex_attribute_detail,lookup_condition:lookup_condition_for_person_complex_attribute_detail.sql,person_attribute_type_id:112,person_id:person_complex_attribute_dst_ds.person_id,date_created:person_complex_attribute_dst_ds.date_created)"));
-
+		
 		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.dynamicElements, conn);
 	}
 
