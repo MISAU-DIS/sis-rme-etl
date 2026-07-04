@@ -128,10 +128,10 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		List<EtlDatabaseObject> availableSrcList = availableSrcObjs != null ? new ArrayList<>(availableSrcObjs)
 				: new ArrayList<>();
 
-		boolean pkResolved = resolvePrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
-				migratedDstParent, availableSrcList, srcConn, dstConn);
+		resolvePrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping, migratedDstParent,
+				availableSrcList, srcConn, dstConn);
 
-		if (!pkResolved && migratedDstParent != null) {
+		if (migratedDstParent != null) {
 			resolveParentForeignKey(transformedRec, dstConf, migratedDstParent);
 		}
 	}

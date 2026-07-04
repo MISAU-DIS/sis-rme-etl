@@ -124,6 +124,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 					if (utilities.setHasElement(avaliableSrcObjects) || mappingInfo.isDoNotUseSrcConfAsDataSource()) {
 						if (mappingInfo.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
+
 							EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this,
 									srcRecord, avaliableSrcObjects, mappingInfo, parentMigratedRec,
 									TransformationType.PRINCIPAL, srcConn, dstConn);
@@ -262,8 +263,6 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 					: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
-
-			stepIntoBreakpoint(getRelatedEtlConf(), itemConf.getSrcConf().getTableAlias().contains("_grouped"));
 
 			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
 					avaliableSrcObjects, srcConn);
