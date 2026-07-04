@@ -455,7 +455,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			if (escapeJsonValues) {
 				replacement = escapeJsonString(replacement);
 			}
-			
+
 			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
 		}
 
@@ -487,7 +487,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			System.err.println("Steped into the breakpoint");
 	}
 
-	static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
+	public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
 		try {
 			return resolvePlaceholders(FileUtilities.realAllFileAsString(file), null, null, true);
 		} catch (IOException e) {

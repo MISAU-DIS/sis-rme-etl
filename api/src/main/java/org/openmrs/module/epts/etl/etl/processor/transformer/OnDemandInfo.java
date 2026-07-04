@@ -395,8 +395,4 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 	}
-
-	public boolean isTransformerExpression(String value) {
-		return value != null && value.contains("(") && value.endsWith(")");
-	}
 }

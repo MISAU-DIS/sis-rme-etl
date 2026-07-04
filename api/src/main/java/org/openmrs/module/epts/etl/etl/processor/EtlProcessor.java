@@ -263,6 +263,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 					: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
 
+			stepIntoBreakpoint(getRelatedEtlConf(), itemConf.getSrcConf().getTableAlias().contains("_grouped"));
+
 			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
 					avaliableSrcObjects, srcConn);
 

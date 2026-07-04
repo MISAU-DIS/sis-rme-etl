@@ -55,4 +55,6 @@ public interface EtlValidator {
 	EtlDBConnectionType getConnectionToUse();
 
 	void init(EtlDataConfiguration relatedEtlConfig, Connection conn) throws EtlExceptionImpl, DBException;
+
+	boolean isDisabled();
 }

@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 
 public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfiguration implements EtlDataConfiguration {
 
@@ -61,5 +63,27 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 
 	public void setDynamicElements(List<String> dynamicElements) {
 		this.dynamicElements = dynamicElements;
+	}
+
+	public static boolean isTransformerExpression(String value) {
+		String transformer = value.contains("(") ? value.split("\\(")[0] : "";
+
+		transformer = transformer.trim().strip();
+
+		if (!utilities.stringHasValue(transformer))
+			return false;
+
+		FieldsMapping map = FieldsMapping.fastCreate("tmp", null);
+
+		map.setTransformer(transformer);
+
+		FieldTransformerType type = null;
+
+		try {
+			type = FieldTransformerType.resolveType(map);
+		} catch (Exception e) {
+		}
+
+		return type != null;
 	}
 }

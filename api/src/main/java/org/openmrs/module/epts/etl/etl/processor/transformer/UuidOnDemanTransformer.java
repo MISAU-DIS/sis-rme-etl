@@ -134,7 +134,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 			if (mapping.length != 2) {
 				throw new EtlExceptionImpl(
-						"Wrong format for newObjectData(" + fieldData + ") within the " + getTransformerDsc() + "\n"
+						"Wrong format for Param (" + fieldData + ") within the " + getTransformerDsc() + "\n"
 								+ "Each object param must be specified as filedName:srcFieldOrValue");
 			} else {
 				String dstField = mapping[0];
@@ -182,7 +182,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 				this.dynamicElements.put(p.getKey(), p.getValue());
 			}
 		}
-		
+
 		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.dynamicElements, conn);
 	}
 
@@ -214,13 +214,18 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn, dstConn);
+		try {
+			String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn,
+					dstConn);
 
-		if (uuid == null) {
-			uuid = UUID.randomUUID().toString();
+			if (uuid == null) {
+				uuid = UUID.randomUUID().toString();
+			}
+
+			return new FieldTransformingInfo(field, uuid, null);
+		} catch (Exception e) {
+			throw new EtlConfException("Error happened while processing transformer " + this, e);
 		}
-
-		return new FieldTransformingInfo(field, uuid, null);
 
 	}
 

@@ -45,10 +45,25 @@ public class DefaultEtlValidator extends AbstractEtlDataConfiguration implements
 
 	private EtlDataConfiguration relatedEtlDataConf;
 
+	private Boolean disabled;
+
 	public DefaultEtlValidator() {
 		phase = ValidationPhase.AFTER_LOAD;
 		behavior = ActionOnEtlIssue.ABORT_PROCESS;
 		connectionToUse = EtlDBConnectionType.srcConnInfo;
+	}
+
+	public Boolean getDisabled() {
+		return disabled;
+	}
+
+	public void setDisabled(Boolean disabled) {
+		this.disabled = disabled;
+	}
+
+	@Override
+	public boolean isDisabled() {
+		return isTrue(disabled);
 	}
 
 	@Override
@@ -204,6 +219,10 @@ public class DefaultEtlValidator extends AbstractEtlDataConfiguration implements
 			throws EtlExceptionImpl, DBException {
 		if (conf.hasValidator()) {
 			for (EtlValidator validator : conf.getValidators()) {
+				if (validator.isDisabled()) {
+					continue;
+				}
+
 				validator.init(conf, srcConn);
 
 				validator.validate(null, null, null, null, srcConn, dstConn);

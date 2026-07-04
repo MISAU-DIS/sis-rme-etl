@@ -456,7 +456,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	}
 
 	public void setSrcField(String srcField) {
-		if (utilities.containsSpace(srcField)) {
+		if (utilities.containsSpace(srcField) && !isTransformerExpression(srcField) ) {
 			throw new ForbiddenOperationException("Space found on field " + srcField);
 		}
 		this.srcField = srcField;
