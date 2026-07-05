@@ -274,7 +274,10 @@ public class SrcConf extends AbstractTableConfiguration
 			if (this.hasParentItemConf() && this.getPrimaryKey().equals(this.getParentSrcConf().getPrimaryKey())) {
 				this.setJoinFields(new ArrayList<>());
 
-				this.getJoinFields().add(FieldsMapping.fastCreate(this.getPrimaryKey().asSimpleKey().getName(), conn));
+				String srcField = this.getParentSrcConf().getTableAlias() + "."
+						+ this.getPrimaryKey().asSimpleKey().getName();
+
+				this.getJoinFields().add(FieldsMapping.fastCreate(srcField, conn));
 			}
 		}
 	}
