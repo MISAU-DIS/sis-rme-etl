@@ -66,6 +66,9 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 	}
 
 	public static boolean isTransformerExpression(String value) {
+		if (value == null)
+			return false;
+
 		String transformer = value.contains("(") ? value.split("\\(")[0] : "";
 
 		transformer = transformer.trim().strip();

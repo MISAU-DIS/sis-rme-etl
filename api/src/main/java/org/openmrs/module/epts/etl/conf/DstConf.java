@@ -547,8 +547,7 @@ public class DstConf extends AbstractTableConfiguration
 			List<Field> myFields = this.getFields();
 
 			for (Field field : myFields) {
-				stepIntoBreakpoint(getRelatedEtlConf(), field.getName().equals("quantity"));
-
+			
 				if (isIgnorableField(field)) {
 					continue;
 				}

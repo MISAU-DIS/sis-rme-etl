@@ -1792,44 +1792,83 @@ public class SQLUtilities {
 
 	public static List<Field> determineFieldsFromQuery(String query) {
 
-		String normalizedQuery = normalizeQuery(query);
-
-		String selectRegex = "(?i)select\\s+(.+?)\\s+from";
-		Pattern selectPattern = Pattern.compile(selectRegex);
-		Matcher selectMatcher = selectPattern.matcher(normalizedQuery);
-
 		List<Field> fields = new ArrayList<>();
 
-		if (selectMatcher.find()) {
+		if (query == null || query.isBlank()) {
+			return fields;
+		}
 
-			String selectClause = selectMatcher.group(1).trim();
+		String normalizedQuery = normalizeQuery(query);
 
-			if (containsSelectWildcard(selectClause)) {
-				throw new IllegalArgumentException("Query contains a wildcard '*' in the SELECT clause");
-			}
+		String selectClause = extractSelectClause(normalizedQuery);
 
-			List<String> fieldsName = splitSelectFields(selectClause);
+		if (selectClause == null || selectClause.isBlank()) {
+			return fields;
+		}
 
-			for (String s : fieldsName) {
+		if (containsSelectWildcard(selectClause)) {
+			throw new IllegalArgumentException("Query contains a wildcard '*' in the SELECT clause");
+		}
 
-				s = utilities.removeDuplicatedEmptySpace(s.trim());
+		List<String> fieldsName = splitSelectFields(selectClause);
 
-				String fieldName;
+		for (String s : fieldsName) {
 
-				if (s.toLowerCase().contains(" as ")) {
-					fieldName = s.split("(?i) as ")[1];
-				} else {
-					String[] parts = s.split("\\s+");
-					fieldName = parts[parts.length - 1];
-				}
+			s = utilities.removeDuplicatedEmptySpace(s.trim());
 
-				fieldName = fieldName.split("\\.")[fieldName.split("\\.").length - 1];
+			String fieldName = determineFieldNameFromSelectItem(s);
 
-				fields.add(new Field(fieldName.trim()));
-			}
+			fields.add(new Field(fieldName.trim()));
 		}
 
 		return fields;
+	}
+
+	private static String determineFieldNameFromSelectItem(String selectItem) {
+
+		if (selectItem.toLowerCase().contains(" as ")) {
+			String[] parts = selectItem.split("(?i)\\s+as\\s+");
+			return cleanFieldName(parts[parts.length - 1]);
+		}
+
+		String[] parts = selectItem.split("\\s+");
+
+		if (parts.length > 1) {
+			return cleanFieldName(parts[parts.length - 1]);
+		}
+
+		return cleanFieldName(selectItem);
+	}
+
+	private static String cleanFieldName(String fieldName) {
+
+		fieldName = fieldName.trim();
+
+		if (fieldName.contains(".")) {
+			String[] parts = fieldName.split("\\.");
+			fieldName = parts[parts.length - 1];
+		}
+
+		return fieldName.replace("`", "").replace("\"", "").trim();
+	}
+
+	private static String extractSelectClause(String query) {
+
+		String lower = query.toLowerCase();
+
+		if (!lower.startsWith("select ")) {
+			return null;
+		}
+
+		int selectStart = 6;
+
+		int fromIndex = indexOfTopLevelKeyword(query, "from", selectStart);
+
+		if (fromIndex >= 0) {
+			return query.substring(selectStart, fromIndex).trim();
+		}
+
+		return query.substring(selectStart).trim();
 	}
 
 	private static List<String> splitSelectFields(String selectClause) {

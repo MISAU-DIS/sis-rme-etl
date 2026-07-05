@@ -123,8 +123,9 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 	public void init(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (parameters == null || parameters.size() < 2) {
-			throw new ForbiddenOperationException("A UuidOnDemanTransformer needs at least 2 parameters.\n"
-					+ "UuidOnDemanTransformer(table:table_name,condition:sql_condition)");
+			throw new ForbiddenOperationException("Error initializing transformer: " + this
+					+ "\nA UuidOnDemanTransformer needs at least 2 parameters.\n"
+					+ "UuidOnDemanTransformer(table:table_name,lookup_condition:sql_condition)");
 		}
 
 		this.dynamicElements = new HashMap<>();
