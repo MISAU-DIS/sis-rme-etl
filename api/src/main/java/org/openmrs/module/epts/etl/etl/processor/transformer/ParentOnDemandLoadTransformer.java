@@ -284,8 +284,11 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 					if (!srcConf.doNotUseAsDatasource()) {
 						List<EtlDatabaseObject> recs;
+						logTrace("Searching recs on demand for: " + this);
 
 						recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects, srcConn);
+
+						logTrace("OnDemand Searching recs finalized: " + this);
 
 						if (recs.isEmpty()) {
 							throw new EtlExceptionImpl("No src record was returned with " + this);

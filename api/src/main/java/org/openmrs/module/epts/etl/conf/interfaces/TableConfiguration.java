@@ -964,10 +964,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 								this.setParentRefInfo(cleanList);
 							}
 
-							
 							this.logDebug("LOADED PARENTS FOR TABLE '" + this.getTableName() + "'");
-							this.logTrace(this.getParentConf().toString());
-							
 						} finally
 
 						{
@@ -1430,6 +1427,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				getRelatedEtlConf().addToFullLoadedTables(this);
 
+				logDebug("Table full loaded: " + this);
 			} catch (SQLException e) {
 				e.printStackTrace();
 

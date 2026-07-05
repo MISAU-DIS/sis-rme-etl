@@ -1470,6 +1470,14 @@ public class CommonUtilities implements Serializable {
 			return str;
 		}
 
+		// 🔹 Boolean
+		boolean isBoolean = utilities.isStringIn(value.toString(), "true", "false");// Forcado devido a um bug dificil
+																					// de analiisar
+
+		if (isBoolean || destinationType == Boolean.class || destinationType == boolean.class) {
+			return parseBoolean(str);
+		}
+
 		// 🔹 Integer
 		if (destinationType == Integer.class || destinationType == int.class) {
 			Double d = Double.parseDouble(str);
@@ -1487,11 +1495,6 @@ public class CommonUtilities implements Serializable {
 		// 🔹 Double
 		if (destinationType == Double.class || destinationType == double.class) {
 			return Double.parseDouble(str);
-		}
-
-		// 🔹 Boolean
-		if (destinationType == Boolean.class || destinationType == boolean.class) {
-			return parseBoolean(str);
 		}
 
 		// 🔹 Character
