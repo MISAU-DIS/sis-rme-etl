@@ -1305,40 +1305,263 @@ public class SQLUtilities {
 	}
 
 	public static List<SqlFunctionInfo> extractSqlFunctionsInSelect(String query) {
+
 		List<SqlFunctionInfo> functions = new ArrayList<>();
 
-		// Normalize the query to make it case insensitive
-		String normalizedQuery = query.toLowerCase();
+		if (query == null || query.isBlank()) {
+			return functions;
+		}
 
-		// Regex to find the SELECT clause and extract its fields
-		Pattern selectPattern = Pattern.compile("select(.*?)from", Pattern.DOTALL);
-		Matcher selectMatcher = selectPattern.matcher(normalizedQuery);
+		String selectClause = extractTopLevelSelectClause(query);
 
-		if (selectMatcher.find()) {
-			// Extract the fields part of the SELECT clause
-			String fieldsPart = selectMatcher.group(1).trim();
+		if (selectClause == null || selectClause.isBlank()) {
+			return functions;
+		}
 
-			// Regex to identify SQL function calls and their aliases, with or without the
-			// "AS" keyword
-			Pattern functionPattern = Pattern
-					.compile("(\\b\\w+\\s*\\([^\\)]*\\))(\\s+as\\s+(\\w+))?|\\b(\\w+)\\s*\\(([^\\)]*)\\)\\s*(\\w+)?");
-			Matcher functionMatcher = functionPattern.matcher(fieldsPart);
+		List<String> selectItems = splitTopLevel(selectClause, ',');
 
-			// Find all function calls in the fields part
-			while (functionMatcher.find()) {
-				String function = functionMatcher.group(1) != null ? functionMatcher.group(1).trim()
-						: functionMatcher.group(4).trim() + "(" + functionMatcher.group(5).trim() + ")";
-				String alias = functionMatcher.group(3) != null ? functionMatcher.group(3).trim()
-						: (functionMatcher.group(6) != null ? functionMatcher.group(6).trim() : null);
-				try {
-					functions.add(new SqlFunctionInfo(SqlFunctionType.determine(function), alias));
-				} catch (ForbiddenOperationException e) {
-					e.printStackTrace();
-				}
+		for (String item : selectItems) {
+
+			SqlFunctionInfo info = extractFunctionInfoFromSelectItem(item);
+
+			if (info != null && !info.getType().isUnknown()) {
+				functions.add(info);
 			}
 		}
 
 		return functions;
+	}
+
+	private static SqlFunctionInfo extractFunctionInfoFromSelectItem(String item) {
+
+		if (item == null || item.isBlank()) {
+			return null;
+		}
+
+		String alias = extractAlias(item);
+		String expression = removeAlias(item);
+
+		String functionName = extractTopLevelFunctionName(expression);
+
+		if (functionName == null) {
+			return null;
+		}
+
+		SqlFunctionType type = SqlFunctionType.determine(functionName + "(");
+
+		return new SqlFunctionInfo(type, alias);
+	}
+
+	private static String extractTopLevelSelectClause(String query) {
+
+		String normalized = query.trim();
+
+		int selectIndex = indexOfTopLevelKeyword(normalized, "select", 0);
+
+		if (selectIndex < 0) {
+			return null;
+		}
+
+		int fromIndex = indexOfTopLevelKeyword(normalized, "from", selectIndex + 6);
+
+		if (fromIndex < 0) {
+			return null;
+		}
+
+		return normalized.substring(selectIndex + 6, fromIndex).trim();
+	}
+
+	private static int indexOfTopLevelKeyword(String text, String keyword, int startAt) {
+
+		int level = 0;
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+
+		for (int i = startAt; i <= text.length() - keyword.length(); i++) {
+
+			char c = text.charAt(i);
+
+			if (c == '\'' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote;
+				continue;
+			}
+
+			if (c == '"' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote;
+				continue;
+			}
+
+			if (inSingleQuote || inDoubleQuote) {
+				continue;
+			}
+
+			if (c == '(') {
+				level++;
+				continue;
+			}
+
+			if (c == ')') {
+				level--;
+				continue;
+			}
+
+			if (level == 0 && text.regionMatches(true, i, keyword, 0, keyword.length())
+					&& isKeywordBoundary(text, i, keyword.length())) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	private static boolean isKeywordBoundary(String text, int start, int length) {
+
+		int before = start - 1;
+		int after = start + length;
+
+		boolean validBefore = before < 0
+				|| !Character.isLetterOrDigit(text.charAt(before)) && text.charAt(before) != '_';
+
+		boolean validAfter = after >= text.length()
+				|| !Character.isLetterOrDigit(text.charAt(after)) && text.charAt(after) != '_';
+
+		return validBefore && validAfter;
+	}
+
+	private static List<String> splitTopLevel(String text, char separator) {
+
+		List<String> result = new ArrayList<>();
+
+		int level = 0;
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+
+		StringBuilder current = new StringBuilder();
+
+		for (int i = 0; i < text.length(); i++) {
+
+			char c = text.charAt(i);
+
+			if (c == '\'' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote;
+				current.append(c);
+				continue;
+			}
+
+			if (c == '"' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote;
+				current.append(c);
+				continue;
+			}
+
+			if (!inSingleQuote && !inDoubleQuote) {
+
+				if (c == '(') {
+					level++;
+				} else if (c == ')') {
+					level--;
+				}
+
+				if (c == separator && level == 0) {
+					result.add(current.toString().trim());
+					current.setLength(0);
+					continue;
+				}
+			}
+
+			current.append(c);
+		}
+
+		if (current.length() > 0) {
+			result.add(current.toString().trim());
+		}
+
+		return result;
+	}
+
+	private static String extractTopLevelFunctionName(String expression) {
+
+		Pattern pattern = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(");
+		Matcher matcher = pattern.matcher(expression);
+
+		while (matcher.find()) {
+			return matcher.group(1);
+		}
+
+		return null;
+	}
+
+	private static String extractAlias(String item) {
+
+		Pattern asPattern = Pattern.compile("(?i)\\s+as\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*$");
+		Matcher asMatcher = asPattern.matcher(item);
+
+		if (asMatcher.find()) {
+			return asMatcher.group(1);
+		}
+
+		List<String> parts = splitByWhitespaceAtTopLevel(item);
+
+		if (parts.size() >= 2) {
+			String last = parts.get(parts.size() - 1);
+
+			if (last.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+				return last;
+			}
+		}
+
+		return null;
+	}
+
+	private static String removeAlias(String item) {
+
+		return item.replaceAll("(?i)\\s+as\\s+[a-zA-Z_][a-zA-Z0-9_]*\\s*$", "")
+				.replaceAll("\\s+[a-zA-Z_][a-zA-Z0-9_]*\\s*$", "").trim();
+	}
+
+	private static List<String> splitByWhitespaceAtTopLevel(String text) {
+
+		List<String> result = new ArrayList<>();
+
+		int level = 0;
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+
+		StringBuilder current = new StringBuilder();
+
+		for (int i = 0; i < text.length(); i++) {
+
+			char c = text.charAt(i);
+
+			if (c == '\'' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote;
+			} else if (c == '"' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote;
+			}
+
+			if (!inSingleQuote && !inDoubleQuote) {
+				if (c == '(')
+					level++;
+				else if (c == ')')
+					level--;
+
+				if (Character.isWhitespace(c) && level == 0) {
+					if (current.length() > 0) {
+						result.add(current.toString());
+						current.setLength(0);
+					}
+					continue;
+				}
+			}
+
+			current.append(c);
+		}
+
+		if (current.length() > 0) {
+			result.add(current.toString());
+		}
+
+		return result;
 	}
 
 	/**
@@ -2164,7 +2387,7 @@ public class SQLUtilities {
 		if (query.contains("health-facility")) {
 			query.contains("health-facility");
 		}
-		
+
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",

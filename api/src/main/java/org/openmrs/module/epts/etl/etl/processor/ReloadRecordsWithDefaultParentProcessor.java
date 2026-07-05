@@ -127,6 +127,8 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				    srcConn);
 				
 				continue;
+			}catch (Exception e) {
+				throw e;
 			}
 			
 			srcObject = recWithDefaultParentInfo.getSrcRelatedObject();

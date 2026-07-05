@@ -305,14 +305,15 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	private void tryToLoadSQLFunctionInfo() {
 
 		if (!isSqlFunctionLoaded()) {
-
+ 
 			List<SqlFunctionInfo> avaliableFunction = SQLUtilities.extractSqlFunctionsInSelect(getMainQuery());
 
 			if (utilities.listHasExactlyOneElement(this.getDataSource().getFields())
 					&& utilities.listHasExactlyOneElement(avaliableFunction)) {
 
 				if (avaliableFunction.get(0).isCountFunction()) {
-
+					SQLUtilities.extractSqlFunctionsInSelect(getMainQuery());
+					
 					utilities.throwForbiddenMethodException();
 
 					this.setCountFunctionInfo(avaliableFunction.get(0));

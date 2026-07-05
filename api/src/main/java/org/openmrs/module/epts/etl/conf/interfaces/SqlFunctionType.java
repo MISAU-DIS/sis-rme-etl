@@ -1,31 +1,47 @@
 package org.openmrs.module.epts.etl.conf.interfaces;
 
+import java.util.regex.Pattern;
+
 public enum SqlFunctionType {
-	
-	COUNT,
-	MAX,
-	MIN,
-	timestampdiff,
-	UNKOWN;
-	
+
+	COUNT, MAX, MIN, timestampdiff, UNKOWN;
+
 	public boolean isCount() {
 		return this.equals(COUNT);
 	}
-	
+
 	public static SqlFunctionType determine(String token) {
-		if (token.toLowerCase().contains("count")) {
+
+		if (token == null || token.isBlank()) {
+			return SqlFunctionType.UNKOWN;
+		}
+
+		if (containsSqlFunction(token, "count")) {
 			return SqlFunctionType.COUNT;
 		}
-		if (token.toLowerCase().contains("max")) {
+
+		if (containsSqlFunction(token, "max")) {
 			return SqlFunctionType.MAX;
 		}
-		if (token.toLowerCase().contains("min")) {
+
+		if (containsSqlFunction(token, "min")) {
 			return SqlFunctionType.MIN;
-		} else if (token.toLowerCase().contains("timestampdiff")) {
+		}
+
+		if (containsSqlFunction(token, "timestampdiff")) {
 			return SqlFunctionType.timestampdiff;
 		}
-		
-		else
-			return SqlFunctionType.UNKOWN;
+
+		return SqlFunctionType.UNKOWN;
+	}
+
+	private static boolean containsSqlFunction(String token, String functionName) {
+		String regex = "(?i)(?<![a-zA-Z0-9_])" + Pattern.quote(functionName) + "\\s*\\(";
+
+		return Pattern.compile(regex).matcher(token).find();
+	}
+
+	public boolean isUnknown() {
+		return this == UNKOWN;
 	}
 }

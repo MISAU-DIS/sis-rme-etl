@@ -291,15 +291,26 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				}
 			}
 
-			if (rootException != null && rootException.isDuplicatePrimaryOrUniqueKeyException()) {
+			if (rootException != null) {
 				DBUtilities.handlePostgresExceptionIssue(conn);
 
-				if (onConflict != null) {
-					resolveConflictWithExistingRecord(tableConfiguration, onConflict, rootException, conn);
-				} else {
-					resolveConflictWithExistingRecord(tableConfiguration, ConflictResolutionType.REJECT, rootException,
-							conn);
+				if (rootException.isDuplicatePrimaryOrUniqueKeyException()) {
+					if (onConflict != null) {
+						resolveConflictWithExistingRecord(tableConfiguration, onConflict, rootException, conn);
+					} else {
+						resolveConflictWithExistingRecord(tableConfiguration, ConflictResolutionType.REJECT,
+								rootException, conn);
+					}
+				} else if (rootException.isInconsistentDataException()) {
+					if (tableConfiguration.getRelatedEtlConf().getDefaultInconsistencyBehavior().logging()) {
+						this.getEtlInfo().setExceptionOnEtl(e);
+						;
+					} else {
+						throw e;
+					}
+
 				}
+
 			} else
 				throw e;
 		}

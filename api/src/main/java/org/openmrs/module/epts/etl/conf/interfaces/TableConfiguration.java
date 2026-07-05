@@ -964,7 +964,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 								this.setParentRefInfo(cleanList);
 							}
 
+							
 							this.logDebug("LOADED PARENTS FOR TABLE '" + this.getTableName() + "'");
+							this.logTrace(this.getParentConf().toString());
+							
 						} finally
 
 						{

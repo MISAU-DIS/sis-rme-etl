@@ -114,20 +114,20 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		if (dataSourceConfig == null) {
+		if (this.dataSourceConfig == null) {
 			synchronized (LOCK) {
-				if (dataSourceConfig == null) {
-					QueryDataSourceConfig conf = new QueryDataSourceConfig(sqlQuery,
+				if (this.dataSourceConfig == null) {
+					QueryDataSourceConfig conf = new QueryDataSourceConfig(this.sqlQuery,
 							field.getTransformationTargetObject().getSrcConf());
 
 					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
 
-					dataSourceConfig = conf;
+					this.dataSourceConfig = conf;
 				}
 			}
 		}
 
-		EtlDatabaseObject srcObj = dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
+		EtlDatabaseObject srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
 				additionalSrcObjects, hasOverrideConnection() ? getOverrideConnection() : srcConn);
 
 		Object dstValue = null;
@@ -142,6 +142,10 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		if (field.getDefaultValue() == null) {
+			 srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
+					additionalSrcObjects, hasOverrideConnection() ? getOverrideConnection() : srcConn);
+
+		
 			EtlDatabaseObject obj = utilities.listHasElement(additionalSrcObjects) ? additionalSrcObjects.get(0) : null;
 
 			throw new EmptyTransformedValueException(obj,
