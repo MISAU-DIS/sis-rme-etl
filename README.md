@@ -856,6 +856,59 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
            For full parameter details and behavior, refer to **PARENT_ON_DEMAND_TRANSFORMER**.
 
       For full parameter details, refer to **PARENT_ON_DEMAND_TRANSFORMER**.
+
+
+	   - **UUID_ON_DEMAND_TRANSFORMER(table_name:tableName,lookup_condition:condition)**: Retrieves the UUID of an existing destination record or generates a new UUID when no matching record is found.
+
+		The transformer searches the specified **destination table** using the configured *lookup_condition*. If a matching record exists, the UUID of that record is returned. Otherwise, a new UUID is generated and returned.
+
+		Because the lookup is always performed against the **destination database**, every value used in the *lookup_condition* must represent the corresponding value in the destination database. However, the ETL engine automatically attempts to resolve values originating from source data sources into their corresponding destination values before executing the lookup. If any referenced value cannot be resolved, the transformer throws an exception.
+
+		**Required parameters:**
+			- *table_name:tableName* – Destination table where the lookup should be performed.
+			- *lookup_condition:condition* – Condition used to search for an existing destination record. The condition may be provided either as an inline expression or as the name of a SQL script located under **dump-scripts**.
+
+	  			When a SQL script is used, dynamic placeholders may be declared using the syntax `${parameter_name}`. Their values are supplied through additional transformer parameters.
+
+		**Inline example:**
+
+		```
+			UUID_ON_DEMAND_TRANSFORMER(
+			table_name:encounter,
+			lookup_condition:encounter_type=@dst_encounter_type_id and patient_id=cd4_obs_dst_ds.person_id and encounter_datetime=cd4_obs_dst_ds.obs_datetime
+			)
+		```
+
+		**SQL script example:**
+
+		Script (**dump-scripts/lookup_condition_for_orders.sql**)
+
+		```sql
+			1 = (
+	    	select 1
+	      	from orders o
+	     	where o.order_type_id = ${order_type_id}
+	       		and o.concept_id = ${concept_id}
+	       	and o.encounter_id = ${encounter_id}
+		)
+		```
+
+		**Transformer**
+
+		```
+		UUID_ON_DEMAND_TRANSFORMER(
+			table_name:orders,
+			lookup_condition:lookup_condition_for_orders.sql,
+			order_type_id:103,
+			concept_id:cd4_obs_src_ds.concept_id,
+			encounter_id:cd4_obs_dst_ds.encounter_id
+		)
+		```
+
+		In the previous example, the ETL engine loads the SQL script, replaces each placeholder with the corresponding transformer parameter, resolves any source values to their destination equivalents when necessary, and finally executes the lookup against the destination database.
+
+		This transformer is useful when different records must consistently reference the same destination entity, even when that entity may not have been created yet.
+
     - **DATE_TRANSFORMER(input:valueOrTransformer,operation:operationName,input_format:format,output_format:format,amount:number,unit:unitName,on_invalid:behavior)**  
   		Performs date and datetime transformations. It can parse string values into dates, format dates as strings, and apply basic date operations such as adding or subtracting days, months, years, hours, minutes, or seconds.
   
