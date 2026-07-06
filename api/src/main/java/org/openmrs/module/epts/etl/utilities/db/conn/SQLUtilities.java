@@ -2468,7 +2468,8 @@ public class SQLUtilities {
 
 				} else {
 
-					List<String> candidateElements = extractCandidateQueryElements(element, arithmeticOperators);
+					List<String> candidateElements = extractCandidateQueryElementsRecursively(element,
+							arithmeticOperators);
 
 					for (String candidate : candidateElements) {
 
@@ -2529,7 +2530,7 @@ public class SQLUtilities {
 		return resolvedElements;
 	}
 
-	private static List<String> extractCandidateQueryElements(String element, String[] arithmeticOperators) {
+	private static List<String> extractCandidateQueryElementsRecursively(String element, String[] splitTokens) {
 
 		List<String> result = new ArrayList<>();
 
@@ -2539,48 +2540,65 @@ public class SQLUtilities {
 
 		element = element.strip().trim();
 
-		if (isWrappedByOuterParentheses(element)) {
+		/*
+		 * 1. Primeiro tenta dividir o elemento ao nível externo.
+		 */
+		String[] topLevelParts = utilities.splitByAnyAtTopLevel(element, splitTokens);
 
-			String inner = element.substring(1, element.length() - 1).strip().trim();
-
-			String[] innerElements = utilities.splitByAnyAtTopLevel(inner, arithmeticOperators);
-
-			for (String innerElement : innerElements) {
-				result.addAll(extractCandidateQueryElements(innerElement, arithmeticOperators));
+		if (topLevelParts.length > 1) {
+			for (String part : topLevelParts) {
+				result.addAll(extractCandidateQueryElementsRecursively(part, splitTokens));
 			}
 
 			return result;
 		}
 
+		/*
+		 * 2. Adiciona o próprio elemento como candidato. Depois a validação
+		 * isValidQueryColumnDefinition(...) decidirá se ele realmente é um campo
+		 * transformável.
+		 */
 		result.add(element);
+
+		/*
+		 * 3. Procura conteúdos dentro de parênteses em qualquer posição do elemento,
+		 * não apenas quando o elemento inteiro está entre ().
+		 */
+		List<String> parenthesizedContents = extractTopLevelParenthesizedContents(element);
+
+		for (String inner : parenthesizedContents) {
+			result.addAll(extractCandidateQueryElementsRecursively(inner, splitTokens));
+		}
 
 		return result;
 	}
 
-	private static boolean isWrappedByOuterParentheses(String value) {
+	private static List<String> extractTopLevelParenthesizedContents(String text) {
 
-		if (value == null) {
-			return false;
+		List<String> result = new ArrayList<>();
+
+		if (text == null || text.isBlank()) {
+			return result;
 		}
 
-		value = value.strip().trim();
-
-		if (!value.startsWith("(") || !value.endsWith(")")) {
-			return false;
-		}
-
-		int level = 0;
 		boolean inSingleQuote = false;
 		boolean inDoubleQuote = false;
 
-		for (int i = 0; i < value.length(); i++) {
+		int level = 0;
+		int start = -1;
 
-			char c = value.charAt(i);
+		for (int i = 0; i < text.length(); i++) {
+
+			char c = text.charAt(i);
 
 			if (c == '\'' && !inDoubleQuote) {
 				inSingleQuote = !inSingleQuote;
-			} else if (c == '"' && !inSingleQuote) {
+				continue;
+			}
+
+			if (c == '"' && !inSingleQuote) {
 				inDoubleQuote = !inDoubleQuote;
+				continue;
 			}
 
 			if (inSingleQuote || inDoubleQuote) {
@@ -2588,17 +2606,38 @@ public class SQLUtilities {
 			}
 
 			if (c == '(') {
+				if (level == 0) {
+					start = i + 1;
+				}
+
 				level++;
-			} else if (c == ')') {
-				level--;
+				continue;
 			}
 
-			if (level == 0 && i < value.length() - 1) {
-				return false;
+			if (c == ')') {
+				level--;
+
+				if (level < 0) {
+					throw new IllegalArgumentException("Unbalanced parentheses in expression: " + text);
+				}
+
+				if (level == 0 && start >= 0) {
+					String inner = text.substring(start, i).strip().trim();
+
+					if (!inner.isEmpty()) {
+						result.add(inner);
+					}
+
+					start = -1;
+				}
 			}
 		}
 
-		return level == 0;
+		if (level != 0) {
+			throw new IllegalArgumentException("Unbalanced parentheses in expression: " + text);
+		}
+
+		return result;
 	}
 
 	private static class ResolvedQueryElement {
