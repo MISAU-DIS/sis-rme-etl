@@ -308,12 +308,16 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		if (dstParent == null) {
-			throw new EtlTransformationException("Error on transforming the parentDstRecord on " + getTransformerDsc(),
-					srcObject, ActionOnEtlIssue.ABORT_PROCESS);
+
+			if (field.nullValueBehavior().abortProcess()) {
+				throw new EtlTransformationException(
+						"Error on transforming the parentDstRecord on " + getTransformerDsc(), srcObject,
+						ActionOnEtlIssue.ABORT_PROCESS);
+			}
 		}
 
-		return new FieldTransformingInfo(field, dstParent.getObjectId().asSimpleValue(),
-				(EtlDataSource) dstParent.getRelatedConfiguration());
+		return new FieldTransformingInfo(field, dstParent != null ? dstParent.getObjectId().asSimpleValue() : null,
+				dstParent != null ? (EtlDataSource) dstParent.getRelatedConfiguration() : null);
 
 	}
 

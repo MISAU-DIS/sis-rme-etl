@@ -100,4 +100,21 @@ public abstract class JsonEtlAbctractObject extends AbstractEtlDataConfiguration
 	public boolean equals(Object obj) {
 		return this == obj;
 	}
+
+	@Override
+	public String toString() {
+		String msg = "table_name: " + table_name;
+
+		String columns = "";
+
+		if (hasColumns()) {
+			for (JsonEtlColumnInfo col : this.getColumns()) {
+				columns += (columns.isEmpty() ? "" : ",") + col.getName();
+			}
+		}
+
+		msg += columns.isEmpty() ? "" : "(" + columns + ")";
+
+		return msg;
+	}
 }

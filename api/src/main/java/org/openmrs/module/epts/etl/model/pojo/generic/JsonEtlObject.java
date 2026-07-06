@@ -277,6 +277,12 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 		JsonEtlObject obj = new JsonEtlObject(etlConf);
 		obj.setFields(fields);
 
+		for (Field f : etlConf.getFields()) {
+			if (!obj.contaisField(f.getName())) {
+				obj.getFields().add(Field.fastCreateField(f.getName()));
+			}
+		}
+
 		return obj;
 	}
 

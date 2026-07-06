@@ -87,6 +87,6 @@ public class EtlConfCheckExpression {
 
 	@Override
 	public String toString() {
-		return "ETL_CONF_CHECK(confName:" + this.confName + "operation:" + this.operation + ")";
+		return "ETL_CONF_CHECK(confName:" + this.confName + ", operation:" + this.operation + ")";
 	}
 }

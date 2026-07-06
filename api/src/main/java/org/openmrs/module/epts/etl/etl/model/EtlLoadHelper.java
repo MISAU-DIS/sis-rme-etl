@@ -65,7 +65,7 @@ public class EtlLoadHelper {
 		}
 
 		if (utilities.listHasNoElement(this.dstConf) && !ignoreNoDstIssue) {
-			throw new NoDstForGivenSrcException();
+			throw new NoDstForGivenSrcException(srcObjects);
 		}
 
 	}
@@ -356,7 +356,7 @@ public class EtlLoadHelper {
 
 					if (getEtlConfiguration().getDefaultInconsistencyBehavior().abortProcess()) {
 						logError("Error while processing record: " + obj, e);
-						
+
 						throw e;
 					} else {
 						etlInfo.setExceptionOnEtl(e);
@@ -447,7 +447,6 @@ public class EtlLoadHelper {
 	void logError(String msg) {
 		getProcessor().logError(msg);
 	}
-
 
 	void logError(String msg, Exception e) {
 		getProcessor().logError(msg, e);
