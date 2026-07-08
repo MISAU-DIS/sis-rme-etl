@@ -198,7 +198,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	@JsonIgnore
 	public String getHumanReadbleEstimatedRemainingTime() {
 		if (this.getProcessed() == 0) {
-			return "UNKNOW";
+			return "CALCULATING...";
 		} else {
 			
 			double eta = (getTotal() * getProcessingTimer().getElapsedSeconds()) / this.getProcessed();

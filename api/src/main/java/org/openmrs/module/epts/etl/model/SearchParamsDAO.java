@@ -24,7 +24,9 @@ public class SearchParamsDAO extends BaseDAO {
 		
 		String sql = "select count(*) value from (" + searchClauses.generateSQL(conn) + ") inner_result;";
 		
-		SimpleValue simpleValue = find(SimpleValue.class, sql, searchClauses.getParameters(), conn);
+		Object[] parameters = searchClauses.getParameters();
+		
+		SimpleValue simpleValue = find(SimpleValue.class, sql, parameters, conn);
 		
 		searchClauses.getSearchParameters().setQtdRecordPerSelected(bkpQtyRecsPerSelect);
 		
