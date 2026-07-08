@@ -294,19 +294,15 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent, DstConf dstConf,
 			TransformationType transformationType, Connection srcConn) throws DBException {
 
-		try {
-			Set<EtlDatabaseObject> result = new LinkedHashSet<>();
+		Set<EtlDatabaseObject> result = new LinkedHashSet<>();
 
-			collectToSrcObjects(srcObject, result);
-			collectToSrcObjects(dstObject, result);
-			collectToSrcObjects(migratedDstParent, result);
-			collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType,
-					srcConn);
+		collectToSrcObjects(srcObject, result);
+		collectToSrcObjects(dstObject, result);
+		collectToSrcObjects(migratedDstParent, result);
+		collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType, srcConn);
 
-			return result;
-		} catch (MissingRequiredTransformationObject e) {
-			return null;
-		}
+		return result;
+
 	}
 
 	private void applyFieldTransformations(EtlProcessor processor, EtlDatabaseObject srcObject,
@@ -365,7 +361,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 						 * transformed as parent of other record. So we force the tranformation
 						 */
 						if (mappingInfo.isRequired() && transformationType.isPrincipal()) {
-							throw new MissingRequiredTransformationObject();
+							throw new MissingRequiredTransformationObject(srcObject, mappingInfo,
+									srcConf.getGeneralBehaviourOnEtlException());
 						} else if (!transformationType.isPrincipal()) {
 							relatedSrcObject = mappingInfo.newInstance();
 							relatedSrcObject.setRelatedConfiguration(mappingInfo);

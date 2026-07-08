@@ -389,18 +389,46 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	}
 
 	public static Properties loadProperties(String path) {
-		if (path == null)
-			return null;
 
 		Properties props = new Properties();
 
+		if (path == null || path.isBlank()) {
+			return props;
+		}
+
 		try (InputStream is = new FileInputStream(path)) {
 			props.load(is);
+
+			for (String key : props.stringPropertyNames()) {
+				props.setProperty(key, stripWrappingQuotes(props.getProperty(key)));
+			}
+
 		} catch (IOException e) {
 			throw new RuntimeException("Error loading properties file: " + path, e);
 		}
 
 		return props;
+	}
+
+	public static String stripWrappingQuotes(String value) {
+
+		if (value == null) {
+			return null;
+		}
+
+		value = value.trim();
+
+		if (value.length() >= 2) {
+
+			char first = value.charAt(0);
+			char last = value.charAt(value.length() - 1);
+
+			if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
+				return value.substring(1, value.length() - 1);
+			}
+		}
+
+		return value;
 	}
 
 	public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env,

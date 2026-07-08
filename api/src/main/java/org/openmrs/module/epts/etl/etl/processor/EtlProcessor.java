@@ -23,7 +23,7 @@ import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
-import org.openmrs.module.epts.etl.exceptions.MissingTransformationSrcObjectException;
+import org.openmrs.module.epts.etl.exceptions.MissingRequiredTransformationObject;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -136,15 +136,12 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 								logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
 							} else {
-								throw new MissingTransformationSrcObjectException(srcRecord,
-										getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException());
+								throw new EtlTransformationException("The srcObject could not be transformed",
+										dstObject, getGeneralBehaviourOnEtlException());
 							}
 						}
-					} else {
-						throw new MissingTransformationSrcObjectException(srcRecord,
-								getRelatedEtlConfiguration().getGeneralBehaviourOnEtlException());
 					}
-				} catch (MissingTransformationSrcObjectException e) {
+				} catch (MissingRequiredTransformationObject e) {
 					tryToLogOrThrowException(record, mappingInfo, e);
 				} catch (EtlTransformationException e) {
 					tryToLogOrThrowException(record, mappingInfo, e);
@@ -265,7 +262,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 					: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
-	
+
 			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
 					avaliableSrcObjects, srcConn);
 
