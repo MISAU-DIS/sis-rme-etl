@@ -379,7 +379,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 		EtlDatabaseObject obj = this.newInstance();
 
-		for (DataSourceField field : this.getObjectFields()) {
+		for (TransformableDataSourceField field : this.getObjectFields()) {
 			FieldTransformingInfo valueInfo = values.get(field.getName());
 
 			obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());

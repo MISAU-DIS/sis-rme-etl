@@ -332,7 +332,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private void collectToSrcObjects(EtlDatabaseObject toCollectFrom, Set<EtlDatabaseObject> srcObjects) {
-		if (toCollectFrom != null) {
+		if (toCollectFrom != null && toCollectFrom.collactable()) {
 			Set<EtlDatabaseObject> avaliable = toCollectFrom.collectAllAvaliableSrcObjects();
 
 			if (utilities.setHasElement(avaliable)) {

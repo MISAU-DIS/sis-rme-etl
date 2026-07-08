@@ -3,6 +3,8 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.ConditionalEtlElement;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
@@ -13,7 +15,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.Field;
 
-public class TransformableDataSourceField extends DataSourceField implements TransformableField {
+public class TransformableDataSourceField extends DataSourceField implements TransformableField, ConditionalEtlElement {
 
 	private static final long serialVersionUID = -7824136202167355998L;
 
@@ -35,6 +37,8 @@ public class TransformableDataSourceField extends DataSourceField implements Tra
 
 	private ActionOnEtlIssue nullValueBehavior;
 
+	private String applyCondition;
+
 	public TransformableDataSourceField() {
 		this.nullValueBehavior = ActionOnEtlIssue.IGNORE;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
@@ -47,6 +51,19 @@ public class TransformableDataSourceField extends DataSourceField implements Tra
 		ds.setName(name);
 
 		return ds;
+	}
+
+	@Override
+	public String getCondition() {
+		return this.applyCondition;
+	}
+
+	public String getApplyCondition() {
+		return applyCondition;
+	}
+
+	public void setApplyCondition(String applyCondition) {
+		this.applyCondition = applyCondition;
 	}
 
 	@Override
@@ -217,5 +234,10 @@ public class TransformableDataSourceField extends DataSourceField implements Tra
 
 	@Override
 	public void init(EtlTransformTarget target) {
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.getParent().getRelatedEtlConf();
 	}
 }

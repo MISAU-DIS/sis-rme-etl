@@ -456,7 +456,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	}
 
 	public void setSrcField(String srcField) {
-		if (utilities.containsSpace(srcField) && !isTransformerExpression(srcField) ) {
+		if (utilities.containsSpace(srcField) && !isTransformerExpression(srcField)) {
 			throw new ForbiddenOperationException("Space found on field " + srcField);
 		}
 		this.srcField = srcField;
@@ -803,5 +803,18 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 	public boolean overridable() {
 		return !isManuallyConfigured();
+	}
+
+	public String getFullSrcField() {
+		if (filedPathernIncludeDataSource()) {
+			return this.srcField;
+		} else {
+			return this.getDataSourceName() != null ? this.getDataSourceName() + "." + this.getSrcField()
+					: this.getSrcField();
+		}
+	}
+
+	private boolean filedPathernIncludeDataSource() {
+		return this.getSrcField().split("\\.").length > 1;
 	}
 }

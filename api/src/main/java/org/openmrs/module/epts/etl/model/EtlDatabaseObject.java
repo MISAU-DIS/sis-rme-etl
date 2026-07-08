@@ -67,7 +67,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	List<EtlDatabaseObject> getDestinationObjects();
 
 	EtlDatabaseObject createACopy();
-	
+
 	void setEtlStageObjectInfo(EtlStageObjectInfo etlStageObjectInfo);
 
 	EtlStageObjectInfo getEtlStageObjectInfo();
@@ -1067,6 +1067,12 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		this.getChildObjects().add(obj);
+	}
+
+	void markAsNotCollactable();
+
+	default boolean collactable() {
+		return true;
 	}
 
 }

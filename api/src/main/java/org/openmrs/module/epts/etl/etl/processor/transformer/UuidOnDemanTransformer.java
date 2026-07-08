@@ -176,6 +176,10 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					"At least 'table' and 'lookup_condition' parameters must be specified");
 		}
 
+		if (this.tableAlias != null) {
+			this.dynamicElements.put("table_alias", this.tableAlias);
+		}
+
 		Map<String, Object> params = relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters();
 
 		if (params != null && !params.isEmpty()) {
@@ -216,6 +220,10 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
 		try {
+
+			stepIntoBreakpoint(getRelatedEtlConf(),
+					transformedRecord.getRelatedConfiguration().getObjectName().equals("orders"));
+
 			String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn,
 					dstConn);
 

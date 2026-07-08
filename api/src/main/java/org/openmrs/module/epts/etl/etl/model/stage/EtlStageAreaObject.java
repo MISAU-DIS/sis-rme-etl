@@ -37,6 +37,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 	private EtlStageAreaObject(EtlStageAreaObject srcStageInfoObject, EtlDatabaseObject obj, EtlStageTableType type,
 			Connection srcConn, Connection dstConn) throws DBException {
+		
 		this.type = type;
 		this.relatedEtlObject = obj;
 

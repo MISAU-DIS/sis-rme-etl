@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -58,8 +59,30 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	protected EtlInfo etlInfo;
 
+	private Boolean collactable;
+
 	public AbstractDatabaseObject() {
 		this.objectId = new Oid();
+
+		this.collactable = true;
+	}
+
+	public Boolean getCollactable() {
+		return collactable;
+	}
+
+	public void setCollactable(Boolean collactable) {
+		this.collactable = collactable;
+	}
+
+	@Override
+	public void markAsNotCollactable() {
+		setCollactable(false);
+	}
+
+	@Override
+	public boolean collactable() {
+		return this.collactable != null && this.collactable;
 	}
 
 	@Override
@@ -295,6 +318,10 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				DBUtilities.handlePostgresExceptionIssue(conn);
 
 				if (rootException.isDuplicatePrimaryOrUniqueKeyException()) {
+					if (onConflict == null && this instanceof EtlStageAreaObject) {
+						onConflict = ConflictResolutionType.UPDATE_EXISTING;
+					}
+
 					if (onConflict != null) {
 						resolveConflictWithExistingRecord(tableConfiguration, onConflict, rootException, conn);
 					} else {

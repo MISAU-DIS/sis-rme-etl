@@ -302,7 +302,9 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				try {
 					setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), params, conn));
 				} catch (DBException e) {
-					throw new DBException("Error computing the query " + this.getName(), e);
+					throw new DBException(
+							"Error computing the query " + (this.getName() != null ? this.getName() : this.getQuery()),
+							e);
 				}
 			}
 

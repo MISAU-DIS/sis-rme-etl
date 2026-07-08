@@ -142,10 +142,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		if (field.getDefaultValue() == null) {
-			 srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
+			srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
 					additionalSrcObjects, hasOverrideConnection() ? getOverrideConnection() : srcConn);
 
-		
 			EtlDatabaseObject obj = utilities.listHasElement(additionalSrcObjects) ? additionalSrcObjects.get(0) : null;
 
 			throw new EmptyTransformedValueException(obj,

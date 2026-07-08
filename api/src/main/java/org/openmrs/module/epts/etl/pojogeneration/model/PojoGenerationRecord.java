@@ -465,4 +465,10 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public void markAsNotCollactable() {
+		// TODO Auto-generated method stub
+
+	}
 }

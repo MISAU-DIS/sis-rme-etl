@@ -711,4 +711,10 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 		return null;
 	}
 
+	@Override
+	public void markAsNotCollactable() {
+		// TODO Auto-generated method stub
+
+	}
+
 }

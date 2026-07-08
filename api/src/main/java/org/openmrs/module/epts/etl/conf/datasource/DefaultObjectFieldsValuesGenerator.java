@@ -2,8 +2,10 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.interfaces.JavaObjectFieldsValuesGenerator;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -27,35 +29,38 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 
 		Map<String, FieldTransformingInfo> map = new HashMap<>();
 
+		Set<EtlDatabaseObject> set = avaliableSrcObjects != null ? new HashSet<>(avaliableSrcObjects) : null;
+
 		for (TransformableDataSourceField field : dataSource.getObjectFields()) {
+			if (field.shouldBeProcessed(srcObject, set, srcConn, dstConn)) {
+				if (field.hasAuxFieldMapping()) {
 
-			if (field.hasAuxFieldMapping()) {
+					try {
+						field.setValue(field
+								.getAuxFieldMapping().getTransformerInstance().transform(processor, srcObject,
+										dstObject, avaliableSrcObjects, field.getAuxFieldMapping(), srcConn, dstConn)
+								.getTransformedValue());
 
-				try {
-					field.setValue(field
-							.getAuxFieldMapping().getTransformerInstance().transform(processor, srcObject, dstObject,
-									avaliableSrcObjects, field.getAuxFieldMapping(), srcConn, dstConn)
-							.getTransformedValue());
+						if (field.getDefaultValue() != null) {
 
-					if (field.getDefaultValue() != null) {
-
-						if (field.getValue() == null || field.getValue().toString().isBlank()) {
-							field.setValue(field.getDefaultValue());
+							if (field.getValue() == null || field.getValue().toString().isBlank()) {
+								field.setValue(field.getDefaultValue());
+							}
 						}
+					} catch (NullPointerException e) {
+						field.setValue(field.getDefaultValue());
 					}
-				} catch (NullPointerException e) {
-					field.setValue(field.getDefaultValue());
 				}
+
+				FieldTransformingInfo fieldInfo = field.getTransformerInstance().transform(processor, srcObject,
+						dstObject, avaliableSrcObjects, field, srcConn, dstConn);
+
+				if (dstObject.getEtlDefaultEtlException() != null) {
+					throw (EtlExceptionImpl) dstObject.getEtlDefaultEtlException();
+				}
+
+				map.put(field.getName(), fieldInfo != null ? fieldInfo : null);
 			}
-
-			FieldTransformingInfo fieldInfo = field.getTransformerInstance().transform(processor, srcObject, dstObject,
-					avaliableSrcObjects, field, srcConn, dstConn);
-
-			if (dstObject.getEtlDefaultEtlException() != null) {
-				throw (EtlExceptionImpl) dstObject.getEtlDefaultEtlException();
-			}
-
-			map.put(field.getName(), fieldInfo != null ? fieldInfo : null);
 		}
 
 		return map;

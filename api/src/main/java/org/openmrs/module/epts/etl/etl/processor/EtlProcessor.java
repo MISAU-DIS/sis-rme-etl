@@ -111,6 +111,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 					EtlDatabaseObject transitionalTransformedObject = mappingInfo.createRecordInstance();
 
+					transitionalTransformedObject.markAsNotCollactable();
+
 					transitionalTransformedObject
 							.setEtlInfo(EtlInfo.initEtlRecord(this, srcRecord, transitionalTransformedObject));
 
@@ -263,7 +265,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 					: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
-
+	
 			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
 					avaliableSrcObjects, srcConn);
 
