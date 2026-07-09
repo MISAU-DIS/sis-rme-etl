@@ -174,7 +174,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		EtlLoadHelper loadHelper = null;
 
-		loadHelper = new EtlLoadHelper(this, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
+		loadHelper = new EtlLoadHelper(this, etlItemConf, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
 
 		if (loadHelper.hasDstConf()) {
 			loadHelper.load(srcConn, dstConn);

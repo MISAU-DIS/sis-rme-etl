@@ -46,8 +46,8 @@ public class EtlLoadHelper {
 
 	private List<DstConf> dstConf;
 
-	public EtlLoadHelper(EtlProcessor processor, List<EtlDatabaseObject> srcObjects, LoadingType loadingType,
-			boolean ignoreNoDstIssue) {
+	public EtlLoadHelper(EtlProcessor processor, EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> srcObjects,
+			LoadingType loadingType, boolean ignoreNoDstIssue) {
 		this.processor = processor;
 		this.srcObjects = srcObjects;
 		this.loadingType = loadingType;
@@ -65,7 +65,7 @@ public class EtlLoadHelper {
 		}
 
 		if (utilities.listHasNoElement(this.dstConf) && !ignoreNoDstIssue) {
-			throw new NoDstForGivenSrcException(srcObjects);
+			throw new NoDstForGivenSrcException(etlItemConf, srcObjects);
 		}
 
 	}
@@ -479,7 +479,8 @@ public class EtlLoadHelper {
 
 		etlInfo.getProcessor().logTrace(msg);
 
-		new EtlLoadHelper(etlInfo.getProcessor(), utilities.parseToList(srcObject), LoadingType.INNER, false)
+		new EtlLoadHelper(etlInfo.getProcessor(), etlInfo.getSrcConf().getParentConf(),
+				utilities.parseToList(srcObject), LoadingType.INNER, false)
 				.load(etlInfo.getDstConf(), srcConn, dstConn);
 	}
 

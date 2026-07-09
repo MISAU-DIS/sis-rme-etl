@@ -220,10 +220,6 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
 		try {
-
-			stepIntoBreakpoint(getRelatedEtlConf(),
-					transformedRecord.getRelatedConfiguration().getObjectName().equals("orders"));
-
 			String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn,
 					dstConn);
 

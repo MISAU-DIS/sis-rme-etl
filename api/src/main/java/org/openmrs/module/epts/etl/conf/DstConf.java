@@ -1366,7 +1366,7 @@ public class DstConf extends AbstractTableConfiguration
 	public String toString() {
 		String str = super.toString();
 
-		str += hasCondition() ? "\n -------> applyCondition: " + this.getCondition() : "";
+		str += hasCondition() ? ", [applyCondition: " + this.getCondition() + "]" : "";
 
 		return str;
 	}
