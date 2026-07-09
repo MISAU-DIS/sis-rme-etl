@@ -2756,7 +2756,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				sql += DBUtilities.generateTableDateTimeFieldWithDefaultValue("creation_date", conn) + endLineMarker;
 
-				String checkCondition = "migration_status IN (-1,0,1,2)";
+				String checkCondition = "migration_status IN (-1,0,1,2,3,4)";
 				String keyName = "CHK_" + tableName + "_MIG_STATUS".toUpperCase();
 
 				sql += DBUtilities.generateTableCheckConstraintDefinition(keyName, checkCondition, conn)
@@ -2927,7 +2927,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				sql += DBUtilities.generateTableDateTimeField("record_date_voided", nullConstraint, conn)
 						+ endLineMarker;
 
-				String checkCondition = "migration_status in (-1,0,1,2)";
+				String checkCondition = "migration_status IN (-1,0,1,2,3,4)";
+
 				String keyName = ("CHK_" + this.generateRelatedSrcStageTableName() + "_MIG_STATUS").toLowerCase();
 
 				sql += DBUtilities.generateTableCheckConstraintDefinition(keyName, checkCondition, conn)

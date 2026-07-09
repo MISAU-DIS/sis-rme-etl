@@ -307,12 +307,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 		EtlDatabaseObject obj;
 
-		try {
-			obj = getTableConf().find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
-					dstConn);
-		} catch (DBException e) {
-			throw e;
-		}
+		obj = getTableConf().find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
+				dstConn);
 
 		return obj != null ? obj.getFieldValue("uuid").toString() : null;
 	}
