@@ -24,7 +24,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * This interface defines how related data is fetched and linked to the main ETL
  * flow.
  */
-public interface EtlAdditionalDataSource extends EtlDataSource {
+public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlElement {
 
 	default ActionOnEtlIssue onMultipleSrcObjectsFound() {
 		return ActionOnEtlIssue.ABORT_PROCESS;

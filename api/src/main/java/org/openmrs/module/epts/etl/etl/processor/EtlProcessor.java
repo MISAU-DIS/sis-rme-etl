@@ -9,6 +9,7 @@ import java.util.function.Function;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
@@ -71,14 +72,28 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
 
 				for (EtlDatabaseObject obj : etlObjects) {
-					EtlStageAreaObject processedRec = obj.generateProcessedRecord(srcConn, dstConn);
+					boolean moved = false;
 
-					if (action.moveToStageArea()) {
+					EtlStageAreaObject processedRec = obj.generateProcessedRecord(srcConn, dstConn);
+					SrcConf srcConf = (SrcConf) obj.getRelatedConfiguration();
+
+					if (action.moveToStageArea()
+							|| (action.moveToStageAreaOnSuccess() && processedRec.isLoadedSuccessifuly())) {
 						processedRec.save(processedRec.getRelatedConfiguration(), srcConn);
 					}
 
-					if ((action.isDelete() || action.moveToStageArea()) && processedRec.isLoadedSuccessifuly()) {
+					if (action.isDelete() || action.moveToStageArea()
+							|| (action.moveToStageAreaOnSuccess() && processedRec.hasNoError())) {
+
 						DatabaseObjectDAO.remove(obj, srcConn);
+
+						moved = true;
+					}
+
+					boolean track = action.moveToStageAreaOnSuccess() && !processedRec.isLoadedSuccessifuly();
+
+					if (!moved && track && srcConf.trackProcessingState()) {
+						obj.trackProcessingState(processedRec, srcConn);
 					}
 				}
 			}
@@ -97,6 +112,11 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		for (EtlDatabaseObject record : etlObjects) {
 			EtlDatabaseObject srcRecord = (EtlDatabaseObject) record;
+
+			if (srcRecord.isTrackable() && getRelatedEtlOperationConfig().hasActionAfterEtl()
+					&& getRelatedEtlOperationConfig().getAfterEtlActionType().includeTracking()) {
+				srcRecord.changeStatusToProcessing(srcConn);
+			}
 
 			if (!etlItemConf.getSrcConf().doNotUseAsDatasource()) {
 				srcRecord.loadObjectIdData(etlItemConf.getSrcConf());

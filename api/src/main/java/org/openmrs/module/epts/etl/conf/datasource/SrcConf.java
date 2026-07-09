@@ -27,6 +27,8 @@ import org.openmrs.module.epts.etl.conf.types.JoinType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
+import org.openmrs.module.epts.etl.etl.model.EtlLoadStatus;
+import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -43,6 +45,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class SrcConf extends AbstractTableConfiguration
 		implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent {
+
+	private static final String[] TRACKING_FIELDS = { "processing_status", "processing_date", "processing_error",
+			"retry_count" };
 
 	private List<AuxExtractTable> auxExtractTable;
 
@@ -73,9 +78,49 @@ public class SrcConf extends AbstractTableConfiguration
 
 	private Boolean doNotUseAsDatasource;
 
+	/**
+	 * Indicates whether source records should track their ETL processing state.
+	 *
+	 * <p>
+	 * When enabled, the ETL engine updates processing metadata directly on the
+	 * source record after each processing attempt. This is useful for queue-based
+	 * or event-based ETL processes where failed records must remain available for
+	 * retry while still exposing their latest processing status.
+	 * </p>
+	 *
+	 * <p>
+	 * A state-tracked source table must expose the following fields:
+	 * </p>
+	 *
+	 * <ul>
+	 * <li>{@code processing_status}</li>
+	 * <li>{@code processing_date}</li>
+	 * <li>{@code processing_error}</li>
+	 * <li>{@code retry_count}</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * If any of these fields are missing, the ETL configuration should be rejected
+	 * during validation.
+	 * </p>
+	 */
+	private Boolean trackProcessingState;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
+	}
+
+	public Boolean getTrackProcessingState() {
+		return trackProcessingState;
+	}
+
+	public Boolean trackProcessingState() {
+		return isTrue(this.getTrackProcessingState());
+	}
+
+	public void setTrackProcessingState(Boolean trackProcessingState) {
+		this.trackProcessingState = trackProcessingState;
 	}
 
 	public Boolean getLimitToOneResult() {
@@ -263,6 +308,12 @@ public class SrcConf extends AbstractTableConfiguration
 
 		if (isJoinable()) {
 			this.loadJoinElements(schemaInfo, conn);
+		}
+
+		if (trackProcessingState() && !isTrackabled()) {
+			throw new EtlConfException(
+					"Table " + this + "is configured to 'trackProcessingState' but miss one or more of traking field "
+							+ TRACKING_FIELDS);
 		}
 	}
 
@@ -972,5 +1023,34 @@ public class SrcConf extends AbstractTableConfiguration
 		}
 
 		return joined;
+	}
+
+	public boolean isTrackabled() {
+		return this.containsAllFields(Field.parseFromNames(TRACKING_FIELDS));
+	}
+
+	public void fillTrackingFields(EtlDatabaseObject toTrack, EtlStageAreaObject processedRec, Connection srcConn) {
+
+		if (!isTrackabled())
+			throw new ForbiddenOperationException("The table " + this + " is not trackable!");
+
+		if (!processedRec.getType().isProcessedRecord()) {
+			throw new ForbiddenOperationException("The EtlStageAreaObject processedRec must be of 'PROCESSED_RECORD'");
+		}
+
+		for (String trackingName : TRACKING_FIELDS) {
+			if (trackingName.equals("retry_count")) {
+				toTrack.setFieldValue(trackingName, ((int) processedRec.getFieldValue(trackingName)) + 1);
+			} else {
+				toTrack.setFieldValue(trackingName, processedRec.getFieldValue(trackingName));
+			}
+		}
+	}
+
+	public void changeObjectStatus(EtlDatabaseObject obj, EtlLoadStatus status, Connection srcConn) {
+		if (!isTrackabled())
+			throw new ForbiddenOperationException("The table " + this + " is not trackable!");
+
+		obj.setFieldValue("processing_status", status.toString());
 	}
 }

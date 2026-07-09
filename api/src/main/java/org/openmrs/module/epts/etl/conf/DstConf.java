@@ -547,7 +547,7 @@ public class DstConf extends AbstractTableConfiguration
 			List<Field> myFields = this.getFields();
 
 			for (Field field : myFields) {
-			
+
 				if (isIgnorableField(field)) {
 					continue;
 				}
@@ -1360,5 +1360,14 @@ public class DstConf extends AbstractTableConfiguration
 	@Override
 	public FieldMappingResolutionStrategy mappingResolutionStrategy() {
 		return this.mappingResolutionStrategy;
+	}
+
+	@Override
+	public String toString() {
+		String str = super.toString();
+
+		str += hasCondition() ? "\n -------> applyCondition: " + this.getCondition() : "";
+
+		return str;
 	}
 }

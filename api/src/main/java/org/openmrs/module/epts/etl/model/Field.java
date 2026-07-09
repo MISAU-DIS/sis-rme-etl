@@ -661,4 +661,17 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 		return null;
 	}
 
+	public static List<Field> parseFromNames(String[] fieldNames) {
+		if (!utilities.arrayHasElement(fieldNames))
+			return null;
+
+		List<Field> fields = new ArrayList<>(fieldNames.length);
+
+		for (String f : fieldNames) {
+			fields.add(Field.fastCreateField(f));
+		}
+
+		return fields;
+	}
+
 }

@@ -345,14 +345,18 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			SrcConf srcConf = (SrcConf) srcObject.getRelatedConfiguration();
 
 			if (!srcConf.doNotUseAsDatasource()) {
-				for (EtlAdditionalDataSource mappingInfo : srcConf.getAvaliableExtraDataSource()) {
+				for (EtlAdditionalDataSource ds : srcConf.getAvaliableExtraDataSource()) {
 
-					List<EtlDatabaseObject> avaliableObjects = mappingInfo.allowMultipleSrcObjectsForLoading()
+					List<EtlDatabaseObject> avaliableObjects = ds.allowMultipleSrcObjectsForLoading()
 							? srcObjects.stream().toList()
 							: utilities.parseToList(srcObject);
 
-					EtlDatabaseObject relatedSrcObject = mappingInfo.loadRelatedSrcObject(processor, srcObject,
-							dstObject, avaliableObjects, srcConn);
+					if (!ds.shouldBeProcessed(srcObject, srcObjects, srcConn, srcConn)) {
+						continue;
+					}
+
+					EtlDatabaseObject relatedSrcObject = ds.loadRelatedSrcObject(processor, srcObject, dstObject,
+							avaliableObjects, srcConn);
 
 					if (relatedSrcObject == null) {
 
@@ -360,12 +364,12 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 						 * If the transformation is not principal, then mean the record is being
 						 * transformed as parent of other record. So we force the tranformation
 						 */
-						if (mappingInfo.isRequired() && transformationType.isPrincipal()) {
-							throw new MissingRequiredTransformationObject(srcObject, mappingInfo,
+						if (ds.isRequired() && transformationType.isPrincipal()) {
+							throw new MissingRequiredTransformationObject(srcObject, ds,
 									srcConf.getGeneralBehaviourOnEtlException());
 						} else if (!transformationType.isPrincipal()) {
-							relatedSrcObject = mappingInfo.newInstance();
-							relatedSrcObject.setRelatedConfiguration(mappingInfo);
+							relatedSrcObject = ds.newInstance();
+							relatedSrcObject.setRelatedConfiguration(ds);
 						}
 					}
 

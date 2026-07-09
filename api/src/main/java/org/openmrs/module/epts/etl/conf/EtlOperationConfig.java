@@ -1024,4 +1024,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 		return false;
 	}
+
+	public boolean hasActionAfterEtl() {
+		return this.getAfterEtlActionType() != null;
+	}
 }

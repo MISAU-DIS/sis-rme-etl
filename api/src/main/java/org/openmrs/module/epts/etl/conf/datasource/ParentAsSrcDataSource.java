@@ -13,68 +13,74 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditionalDataSource, EtlSrcConf {
-	
+
 	private SrcConf relatedSrcConf;
-	
+
 	public ParentAsSrcDataSource() {
 	}
-	
+
 	@Override
 	public String getName() {
 		return getTableName();
 	}
-	
+
 	@Override
 	public SrcConf getRelatedSrcConf() {
 		return this.relatedSrcConf;
 	}
-	
+
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		this.relatedSrcConf = relatedSrcConf;
 	}
-	
+
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
-	        throws DBException {
-		
+			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
+			throws DBException {
+
 		return avaliableSrcObjects.get(0).getSharedPkObj();
 	}
-	
+
 	@Override
 	public Boolean allowMultipleSrcObjectsForLoading() {
 		return false_();
 	}
-	
+
 	@Override
 	public Boolean isRequired() {
 		return true_();
 	}
-	
+
 	public static ParentAsSrcDataSource generateFromSrcConfSharedPkParent(SrcConf mainSrcConf, ParentTable parent,
-	        Connection conn) throws ForbiddenOperationException, DBException {
+			Connection conn) throws ForbiddenOperationException, DBException {
 		ParentAsSrcDataSource ds = new ParentAsSrcDataSource();
-		
+
 		ds.setChildTableConf(parent.getChildTableConf());
-		
+
 		ds.clone(parent, null, null, conn);
-		
+
 		ds.relatedSrcConf = mainSrcConf;
-		
+
 		ds.setRefCode(parent.getRefCode());
 		ds.setRefMapping(parent.getRefMapping());
-		
+
 		ds.setConditionalFields(parent.getConditionalFields());
 		ds.setDefaultValueDueInconsistency(parent.getDefaultValueDueInconsistency());
 		ds.setSetNullDueInconsistency(parent.isSetNullDueInconsistency());
-		
+
 		return ds;
 	}
-	
+
 	@Override
 	public String getQuery() {
 		return null;
 	}
-	
+
+	@Override
+	public String getCondition() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

@@ -23,314 +23,323 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * Represents a source table configuration. A {@link TableDataSourceConfig} is used as an auxiliary
- * extraction table as well as an extra data source
+ * Represents a source table configuration. A {@link TableDataSourceConfig} is
+ * used as an auxiliary extraction table as well as an extra data source
  */
-public class TableDataSourceConfig extends AbstractTableConfiguration implements EtlAdditionalDataSource, JoinableEntity, MainJoiningEntity, EtlSrcConf {
-	
+public class TableDataSourceConfig extends AbstractTableConfiguration
+		implements EtlAdditionalDataSource, JoinableEntity, MainJoiningEntity, EtlSrcConf {
+
 	private List<FieldsMapping> joinFields;
-	
+
 	private String joinExtraCondition;
-	
+
 	private List<AuxExtractTable> auxExtractTable;
-	
+
 	/*
-	 * Defines the type of SQL join used to link the extra table with the main table. 
-	 * The supported values are INNER, LEFT, or RIGHT. If this property is not specified, the default join type is LEFT. 
-	 * When the join type is set to INNER, the ETL process will skip the main record if no matching record is found in the extra table.
+	 * Defines the type of SQL join used to link the extra table with the main
+	 * table. The supported values are INNER, LEFT, or RIGHT. If this property is
+	 * not specified, the default join type is LEFT. When the join type is set to
+	 * INNER, the ETL process will skip the main record if no matching record is
+	 * found in the extra table.
 	 */
 	private JoinType joinType;
-	
+
 	private ConditionClauseScope joinExtraConditionScope;
-	
+
 	public TableDataSourceConfig() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.joinType = JoinType.LEFT;
 	}
-	
+
 	@Override
 	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
-	        Connection dstConn) throws DBException {
+			Connection dstConn) throws DBException {
 		super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
-		
+
 		if (this.auxExtractTable != null) {
 			for (AuxExtractTable aux : this.auxExtractTable) {
 				aux.init(this, etlSchemaObject, srcConn, dstConn);
 			}
 		}
 	}
-	
+
 	@Override
 	public ConditionClauseScope getJoinExtraConditionScope() {
 		return this.joinExtraConditionScope;
 	}
-	
+
 	@Override
 	public void setJoinExtraConditionScope(ConditionClauseScope joinExtraConditionScope) {
 		this.joinExtraConditionScope = joinExtraConditionScope;
 	}
-	
+
 	@Override
 	public Boolean doNotUseAsDatasource() {
 		return Boolean.FALSE;
 	}
-	
+
 	@Override
 	public List<? extends JoinableEntity> getJoiningTable() {
 		return this.getAuxExtractTable();
 	}
-	
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public void setJoiningTable(List<? extends JoinableEntity> joiningTable) {
 		setAuxExtractTable((List<AuxExtractTable>) joiningTable);
 	}
-	
+
 	public List<AuxExtractTable> getAuxExtractTable() {
 		return this.auxExtractTable;
 	}
-	
+
 	public void setAuxExtractTable(List<AuxExtractTable> auxExtractTable) {
 		this.auxExtractTable = auxExtractTable;
 	}
-	
+
 	public JoinType getJoinType() {
 		return joinType;
 	}
-	
+
 	public void setJoinType(JoinType joinType) {
 		this.joinType = joinType;
 	}
-	
+
 	@Override
 	public Boolean isRequired() {
 		return this.joinType.isInnerJoin();
 	}
-	
+
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
 		if (isFullLoaded()) {
 			return;
 		}
-		
+
 		this.tryToGenerateTableAlias(getRelatedEtlConf());
-		
+
 		super.fullLoad(conn);
 	}
-	
+
 	public String getJoinExtraCondition() {
 		return joinExtraCondition;
 	}
-	
+
 	public void setJoinExtraCondition(String joinExtraCondition) {
 		this.joinExtraCondition = joinExtraCondition;
 	}
-	
+
 	public List<FieldsMapping> getJoinFields() {
 		return joinFields;
 	}
-	
+
 	public void setJoinFields(List<FieldsMapping> joinFields) {
 		this.joinFields = joinFields;
 	}
-	
+
 	@Override
 	public SrcConf getRelatedSrcConf() {
 		return (SrcConf) this.getParentConf();
 	}
-	
+
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		setParentConf(relatedSrcConf);
 	}
-	
+
 	@Override
 	public String getQuery() {
 		String condition = super.generateConditionsFields(null, this.joinFields, this.joinExtraCondition);
-		
+
 		return this.generateSelectFromQuery() + " WHERE " + condition;
 	}
-	
+
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		try {
 			return this.getParentConf().getRelatedEtlConf();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw e;
 		}
 	}
-	
+
 	@Override
 	public void setExtraConditionForExtract(String extraConditionForExtract) {
 		if (extraConditionForExtract != null)
 			throw new ForbiddenOperationException(
-			        "Forbiden method for auxExtractTable(" + this + ") please use joinExtraCondition parameter!!!");
+					"Forbiden method for auxExtractTable(" + this + ") please use joinExtraCondition parameter!!!");
 	}
-	
+
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
-	        throws DBException {
-		
+			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
+			throws DBException {
+
 		if (!isPrepared()) {
 			prepare(avaliableSrcObjects, srcConn);
 		}
-		
+
 		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject,
-		    avaliableSrcObjects, srcConn);
-		
+				avaliableSrcObjects, srcConn);
+
 		if (utilities.listHasNoElement(list)) {
 			return null;
 		}
-		
+
 		if (utilities.arrayHasMoreThanOneElements(list)) {
 			logWarn("The datasource (" + this.getName() + ") returned more than one src objects for src: " + srcObject);
 		}
-		
+
 		return list.get(0);
 	}
-	
+
 	@Override
 	public Boolean allowMultipleSrcObjectsForLoading() {
 		return Boolean.FALSE;
 	}
-	
+
 	public String generateJoinCondition() {
 		return super.generateJoinCondition(this.getRelatedSrcConf(), this.joinFields, this.joinExtraCondition);
 	}
-	
+
 	@Override
 	public String getName() {
 		return super.getTableName();
 	}
-	
+
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		return this.getRelatedSrcConf().getRelatedConnInfo();
 	}
-	
+
 	@Override
 	public Boolean isGeneric() {
 		return Boolean.FALSE;
 	}
-	
+
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		this.loadJoinElements(schemaInfo, conn);
 		this.loadAlias();
-		
+
 		this.tryToLoadAuxExtraJoinTable(schemaInfo, conn);
 	}
-	
+
 	@Override
 	public TableConfiguration getJoiningEntity() {
 		return getRelatedSrcConf();
 	}
-	
+
 	@Override
 	public void setMainExtractTable(MainJoiningEntity mainJoiningTable) {
 		this.setParentConf(mainJoiningTable);
 	}
-	
+
 	@Override
 	public MainJoiningEntity getMainExtractTable() {
 		return this.getRelatedSrcConf();
 	}
-	
+
 	@Override
 	public Boolean isJoinable() {
 		return Boolean.TRUE;
 	}
-	
+
 	@Override
 	public Boolean isMainJoiningEntity() {
 		return Boolean.TRUE;
 	}
-	
+
 	@Override
 	public MainJoiningEntity parseToJoining() throws ForbiddenOperationException {
 		return this;
 	}
-	
+
 	@Override
 	public JoinableEntity parseToJoinable() throws ForbiddenOperationException {
 		return this;
 	}
-	
-	public static List<TableDataSourceConfig> cloneAll(List<TableDataSourceConfig> allToCloneFrom, SrcConf relatedSrcConf,
-	        EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
-		
+
+	public static List<TableDataSourceConfig> cloneAll(List<TableDataSourceConfig> allToCloneFrom,
+			SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+
 		List<TableDataSourceConfig> allCloned = null;
-		
+
 		if (utilities.listHasElement(allToCloneFrom)) {
 			allCloned = new ArrayList<>(allToCloneFrom.size());
-			
+
 			for (TableDataSourceConfig aux : allToCloneFrom) {
 				TableDataSourceConfig cloned = new TableDataSourceConfig();
 				cloned.clone(aux, relatedSrcConf, schemaInfoSrc, conn);
-				
+
 				allCloned.add(cloned);
 			}
 		}
-		
+
 		return allCloned;
 	}
-	
+
 	public void clone(TableDataSourceConfig toCloneFrom, SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc,
-	        Connection conn) throws DBException {
+			Connection conn) throws DBException {
 		super.clone(toCloneFrom, relatedSrcConf, schemaInfoSrc, conn);
-		
+
 		this.setJoinFields(toCloneFrom.getJoinFields());
 		this.setJoinExtraCondition(this.getJoinExtraCondition());
 		this.setRelatedSrcConf(relatedSrcConf);
 		this.setJoinExtraConditionScope(toCloneFrom.getJoinExtraConditionScope());
-		
+
 		if (toCloneFrom.hasAuxExtractTable()) {
-			this.setAuxExtractTable(AuxExtractTable.cloneAll(toCloneFrom.getAuxExtractTable(), this, schemaInfoSrc, conn));
+			this.setAuxExtractTable(
+					AuxExtractTable.cloneAll(toCloneFrom.getAuxExtractTable(), this, schemaInfoSrc, conn));
 		}
-		
+
 		this.setJoinType(toCloneFrom.getJoinType());
 	}
-	
+
 	@Override
 	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
-	        throws ForbiddenOperationException, DBException {
+			throws ForbiddenOperationException, DBException {
 		super.tryToLoadSchemaInfo(schemaInfoSrc, conn);
-		
+
 		if (this.hasAuxExtractTable()) {
 			for (AuxExtractTable tab : this.getAuxExtractTable()) {
 				tab.tryToLoadSchemaInfo(schemaInfoSrc, conn);
 			}
 		}
 	}
-	
+
 	public static void tryToReplacePlaceholders(List<TableDataSourceConfig> extraTableDataSource,
-	        EtlDatabaseObject schemaInfoSrc) {
+			EtlDatabaseObject schemaInfoSrc) {
 		if (utilities.listHasElement(extraTableDataSource)) {
 			for (TableDataSourceConfig a : extraTableDataSource) {
 				a.tryToReplacePlaceholders(schemaInfoSrc);
 			}
 		}
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
 		FieldsMapping.tryToReplacePlaceholders(getJoinFields(), schemaInfoSrc);
-		
+
 		setJoinExtraCondition(utilities.tryToReplacePlaceholders(getJoinExtraCondition(), schemaInfoSrc));
-		
+
 		AuxExtractTable.tryToReplacePlaceholders(this.getAuxExtractTable(), schemaInfoSrc);
-		
+
 	}
-	
+
 	@Override
 	public SrcConf getParentConf() {
 		return (SrcConf) super.getParentConf();
 	}
-	
+
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		return EtlAdditionalDataSource.super.retrieveAllAvailableTemplateParameters();
+	}
+
+	@Override
+	public String getCondition() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

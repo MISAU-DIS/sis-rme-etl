@@ -28,6 +28,7 @@ import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordAlreadyLoadedRecordException;
 import org.openmrs.module.epts.etl.exceptions.ConflictWithRecordNotYetAvaliableException;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -800,7 +801,9 @@ public interface EtlDatabaseObject extends EtlObject {
 				this.setObjectId(recordOnDB.getObjectId());
 				this.update(tableConfiguration, conn);
 			} else {
-				this.getEtlInfo().setConflictResolutionType(ConflictResolutionType.KEPT_EXISTING);
+				if (this.getEtlInfo() != null) {
+					this.getEtlInfo().setConflictResolutionType(ConflictResolutionType.KEPT_EXISTING);
+				}
 
 				this.setObjectId(recordOnDB.getObjectId());
 			}
@@ -1073,6 +1076,44 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default boolean collactable() {
 		return true;
+	}
+
+	default void trackProcessingState(EtlStageAreaObject processedRec, Connection srcConn)
+			throws EtlConfException, DBException {
+		SrcConf srcConf = (SrcConf) processedRec.getRelatedEtlObject().getRelatedConfiguration();
+
+		if (!srcConf.isTrackabled()) {
+			throw new EtlConfException("The table " + this + " is not trackable!!");
+		}
+
+		srcConf.fillTrackingFields(this, processedRec, srcConn);
+
+		this.save(srcConf, srcConn);
+	}
+
+	default boolean isTrackable() {
+		if (!(this.getRelatedConfiguration() instanceof SrcConf))
+			return false;
+
+		SrcConf srcConf = (SrcConf) this.getRelatedConfiguration();
+
+		return srcConf.isTrackabled();
+	}
+
+	default void changeStatusToProcessing(Connection srcConn) throws DBException {
+		changeStatus(EtlLoadStatus.PROCESSING, srcConn);
+	}
+
+	default void changeStatus(EtlLoadStatus status, Connection srcConn) throws DBException {
+		if (!isTrackable()) {
+			throw new ForbiddenOperationException("Attempt to track not trackable object " + this);
+		}
+
+		SrcConf srcConf = (SrcConf) this.getRelatedConfiguration();
+
+		srcConf.changeObjectStatus(this, status, srcConn);
+
+		this.save(srcConf, srcConn);
 	}
 
 }

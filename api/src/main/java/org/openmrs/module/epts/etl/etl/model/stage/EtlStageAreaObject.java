@@ -37,7 +37,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 	private EtlStageAreaObject(EtlStageAreaObject srcStageInfoObject, EtlDatabaseObject obj, EtlStageTableType type,
 			Connection srcConn, Connection dstConn) throws DBException {
-		
+
 		this.type = type;
 		this.relatedEtlObject = obj;
 
@@ -125,7 +125,10 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 					: EtlLoadStatus.FULL_LOADED;
 
 			this.setFieldValue("last_sync_try_err",
-					!status.isFullLoaded() ? utilities.garantirXCaracteres(obj.getEtlInfo().getExceptionOnEtl().getLocalizedMessage(), 499) : null);
+					!status.isFullLoaded()
+							? utilities.garantirXCaracteres(obj.getEtlInfo().getExceptionOnEtl().getLocalizedMessage(),
+									499)
+							: null);
 
 			this.setFieldValue("etl_confing_id", operation_id);
 			this.setFieldValue("src_stage_table_name", srcStageTable.getTableName());
@@ -161,7 +164,15 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 				this.setFieldValue(f.getName(), f.getValue());
 			}
 
-			this.setFieldValue("retry_count", 0);
+			EtlStageAreaObject existing = EtlStageAreaObjectDAO.getByUniqueKeys(this, srcConn);
+
+			int retry = -1;
+
+			if (existing != null) {
+				retry = (int) existing.getField("retry_count").getValue();
+			}
+
+			this.setFieldValue("retry_count", retry++);
 			this.setFieldValue("processing_status", this.status.name());
 			this.setFieldValue("processing_date", DateAndTimeUtilities.getCurrentSystemDate(srcConn));
 			this.setFieldValue("processing_error",
@@ -188,6 +199,10 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			// We intencionaly null the keyInfo as we do want them to be stored again
 			this.keyInfo = null;
 		}
+	}
+
+	public EtlStageTableType getType() {
+		return type;
 	}
 
 	public boolean isLoadedSuccessifuly() {
@@ -393,4 +408,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 		}
 	}
 
+	public boolean hasNoError() {
+		return isLoadedSuccessifuly() || this.status.isNotLoaded();
+	}
 }
