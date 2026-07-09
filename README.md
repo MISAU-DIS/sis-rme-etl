@@ -274,6 +274,12 @@ Each operation can be configured using the following fields:
 - *afterEtlActionType*: Defines the action to be applied to the source record after it has been processed by the ETL.
   - *DELETE*: Permanently removes the record from the source table.
   - *MOVE_TO_STAGE_AREA*: Transfers the record to the ETL processing stage area. Records stored in the stage area are marked with a processing status and may be reprocessed later if necessary.
+  - *MOVE_TO_STAGE_AREA_ON_SUCCESS*: Moves the source record to the stage area only when it has been successfully processed.
+
+  If the record is processed successfully, it is moved from the source table to the stage area. If processing fails, the record remains in the source table.
+
+  When used together with *trackProcessingState*, failed records are updated with their latest processing status, processing date, processing error, and retry count, allowing them to be retried in future ETL executions.
+
 - *dstType*: Specifies the output destination type:
   - *db* – Stores transformed records in the database
   - *json* – Writes records to a JSON file
@@ -302,6 +308,7 @@ Each ETL item typically contains two main components:
    "srcConf":{
       "tableName":"",
       "extraConditionForExtract":"",
+	  "trackProcessingState":"",
       "observationDateFields":[
       ],
       "sharePkWith":"",
@@ -370,7 +377,24 @@ The main configuration fields are described below:
 - *extraQueryDataSource*: An optional list of custom queries used as additional data sources.
 - *extraObjectDataSource*: An optional list of object-based data source configurations.
 - *queryOrderingInfo*: provide the ordering to be used when querying the src table. The fields list the ordering fields and the supported types are "ASC" and "DSC";
-- *onConflict*: Refers to [dstConf.onConflict](#onConflict), defining how conflicts should be handled during processing.
+- *onConflict*: Refers to [dstConf.onConflict](#onConflict), defining how conflicts should be handled during processing;
+- *trackProcessingState*: Indicates whether records from this source configuration should store their ETL processing state directly in the source table.
+
+  When enabled, the ETL engine updates the source record after each processing attempt using the following fields:
+
+  - *processing_status* – Current processing status of the record.
+  - *processing_date* – Date and time of the latest processing attempt.
+  - *processing_error* – Error message recorded when processing fails.
+  - *retry_count* – Number of failed processing attempts.
+
+  Source configurations with *trackProcessingState* enabled must expose all required processing state fields:
+
+  - *processing_status*
+  - *processing_date*
+  - *processing_error*
+  - *retry_count*
+
+  This feature is especially useful for queue-based ETL processes, where failed records must remain in the source table so they can be retried later.
 
 Below are additional details for the more complex configurations within *srcConf*.
 
