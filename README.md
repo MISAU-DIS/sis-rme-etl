@@ -1287,15 +1287,37 @@ ETL_CONF_CHECK(
 
 - **conf** – Name or alias of the ETL configuration or data source to inspect.
 - **operation** – Type of configuration check to perform.
-- **field** – Field involved in the check (required only by operations that need it).
+- **field** – Field involved in the check (required only by operations that operate on fields).
 
 ##### Supported operations
 
-- **HAS_FIELD** – Returns **true** if the specified configuration exposes the given field.
+- **EXISTS** – Returns **true** if the specified configuration or data source exists.
+- **DOES_NOT_EXIST** – Returns **true** if the specified configuration or data source does not exist.
+- **HAS_FIELD** – Returns **true** if the specified configuration or data source exposes the given field.
 - **COUNT_FIELDS** – Returns the number of available fields.
 - **COUNT_RECORDS** – Returns the number of records available for the referenced configuration or data source.
 
-##### Example
+##### Examples
+
+Verify whether a configuration exists:
+
+```
+ETL_CONF_CHECK(
+    conf:person_address_person_src_ds,
+    operation:EXISTS
+)
+```
+
+Verify whether a configuration does not exist:
+
+```
+ETL_CONF_CHECK(
+    conf:person_address_person_src_ds,
+    operation:DOES_NOT_EXIST
+)
+```
+
+Verify whether a configuration contains a specific field:
 
 ```
 ETL_CONF_CHECK(
@@ -1305,17 +1327,27 @@ ETL_CONF_CHECK(
 )
 ```
 
-The above expression evaluates to **true** only if the data source identified by `${aliases_prefix}_src_ds` contains the field **location_id**.
+The previous expression evaluates to **true** only if the data source identified by `${aliases_prefix}_src_ds` exists and exposes the field **location_id**.
 
-This is particularly useful when working with dynamic or heterogeneous data sources whose schema may vary.
+Configuration checks are particularly useful when working with dynamic or heterogeneous ETL configurations, where data sources or fields may or may not be available depending on the process configuration.
 
-The following example loads the auxiliary data source only when the source data contains the field **location_id** and the current source object has a non-null value for that field.
+The following example loads an auxiliary data source only when the source data source contains the field **location_id** and the current source object has a non-null value for that field.
 
 ```
 {
    "name":"${aliases_prefix}_location_dst_ds",
    "script":"sesp_location_query.sql",
    "applyCondition":"ETL_CONF_CHECK(conf:${aliases_prefix}_src_ds,operation:HAS_FIELD,field:location_id) and ${aliases_prefix}_src_ds.location_id != null"
+}
+```
+
+Similarly, the following example loads the auxiliary data source only if the referenced configuration exists:
+
+```
+{
+   "name":"person_address_person_dst_ds",
+   "script":"person_address_person_query.sql",
+   "applyCondition":"ETL_CONF_CHECK(conf:person_address_person_src_ds,operation:EXISTS)"
 }
 ```
 
