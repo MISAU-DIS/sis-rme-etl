@@ -1088,7 +1088,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		srcConf.fillTrackingFields(this, processedRec, srcConn);
 
-		this.save(srcConf, srcConn);
+		this.update(srcConf, srcConn);
 	}
 
 	default boolean isTrackable() {

@@ -275,10 +275,10 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 
 	public static JsonEtlObject fastCreate(JsonSimpleOutputDataSource etlConf, List<Field> fields) {
 		JsonEtlObject obj = new JsonEtlObject(etlConf);
-		obj.setFields(fields);
+		obj.setFields(fields != null ? fields : new ArrayList<>());
 
 		for (Field f : etlConf.getFields()) {
-			if (!obj.contaisField(f.getName())) {
+			if (!utilities.listHasElement(fields) || !obj.contaisField(f.getName())) {
 				obj.getFields().add(Field.fastCreateField(f.getName()));
 			}
 		}

@@ -2867,20 +2867,30 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				sql.add("CREATE TABLE " + fullStageTableName + " LIKE " + this.getFullTableName());
 
-				sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN processing_status "
-						+ "ENUM('FULL_LOADED','PARTIALY_LOADED', 'NOT_LOADED_DUE_ERRORS', 'NOT_LOADED') " + "NOT NULL");
+				if (!this.containsField("processing_status")) {
+					sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN processing_status "
+							+ "ENUM('FULL_LOADED','PARTIALY_LOADED', 'NOT_LOADED_DUE_ERRORS', 'NOT_LOADED') "
+							+ "NOT NULL");
+				}
 
-				sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN processing_date DATETIME NOT NULL");
+				if (!this.containsField("processing_status")) {
+					sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN processing_date DATETIME NOT NULL");
+				}
 
-				sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN processing_error TEXT NULL");
-
-				sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN retry_count INT NOT NULL DEFAULT 0");
-
-				sql.add("CREATE INDEX idx_" + stageTableName + "_processing_status " + "ON " + fullStageTableName
-						+ "(processing_status)");
-
-				sql.add("CREATE INDEX idx_" + stageTableName + "_retry_count " + "ON " + fullStageTableName
-						+ "(retry_count)");
+				if (!this.containsField("processing_error")) {
+					sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN processing_error TEXT NULL");
+				}
+				if (!this.containsField("retry_count")) {
+					sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN retry_count INT NOT NULL DEFAULT 0");
+				}
+				if (!this.containsField("processing_status")) {
+					sql.add("CREATE INDEX idx_" + stageTableName + "_processing_status " + "ON " + fullStageTableName
+							+ "(processing_status)");
+				}
+				if (!this.containsField("retry_count")) {
+					sql.add("CREATE INDEX idx_" + stageTableName + "_retry_count " + "ON " + fullStageTableName
+							+ "(retry_count)");
+				}
 
 				BaseDAO.executeBatch(conn, sql.toArray(new String[0]));
 			} else {

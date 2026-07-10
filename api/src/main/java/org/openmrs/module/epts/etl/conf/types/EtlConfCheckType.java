@@ -20,5 +20,9 @@ public enum EtlConfCheckType {
 	 * Counts the number of fields or columns available in the referenced
 	 * configuration.
 	 */
-	COUNT_FIELDS
+	COUNT_FIELDS,
+
+	EXISTS,
+
+	DOES_NOT_EXIST;
 }

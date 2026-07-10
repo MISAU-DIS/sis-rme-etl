@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.conf;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -43,6 +44,15 @@ public class EtlConfCheckEvaluator {
 		EtlDataConfiguration conf = expression.getRelatedConfiguration();
 
 		if (conf == null) {
+
+			if (expression.getOperation() == EtlConfCheckType.EXISTS) {
+				return false;
+			}
+
+			if (expression.getOperation() == EtlConfCheckType.DOES_NOT_EXIST) {
+				return true;
+			}
+
 			throw new EtlConfException("ETL configuration check failed. Etl Confuiguration '" + expression.getConfName()
 					+ "' was not found.");
 		}
