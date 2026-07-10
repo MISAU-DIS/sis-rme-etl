@@ -212,6 +212,8 @@ public enum FieldTransformerType {
 
 		List<Object> params = new ArrayList<>();
 
+		def= def.trim();
+		
 		if (def == null || !def.contains("(") || !def.endsWith(")")) {
 			return params;
 		}
