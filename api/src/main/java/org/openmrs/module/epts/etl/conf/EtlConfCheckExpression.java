@@ -5,6 +5,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 
@@ -54,35 +55,60 @@ public class EtlConfCheckExpression {
 		if (context instanceof EtlDataSource) {
 			EtlDataSource ds = (EtlDataSource) context;
 
-			if (ds.hasAlias() && ds.getAlias().equals(this.confName)) {
-				relatedConfiguration = ds;
+			if (tryToSelectDsToRelatedConfiguration(ds)) {
 				return;
 			}
 
-			SrcConf srcConf = null;
+			ds = tryToLocateDsWithinSrcConf(ds);
 
-			if (ds instanceof EtlAdditionalDataSource) {
-				srcConf = ((EtlAdditionalDataSource) ds).getRelatedSrcConf();
-			} else if (ds instanceof SrcConf) {
-				srcConf = (SrcConf) ds;
-			} else if (ds instanceof DstConf) {
-				srcConf = ((DstConf) ds).getSrcConf();
-			}
-
-			try {
-				EtlDataSource ds1 = srcConf.findDataSourceOnAllAvaliabeDatasources(this.confName);
-
-				if (ds1 != null) {
-					relatedConfiguration = ds1;
-					return;
-				}
-			} catch (DatabaseResourceDoesNotExists e) {
+			if (tryToSelectDsToRelatedConfiguration(ds)) {
+				return;
 			}
 		}
 
+		if (context instanceof FieldsMapping) {
+			SrcConf ds = ((FieldsMapping) context).getTransformationTargetObject().getSrcConf();
+
+			if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf(ds))) {
+				return;
+			}
+
+		}
 		if (relatedConfiguration == null) {
 			throw new EtlConfException("The related Etl Conf cannot be found within the given context " + this);
 		}
+	}
+
+	private boolean tryToSelectDsToRelatedConfiguration(EtlDataSource ds) {
+		if (ds != null && ds.hasAlias() && ds.getAlias().equals(this.confName)) {
+			relatedConfiguration = ds;
+			return true;
+		}
+
+		return false;
+	}
+
+	private EtlDataSource tryToLocateDsWithinSrcConf(EtlDataSource ds) {
+		SrcConf srcConf = null;
+
+		if (ds instanceof EtlAdditionalDataSource) {
+			srcConf = ((EtlAdditionalDataSource) ds).getRelatedSrcConf();
+		} else if (ds instanceof SrcConf) {
+			srcConf = (SrcConf) ds;
+		} else if (ds instanceof DstConf) {
+			srcConf = ((DstConf) ds).getSrcConf();
+		}
+
+		try {
+			EtlDataSource ds1 = srcConf.findDataSourceOnAllAvaliabeDatasources(this.confName);
+
+			if (ds1 != null) {
+				return ds1;
+			}
+		} catch (DatabaseResourceDoesNotExists e) {
+		}
+
+		return null;
 	}
 
 	@Override

@@ -44,7 +44,6 @@ public class EtlConfCheckEvaluator {
 		EtlDataConfiguration conf = expression.getRelatedConfiguration();
 
 		if (conf == null) {
-
 			if (expression.getOperation() == EtlConfCheckType.EXISTS) {
 				return false;
 			}
@@ -70,6 +69,10 @@ public class EtlConfCheckEvaluator {
 
 		case COUNT_FIELDS:
 			return ds.getFields().size();
+		case EXISTS:
+			return true;
+		case DOES_NOT_EXIST:
+			return false;
 
 		default:
 			throw new EtlConfException("Unsupported ETL configuration check type: " + expression.getOperation());

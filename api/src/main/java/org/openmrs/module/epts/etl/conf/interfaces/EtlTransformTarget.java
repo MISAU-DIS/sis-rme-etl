@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.SimpleCondition;
+import org.openmrs.module.epts.etl.conf.AtomicCondition;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.InvalidAtomicConditionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
@@ -132,7 +133,7 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 					+ "' are only allowed when all duplicated mappings define an applyCondition.");
 		}
 
-		if (!areMutuallyExclusive(existing.getCondition(), candidate.getCondition())) {
+		if (!conditionsDoNotIntersect(existing.getCondition(), candidate.getCondition())) {
 			throw new ForbiddenOperationException("Duplicate mappings for destination field '" + candidate.getDstField()
 					+ "' must have mutually exclusive applyCondition values. " + "Existing condition: ["
 					+ existing.getCondition() + "], " + "new condition: [" + candidate.getCondition() + "]");
@@ -147,19 +148,22 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 		return false;
 	}
 
-	default boolean areMutuallyExclusive(String conditionA, String conditionB) {
+	default boolean conditionsDoNotIntersect(String conditionA, String conditionB)
+			throws InvalidAtomicConditionException {
 
-		SimpleCondition a = SimpleCondition.parse(conditionA);
-		SimpleCondition b = SimpleCondition.parse(conditionB);
+		try {
+			AtomicCondition a = AtomicCondition.parse(conditionA);
+			AtomicCondition b = AtomicCondition.parse(conditionB);
 
-		if (a == null || b == null) {
-			throw new ForbiddenOperationException(
-					"Unable to verify whether applyCondition values are mutually exclusive. "
-							+ "Only simple conditions are supported for duplicate mappings, such as "
-							+ "'field = null', 'field != null', 'field = value', or 'field != value'.");
+			return a.doesNotIntersectWith(b);
+
+		} catch (InvalidAtomicConditionException e) {
+
+			throw new InvalidAtomicConditionException(
+					"Unable to determine whether two applyCondition expressions may overlap.\n\n" + "Condition A: "
+							+ conditionA + "\n" + "Condition B: " + conditionB + "\n\n" + e.getMessage(),
+					e);
 		}
-
-		return a.isMutuallyExclusiveWith(b);
 	}
 
 	default EtlDataSource findDataSource(String dsName) {
