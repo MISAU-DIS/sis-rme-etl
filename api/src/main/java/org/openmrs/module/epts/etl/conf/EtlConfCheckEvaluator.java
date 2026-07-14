@@ -1,10 +1,13 @@
 package org.openmrs.module.epts.etl.conf;
 
+import java.util.Set;
+
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
@@ -39,7 +42,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  */
 public class EtlConfCheckEvaluator {
 
-	public Object evaluate(EtlConfCheckExpression expression) throws EtlTransformationException, DBException {
+	public Object evaluate(EtlConfCheckExpression expression, EtlDatabaseObject srcObject,
+			Set<EtlDatabaseObject> avaliableSrcObjects) throws EtlTransformationException, DBException {
 
 		EtlDataConfiguration conf = expression.getRelatedConfiguration();
 
@@ -70,12 +74,30 @@ public class EtlConfCheckEvaluator {
 		case COUNT_FIELDS:
 			return ds.getFields().size();
 		case EXISTS:
-			return true;
+			return existsDsWithinObjects(ds, srcObject, avaliableSrcObjects);
 		case DOES_NOT_EXIST:
-			return false;
+			return !existsDsWithinObjects(ds, srcObject, avaliableSrcObjects);
 
 		default:
 			throw new EtlConfException("Unsupported ETL configuration check type: " + expression.getOperation());
 		}
+	}
+
+	boolean existsDsWithinObjects(EtlDataSource ds, EtlDatabaseObject srcObject,
+			Set<EtlDatabaseObject> avaliableSrcObjects) {
+		if (srcObject != null && srcObject.getRelatedConfiguration().getAlias().equals(ds.getAlias())) {
+			return true;
+		}
+
+		if (avaliableSrcObjects != null) {
+
+			for (EtlDatabaseObject obj : avaliableSrcObjects) {
+				if (obj.getRelatedConfiguration().getAlias().equals(ds.getAlias())) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 }

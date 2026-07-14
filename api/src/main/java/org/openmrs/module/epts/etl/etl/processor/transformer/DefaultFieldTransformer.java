@@ -88,8 +88,9 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 
 		List<EtlDatabaseObject> result = new ArrayList<>();
 
-		if (srcObject == null || srcObject.getDestinationObjects() == null || srcObject.getDestinationObjects().isEmpty()
-				|| transformedRecord == null || transformedRecord.getRelatedConfiguration() == null) {
+		if (srcObject == null || srcObject.getDestinationObjects() == null
+				|| srcObject.getDestinationObjects().isEmpty() || transformedRecord == null
+				|| transformedRecord.getRelatedConfiguration() == null) {
 			return result;
 		}
 
@@ -188,11 +189,20 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 				? transformedRecord.getRelatedConfiguration().getObjectName()
 				: null;
 
-		String fieldName = objectName != null ? objectName + "(" + field.getName() + ")" : "'" + field.getName() + "'";
+		String fieldName = objectName != null ? objectName + "(" + field.getDstField() + ")"
+				: "'" + field.getDstField() + "'";
 
-		String msg = "The field " + fieldName
-				+ " could not be resolved from the available source objects or previous destination records. "
-				+ "The transformation would produce a null value, but this field is not configured to accept null values. "
+		String srcField = field.getDataSourceName() != null ? field.getDataSourceName() + "." : "";
+
+		srcField += field.hasSrcField() ? field.getSrcField().split("@")[0] : "";
+
+		String srcMessage = "the available source objects or previous destination records";
+
+		if (!srcField.isEmpty())
+			srcMessage = srcField;
+
+		String msg = "The field " + fieldName + " could not be resolved from " + srcMessage
+				+ ". The transformation would produce a null value, but this field is not configured to accept null values. "
 				+ "Configure an explicit mapping, allow null values, or ensure that a previous destination record is available as a data source.";
 
 		if (field.nullValueBehavior().markRecordAsFailed()) {

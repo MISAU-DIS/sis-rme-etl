@@ -53,7 +53,7 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 					boolean result;
 
 					if (isEtlConfCheckExpression(andCond)) {
-						result = evaluateEtlConfCheck(andCond);
+						result = evaluateEtlConfCheck(andCond, srcObject, avaliableSrcObjects);
 					} else {
 						result = evaluateCondition(srcObject, avaliableSrcObjects, andCond, srcConn, dstConn);
 					}
@@ -81,11 +81,12 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 		return condition != null && condition.trim().matches("(?i)^ETL_CONF_CHECK\\s*\\(.*\\)$");
 	}
 
-	default boolean evaluateEtlConfCheck(String expressionText) throws EtlTransformationException, DBException {
+	default boolean evaluateEtlConfCheck(String expressionText, EtlDatabaseObject srcObject,
+			Set<EtlDatabaseObject> avaliableSrcObjects) throws EtlTransformationException, DBException {
 
 		EtlConfCheckExpression expression = parseEtlConfCheckExpression(expressionText);
 
-		Object result = new EtlConfCheckEvaluator().evaluate(expression);
+		Object result = new EtlConfCheckEvaluator().evaluate(expression, srcObject, avaliableSrcObjects);
 
 		if (!(result instanceof Boolean)) {
 			throw new EtlConfException("ETL_CONF_CHECK must return a boolean value when used as a condition. "

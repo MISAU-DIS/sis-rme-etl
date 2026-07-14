@@ -1545,7 +1545,7 @@ public class CommonUtilities implements Serializable {
 		return utilities.isStringIn(obj.toString().toLowerCase(), "true", "1");
 	}
 
-	/**
+	/**							
 	 * Retorna todos os atributos de instancia de da classe de um objecto
 	 * independentemento do modificador de acesso
 	 * 
