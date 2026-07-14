@@ -208,6 +208,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private EtlItemConfiguration defaultEtlItemConf;
 
+	private Boolean warnOnNoDstObjectFound;
+
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 
@@ -227,6 +229,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.disableDefaultObjectCreation = false;
 		this.defaultEtlItemConf = new EtlItemConfiguration();
 		this.defaultEtlItemConf.setRelatedEtlConf(this);
+	}
+
+	public Boolean getWarnOnNoDstObjectFound() {
+		return warnOnNoDstObjectFound;
+	}
+
+	public void setWarnOnNoDstObjectFound(Boolean warnOnNoDstObjectFound) {
+		this.warnOnNoDstObjectFound = warnOnNoDstObjectFound;
 	}
 
 	public EtlItemConfiguration getDefaultEtlItemConf() {
@@ -2477,5 +2487,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		return false;
+	}
+
+	public boolean warnOnNoDstObjectFound() {
+		return isTrue(warnOnNoDstObjectFound);
 	}
 }

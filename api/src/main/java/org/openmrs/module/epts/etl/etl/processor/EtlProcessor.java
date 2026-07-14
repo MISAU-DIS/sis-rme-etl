@@ -183,8 +183,15 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			logInfo("ETL OPERATION [" + etlItemConf.getConfigCode() + "] DONE ON " + etlObjects.size() + "' RECORDS");
 		} else {
-			logWarn("NO DST OBJECT WAS FOUND FOR ETL[" + etlItemConf.getConfigCode() + "] ON '" + etlObjects.size()
-					+ "' RECORDS");
+
+			String msg = "NO DST OBJECT WAS FOUND FOR ETL[" + etlItemConf.getConfigCode() + "] ON '" + etlObjects.size()
+					+ "' RECORDS";
+
+			if (getRelatedEtlConf().warnOnNoDstObjectFound()) {
+				logWarn(msg);
+			} else {
+				logDebug(msg);
+			}
 
 			tryToPerfomeEtlOnChild(etlItemConf, etlObjects, srcConn, dstConn);
 		}

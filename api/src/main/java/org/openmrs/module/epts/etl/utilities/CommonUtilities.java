@@ -1542,9 +1542,7 @@ public class CommonUtilities implements Serializable {
 			return (Boolean) obj;
 		}
 
-		Boolean true_ = utilities.isStringIn(obj.toString().toLowerCase(), "true", "1");
-
-		return true_.equals(obj);
+		return utilities.isStringIn(obj.toString().toLowerCase(), "true", "1");
 	}
 
 	/**

@@ -212,6 +212,9 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
 			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 
+		stepIntoBreakpoint(getRelatedEtlConf(),
+				fm.getDstField().equals("voided") && !this.getObjectName().equals("obs"));
+
 		if (fm.hasTransformer()) {
 			fm.tryToLoadTransformer(this, conn);
 
@@ -220,13 +223,13 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			}
 		}
 
-		if (getPrimaryKey() != null && getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField())
-				&& isAutoIncrementId()) {
+		if (this.getPrimaryKey() != null && this.getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField())
+				&& this.isAutoIncrementId()) {
 			return;
 		}
 
-		if (!isLoadedDataSourceInfo()) {
-			loadDataSourceInfo(conn);
+		if (!this.isLoadedDataSourceInfo()) {
+			this.loadDataSourceInfo(conn);
 		}
 
 		int qtyOccurences = 0;
@@ -235,9 +238,9 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			return;
 		}
 
-		if (hasMappingResolutionStrategy()) {
-			if (!mappingResolutionStrategy().allowAuto() && mappingResolutionStrategy().allowDefault()) {
-				EtlDatabaseObject defaultObject = getTargetDefaultObject(conn, conn);
+		if (this.hasMappingResolutionStrategy()) {
+			if (!this.mappingResolutionStrategy().allowAuto() && this.mappingResolutionStrategy().allowDefault()) {
+				EtlDatabaseObject defaultObject = this.getTargetDefaultObject(conn, conn);
 
 				if (defaultObject != null) {
 					fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
