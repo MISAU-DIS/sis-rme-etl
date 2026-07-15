@@ -318,6 +318,10 @@ Each ETL item typically contains two main components:
       ],
       "parents":[
       ],
+	  "expansionQueryDataSource":{
+	  },
+	  "expansionTableDataSource":{
+	  },
       "extraTableDataSource":[
       ],
       "extraQueryDataSource":[
@@ -538,6 +542,72 @@ For more advanced use cases, static conditions can also be defined using:
 - *dstField* and *dstValue*
 
 This approach provides additional flexibility, allowing both dynamic field-based joins and fixed-value conditions to be combined when defining the join logic.
+
+#### The expansionDataSource configuration
+
+The **expansionQueryDataSource** and **expansionTableDataSource** configurations define an additional data source capable of expansion a single primary source record into multiple independent transformation contexts.
+
+Unlike the existing **extra*** data sources, which enrich the current transformation context without changing the number of records being transformed, an **expansion** data source may return multiple records. Each returned record creates a new transformation context that is processed independently and may therefore produce a separate destination record.
+
+The primary source record loaded by **srcConf** remains available in every generated transformation context.
+
+Only **one** expansion data source may be defined per **SrcConf**. Currently, the ETL engine supports the following expansion data source types:
+
+- **expansionQueryDataSource** – Expands the primary source record using the result of a SQL query.
+- **expansionTableDataSource** – Expands the primary source record using records from another database table.
+
+##### Difference from the existing extra data sources
+
+The distinction between **extra** data sources and **expansion** data sources is fundamental:
+
+**Extra data sources** (such as **extraQueryDataSource**, **extraTableDataSource**, **extraJsonDataSource**, and **extraObjectDataSource**) are intended to **enrich** the current transformation context. They provide additional information for the current source record but **never change the number of transformation contexts**. Regardless of how much data they retrieve, they always contribute to the transformation of the same destination record.
+
+In contrast, an **expansion** data source is intended to **expand** the transformation. Instead of enriching the current context, it generates one transformation context for each record it returns. Consequently, a single primary source record may produce multiple destination records.
+
+The following diagram illustrates the difference:
+
+```
+Primary Source Record
+        │
+        ├──────────────► extraDataSource
+        │                    │
+        │                    ▼
+        │            One enriched transformation context
+        │
+        └──────────────► expansionDataSource
+                             │
+                             ├────────► Transformation Context #1
+                             ├────────► Transformation Context #2
+                             └────────► Transformation Context #N
+```
+
+##### Example
+
+```
+{
+   "srcConf":{
+      "tableName":"patient",
+      "tableAlias":"patient_main_src_ds",
+
+      "expansionQueryDataSource":{
+         "name":"patient_encounter_src_ds",
+         "query":"select encounter_id, encounter_type, encounter_datetime from encounter e where e.patient_id = patient_main_src_ds.patient_id"
+      }
+   }
+}
+```
+
+In this example, each **patient** record loaded by **srcConf** becomes the primary transformation context.
+
+The **expansionQueryDataSource** retrieves all encounters belonging to the current patient. Each encounter returned by the query generates a new transformation context containing:
+
+- the original **patient** source record; and
+- the corresponding **encounter** record.
+
+If a patient has three encounters, the ETL engine will generate three independent transformation contexts and execute the configured ETL logic separately for each one.
+
+Each generated context may still be enriched by the existing **extra*** data sources before the destination transformation takes place.
+
 
 #### The extra datasource table configuration
 
