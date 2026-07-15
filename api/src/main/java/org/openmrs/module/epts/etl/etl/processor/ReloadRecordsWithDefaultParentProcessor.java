@@ -157,7 +157,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				
 				parentAsSrc.copyFrom(recWithDefaultParentInfo.getParentRecordInOrigin());
 				
-				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, dst, null, TransformationType.INNER,
+				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, null, dst, null, TransformationType.INNER,
 				    srcConn, dstConn);
 				
 				if (dstParent != null) {

@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlExpansionDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
@@ -106,6 +107,9 @@ public class SrcConf extends AbstractTableConfiguration
 	 */
 	private Boolean trackProcessingState;
 
+	private ExpansionQueryDataSource expansionQueryDataSource;
+	private ExpansionTableDataSource expansionTableDataSource;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
@@ -143,6 +147,31 @@ public class SrcConf extends AbstractTableConfiguration
 		this.doNotUseAsDatasource = doNotUseAsDatasource;
 	}
 
+	public ExpansionQueryDataSource getExpansionQueryDataSource() {
+		return expansionQueryDataSource;
+	}
+
+	public void setExpansionQueryDataSource(ExpansionQueryDataSource expansionQueryDataSource) {
+		this.expansionQueryDataSource = expansionQueryDataSource;
+	}
+
+	public ExpansionTableDataSource getExpansionTableDataSource() {
+		return expansionTableDataSource;
+	}
+
+	public void setExpansionTableDataSource(ExpansionTableDataSource expansionTableDataSource) {
+		this.expansionTableDataSource = expansionTableDataSource;
+	}
+
+	public EtlExpansionDataSource getExpansionDataSource() {
+		return this.getExpansionQueryDataSource() != null ? getExpansionQueryDataSource()
+				: getExpansionTableDataSource();
+	}
+
+	public boolean hasExpansionDs() {
+		return this.getExpansionDataSource() != null;
+	}
+
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
 		if (isInitialized()) {
 			return;
@@ -160,11 +189,22 @@ public class SrcConf extends AbstractTableConfiguration
 			this.setDstType(getRelatedEtlConf().getOperations().get(0).getDstType());
 		}
 
+		if (this.hasExpansionDs()) {
+			this.getExpansionDataSource().setParentConf(this);
+		}
+
 		if (this.hasAlias()) {
 			this.setUsingManualDefinedAlias(true);
 			getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
 		} else {
 			tryToGenerateTableAlias(getRelatedEtlConf());
+		}
+
+		if (getExpansionQueryDataSource() != null && getExpansionTableDataSource() != null) {
+			throw new EtlConfException(
+					"Invalid srcConf configuration. Only one expansion data source may be configured. "
+							+ "Choose either 'expansionQueryDataSource' or 'expansionTableDataSource', "
+							+ "but not both.");
 		}
 
 		initAllAvaliableExtraDataSource(srcConn, dstConn);
@@ -371,6 +411,10 @@ public class SrcConf extends AbstractTableConfiguration
 		OpenConnection srcConn = this.getRelatedConnInfo().openConnection(this);
 
 		try {
+
+			if (this.hasExpansionDs()) {
+				this.getExpansionDataSource().fullLoad(srcConn);
+			}
 
 			if (hasExtraTableDataSourceConfig()) {
 				for (TableDataSourceConfig t : this.getExtraTableDataSource()) {

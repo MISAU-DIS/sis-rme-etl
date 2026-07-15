@@ -269,7 +269,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		return new PreparedQuery(queryDs, avaliableDataSource, configuration, false, dbmsType);
 	}
 
-	public static PreparedQuery prepare(EtlAdditionalDataSource queryDs, EtlConfiguration etlConfig,
+	public static PreparedQuery prepare(EtlDataSource queryDs, EtlConfiguration etlConfig,
 			List<EtlDataSource> avaliableDataSource, boolean ignoreMissingParameters, DbmsType dbmsType)
 			throws ForbiddenOperationException {
 
@@ -305,7 +305,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	private void tryToLoadSQLFunctionInfo() {
 
 		if (!isSqlFunctionLoaded()) {
- 
+
 			List<SqlFunctionInfo> avaliableFunction = SQLUtilities.extractSqlFunctionsInSelect(getMainQuery());
 
 			if (utilities.listHasExactlyOneElement(this.getDataSource().getFields())
@@ -313,7 +313,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 				if (avaliableFunction.get(0).isCountFunction()) {
 					SQLUtilities.extractSqlFunctionsInSelect(getMainQuery());
-					
+
 					utilities.throwForbiddenMethodException();
 
 					this.setCountFunctionInfo(avaliableFunction.get(0));

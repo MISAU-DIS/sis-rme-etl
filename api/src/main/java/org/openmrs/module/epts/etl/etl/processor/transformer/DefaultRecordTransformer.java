@@ -43,8 +43,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject migratedDstParent, TransformationType transformationType, Connection srcConn,
 			Connection dstConn) throws DBException, EtlTransformationException {
 
-		Set<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, migratedDstParent, dstConf,
-				transformationType, srcConn);
+		Set<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, null, migratedDstParent,
+				dstConf, transformationType, srcConn);
 
 		try {
 			if (srcObjects == null || srcObjects.isEmpty()) {
@@ -291,12 +291,13 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	public Set<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent, DstConf dstConf,
-			TransformationType transformationType, Connection srcConn) throws DBException {
+			EtlDatabaseObject srcObjectExpansion, EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent,
+			DstConf dstConf, TransformationType transformationType, Connection srcConn) throws DBException {
 
 		Set<EtlDatabaseObject> result = new LinkedHashSet<>();
 
 		collectToSrcObjects(srcObject, result);
+		collectToSrcObjects(srcObjectExpansion, result);
 		collectToSrcObjects(dstObject, result);
 		collectToSrcObjects(migratedDstParent, result);
 		collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType, srcConn);

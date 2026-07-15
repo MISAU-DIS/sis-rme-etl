@@ -794,9 +794,11 @@ public interface EtlDatabaseObject extends EtlObject {
 			}
 
 			if (existingRecordIsOutdated) {
-				this.getEtlInfo()
-						.setConflictResolutionType(onConflict.patchExisting() ? ConflictResolutionType.PATCHED_EXISTING
-								: ConflictResolutionType.UPDATED_EXISTING);
+				if (this.getEtlInfo() != null) {
+					this.getEtlInfo().setConflictResolutionType(
+							onConflict.patchExisting() ? ConflictResolutionType.PATCHED_EXISTING
+									: ConflictResolutionType.UPDATED_EXISTING);
+				}
 
 				this.setObjectId(recordOnDB.getObjectId());
 				this.update(tableConfiguration, conn);

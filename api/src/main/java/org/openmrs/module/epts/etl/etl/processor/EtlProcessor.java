@@ -110,8 +110,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException {
 
-		for (EtlDatabaseObject record : etlObjects) {
-			EtlDatabaseObject srcRecord = (EtlDatabaseObject) record;
+		for (EtlDatabaseObject srcRecord : etlObjects) {
 
 			if (srcRecord.isTrackable() && getRelatedEtlOperationConfig().hasActionAfterEtl()
 					&& getRelatedEtlOperationConfig().getAfterEtlActionType().includeTracking()) {
@@ -122,49 +121,27 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
 			}
 
-			for (DstConf mappingInfo : etlItemConf.getDstConf()) {
-				if (mappingInfo.isDisabled()) {
+			for (DstConf dstConf : etlItemConf.getDstConf()) {
+				if (dstConf.isDisabled()) {
 					continue;
 				}
 
-				try {
+				List<EtlDatabaseObject> expansion = null;
 
-					EtlDatabaseObject transitionalTransformedObject = mappingInfo.createRecordInstance();
+				SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
 
-					transitionalTransformedObject.markAsNotCollactable();
+				if (srcConf.hasExpansionDs()) {
+					expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, null, srcRecord, null);
+				} else {
+					expansion = utilities.parseToList(srcRecord);
+				}
 
-					transitionalTransformedObject
-							.setEtlInfo(EtlInfo.initEtlRecord(this, srcRecord, transitionalTransformedObject));
-
-					Set<EtlDatabaseObject> avaliableSrcObjects = mappingInfo.getTransformerInstance()
-							.collectSourceObjects(this, srcRecord, transitionalTransformedObject, parentMigratedRec,
-									mappingInfo, TransformationType.PRINCIPAL, srcConn);
-
-					if (transitionalTransformedObject.getEtlDefaultEtlException() != null) {
-						throw (EtlExceptionImpl) transitionalTransformedObject.getEtlDefaultEtlException();
+				if (utilities.listHasElement(expansion)) {
+					for (EtlDatabaseObject expanded : expansion) {
+						transform(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
 					}
-
-					if (utilities.setHasElement(avaliableSrcObjects) || mappingInfo.isDoNotUseSrcConfAsDataSource()) {
-						if (mappingInfo.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
-
-							EtlDatabaseObject dstObject = mappingInfo.getTransformerInstance().transform(this,
-									srcRecord, avaliableSrcObjects, mappingInfo, parentMigratedRec,
-									TransformationType.PRINCIPAL, srcConn, dstConn);
-
-							if (dstObject != null) {
-								record.addDestinationRecord(dstObject);
-
-								logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
-							} else {
-								throw new EtlTransformationException("The srcObject could not be transformed",
-										dstObject, getGeneralBehaviourOnEtlException());
-							}
-						}
-					}
-				} catch (MissingRequiredTransformationObject e) {
-					tryToLogOrThrowException(record, mappingInfo, e);
-				} catch (EtlTransformationException e) {
-					tryToLogOrThrowException(record, mappingInfo, e);
+				} else {
+					logWarn("Expansion of record result on empty list:" + srcRecord);
 				}
 			}
 		}
@@ -197,6 +174,50 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 
 		return loadHelper;
+	}
+
+	private void transform(EtlDatabaseObject srcRecord, EtlDatabaseObject srcRecordExpansion,
+			EtlDatabaseObject parentMigratedRec, DstConf dstConf, Connection srcConn, Connection dstConn)
+			throws DBException {
+
+		try {
+			EtlDatabaseObject transitionalTransformedObject = dstConf.createRecordInstance();
+
+			transitionalTransformedObject.markAsNotCollactable();
+
+			transitionalTransformedObject
+					.setEtlInfo(EtlInfo.initEtlRecord(this, srcRecord, transitionalTransformedObject));
+
+			Set<EtlDatabaseObject> avaliableSrcObjects = dstConf.getTransformerInstance().collectSourceObjects(this,
+					srcRecord, srcRecordExpansion, transitionalTransformedObject, parentMigratedRec, dstConf,
+					TransformationType.PRINCIPAL, srcConn);
+
+			if (transitionalTransformedObject.getEtlDefaultEtlException() != null) {
+				throw (EtlExceptionImpl) transitionalTransformedObject.getEtlDefaultEtlException();
+			}
+
+			if (utilities.setHasElement(avaliableSrcObjects) || dstConf.isDoNotUseSrcConfAsDataSource()) {
+				if (dstConf.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
+
+					EtlDatabaseObject dstObject = dstConf.getTransformerInstance().transform(this, srcRecord,
+							avaliableSrcObjects, dstConf, parentMigratedRec, TransformationType.PRINCIPAL, srcConn,
+							dstConn);
+
+					if (dstObject != null) {
+						srcRecord.addDestinationRecord(dstObject);
+
+						logTrace("dstRecord " + srcRecord + " transforming to " + dstObject);
+					} else {
+						throw new EtlTransformationException("The srcObject could not be transformed", dstObject,
+								getGeneralBehaviourOnEtlException());
+					}
+				}
+			}
+		} catch (MissingRequiredTransformationObject e) {
+			tryToLogOrThrowException(srcRecord, dstConf, e);
+		} catch (EtlTransformationException e) {
+			tryToLogOrThrowException(srcRecord, dstConf, e);
+		}
 	}
 
 	private void tryToLogOrThrowException(EtlDatabaseObject record, DstConf mappingInfo, EtlTransformationException e) {

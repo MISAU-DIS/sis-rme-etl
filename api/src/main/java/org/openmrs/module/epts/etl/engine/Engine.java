@@ -324,6 +324,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			boolean restart;
 
 			do {
+
+				if (stopRequested() || isStopped()) {
+					logWarn("Aborting engine as stop requested!", 10, true);
+
+					return;
+				}
+
 				restart = this.runIteration();
 
 				if (restart) {
@@ -558,6 +565,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				}
 
 				for (IntervalExtremeRecord i : iManager.getCurrentLimits().getAllNotProcessed()) {
+					if (stopRequested() || isStopped()) {
+						logWarn("Aborting engine as stop requested!", 10, true);
+
+						return;
+					}
+
 					TaskProcessor<T> taskProcessor = getController().initRelatedTaskProcessor(this, i, false);
 					taskProcessor.setProcessorId(this.getEngineId());
 

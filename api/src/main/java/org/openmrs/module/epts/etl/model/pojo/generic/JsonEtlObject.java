@@ -360,4 +360,5 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	public EtlDatabaseObject createACopy() {
 		throw new ForbiddenOperationException("Forbiden method!");
 	}
+
 }

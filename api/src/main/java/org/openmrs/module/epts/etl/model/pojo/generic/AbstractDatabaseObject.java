@@ -331,7 +331,6 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				} else if (rootException.isInconsistentDataException()) {
 					if (tableConfiguration.getRelatedEtlConf().getDefaultInconsistencyBehavior().logging()) {
 						this.getEtlInfo().setExceptionOnEtl(e);
-						;
 					} else {
 						throw e;
 					}

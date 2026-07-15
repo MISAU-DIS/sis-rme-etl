@@ -382,6 +382,8 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		for (TransformableDataSourceField field : this.getObjectFields()) {
 			FieldTransformingInfo valueInfo = values.get(field.getName());
 
+			stepIntoBreakpoint(getRelatedEtlConf(), valueInfo == null);
+			
 			obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());
 
 			obj.getField(field.getName()).setTransformingInfo(valueInfo);

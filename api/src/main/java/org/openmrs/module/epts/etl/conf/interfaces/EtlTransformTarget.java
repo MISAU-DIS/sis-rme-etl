@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AtomicCondition;
+import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -295,6 +296,23 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 					}
 				}
 			}
+		}
+
+		if (this instanceof DstConf) {
+			DstConf c = (DstConf) this;
+
+			if (qtyOccurences == 0 && c.hasParentDstConf()) {
+				ParentTable ref = c.getFieldIsRelatedParent(fm);
+
+				if (ref != null) {
+					qtyOccurences++;
+
+					fm.setDataSourceName(ref.getAlias());
+					fm.setDataSource(ref);
+					fm.loadType(this, ref, conn);
+				}
+			}
+
 		}
 
 		List<EtlTransformTarget> previousDataSourceTarget = this.retrievePreviousDataSourceTargets();

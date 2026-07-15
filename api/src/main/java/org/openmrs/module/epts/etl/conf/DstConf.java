@@ -855,11 +855,15 @@ public class DstConf extends AbstractTableConfiguration
 
 		this.fullLoadAllRelatedTables(getRelatedEtlConf(), null, conn);
 
-		if (useAsDataSource()) {
-			addToAvaliableDataSource(this);
+		if (this.useAsDataSource()) {
+			this.addToAvaliableDataSource(this);
 		}
 
-		determinePrefferredDataSources();
+		if (this.getSrcConf().hasExpansionDs()) {
+			this.addToAvaliableDataSource(this.getSrcConf().getExpansionDataSource());
+		}
+
+		this.determinePrefferredDataSources();
 
 		this.setLoadedDataSourceInfo(true);
 	}
@@ -916,6 +920,11 @@ public class DstConf extends AbstractTableConfiguration
 			if (!this.preferredDataSource.contains(getSrcConf().getName()) && useSrcConfAsDataSource()) {
 				this.preferredDataSource.add(getSrcConf().getAlias());
 			}
+
+			if (this.getSrcConf().hasExpansionDs()) {
+				this.preferredDataSource.add(this.getSrcConf().getExpansionDataSource().getAlias());
+			}
+
 		}
 
 		// Change the ds name to aliases

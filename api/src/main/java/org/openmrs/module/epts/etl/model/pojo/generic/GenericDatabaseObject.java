@@ -646,9 +646,8 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		copy.auxLoadObject = this.auxLoadObject;
 		copy.loadedFromDb = this.loadedFromDb;
 
-
 		copy.copyFrom(this);
-		
+
 		return copy;
 	}
 }
