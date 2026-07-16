@@ -242,9 +242,13 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 				if (param.getContextType().compareClause() || param.getContextType().selectField()
 						|| param.getContextType().inClause()) {
 
-					params.add(paramTransformInfo);
+					int qtyOccurrences = countParameterOccurrences(pQuery, param.getName());
 
-					pQuery = SQLUtilities.replaceFirstParameterOccurrence(pQuery, param.getName(), PreparedQueryInfo
+					for (int i = 0; i < qtyOccurrences; i++) {
+						params.add(paramTransformInfo);
+					}
+
+					pQuery = replaceAllParameterOccurrences(pQuery, param.getName(), PreparedQueryInfo
 							.determineQtyElementsWithinTheParamValue(paramTransformInfo.getTransformedValue()));
 
 				} else if (param.getContextType().dbResource()) {
@@ -254,7 +258,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 								+ "' has no value and is needed to generate prepared query.");
 					}
 
-					pQuery = SQLUtilities.replaceParameterWithValue(pQuery, param.getName(),
+					pQuery = replaceAllParameterOccurrencesWithValue(pQuery, param.getName(),
 							paramTransformInfo.getTransformedValue());
 				}
 			}
@@ -376,7 +380,77 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			}
 		}
 
-		return parameters;
+		return removeDuplicatedQueryParameters(parameters);
+	}
+
+	private List<QueryParameter> removeDuplicatedQueryParameters(List<QueryParameter> parameters) {
+		List<QueryParameter> uniqueParameters = new ArrayList<>();
+
+		if (!utilities.listHasElement(parameters)) {
+			return uniqueParameters;
+		}
+
+		for (QueryParameter parameter : parameters) {
+			if (!containsQueryParameter(uniqueParameters, parameter.getName())) {
+				uniqueParameters.add(parameter);
+			}
+		}
+
+		return uniqueParameters;
+	}
+
+	private boolean containsQueryParameter(List<QueryParameter> parameters, String name) {
+		if (!utilities.listHasElement(parameters)) {
+			return false;
+		}
+
+		for (QueryParameter parameter : parameters) {
+			if (parameter.getName().equals(name)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private int countParameterOccurrences(String query, String paramName) {
+		int qtyOccurrences = 0;
+
+		Matcher matcher = createParameterPattern(paramName).matcher(query);
+
+		while (matcher.find()) {
+			qtyOccurrences++;
+		}
+
+		return qtyOccurrences;
+	}
+
+	private String replaceAllParameterOccurrences(String query, String paramName, int qtyQuestionMarks) {
+		if (qtyQuestionMarks <= 0) {
+			throw new IllegalArgumentException("qtyQuestionMarks must be greater than zero");
+		}
+
+		String replacement = String.join(",", java.util.Collections.nCopies(qtyQuestionMarks, "?"));
+
+		return createParameterPattern(paramName).matcher(query).replaceAll(Matcher.quoteReplacement(replacement));
+	}
+
+	private String replaceAllParameterOccurrencesWithValue(String query, String paramName, Object value) {
+		String replacement = value != null ? value.toString() : "null";
+
+		return createParameterPattern(paramName).matcher(query).replaceAll(Matcher.quoteReplacement(replacement));
+	}
+
+	private Pattern createParameterPattern(String paramName) {
+		String token = paramName.startsWith("(") && paramName.endsWith(")") ? "@" + paramName : "@" + paramName;
+		String alternativeToken = paramName.startsWith("(") && paramName.endsWith(")") ? null : "@(" + paramName + ")";
+		String regex = Pattern.quote(token);
+
+		if (alternativeToken != null) {
+			regex += "|" + Pattern.quote(alternativeToken);
+		}
+
+		return Pattern.compile("(?:" + regex + ")(?![a-zA-Z0-9_\\.])");
 	}
 
 	private String ensureDynamicElementsLoadedAsParameteres(String query) {
