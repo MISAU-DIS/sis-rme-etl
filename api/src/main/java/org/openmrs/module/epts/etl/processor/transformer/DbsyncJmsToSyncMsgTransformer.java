@@ -120,8 +120,8 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 
 	@Override
 	public Set<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent, DstConf dstConf,
-			TransformationType transformationType, Connection srcConn) throws DBException {
+			EtlDatabaseObject srcObjectExpansion, EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent,
+			DstConf dstConf, TransformationType transformationType, Connection srcConn) throws DBException {
 		// TODO Auto-generated method stub
 		return null;
 	}

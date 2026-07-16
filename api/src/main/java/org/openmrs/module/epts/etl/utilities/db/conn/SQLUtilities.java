@@ -2380,10 +2380,9 @@ public class SQLUtilities {
 				avaliableSrcObjects, relatedEtlConf, conn);
 
 		for (ResolvedQueryElement element : resolvedElements) {
-
 			// String replacement = toSqlLiteral(element.getValue());
 
-			String replacement = element.getValue().toString();
+			String replacement = element.getValue() != null ? element.getValue().toString() : "null";
 
 			query = replaceFirstLiteralTokenWithValue(query, element.getToken(), replacement);
 		}
