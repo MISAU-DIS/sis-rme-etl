@@ -233,34 +233,74 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		String pQuery = query;
 
 		if (hasQueryParams()) {
+			Map<String, FieldTransformingInfo> paramValues = resolveQueryParameterValues(processor, srcObject,
+					dstObject, avaliableSrcObjects, conn);
 
-			for (QueryParameter param : this.getQueryParams()) {
-
-				FieldTransformingInfo paramTransformInfo = param.transformParam(processor, srcObject, dstObject,
-						avaliableSrcObjects, conn);
-
-				if (param.getContextType().compareClause() || param.getContextType().selectField()
-						|| param.getContextType().inClause()) {
-
-					params.add(paramTransformInfo);
-
-					pQuery = SQLUtilities.replaceFirstParameterOccurrence(pQuery, param.getName(), PreparedQueryInfo
-							.determineQtyElementsWithinTheParamValue(paramTransformInfo.getTransformedValue()));
-
-				} else if (param.getContextType().dbResource()) {
-
-					if (paramTransformInfo == null) {
-						throw new ForbiddenOperationException("The parameter '" + param.getName()
-								+ "' has no value and is needed to generate prepared query.");
-					}
-
-					pQuery = SQLUtilities.replaceParameterWithValue(pQuery, param.getName(),
-							paramTransformInfo.getTransformedValue());
-				}
-			}
+			pQuery = applyQueryParameterValues(pQuery, paramValues, params);
 		}
 
 		return new PreparedQueryInfo(pQuery, params);
+	}
+
+	private Map<String, FieldTransformingInfo> resolveQueryParameterValues(EtlProcessor processor,
+			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects,
+			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+
+		Map<String, FieldTransformingInfo> paramValues = new HashMap<>();
+
+		for (QueryParameter param : this.getQueryParams()) {
+			paramValues.put(param.getName(),
+					param.transformParam(processor, srcObject, dstObject, avaliableSrcObjects, conn));
+		}
+
+		return paramValues;
+	}
+
+	private String applyQueryParameterValues(String query, Map<String, FieldTransformingInfo> paramValues,
+			List<FieldTransformingInfo> params) {
+
+		Map<String, QueryParameter> paramsByToken = buildQueryParameterTokenMap();
+
+		if (paramsByToken.isEmpty()) {
+			return query;
+		}
+
+		Matcher matcher = createAnyParameterPattern(paramsByToken.keySet()).matcher(query);
+		StringBuffer preparedQuery = new StringBuffer();
+
+		while (matcher.find()) {
+			QueryParameter param = paramsByToken.get(matcher.group());
+			FieldTransformingInfo paramTransformInfo = paramValues.get(param.getName());
+			String replacement;
+
+			if (param.getContextType().compareClause() || param.getContextType().selectField()
+					|| param.getContextType().inClause()) {
+
+				params.add(paramTransformInfo);
+
+				replacement = buildQuestionMarkReplacement(PreparedQueryInfo
+						.determineQtyElementsWithinTheParamValue(paramTransformInfo.getTransformedValue()));
+
+			} else if (param.getContextType().dbResource()) {
+
+				if (paramTransformInfo == null) {
+					throw new ForbiddenOperationException("The parameter '" + param.getName()
+							+ "' has no value and is needed to generate prepared query.");
+				}
+
+				replacement = paramTransformInfo.getTransformedValue() != null
+						? paramTransformInfo.getTransformedValue().toString()
+						: "null";
+			} else {
+				replacement = matcher.group();
+			}
+
+			matcher.appendReplacement(preparedQuery, Matcher.quoteReplacement(replacement));
+		}
+
+		matcher.appendTail(preparedQuery);
+
+		return preparedQuery.toString();
 	}
 
 	public static PreparedQuery prepare(EtlDataSource queryDs, List<EtlDataSource> avaliableDataSource,
@@ -376,7 +416,87 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			}
 		}
 
-		return parameters;
+		return removeDuplicatedQueryParameters(parameters);
+	}
+
+	private List<QueryParameter> removeDuplicatedQueryParameters(List<QueryParameter> parameters) {
+		List<QueryParameter> uniqueParameters = new ArrayList<>();
+
+		if (!utilities.listHasElement(parameters)) {
+			return uniqueParameters;
+		}
+
+		for (QueryParameter parameter : parameters) {
+			if (!containsQueryParameter(uniqueParameters, parameter.getName())) {
+				uniqueParameters.add(parameter);
+			}
+		}
+
+		return uniqueParameters;
+	}
+
+	private boolean containsQueryParameter(List<QueryParameter> parameters, String name) {
+		if (!utilities.listHasElement(parameters)) {
+			return false;
+		}
+
+		for (QueryParameter parameter : parameters) {
+			if (parameter.getName().equals(name)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private String buildQuestionMarkReplacement(int qtyQuestionMarks) {
+		if (qtyQuestionMarks <= 0) {
+			throw new IllegalArgumentException("qtyQuestionMarks must be greater than zero");
+		}
+
+		return String.join(",", java.util.Collections.nCopies(qtyQuestionMarks, "?"));
+	}
+
+	private Map<String, QueryParameter> buildQueryParameterTokenMap() {
+		Map<String, QueryParameter> paramsByToken = new HashMap<>();
+
+		for (QueryParameter param : this.getQueryParams()) {
+			for (String token : buildParameterTokens(param.getName())) {
+				paramsByToken.put(token, param);
+			}
+		}
+
+		return paramsByToken;
+	}
+
+	private List<String> buildParameterTokens(String paramName) {
+		List<String> tokens = new ArrayList<>();
+
+		tokens.add("@" + paramName);
+
+		if (!paramName.startsWith("(") || !paramName.endsWith(")")) {
+			tokens.add("@(" + paramName + ")");
+		}
+
+		return tokens;
+	}
+
+	private Pattern createAnyParameterPattern(Set<String> tokens) {
+		List<String> orderedTokens = new ArrayList<>(tokens);
+
+		java.util.Collections.sort(orderedTokens, (a, b) -> Integer.compare(b.length(), a.length()));
+
+		StringBuilder regex = new StringBuilder();
+
+		for (String token : orderedTokens) {
+			if (regex.length() > 0) {
+				regex.append("|");
+			}
+
+			regex.append(Pattern.quote(token));
+		}
+
+		return Pattern.compile("(?:" + regex + ")(?![a-zA-Z0-9_\\.])");
 	}
 
 	private String ensureDynamicElementsLoadedAsParameteres(String query) {
