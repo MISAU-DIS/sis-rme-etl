@@ -105,6 +105,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			if (successful) {
 				moveToStageArea(obj, stageRecord, srcConn);
+				DatabaseObjectDAO.remove(obj, srcConn);
 			} else {
 				trackFailedProcessingIfConfigured(obj, stageRecord, srcConn);
 			}
