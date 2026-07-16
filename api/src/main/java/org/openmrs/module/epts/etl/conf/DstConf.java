@@ -130,6 +130,8 @@ public class DstConf extends AbstractTableConfiguration
 
 	private Boolean allowDuplicateDestinationMappings;
 
+	private Boolean executeUpdateIfRecordIdIsSet;
+
 	public DstConf() {
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
 		this.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.ABORT_PROCESS);
@@ -140,6 +142,14 @@ public class DstConf extends AbstractTableConfiguration
 		this();
 
 		setTableName(tableName);
+	}
+
+	public Boolean getExecuteUpdateIfRecordIdIsSet() {
+		return executeUpdateIfRecordIdIsSet;
+	}
+
+	public void setExecuteUpdateIfRecordIdIsSet(Boolean executeUpdateIfRecordIdIsSet) {
+		this.executeUpdateIfRecordIdIsSet = executeUpdateIfRecordIdIsSet;
 	}
 
 	private void ensureTargetDefaultObjectInitialized(Connection srcConn, Connection dstConn) throws DBException {
@@ -1378,5 +1388,9 @@ public class DstConf extends AbstractTableConfiguration
 		str += hasCondition() ? ", [applyCondition: " + this.getCondition() + "]" : "";
 
 		return str;
+	}
+
+	public boolean executeUpdateIfRecordIdIsSet() {
+		return isTrue(executeUpdateIfRecordIdIsSet);
 	}
 }

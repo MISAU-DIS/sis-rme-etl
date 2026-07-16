@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
+import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -925,6 +926,26 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 		for (EtlDatabaseObject record : objects) {
 			record.delete(conn);
+
+			result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
+		}
+
+		return result;
+	}
+
+	public static EtlOperationResultHeader<EtlDatabaseObject> update(List<EtlDatabaseObject> objects, DstConf dstConf,
+			Connection conn) throws DBException {
+
+		EtlOperationResultHeader<EtlDatabaseObject> result = new EtlOperationResultHeader<>(
+				new IntervalExtremeRecord());
+
+		for (EtlDatabaseObject record : objects) {
+			EtlDatabaseObject existing = getByOid(dstConf, record.getObjectId(), conn);
+
+			if (existing == null)
+				throw new ForbiddenOperationException("Atempt to update not existing record: " + record);
+
+			record.update(dstConf, conn);
 
 			result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
 		}

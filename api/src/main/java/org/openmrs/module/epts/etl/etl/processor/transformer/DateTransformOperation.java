@@ -7,5 +7,6 @@ public enum DateTransformOperation {
 	SUBTRACT,
 	NOW,
 	START_OF_DAY,
-	END_OF_DAY
+	END_OF_DAY,
+	DATE_ONLY
 }

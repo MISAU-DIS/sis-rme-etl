@@ -2381,7 +2381,9 @@ public class SQLUtilities {
 
 		for (ResolvedQueryElement element : resolvedElements) {
 
-			String replacement = toSqlLiteral(element.getValue());
+			// String replacement = toSqlLiteral(element.getValue());
+
+			String replacement = element.getValue().toString();
 
 			query = replaceFirstLiteralTokenWithValue(query, element.getToken(), replacement);
 		}
@@ -2402,6 +2404,7 @@ public class SQLUtilities {
 		return query;
 	}
 
+	@SuppressWarnings("unused")
 	private static String toSqlLiteral(Object value) {
 
 		if (value == null) {
@@ -2422,10 +2425,6 @@ public class SQLUtilities {
 	private static List<ResolvedQueryElement> resolveTransformableQueryElements(String query,
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
 			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-
-		if (query.contains("health-facility")) {
-			query.contains("health-facility");
-		}
 
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
@@ -2453,25 +2452,21 @@ public class SQLUtilities {
 
 				element = element.strip().trim();
 
-				FieldsMapping map;
+				FieldsMapping map = null;
 				String adjustedElement;
 
 				if (isTransformerExpression(element)) {
 
 					adjustedElement = element;
 
-					map = FieldsMapping.fastCreate("tmp_field", transformingTarget, conn);
-
-					map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
-
-					map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
+					map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
 
 				} else {
-
 					List<String> candidateElements = extractCandidateQueryElementsRecursively(element,
 							arithmeticOperators);
 
 					for (String candidate : candidateElements) {
+						map = null;
 
 						if (candidate == null || candidate.isBlank()) {
 							continue;
@@ -2479,17 +2474,21 @@ public class SQLUtilities {
 
 						adjustedElement = candidate.strip().trim();
 
-						if (!isValidQueryColumnDefinition(adjustedElement)) {
+						if (isTransformerExpression(candidate)) {
+							map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
+						} else if (!isValidQueryColumnDefinition(adjustedElement)) {
 							continue;
 						}
 
 						try {
-							map = FieldsMapping.fastCreate(adjustedElement, transformingTarget, conn);
+							if (map == null) {
 
-							if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
-								continue;
+								map = FieldsMapping.fastCreate(adjustedElement, transformingTarget, conn);
+
+								if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
+									continue;
+								}
 							}
-
 						} catch (InvalidDataSourceOnFieldDefifitionException e) {
 
 							if (utilities.contains(avaliableTableAliases, e.getDataSourceName())) {
@@ -2530,47 +2529,161 @@ public class SQLUtilities {
 		return resolvedElements;
 	}
 
+	private static FieldsMapping generateTransformerMapping(Connection conn,
+			FastEtlTransformingTarget transformingTarget, String adjustedElement) throws DBException {
+		FieldsMapping map;
+		map = FieldsMapping.fastCreate("tmp_field", transformingTarget, conn);
+
+		map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
+
+		map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
+		return map;
+	}
+
 	private static List<String> extractCandidateQueryElementsRecursively(String element, String[] splitTokens) {
 
-		List<String> result = new ArrayList<>();
+		Set<String> result = new LinkedHashSet<>();
+
+		extractCandidateQueryElementsRecursively(element, splitTokens, result);
+
+		return new ArrayList<>(result);
+	}
+
+	private static void extractCandidateQueryElementsRecursively(String element, String[] splitTokens,
+			Set<String> result) {
 
 		if (element == null || element.isBlank()) {
-			return result;
+			return;
 		}
 
-		element = element.strip().trim();
+		String normalized = element.strip().trim();
 
 		/*
-		 * 1. Primeiro tenta dividir o elemento ao nível externo.
+		 * Se todo o elemento estiver envolvido por parênteses externos, remove apenas
+		 * esse par externo e volta a processar.
 		 */
-		String[] topLevelParts = utilities.splitByAnyAtTopLevel(element, splitTokens);
+		if (isWrappedByOuterParentheses(normalized)) {
+
+			String inner = normalized.substring(1, normalized.length() - 1).strip().trim();
+
+			extractCandidateQueryElementsRecursively(inner, splitTokens, result);
+
+			return;
+		}
+
+		/*
+		 * Divide apenas pelos tokens que aparecem no nível atual, ignorando os que
+		 * estão dentro de parênteses ou strings.
+		 */
+		String[] topLevelParts = utilities.splitByAnyAtTopLevel(normalized, splitTokens);
 
 		if (topLevelParts.length > 1) {
+
 			for (String part : topLevelParts) {
-				result.addAll(extractCandidateQueryElementsRecursively(part, splitTokens));
+				extractCandidateQueryElementsRecursively(part, splitTokens, result);
 			}
 
-			return result;
+			return;
 		}
 
 		/*
-		 * 2. Adiciona o próprio elemento como candidato. Depois a validação
-		 * isValidQueryColumnDefinition(...) decidirá se ele realmente é um campo
-		 * transformável.
+		 * Se o elemento já é uma definição simples de coluna ou uma expressão de
+		 * transformer, adiciona diretamente.
 		 */
-		result.add(element);
+		if (isValidQueryColumnDefinition(normalized) || isTransformerExpression(normalized)) {
 
-		/*
-		 * 3. Procura conteúdos dentro de parênteses em qualquer posição do elemento,
-		 * não apenas quando o elemento inteiro está entre ().
-		 */
-		List<String> parenthesizedContents = extractTopLevelParenthesizedContents(element);
-
-		for (String inner : parenthesizedContents) {
-			result.addAll(extractCandidateQueryElementsRecursively(inner, splitTokens));
+			result.add(normalized);
+			return;
 		}
 
-		return result;
+		/*
+		 * Caso seja uma expressão complexa, função ou subquery, procura os conteúdos
+		 * internos dos parênteses.
+		 */
+		List<String> parenthesizedContents = extractTopLevelParenthesizedContents(normalized);
+
+		if (!parenthesizedContents.isEmpty()) {
+
+			for (String inner : parenthesizedContents) {
+				extractCandidateQueryElementsRecursively(inner, splitTokens, result);
+			}
+
+			return;
+		}
+
+		/*
+		 * Não adiciona expressões complexas como candidatos.
+		 *
+		 * Exemplos ignorados: select distinct e.encounter_type=53
+		 * date(encounter_datetime)
+		 */
+	}
+
+	private static boolean isWrappedByOuterParentheses(String value) {
+
+		if (value == null) {
+			return false;
+		}
+
+		value = value.strip().trim();
+
+		if (value.length() < 2 || value.charAt(0) != '(' || value.charAt(value.length() - 1) != ')') {
+			return false;
+		}
+
+		int level = 0;
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+
+		for (int i = 0; i < value.length(); i++) {
+
+			char c = value.charAt(i);
+
+			if (c == '\'' && !inDoubleQuote && !isEscaped(value, i)) {
+				inSingleQuote = !inSingleQuote;
+				continue;
+			}
+
+			if (c == '"' && !inSingleQuote && !isEscaped(value, i)) {
+				inDoubleQuote = !inDoubleQuote;
+				continue;
+			}
+
+			if (inSingleQuote || inDoubleQuote) {
+				continue;
+			}
+
+			if (c == '(') {
+				level++;
+			} else if (c == ')') {
+				level--;
+
+				if (level < 0) {
+					return false;
+				}
+			}
+
+			/*
+			 * Os parênteses externos fecharam antes do fim. Logo não envolvem todo o
+			 * elemento.
+			 */
+			if (level == 0 && i < value.length() - 1) {
+				return false;
+			}
+		}
+
+		return level == 0;
+	}
+
+	private static boolean isEscaped(String text, int index) {
+
+		int backslashCount = 0;
+
+		for (int i = index - 1; i >= 0 && text.charAt(i) == '\\'; i--) {
+			backslashCount++;
+		}
+
+		return backslashCount % 2 != 0;
 	}
 
 	private static List<String> extractTopLevelParenthesizedContents(String text) {

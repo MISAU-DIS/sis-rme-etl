@@ -64,38 +64,16 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
 			throws DBException {
 		try {
-
 			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
 
-			if (getRelatedEtlOperationConfig().getAfterEtlActionType() != null
-					&& !getRelatedEtlOperationConfig().getAfterEtlActionType().isUndefined()) {
-				EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
+			EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
 
-				for (EtlDatabaseObject obj : etlObjects) {
-					boolean moved = false;
+			if (action == null || action.isUndefined()) {
+				return;
+			}
 
-					EtlStageAreaObject processedRec = obj.generateProcessedRecord(srcConn, dstConn);
-					SrcConf srcConf = (SrcConf) obj.getRelatedConfiguration();
-
-					if (action.moveToStageArea()
-							|| (action.moveToStageAreaOnSuccess() && processedRec.isLoadedSuccessifuly())) {
-						processedRec.save(processedRec.getRelatedConfiguration(), srcConn);
-					}
-
-					if (action.isDelete() || action.moveToStageArea()
-							|| (action.moveToStageAreaOnSuccess() && processedRec.hasNoError())) {
-
-						DatabaseObjectDAO.remove(obj, srcConn);
-
-						moved = true;
-					}
-
-					boolean track = action.moveToStageAreaOnSuccess() && !processedRec.isLoadedSuccessifuly();
-
-					if (!moved && track && srcConf.trackProcessingState()) {
-						obj.trackProcessingState(processedRec, srcConn);
-					}
-				}
+			for (EtlDatabaseObject obj : etlObjects) {
+				applyAfterEtlAction(obj, action, srcConn, dstConn);
 			}
 		} catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
@@ -103,6 +81,51 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			logError(this.getEngine().getEngineId() + ": " + e.getMessage());
 
 			getTaskResultInfo().setFatalException(e);
+		}
+	}
+
+	private void applyAfterEtlAction(EtlDatabaseObject obj, EtlActionType action, Connection srcConn,
+			Connection dstConn) throws DBException {
+
+		if (action.isDelete()) {
+			DatabaseObjectDAO.remove(obj, srcConn);
+			return;
+		}
+
+		EtlStageAreaObject stageRecord = obj.generateProcessedRecord(srcConn, dstConn);
+
+		boolean successful = stageRecord.isLoadedSuccessifuly();
+
+		if (action.moveToStageArea()) {
+			moveToStageArea(obj, stageRecord, srcConn);
+			return;
+		}
+
+		if (action.moveToStageAreaOnSuccess()) {
+
+			if (successful) {
+				moveToStageArea(obj, stageRecord, srcConn);
+			} else {
+				trackFailedProcessingIfConfigured(obj, stageRecord, srcConn);
+			}
+		}
+	}
+
+	private void moveToStageArea(EtlDatabaseObject sourceRecord, EtlStageAreaObject stageRecord, Connection srcConn)
+			throws DBException {
+
+		stageRecord.save(stageRecord.getRelatedConfiguration(), srcConn);
+
+		DatabaseObjectDAO.remove(sourceRecord, srcConn);
+	}
+
+	private void trackFailedProcessingIfConfigured(EtlDatabaseObject sourceRecord, EtlStageAreaObject stageRecord,
+			Connection srcConn) throws DBException {
+
+		SrcConf srcConf = (SrcConf) sourceRecord.getRelatedConfiguration();
+
+		if (srcConf.trackProcessingState()) {
+			sourceRecord.trackProcessingState(stageRecord, srcConn);
 		}
 	}
 

@@ -253,9 +253,30 @@ public class EtlLoadHelper {
 
 			dstConf.setUseMysqlInsertIgnore(this.getEtlOperationConfig().useseMysqlInsertIgnore());
 
-			this.loadAndAddResult(DatabaseObjectDAO.load(objects, dstConf, dstConn), dstConf);
+			List<EtlDatabaseObject> recordToUpdate = new ArrayList<>();
+			List<EtlDatabaseObject> recordToCreate = new ArrayList<>();
 
-			logDebug(objects.size() + " " + dstConf.getTableName() + "  inserted on db!");
+			if (dstConf.executeUpdateIfRecordIdIsSet()) {
+
+				for (EtlDatabaseObject obj : objects) {
+					if (obj.hasValuedObjectId()) {
+						recordToUpdate.add(obj);
+					} else {
+						recordToCreate.add(obj);
+					}
+				}
+			} else {
+				recordToCreate = objects;
+			}
+
+			this.loadAndAddResult(DatabaseObjectDAO.load(recordToCreate, dstConf, dstConn), dstConf);
+			logDebug(recordToCreate.size() + " " + dstConf.getTableName() + "  inserted on db!");
+
+			if (!recordToUpdate.isEmpty()) {
+				this.loadAndAddResult(DatabaseObjectDAO.update(recordToUpdate, dstConf, dstConn), dstConf);
+				logDebug(recordToUpdate.size() + " " + dstConf.getTableName() + "  updated on db!");
+			}
+
 		} else if (getActionType().isUpdate()) {
 			logDebug("Starting the update of " + objects.size() + " " + dstConf.getTableName() + " on db...");
 

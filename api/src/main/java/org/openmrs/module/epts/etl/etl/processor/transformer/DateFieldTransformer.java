@@ -218,7 +218,6 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 				return getEndOfDay(readyValueToTransform);
 
 			default:
-
 				throw new ForbiddenOperationException("Unsupported operation: " + operation);
 
 			}
