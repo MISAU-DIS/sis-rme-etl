@@ -84,6 +84,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	private String applyCondition;
 
+	private EtlConfiguration relatedEtlConfiguration;
+
 	public QueryDataSourceConfig() {
 		this.loadHealper = new DatabaseObjectLoaderHelper(this);
 
@@ -330,7 +332,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public EtlConfiguration getRelatedEtlConf() {
-		return this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedEtlConf() : null;
+		return this.relatedEtlConfiguration != null ? this.relatedEtlConfiguration
+				: this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedEtlConf() : null;
 	}
 
 	@JsonIgnore
@@ -518,6 +521,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				objs.addAll(avaliableSrcObjects);
 			}
 
+			list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject, avaliableSrcObjects, srcConn);
+
 			throw new ForbiddenOperationException("The datasource (" + this.getName()
 					+ ") returned more than one src objects for src objects: " + objs);
 		}
@@ -693,6 +698,14 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	public void setApplyCondition(String applyCondition) {
 		this.applyCondition = applyCondition;
+	}
+
+	public void setRelatedEtlConf(EtlConfiguration relatedEtlConfiguration) {
+		this.relatedEtlConfiguration = relatedEtlConfiguration;
+	}
+
+	public EtlConfiguration getRelatedEtlConfiguration() {
+		return relatedEtlConfiguration;
 	}
 
 }

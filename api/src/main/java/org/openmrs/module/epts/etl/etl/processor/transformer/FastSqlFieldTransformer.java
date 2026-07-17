@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
@@ -117,9 +118,17 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		if (this.dataSourceConfig == null) {
 			synchronized (LOCK) {
 				if (this.dataSourceConfig == null) {
+
+					EtlConfiguration relatedEtlConfiguration = field.getTransformationTargetObject()
+							.getSrcConf() != null
+									? field.getTransformationTargetObject().getSrcConf().getRelatedEtlConf()
+									: field.getTransformationTargetObject().getRelatedEtlConf();
+
 					QueryDataSourceConfig conf = new QueryDataSourceConfig(this.sqlQuery,
 							field.getTransformationTargetObject().getSrcConf());
 
+					conf.setRelatedEtlConf(relatedEtlConfiguration);
+					
 					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
 
 					this.dataSourceConfig = conf;
