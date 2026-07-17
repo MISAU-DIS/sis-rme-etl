@@ -251,7 +251,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private void tryToLogOrThrowException(EtlDatabaseObject record, DstConf mappingInfo, EtlTransformationException e) {
 		ActionOnEtlIssue defaultBehavior = mappingInfo.getRelatedEtlConf().getDefaultExceptionBehavior();
 		ActionOnEtlIssue exceptionBehavior = e.getAction();
-
+	
 		if (defaultBehavior.abort()) {
 			throw e;
 		}

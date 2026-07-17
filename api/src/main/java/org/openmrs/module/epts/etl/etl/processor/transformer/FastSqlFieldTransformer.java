@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -63,6 +64,10 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 	private String sqlQuery;
 
+	private String name;
+
+	private ActionOnEtlIssue onMultipleSrcObjectsFound;
+
 	private volatile QueryDataSourceConfig dataSourceConfig;
 
 	public FastSqlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
@@ -70,7 +75,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		super(parameters, relatedEtlTransformTarget, field);
 
-		this.sqlQuery = retrieveSqlQueryFromParameters(parameters);
+		this.retrieveSqlQueryFromParameters(parameters);
 
 		try {
 			this.tryToLoadDumpScriptContentToFieldAndValidate("sqlQuery",
@@ -96,18 +101,51 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 				k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field, conn));
 	}
 
-	private static String retrieveSqlQueryFromParameters(List<Object> parameters) {
+	private void retrieveSqlQueryFromParameters(List<Object> parameters) {
 		if (parameters == null || parameters.isEmpty()) {
 			throw new EtlExceptionImpl("A FastSqlFieldTransformer needs a sqlQuery as parameter.\n"
 					+ "ex: org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer(select uuid())");
 		}
 
-		if (parameters.size() > 1) {
-			throw new EtlExceptionImpl("A FastSqlFieldTransformer supports only one parameter, the sqlQuery");
+		if (parameters.size() == 1) {
+			this.sqlQuery = parameters.get(0).toString();
+
+			return;
 		}
 
-		String sqlQuery = parameters.get(0).toString();
-		return sqlQuery;
+		for (Object fieldData : parameters) {
+			String[] mapping = fieldData.toString().split(":", 2);
+
+			if (mapping.length != 2) {
+				throw new EtlExceptionImpl("Wrong format for conditional parameters within the tranformer "
+						+ getTransformerDsc() + "\n" + "Each object param must be specified as paramName:paramValue");
+			}
+
+			String paramName = mapping[0];
+			String paramValue = mapping[1];
+
+			if (!utilities.stringHasValue(paramValue)) {
+				throw new EtlExceptionImpl("The paramValue for parameter " + paramName
+						+ " has no value on transformer:  " + getTransformerDsc());
+			}
+
+			if (paramName.equals("query")) {
+				this.sqlQuery = paramValue;
+			} else if (paramName.equals("name")) {
+				this.name = paramValue;
+			} else if (paramName.equals("onMultipleSrcObjectsFound")) {
+				try {
+					this.onMultipleSrcObjectsFound = ActionOnEtlIssue.valueOf(paramValue);
+				} catch (Exception e) {
+					throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
+							+ " on transformer:  " + getTransformerDsc());
+				}
+
+			} else {
+				throw new ForbiddenOperationException(
+						"Unsupported parameter " + paramName + " on transformer:  " + getTransformerDsc());
+			}
+		}
 	}
 
 	@Override
@@ -128,7 +166,11 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 							field.getTransformationTargetObject().getSrcConf());
 
 					conf.setRelatedEtlConf(relatedEtlConfiguration);
-					
+
+					conf.setName(this.name);
+
+					conf.setOnMultipleSrcObjectsFound(this.onMultipleSrcObjectsFound);
+
 					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
 
 					this.dataSourceConfig = conf;
@@ -151,8 +193,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		if (field.getDefaultValue() == null) {
-			srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
-					additionalSrcObjects, hasOverrideConnection() ? getOverrideConnection() : srcConn);
+			if (this.getOnNullTransformedvalue() != null && this.getOnNullTransformedvalue().setToNull()) {
+				return new FieldTransformingInfo(field, null, null);
+			}
 
 			EtlDatabaseObject obj = utilities.listHasElement(additionalSrcObjects) ? additionalSrcObjects.get(0) : null;
 

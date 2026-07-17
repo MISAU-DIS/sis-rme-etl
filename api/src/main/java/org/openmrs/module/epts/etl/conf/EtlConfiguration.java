@@ -180,6 +180,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private ActionOnEtlIssue defaultInconsistencyBehavior;
 
+	private ActionOnEtlIssue defaultMissingRequiredObjectBehavior;
+
 	/**
 	 * Defines additional source tables that are not explicitly configured as ETL
 	 * sources but are related to the configured source tables.
@@ -229,6 +231,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.disableDefaultObjectCreation = false;
 		this.defaultEtlItemConf = new EtlItemConfiguration();
 		this.defaultEtlItemConf.setRelatedEtlConf(this);
+	}
+
+	public ActionOnEtlIssue getDefaultMissingRequiredObjectBehavior() {
+		return defaultMissingRequiredObjectBehavior;
+	}
+
+	public void setDefaultMissingRequiredObjectBehavior(ActionOnEtlIssue defaultMissingRequiredObjectBehavior) {
+		this.defaultMissingRequiredObjectBehavior = defaultMissingRequiredObjectBehavior;
+	}
+
+	public ActionOnEtlIssue defaultMissingRequiredObjectBehavior() {
+		return this.defaultMissingRequiredObjectBehavior;
 	}
 
 	public Boolean getWarnOnNoDstObjectFound() {

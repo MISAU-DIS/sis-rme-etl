@@ -367,7 +367,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 						 */
 						if (ds.isRequired() && transformationType.isPrincipal()) {
 							throw new MissingRequiredTransformationObject(srcObject, ds,
-									srcConf.getGeneralBehaviourOnEtlException());
+									srcConf.getMissingRequiredObjectBehavior());
 						} else if (!transformationType.isPrincipal()) {
 							relatedSrcObject = ds.newInstance();
 							relatedSrcObject.setRelatedConfiguration(ds);

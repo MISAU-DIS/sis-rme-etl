@@ -28,6 +28,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	protected FieldsMapping input;
 
+	protected ActionOnEtlIssue onNullTransformedvalue;
+
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 			TransformableField field) {
 		/*
@@ -38,6 +40,14 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		this.parameters = parameters;
 		this.relatedEtlTransformTarget = relatedEtlTargedConf;
 		this.field = field;
+	}
+
+	public ActionOnEtlIssue getOnNullTransformedvalue() {
+		return onNullTransformedvalue;
+	}
+
+	public void setOnNullTransformedvalue(ActionOnEtlIssue onNullTransformedvalue) {
+		this.onNullTransformedvalue = onNullTransformedvalue;
 	}
 
 	public List<Object> getParameters() {
