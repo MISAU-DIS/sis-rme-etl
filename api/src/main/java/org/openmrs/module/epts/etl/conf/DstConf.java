@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
@@ -557,7 +558,6 @@ public class DstConf extends AbstractTableConfiguration
 			List<Field> myFields = this.getFields();
 
 			for (Field field : myFields) {
-
 				if (isIgnorableField(field)) {
 					continue;
 				}
@@ -1392,5 +1392,21 @@ public class DstConf extends AbstractTableConfiguration
 
 	public boolean executeUpdateIfRecordIdIsSet() {
 		return isTrue(executeUpdateIfRecordIdIsSet);
+	}
+
+	public EtlDataSource findParentDataSource(ParentTable ref) {
+		for (EtlDataSource ds : getAllAvaliableDataSource()) {
+			if (!(ds instanceof TableConfiguration))
+				continue;
+
+			TableConfiguration tabConf = (TableConfiguration) ds;
+
+			if (tabConf.getFullTableName().equals(ref.getFullTableName())) {
+				return ds;
+			}
+		}
+
+		throw new EtlConfException("Parent related Data Source [" + ref
+				+ " Could not found within dstConf avaliable Data Sources: " + this);
 	}
 }

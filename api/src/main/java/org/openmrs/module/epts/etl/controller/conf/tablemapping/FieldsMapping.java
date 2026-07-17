@@ -126,7 +126,9 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		if (this.getDstField() == null) {
 			throw new NoFieldWithFieldsMapping();
 		} else {
-			dstField = this.getDstField().toString().split("\\.")[0];
+			String[] dstFieldElements = this.getDstField().toString().split("\\.");
+			
+			this.setDstField(dstFieldElements[dstFieldElements.length-1]);
 		}
 
 		if (tryToLoadTransformer) {

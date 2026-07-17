@@ -2428,7 +2428,7 @@ public class SQLUtilities {
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
-				" join ", " where ", " in " };
+				" join ", " where ", " in ", " not ", " not in " };
 
 		Set<String> avaliableTableAliases = retrieveTableAliases(query);
 

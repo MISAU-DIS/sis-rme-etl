@@ -298,19 +298,20 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			}
 		}
 
-		if (this instanceof DstConf) {
+		if (qtyOccurences == 0 && this instanceof DstConf) {
 			DstConf c = (DstConf) this;
 
-			if (qtyOccurences == 0 && c.hasParentDstConf()) {
+			if (c.hasParentDstConf()) {
 				ParentTable ref = c.getFieldIsRelatedParent(fm);
 
-				if (ref != null) {
-					qtyOccurences++;
+				EtlDataSource parentRelatedDs = c.findParentDataSource(ref);
 
-					fm.setDataSourceName(ref.getAlias());
-					fm.setDataSource(ref);
-					fm.loadType(this, ref, conn);
-				}
+				qtyOccurences++;
+
+				fm.setSrcField(parentRelatedDs.getPrimaryKey().asSimpleKey().getName());
+				fm.setDataSourceName(parentRelatedDs.getAlias());
+				fm.setDataSource(parentRelatedDs);
+				fm.loadType(this, parentRelatedDs, conn);
 			}
 
 		}

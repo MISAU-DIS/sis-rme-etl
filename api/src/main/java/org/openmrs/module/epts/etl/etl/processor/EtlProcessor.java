@@ -145,6 +145,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
 			}
 
+			List<EtlDatabaseObject> avaliableSrcDs = parentMigratedRec != null
+					? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
+					: new ArrayList<>();
+
 			for (DstConf dstConf : etlItemConf.getDstConf()) {
 				if (dstConf.isDisabled()) {
 					continue;
@@ -155,7 +159,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
 
 				if (srcConf.hasExpansionDs()) {
-					expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, null, srcRecord, null);
+					expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, avaliableSrcDs, null, srcConn);
 				} else {
 					expansion = utilities.parseToList(srcRecord);
 				}
