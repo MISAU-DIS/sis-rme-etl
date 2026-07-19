@@ -210,7 +210,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private EtlItemConfiguration defaultEtlItemConf;
 
-	private Boolean warnOnNoDstObjectFound;
+	private Boolean doNotWarnOnNoDstObjectFound;
 
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
@@ -245,12 +245,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return this.defaultMissingRequiredObjectBehavior;
 	}
 
-	public Boolean getWarnOnNoDstObjectFound() {
-		return warnOnNoDstObjectFound;
+	public Boolean getDoNotWarnOnNoDstObjectFound() {
+		return doNotWarnOnNoDstObjectFound;
 	}
 
-	public void setWarnOnNoDstObjectFound(Boolean warnOnNoDstObjectFound) {
-		this.warnOnNoDstObjectFound = warnOnNoDstObjectFound;
+	public void setDoNotWarnOnNoDstObjectFound(Boolean doNotWarnOnNoDstObjectFound) {
+		this.doNotWarnOnNoDstObjectFound = doNotWarnOnNoDstObjectFound;
 	}
 
 	public EtlItemConfiguration getDefaultEtlItemConf() {
@@ -2503,7 +2503,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return false;
 	}
 
-	public boolean warnOnNoDstObjectFound() {
-		return isTrue(warnOnNoDstObjectFound);
+	public boolean doNotWarnOnNoDstObjectFound() {
+		return isTrue(doNotWarnOnNoDstObjectFound);
 	}
 }

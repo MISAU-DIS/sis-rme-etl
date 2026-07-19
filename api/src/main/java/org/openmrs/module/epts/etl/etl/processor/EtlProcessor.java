@@ -197,7 +197,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			String msg = "NO DST OBJECT WAS FOUND FOR ETL[" + etlItemConf.getConfigCode() + "] ON '" + etlObjects.size()
 					+ "' RECORDS";
 
-			if (getRelatedEtlConf().warnOnNoDstObjectFound()) {
+			if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
 				logWarn(msg);
 			} else {
 				logDebug(msg);
@@ -312,8 +312,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private void createDefaultFailedDstObject(EtlDatabaseObject record, DstConf mappingInfo,
 			EtlTransformationException e) {
 
-		logWarn("Issues found when transforming record " + record + ". The issue will be logged: "
-				+ e.getLocalizedMessage());
+		if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
+			logWarn("Issues found when transforming record " + record + ". The issue will be logged: "
+					+ e.getLocalizedMessage());
+		}
 
 		EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
 
