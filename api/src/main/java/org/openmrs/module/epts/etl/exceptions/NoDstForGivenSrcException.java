@@ -6,7 +6,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
-public class NoDstForGivenSrcException extends EtlExceptionImpl {
+public class NoDstForGivenSrcException extends EtlTransformationException {
 
 	private static final long serialVersionUID = 1L;
 

@@ -69,7 +69,7 @@ public class CommonUtilities implements Serializable {
 		if (!stringHasValue(str) || str.length() <= x)
 			return str;
 
-		return str.substring(0, x) + "...";
+		return str.substring(0, x - 3) + "...";
 	}
 
 	public String ident(String str, int totalSize) {
@@ -1545,7 +1545,7 @@ public class CommonUtilities implements Serializable {
 		return utilities.isStringIn(obj.toString().toLowerCase(), "true", "1");
 	}
 
-	/**							
+	/**
 	 * Retorna todos os atributos de instancia de da classe de um objecto
 	 * independentemento do modificador de acesso
 	 * 

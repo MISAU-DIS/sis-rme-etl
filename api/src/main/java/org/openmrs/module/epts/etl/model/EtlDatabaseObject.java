@@ -1066,6 +1066,10 @@ public interface EtlDatabaseObject extends EtlObject {
 		return EtlStageAreaObject.generateProcessedRecord(this, srcConn, dstConn);
 	}
 
+	default EtlStageAreaObject generateSrcStageRecord(Connection srcConn, Connection dstConn) throws DBException {
+		return EtlStageAreaObject.generateSrcStageRecord(this, srcConn, dstConn);
+	}
+
 	default void addChildObject(EtlDatabaseObject obj) {
 		if (this.getChildObjects() == null) {
 			this.setChildObjects(new ArrayList<>());

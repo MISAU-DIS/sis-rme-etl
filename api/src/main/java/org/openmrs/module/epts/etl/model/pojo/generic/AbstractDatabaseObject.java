@@ -335,7 +335,8 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						throw e;
 					}
 
-				}
+				} else
+					throw e;
 
 			} else
 				throw e;
