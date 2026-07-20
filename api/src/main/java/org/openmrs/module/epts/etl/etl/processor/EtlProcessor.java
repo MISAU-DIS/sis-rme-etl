@@ -95,7 +95,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		EtlStageAreaObject stageRecord = obj.generateProcessedRecord(srcConn, dstConn);
 
-		boolean successful = stageRecord.hasNoError() ;
+		boolean successful = stageRecord.hasNoError();
 
 		if (action.moveToStageArea()) {
 			moveToStageArea(obj, stageRecord, srcConn);
@@ -170,7 +170,12 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 						transform(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
 					}
 				} else {
-					logWarn("Expansion of record result on empty list:" + srcRecord);
+
+					if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
+						logWarn("Expansion of record result on empty list:" + srcRecord);
+					} else {
+						logDebug("Expansion of record result on empty list:" + srcRecord);
+					}
 				}
 			}
 		}
