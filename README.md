@@ -609,7 +609,24 @@ If a patient has three encounters, the ETL engine will generate three independen
 Each generated context may still be enriched by the existing **extra*** data sources before the destination transformation takes place.
 
 
-#### The extra datasource table configuration
+#### The extra data source configurations
+
+Extra data sources provide additional information required during the transformation process. Unlike the primary source defined by **srcConf**, they do not create new transformation contexts or produce additional destination records. Instead, they enrich the current transformation context with supplementary data that may be required by mappings, conditions, or transformers.
+
+Each extra data source is executed within the context of the current source record, making its result available to the transformation through a unique data source name.
+
+The ETL engine currently supports the following types of extra data sources:
+
+- **extraQueryDataSource** – Retrieves additional data by executing a SQL query.
+- **extraTableDataSource** – Retrieves additional data directly from a database table.
+- **extraJsonDataSource** – Loads additional data from a JSON document.
+- **extraObjectDataSource** – Loads additional data from a Java object.
+
+Although each data source type has its own configuration, they all share a common set of concepts and behaviors described in this section. These include properties such as whether the data source is required, how missing required objects are handled, and other common configuration options.
+
+If additional records must generate independent transformation contexts, an **Expansion Data Source** should be used instead of an extra data source.
+
+##### The extra Table DataSource Configuration
 
 The **"extraTableDataSource"** element allows the definition of additional tables to be used as data sources alongside the main source table defined in the ETL configuration.
 
@@ -688,7 +705,7 @@ Each *extraQueryDataSource* entry supports the following properties:
 - **required** – A boolean flag indicating whether the result of the query is mandatory. If set to true and the query does not return any result, the corresponding source record will be skipped.
 - **applyCondition**: Optional SQL-like condition that determines whether this data source should be loaded during the transformation phase. The data source is loaded only when the condition evaluates to **true**. For the supported condition syntax and examples, see <a href="#using-conditions">Using Conditions on Configurations</a>.
 
-#### The extraObjectDataSource configuration
+##### The extraObjectDataSource configuration
 The **extraObjectDataSource** allows the definition of custom object-based data sources that can be used during the ETL process.
 
 Unlike table or query data sources, an object data source provides values through explicitly defined fields. These values can either be:
@@ -1037,7 +1054,187 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
 
 For demo see [exploring-objectdatasource-field-transformers](docs/demo/README.md#exploring-objectdatasource-field-transformers) session.
 
-#### The use of params within Src Configuration
+#### The extraJsonDataSource configuration
+
+The **extraJsonDataSource** extracts one or more structured business objects from a JSON document and exposes them as additional ETL data sources.
+
+Unlike **extraQueryDataSource** and **extraTableDataSource**, which retrieve data from external relational databases, an **extraJsonDataSource** parses a JSON payload that is already available within the current transformation context. Once parsed, the JSON objects behave exactly like any other ETL data source and may be referenced by mappings, transformers, conditions, lookup operations, and parent loading configurations.
+
+This configuration is particularly useful when integrating with systems that exchange complex business entities as JSON documents instead of normalized database tables.
+
+##### How it works
+
+The **extraJsonDataSource** reads a JSON document from the configured **payload** property and transforms it into one or more independent ETL data sources.
+
+The JSON document always produces:
+
+- one **primary output data source**, representing the main business object contained in the JSON document; and
+- zero or more **related output data sources**, representing additional business objects referenced by the primary object.
+
+Once the JSON document has been parsed, the ETL engine no longer works directly with the JSON structure. Instead, every generated output data source behaves exactly like any other ETL data source available during the transformation.
+
+##### Configuration properties
+
+- **name** – Unique name assigned to the JSON data source.
+
+- **payload** – Field or expression containing the JSON document to be parsed. The value is resolved from the current transformation context and must evaluate to a valid JSON document.
+
+- **outputDataSource** – Defines the primary business object extracted from the JSON document.
+
+- **relatedOutputDataSources** – Defines additional business objects contained in the same JSON document that should be exposed as independent ETL data sources.
+
+##### The outputDataSource configuration
+
+The **outputDataSource** defines the primary object extracted from the JSON document.
+
+Its configuration contains the following properties:
+
+- **name** – Name assigned to the generated ETL data source.
+- **fields** – List of fields exposed by the generated data source.
+
+Only the configured fields become available for mappings, transformers, conditions, and other ETL operations.
+
+##### The relatedOutputDataSources configuration
+
+Business objects contained in a JSON document often reference additional related objects such as patients, users, visits, providers, locations, or other domain entities.
+
+The **relatedOutputDataSources** configuration allows these related objects to be exposed as independent ETL data sources.
+
+Each related output data source defines:
+
+- **name** – Name assigned to the generated ETL data source.
+- **childField** – Field in the primary output object that identifies the related object.
+- **fields** – List of fields exposed by the generated data source.
+
+The ETL engine automatically resolves each related object referenced by the primary object using the configured **childField**. Each resolved object becomes an independent data source available throughout the remainder of the transformation.
+
+##### Example
+
+```
+{
+   "extraJsonDataSource":[
+      {
+         "name":"encounter_sisrme_event",
+         "payload":"sync_msg.entity_payload",
+
+         "outputDataSource":{
+            "name":"encounter_src_ds",
+            "fields":[
+               "encounter_id",
+               "encounter_type",
+               "patient_id",
+               "location_id",
+               "encounter_datetime",
+               "creator",
+               "date_created",
+               "visit_id",
+               "uuid"
+            ]
+         },
+
+         "relatedOutputDataSources":[
+            {
+               "name":"encounter_patient_src_ds",
+               "childField":"patient_id",
+               "fields":[
+                  "patient_id",
+                  "creator",
+                  "date_created",
+                  "allergy_status",
+                  "uuid"
+               ]
+            },
+            {
+               "name":"visit_src_ds",
+               "childField":"visit_id",
+               "fields":[
+                  "visit_id",
+                  "patient_id",
+                  "visit_type_id",
+                  "date_started",
+                  "date_stopped",
+                  "location_id",
+                  "creator",
+                  "date_created",
+                  "uuid"
+               ]
+            },
+            {
+               "name":"creator_user_src_ds",
+               "childField":"creator",
+               "fields":[
+                  "user_id",
+                  "username",
+                  "person_id",
+                  "date_retired",
+                  "uuid",
+                  "email"
+               ]
+            }
+         ]
+      }
+   ]
+}
+```
+
+##### Processing flow
+
+In the previous example, the ETL engine performs the following steps:
+
+1. Reads the JSON document stored in **sync_msg.entity_payload**.
+2. Parses the document into its corresponding business objects.
+3. Creates the primary data source **encounter_src_ds**.
+4. Resolves the related objects referenced by **patient_id**, **visit_id**, and **creator**.
+5. Creates the related data sources:
+   - **encounter_patient_src_ds**
+   - **visit_src_ds**
+   - **creator_user_src_ds**
+6. Adds every generated data source to the current transformation context.
+
+From this point forward, the transformation no longer interacts directly with the JSON document. Instead, all generated objects behave exactly like any other ETL data source.
+
+##### Relationship resolution
+
+The **childField** property specifies which field in the primary output object identifies a related object contained in the JSON document.
+
+For example:
+
+```
+{
+   "childField":"patient_id"
+}
+```
+
+indicates that the **patient_id** field of the primary object references another business object representing the patient.
+
+Likewise:
+
+- **visit_id** resolves the related visit object.
+- **creator** resolves the related user object.
+
+The ETL engine automatically performs these associations while constructing the transformation context.
+
+##### Generated data sources
+
+After processing the previous example, the following ETL data sources become available:
+
+```
+sync_msg
+encounter_src_ds
+encounter_patient_src_ds
+visit_src_ds
+creator_user_src_ds
+```
+
+These generated data sources can be referenced exactly like any other source or extra data source throughout the remaining ETL configuration.
+
+##### Typical use cases
+
+The **extraJsonDataSource** is particularly useful when integrating with messaging systems, event-driven architectures, REST APIs, or synchronization platforms where complete business entities are exchanged as JSON documents.
+
+Instead of manually parsing JSON values through mappings or transformers, the ETL engine converts the document into a collection of strongly defined ETL data sources, allowing the remainder of the transformation to use a consistent and uniform data access model regardless of whether the source data originated from a relational database or a JSON document.
+
+##### The use of params within Src Configuration
 The *srcConf* supports the use of dynamic parameters in queries and configuration fields. These parameters allow flexible and reusable configurations by enabling values to be injected at runtime.
 
 Parameters are defined as identifiers prefixed with "@", for example: *location_id = @locationId*.
