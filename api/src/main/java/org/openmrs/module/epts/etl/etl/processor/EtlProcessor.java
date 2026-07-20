@@ -95,7 +95,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		EtlStageAreaObject stageRecord = obj.generateProcessedRecord(srcConn, dstConn);
 
-		boolean successful = stageRecord.isLoadedSuccessifuly();
+		boolean successful = stageRecord.hasNoError() ;
 
 		if (action.moveToStageArea()) {
 			moveToStageArea(obj, stageRecord, srcConn);
