@@ -1014,7 +1014,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public boolean moveProcessedRecordsToStageArea() {
-		if (this.getAfterEtlActionType() != null && this.getAfterEtlActionType().moveToStageArea()) {
+		if (this.getAfterEtlActionType() != null && (this.getAfterEtlActionType().moveToStageArea()
+				|| this.getAfterEtlActionType().moveToStageAreaOnSuccess())) {
 			return true;
 		}
 
