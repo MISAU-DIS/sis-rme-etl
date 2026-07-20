@@ -1,5 +1,7 @@
 package org.openmrs.module.epts.etl.conf.types;
 
+import org.openmrs.module.epts.etl.exceptions.ActionIssueNotAllowed;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 public enum ActionOnEtlIssue {
@@ -27,6 +29,8 @@ public enum ActionOnEtlIssue {
 			IGNORE };
 
 	public static final ActionOnEtlIssue[] ON_MISSING_FIELDS_MAPPING = { ABORT_PROCESS, IGNORE, USE_DEFAULT };
+
+	public static final ActionOnEtlIssue[] ON_MISSING_REQUIRED_OBJECT = { ABORT_PROCESS, MARK_RECORD_AS_FAILED };
 
 	public static final ActionOnEtlIssue[] IN_SAME_LEVEL = { USE_DEFAULT, USE_INPUT, SET_TO_NULL, USE_LAST, USE_FIRST,
 			CREATE_ON_DST };
@@ -119,5 +123,43 @@ public enum ActionOnEtlIssue {
 
 	public boolean logging() {
 		return utilities.existOnArray(LOGING, this);
+	}
+
+	public void validateAllowedOnEtlConfiguration(String field) throws EtlConfException {
+		validate(field, ALLOWED_ON_ETL_CONFIGURATION);
+	}
+
+	public void validateOnMultipleDataSourceFound(String field) throws EtlConfException {
+		validate(field, ON_MULTIPLE_DATA_SOURCE_FOUND);
+	}
+
+	public void validateOnNull(String field) throws EtlConfException {
+		validate(field, ON_NULL);
+	}
+
+	public void validateOnInconsistency(String field) throws EtlConfException {
+		validate(field, ON_INCONSISTENCY);
+	}
+
+	public void validateOnMissingFastSrcParent(String field) throws EtlConfException {
+		validate(field, ON_MISSING_FAST_SRC_PARENT);
+	}
+
+	public void validateOnMissingMapping(String field) throws EtlConfException {
+		validate(field, ON_MISSING_MAPPING);
+	}
+
+	public void validateOnMissingFieldsMapping(String field) throws EtlConfException {
+		validate(field, ON_MISSING_FIELDS_MAPPING);
+	}
+
+	public void validateOnMissingRequiredObject(String field) throws EtlConfException {
+		validate(field, ON_MISSING_REQUIRED_OBJECT);
+	}
+
+	private void validate(String field, ActionOnEtlIssue[] against) throws EtlConfException {
+		if (!utilities.existOnArray(against, this)) {
+			throw new ActionIssueNotAllowed(field, this, against);
+		}
 	}
 }

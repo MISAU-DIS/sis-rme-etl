@@ -180,6 +180,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private ActionOnEtlIssue defaultInconsistencyBehavior;
 
+	private ActionOnEtlIssue defaultMissingRequiredObjectBehavior;
+
 	/**
 	 * Defines additional source tables that are not explicitly configured as ETL
 	 * sources but are related to the configured source tables.
@@ -208,7 +210,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private EtlItemConfiguration defaultEtlItemConf;
 
-	private Boolean warnOnNoDstObjectFound;
+	private Boolean doNotWarnOnNoDstObjectFound;
 
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
@@ -231,12 +233,24 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.defaultEtlItemConf.setRelatedEtlConf(this);
 	}
 
-	public Boolean getWarnOnNoDstObjectFound() {
-		return warnOnNoDstObjectFound;
+	public ActionOnEtlIssue getDefaultMissingRequiredObjectBehavior() {
+		return defaultMissingRequiredObjectBehavior;
 	}
 
-	public void setWarnOnNoDstObjectFound(Boolean warnOnNoDstObjectFound) {
-		this.warnOnNoDstObjectFound = warnOnNoDstObjectFound;
+	public void setDefaultMissingRequiredObjectBehavior(ActionOnEtlIssue defaultMissingRequiredObjectBehavior) {
+		this.defaultMissingRequiredObjectBehavior = defaultMissingRequiredObjectBehavior;
+	}
+
+	public ActionOnEtlIssue defaultMissingRequiredObjectBehavior() {
+		return this.defaultMissingRequiredObjectBehavior;
+	}
+
+	public Boolean getDoNotWarnOnNoDstObjectFound() {
+		return doNotWarnOnNoDstObjectFound;
+	}
+
+	public void setDoNotWarnOnNoDstObjectFound(Boolean doNotWarnOnNoDstObjectFound) {
+		this.doNotWarnOnNoDstObjectFound = doNotWarnOnNoDstObjectFound;
 	}
 
 	public EtlItemConfiguration getDefaultEtlItemConf() {
@@ -2489,7 +2503,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return false;
 	}
 
-	public boolean warnOnNoDstObjectFound() {
-		return isTrue(warnOnNoDstObjectFound);
+	public boolean doNotWarnOnNoDstObjectFound() {
+		return isTrue(doNotWarnOnNoDstObjectFound);
 	}
 }

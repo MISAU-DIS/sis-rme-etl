@@ -23,9 +23,11 @@ import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SqlConditionElement;
 import org.openmrs.module.epts.etl.conf.datasource.SqlFunctionInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -2428,7 +2430,7 @@ public class SQLUtilities {
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
-				" join ", " where ", " in " };
+				" join ", " where ", " in ", " not ", " not in " };
 
 		Set<String> avaliableTableAliases = retrieveTableAliases(query);
 
@@ -2536,6 +2538,11 @@ public class SQLUtilities {
 		map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
 
 		map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
+
+		if (map.getTransformerInstance() instanceof FastSqlFieldTransformer) {
+			map.getTransformerInstance().setOnNullTransformedvalue(ActionOnEtlIssue.SET_TO_NULL);
+		}
+
 		return map;
 	}
 

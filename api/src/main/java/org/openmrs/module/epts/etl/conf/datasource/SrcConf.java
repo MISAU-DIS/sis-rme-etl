@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
@@ -110,9 +111,23 @@ public class SrcConf extends AbstractTableConfiguration
 	private ExpansionQueryDataSource expansionQueryDataSource;
 	private ExpansionTableDataSource expansionTableDataSource;
 
+	private ActionOnEtlIssue missingRequiredObjectBehavior;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
+	}
+
+	public ActionOnEtlIssue getMissingRequiredObjectBehavior() {
+		return missingRequiredObjectBehavior;
+	}
+
+	public void setMissingRequiredObjectBehavior(ActionOnEtlIssue missingRequiredObjectBehavior) {
+		this.missingRequiredObjectBehavior = missingRequiredObjectBehavior;
+	}
+
+	public ActionOnEtlIssue missingRequiredObjectBehavior() {
+		return this.missingRequiredObjectBehavior;
 	}
 
 	public Boolean getTrackProcessingState() {
@@ -348,6 +363,10 @@ public class SrcConf extends AbstractTableConfiguration
 
 		if (isJoinable()) {
 			this.loadJoinElements(schemaInfo, conn);
+		}
+
+		if (this.getMissingRequiredObjectBehavior() == null) {
+			this.setMissingRequiredObjectBehavior(this.getRelatedEtlConf().getDefaultMissingRequiredObjectBehavior());
 		}
 
 		if (trackProcessingState() && !isTrackabled()) {

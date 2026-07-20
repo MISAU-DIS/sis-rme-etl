@@ -127,7 +127,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			this.setFieldValue("last_sync_try_err",
 					!status.isFullLoaded()
 							? utilities.garantirXCaracteres(obj.getEtlInfo().getExceptionOnEtl().getLocalizedMessage(),
-									499)
+									500)
 							: null);
 
 			this.setFieldValue("etl_confing_id", operation_id);
@@ -259,6 +259,18 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 		if (tabConf.hasPK()) {
 			return generate(null, relatedEtlObject, EtlStageTableType.PROCESSED_RECORD, srcConn, dstConn);
+		} else {
+			return null;
+		}
+	}
+
+	public static EtlStageAreaObject generateSrcStageRecord(EtlDatabaseObject relatedEtlObject, Connection srcConn,
+			Connection dstConn) throws DBException {
+
+		TableConfiguration tabConf = (TableConfiguration) relatedEtlObject.getRelatedConfiguration();
+
+		if (tabConf.hasPK()) {
+			return generate(null, relatedEtlObject, EtlStageTableType.SRC, srcConn, dstConn);
 		} else {
 			return null;
 		}

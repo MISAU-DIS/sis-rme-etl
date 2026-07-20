@@ -25,6 +25,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.MissingRequiredTransformationObject;
+import org.openmrs.module.epts.etl.exceptions.NoDstForGivenSrcException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -145,6 +146,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
 			}
 
+			List<EtlDatabaseObject> avaliableSrcDs = parentMigratedRec != null
+					? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
+					: new ArrayList<>();
+
 			for (DstConf dstConf : etlItemConf.getDstConf()) {
 				if (dstConf.isDisabled()) {
 					continue;
@@ -155,7 +160,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
 
 				if (srcConf.hasExpansionDs()) {
-					expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, null, srcRecord, null);
+					expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, avaliableSrcDs, null, srcConn);
 				} else {
 					expansion = utilities.parseToList(srcRecord);
 				}
@@ -175,7 +180,11 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		EtlLoadHelper loadHelper = null;
 
-		loadHelper = new EtlLoadHelper(this, etlItemConf, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
+		try {
+			loadHelper = new EtlLoadHelper(this, etlItemConf, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
+		} catch (NoDstForGivenSrcException e) {
+			tryToLogOrThrowNoDstForGivenSrcException(etlObjects, e, srcConn, dstConn);
+		}
 
 		if (loadHelper.hasDstConf()) {
 			loadHelper.load(srcConn, dstConn);
@@ -188,7 +197,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			String msg = "NO DST OBJECT WAS FOUND FOR ETL[" + etlItemConf.getConfigCode() + "] ON '" + etlObjects.size()
 					+ "' RECORDS";
 
-			if (getRelatedEtlConf().warnOnNoDstObjectFound()) {
+			if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
 				logWarn(msg);
 			} else {
 				logDebug(msg);
@@ -244,6 +253,34 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 	}
 
+	private void tryToLogOrThrowNoDstForGivenSrcException(List<EtlDatabaseObject> records, NoDstForGivenSrcException e,
+			Connection srcConn, Connection dstConn) throws DBException {
+
+		ActionOnEtlIssue defaultBehavior = this.getRelatedEtlConf().getDefaultExceptionBehavior();
+		ActionOnEtlIssue exceptionBehavior = e.getAction();
+
+		if (defaultBehavior.abort()) {
+			throw e;
+		}
+
+		if (defaultBehavior.useExceptionBehavior()) {
+			if (exceptionBehavior == null) {
+				throw e;
+			}
+
+			if (exceptionBehavior.logging()) {
+				for (EtlDatabaseObject record : records) {
+					EtlStageAreaObject r = record.generateSrcStageRecord(srcConn, dstConn);
+					r.setFieldValue("last_sync_try_err", utilities.garantirXCaracteres(e.getLocalizedMessage(), 499));
+					r.save(r.getRelatedEtlTableConf(), srcConn);
+				}
+			} else {
+				throw e;
+			}
+		}
+
+	}
+
 	private void tryToLogOrThrowException(EtlDatabaseObject record, DstConf mappingInfo, EtlTransformationException e) {
 		ActionOnEtlIssue defaultBehavior = mappingInfo.getRelatedEtlConf().getDefaultExceptionBehavior();
 		ActionOnEtlIssue exceptionBehavior = e.getAction();
@@ -252,7 +289,9 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			throw e;
 		}
 
-		if (defaultBehavior.useExceptionBehavior()) {
+		if (defaultBehavior.logging()) {
+			createDefaultFailedDstObject(record, mappingInfo, e);
+		} else if (defaultBehavior.useExceptionBehavior()) {
 			if (exceptionBehavior == null) {
 				throw e;
 			}
@@ -273,8 +312,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private void createDefaultFailedDstObject(EtlDatabaseObject record, DstConf mappingInfo,
 			EtlTransformationException e) {
 
-		logWarn("Issues found when transforming record " + record + ". The issue will be logged: "
-				+ e.getLocalizedMessage());
+		if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
+			logWarn("Issues found when transforming record " + record + ". The issue will be logged: "
+					+ e.getLocalizedMessage());
+		}
 
 		EtlDatabaseObject dstObject = mappingInfo.createRecordInstance();
 

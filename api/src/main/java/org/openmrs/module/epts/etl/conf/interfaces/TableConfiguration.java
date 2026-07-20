@@ -2226,8 +2226,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					field.setSrcField(field.getDstField());
 				}
 
-				// By default the joining value is marked as parameter
-				Object value = "@" + field.getDstField();
+				Object value = field.getDstField();
 
 				if (parentObject != null) {
 					try {
