@@ -1103,7 +1103,7 @@ public class SrcConf extends AbstractTableConfiguration
 
 		for (String trackingName : TRACKING_FIELDS) {
 			if (trackingName.equals("retry_count")) {
-				toTrack.setFieldValue(trackingName, ((int) processedRec.getFieldValue(trackingName)) + 1);
+				toTrack.setFieldValue(trackingName, ((int) toTrack.getFieldValue(trackingName)) + 1);
 			} else {
 				toTrack.setFieldValue(trackingName, processedRec.getFieldValue(trackingName));
 			}

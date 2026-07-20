@@ -78,8 +78,8 @@ public interface EtlDatabaseObject extends EtlObject {
 			if (this.getEtlInfo().hasExceptionOnEtl()) {
 				return this.getEtlInfo().getExceptionOnEtl();
 			}
-		} else if (hasDestinationRecords()) {
-			for (EtlDatabaseObject dst : this.getDestinationObjects()) {
+		} else if (hasDestinationRecordsRecursively()) {
+			for (EtlDatabaseObject dst : this.getDestinationObjectsRecursively()) {
 				if (dst.isInEtlProcess()) {
 					if (dst.getEtlInfo().hasExceptionOnEtl()) {
 						return dst.getEtlInfo().getExceptionOnEtl();
