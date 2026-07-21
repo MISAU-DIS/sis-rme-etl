@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
@@ -29,6 +30,8 @@ import org.openmrs.module.epts.etl.exceptions.NoDstForGivenSrcException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
+import org.openmrs.module.epts.etl.utilities.db.conn.ConnectionKeepAlive;
+import org.openmrs.module.epts.etl.utilities.db.conn.ConnectionKeepAliveManager;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -38,6 +41,9 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * @author jpboane
  */
 public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
+
+	private ReentrantLock dstConnectionLock = new ReentrantLock();
+	private ConnectionKeepAliveManager keepAliveManager = ConnectionKeepAliveManager.getInstance();
 
 	public EtlProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
@@ -135,46 +141,58 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException {
 
-		for (EtlDatabaseObject srcRecord : etlObjects) {
+		ReentrantLock dstConnLock = new ReentrantLock();
 
-			if (srcRecord.isTrackable() && getRelatedEtlOperationConfig().hasActionAfterEtl()
-					&& getRelatedEtlOperationConfig().getAfterEtlActionType().includeTracking()) {
-				srcRecord.changeStatusToProcessing(srcConn);
-			}
+		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, dstConnLock, this)) {
 
-			if (!etlItemConf.getSrcConf().doNotUseAsDatasource()) {
-				srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
-			}
+			for (EtlDatabaseObject srcRecord : etlObjects) {
 
-			List<EtlDatabaseObject> avaliableSrcDs = parentMigratedRec != null
-					? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
-					: new ArrayList<>();
-
-			for (DstConf dstConf : etlItemConf.getDstConf()) {
-				if (dstConf.isDisabled()) {
-					continue;
+				if (srcRecord.isTrackable() && getRelatedEtlOperationConfig().hasActionAfterEtl()
+						&& getRelatedEtlOperationConfig().getAfterEtlActionType().includeTracking()) {
+					srcRecord.changeStatusToProcessing(srcConn);
 				}
 
-				List<EtlDatabaseObject> expansion = null;
-
-				SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
-
-				if (srcConf.hasExpansionDs()) {
-					expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, avaliableSrcDs, null, srcConn);
-				} else {
-					expansion = utilities.parseToList(srcRecord);
+				if (!etlItemConf.getSrcConf().doNotUseAsDatasource()) {
+					srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
 				}
 
-				if (utilities.listHasElement(expansion)) {
-					for (EtlDatabaseObject expanded : expansion) {
-						transform(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
+				List<EtlDatabaseObject> avaliableSrcDs = parentMigratedRec != null
+						? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
+						: new ArrayList<>();
+
+				for (DstConf dstConf : etlItemConf.getDstConf()) {
+					if (dstConf.isDisabled()) {
+						continue;
 					}
-				} else {
 
-					if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
-						logWarn("Expansion of record result on empty list:" + srcRecord);
+					List<EtlDatabaseObject> expansion = null;
+
+					SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
+
+					if (srcConf.hasExpansionDs()) {
+						expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, avaliableSrcDs, null,
+								srcConn);
 					} else {
-						logDebug("Expansion of record result on empty list:" + srcRecord);
+						expansion = utilities.parseToList(srcRecord);
+					}
+
+					if (utilities.listHasElement(expansion)) {
+						for (EtlDatabaseObject expanded : expansion) {
+							dstConnectionLock.lock();
+
+							try {
+								transform(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
+							} finally {
+								dstConnectionLock.unlock();
+							}
+						}
+					} else {
+
+						if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
+							logWarn("Expansion of record result on empty list:" + srcRecord);
+						} else {
+							logDebug("Expansion of record result on empty list:" + srcRecord);
+						}
 					}
 				}
 			}
