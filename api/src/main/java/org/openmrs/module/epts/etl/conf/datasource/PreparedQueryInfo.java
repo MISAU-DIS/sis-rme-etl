@@ -43,7 +43,7 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
 		int qty = 0;
 
-		for (FieldTransformingInfo p : this.parameters) {
+		for (FieldTransformingInfo p : this.parameters) { 
 			qty += determineQtyElementsWithinTheParamValue(p.getTransformedValue());
 		}
 

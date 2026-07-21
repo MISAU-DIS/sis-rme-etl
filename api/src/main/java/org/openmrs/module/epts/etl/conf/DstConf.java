@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -131,7 +132,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	private Boolean allowDuplicateDestinationMappings;
 
-	private Boolean executeUpdateIfRecordIdIsSet;
+	private ActionOnLoad actionWhenRecordIdIsSet;
 
 	public DstConf() {
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
@@ -143,14 +144,6 @@ public class DstConf extends AbstractTableConfiguration
 		this();
 
 		setTableName(tableName);
-	}
-
-	public Boolean getExecuteUpdateIfRecordIdIsSet() {
-		return executeUpdateIfRecordIdIsSet;
-	}
-
-	public void setExecuteUpdateIfRecordIdIsSet(Boolean executeUpdateIfRecordIdIsSet) {
-		this.executeUpdateIfRecordIdIsSet = executeUpdateIfRecordIdIsSet;
 	}
 
 	private void ensureTargetDefaultObjectInitialized(Connection srcConn, Connection dstConn) throws DBException {
@@ -1391,7 +1384,19 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public boolean executeUpdateIfRecordIdIsSet() {
-		return isTrue(executeUpdateIfRecordIdIsSet);
+		return actionWhenRecordIdIsSet != null && actionWhenRecordIdIsSet == ActionOnLoad.UPDATE;
+	}
+
+	public boolean executePatchUpdateIfRecordIdIsSet() {
+		return actionWhenRecordIdIsSet != null && actionWhenRecordIdIsSet == ActionOnLoad.PATCH_UPDATE;
+	}
+
+	public ActionOnLoad getActionWhenRecordIdIsSet() {
+		return actionWhenRecordIdIsSet;
+	}
+
+	public void setActionWhenRecordIdIsSet(ActionOnLoad actionWhenRecordIdIsSet) {
+		this.actionWhenRecordIdIsSet = actionWhenRecordIdIsSet;
 	}
 
 	public EtlDataSource findParentDataSource(ParentTable ref) {
@@ -1408,5 +1413,9 @@ public class DstConf extends AbstractTableConfiguration
 
 		throw new EtlConfException("Parent related Data Source [" + ref
 				+ " Could not found within dstConf avaliable Data Sources: " + this);
+	}
+
+	public boolean hasActionWhenRecordIdIsSet() {
+		return this.getActionWhenRecordIdIsSet() != null;
 	}
 }

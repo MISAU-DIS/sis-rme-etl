@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.SimpleValue;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
@@ -940,13 +941,20 @@ public class DatabaseObjectDAO extends BaseDAO {
 				new IntervalExtremeRecord());
 
 		for (EtlDatabaseObject record : objects) {
-			EtlDatabaseObject existing = getByOid(dstConf, record.getObjectId(), conn);
+			EtlDatabaseObject recordOnDB = getByOid(dstConf, record.getObjectId(), conn);
 
-			if (existing == null)
+			if (recordOnDB == null)
 				throw new ForbiddenOperationException("Atempt to update not existing record: " + record);
 
-			record.update(dstConf, conn);
-
+			if (dstConf.hasActionWhenRecordIdIsSet() && dstConf.getActionWhenRecordIdIsSet().isPatchUpdate()) {
+				for (Field field : dstConf.getFields()) {
+					if (!dstConf.getPatchFields().contains(field.getName())) {
+						record.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()));
+					}
+				}
+			} else {
+				record.update(dstConf, conn);
+			}
 			result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
 		}
 

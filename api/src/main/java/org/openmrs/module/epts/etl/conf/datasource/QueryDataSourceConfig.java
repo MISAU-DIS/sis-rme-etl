@@ -510,9 +510,6 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject,
 				avaliableSrcObjects, srcConn);
 
-		this.getDefaultPreparedQuery().stepIntoBreakpoint(getRelatedEtlConfiguration(),
-				utilities.arrayHasMoreThanOneElements(list));
-
 		if (utilities.listHasNoElement(list)) {
 			return null;
 		} else if (utilities.arrayHasMoreThanOneElements(list) && onMultipleSrcObjectsFound().abort()) {

@@ -40,6 +40,8 @@ public final class ConnectionKeepAlive implements AutoCloseable {
 
 	void pingSafely() {
 
+		this.processor.logDebug("Pinging connection: " + this.connection);
+
 		if (closed.get()) {
 			return;
 		}
