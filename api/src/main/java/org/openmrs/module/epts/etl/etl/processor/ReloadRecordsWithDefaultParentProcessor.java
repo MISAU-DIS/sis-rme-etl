@@ -91,8 +91,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 		}
 		catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
-			logError(e.getLocalizedMessage());
-			logError(e.getMessage());
+			logError(e.getLocalizedMessage(), e);
 			
 			getTaskResultInfo().setFatalException(e);
 		}

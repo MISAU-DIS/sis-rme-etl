@@ -697,10 +697,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		logger.err(msg, e, arguments);
 	}
 
-	public void logErr(String msg) {
-		logger.error(msg);
-	}
-
 	public boolean isProgressInfoLoaded() {
 		return progressInfoLoaded;
 	}
@@ -761,6 +757,11 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		return this.relatedEtlConf;
+	}
+
+	@Override
+	public void logErr(String msg, Throwable throwable) {
+		logger.err(msg, throwable);
 	}
 
 }

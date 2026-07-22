@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,10 +100,6 @@ public class EtlLogger {
 		log(Level.INFO, msg, null);
 	}
 
-	public void error(String msg) {
-		log(Level.ERROR, msg, null);
-	}
-
 	public void err(String msg, Exception e) {
 		log(Level.ERROR, msg, e);
 	}
@@ -147,11 +144,12 @@ public class EtlLogger {
 
 		switch (msgLevel) {
 		case ERROR:
-			if (throwable != null) {
-				logger.error(finalMsg, throwable, arguments);
-			} else {
-				logger.error(finalMsg, arguments);
+			if (throwable == null) {
+				throw new EtlExceptionImpl("You should soecify throwable on error logging!");
 			}
+
+			logger.error(finalMsg, throwable, arguments);
+
 			break;
 
 		case WARN:
@@ -177,6 +175,7 @@ public class EtlLogger {
 		lastEffectiveLogTimeMillis.set(System.currentTimeMillis());
 
 		return true;
+
 	}
 
 	private boolean isEnabled(Level msgLevel) {

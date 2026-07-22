@@ -120,7 +120,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			pkMapping = dstConf.getMappingUsingDstField(pkField.getName());
 
 		} catch (FieldsMappingException e) {
-			pkMapping = FieldsMapping.fastCreate(pkField.getName(), dstConn);
+			pkMapping = FieldsMapping.fastCreate(dstConf, pkField.getName(), dstConn);
 
 			pkMapping.tryToLoadTransformer(dstConf, dstConn);
 		}

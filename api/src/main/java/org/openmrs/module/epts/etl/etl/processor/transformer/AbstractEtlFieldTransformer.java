@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfiguration implements EtlFieldTransformer {
@@ -32,14 +33,17 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 			TransformableField field) {
-		/*
-		 * if (relatedEtlTargedConf == null) throw new
-		 * EtlConfException("The target conf cannot be null!");
-		 */
 
 		this.parameters = parameters;
 		this.relatedEtlTransformTarget = relatedEtlTargedConf;
 		this.field = field;
+
+		if (relatedEtlTargedConf == null)
+			throw new EtlConfException("The target conf withing " + this + " is null");
+
+		if (relatedEtlTargedConf.getRelatedEtlConf() == null)
+			throw new EtlConfException("The RelatedEtlConf conf withing the target of " + this + " is null");
+
 	}
 
 	public void traceTransformationInitialization(TransformableField field) {

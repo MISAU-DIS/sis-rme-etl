@@ -825,13 +825,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		logger.warn(msg);
 	}
 
-	public void err(String msg) {
-		if (logger == null)
-			initLogger();
-
-		logger.error(msg);
-	}
-
 	public void err(String msg, Exception e) {
 		if (logger == null)
 			initLogger();
@@ -1079,7 +1072,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					}
 				} else
 					throw e;
-			} finally {
+			} catch (Exception e) {
+				e.printStackTrace();
+
+				err("Error happened while handling dstConn", e);
+			}
+
+			finally {
 				finalizeConnection(dstConn, this);
 			}
 

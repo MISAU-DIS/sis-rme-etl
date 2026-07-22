@@ -84,8 +84,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			}
 		} catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
-			logError(e.getLocalizedMessage());
-			logError(this.getEngine().getEngineId() + ": " + e.getMessage());
+			logError(e.getLocalizedMessage(), e);
 
 			getTaskResultInfo().setFatalException(e);
 		}

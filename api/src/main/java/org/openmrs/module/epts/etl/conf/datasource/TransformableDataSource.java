@@ -215,7 +215,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 			for (TransformableDataSourceField field : this.getObjectFields()) {
 				field.setParent(this);
 
-				FieldsMapping auxFieldMapping = FieldsMapping.fastCreate(field, conn);
+				FieldsMapping auxFieldMapping = FieldsMapping.fastCreate(this, field, conn);
 
 				if (auxFieldMapping.hasDataSourceName()) {
 					field.setValue(null);
@@ -383,7 +383,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 			FieldTransformingInfo valueInfo = values.get(field.getName());
 
 			stepIntoBreakpoint(getRelatedEtlConf(), valueInfo == null);
-			
+
 			obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());
 
 			obj.getField(field.getName()).setTransformingInfo(valueInfo);

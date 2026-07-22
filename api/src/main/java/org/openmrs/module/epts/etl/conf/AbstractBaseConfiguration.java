@@ -5,6 +5,8 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public abstract class AbstractBaseConfiguration implements BaseConfiguration {
 
@@ -61,7 +63,8 @@ public abstract class AbstractBaseConfiguration implements BaseConfiguration {
 		return Boolean.TRUE;
 	}
 
-	public static boolean isTransformerExpression(String value) {
+	public static boolean isTransformerExpression(EtlConfiguration etlConfiguration, String value)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 		String transformer = value.contains("(") ? value.split("\\(")[0] : "";
 
 		transformer = transformer.trim().strip();
@@ -69,7 +72,8 @@ public abstract class AbstractBaseConfiguration implements BaseConfiguration {
 		if (!utilities.stringHasValue(transformer))
 			return false;
 
-		FieldsMapping map = FieldsMapping.fastCreate("tmp", null);
+		FieldsMapping map = FieldsMapping.fastCreate(FastEtlTransformingTarget.fastCreate(etlConfiguration, null, null),
+				"tmp", null);
 
 		map.setTransformer(transformer);
 

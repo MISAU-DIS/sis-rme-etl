@@ -155,12 +155,13 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 
 				if (paramName.equals("input")) {
 					if (isTransformerExpression(paramValue)) {
-						this.input = FieldsMapping.fastCreate(field.getDstField(), field.getDstField(), false, conn);
+						this.input = FieldsMapping.fastCreate(relatedEtlTransformTarget, field.getDstField(),
+								field.getDstField(), false, conn);
 						this.input.setTransformer(paramValue);
 						this.input.tryToLoadTransformer(relatedEtlTransformTarget, conn);
 
 					} else {
-						this.input = FieldsMapping.fastCreate(paramValue, paramValue, relatedEtlTransformTarget, conn);
+						this.input = FieldsMapping.fastCreate(relatedEtlTransformTarget, paramValue, paramValue, conn);
 					}
 				} else if (paramName.equals("extra_condition")) {
 					this.extraCondition = paramValue;

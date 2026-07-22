@@ -237,10 +237,11 @@ public class QueryParameter extends Field {
 
 		FastEtlTransformingTarget target = FastEtlTransformingTarget.fastCreate(this.getRelatedEtlConf(),
 				avaliableSrcObjects, conn);
+
 		target.setRelatedEtlConfig(getRelatedEtlConf());
 
 		if (this.isComposite()) {
-			map = FieldsMapping.fastCreate(this.getAjustedName(), target, conn);
+			map = FieldsMapping.fastCreate(target, this.getAjustedName(), conn);
 
 			if (!map.hasDataSourceName()) {
 				throw new EtlExceptionImpl("The field " + this.getAjustedName()
@@ -248,10 +249,7 @@ public class QueryParameter extends Field {
 			}
 
 		} else {
-			map = FieldsMapping.fastCreate("@" + this.getName(), this.getName(), true, conn);
-
-			map.setTransformationTargetObject(target);
-
+			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), true, conn);
 		}
 
 		return map.getTransformerInstance().transform(null, fakeSrcObject, fakeSrcObject, avaliableSrcObjects, map,

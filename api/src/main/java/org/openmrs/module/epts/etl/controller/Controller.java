@@ -10,7 +10,7 @@ public interface Controller extends MonitoredOperation {
 	
 	void logWarn(String msg);
 	
-	void logErr(String msg);
+	void logErr(String msg, Throwable throwable);
 	
 	String getControllerId();
 	

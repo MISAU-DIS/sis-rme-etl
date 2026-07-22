@@ -8,57 +8,56 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class SqlConditionElement {
-	
+
 	private FieldsMapping mappig;
-	
+
 	private String field;
-	
+
 	private String operator;
-	
+
 	private String value;
-	
+
 	public SqlConditionElement(String field, String operator, String value) {
 		this.field = field;
 		this.operator = operator;
 		this.value = value;
 	}
-	
+
 	public String getField() {
 		return field;
 	}
-	
+
 	public String getOperator() {
 		return operator;
 	}
-	
+
 	public String getValue() {
 		return value;
 	}
-	
+
 	@Override
 	public String toString() {
 		return field + " " + operator + " " + value;
 	}
-	
-	public void fullLoad(
-	        EtlTransformTarget transformTarget, Connection conn)
-	        throws FieldAvaliableInMultipleDataSources, DBException {
-		this.mappig = FieldsMapping.fastCreate(value, field, transformTarget, conn);
+
+	public void fullLoad(EtlTransformTarget transformTarget, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+		this.mappig = FieldsMapping.fastCreate(transformTarget, value, field, conn);
 	}
-	
+
 	public FieldsMapping getMappig() {
 		return mappig;
 	}
-	
+
 	public String parseToQuestionMarked() {
 		return field + " " + operator + (this.value != null ? " ?" : "");
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (!(obj instanceof SqlConditionElement))
 			return false;
-		
+
 		return this.field.equals(((SqlConditionElement) obj).getField());
 	}
 }

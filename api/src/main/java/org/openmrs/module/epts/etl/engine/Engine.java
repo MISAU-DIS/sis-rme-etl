@@ -324,6 +324,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			boolean restart;
 
 			do {
+				this.changeStatusToRunning();
 
 				if (stopRequested() || isStopped()) {
 					logWarn("Aborting engine as stop requested!", 10, true);
@@ -340,22 +341,21 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		} catch (Exception e) {
 			this.stopOperationDueError(e);
 
-			logErr(e.getLocalizedMessage());
-			logErr(e.getMessage());
+			logErr(e.getLocalizedMessage(), e);
 		}
 	}
 
 	private boolean runIteration() throws DBException, Exception {
 		logWarn("INITIALIZING ENGINE FOR ETL CONFIG [" + getEtlItemConfiguration().getConfigCode().toUpperCase() + "]");
 
-		long minRecId = tableOperationProgressInfo.getProgressMeter().getMinRecordId();
+		long minRecId = this.tableOperationProgressInfo.getProgressMeter().getMinRecordId();
 
 		if (minRecId == 0) {
 			logDebug("DETERMINING MIN RECORD FOR " + getSrcConf().getTableName());
 
 			minRecId = getController().getMinRecordId(this);
 
-			logDebug("FOUND MIN RECORD " + getEtlItemConfiguration() + " = " + minRecId);
+			this.logDebug("FOUND MIN RECORD " + getEtlItemConfiguration() + " = " + minRecId);
 
 			tableOperationProgressInfo.getProgressMeter().setMinRecordId(minRecId);
 
@@ -369,13 +369,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			maxRecId = tableOperationProgressInfo.getProgressMeter().getMaxRecordId();
 
 			if (maxRecId == 0) {
-				logDebug("DETERMINING MAX RECORD FOR CONFIG '" + getEtlItemConfiguration().getConfigCode() + "'");
+				this.logDebug("DETERMINING MAX RECORD FOR CONFIG '" + getEtlItemConfiguration().getConfigCode() + "'");
 
 				maxRecId = getController().getMaxRecordId(this);
 
 				tableOperationProgressInfo.getProgressMeter().setMaxRecordId(maxRecId);
 
-				logDebug("FOUND MAX RECORD " + getEtlItemConfiguration() + " = " + maxRecId);
+				this.logDebug("FOUND MAX RECORD " + getEtlItemConfiguration() + " = " + maxRecId);
 			} else {
 				logDebug("USING SAVED MAX RECORD " + getEtlItemConfiguration() + " = " + maxRecId);
 			}
@@ -392,9 +392,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			} else {
 				msg += " FINISHING....";
 
-				changeStatusToFinished();
+				this.changeStatusToFinished();
 
-				getRelatedOperationController().markTableOperationAsFinished(getEtlItemConfiguration());
+				this.getRelatedOperationController().markTableOperationAsFinished(getEtlItemConfiguration());
 			}
 
 			logWarn(msg);
@@ -406,19 +406,19 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			setMaxRecordsPerProcessing(getController().getOperationConfig().getMaxSupportedProcessors());
 		}
 
-		ensureSearchParamInitialized();
+		this.ensureSearchParamInitialized();
 
-		changeStatusToRunning();
+		this.changeStatusToRunning();
 
-		calculateStatistics();
+		this.calculateStatistics();
 
-		doFirstSaveAllLimits();
+		this.doFirstSaveAllLimits();
 
-		logDebug("CREATING DEFAULT PARENT OBJECTS");
+		this.logDebug("CREATING DEFAULT PARENT OBJECTS");
 
-		getEtlItemConfiguration().tryToCreateDefaultRecordsForAllTables();
+		this.getEtlItemConfiguration().tryToCreateDefaultRecordsForAllTables();
 
-		logTrace("DEFAULT PARENT OBJECTS CREATED");
+		this.logTrace("DEFAULT PARENT OBJECTS CREATED");
 
 		ThreadingMode threadingMode = this.getRelatedEtlOperationConfig().getThreadingMode();
 
@@ -432,7 +432,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			this.performeTaskInSingleProcessor();
 		}
 
-		performeEngineFinalization();
+		this.performeEngineFinalization();
 
 		return mustRestartInTheEnd() && !stopRequested();
 	}
@@ -1110,8 +1110,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return getController().mustRestartInTheEnd();
 	}
 
-	public void logErr(String msg) {
-		getRelatedOperationController().logErr(msg);
+	public void logErr(String msg, Throwable throwable) {
+		getRelatedOperationController().logErr(msg, throwable);
 	}
 
 	public OperationController<T> getRelatedOperationController() {

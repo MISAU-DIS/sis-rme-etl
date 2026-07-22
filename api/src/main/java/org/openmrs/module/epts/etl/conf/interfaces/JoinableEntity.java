@@ -11,6 +11,7 @@ import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -18,171 +19,178 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 /**
- * Represents an database object which can be joined to other database object (the
- * {@link MainJoiningEntity})
+ * Represents an database object which can be joined to other database object
+ * (the {@link MainJoiningEntity})
  */
 public interface JoinableEntity extends TableConfiguration {
-	
+
 	List<FieldsMapping> getJoinFields();
-	
+
 	String getTableAlias();
-	
+
 	TableConfiguration getJoiningEntity();
-	
+
 	String getJoinExtraCondition();
-	
+
 	JoinType getJoinType();
-	
+
 	ConditionClauseScope getJoinExtraConditionScope();
-	
+
 	void setJoinExtraConditionScope(ConditionClauseScope joinExtraConditionScope);
-	
+
 	Boolean doNotUseAsDatasource();
-	
+
 	void setJoinFields(List<FieldsMapping> joinFields);
-	
+
 	void setJoinType(JoinType joinType);
-	
+
 	void setJoinExtraCondition(String joinExtraCondition);
-	
+
 	void setMainExtractTable(MainJoiningEntity mainJoiningTable);
-	
+
 	/**
-	 * Tells whether this joinable entity is also joining ({@link MainJoiningEntity}) or not.
-	 * Example of known main joining entities are {@link AuxExtractTable}
+	 * Tells whether this joinable entity is also joining
+	 * ({@link MainJoiningEntity}) or not. Example of known main joining entities
+	 * are {@link AuxExtractTable}
 	 * 
 	 * @return 'true' if this joinable entity is also main joining entity
 	 */
 	Boolean isMainJoiningEntity();
-	
+
 	/**
 	 * @return return this joinable entity as {@link MainJoiningEntity}
-	 * @throws ForbiddenOperationException if this main joinable entity is not joining
+	 * @throws ForbiddenOperationException if this main joinable entity is not
+	 *                                     joining
 	 */
 	MainJoiningEntity parseToJoining() throws ForbiddenOperationException;
-	
+
 	MainJoiningEntity getMainExtractTable();
-	
+
 	default Boolean hasJoinExtraCondition() {
 		return utilities.stringHasValue(this.getJoinExtraCondition());
 	}
-	
+
 	default void addJoinField(FieldsMapping fm) {
 		if (this.getJoinFields() == null) {
 			this.setJoinFields(new ArrayList<>());
 		}
-		
+
 		this.getJoinFields().add(fm);
 	}
-	
+
 	default Boolean hasJoinType() {
 		return this.getJoinType() != null;
 	}
-	
+
 	default Boolean hasJoinFields() {
 		return this.getJoinFields() != null && this.getJoinFields().size() > 0;
 	}
-	
-	default void tryToLoadJoinFields(Connection conn) {
+
+	default void tryToLoadJoinFields(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		if (!hasJoinFields()) {
 			this.setJoinFields(this.tryToLoadJoinFields(getJoiningEntity(), conn));
 		}
 	}
-	
+
 	@Override
 	default void fullLoad(Connection conn) throws DBException {
-		this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition", retrieveAllAvailableTemplateParameters(),
-		    conn);
-		
+		this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition",
+				retrieveAllAvailableTemplateParameters(), conn);
+
 		TableConfiguration.super.fullLoad(conn);
 	}
-	
+
 	default String generateJoinConditionsFields() {
 		String conditionFields = "";
-		
+
 		for (int i = 0; i < this.getJoinFields().size(); i++) {
 			if (i > 0)
 				conditionFields += " AND ";
-			
+
 			FieldsMapping field = this.getJoinFields().get(i);
-			
+
 			if (field.hasSrcField() && field.hasDstField()) {
-				conditionFields += getTableAlias() + "." + field.getSrcField() + " = " + getJoiningEntity().getTableAlias()
-				        + "." + field.getDstField();
+				conditionFields += getTableAlias() + "." + field.getSrcField() + " = "
+						+ getJoiningEntity().getTableAlias() + "." + field.getDstField();
 			} else if (field.hasSrcField() && field.hasSrcValue()) {
 				conditionFields += getTableAlias() + "." + field.getSrcField() + " = " + field.getSrcValue();
 			} else if (field.hasDstField() && field.hasDstValue()) {
 				conditionFields += getJoiningEntity().getTableAlias() + "." + field.getDstField() + " = "
-				        + field.getDstValue();
+						+ field.getDstValue();
 			} else {
 				throw new ForbiddenOperationException(
-				        "The join fields mapping must either have 'srcField and dstField', 'srcField and srcValue' or 'dstField and dstValue'");
+						"The join fields mapping must either have 'srcField and dstField', 'srcField and srcValue' or 'dstField and dstValue'");
 			}
-			
+
 		}
-		
+
 		if (this.getJoinExtraConditionScope().isJoinClause() && this.getJoinExtraCondition() != null
-		        && !this.getJoinExtraCondition().isEmpty()) {
+				&& !this.getJoinExtraCondition().isEmpty()) {
 			conditionFields += " AND (" + this.getJoinExtraCondition() + ")";
 		}
-		
+
 		return conditionFields;
 	}
-	
+
 	default void loadJoinElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		if (hasJoinExtraCondition()) {
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getJoinExtraCondition(), null)) {
 				throw new EtlConfException("Invalid joinExtraCondition \n" + this.getJoinExtraCondition());
 			}
 		}
-		
+
 		tryToLoadJoinFields(conn);
-		
+
 		if (hasJoinExtraCondition() && !isUsingManualDefinedAlias()) {
 			setJoinExtraCondition(SQLUtilities.qualifyUnqualifiedSqlFields(getJoinExtraCondition(), getTableName()));
-			
+
 			this.setJoinExtraCondition(
-			    this.getJoinExtraCondition().replaceAll(getTableName() + "\\.", getTableAlias() + "\\."));
-			
+					this.getJoinExtraCondition().replaceAll(getTableName() + "\\.", getTableAlias() + "\\."));
+
 			if (schemaInfo != null) {
-				this.setJoinExtraCondition(SQLUtilities.tryToReplaceParamsInQuery(this.getJoinExtraCondition(), schemaInfo));
+				this.setJoinExtraCondition(
+						SQLUtilities.tryToReplaceParamsInQuery(this.getJoinExtraCondition(), schemaInfo));
 			}
 		}
-		
+
 		if (!hasJoinFields()) {
 			throw new MissingJoiningElementsException(this, this.getJoiningEntity());
 		} else {
-			
+
 			for (FieldsMapping joiningField : this.getJoinFields()) {
 				if (schemaInfo != null) {
-					joiningField.setSrcField(SQLUtilities.tryToReplaceParamsInQuery(joiningField.getSrcField(), schemaInfo));
-					joiningField.setSrcValue(SQLUtilities.tryToReplaceParamsInQuery(joiningField.getSrcValue(), schemaInfo));
-					joiningField.setDstField(SQLUtilities.tryToReplaceParamsInQuery(joiningField.getDstField(), schemaInfo));
-					joiningField.setDstValue(SQLUtilities.tryToReplaceParamsInQuery(joiningField.getDstValue(), schemaInfo));
+					joiningField.setSrcField(
+							SQLUtilities.tryToReplaceParamsInQuery(joiningField.getSrcField(), schemaInfo));
+					joiningField.setSrcValue(
+							SQLUtilities.tryToReplaceParamsInQuery(joiningField.getSrcValue(), schemaInfo));
+					joiningField.setDstField(
+							SQLUtilities.tryToReplaceParamsInQuery(joiningField.getDstField(), schemaInfo));
+					joiningField.setDstValue(
+							SQLUtilities.tryToReplaceParamsInQuery(joiningField.getDstValue(), schemaInfo));
 				}
 			}
 		}
-		
+
 		if (!hasJoinType()) {
 			setJoinType(determineJoinType());
 		}
 	}
-	
+
 	default void loadAlias() {
 		if (hasJoinExtraCondition() && !isUsingManualDefinedAlias()) {
 			this.setJoinExtraCondition(
-			    this.getJoinExtraCondition().replaceAll(getTableName() + "\\.", getTableAlias() + "\\."));
-			
+					this.getJoinExtraCondition().replaceAll(getTableName() + "\\.", getTableAlias() + "\\."));
+
 			this.setJoinExtraCondition(this.getJoinExtraCondition().replaceAll(
-			    this.getMainExtractTable().getObjectName() + "\\.", this.getMainExtractTable().getAlias() + "\\."));
-			
+					this.getMainExtractTable().getObjectName() + "\\.", this.getMainExtractTable().getAlias() + "\\."));
+
 			String condition = SQLUtilities.tryToPutTableNameInFieldsInASqlClause(this.getJoinExtraCondition(),
-			    this.getTableAlias(), this.getFields());
-			
+					this.getTableAlias(), this.getFields());
+
 			this.setJoinExtraCondition(condition);
 		}
 	}
-	
+
 	default JoinType determineJoinType() {
 		if (utilities.arrayHasMoreThanOneElements(this.getMainExtractTable().getJoiningTable())) {
 			return JoinType.LEFT;
@@ -190,24 +198,24 @@ public interface JoinableEntity extends TableConfiguration {
 			return JoinType.INNER;
 		}
 	}
-	
+
 	@Override
 	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> allParameters = new HashMap<>();
-		
+
 		Map<String, Object> parentParameters = this.getMainExtractTable().retrieveAllAvailableTemplateParameters();
-		
+
 		if (parentParameters != null && !parentParameters.isEmpty()) {
 			allParameters.putAll(parentParameters);
 		}
-		
+
 		Map<String, Object> ownParameters = TableConfiguration.super.retrieveAllAvailableTemplateParameters();
-		
+
 		if (ownParameters != null && !ownParameters.isEmpty()) {
 			allParameters.putAll(ownParameters);
 		}
-		
+
 		return allParameters;
 	}
-	
+
 }

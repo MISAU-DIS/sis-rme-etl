@@ -283,7 +283,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 				} catch (NullPointerException e) {
 					logErr("Error on thread " + this.getControllerId()
-							+ ": Progress meter not found for Etl Confinguration [" + config.getConfigCode() + "].");
+							+ ": Progress meter not found for Etl Confinguration [" + config.getConfigCode() + "].", e);
 
 					e.printStackTrace();
 
@@ -385,7 +385,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 					progressInfo = this.progressInfo.retrieveProgressInfo(config);
 				} catch (NullPointerException e) {
 					logErr("Error on thread " + this.getControllerId()
-							+ ": Progress meter not found for Etl Confinguration [" + config.getConfigCode() + "].");
+							+ ": Progress meter not found for Etl Confinguration [" + config.getConfigCode() + "].", e);
 
 					e.printStackTrace();
 
@@ -764,7 +764,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		if (lastException == null) {
 			logWarn("THE PROCESS " + getControllerId().toUpperCase() + " WAS STOPPED!!!");
 		} else {
-			logErr("THE PROCESS " + getControllerId().toUpperCase() + " WAS STOPPED DUE ERROR!!!");
+			logErr("THE PROCESS " + getControllerId().toUpperCase() + " WAS STOPPED DUE ERROR!!!", lastException);
 
 			lastException.printStackTrace();
 		}
@@ -818,6 +818,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public void requestStopDueError(Engine<T> monitor, Exception e) {
+		if (e == null)
+			throw new EtlExceptionImpl("The exception error is empty");
+
 		logErr("Requesting stop due error", e);
 
 		getProcessController().requestStop();
@@ -926,8 +929,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.processController.logErr(msg, e, arguments);
 	}
 
-	public void logErr(String msg) {
-		this.processController.logErr(msg);
+	@Override
+	public void logErr(String msg, Throwable e) {
+		this.processController.logErr(msg, e);
 	}
 
 	public void logErr(String msg, Exception e) {

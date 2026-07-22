@@ -2238,7 +2238,8 @@ public class SQLUtilities {
 		return columnDef.matches(regex);
 	}
 
-	public static boolean isTransformerExpression(String value) {
+	public static boolean isTransformerExpression(EtlConfiguration etlConfiguration, String value)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 		String transformer = value.contains("(") ? value.split("\\(")[0] : "";
 
 		transformer = transformer.trim().strip();
@@ -2246,7 +2247,9 @@ public class SQLUtilities {
 		if (!utilities.stringHasValue(transformer))
 			return false;
 
-		FieldsMapping map = FieldsMapping.fastCreate("tmp", null);
+		FieldsMapping map = FieldsMapping.fastCreate(FastEtlTransformingTarget.fastCreate(etlConfiguration, null, null),
+				"tmp", null);
+
 		map.setTransformer(transformer);
 
 		FieldTransformerType type = null;
@@ -2457,14 +2460,14 @@ public class SQLUtilities {
 				FieldsMapping map = null;
 				String adjustedElement;
 
-				if (isTransformerExpression(element)) {
+				if (isTransformerExpression(relatedEtlConf, element)) {
 
 					adjustedElement = element;
 
 					map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
 
 				} else {
-					List<String> candidateElements = extractCandidateQueryElementsRecursively(element,
+					List<String> candidateElements = extractCandidateQueryElementsRecursively(relatedEtlConf, element,
 							arithmeticOperators);
 
 					for (String candidate : candidateElements) {
@@ -2476,7 +2479,7 @@ public class SQLUtilities {
 
 						adjustedElement = candidate.strip().trim();
 
-						if (isTransformerExpression(candidate)) {
+						if (isTransformerExpression(relatedEtlConf, candidate)) {
 							map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
 						} else if (!isValidQueryColumnDefinition(adjustedElement)) {
 							continue;
@@ -2485,7 +2488,7 @@ public class SQLUtilities {
 						try {
 							if (map == null) {
 
-								map = FieldsMapping.fastCreate(adjustedElement, transformingTarget, conn);
+								map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
 
 								if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
 									continue;
@@ -2534,7 +2537,7 @@ public class SQLUtilities {
 	private static FieldsMapping generateTransformerMapping(Connection conn,
 			FastEtlTransformingTarget transformingTarget, String adjustedElement) throws DBException {
 		FieldsMapping map;
-		map = FieldsMapping.fastCreate("tmp_field", transformingTarget, conn);
+		map = FieldsMapping.fastCreate(transformingTarget, "tmp_field", conn);
 
 		map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
 
@@ -2547,17 +2550,18 @@ public class SQLUtilities {
 		return map;
 	}
 
-	private static List<String> extractCandidateQueryElementsRecursively(String element, String[] splitTokens) {
+	private static List<String> extractCandidateQueryElementsRecursively(EtlConfiguration etlConfiguration,
+			String element, String[] splitTokens) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		Set<String> result = new LinkedHashSet<>();
 
-		extractCandidateQueryElementsRecursively(element, splitTokens, result);
+		extractCandidateQueryElementsRecursively(etlConfiguration, element, splitTokens, result);
 
 		return new ArrayList<>(result);
 	}
 
-	private static void extractCandidateQueryElementsRecursively(String element, String[] splitTokens,
-			Set<String> result) {
+	private static void extractCandidateQueryElementsRecursively(EtlConfiguration etlConfiguration, String element,
+			String[] splitTokens, Set<String> result) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (element == null || element.isBlank()) {
 			return;
@@ -2573,7 +2577,7 @@ public class SQLUtilities {
 
 			String inner = normalized.substring(1, normalized.length() - 1).strip().trim();
 
-			extractCandidateQueryElementsRecursively(inner, splitTokens, result);
+			extractCandidateQueryElementsRecursively(etlConfiguration, inner, splitTokens, result);
 
 			return;
 		}
@@ -2587,7 +2591,7 @@ public class SQLUtilities {
 		if (topLevelParts.length > 1) {
 
 			for (String part : topLevelParts) {
-				extractCandidateQueryElementsRecursively(part, splitTokens, result);
+				extractCandidateQueryElementsRecursively(etlConfiguration, part, splitTokens, result);
 			}
 
 			return;
@@ -2597,7 +2601,7 @@ public class SQLUtilities {
 		 * Se o elemento já é uma definição simples de coluna ou uma expressão de
 		 * transformer, adiciona diretamente.
 		 */
-		if (isValidQueryColumnDefinition(normalized) || isTransformerExpression(normalized)) {
+		if (isValidQueryColumnDefinition(normalized) || isTransformerExpression(etlConfiguration, normalized)) {
 
 			result.add(normalized);
 			return;
@@ -2612,7 +2616,7 @@ public class SQLUtilities {
 		if (!parenthesizedContents.isEmpty()) {
 
 			for (String inner : parenthesizedContents) {
-				extractCandidateQueryElementsRecursively(inner, splitTokens, result);
+				extractCandidateQueryElementsRecursively(etlConfiguration, inner, splitTokens, result);
 			}
 
 			return;

@@ -215,6 +215,10 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
+		if (relatedEtlConfiguration == null)
+			throw new ForbiddenOperationException(
+					"Empty relatedEtlConfiguration was provided for PreparedQuery(" + query + ")");
+
 		return generatePreparedQuery(relatedEtlConfiguration, processor, srcObject, dstObject, avaliableSrcObjects,
 				this.query, conn);
 	}
@@ -222,12 +226,21 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	public PreparedQueryInfo generatePreparedQuery(EtlConfiguration relatedEtlConfiguration, String query,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
+		if (relatedEtlConfiguration == null)
+			throw new ForbiddenOperationException(
+					"Empty relatedEtlConfiguration was provided for PreparedQuery(" + query + ")");
+
+		
 		return this.generatePreparedQuery(relatedEtlConfiguration, null, null, null, null, conn);
 	}
 
 	public PreparedQueryInfo generatePreparedQuery(EtlConfiguration relatedEtlConfiguration, EtlProcessor processor,
 			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects,
 			String query, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+
+		if (relatedEtlConfiguration == null)
+			throw new ForbiddenOperationException(
+					"Empty relatedEtlConfiguration was provided for PreparedQuery(" + query + ")");
 
 		List<FieldTransformingInfo> params = new ArrayList<>();
 

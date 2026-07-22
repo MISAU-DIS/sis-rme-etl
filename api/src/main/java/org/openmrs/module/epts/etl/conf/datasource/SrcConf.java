@@ -12,12 +12,14 @@ import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlExpansionDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -387,7 +389,9 @@ public class SrcConf extends AbstractTableConfiguration
 				String srcField = this.getParentSrcConf().getTableAlias() + "."
 						+ this.getPrimaryKey().asSimpleKey().getName();
 
-				this.getJoinFields().add(FieldsMapping.fastCreate(srcField, conn));
+				EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(this.getRelatedEtlConf(), null, conn);
+
+				this.getJoinFields().add(FieldsMapping.fastCreate(target, srcField, conn));
 			}
 		}
 	}

@@ -140,7 +140,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	private void ensurePayloadFieldInfoIsLoaded(Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
-		this.payloadFieldsMap = FieldsMapping.fastCreate(this.payload, "payload", this, conn);
+		this.payloadFieldsMap = FieldsMapping.fastCreate(this, this.payload, "payload", conn);
 	}
 
 	@Override

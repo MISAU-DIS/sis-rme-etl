@@ -10,6 +10,7 @@ import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -118,7 +119,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						this.parentSourceField = srcFieldOrValue;
 
 						this.parentSourceIdMapping = utilities.stringHasValue(this.parentSourceField)
-								? new FieldsMapping(this.parentSourceField,
+								? new FieldsMapping(relatedEtlTransformTarget, this.parentSourceField,
 										relatedEtlTransformTarget.getSrcConf().getTableAlias(), field.getDstField(),
 										conn)
 								: null;
@@ -173,8 +174,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 						FieldsMapping fm;
 
-						if (isTransformerExpression(srcFieldOrValue)) {
-							fm = FieldsMapping.fastCreate(dstField, dstField, false, conn);
+						if (isTransformerExpression(relatedEtlTransformTarget.getRelatedEtlConf(), srcFieldOrValue)) {
+							fm = FieldsMapping.fastCreate(relatedEtlTransformTarget, dstField, dstField, false, conn);
 							fm.setTransformer(srcFieldOrValue);
 							fm.tryToLoadTransformer(relatedEtlTransformTarget, conn);
 
@@ -230,9 +231,9 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		return "override_fields".equals(map[0]);
 	}
 
-	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField, DstConf EtlTransformTarget,
+	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField, DstConf transformTarget,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-		FieldsMapping fieldMap = FieldsMapping.fastCreate(parentFieldName, dstField, EtlTransformTarget, conn);
+		FieldsMapping fieldMap = FieldsMapping.fastCreate(transformTarget, parentFieldName, dstField, conn);
 
 		if (!fieldMap.hasDataSourceName() && !fieldMap.isMapToNullValue()) {
 

@@ -66,7 +66,7 @@ public final class ConnectionKeepAlive implements AutoCloseable {
 			}
 
 		} catch (SQLException e) {
-			processor.logError("Destination connection keep-alive failed: " + e.getMessage());
+			processor.logError("Destination connection keep-alive failed: " + e.getMessage(), e);
 
 		} finally {
 			connectionLock.unlock();

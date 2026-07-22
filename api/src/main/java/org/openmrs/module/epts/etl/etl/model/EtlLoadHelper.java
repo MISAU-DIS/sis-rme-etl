@@ -19,6 +19,7 @@ import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
@@ -117,8 +118,8 @@ public class EtlLoadHelper {
 
 				if (!dst.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
 					if (hasUnresolvedError(dst)) {
-						logError("Found issues loading to " + dst);
-						logError("Aborting operation");
+						logError("Found issues loading to " + dst, getUnresolvedError(dst));
+						logWarn("Aborting operation");
 
 						return;
 					}
@@ -163,6 +164,30 @@ public class EtlLoadHelper {
 		}
 
 		return false;
+	}
+
+	private Exception getUnresolvedError(DstConf dst) {
+
+		for (EtlDatabaseObject r : this.getSrcObjects()) {
+			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
+
+			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
+
+				if (dstObject.getEtlInfo().getExceptionOnEtl() instanceof InconsistentStateException
+						&& dst.getRelatedEtlConf().getDefaultInconsistencyBehavior().markRecordAsFailed()) {
+
+					continue;
+				}
+
+				if (isIgnorableException(dstObject.getEtlInfo().getExceptionOnEtl())) {
+					continue;
+				}
+
+				return (Exception) dstObject.getEtlInfo().getExceptionOnEtl();
+			}
+		}
+
+		throw new EtlExceptionImpl("No unresolved exception was found withn " + dst);
 	}
 
 	private boolean isIgnorableException(EtlException e) {
@@ -463,10 +488,6 @@ public class EtlLoadHelper {
 
 	void logWarn(String msg) {
 		getProcessor().logWarn(msg);
-	}
-
-	void logError(String msg) {
-		getProcessor().logError(msg);
 	}
 
 	void logError(String msg, Exception e) {

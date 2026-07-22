@@ -561,10 +561,10 @@ public class DstConf extends AbstractTableConfiguration
 						: this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
 
 				if (etlField != null) {
-					fm = FieldsMapping.fastCreate(etlField.getSrcField().getName(), field.getName(), true, conn);
+					fm = FieldsMapping.fastCreate(this, etlField.getSrcField().getName(), field.getName(), true, conn);
 					fm.setDataSourceName(etlField.getSrcDataSource().getName());
 				} else {
-					fm = FieldsMapping.fastCreate(field.getName(), field.getName(), true, conn);
+					fm = FieldsMapping.fastCreate(this, field.getName(), field.getName(), true, conn);
 				}
 
 				if (!this.getAllMapping().contains(fm)) {
@@ -980,7 +980,7 @@ public class DstConf extends AbstractTableConfiguration
 		this.getGeneratedJoinFields().add(toAdd);
 	}
 
-	private void loadJoinFields(Connection conn) {
+	private void loadJoinFields(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		if (this.getJoinFields() != null) {
 			addToGeneratedJoinFields(getJoinFields());
 		}
@@ -1002,9 +1002,11 @@ public class DstConf extends AbstractTableConfiguration
 
 	/**
 	 * @param uk
+	 * @throws DBException
+	 * @throws FieldAvaliableInMultipleDataSources
 	 */
 	public void tryToAutoGenerateJoinFields(AbstractTableConfiguration ukTable, AbstractTableConfiguration targetTable,
-			Connection conn) {
+			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		for (UniqueKeyInfo uk : ukTable.getUniqueKeys()) {
 
@@ -1022,7 +1024,7 @@ public class DstConf extends AbstractTableConfiguration
 				List<FieldsMapping> joinFieldsFromUniqueKey = new ArrayList<>();
 
 				for (Key key : uk.getFields()) {
-					joinFieldsFromUniqueKey.add(FieldsMapping.fastCreate(key.getName(), conn));
+					joinFieldsFromUniqueKey.add(FieldsMapping.fastCreate(this, key.getName(), conn));
 				}
 
 				addToGeneratedJoinFields(joinFieldsFromUniqueKey);

@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -265,8 +266,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 			getRelatedEtlConf().trace("Determining fields for query...");
 
-			PreparedQueryInfo pq = query.generatePreparedQuery(this.getRelatedEtlConfiguration(), this.getQuery(),
-					conn);
+			PreparedQueryInfo pq = query.generatePreparedQuery(this.getRelatedEtlConf(), this.getQuery(), conn);
 
 			setFields(SQLUtilities.determineFieldsFromQuery(pq.getPreparedQuery(), pq.extractParametersValueToArray(),
 					conn));
@@ -545,7 +545,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 		if (relationshipResolutionStrategy.skip()) {
 			for (Field f : result.getFields()) {
-				FieldsMapping tf = FieldsMapping.fastCreate(f.getName(), srcConn);
+				FieldsMapping tf = FieldsMapping.fastCreate((EtlTransformTarget) dstObject.getRelatedConfiguration(),
+						f.getName(), srcConn);
 				tf.setRelationshipResolutionStrategy(RelationshipResolutionStrategy.SKIP);
 
 				f.setTransformingInfo(new FieldTransformingInfo(tf, result.getFieldValue(f.getName()), this));

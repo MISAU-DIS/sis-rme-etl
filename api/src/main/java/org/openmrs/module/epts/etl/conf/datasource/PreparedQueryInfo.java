@@ -6,6 +6,7 @@ import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
@@ -24,6 +25,10 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 		this.preparedQuery = preparedQuery;
 		this.parameters = parameters;
 		this.relateConfiguration = relateConfiguration;
+
+		if (relateConfiguration == null)
+			throw new ForbiddenOperationException(
+					"Empty relateConfiguration was provided for PreparedQueryInfo (" + originalQuery + "");
 
 		if (utilities.listHasElement(parameters)) {
 			this.getRelatedEtlConf().trace(

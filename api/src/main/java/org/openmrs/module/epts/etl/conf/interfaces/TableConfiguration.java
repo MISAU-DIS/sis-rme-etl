@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
@@ -31,6 +32,7 @@ import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.DuplicateMappingException;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -740,8 +742,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		this.getRelatedEtlConf().warn(msg);
 	}
 
-	default void logErr(String msg) {
-		this.getRelatedEtlConf().err(msg);
+	default void logErr(String msg, Throwable throwable) {
+		this.getRelatedEtlConf().err(msg, throwable);
 	}
 
 	default int countParents(Connection conn) throws SQLException {
@@ -2156,7 +2158,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		return utilities.stringHasValue(getSchema());
 	}
 
-	default List<FieldsMapping> tryToLoadJoinFields(TableConfiguration relatedTabConf, Connection conn) {
+	default List<FieldsMapping> tryToLoadJoinFields(TableConfiguration relatedTabConf, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		List<FieldsMapping> joinFields = new ArrayList<>();
 
@@ -2169,9 +2172,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				ParentTable ref = pInfo.get(0);
 
+				EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(), null, conn);
+
 				for (RefMapping map : ref.getRefMapping()) {
-					joinFields.add(
-							new FieldsMapping(map.getParentField().getName(), "", map.getChildField().getName(), conn));
+					joinFields.add(FieldsMapping.fastCreate(target, map.getParentField().getName(),
+							map.getChildField().getName(), conn));
 				}
 			} else {
 				throw new ForbiddenOperationException(
@@ -2190,8 +2195,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 					ParentTable ref = pInfo.get(0);
 
+					EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(), null, conn);
+
 					for (RefMapping map : ref.getRefMapping()) {
-						joinFields.add(new FieldsMapping(map.getChildField().getName(), "",
+						joinFields.add(FieldsMapping.fastCreate(target, map.getChildField().getName(),
 								map.getParentField().getName(), conn));
 					}
 				} else {

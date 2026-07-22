@@ -73,12 +73,13 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 
 				if (paramName.equals("input")) {
 					if (isTransformerExpression(paramValue)) {
-						this.input = FieldsMapping.fastCreate(field.getDstField(), field.getDstField(), false, conn);
+						this.input = FieldsMapping.fastCreate(relatedEtlTargedConf, field.getDstField(),
+								field.getDstField(), false, conn);
 						this.input.setTransformer(paramValue);
 						this.input.tryToLoadTransformer(relatedEtlTransformTarget, conn);
 
 					} else {
-						this.input = FieldsMapping.fastCreate(paramValue, paramValue, relatedEtlTransformTarget, conn);
+						this.input = FieldsMapping.fastCreate(relatedEtlTargedConf, paramValue, paramValue, conn);
 					}
 				} else if (paramName.equals("operation")) {
 					this.operation = DateTransformOperation.valueOf(paramValue.toUpperCase());
@@ -161,7 +162,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
 		traceTransformationInitialization(field);
-		
+
 		try {
 			Object valueToTransform = null;
 			FieldTransformingInfo transformingInfo = null;
