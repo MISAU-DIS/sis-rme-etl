@@ -10,17 +10,26 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
-	private final String query;
+	private EtlConfiguration relateConfiguration;
+	private String originalQuery;
+	private final String preparedQuery;
 
 	private final List<FieldTransformingInfo> parameters;
 
 	private final Object[] parametersValues;
 
-	public PreparedQueryInfo(String query, List<FieldTransformingInfo> parameters) {
-		this.query = query;
+	public PreparedQueryInfo(String preparedQuery, String originalQuery, EtlConfiguration relateConfiguration,
+			List<FieldTransformingInfo> parameters) {
+
+		this.preparedQuery = preparedQuery;
 		this.parameters = parameters;
+		this.relateConfiguration = relateConfiguration;
 
 		if (utilities.listHasElement(parameters)) {
+			this.getRelatedEtlConf().trace(
+					"Initializing PreparedQueryInfo for original query={}, prepared query={}, params={}", originalQuery,
+					preparedQuery, parameters);
+
 			this.parametersValues = new Object[this.determineQtyOfFullParams()];
 
 			int j = 0;
@@ -37,6 +46,15 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
 	}
 
+	public String getOriginalQuery() {
+		return originalQuery;
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.relateConfiguration;
+	}
+
 	private int determineQtyOfFullParams() {
 		if (!this.hasParams())
 			return 0;
@@ -44,8 +62,6 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 		int qty = 0;
 
 		for (FieldTransformingInfo p : this.parameters) {
-			stepIntoBreakpoint(getRelatedEtlConf(), p == null);
-
 			qty += determineQtyElementsWithinTheParamValue(p.getTransformedValue());
 		}
 
@@ -86,8 +102,8 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 		return utilities.parseObjectToArray(transformedValue);
 	}
 
-	public String getQuery() {
-		return query;
+	public String getPreparedQuery() {
+		return preparedQuery;
 	}
 
 	public List<FieldTransformingInfo> getParameters() {
@@ -96,11 +112,6 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
 	public Object[] extractParametersValueToArray() {
 		return this.parametersValues;
-	}
-
-	@Override
-	public EtlConfiguration getRelatedEtlConf() {
-		return null;
 	}
 
 	@Override

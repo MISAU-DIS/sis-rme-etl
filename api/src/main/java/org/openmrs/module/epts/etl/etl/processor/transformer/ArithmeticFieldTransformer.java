@@ -79,6 +79,8 @@ public class ArithmeticFieldTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
+		traceTransformationInitialization(field);
+
 		if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
 			throw new EtlExceptionImpl("ArithmeticFieldTransformer requires at least one source object.");
 		}
@@ -107,6 +109,8 @@ public class ArithmeticFieldTransformer extends AbstractEtlFieldTransformer {
 			throw new EtlTransformationException(
 					"Failed to evaluate arithmetic expression: " + field.getValueToTransform(), e, srcObject,
 					ActionOnEtlIssue.ABORT_PROCESS);
+		} finally {
+			traceTransformationFinalization(field);
 		}
 	}
 

@@ -219,6 +219,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
+		traceTransformationInitialization(field);
+
 		try {
 			String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn,
 					dstConn);
@@ -230,6 +232,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			return new FieldTransformingInfo(field, uuid, null);
 		} catch (Exception e) {
 			throw new EtlConfException("Error happened while processing transformer " + this, e);
+		} finally {
+			traceTransformationFinalization(field);
 		}
 
 	}
@@ -307,8 +311,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 		EtlDatabaseObject obj;
 
-		obj = getTableConf().find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
-				dstConn);
+		obj = getTableConf().find(p.getPreparedQuery(),
+				resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn), dstConn);
 
 		return obj != null ? obj.getFieldValue("uuid").toString() : null;
 	}

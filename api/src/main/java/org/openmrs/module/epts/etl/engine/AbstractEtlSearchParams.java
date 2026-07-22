@@ -113,7 +113,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
 
 		if (dataSourceObjects != null) {
-			this.getRelatedEtlConf().logTrace("Search for parentObject..." + dataSourceObjects);
+			this.getRelatedEtlConf().trace("Search for parentObject..." + dataSourceObjects);
 		}
 
 		if (extraCondition != null) {
@@ -125,7 +125,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 			Object[] params = pq.extractParametersValueToArray();
 
-			searchClauses.addToClauses(pq.getQuery());
+			searchClauses.addToClauses(pq.getPreparedQuery());
 
 			if (utilities.arrayHasElement(params)) {
 				searchClauses.addToParameters(params);
@@ -297,7 +297,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		}
 
 		if (getRelatedEtlConf() != null) {
-			getRelatedEtlConf().logTrace("Using query for intervals " + intervalExtremeRecord + " > \n------------ \n "
+			getRelatedEtlConf().trace("Using query for intervals " + intervalExtremeRecord + " > \n------------ \n "
 					+ this.generateFulfilledQuery(intervalExtremeRecord, parentObject, auxDataSourceObjects, srcConn,
 							dstCOnn)
 					+ "\n----------------");

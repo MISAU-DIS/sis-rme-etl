@@ -615,7 +615,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 						} catch (DBException e1) {
 							if (e1.getMessage().contains("stage_record_id")) {
 								tabConf.getRelatedEtlConf()
-										.logWarn("Error encountered when creating stage record " + record);
+										.warn("Error encountered when creating stage record " + record);
 							} else {
 
 								if (tabConf.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()

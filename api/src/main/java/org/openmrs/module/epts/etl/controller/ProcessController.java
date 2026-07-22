@@ -657,8 +657,16 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		logger.debug(msg);
 	}
 
+	public void logDebug(String msg, Object... argments) {
+		logger.debug(msg, argments);
+	}
+
 	public void logInfo(String msg) {
 		logger.info(msg);
+	}
+
+	public void logInfo(String msg, Object... argments) {
+		logger.info(msg, argments);
 	}
 
 	public void logWarn(String msg) {
@@ -669,12 +677,24 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		logger.trace(msg);
 	}
 
+	public void logTrace(String msg, Object... argments) {
+		logger.trace(msg, argments);
+	}
+
 	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
 		logger.warn(msg, interval, suppressIfAnyRecentLog);
 	}
 
+	public void logWarn(String msg, Object... argments) {
+		logger.warn(msg, argments);
+	}
+
 	public void logErr(String msg, Exception e) {
-		logger.error(msg, e);
+		logger.err(msg, e);
+	}
+
+	public void logErr(String msg, Exception e, Object... arguments) {
+		logger.err(msg, e, arguments);
 	}
 
 	public void logErr(String msg) {

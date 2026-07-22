@@ -241,83 +241,89 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		EtlDatabaseObject dstParent = null;
-		EtlDatabaseObject srcParent = null;
+		traceTransformationInitialization(field);
 
-		if (existingSrcParentIsApplicable()) {
+		try {
+			EtlDatabaseObject dstParent = null;
+			EtlDatabaseObject srcParent = null;
 
-			try {
-				srcParent = this.resolveSrcParent(processor, srcObject, transformedRecord, additionalSrcObjects,
-						srcConn, dstConn);
+			if (existingSrcParentIsApplicable()) {
 
-				dstParent = this.resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
-						srcConn, dstConn);
-			} catch (InconsistentStateException e) {
+				try {
+					srcParent = this.resolveSrcParent(processor, srcObject, transformedRecord, additionalSrcObjects,
+							srcConn, dstConn);
 
-				ParentTable parentInfo = ((TableConfiguration) srcObject.getRelatedConfiguration())
-						.findParentRefInfoByParentTable(getParentTableName());
+					dstParent = this.resolveParent(processor, srcParent, srcObject, transformedRecord,
+							additionalSrcObjects, srcConn, dstConn);
+				} catch (InconsistentStateException e) {
 
-				parentInfo.setTableName(getParentTableName());
+					ParentTable parentInfo = ((TableConfiguration) srcObject.getRelatedConfiguration())
+							.findParentRefInfoByParentTable(getParentTableName());
 
-				InconsistenceInfo inconsistence = InconsistenceInfo.generate(srcObject, parentInfo,
-						processor.getRelatedEtlConfiguration().getOriginAppLocationCode());
+					parentInfo.setTableName(getParentTableName());
 
-				srcObject.setFieldValue(this.getParentSourceField(), null);
+					InconsistenceInfo inconsistence = InconsistenceInfo.generate(srcObject, parentInfo,
+							processor.getRelatedEtlConfiguration().getOriginAppLocationCode());
 
-				inconsistence.save((TableConfiguration) this.relatedEtlTransformTarget, srcConn);
+					srcObject.setFieldValue(this.getParentSourceField(), null);
+
+					inconsistence.save((TableConfiguration) this.relatedEtlTransformTarget, srcConn);
+				}
 			}
-		}
-
-		if (dstParent == null) {
-			dstParent = this.retrieveExistingOnDemandParent(processor, srcObject, additionalSrcObjects, srcConn,
-					dstConn);
 
 			if (dstParent == null) {
-				if (usesTemplate()) {
-					SrcConf srcConf = null;
+				dstParent = this.retrieveExistingOnDemandParent(processor, srcObject, additionalSrcObjects, srcConn,
+						dstConn);
 
-					if (srcParent == null) {
-						srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
-					} else {
-						srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn, dstConn);
-					}
+				if (dstParent == null) {
+					if (usesTemplate()) {
+						SrcConf srcConf = null;
 
-					if (!srcConf.doNotUseAsDatasource()) {
-						List<EtlDatabaseObject> recs;
-						logTrace("Searching recs on demand for: " + this);
-
-						recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects, srcConn);
-
-						logTrace("OnDemand Searching recs finalized: " + this);
-
-						if (recs.isEmpty()) {
-							throw new EtlExceptionImpl("No src record was returned with " + this);
+						if (srcParent == null) {
+							srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+						} else {
+							srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn, dstConn);
 						}
 
-						srcParent = recs.get(0);
-					} else {
-						System.err.println();
+						if (!srcConf.doNotUseAsDatasource()) {
+							List<EtlDatabaseObject> recs;
+							logTrace("Searching recs on demand for: " + this);
+
+							recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects, srcConn);
+
+							logTrace("OnDemand Searching recs finalized: " + this);
+
+							if (recs.isEmpty()) {
+								throw new EtlExceptionImpl("No src record was returned with " + this);
+							}
+
+							srcParent = recs.get(0);
+						} else {
+							System.err.println();
+						}
 					}
+
+					dstParent = this.createParent(processor, srcParent, srcObject, transformedRecord,
+							additionalSrcObjects, field, srcConn, dstConn);
+
 				}
 
-				dstParent = this.createParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
-						field, srcConn, dstConn);
-
 			}
 
-		}
+			if (dstParent == null) {
 
-		if (dstParent == null) {
-
-			if (field.nullValueBehavior().abortProcess()) {
-				throw new EtlTransformationException(
-						"Error on transforming the parentDstRecord on " + getTransformerDsc(), srcObject,
-						ActionOnEtlIssue.ABORT_PROCESS);
+				if (field.nullValueBehavior().abortProcess()) {
+					throw new EtlTransformationException(
+							"Error on transforming the parentDstRecord on " + getTransformerDsc(), srcObject,
+							ActionOnEtlIssue.ABORT_PROCESS);
+				}
 			}
-		}
 
-		return new FieldTransformingInfo(field, dstParent != null ? dstParent.getObjectId().asSimpleValue() : null,
-				dstParent != null ? (EtlDataSource) dstParent.getRelatedConfiguration() : null);
+			return new FieldTransformingInfo(field, dstParent != null ? dstParent.getObjectId().asSimpleValue() : null,
+					dstParent != null ? (EtlDataSource) dstParent.getRelatedConfiguration() : null);
+		} finally {
+			traceTransformationFinalization(field);
+		}
 
 	}
 
@@ -460,7 +466,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
 				this.getOnDemandCheckCondition(), null, allObjs, getRelatedEtlConf(), dstConn);
 
-		return dstConf.find(p.getQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn), dstConn);
+		return dstConf.find(p.getPreparedQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
+				dstConn);
 	}
 
 	private Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
@@ -759,7 +766,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			conf.setSrcConf(null);
 			conf.setTemplate(template);
 
-			conf.getRelatedEtlConf().logTrace("Template within transformer loaded!");
+			conf.getRelatedEtlConf().trace("Template within transformer loaded!");
 		} else if (useMainEtlTable) {
 			DstConf EtlTransformTarget = new DstConf(getParentTableName());
 

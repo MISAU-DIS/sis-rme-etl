@@ -160,34 +160,34 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		Object valueToTransform = null;
+		traceTransformationInitialization(field);
+		
+		try {
+			Object valueToTransform = null;
+			FieldTransformingInfo transformingInfo = null;
+			if (this.hasInput()) {
+				transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject,
+						transformedRecord, additionalSrcObjects, this.input, srcConn, dstConn);
 
-		FieldTransformingInfo transformingInfo = null;
+				try {
+					valueToTransform = transformingInfo.getTransformedValue();
+				} catch (Exception e) {
+					throw e;
+				}
 
-		if (this.hasInput()) {
-			transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject, transformedRecord,
-					additionalSrcObjects, this.input, srcConn, dstConn);
-
-			try {
-				valueToTransform = transformingInfo.getTransformedValue();
-			} catch (Exception e) {
-				throw e;
+			} else {
+				valueToTransform = field.getValueToTransform();
 			}
-
-		} else {
-			valueToTransform = field.getValueToTransform();
+			if (valueToTransform == null) {
+				return null;
+			}
+			Object readyValueToTranform = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(
+					field.getTransformationTargetObject().getRelatedEtlConf(), additionalSrcObjects, valueToTransform);
+			Object transformedValue = evaluate(srcObject, readyValueToTranform);
+			return new FieldTransformingInfo(field, transformedValue, null);
+		} finally {
+			traceTransformationFinalization(field);
 		}
-
-		if (valueToTransform == null) {
-			return null;
-		}
-
-		Object readyValueToTranform = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(
-				field.getTransformationTargetObject().getRelatedEtlConf(), additionalSrcObjects, valueToTransform);
-
-		Object transformedValue = evaluate(srcObject, readyValueToTranform);
-
-		return new FieldTransformingInfo(field, transformedValue, null);
 	}
 
 	private Object evaluate(EtlDatabaseObject srcObject, Object readyValueToTransform) {

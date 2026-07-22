@@ -209,7 +209,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 			try {
 				if (getEtlConfiguration().hasEtlItemsConf()) {
-					for (EtlItemConfiguration config : getProcessController().getRelatedEtlConf().getEtlItemConfiguration()) {
+					for (EtlItemConfiguration config : getProcessController().getRelatedEtlConf()
+							.getEtlItemConfiguration()) {
 						config.doMinimalTableInitialization(srcConn, dstConn);
 					}
 				}
@@ -904,8 +905,16 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.processController.logWarn(msg);
 	}
 
+	public void logWarn(String msg, Object... arguments) {
+		this.processController.logWarn(msg, arguments);
+	}
+
 	public void logTrace(String msg) {
 		this.processController.logTrace(msg);
+	}
+
+	public void logTrace(String msg, Object... arguments) {
+		this.processController.logTrace(msg, arguments);
 	}
 
 	@Override
@@ -913,20 +922,32 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.processController.logWarn(msg, interval, suppressIfAnyRecentLog);
 	}
 
-	public void logErr(String msg, Exception e) {
-		this.processController.logErr(msg, e);
-	}
-
-	public void logInfo(String msg) {
-		this.processController.logInfo(msg);
+	public void logErr(String msg, Exception e, Object... arguments) {
+		this.processController.logErr(msg, e, arguments);
 	}
 
 	public void logErr(String msg) {
 		this.processController.logErr(msg);
 	}
 
+	public void logErr(String msg, Exception e) {
+		this.processController.logErr(msg, e);
+	}
+
+	public void logInfo(String msg, Object... arguments) {
+		this.processController.logInfo(msg);
+	}
+
+	public void logInfo(String msg) {
+		this.processController.logInfo(msg);
+	}
+
 	public void logDebug(String msg) {
 		this.processController.logDebug(msg);
+	}
+
+	public void logDebug(String msg, Object... arguments) {
+		this.processController.logDebug(msg, arguments);
 	}
 
 	public boolean isResumable() {

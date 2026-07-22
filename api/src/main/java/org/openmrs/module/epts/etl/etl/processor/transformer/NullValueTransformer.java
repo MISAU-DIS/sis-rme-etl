@@ -75,6 +75,11 @@ public class NullValueTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		return new FieldTransformingInfo(field, null, null);
+		traceTransformationInitialization(field);
+		try {
+			return new FieldTransformingInfo(field, null, null);
+		} finally {
+			traceTransformationFinalization(field);
+		}
 	}
 }

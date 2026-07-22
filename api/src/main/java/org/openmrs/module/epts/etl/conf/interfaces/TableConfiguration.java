@@ -725,23 +725,23 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void logInfo(String msg) {
-		this.getRelatedEtlConf().logInfo(msg);
+		this.getRelatedEtlConf().info(msg);
 	}
 
 	default void logDebug(String msg) {
-		this.getRelatedEtlConf().logDebug(msg);
+		this.getRelatedEtlConf().debug(msg);
 	}
 
 	default void logTrace(String msg) {
-		this.getRelatedEtlConf().logTrace(msg);
+		this.getRelatedEtlConf().trace(msg);
 	}
 
 	default void logWarn(String msg) {
-		this.getRelatedEtlConf().logWarn(msg);
+		this.getRelatedEtlConf().warn(msg);
 	}
 
 	default void logErr(String msg) {
-		this.getRelatedEtlConf().logErr(msg);
+		this.getRelatedEtlConf().err(msg);
 	}
 
 	default int countParents(Connection conn) throws SQLException {

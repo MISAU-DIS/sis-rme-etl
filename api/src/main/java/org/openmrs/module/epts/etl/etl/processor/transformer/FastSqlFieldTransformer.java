@@ -153,6 +153,8 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
+		traceTransformationInitialization(field);
+
 		if (this.dataSourceConfig == null) {
 			synchronized (LOCK) {
 				if (this.dataSourceConfig == null) {
@@ -178,30 +180,36 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			}
 		}
 
-		EtlDatabaseObject srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject, transformedRecord,
-				additionalSrcObjects, hasOverrideConnection() ? getOverrideConnection() : srcConn);
+		try {
+			EtlDatabaseObject srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject,
+					transformedRecord, additionalSrcObjects,
+					hasOverrideConnection() ? getOverrideConnection() : srcConn);
 
-		Object dstValue = null;
+			Object dstValue = null;
 
-		if (srcObj != null && srcObj.getFields() != null && !srcObj.getFields().isEmpty()) {
+			if (srcObj != null && srcObj.getFields() != null && !srcObj.getFields().isEmpty()) {
 
-			dstValue = srcObj.getFields().get(0).getValue();
-		}
-
-		if (dstValue != null) {
-			return new FieldTransformingInfo(field, dstValue, null);
-		}
-
-		if (field.getDefaultValue() == null) {
-			if (this.getOnNullTransformedvalue() != null && this.getOnNullTransformedvalue().setToNull()) {
-				return new FieldTransformingInfo(field, null, null);
+				dstValue = srcObj.getFields().get(0).getValue();
 			}
 
-			EtlDatabaseObject obj = utilities.listHasElement(additionalSrcObjects) ? additionalSrcObjects.get(0) : null;
+			if (dstValue != null) {
+				return new FieldTransformingInfo(field, dstValue, null);
+			}
 
-			throw new EmptyTransformedValueException(obj,
-					field.getSrcField() != null ? field.getSrcField() : field.getDstField(), this,
-					ActionOnEtlIssue.ABORT_PROCESS);
+			if (field.getDefaultValue() == null) {
+				if (this.getOnNullTransformedvalue() != null && this.getOnNullTransformedvalue().setToNull()) {
+					return new FieldTransformingInfo(field, null, null);
+				}
+
+				EtlDatabaseObject obj = utilities.listHasElement(additionalSrcObjects) ? additionalSrcObjects.get(0)
+						: null;
+
+				throw new EmptyTransformedValueException(obj,
+						field.getSrcField() != null ? field.getSrcField() : field.getDstField(), this,
+						ActionOnEtlIssue.ABORT_PROCESS);
+			}
+		} finally {
+			traceTransformationFinalization(field);
 		}
 
 		return null;

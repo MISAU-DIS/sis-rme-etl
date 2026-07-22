@@ -985,6 +985,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		getRelatedOperationController().logErr(msg, e);
 	}
 
+	public void logErr(String msg, Exception e, Object... arguments) {
+		getRelatedOperationController().logErr(msg, e, arguments);
+	}
+
 	@Override
 	public void requestStop() {
 		if (isStopped() || isFinished() || stopRequested()) {
@@ -1122,12 +1126,28 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		getRelatedOperationController().logInfo(msg);
 	}
 
+	public void logInfo(String msg, Object... arguments) {
+		getRelatedOperationController().logInfo(msg, arguments);
+	}
+
 	public void logDebug(String msg) {
 		getRelatedOperationController().logDebug(msg);
 	}
 
+	public void logDebug(String msg, Object... arguments) {
+		getRelatedOperationController().logDebug(msg, arguments);
+	}
+
+	public void logWarn(String msg, Object... arguments) {
+		getRelatedOperationController().logWarn(msg, arguments);
+	}
+
 	public void logWarn(String msg) {
 		getRelatedOperationController().logWarn(msg);
+	}
+
+	public void logTrace(String msg, Object... arguments) {
+		getRelatedOperationController().logTrace(msg, arguments);
 	}
 
 	public void logTrace(String msg) {

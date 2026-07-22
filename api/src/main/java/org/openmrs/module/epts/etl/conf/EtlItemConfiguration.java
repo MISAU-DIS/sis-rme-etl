@@ -364,13 +364,13 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 						}
 
 						if (refInfo.getDefaultObject(dstConn) == null) {
-							getRelatedEtlConf().logDebug(
+							getRelatedEtlConf().debug(
 									"Creating default dstRecord for table " + refInfo.getFullTableDescription());
 
 							try {
 								refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
 							} catch (Exception e) {
-								getRelatedEtlConf().logErr(
+								getRelatedEtlConf().err(
 										"Error creating default record for table: " + refInfo.getTableAlias(), e);
 							}
 						}

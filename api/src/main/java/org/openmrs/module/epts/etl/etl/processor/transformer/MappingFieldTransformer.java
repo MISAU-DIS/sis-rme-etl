@@ -195,7 +195,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 							(TableConfiguration) additionalSrcObjects.get(0).getRelatedConfiguration());
 
 					this.tableConfig.setExtraConditionForExtract(this.extraCondition);
-					
+
 					try {
 						this.tableConfig.fullLoad(srcConn);
 					} catch (DBException e) {
@@ -255,80 +255,86 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
-			throw new EtlExceptionImpl("MappingFieldTransformer requires at least one source object.");
-		}
+		traceTransformationInitialization(field);
 
-		buildMappingCache(additionalSrcObjects, srcConn);
-
-		Object valueToTransform = null;
-
-		FieldTransformingInfo transformingInfo = null;
-
-		if (this.hasInput()) {
-			transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject, transformedRecord,
-					additionalSrcObjects, this.input, srcConn, dstConn);
-
-			try {
-				valueToTransform = transformingInfo.getTransformedValue();
-			} catch (Exception e) {
-				throw e;
+		try {
+			if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
+				throw new EtlExceptionImpl("MappingFieldTransformer requires at least one source object.");
 			}
 
-		} else {
-			valueToTransform = field.getValueToTransform();
-		}
+			buildMappingCache(additionalSrcObjects, srcConn);
 
-		if (valueToTransform == null)
-			return null;
+			Object valueToTransform = null;
 
-		String srcValueWithParamsReplaced = EtlFieldTransformer
-				.tryToReplaceParametersOnSrcValue(field.getTransformationTargetObject().getRelatedEtlConf(),
-						additionalSrcObjects, valueToTransform)
-				.toString();
+			FieldTransformingInfo transformingInfo = null;
 
-		Object dstValue = mappingCache.get(srcValueWithParamsReplaced);
+			if (this.hasInput()) {
+				transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject,
+						transformedRecord, additionalSrcObjects, this.input, srcConn, dstConn);
 
-		if (dstValue != null) {
-			transformingInfo = new FieldTransformingInfo(field, dstValue, null);
+				try {
+					valueToTransform = transformingInfo.getTransformedValue();
+				} catch (Exception e) {
+					throw e;
+				}
 
-			transformingInfo.setLoadedWithDefaultValue(true);
-
-			return transformingInfo;
-		} else if (onMissing().useInputOnMissingMapping()) {
-			if (transformingInfo != null) {
-				return transformingInfo;
 			} else {
+				valueToTransform = field.getValueToTransform();
+			}
+
+			if (valueToTransform == null)
+				return null;
+
+			String srcValueWithParamsReplaced = EtlFieldTransformer
+					.tryToReplaceParametersOnSrcValue(field.getTransformationTargetObject().getRelatedEtlConf(),
+							additionalSrcObjects, valueToTransform)
+					.toString();
+
+			Object dstValue = mappingCache.get(srcValueWithParamsReplaced);
+
+			if (dstValue != null) {
 				transformingInfo = new FieldTransformingInfo(field, dstValue, null);
 
 				transformingInfo.setLoadedWithDefaultValue(true);
 
 				return transformingInfo;
-			}
-		}
+			} else if (onMissing().useInputOnMissingMapping()) {
+				if (transformingInfo != null) {
+					return transformingInfo;
+				} else {
+					transformingInfo = new FieldTransformingInfo(field, dstValue, null);
 
-		if (field.getDefaultValue() == null) {
+					transformingInfo.setLoadedWithDefaultValue(true);
 
-			MissingMappingException e = new MissingMappingException(additionalSrcObjects.get(0), field.getSrcField(),
-					srcValueWithParamsReplaced, this, this.onMissing());
-
-			if (onMissing().abortProcess()) {
-				throw e;
-			}
-
-			if (onMissing().setToNull()) {
-				transformingInfo = new FieldTransformingInfo(field, dstValue, null);
-
-				transformingInfo.setLoadedWithDefaultValue(true);
-
-				return transformingInfo;
+					return transformingInfo;
+				}
 			}
 
-			if (onMissing().markRecordAsFailed()) {
-				EtlInfo info = transformedRecord.getEtlInfo();
+			if (field.getDefaultValue() == null) {
 
-				info.setExceptionOnEtl(e);
+				MissingMappingException e = new MissingMappingException(additionalSrcObjects.get(0),
+						field.getSrcField(), srcValueWithParamsReplaced, this, this.onMissing());
+
+				if (onMissing().abortProcess()) {
+					throw e;
+				}
+
+				if (onMissing().setToNull()) {
+					transformingInfo = new FieldTransformingInfo(field, dstValue, null);
+
+					transformingInfo.setLoadedWithDefaultValue(true);
+
+					return transformingInfo;
+				}
+
+				if (onMissing().markRecordAsFailed()) {
+					EtlInfo info = transformedRecord.getEtlInfo();
+
+					info.setExceptionOnEtl(e);
+				}
 			}
+		} finally {
+			traceTransformationFinalization(field);
 		}
 
 		return null;

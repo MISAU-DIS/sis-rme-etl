@@ -187,14 +187,14 @@ public class DBConnectionService {
 
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 
-			logger.info("Obtendo conexão. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt,
+			logger.trace("Obtendo conexão. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt,
 					maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
 					dataSource.getWaitCount());
 
 			try {
 				Connection connection = dataSource.getConnection();
 
-				logger.info("Conexão obtida. attempt={}, active={}, idle={}, size={}, waitCount={}", attempt,
+				logger.trace("Conexão obtida. attempt={}, active={}, idle={}, size={}, waitCount={}", attempt,
 						dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(), dataSource.getWaitCount());
 
 				return connection;
@@ -202,11 +202,11 @@ public class DBConnectionService {
 			} catch (SQLException e) {
 				lastException = e;
 
-				logger.error(
+				logger.err(
 						"Falha ao obter conexão. attempt={}/{}, active={}, idle={}, "
 								+ "size={}, waitCount={}, sqlState={}, errorCode={}, message={}",
-						attempt, maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
-						dataSource.getWaitCount(), e.getSQLState(), e.getErrorCode(), e.getMessage(), e);
+						e, attempt, maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
+						dataSource.getWaitCount(), e.getSQLState(), e.getErrorCode(), e.getMessage());
 
 				logExceptionChain(e);
 
@@ -269,7 +269,7 @@ public class DBConnectionService {
 		int index = 1;
 
 		while (current != null) {
-			logger.error("SQLException[{}]: type={}, sqlState={}, errorCode={}, message={}", index,
+			logger.err("SQLException[{}]: type={}, sqlState={}, errorCode={}, message={}", current, index,
 					current.getClass().getName(), current.getSQLState(), current.getErrorCode(), current.getMessage());
 
 			current = current.getNextException();

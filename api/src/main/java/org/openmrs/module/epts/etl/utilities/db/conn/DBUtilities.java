@@ -799,7 +799,7 @@ public class DBUtilities {
 		try {
 			connInfo.tryToExtractHostInfoFromMysqlUri();
 			
-			connInfo.getRelatedEtlConf().logWarn("Start execution of scripn on database: " + databaseSchemaFullPath);
+			connInfo.getRelatedEtlConf().warn("Start execution of scripn on database: " + databaseSchemaFullPath);
 			
 			ProcessBuilder pb = new ProcessBuilder("mysql", "-u", connInfo.getDataBaseUserName(),
 			        "-p" + connInfo.getDataBaseUserPassword(), "-h", connInfo.getDbHost(), "-P",
@@ -839,7 +839,7 @@ public class DBUtilities {
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			
-			connInfo.getRelatedEtlConf().logWarn("Execution of script " + databaseSchemaFullPath + " was interrupted!!!");
+			connInfo.getRelatedEtlConf().warn("Execution of script " + databaseSchemaFullPath + " was interrupted!!!");
 		}
 		catch (IOException e) {
 			throw new EtlExceptionImpl(e);

@@ -20,14 +20,16 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * Field transformer that implements a COALESCE-like behavior for ETL field transformations.
+ * Field transformer that implements a COALESCE-like behavior for ETL field
+ * transformations.
  * <p>
- * This transformer evaluates a sequence of candidate values and returns the first non-null value
- * obtained from them. Each parameter is interpreted as a possible source for the destination field
- * value and is evaluated in the order it is defined. If the result of evaluating the first
- * parameter is {@code null}, the transformer evaluates the next one, continuing until a non-null
- * value is found. If all evaluated parameters result in {@code null}, the transformation result
- * will also be {@code null}.
+ * This transformer evaluates a sequence of candidate values and returns the
+ * first non-null value obtained from them. Each parameter is interpreted as a
+ * possible source for the destination field value and is evaluated in the order
+ * it is defined. If the result of evaluating the first parameter is
+ * {@code null}, the transformer evaluates the next one, continuing until a
+ * non-null value is found. If all evaluated parameters result in {@code null},
+ * the transformation result will also be {@code null}.
  * </p>
  * <p>
  * Parameters accepted by this transformer may represent:
@@ -38,20 +40,26 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * </ul>
  * </p>
  * <p>
- * When referencing a field from a data source, it can be specified using either:
+ * When referencing a field from a data source, it can be specified using
+ * either:
  * <ul>
  * <li>A simple field name: {@code "field"}</li>
- * <li>A qualified name including the data source alias: {@code "dataSourceName.field"}</li>
+ * <li>A qualified name including the data source alias:
+ * {@code "dataSourceName.field"}</li>
  * </ul>
- * The qualified form should be used when multiple data sources may contain fields with the same
- * name to avoid ambiguity.
+ * The qualified form should be used when multiple data sources may contain
+ * fields with the same name to avoid ambiguity.
  * </p>
  * <p>
  * At least two parameters must be provided when configuring this transformer.
  * </p>
- * Example usage: <pre>
+ * Example usage:
+ * 
+ * <pre>
  * CoalesceFieldTransformer(patient_id, encounter.patient_id, 'UNKNOWN')
- * </pre> In this example the transformer will:
+ * </pre>
+ * 
+ * In this example the transformer will:
  * <ol>
  * <li>Try {@code patient_id}</li>
  * <li>If null, try {@code encounter.patient_id}</li>
@@ -59,114 +67,119 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * </ol>
  */
 public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
-	
+
 	private static final Map<String, CoalesceFieldTransformer> INSTANCES = new ConcurrentHashMap<>();
-	
+
 	private final List<FieldsMapping> coalesceFields;
-	
-	public CoalesceFieldTransformer(List<Object> parameters, EtlTransformTarget EtlTransformTarget, TransformableField field,
-	    Connection conn) throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
-		
+
+	public CoalesceFieldTransformer(List<Object> parameters, EtlTransformTarget EtlTransformTarget,
+			TransformableField field, Connection conn)
+			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
+
 		super(parameters, EtlTransformTarget, field);
-		
+
 		this.coalesceFields = new ArrayList<>();
-		
+
 		for (Object obj : parameters) {
 			FieldsMapping fm;
-			
+
 			if (isTransformerExpression(obj.toString())) {
 				fm = FieldsMapping.fastCreate(field.getDstField(), field.getDstField(), false, conn);
 				fm.setTransformer(obj.toString());
 				fm.tryToLoadTransformer(relatedEtlTransformTarget, conn);
-				
+
 			} else {
-				
+
 				String[] fieldParts = obj.toString().split("\\.");
-				
+
 				String dataSourceName = null;
 				String srcFieldName;
-				
+
 				if (fieldParts.length > 1) {
 					dataSourceName = fieldParts[0];
 					srcFieldName = fieldParts[1];
 				} else {
 					srcFieldName = fieldParts[0];
 				}
-				
+
 				fm = FieldsMapping.fastCreate(srcFieldName, field.getDstField(), true, conn);
 				fm.tryToLoadTransformer(EtlTransformTarget, conn);
-				
+
 				if (dataSourceName != null) {
-					
+
 					EtlDataSource ds = EtlTransformTarget.findDataSource(dataSourceName);
-					
+
 					if (ds != null) {
 						fm.setDataSourceName(ds.getAlias());
 					} else {
 						throw new EtlExceptionImpl(
-						        "Invalid datasource '" + dataSourceName + "' on CoalesceFieldTransformer: " + obj);
+								"Invalid datasource '" + dataSourceName + "' on CoalesceFieldTransformer: " + obj);
 					}
-					
+
 				} else {
 					EtlTransformTarget.tryToLoadDataSourceToFieldMapping(fm, conn);
 				}
-				
+
 				if (!fm.hasDataSourceName()) {
 					fm.setSrcValue(obj);
 				}
 			}
-			
+
 			this.coalesceFields.add(fm);
 		}
-		
-		EtlTransformTarget.getRelatedEtlConf().logTrace("CoalesceFieldTransformer initialized");
+
+		EtlTransformTarget.getRelatedEtlConf().trace("CoalesceFieldTransformer initialized");
 	}
-	
+
 	public List<FieldsMapping> getCoalesceFields() {
 		return coalesceFields;
 	}
-	
+
 	public static CoalesceFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget EtlTransformTarget,
-	        TransformableField field, Connection conn) {
-		
+			TransformableField field, Connection conn) {
+
 		if (parameters == null || parameters.size() < 2) {
 			throw new ForbiddenOperationException("A CoalesceFieldTransformer needs at least 2 parameters.\n"
-			        + "Eg: CoalesceFieldTransformer(field1, field2)");
+					+ "Eg: CoalesceFieldTransformer(field1, field2)");
 		}
-		
+
 		String key = buildCacheKey(EtlTransformTarget, field, parameters);
-		
+
 		return INSTANCES.computeIfAbsent(key, k -> {
 			try {
 				return new CoalesceFieldTransformer(parameters, EtlTransformTarget, field, conn);
-			}
-			catch (DBException e) {
+			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}
 		});
 	}
-	
+
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-	        Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
-		
-		for (FieldsMapping map : this.getCoalesceFields()) {
-			
-			FieldTransformingInfo transformingInfo = null;
-			
-			try {
-				transformingInfo = map.getTransformerInstance().transform(processor, srcObject, transformedRecord,
-				    additionalSrcObjects, map, srcConn, dstConn);
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
+			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
+
+		traceTransformationInitialization(field);
+
+		try {
+			for (FieldsMapping map : this.getCoalesceFields()) {
+
+				FieldTransformingInfo transformingInfo = null;
+
+				try {
+					transformingInfo = map.getTransformerInstance().transform(processor, srcObject, transformedRecord,
+							additionalSrcObjects, map, srcConn, dstConn);
+				} catch (EtlTransformationException e) {
+				}
+
+				if (transformingInfo != null && transformingInfo.getTransformedValue() != null) {
+					return transformingInfo;
+				}
 			}
-			catch (EtlTransformationException e) {}
-			
-			if (transformingInfo != null && transformingInfo.getTransformedValue() != null) {
-				return transformingInfo;
-			}
+		} finally {
+			traceTransformationFinalization(field);
 		}
-		
 		return null;
 	}
-	
+
 }

@@ -109,7 +109,7 @@ public class ProcessStarter implements ControllerStarter {
 			logFinalStatus(controller);
 
 		} catch (Exception e) {
-			logger.error("ProcessStarter failed", e);
+			logger.err("ProcessStarter failed", e);
 
 			if (this.currentController != null) {
 				this.currentController.requestStop();

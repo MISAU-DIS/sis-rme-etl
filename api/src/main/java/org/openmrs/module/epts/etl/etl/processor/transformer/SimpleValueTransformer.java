@@ -62,16 +62,19 @@ public class SimpleValueTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
 
-		Object result = EtlFieldTransformer
-				.tryToReplaceParametersOnSrcValue(field.getTransformationTargetObject() != null
-						? field.getTransformationTargetObject().getRelatedEtlConf()
-						: null, additionalSrcObjects, field.getValueToTransform());
-
-		FieldTransformingInfo transformingInfo = new FieldTransformingInfo(field, result, null);
-
-		transformingInfo
-				.setLoadedWithDefaultValue(result != null && result.toString().equals(field.getValueToTransform()));
-
-		return transformingInfo;
+		traceTransformationInitialization(field);
+		
+		try {
+			Object result = EtlFieldTransformer
+					.tryToReplaceParametersOnSrcValue(field.getTransformationTargetObject() != null
+							? field.getTransformationTargetObject().getRelatedEtlConf()
+							: null, additionalSrcObjects, field.getValueToTransform());
+			FieldTransformingInfo transformingInfo = new FieldTransformingInfo(field, result, null);
+			transformingInfo
+					.setLoadedWithDefaultValue(result != null && result.toString().equals(field.getValueToTransform()));
+			return transformingInfo;
+		} finally {
+			traceTransformationFinalization(field);
+		}
 	}
 }

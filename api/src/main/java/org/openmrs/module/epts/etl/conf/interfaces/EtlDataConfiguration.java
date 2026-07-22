@@ -510,7 +510,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 	default void bPoint(EtlConfiguration etlConf) {
 		if (etlConf != null)
-			etlConf.logDebug("Steped into the breakpoint");
+			etlConf.debug("Steped into the breakpoint");
 		else
 			System.err.println("Steped into the breakpoint");
 	}

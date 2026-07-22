@@ -350,9 +350,9 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		String databaseName = this.determineSchema();
 		String databaseSchemaFullPath = etlConf.generateDatabaseSchemaFullPath(this);
 		
-		etlConf.logWarn("Database '" + databaseName + "' Does not exist but schema exists.");
+		etlConf.warn("Database '" + databaseName + "' Does not exist but schema exists.");
 		
-		etlConf.logDebug("Database '" + databaseName + "' created!");
+		etlConf.debug("Database '" + databaseName + "' created!");
 		
 		try {
 			DBUtilities.createDb(this, this.determineSchema());
@@ -360,7 +360,7 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 			DBUtilities.runScriptOnDbServer(this, databaseSchemaFullPath);
 		}
 		catch (Exception e) {
-			etlConf.logErr("An error occurred restoring dump: " + databaseSchemaFullPath);
+			etlConf.err("An error occurred restoring dump: " + databaseSchemaFullPath);
 			
 			try {
 				DBUtilities.dropDB(this, this.determineSchema());

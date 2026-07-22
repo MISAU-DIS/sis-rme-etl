@@ -797,46 +797,62 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	}
 
-	public void logDebug(String msg) {
+	public void debug(String msg) {
 		if (logger == null)
 			initLogger();
 
 		this.logger.debug(msg);
 	}
 
-	public void logTrace(String msg) {
+	public void trace(String msg) {
 		if (logger == null)
 			initLogger();
 
 		this.logger.trace(msg);
 	}
 
-	public void logInfo(String msg) {
+	public void info(String msg) {
 		if (logger == null)
 			initLogger();
 
 		logger.info(msg);
 	}
 
-	public void logWarn(String msg) {
+	public void warn(String msg) {
 		if (logger == null)
 			initLogger();
 
 		logger.warn(msg);
 	}
 
-	public void logErr(String msg) {
+	public void err(String msg) {
 		if (logger == null)
 			initLogger();
 
 		logger.error(msg);
 	}
 
-	public void logErr(String msg, Exception e) {
+	public void err(String msg, Exception e) {
 		if (logger == null)
 			initLogger();
 
-		logger.error(msg, e);
+		logger.err(msg, e);
+	}
+
+	public void err(String msg, Throwable throwable, Object... arguments) {
+		logger.err(msg, throwable, arguments);
+	}
+
+	public void info(String msg, Object... arguments) {
+		logger.info(msg, arguments);
+	}
+
+	public void trace(String msg, Object... arguments) {
+		logger.trace(msg, arguments);
+	}
+
+	public void debug(String msg, Object... arguments) {
+		logger.debug(msg, arguments);
 	}
 
 	/**
@@ -943,7 +959,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 							List<EtlItemConfiguration> dynamicItems = item.generateDynamicItems(this, conn);
 
 							if (utilities.listHasElement(dynamicItems)) {
-								logDebug("Found Dynamic Item on position [" + counter.getCounter() + "] whith "
+								debug("Found Dynamic Item on position [" + counter.getCounter() + "] whith "
 										+ dynamicItems.size() + " returned item!");
 
 								for (EtlItemConfiguration dItem : dynamicItems) {
@@ -953,7 +969,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 								}
 
 							} else {
-								logWarn("No Item was returned on dynamic item [" + counter.getCounter() + "]");
+								warn("No Item was returned on dynamic item [" + counter.getCounter() + "]");
 							}
 
 						} else {
@@ -967,11 +983,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 							allItem.add(item);
 
-							logInfo("Starting initialization of item " + counter);
+							info("Starting initialization of item " + counter);
 
 							item.init(this, false, srcConn, dstConn);
 
-							logInfo("Item initialized: " + item.getConfigCode());
+							info("Item initialized: " + item.getConfigCode());
 						}
 					}
 
@@ -1040,11 +1056,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		if (!existRelatedRecursiveRecordInfoTable(conn)) {
-			logDebug("GENERATING RELATED RECURSIVE TABLE");
+			debug("GENERATING RELATED RECURSIVE TABLE");
 
 			createRecordWithDefaultParentInfoTable(conn);
 
-			logDebug("RELATEDRECURSIVE TABLE GENERATED");
+			debug("RELATEDRECURSIVE TABLE GENERATED");
 		}
 
 		if (this.hasDstConnInfo()) {
@@ -1080,13 +1096,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		if (!this.hasParentEtlConf()) {
 
-			logWarn("Ensuring execution of startup scripts...");
+			warn("Ensuring execution of startup scripts...");
 
 			File srcScriptsDir = this.getSrcSqlStartupScriptsDirectory();
 
 			if (srcScriptsDir.listFiles() != null) {
 
-				logDebug("Found " + srcScriptsDir.listFiles().length + " Scripts on src startup scripts!");
+				debug("Found " + srcScriptsDir.listFiles().length + " Scripts on src startup scripts!");
 
 				for (File script : srcScriptsDir.listFiles()) {
 					if (!scriptAlredExecuted(EtlSide.SRC, script)) {
@@ -1097,7 +1113,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 						DBUtilities.runScriptOnDbServer(srcConnInfo, script.getAbsolutePath());
 						markScriptAsExecuted(EtlSide.SRC, script);
 					} else {
-						logWarn("Script was already executed: " + script);
+						warn("Script was already executed: " + script);
 					}
 				}
 			}
@@ -1117,12 +1133,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 							DBUtilities.runScriptOnDbServer(dstConnInfo, script.getAbsolutePath());
 							markScriptAsExecuted(EtlSide.DST, script);
 						} catch (Exception e) {
-							logErr("Error found while executing script ''" + script + "'", e);
+							err("Error found while executing script ''" + script + "'", e);
 
 							throw e;
 						}
 					} else {
-						logWarn("Script was already executed: " + script);
+						warn("Script was already executed: " + script);
 					}
 
 				}
@@ -1197,11 +1213,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		try {
 			for (EtlItemConfiguration conf : this.getEtlItemConfiguration()) {
 				if (!conf.isFullLoaded()) {
-					logDebug("PERFORMING FULL CONFIGURATION LOAD ON ETL '" + conf.getConfigCode() + "'");
+					debug("PERFORMING FULL CONFIGURATION LOAD ON ETL '" + conf.getConfigCode() + "'");
 					conf.fullLoad(null);
 				}
 
-				logDebug("THE FULL CONFIGURATION LOAD HAS DONE ON ETL '" + conf.getConfigCode() + "'");
+				debug("THE FULL CONFIGURATION LOAD HAS DONE ON ETL '" + conf.getConfigCode() + "'");
 			}
 
 			this.fullLoaded = true;
@@ -1921,8 +1937,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 					done = true;
 				} catch (ConcurrentModificationException e) {
-					logTrace(
-							"ConcurrentModificationException found when finding on loaded table. The aplication will retry");
+					trace("ConcurrentModificationException found when finding on loaded table. The aplication will retry");
 					TimeCountDown.sleep(2);
 				}
 			}

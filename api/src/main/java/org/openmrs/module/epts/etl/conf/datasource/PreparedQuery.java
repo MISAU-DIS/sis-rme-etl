@@ -120,11 +120,11 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	}
 
 	void logTrace(String msg) {
-		getRelatedEtlConf().logTrace(msg);
+		getRelatedEtlConf().trace(msg);
 	}
 
 	void logDebug(String msg) {
-		getRelatedEtlConf().logDebug(msg);
+		getRelatedEtlConf().debug(msg);
 	}
 
 	public void setQuery(String query) {
@@ -211,22 +211,23 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		this.queryParams = queryParams;
 	}
 
-	public PreparedQueryInfo generatePreparedQuery(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+	public PreparedQueryInfo generatePreparedQuery(EtlConfiguration relatedEtlConfiguration, EtlProcessor processor,
+			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects,
+			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		return generatePreparedQuery(processor, srcObject, dstObject, avaliableSrcObjects, this.query, conn);
+		return generatePreparedQuery(relatedEtlConfiguration, processor, srcObject, dstObject, avaliableSrcObjects,
+				this.query, conn);
 	}
 
-	public PreparedQueryInfo generatePreparedQuery(String query, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+	public PreparedQueryInfo generatePreparedQuery(EtlConfiguration relatedEtlConfiguration, String query,
+			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		return this.generatePreparedQuery(null, null, null, null, conn);
+		return this.generatePreparedQuery(relatedEtlConfiguration, null, null, null, null, conn);
 	}
 
-	public PreparedQueryInfo generatePreparedQuery(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, String query, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+	public PreparedQueryInfo generatePreparedQuery(EtlConfiguration relatedEtlConfiguration, EtlProcessor processor,
+			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects,
+			String query, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		List<FieldTransformingInfo> params = new ArrayList<>();
 
@@ -239,7 +240,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			pQuery = applyQueryParameterValues(pQuery, paramValues, params);
 		}
 
-		return new PreparedQueryInfo(pQuery, params);
+		return new PreparedQueryInfo(pQuery, query, relatedEtlConfiguration, params);
 	}
 
 	private Map<String, FieldTransformingInfo> resolveQueryParameterValues(EtlProcessor processor,
@@ -845,8 +846,9 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<EtlDatabaseObject> query(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> srcObjects, Connection conn) throws DBException {
+	public List<EtlDatabaseObject> query(EtlConfiguration relatedEtlConfiguration, EtlProcessor processor,
+			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, List<EtlDatabaseObject> srcObjects,
+			Connection conn) throws DBException {
 
 		if (this.isCountQuery()) {
 			IntervalExtremeRecord limits = this.detemineLimits(processor.getEngine(), conn);
@@ -863,13 +865,13 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			return utilities.parseToList(obj);
 		}
 
-		PreparedQueryInfo pq = generatePreparedQuery(processor, srcObject, dstObject, srcObjects, this.getQuery(),
-				conn);
+		PreparedQueryInfo pq = generatePreparedQuery(relatedEtlConfiguration, processor, srcObject, dstObject,
+				srcObjects, this.getQuery(), conn);
 
 		Object[] params = pq.extractParametersValueToArray();
 
 		return (List<EtlDatabaseObject>) DatabaseObjectDAO.search(this.getDataSource().getLoadHealper(),
-				this.getDataSource().getSyncRecordClass(), pq.getQuery(), params, conn);
+				this.getDataSource().getSyncRecordClass(), pq.getPreparedQuery(), params, conn);
 	}
 
 	@Override

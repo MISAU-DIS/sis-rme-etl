@@ -51,6 +51,10 @@ public class EtlLogger {
 		warn(msg, msg, logIntervalInSeconds, suppressIfAnyRecentLog);
 	}
 
+	public void warn(String msg, Object... arguments) {
+		log(Level.WARN, msg, null, arguments);
+	}
+
 	public void warn(String key, String msg, double logIntervalInSeconds, boolean suppressIfAnyRecentLog) {
 
 		if (!isEnabled(Level.WARN)) {
@@ -99,7 +103,7 @@ public class EtlLogger {
 		log(Level.ERROR, msg, null);
 	}
 
-	public void error(String msg, Exception e) {
+	public void err(String msg, Exception e) {
 		log(Level.ERROR, msg, e);
 	}
 
@@ -111,16 +115,26 @@ public class EtlLogger {
 		log(Level.TRACE, msg, null);
 	}
 
-	public void error(String msg, Object... arguments) {
-		log(Level.ERROR, msg, null, arguments);
+	public void err(String msg, Throwable throwable, Object... arguments) {
+		log(Level.ERROR, msg, throwable, arguments);
 	}
 
 	public void info(String msg, Object... arguments) {
 		log(Level.INFO, msg, null, arguments);
 	}
 
+	public void trace(String msg, Object... arguments) {
+		log(Level.TRACE, msg, null, arguments);
+	}
+
+	public void debug(String msg, Object... arguments) {
+		log(Level.DEBUG, msg, null, arguments);
+	}
+
 	private boolean log(Level msgLevel, String msg, Throwable throwable) {
-		return log(msgLevel, msg, throwable, null);
+		Object[] arguments = null;
+
+		return log(msgLevel, msg, throwable, arguments);
 	}
 
 	private boolean log(Level msgLevel, String msg, Throwable throwable, Object... arguments) {

@@ -76,8 +76,8 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 			prepare(avaliableSrcObjects, srcConn);
 		}
 
-		return this.getDefaultPreparedQuery().query(null, parentSrcObject, parentSrcObject, avaliableSrcObjects,
-				srcConn);
+		return this.getDefaultPreparedQuery().query(this.getRelatedEtlConf(), null, parentSrcObject, parentSrcObject,
+				avaliableSrcObjects, srcConn);
 	}
 
 	default void loadOwnFieldsToEtlFields(List<EtlField> etlFields, Boolean presereOriginalNames) {

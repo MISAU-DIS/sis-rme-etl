@@ -966,7 +966,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public void recalculateThreads(List<EtlItemConfiguration> avaliableItems) {
-		getRelatedEtlConfig().logInfo("Determining optimal threads...");
+		getRelatedEtlConfig().info("Determining optimal threads...");
 
 		if (this.getThreadingMode().isMultiThread()) {
 
@@ -997,7 +997,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			msg += "Thread to use per item          : " + treadPerItem + "\n";
 			msg += "------------------------------------";
 
-			this.getRelatedEtlConfig().logInfo(msg);
+			this.getRelatedEtlConfig().info(msg);
 
 			this.setMaxSupportedProcessors((int) treadPerItem);
 		} else {

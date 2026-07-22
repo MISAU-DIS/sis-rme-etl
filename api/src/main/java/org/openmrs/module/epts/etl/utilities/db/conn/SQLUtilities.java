@@ -2345,28 +2345,29 @@ public class SQLUtilities {
 		return aliases;
 	}
 
-	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String query,
+	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String originalQuery,
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
 			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		query = normalizeQuery(query);
+		String preparedQuery = normalizeQuery(originalQuery);
 
-		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
-				.toString().toLowerCase();
+		preparedQuery = EtlFieldTransformer
+				.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, preparedQuery).toString()
+				.toLowerCase();
 
 		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
 
-		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, knownTableAliases,
-				avaliableSrcObjects, relatedEtlConf, conn);
+		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(preparedQuery,
+				knownTableAliases, avaliableSrcObjects, relatedEtlConf, conn);
 
 		for (ResolvedQueryElement element : resolvedElements) {
 
-			query = replaceFirstLiteralTokenWithQuestionMark(query, element.getToken());
+			preparedQuery = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken());
 
 			resolvedValues.add(element.getValueInfo());
 		}
 
-		return new PreparedQueryInfo(query, resolvedValues);
+		return new PreparedQueryInfo(preparedQuery, originalQuery, relatedEtlConf, resolvedValues);
 	}
 
 	public static String ensureDataSourceElementsReplaced(String query, List<String> knownTableAliases,

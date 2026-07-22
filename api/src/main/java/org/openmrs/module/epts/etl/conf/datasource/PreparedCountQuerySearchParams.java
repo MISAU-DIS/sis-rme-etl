@@ -11,77 +11,80 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.base.VOLoaderHelper;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 /**
- * This search params allow the count query in multi-thread in a {@link PreparedQuery}
+ * This search params allow the count query in multi-thread in a
+ * {@link PreparedQuery}
  */
 public class PreparedCountQuerySearchParams extends AbstractEtlSearchParams<EtlDatabaseObject> {
-	
+
 	PreparedQuery preparedQuery;
-	
+
 	public PreparedCountQuerySearchParams(PreparedQuery preparedQuery, IntervalExtremeRecord a) {
 		super(null, null);
-		
+
 		this.preparedQuery = preparedQuery;
 	}
-	
+
 	public PreparedQuery getPreparedQuery() {
 		return preparedQuery;
 	}
-	
+
 	public TableConfiguration getMainTableConf() {
 		return getPreparedQuery().getCountFunctionInfo().getMainTable();
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> cloneMe() {
 		return null;
 	}
-	
+
 	@Override
 	protected VOLoaderHelper getLoaderHealper() {
 		return null;
 	}
-	
+
 	@Override
 	public String generateDestinationExclusionClause(Connection srcConn, Connection dstConn) throws DBException {
 		return null;
 	}
-	
+
 	@Override
 	public SearchClauses<EtlDatabaseObject> generateSearchClauses(IntervalExtremeRecord intervalExtremeRecord,
-	        EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
-	        Connection dstConn) throws DBException {
-		
+			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
+
 		SearchClauses<EtlDatabaseObject> searchClauses = new SearchClauses<EtlDatabaseObject>(this);
-		
+
 		searchClauses.addColumnToSelect("1");
-		
-		PreparedQueryInfo pq = this.getPreparedQuery().generatePreparedQuery(null, parentObject, parentObject,
-		    auxDataSourceObjects, srcConn);
-		
-		searchClauses.addToClauseFrom(SQLUtilities.extractFromClauseOnSqlSelectQuery(pq.getQuery()));
-		searchClauses.addToClauses(SQLUtilities.extractWhereClauseInASelectQuery(pq.getQuery()));
-		
+
+		PreparedQueryInfo pq = this.getPreparedQuery().generatePreparedQuery(
+				((OpenConnection) srcConn).getDbConnInfo().getRelatedEtlConf(), null, parentObject, parentObject,
+				auxDataSourceObjects, srcConn);
+
+		searchClauses.addToClauseFrom(SQLUtilities.extractFromClauseOnSqlSelectQuery(pq.getPreparedQuery()));
+		searchClauses.addToClauses(SQLUtilities.extractWhereClauseInASelectQuery(pq.getPreparedQuery()));
+
 		TableConfiguration tabConf = this.getPreparedQuery().getCountFunctionInfo().getMainTable();
-		
-		searchClauses.addToClauses(
-		    tabConf.getTableAlias() + "." + tabConf.getPrimaryKey().retrieveSimpleKeyColumnName() + " between ? and ?");
-		
+
+		searchClauses.addToClauses(tabConf.getTableAlias() + "." + tabConf.getPrimaryKey().retrieveSimpleKeyColumnName()
+				+ " between ? and ?");
+
 		searchClauses.addToParameters(pq.getParameters());
-		
+
 		searchClauses.addToParameters(intervalExtremeRecord.getMinRecordId());
 		searchClauses.addToParameters(intervalExtremeRecord.getMaxRecordId());
-		
+
 		return searchClauses;
 	}
-	
+
 	@Override
 	public int countNotProcessedRecords(OperationController<EtlDatabaseObject> controller, Connection conn)
-	        throws DBException {
+			throws DBException {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-	
+
 }

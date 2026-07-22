@@ -20,8 +20,8 @@ public class ExpansionQueryDataSource extends QueryDataSourceConfig implements E
 			prepare(availableSourceObjects, srcConn);
 		}
 
-		return this.getDefaultPreparedQuery().query(processor, primarySourceObject, dstObject, availableSourceObjects,
-				srcConn);
+		return this.getDefaultPreparedQuery().query(processor.getRelatedEtlConfiguration(), processor,
+				primarySourceObject, dstObject, availableSourceObjects, srcConn);
 	}
 
 	@Override

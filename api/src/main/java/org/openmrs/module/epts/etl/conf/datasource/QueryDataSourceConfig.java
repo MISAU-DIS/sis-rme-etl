@@ -258,18 +258,20 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		PreparedQuery query;
 		try {
 
-			getRelatedEtlConf().logDebug("Initializing full loading of QueryDataSourceConfig [" + this.getName() + "]");
+			getRelatedEtlConf().debug("Initializing full loading of QueryDataSourceConfig [" + this.getDesc() + "]");
 
 			query = PreparedQuery.prepare(this, getRelatedEtlConf(), null, true,
 					DbmsType.determineFromConnection(conn));
 
-			getRelatedEtlConf().logTrace("Determining fields for query...");
+			getRelatedEtlConf().trace("Determining fields for query...");
 
-			PreparedQueryInfo pq = query.generatePreparedQuery(this.getQuery(), conn);
+			PreparedQueryInfo pq = query.generatePreparedQuery(this.getRelatedEtlConfiguration(), this.getQuery(),
+					conn);
 
-			setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), pq.extractParametersValueToArray(), conn));
+			setFields(SQLUtilities.determineFieldsFromQuery(pq.getPreparedQuery(), pq.extractParametersValueToArray(),
+					conn));
 
-			getRelatedEtlConf().logDebug("QueryDataSourceConfig [" + this.getName() + "] full loaded!");
+			getRelatedEtlConf().debug("QueryDataSourceConfig [" + this.getDesc() + "] full loaded!");
 
 			this.fullLoaded = true;
 		} catch (ForbiddenOperationException | InvalidDataSourceOnFieldDefifitionException
@@ -290,29 +292,38 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			return;
 		}
 
+		this.getRelatedEtlConf().trace("Starting Preparation of QueryDataSourceConfig: " + this.getDesc());
+
 		synchronized (stringLock) {
+			if (isPrepared()) {
+				return;
+			}
+
+			this.getRelatedEtlConf().trace("Preparing QueryDataSourceConfig: " + this.getDesc());
+
 			PreparedQuery query = PreparedQuery.prepare(this,
 					EtlDataSource.extractDataSourceFromObjects(avaliableSrcObjects), getRelatedEtlConf(),
 					DbmsType.determineFromConnection(conn));
 
 			if (!isDoNotLoadFields()) {
 
-				PreparedQueryInfo pq = query.generatePreparedQuery(null, null, null, avaliableSrcObjects, conn);
+				PreparedQueryInfo pq = query.generatePreparedQuery(this.getRelatedEtlConfiguration(), null, null, null,
+						avaliableSrcObjects, conn);
 
 				Object[] params = pq.extractParametersValueToArray();
 
 				try {
-					setFields(SQLUtilities.determineFieldsFromQuery(pq.getQuery(), params, conn));
+					setFields(SQLUtilities.determineFieldsFromQuery(pq.getPreparedQuery(), params, conn));
 				} catch (DBException e) {
-					throw new DBException(
-							"Error computing the query " + (this.getName() != null ? this.getName() : this.getQuery()),
-							e);
+					throw new DBException("Error computing QueryDataSourceConfig " + this.getDesc(), e);
 				}
 			}
 
 			this.fullLoaded = true;
 
 			this.defaultPreparedQuery = query;
+
+			this.getRelatedEtlConf().trace("QueryDataSourceConfig Prepared: " + this.getDesc());
 		}
 	}
 
@@ -497,6 +508,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
 			throws DBException {
 
+		this.getRelatedEtlConf().trace("Loading related Src Objects for Query DataSource: " + this.getDesc());
+
 		if (avaliableSrcObjects != null) {
 			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), srcConn, srcConn)) {
 				return null;
@@ -507,8 +520,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			this.prepare(avaliableSrcObjects, srcConn);
 		}
 
-		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject,
-				avaliableSrcObjects, srcConn);
+		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConfiguration(),
+				processor, srcObject, dstObject, avaliableSrcObjects, srcConn);
 
 		if (utilities.listHasNoElement(list)) {
 			return null;
@@ -521,9 +534,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				objs.addAll(avaliableSrcObjects);
 			}
 
-			list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject, avaliableSrcObjects, srcConn);
+			list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConfiguration(), processor, srcObject,
+					dstObject, avaliableSrcObjects, srcConn);
 
-			throw new ForbiddenOperationException("The datasource (" + (hasName() ? this.getName() : this)
+			throw new ForbiddenOperationException("The query datasource (" + this.getDesc()
 					+ ") returned more than one src objects for src objects: " + objs);
 		}
 
@@ -615,6 +629,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@Override
 	public String toString() {
 		return "Query " + getName() + "\nQuery\n--------------------\n" + getQuery() + "\n--------------------";
+	}
+
+	public String getDesc() {
+		return this.hasName() ? this.getName() : this.getQuery();
 	}
 
 	@Override

@@ -42,6 +42,14 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		this.field = field;
 	}
 
+	public void traceTransformationInitialization(TransformableField field) {
+		logTrace("Starting transformation of field {} within {}", field.toString(), this.toString());
+	}
+
+	public void traceTransformationFinalization(TransformableField field) {
+		logTrace("Finished transformation of field {} within {}", field.toString(), this.toString());
+	}
+
 	public ActionOnEtlIssue getOnNullTransformedvalue() {
 		return onNullTransformedvalue;
 	}
@@ -93,7 +101,11 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	}
 
 	protected void logTrace(String msg) {
-		this.relatedEtlTransformTarget.getRelatedEtlConf().logTrace(msg);
+		this.relatedEtlTransformTarget.getRelatedEtlConf().trace(msg);
+	}
+
+	protected void logTrace(String msg, Object... arguments) {
+		this.relatedEtlTransformTarget.getRelatedEtlConf().trace(msg, arguments);
 	}
 
 	@Override
