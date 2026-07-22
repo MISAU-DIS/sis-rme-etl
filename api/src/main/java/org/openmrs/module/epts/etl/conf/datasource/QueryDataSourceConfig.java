@@ -523,7 +523,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 			list = this.getDefaultPreparedQuery().query(processor, srcObject, dstObject, avaliableSrcObjects, srcConn);
 
-			throw new ForbiddenOperationException("The datasource (" + this.getName()
+			throw new ForbiddenOperationException("The datasource (" + (hasName() ? this.getName() : this)
 					+ ") returned more than one src objects for src objects: " + objs);
 		}
 
@@ -539,6 +539,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		}
 
 		return result;
+	}
+
+	public boolean hasName() {
+		return utilities.stringHasValue(this.getName());
 	}
 
 	@Override

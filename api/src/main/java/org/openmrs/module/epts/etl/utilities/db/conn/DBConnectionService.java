@@ -7,8 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
-import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -39,42 +39,54 @@ public class DBConnectionService {
 		this.dataSource.setUsername(dbConnInfo.getDataBaseUserName());
 		this.dataSource.setPassword(dbConnInfo.getDataBaseUserPassword());
 
-		this.dataSource.setInitialSize(10);
+		int maxActive = dbConnInfo.getMaxActiveConnections() > 0 ? dbConnInfo.getMaxActiveConnections() : 16;
 
-		this.dataSource
-				.setMaxActive(dbConnInfo.getMaxActiveConnections() > 0 ? dbConnInfo.getMaxActiveConnections() : 16);
+		int maxIdle = dbConnInfo.getMaxIdleConnections() > 0 ? dbConnInfo.getMaxIdleConnections() : 8;
 
+		int minIdle = dbConnInfo.getMinIdleConnections() > 0 ? dbConnInfo.getMinIdleConnections() : 2;
+
+		this.dataSource.setInitialSize(minIdle);
+		this.dataSource.setMinIdle(minIdle);
+		this.dataSource.setMaxIdle(maxIdle);
+		this.dataSource.setMaxActive(maxActive);
 		this.dataSource.setMaxWait(30_000);
-
-		this.dataSource.setMaxIdle(dbConnInfo.getMaxIdleConnections() > 0 ? dbConnInfo.getMaxIdleConnections() : 8);
-
-		this.dataSource.setMinIdle(dbConnInfo.getMinIdleConnections() > 0 ? dbConnInfo.getMinIdleConnections() : 2);
 
 		this.dataSource.setDefaultAutoCommit(dbConnInfo.isAutoCommit());
 		this.dataSource.setDefaultTransactionIsolation(dbConnInfo.getIsolationLevel().level);
 
 		/*
-		 * Validação das conexões.
+		 * Validação.
 		 */
 		this.dataSource.setTestOnConnect(true);
 		this.dataSource.setTestOnBorrow(true);
 		this.dataSource.setTestWhileIdle(true);
 
-		this.dataSource.setValidationQuery("SELECT 1");
+		this.dataSource.setValidationQuery("/* ping */ SELECT 1");
+		// this.dataSource.setValidationQueryTimeout(5);
 		this.dataSource.setValidationInterval(30_000);
 		this.dataSource.setLogValidationErrors(true);
 
 		/*
-		 * Limpeza das conexões ociosas.
+		 * Limpeza periódica.
 		 */
 		this.dataSource.setTimeBetweenEvictionRunsMillis(60_000);
 		this.dataSource.setMinEvictableIdleTimeMillis(5 * 60_000);
 
 		/*
-		 * Diagnóstico.
+		 * Renovação obrigatória.
+		 *
+		 * Deve ser menor que wait_timeout e que os timeouts de firewall, proxy ou
+		 * balanceador.
 		 */
-		this.dataSource.setRemoveAbandoned(false);
+		this.dataSource.setMaxAge(20 * 60_000L);
+
+		/*
+		 * Diagnóstico de conexões não devolvidas.
+		 */
+		this.dataSource.setRemoveAbandoned(true);
+		this.dataSource.setRemoveAbandonedTimeout(600);
 		this.dataSource.setLogAbandoned(true);
+		this.dataSource.setAbandonWhenPercentageFull(75);
 	}
 
 	@Override
@@ -166,37 +178,111 @@ public class DBConnectionService {
 		}
 	}
 
-	private synchronized Connection openConnection() throws DBException {
+	private Connection openConnection() throws DBException {
 
-		int qtyTry = 50;
+		final int maxAttempts = 5;
+		final long retryDelayMillis = 2_000L;
 
-		SQLException exception = null;
+		SQLException lastException = null;
 
-		while (qtyTry >= 0) {
+		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+			logger.info("Obtendo conexão. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt,
+					maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
+					dataSource.getWaitCount());
+
 			try {
-				Connection conn = this.dataSource.getConnection();
+				Connection connection = dataSource.getConnection();
 
-				return conn;
+				logger.info("Conexão obtida. attempt={}, active={}, idle={}, size={}, waitCount={}", attempt,
+						dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(), dataSource.getWaitCount());
+
+				return connection;
+
 			} catch (SQLException e) {
-				exception = e;
+				lastException = e;
 
-				logger.warn("OpenedConnections: " + OpenConnection.qtyOpenedConnections + ", ClosedConnections: "
-						+ OpenConnection.qtyClosedConnections);
+				logger.error(
+						"Falha ao obter conexão. attempt={}/{}, active={}, idle={}, "
+								+ "size={}, waitCount={}, sqlState={}, errorCode={}, message={}",
+						attempt, maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
+						dataSource.getWaitCount(), e.getSQLState(), e.getErrorCode(), e.getMessage(), e);
 
-				if (DBUtilities.determineDataBaseFromException(e).equals(DBUtilities.MYSQL_DATABASE)) {
-					if (DBException.checkIfExceptionContainsMessage(e, "Unknown database")) {
-						throw new DBException(e);
-					}
+				logExceptionChain(e);
+
+				if (isUnknownDatabase(e)) {
+					throw new DBException(e);
 				}
 
-				logger.error("Nao foi possivel obter a conexao. Tentando novamente obter a conexao novamente...", e);
+				if (!isTransientConnectionFailure(e)) {
+					throw new DBException(e);
+				}
 
-				TimeCountDown.sleep(2);
+				if (attempt < maxAttempts) {
+					sleepBeforeRetry(retryDelayMillis);
+				}
 			}
-
-			qtyTry--;
 		}
 
-		throw new DBException(exception);
+		throw new DBException(lastException);
+	}
+
+	private boolean isUnknownDatabase(SQLException e) {
+		return DBUtilities.MYSQL_DATABASE.equals(DBUtilities.determineDataBaseFromException(e))
+				&& DBException.checkIfExceptionContainsMessage(e, "Unknown database");
+	}
+
+	private boolean isTransientConnectionFailure(SQLException e) {
+
+		SQLException current = e;
+
+		while (current != null) {
+			String sqlState = current.getSQLState();
+
+			/*
+			 * SQLState classe 08 = connection exception.
+			 */
+			if (sqlState != null && sqlState.startsWith("08")) {
+				return true;
+			}
+
+			Throwable cause = current.getCause();
+
+			while (cause != null) {
+				if (cause instanceof java.net.SocketException || cause instanceof java.net.ConnectException
+						|| cause instanceof java.net.SocketTimeoutException) {
+					return true;
+				}
+
+				cause = cause.getCause();
+			}
+
+			current = current.getNextException();
+		}
+
+		return false;
+	}
+
+	private void logExceptionChain(SQLException exception) {
+
+		SQLException current = exception;
+		int index = 1;
+
+		while (current != null) {
+			logger.error("SQLException[{}]: type={}, sqlState={}, errorCode={}, message={}", index,
+					current.getClass().getName(), current.getSQLState(), current.getErrorCode(), current.getMessage());
+
+			current = current.getNextException();
+			index++;
+		}
+	}
+
+	private void sleepBeforeRetry(long millis) throws EtlConfException {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new EtlConfException(e);
+		}
 	}
 }

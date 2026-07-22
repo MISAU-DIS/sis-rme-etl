@@ -453,6 +453,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		List<EtlDatabaseObject> allObjs = srcObjects != null ? srcObjects
 				: (srcObject != null ? utilities.parseToList(srcObject) : null);
 
+		String onDemand = this.getOnDemandCheckCondition();
+
+		logTrace(onDemand);
+
 		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
 				this.getOnDemandCheckCondition(), null, allObjs, getRelatedEtlConf(), dstConn);
 
