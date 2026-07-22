@@ -111,15 +111,19 @@ public class EtlLogger {
 		log(Level.TRACE, msg, null);
 	}
 
-	public void error(String format, Object... arguments) {
-		logger.error(format, arguments);
+	public void error(String msg, Object... arguments) {
+		log(Level.ERROR, msg, null, arguments);
 	}
 
-	public void info(String format, Object... arguments) {
-		logger.info(format, arguments);
+	public void info(String msg, Object... arguments) {
+		log(Level.INFO, msg, null, arguments);
 	}
 
 	private boolean log(Level msgLevel, String msg, Throwable throwable) {
+		return log(msgLevel, msg, throwable, null);
+	}
+
+	private boolean log(Level msgLevel, String msg, Throwable throwable, Object... arguments) {
 
 		if (!isEnabled(msgLevel)) {
 			return false;
@@ -130,26 +134,26 @@ public class EtlLogger {
 		switch (msgLevel) {
 		case ERROR:
 			if (throwable != null) {
-				logger.error(finalMsg, throwable);
+				logger.error(finalMsg, throwable, arguments);
 			} else {
-				logger.error(finalMsg);
+				logger.error(finalMsg, arguments);
 			}
 			break;
 
 		case WARN:
-			logger.warn(finalMsg);
+			logger.warn(finalMsg, arguments);
 			break;
 
 		case INFO:
-			logger.info(finalMsg);
+			logger.info(finalMsg, arguments);
 			break;
 
 		case DEBUG:
-			logger.debug(finalMsg);
+			logger.debug(finalMsg, arguments);
 			break;
 
 		case TRACE:
-			logger.trace(finalMsg);
+			logger.trace(finalMsg, arguments);
 			break;
 
 		default:
