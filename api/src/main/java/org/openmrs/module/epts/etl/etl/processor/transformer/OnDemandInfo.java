@@ -118,11 +118,17 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 						this.parentSourceField = srcFieldOrValue;
 
-						this.parentSourceIdMapping = utilities.stringHasValue(this.parentSourceField)
-								? new FieldsMapping(relatedEtlTransformTarget, this.parentSourceField,
-										relatedEtlTransformTarget.getSrcConf().getTableAlias(), field.getDstField(),
-										conn)
-								: null;
+						if (utilities.stringHasValue(this.parentSourceField)) {
+
+							String srcField = this.parentSourceField;
+							String dstField1 = field.getDstField();
+							String dataSourceName = relatedEtlTransformTarget.getSrcConf().getTableAlias();
+						
+							this.parentSourceIdMapping = FieldsMapping.fastCreate(relatedEtlTransformTarget, srcField,
+									dataSourceName, dstField1, conn);
+						} else {
+							this.parentSourceIdMapping = null;
+						}
 
 					} else if (dstField.equals("on_demand_check_condition")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
