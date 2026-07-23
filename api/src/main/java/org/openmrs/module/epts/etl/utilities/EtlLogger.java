@@ -23,15 +23,22 @@ public class EtlLogger {
 	private final Level level;
 
 	private volatile boolean blocked;
+	private Class<?> clazz;
 
 	public <T> EtlLogger(Class<T> clazz) {
 		this(LoggerFactory.getLogger(clazz));
+
+		this.clazz = clazz;
 	}
 
 	public EtlLogger(Logger logger) {
 		this.logger = logger;
 		this.level = determineLogLevel();
 		this.blocked = false;
+	}
+
+	public Class<?> getClazz() {
+		return clazz;
 	}
 
 	public static <T> EtlLogger getLogger(Class<T> clazz) {
@@ -136,7 +143,7 @@ public class EtlLogger {
 
 	private boolean log(Level msgLevel, String msg, Throwable throwable, Object... arguments) {
 
-		if (!isEnabled(msgLevel)) {
+		if (!this.isEnabled(msgLevel)) {
 			return false;
 		}
 
@@ -179,12 +186,7 @@ public class EtlLogger {
 	}
 
 	private boolean isEnabled(Level msgLevel) {
-
 		if (blocked) {
-			return false;
-		}
-
-		if (msgLevel.compareTo(level) > 0) {
 			return false;
 		}
 

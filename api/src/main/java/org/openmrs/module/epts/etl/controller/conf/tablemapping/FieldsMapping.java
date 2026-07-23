@@ -382,9 +382,10 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 				if (target instanceof FastEtlTransformingTarget && !target.hasDataSource()) {
 					this.setDataSourceName(dataSourceName);
-				} else
+				} else {
 					throw new InvalidDataSourceOnFieldDefifitionException(this.getOriginalSrcFieldDefinition(),
 							dataSourceName);
+				}
 			}
 		} else {
 			try {

@@ -735,24 +735,56 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 		String objectId = "objectId = " + (this.getObjectId() != null ? this.getObjectId() : "");
 
-		String ukeys = "";
+		String objectName = null;
+
+		if (this.getRelatedConfiguration() instanceof TableConfiguration) {
+			objectName = ((TableConfiguration) this.getRelatedConfiguration()).getTableAlias();
+		} else {
+			objectName = this.getObjectName();
+		}
+
+		StringBuilder uniqueKeysDesc = new StringBuilder();
 
 		if (utilities.listHasElement(getUniqueKeysInfo())) {
-			int i = 0;
+			for (UniqueKeyInfo uniqueKey : getUniqueKeysInfo()) {
+				uniqueKey.loadValuesToFields(this);
 
-			for (UniqueKeyInfo uk : getUniqueKeysInfo()) {
-				uk.loadValuesToFields(this);
+				if (uniqueKeysDesc.length() > 0) {
+					uniqueKeysDesc.append(", ");
+				}
 
-				if (i > 0)
-					ukeys += ", ";
-
-				ukeys += uk.toString();
-
-				i++;
+				uniqueKeysDesc.append(uniqueKey);
 			}
 		}
 
-		return "[" + utilities.concatStringsWithSeparator(objectId, ukeys, ",") + "]";
+		StringBuilder fieldsDesc = new StringBuilder();
+
+		if (utilities.listHasElement(getFields())) {
+			for (Field field : getFields()) {
+				if (fieldsDesc.length() > 0) {
+					fieldsDesc.append(", ");
+				}
+
+				fieldsDesc.append(field.getName()).append(" = ")
+						.append(field.getValue() != null ? field.getValue() : "");
+			}
+		}
+
+		StringBuilder description = new StringBuilder(objectName + "[");
+
+		description.append(objectId);
+
+		if (uniqueKeysDesc.length() > 0) {
+			description.append(", uniqueKeys = {").append(uniqueKeysDesc).append("}");
+		}
+
+		if (fieldsDesc.length() > 0) {
+			description.append(", fields = {").append(fieldsDesc).append("}");
+		}
+
+		description.append("]");
+
+		return description.toString();
 	}
 
 	@Override

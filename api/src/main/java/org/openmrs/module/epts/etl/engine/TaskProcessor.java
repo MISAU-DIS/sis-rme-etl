@@ -272,8 +272,16 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		monitor.logDebug(msg);
 	}
 
+	public void logDebug(String msg, Object... arguments) {
+		monitor.logDebug(msg, arguments);
+	}
+
 	public void logTrace(String msg) {
 		monitor.logTrace(msg);
+	}
+
+	public void logTrace(String msg, Object... arguments) {
+		monitor.logTrace(msg, arguments);
 	}
 
 	public void logWarn(String msg) {

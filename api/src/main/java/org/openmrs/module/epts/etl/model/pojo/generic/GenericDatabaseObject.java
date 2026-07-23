@@ -534,22 +534,6 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	@JsonIgnore
-	public String toString() {
-
-		String tableName = this.relatedConfiguration != null ? this.relatedConfiguration.getObjectName()
-				: "Aknown Object";
-
-		String tableNameAlias = "N/A";
-
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			tableNameAlias = ((TableConfiguration) this.relatedConfiguration).getTableAlias();
-		}
-
-		return tableName + "(" + tableNameAlias + "): " + super.toString();
-	}
-
-	@Override
 	public void copyFrom(EtlDatabaseObject copyFrom) {
 
 		if (copyFrom == null) {

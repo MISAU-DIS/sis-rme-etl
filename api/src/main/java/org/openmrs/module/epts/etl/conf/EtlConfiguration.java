@@ -855,6 +855,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	 * @throws DBException
 	 */
 	public void init(OpenConnection conn) throws ForbiddenOperationException, DBException {
+		initLogger();
+
 		if (initialized || disabled) {
 			return;
 		}
@@ -1206,8 +1208,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public void fullLoad() {
 		if (this.fullLoaded)
 			return;
-
-		initLogger();
 
 		try {
 			for (EtlItemConfiguration conf : this.getEtlItemConfiguration()) {

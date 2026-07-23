@@ -8,7 +8,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
-import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -16,9 +15,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @author jpboane
  */
 public class DBConnectionService {
-
-	private static final EtlLogger logger = EtlLogger.getLogger(DBConnectionService.class);
-
 	private final Object LOCK = new Object();
 
 	private static List<DBConnectionService> services = new CopyOnWriteArrayList<DBConnectionService>();
@@ -187,14 +183,15 @@ public class DBConnectionService {
 
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 
-			logger.trace("Obtendo conexão. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt,
-					maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
-					dataSource.getWaitCount());
+			getDbConnInfo().getRelatedEtlConf().trace(
+					"Obtendo conexão. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt, maxAttempts,
+					dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(), dataSource.getWaitCount());
 
 			try {
 				Connection connection = dataSource.getConnection();
 
-				logger.trace("Conexão obtida. attempt={}, active={}, idle={}, size={}, waitCount={}", attempt,
+				getDbConnInfo().getRelatedEtlConf().trace(
+						"Conexão obtida. attempt={}, active={}, idle={}, size={}, waitCount={}", attempt,
 						dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(), dataSource.getWaitCount());
 
 				return connection;
@@ -202,11 +199,11 @@ public class DBConnectionService {
 			} catch (SQLException e) {
 				lastException = e;
 
-				logger.err(
-						"Falha ao obter conexão. attempt={}/{}, active={}, idle={}, "
-								+ "size={}, waitCount={}, sqlState={}, errorCode={}, message={}",
-						e, attempt, maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
-						dataSource.getWaitCount(), e.getSQLState(), e.getErrorCode(), e.getMessage());
+				getDbConnInfo().getRelatedEtlConf()
+						.err("Falha ao obter conexão. attempt={}/{}, active={}, idle={}, "
+								+ "size={}, waitCount={}, sqlState={}, errorCode={}, message={}", e, attempt,
+								maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
+								dataSource.getWaitCount(), e.getSQLState(), e.getErrorCode(), e.getMessage());
 
 				logExceptionChain(e);
 
@@ -269,8 +266,9 @@ public class DBConnectionService {
 		int index = 1;
 
 		while (current != null) {
-			logger.err("SQLException[{}]: type={}, sqlState={}, errorCode={}, message={}", current, index,
-					current.getClass().getName(), current.getSQLState(), current.getErrorCode(), current.getMessage());
+			getDbConnInfo().getRelatedEtlConf().err("SQLException[{}]: type={}, sqlState={}, errorCode={}, message={}",
+					current, index, current.getClass().getName(), current.getSQLState(), current.getErrorCode(),
+					current.getMessage());
 
 			current = current.getNextException();
 			index++;

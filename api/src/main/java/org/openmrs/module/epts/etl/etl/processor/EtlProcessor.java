@@ -145,6 +145,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, dstConnLock, this)) {
 
 			for (EtlDatabaseObject srcRecord : etlObjects) {
+				logTrace("Initializing the transformation process of record {} ", srcRecord);
 
 				if (srcRecord.isTrackable() && getRelatedEtlOperationConfig().hasActionAfterEtl()
 						&& getRelatedEtlOperationConfig().getAfterEtlActionType().includeTracking()) {
@@ -161,6 +162,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 				for (DstConf dstConf : etlItemConf.getDstConf()) {
 					if (dstConf.isDisabled()) {
+						logTrace("Skiping transformation of dstConf {} as it is disabled", dstConf);
+
 						continue;
 					}
 
@@ -169,6 +172,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 					SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
 
 					if (srcConf.hasExpansionDs()) {
+						logTrace("Starting expation of record {} within the dstConf {}", srcRecord, dstConf);
+
 						expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, avaliableSrcDs, null,
 								srcConn);
 					} else {
@@ -180,7 +185,27 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							dstConnectionLock.lock();
 
 							try {
+
+								if (srcConf.hasExpansionDs()) {
+									logDebug(
+											"Starting the transformation of record {} with expanstion {} within the dstConf {}",
+											srcRecord, expanded, dstConf);
+								} else {
+									logDebug("Starting the transformation of record {} within the dstConf {}",
+											srcRecord, dstConf);
+								}
+
 								transform(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
+
+								if (srcConf.hasExpansionDs()) {
+									logTrace(
+											"Finished transformation of record {} with expanstion {} within the dstConf {}. Current transformed objects within the srcObject {}",
+											srcRecord, expanded, dstConf, srcRecord);
+								} else {
+									logTrace(
+											"Finished transformation of record {} within the dstConf {}. Current transformed objects within the srcObject {}",
+											srcRecord, dstConf, srcRecord);
+								}
 							} finally {
 								dstConnectionLock.unlock();
 							}
