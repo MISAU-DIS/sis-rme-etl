@@ -182,16 +182,16 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 					if (utilities.listHasElement(expansion)) {
 						for (EtlDatabaseObject expanded : expansion) {
-							dstConnectionLock.lock();
+							// dstConnectionLock.lock();
 
 							try {
 
 								if (srcConf.hasExpansionDs()) {
-									logDebug(
+									logTrace(
 											"Starting the transformation of record {} with expanstion {} within the dstConf {}",
 											srcRecord, expanded, dstConf);
 								} else {
-									logDebug("Starting the transformation of record {} within the dstConf {}",
+									logTrace("Starting the transformation of record {} within the dstConf {}",
 											srcRecord, dstConf);
 								}
 
@@ -207,7 +207,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 											srcRecord, dstConf, srcRecord);
 								}
 							} finally {
-								dstConnectionLock.unlock();
+								// dstConnectionLock.unlock();
 							}
 						}
 					} else {

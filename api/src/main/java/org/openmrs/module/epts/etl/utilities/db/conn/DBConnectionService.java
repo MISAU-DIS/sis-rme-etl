@@ -183,8 +183,8 @@ public class DBConnectionService {
 
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 
-			getDbConnInfo().getRelatedEtlConf().trace(
-					"Obtendo conexão. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt, maxAttempts,
+			getDbConnInfo().getRelatedEtlConf().debug(
+					"Obtendo conexao. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt, maxAttempts,
 					dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(), dataSource.getWaitCount());
 
 			try {
