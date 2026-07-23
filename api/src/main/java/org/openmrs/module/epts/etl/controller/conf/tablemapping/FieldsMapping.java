@@ -7,6 +7,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.Extension;
+import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.datasource.DataSourceField;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
@@ -378,8 +379,12 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			if (ds != null) {
 				this.setDataSourceName(ds.getAlias());
 			} else {
-				throw new InvalidDataSourceOnFieldDefifitionException(this.getOriginalSrcFieldDefinition(),
-						dataSourceName);
+
+				if (target instanceof FastEtlTransformingTarget && !target.hasDataSource()) {
+					this.setDataSourceName(dataSourceName);
+				} else
+					throw new InvalidDataSourceOnFieldDefifitionException(this.getOriginalSrcFieldDefinition(),
+							dataSourceName);
 			}
 		} else {
 			try {

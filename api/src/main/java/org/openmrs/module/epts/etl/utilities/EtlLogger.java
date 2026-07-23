@@ -148,7 +148,7 @@ public class EtlLogger {
 				throw new EtlExceptionImpl("You should soecify throwable on error logging!");
 			}
 
-			logger.error(finalMsg, throwable, arguments);
+			logger.error(finalMsg, throwable);
 
 			break;
 

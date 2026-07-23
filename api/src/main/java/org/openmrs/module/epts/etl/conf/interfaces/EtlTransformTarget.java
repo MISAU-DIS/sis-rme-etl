@@ -463,4 +463,8 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 		}
 	}
 
+	default boolean hasDataSource() {
+		return utilities.listHasElement(this.getAllAvaliableDataSource());
+	}
+
 }

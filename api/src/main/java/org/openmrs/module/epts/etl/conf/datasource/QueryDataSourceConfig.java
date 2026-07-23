@@ -307,7 +307,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 			if (!isDoNotLoadFields()) {
 
-				PreparedQueryInfo pq = query.generatePreparedQuery(this.getRelatedEtlConfiguration(), null, null, null,
+				PreparedQueryInfo pq = query.generatePreparedQuery(this.getRelatedEtlConf(), null, null, null,
 						avaliableSrcObjects, conn);
 
 				Object[] params = pq.extractParametersValueToArray();
@@ -520,8 +520,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			this.prepare(avaliableSrcObjects, srcConn);
 		}
 
-		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConfiguration(),
-				processor, srcObject, dstObject, avaliableSrcObjects, srcConn);
+		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConf(), processor,
+				srcObject, dstObject, avaliableSrcObjects, srcConn);
 
 		if (utilities.listHasNoElement(list)) {
 			return null;
@@ -534,7 +534,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				objs.addAll(avaliableSrcObjects);
 			}
 
-			list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConfiguration(), processor, srcObject,
+			list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConf(), processor, srcObject,
 					dstObject, avaliableSrcObjects, srcConn);
 
 			throw new ForbiddenOperationException("The query datasource (" + this.getDesc()
@@ -725,10 +725,6 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	public void setRelatedEtlConf(EtlConfiguration relatedEtlConfiguration) {
 		this.relatedEtlConfiguration = relatedEtlConfiguration;
-	}
-
-	public EtlConfiguration getRelatedEtlConfiguration() {
-		return relatedEtlConfiguration;
 	}
 
 }
