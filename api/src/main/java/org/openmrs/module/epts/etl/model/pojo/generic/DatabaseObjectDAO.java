@@ -489,7 +489,11 @@ public class DatabaseObjectDAO extends BaseDAO {
 		boolean tryToResolveException = false;
 		boolean generateOperationResult = false;
 
+		tabConf.logTrace("Starting Insertion of {}", record.fullObjectDesc());
+
 		insert(utilities.parseToList(record), tabConf, tryToResolveException, generateOperationResult, conn);
+
+		tabConf.logTrace("Finalized Insertion of {}", record.fullObjectDesc());
 	}
 
 	public static EtlOperationResultHeader<EtlDatabaseObject> load(List<EtlDatabaseObject> objects,

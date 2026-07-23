@@ -73,6 +73,61 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	EtlStageObjectInfo getEtlStageObjectInfo();
 
+	default String fullObjectDesc() {
+		String objectId = "objectId = " + (this.getObjectId() != null ? this.getObjectId() : "");
+
+		String objectName = null;
+
+		if (this.getRelatedConfiguration() instanceof TableConfiguration) {
+			objectName = ((TableConfiguration) this.getRelatedConfiguration()).getTableAlias();
+		} else {
+			objectName = this.getObjectName();
+		}
+
+		StringBuilder uniqueKeysDesc = new StringBuilder();
+
+		if (utils.listHasElement(getUniqueKeysInfo())) {
+			for (UniqueKeyInfo uniqueKey : getUniqueKeysInfo()) {
+				uniqueKey.loadValuesToFields(this);
+
+				if (uniqueKeysDesc.length() > 0) {
+					uniqueKeysDesc.append(", ");
+				}
+
+				uniqueKeysDesc.append(uniqueKey);
+			}
+		}
+
+		StringBuilder fieldsDesc = new StringBuilder();
+
+		if (utils.listHasElement(getFields())) {
+			for (Field field : getFields()) {
+				if (fieldsDesc.length() > 0) {
+					fieldsDesc.append(", ");
+				}
+
+				fieldsDesc.append(field.getName()).append(" = ")
+						.append(field.getValue() != null ? field.getValue() : "");
+			}
+		}
+
+		StringBuilder description = new StringBuilder(objectName + "[");
+
+		description.append(objectId);
+
+		if (uniqueKeysDesc.length() > 0) {
+			description.append(", uniqueKeys = {").append(uniqueKeysDesc).append("}");
+		}
+
+		if (fieldsDesc.length() > 0) {
+			description.append(", fields = {").append(fieldsDesc).append("}");
+		}
+
+		description.append("]");
+
+		return description.toString();
+	}
+
 	default EtlException getEtlDefaultEtlException() {
 		if (this.isInEtlProcess()) {
 			if (this.getEtlInfo().hasExceptionOnEtl()) {
