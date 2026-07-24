@@ -27,6 +27,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
+import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
@@ -132,7 +133,8 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		if (tryToLoadDataSourceAndTransformer) {
 			try {
 				tryToLoadDataSourceAndTransformer(conn);
-			} catch (InvalidDataSourceOnFieldDefifitionException | FieldAvaliableInMultipleDataSources e) {
+			} catch (InvalidDataSourceOnFieldDefifitionException | FieldAvaliableInMultipleDataSources
+					| MissingFieldException e) {
 				if (!ignoreDataSourceIssues) {
 					throw e;
 				}

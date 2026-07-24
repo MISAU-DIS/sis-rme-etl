@@ -557,7 +557,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		if (relationshipResolutionStrategy.skip()) {
 			for (Field f : result.getFields()) {
 				FieldsMapping tf = FieldsMapping.fastCreate((EtlTransformTarget) dstObject.getRelatedConfiguration(),
-						f.getName(), srcConn);
+						f.getName(), f.getName(), true, srcConn);
 				tf.setRelationshipResolutionStrategy(RelationshipResolutionStrategy.SKIP);
 
 				f.setTransformingInfo(new FieldTransformingInfo(tf, result.getFieldValue(f.getName()), this));

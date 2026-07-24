@@ -151,8 +151,8 @@ public class EtlLogger {
 
 		switch (msgLevel) {
 		case ERROR:
-			if (throwable == null) {
-				throw new EtlExceptionImpl("You should soecify throwable on error logging!");
+			if (throwable == null && arguments == null) {
+				throw new EtlExceptionImpl("You should specify throwable or arguments on error logging!");
 			}
 
 			if (arguments != null) {
