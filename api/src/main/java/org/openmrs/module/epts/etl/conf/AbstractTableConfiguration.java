@@ -147,6 +147,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	 */
 	private List<String> patchFields;
 
+	private List<String> excludedFieldsFromObjectDesc;
+
 	public AbstractTableConfiguration() {
 		this.loadHealper = new DatabaseObjectLoaderHelper(this);
 	}
@@ -155,6 +157,15 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this();
 
 		this.tableName = tableName;
+	}
+
+	@Override
+	public List<String> getExcludedFieldsFromObjectDesc() {
+		return this.excludedFieldsFromObjectDesc;
+	}
+
+	public void setExcludedFieldsFromObjectDesc(List<String> excludedFieldsFromObjectDesc) {
+		this.excludedFieldsFromObjectDesc = excludedFieldsFromObjectDesc;
 	}
 
 	public List<String> getPatchFields() {
