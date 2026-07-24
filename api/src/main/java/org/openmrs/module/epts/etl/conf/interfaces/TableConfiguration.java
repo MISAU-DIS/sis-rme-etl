@@ -2309,7 +2309,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 
 		logTrace("Finding Configured table '" + fullTableName + "' on Table '" + this.getFullTableName() + "("
-				+ System.identityHashCode(this) + ") with Parents: [" + this.getParentRefInfoAsString() + "]");
+				+ System.identityHashCode(this) + ")"
+				+ (utilities.listHasElement(this.getParentRefInfoAsString())
+						? " with Parents: [" + this.getParentRefInfoAsString() + "]"
+						: ""));
 
 		alreadyCheckedObjects.add(identity);
 

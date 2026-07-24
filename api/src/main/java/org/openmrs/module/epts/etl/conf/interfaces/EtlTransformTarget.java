@@ -213,6 +213,10 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
 			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 
+		getRelatedEtlConf().trace(
+				"Initializing dataSource info loading within FieldsMapping {} transformer {} on target {}", fm,
+				fm.getTransformer(), this);
+
 		if (fm.hasTransformer()) {
 			fm.tryToLoadTransformer(this, conn);
 
@@ -233,6 +237,11 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 		int qtyOccurences = 0;
 
 		if (fm.getSrcValue() != null || fm.isMapToNullValue()) {
+			return;
+		}
+
+		if (fm.hasDataSourceName()) {
+			fm.setDataSource(findDataSource(fm.getDataSourceName()));
 			return;
 		}
 
@@ -304,14 +313,16 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			if (c.hasParentDstConf()) {
 				ParentTable ref = c.getFieldIsRelatedParent(fm);
 
-				EtlDataSource parentRelatedDs = c.findParentDataSource(ref);
+				if (ref != null) {
+					EtlDataSource parentRelatedDs = c.findParentDataSource(ref);
 
-				qtyOccurences++;
+					qtyOccurences++;
 
-				fm.setSrcField(parentRelatedDs.getPrimaryKey().asSimpleKey().getName());
-				fm.setDataSourceName(parentRelatedDs.getAlias());
-				fm.setDataSource(parentRelatedDs);
-				fm.loadType(this, parentRelatedDs, conn);
+					fm.setSrcField(parentRelatedDs.getPrimaryKey().asSimpleKey().getName());
+					fm.setDataSourceName(parentRelatedDs.getAlias());
+					fm.setDataSource(parentRelatedDs);
+					fm.loadType(this, parentRelatedDs, conn);
+				}
 			}
 
 		}

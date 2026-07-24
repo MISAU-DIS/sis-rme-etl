@@ -561,10 +561,10 @@ public class DstConf extends AbstractTableConfiguration
 						: this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
 
 				if (etlField != null) {
-					fm = FieldsMapping.fastCreate(this, etlField.getSrcField().getName(), field.getName(), conn);
+					fm = FieldsMapping.fastCreate(this, etlField.getSrcField().getName(), field.getName(), true, conn);
 					fm.setDataSourceName(etlField.getSrcDataSource().getName());
 				} else {
-					fm = FieldsMapping.fastCreate(this, field.getName(), field.getName(), conn);
+					fm = FieldsMapping.fastCreate(this, field.getName(), field.getName(), true, conn);
 				}
 
 				if (!this.getAllMapping().contains(fm)) {
@@ -598,7 +598,9 @@ public class DstConf extends AbstractTableConfiguration
 			}
 		}
 
-		if (mappingProblem != null && mappingProblem.hasIssue()) {
+		if (mappingProblem != null && mappingProblem.hasIssue())
+
+		{
 			throw new FieldsMappingException(this, mappingProblem);
 		}
 

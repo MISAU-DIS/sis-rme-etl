@@ -480,9 +480,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 		}
 
+		logDebug("Reseting minRecordId");
 		getProgressMeter().setMinRecordId(getController().getMinRecordId(this));
+
+		logDebug("Reseting maxRecordId");
 		getProgressMeter().setMaxRecordId(getController().getMaxRecordId(this));
 
+		logTrace("Extreme records set!");
 	}
 
 	private void performeEngineFinalization() throws DBException, Exception {

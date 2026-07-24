@@ -217,7 +217,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return this.getPrimaryKey() != null && this.getPrimaryKey().isCompositeKey();
 	}
 
-	default boolean fieldIsExcludedForObjectDesc(Field field) {
+	default boolean fieldIsExcludedFromObjectDesc(Field field) {
 		return hasExcludedFieldsFromObjectDesc() && this.getExcludedFieldsFromObjectDesc().contains(field.getName());
 	}
 

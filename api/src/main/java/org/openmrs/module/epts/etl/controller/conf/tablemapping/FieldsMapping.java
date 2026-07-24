@@ -101,6 +101,13 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			String dstField, String providedTransformer, Connection conn)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
+		this(target, srcFieldFullName, providedDataSourceName, dstField, providedTransformer, false, conn);
+	}
+
+	private FieldsMapping(EtlTransformTarget target, String srcFieldFullName, String providedDataSourceName,
+			String dstField, String providedTransformer, boolean ignoreDataSourceIssues, Connection conn)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+
 		this();
 
 		boolean tryToLoadDataSourceAndTransformer = false;
@@ -123,7 +130,13 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		init(target);
 
 		if (tryToLoadDataSourceAndTransformer) {
-			tryToLoadDataSourceAndTransformer(conn);
+			try {
+				tryToLoadDataSourceAndTransformer(conn);
+			} catch (InvalidDataSourceOnFieldDefifitionException | FieldAvaliableInMultipleDataSources e) {
+				if (!ignoreDataSourceIssues) {
+					throw e;
+				}
+			}
 		}
 
 	}
@@ -298,6 +311,16 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		String providedDataSourceName = null;
 
 		return new FieldsMapping(transformTarget, srcField, providedDataSourceName, destField, null, conn);
+	}
+
+	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField, String destField,
+			boolean ignoreDataSourceIssues, Connection conn)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+
+		String providedDataSourceName = null;
+
+		return new FieldsMapping(transformTarget, srcField, providedDataSourceName, destField, null,
+				ignoreDataSourceIssues, conn);
 	}
 
 	public static FieldsMapping fastCreateWithTransformer(EtlTransformTarget transformTarget, String dstField,
@@ -631,27 +654,32 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			// Try to switch from srcValue to srcField.
 			// We force switch if there is no srcField but srcValue follow the pattern
 			// srcField
-			String[] srcFieldParts = this.getSrcValue().toString().split("\\.");
 
-			if (srcFieldParts.length == 2) {
-				if (SQLUtilities.isValidQueryColumnDefinition(this.getSrcValue().toString())) {
+			if (SQLUtilities.isValidQueryColumnDefinition(this.getSrcValue().toString())) {
+				String[] srcFieldParts = this.getSrcValue().toString().split("\\.");
+
+				if (srcFieldParts.length == 2) {
 					this.tryToReloadSrcFieldAndDataSourceName(this.getSrcValue().toString());
 					this.setSrcValue(null);
 					this.setSrcValueSwitchedToSrcField(true);
 				}
 			}
 		} else if (this.hasSrcField() && !this.hasSrcValue()) {
-			String[] srcFieldParts = this.getSrcField().toString().split("\\.");
+			if (SQLUtilities.isValidQueryColumnDefinition(this.getSrcField()) || this.getSrcField().startsWith("@")
+					|| utilities.isNumeric(this.getSrcField())) {
 
-			this.tryToReloadSrcFieldAndDataSourceName(this.getSrcField());
+				String[] srcFieldParts = this.getSrcField().toString().split("\\.");
 
-			if (srcFieldParts.length == 1) {
-				if (this.getSrcField().startsWith("@") || utilities.isNumeric(this.getSrcField())) {
-					this.setSrcValue(this.getSrcField());
-					this.setSrcField(null);
-				} else if (this.getSrcField().equals("null")) {
-					this.setMapToNullValue(true);
-					this.setSrcField(null);
+				this.tryToReloadSrcFieldAndDataSourceName(this.getSrcField());
+
+				if (srcFieldParts.length == 1) {
+					if (this.getSrcField().startsWith("@") || utilities.isNumeric(this.getSrcField())) {
+						this.setSrcValue(this.getSrcField());
+						this.setSrcField(null);
+					} else if (this.getSrcField().equals("null")) {
+						this.setMapToNullValue(true);
+						this.setSrcField(null);
+					}
 				}
 			}
 		}
