@@ -2487,11 +2487,12 @@ public class SQLUtilities {
 
 						try {
 							if (map == null) {
+								if (checkIfFieldDefinitionIncludeQualifier(adjustedElement)) {
+									map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
 
-								map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
-
-								if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
-									continue;
+									if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
+										continue;
+									}
 								}
 							}
 						} catch (InvalidDataSourceOnFieldDefifitionException e) {
@@ -2503,13 +2504,16 @@ public class SQLUtilities {
 							throw e;
 						}
 
-						if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
+						if (map == null || (!map.hasDataSourceName() && map.useDefaultTransformer())) {
 							continue;
 						}
 
-						FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null,
-								avaliableSrcObjects.get(0), avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn,
-								conn);
+						EtlDatabaseObject obj = utilities.listHasElement(avaliableSrcObjects)
+								? avaliableSrcObjects.get(0)
+								: null;
+
+						FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null, obj, obj,
+								avaliableSrcObjects, map, conn, conn);
 
 						resolvedElements.add(new ResolvedQueryElement(adjustedElement, valueInfo));
 					}
