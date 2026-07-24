@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -84,10 +83,8 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 			FieldsMapping fm;
 
 			if (isTransformerExpression(obj.toString())) {
-				fm = FieldsMapping.fastCreate(transformTarget, field.getDstField(), field.getDstField(), false, conn);
-				fm.setTransformer(obj.toString());
-				fm.tryToLoadTransformer(transformTarget, conn);
-
+				fm = FieldsMapping.fastCreateWithTransformer(transformTarget, field.getDstField(), obj.toString(),
+						conn);
 			} else {
 
 				String[] fieldParts = obj.toString().split("\\.");
@@ -102,23 +99,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 					srcFieldName = fieldParts[0];
 				}
 
-				fm = FieldsMapping.fastCreate(transformTarget, srcFieldName, field.getDstField(), true, conn);
-				fm.tryToLoadTransformer(transformTarget, conn);
-
-				if (dataSourceName != null) {
-
-					EtlDataSource ds = transformTarget.findDataSource(dataSourceName);
-
-					if (ds != null) {
-						fm.setDataSourceName(ds.getAlias());
-					} else {
-						throw new EtlExceptionImpl(
-								"Invalid datasource '" + dataSourceName + "' on CoalesceFieldTransformer: " + obj);
-					}
-
-				} else {
-					transformTarget.tryToLoadDataSourceToFieldMapping(fm, conn);
-				}
+				fm = FieldsMapping.fastCreate(transformTarget, srcFieldName, dataSourceName, field.getDstField(), conn);
 
 				if (!fm.hasDataSourceName()) {
 					fm.setSrcValue(obj);

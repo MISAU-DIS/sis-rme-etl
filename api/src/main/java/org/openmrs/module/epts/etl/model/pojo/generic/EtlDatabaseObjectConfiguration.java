@@ -108,6 +108,27 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
 
+	Boolean isDestinationInstallationType();
+
+	void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass);
+
+	List<ParentTable> getParentRefInfo();
+
+	List<ChildTable> getChildRefInfo();
+
+	DatabaseObjectLoaderHelper getLoadHealper();
+
+	String getAlias();
+
+	/**
+	 * Generates a full dump select from query.
+	 * 
+	 * @return the generated select dump query
+	 */
+	String generateSelectFromQuery();
+
+	List<String> getExcludedFieldsFromObjectDesc();
+
 	default EtlConfiguration getRelatedEtlConf() {
 		return this.getParentConf() != null ? this.getParentConf().getRelatedEtlConf() : null;
 	}
@@ -138,16 +159,6 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		}
 		return getSyncRecordClass();
 	}
-
-	Boolean isDestinationInstallationType();
-
-	void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass);
-
-	List<ParentTable> getParentRefInfo();
-
-	List<ChildTable> getChildRefInfo();
-
-	DatabaseObjectLoaderHelper getLoadHealper();
 
 	default List<String> getParentRefInfoAsString() {
 		List<String> parents = new ArrayList<>();
@@ -194,8 +205,6 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return null;
 	}
 
-	String getAlias();
-
 	default List<Field> cloneFields(EtlDatabaseObject originalObject) {
 		return Field.cloneFields(this.getFields(), originalObject);
 	}
@@ -208,10 +217,12 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return this.getPrimaryKey() != null && this.getPrimaryKey().isCompositeKey();
 	}
 
-	/**
-	 * Generates a full dump select from query.
-	 * 
-	 * @return the generated select dump query
-	 */
-	String generateSelectFromQuery();
+	default boolean fieldIsExcludedFromObjectDesc(Field field) {
+		return hasExcludedFieldsFromObjectDesc() && this.getExcludedFieldsFromObjectDesc().contains(field.getName());
+	}
+
+	default boolean hasExcludedFieldsFromObjectDesc() {
+		return utilities.listHasElement(this.getExcludedFieldsFromObjectDesc());
+	}
+
 }

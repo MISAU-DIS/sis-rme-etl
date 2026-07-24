@@ -598,7 +598,9 @@ public class DstConf extends AbstractTableConfiguration
 			}
 		}
 
-		if (mappingProblem != null && mappingProblem.hasIssue()) {
+		if (mappingProblem != null && mappingProblem.hasIssue())
+
+		{
 			throw new FieldsMappingException(this, mappingProblem);
 		}
 

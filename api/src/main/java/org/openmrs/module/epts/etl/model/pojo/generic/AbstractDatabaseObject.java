@@ -761,6 +761,10 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 		if (utilities.listHasElement(getFields())) {
 			for (Field field : getFields()) {
+				if (getRelatedConfiguration().fieldIsExcludedFromObjectDesc(field)) {
+					continue;
+				}
+
 				if (fieldsDesc.length() > 0) {
 					fieldsDesc.append(", ");
 				}

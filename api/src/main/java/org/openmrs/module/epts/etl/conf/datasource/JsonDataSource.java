@@ -60,8 +60,19 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	private String condition;
 
+	private List<String> excludedFieldsFromObjectDesc;
+
 	public JsonDataSource() {
 		this.loadedDataSourceInfo = false;
+	}
+
+	@Override
+	public List<String> getExcludedFieldsFromObjectDesc() {
+		return this.excludedFieldsFromObjectDesc;
+	}
+
+	public void setExcludedFieldsFromObjectDesc(List<String> excludedFieldsFromObjectDesc) {
+		this.excludedFieldsFromObjectDesc = excludedFieldsFromObjectDesc;
 	}
 
 	public JsonMainOutputDataSource getOutputDataSource() {
@@ -140,6 +151,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	private void ensurePayloadFieldInfoIsLoaded(Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
+
 		this.payloadFieldsMap = FieldsMapping.fastCreate(this, this.payload, "payload", conn);
 	}
 
@@ -444,4 +456,5 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 	public void setCondition(String condition) {
 		this.condition = condition;
 	}
+
 }

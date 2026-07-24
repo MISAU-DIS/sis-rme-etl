@@ -73,11 +73,8 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 
 				if (paramName.equals("input")) {
 					if (isTransformerExpression(paramValue)) {
-						this.input = FieldsMapping.fastCreate(relatedEtlTargedConf, field.getDstField(),
-								field.getDstField(), false, conn);
-						this.input.setTransformer(paramValue);
-						this.input.tryToLoadTransformer(relatedEtlTransformTarget, conn);
-
+						this.input = FieldsMapping.fastCreateWithTransformer(relatedEtlTargedConf, field.getDstField(),
+								paramValue, conn);
 					} else {
 						this.input = FieldsMapping.fastCreate(relatedEtlTargedConf, paramValue, paramValue, conn);
 					}

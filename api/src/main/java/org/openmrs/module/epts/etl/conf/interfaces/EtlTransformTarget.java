@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidAtomicConditionException;
+import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
@@ -213,6 +214,10 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
 			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 
+		getRelatedEtlConf().trace(
+				"Initializing dataSource info loading within FieldsMapping {} transformer {} on target {}", fm,
+				fm.getTransformer(), this);
+
 		if (fm.hasTransformer()) {
 			fm.tryToLoadTransformer(this, conn);
 
@@ -236,12 +241,25 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			return;
 		}
 
+		if (fm.hasDataSourceName()) {
+			fm.setDataSource(findDataSource(fm.getDataSourceName()));
+			return;
+		}
+
 		if (this.hasMappingResolutionStrategy()) {
 			if (!this.mappingResolutionStrategy().allowAuto() && this.mappingResolutionStrategy().allowDefault()) {
 				EtlDatabaseObject defaultObject = this.getTargetDefaultObject(conn, conn);
 
 				if (defaultObject != null) {
-					fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+					try {
+						fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+					} catch (MissingFieldException e) {
+						getRelatedEtlConf().err(
+								"Error while loading data source info within FieldsMapping {} transformer {} on target {}",
+								fm, fm.getTransformer(), this);
+
+						throw e;
+					}
 					fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER, conn);
 				} else {
 					throw new ForbiddenOperationException("The default object was not generated...!");
@@ -304,14 +322,16 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			if (c.hasParentDstConf()) {
 				ParentTable ref = c.getFieldIsRelatedParent(fm);
 
-				EtlDataSource parentRelatedDs = c.findParentDataSource(ref);
+				if (ref != null) {
+					EtlDataSource parentRelatedDs = c.findParentDataSource(ref);
 
-				qtyOccurences++;
+					qtyOccurences++;
 
-				fm.setSrcField(parentRelatedDs.getPrimaryKey().asSimpleKey().getName());
-				fm.setDataSourceName(parentRelatedDs.getAlias());
-				fm.setDataSource(parentRelatedDs);
-				fm.loadType(this, parentRelatedDs, conn);
+					fm.setSrcField(parentRelatedDs.getPrimaryKey().asSimpleKey().getName());
+					fm.setDataSourceName(parentRelatedDs.getAlias());
+					fm.setDataSource(parentRelatedDs);
+					fm.loadType(this, parentRelatedDs, conn);
+				}
 			}
 
 		}

@@ -72,8 +72,9 @@ public abstract class AbstractBaseConfiguration implements BaseConfiguration {
 		if (!utilities.stringHasValue(transformer))
 			return false;
 
-		FieldsMapping map = FieldsMapping.fastCreate(FastEtlTransformingTarget.fastCreate(etlConfiguration, null, null),
-				"tmp", null);
+		FastEtlTransformingTarget target = FastEtlTransformingTarget.fastCreate(etlConfiguration, null, null);
+
+		FieldsMapping map = FieldsMapping.fastCreate(target, "tmp", null);
 
 		map.setTransformer(transformer);
 

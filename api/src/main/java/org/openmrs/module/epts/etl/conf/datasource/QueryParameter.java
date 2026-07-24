@@ -249,7 +249,7 @@ public class QueryParameter extends Field {
 			}
 
 		} else {
-			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), true, conn);
+			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), conn);
 		}
 
 		return map.getTransformerInstance().transform(null, fakeSrcObject, fakeSrcObject, avaliableSrcObjects, map,

@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.base.VO;
@@ -1396,11 +1397,11 @@ public class CommonUtilities implements Serializable {
 		return getFieldValue(obj.getObjectName(), obj, fieldName);
 	}
 
-	public Object getFieldValue(Object obj, String fieldName) throws ForbiddenOperationException {
+	public Object getFieldValue(Object obj, String fieldName) throws MissingFieldException {
 		return getFieldValue(obj.getClass().getName(), obj, fieldName);
 	}
 
-	private Object getFieldValue(String objectName, Object obj, String fieldName) throws ForbiddenOperationException {
+	private Object getFieldValue(String objectName, Object obj, String fieldName) throws MissingFieldException {
 
 		for (Field field : getInstanceFields(obj)) {
 
@@ -1415,8 +1416,7 @@ public class CommonUtilities implements Serializable {
 			}
 		}
 
-		throw new ForbiddenOperationException(
-				"The field '" + fieldName + "' was not found on object '" + objectName + "'");
+		throw new MissingFieldException(fieldName, objectName);
 	}
 
 	public void setFieldValue(Object obj, String fieldName, Object fieldValue) {
