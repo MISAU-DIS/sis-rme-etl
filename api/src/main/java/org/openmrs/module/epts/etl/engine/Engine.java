@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
+import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
 import org.openmrs.module.epts.etl.conf.types.ThreadingMode;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -410,7 +411,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		this.changeStatusToRunning();
 
-		this.calculateStatistics();
+		EtlTotalRecordsCountStrategy countStrategy = this.getRelatedEtlOperationConfig().getTotalCountStrategy();
+
+		this.calculateStatistics(getProgressMeter().getTotal() > 0 && countStrategy.isCountAlways()
+				? EtlTotalRecordsCountStrategy.COUNT_ONCE
+				: null);
 
 		this.doFirstSaveAllLimits();
 
@@ -487,6 +492,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		getProgressMeter().setMaxRecordId(getController().getMaxRecordId(this));
 
 		logTrace("Extreme records set!");
+		
+		getProgressMeter().resetTotal();
 	}
 
 	private void performeEngineFinalization() throws DBException, Exception {
@@ -922,8 +929,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		this.currentTaskProcessor = new ArrayList<>(qtyProcessors);
 	}
 
-	private void calculateStatistics() throws DBException {
+	private void calculateStatistics(EtlTotalRecordsCountStrategy overrideCountStrategy) throws DBException {
 		OpenConnection conn = getController().openSrcConnection(this);
+
+		EtlTotalRecordsCountStrategy countStrategy = overrideCountStrategy != null ? overrideCountStrategy
+				: this.getRelatedEtlOperationConfig().getTotalCountStrategy();
 
 		try {
 			logWarn("CALCULATING STATISTICS! Using '"
@@ -933,7 +943,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			int total = getProgressMeter().getTotal();
 			int processed = total - remaining;
 
-			if (this.getRelatedEtlOperationConfig().getTotalCountStrategy().isCountAlways()) {
+			if (countStrategy.isCountAlways()) {
 				if (total > 0) {
 					logDebug(
 							"Recorded statistic found! But the statistics will be recalculated as per configuration totalCountStrategy set to COUNT_ALWAYS");
@@ -946,10 +956,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			if (total == 0) {
-				if (this.getRelatedEtlOperationConfig().getTotalCountStrategy().isUseMaxRecordIdAsCount()) {
+				if (countStrategy.isUseMaxRecordIdAsCount()) {
 					total = (int) this.getProgressMeter().getMaxRecordId();
 					remaining = total;
-				} else if (this.getRelatedEtlOperationConfig().getTotalCountStrategy().isUseProvided()) {
+				} else if (countStrategy.isUseProvided()) {
 					total = this.getRelatedEtlOperationConfig().getTotalAvaliableRecordsToProcess();
 					remaining = total;
 				} else {

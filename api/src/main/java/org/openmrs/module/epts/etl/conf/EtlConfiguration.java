@@ -836,6 +836,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		logger.err(msg, throwable, arguments);
 	}
 
+	public void err(String msg, Object... arguments) {
+		logger.err(msg, arguments);
+	}
+
 	public void info(String msg, Object... arguments) {
 		logger.info(msg, arguments);
 	}

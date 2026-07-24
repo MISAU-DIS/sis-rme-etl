@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
@@ -35,7 +36,7 @@ public interface VO {
 	 * @param fieldName of field to retrieve
 	 * @return Return a value of given field
 	 */
-	default Object getFieldValue(String fieldName) throws ForbiddenOperationException {
+	default Object getFieldValue(String fieldName) throws MissingFieldException {
 		return CommonUtilities.getInstance().getFieldValue(this, fieldName);
 	}
 	

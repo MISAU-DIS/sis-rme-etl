@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidAtomicConditionException;
+import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
@@ -250,7 +251,15 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 				EtlDatabaseObject defaultObject = this.getTargetDefaultObject(conn, conn);
 
 				if (defaultObject != null) {
-					fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+					try {
+						fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
+					} catch (MissingFieldException e) {
+						getRelatedEtlConf().err(
+								"Error while loading data source info within FieldsMapping {} transformer {} on target {}",
+								fm, fm.getTransformer(), this);
+
+						throw e;
+					}
 					fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER, conn);
 				} else {
 					throw new ForbiddenOperationException("The default object was not generated...!");

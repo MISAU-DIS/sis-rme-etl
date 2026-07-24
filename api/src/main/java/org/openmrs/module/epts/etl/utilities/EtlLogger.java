@@ -119,8 +119,8 @@ public class EtlLogger {
 		log(Level.TRACE, msg, null);
 	}
 
-	public void err(String msg, Throwable throwable, Object... arguments) {
-		log(Level.ERROR, msg, throwable, arguments);
+	public void err(String msg, Object... arguments) {
+		log(Level.ERROR, msg, null, arguments);
 	}
 
 	public void info(String msg, Object... arguments) {

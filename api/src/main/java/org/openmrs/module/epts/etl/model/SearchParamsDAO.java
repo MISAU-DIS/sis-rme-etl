@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.model;
 import java.sql.Connection;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
@@ -14,76 +15,92 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class SearchParamsDAO extends BaseDAO {
-	
+
 	public static <T extends VO> int countAll(AbstractSearchParams<T> parametros, IntervalExtremeRecord interval,
-	        Connection conn) throws DBException {
+			Connection conn) throws DBException {
 		SearchClauses<T> searchClauses = parametros.generateSearchClauses(interval, null, null, conn, null);
-		
+
 		int bkpQtyRecsPerSelect = searchClauses.getSearchParameters().getQtdRecordPerSelected();
 		searchClauses.getSearchParameters().setQtdRecordPerSelected(0);
-		
+
 		String sql = "select count(*) value from (" + searchClauses.generateSQL(conn) + ") inner_result;";
-		
+
 		Object[] parameters = searchClauses.getParameters();
-		
+
 		SimpleValue simpleValue = find(SimpleValue.class, sql, parameters, conn);
-		
+
 		searchClauses.getSearchParameters().setQtdRecordPerSelected(bkpQtyRecsPerSelect);
-		
+
 		if (simpleValue != null && CommonUtilities.getInstance().stringHasValue(simpleValue.getValue())) {
 			return simpleValue.intValue();
 		}
-		
+
 		return 0;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public static <T extends EtlDatabaseObject> long retrieveExtremRecord(
-	        @SuppressWarnings("rawtypes") AbstractEtlSearchParams parametros, SqlFunctionType sqlFunctionType,
-	        IntervalExtremeRecord interval, Connection conn) throws DBException {
-		
+			@SuppressWarnings("rawtypes") AbstractEtlSearchParams parametros, SqlFunctionType sqlFunctionType,
+			IntervalExtremeRecord interval, Connection conn) throws DBException {
+
 		SearchClauses<T> searchClauses = parametros.generateSearchClauses(interval, null, null, conn, null);
-		
+
 		int bkpQtyRecsPerSelect = searchClauses.getSearchParameters().getQtdRecordPerSelected();
 		searchClauses.getSearchParameters().setQtdRecordPerSelected(0);
-		
+
 		SrcConf tabConf = parametros.getSrcConf();
-		
-		String selectClause = sqlFunctionType.toString() + "(" + tabConf.getTableAlias() + "_"
-		        + tabConf.getPrimaryKey().retrieveSimpleKeyColumnName() + ") as value";
-		
-		String sql = "select " + selectClause + " from (" + searchClauses.generateSQL(conn) + ") inner_result;";
-		
-		SimpleValue simpleValue = find(SimpleValue.class, sql, searchClauses.getParameters(), conn);
-		
-		searchClauses.getSearchParameters().setQtdRecordPerSelected(bkpQtyRecsPerSelect);
-		
-		if (simpleValue != null && CommonUtilities.getInstance().stringHasValue(simpleValue.getValue())) {
-			return simpleValue.longValue();
-		}
-		
-		return 0;
-	}
-	
-	public static <T extends VO> List<T> search(AbstractSearchParams<T> searchParams, Connection conn) throws DBException {
-		
-		SearchClauses<T> searchClauses = searchParams.generateSearchClauses(null, null, null, conn, null);
-		
+
+		String bkpColumnsToSelect = searchClauses.getColumnsToSelect();
+		EtlQueryOrderingInfo bkpOrderBy = parametros.getQueryOrderingInfo();
+
+		parametros.setQueryOrderingInfo(null);
+
+		String selectClause = sqlFunctionType.toString() + "(" + tabConf.getTableAlias() + "."
+				+ tabConf.getPrimaryKey().retrieveSimpleKeyColumnName() + ") as value";
+
+		searchClauses.setColumnsToSelect(selectClause);
+
 		String sql = searchClauses.generateSQL(conn);
-		
+
+		SimpleValue simpleValue;
+
+		try {
+			simpleValue = find(SimpleValue.class, sql, searchClauses.getParameters(), conn);
+
+			searchClauses.getSearchParameters().setQtdRecordPerSelected(bkpQtyRecsPerSelect);
+
+			if (simpleValue != null && CommonUtilities.getInstance().stringHasValue(simpleValue.getValue())) {
+				return simpleValue.longValue();
+			}
+
+			return 0;
+		} finally {
+			searchClauses.setColumnsToSelect(bkpColumnsToSelect);
+			parametros.setQueryOrderingInfo(bkpOrderBy);
+		}
+
+	}
+
+	public static <T extends VO> List<T> search(AbstractSearchParams<T> searchParams, Connection conn)
+			throws DBException {
+
+		SearchClauses<T> searchClauses = searchParams.generateSearchClauses(null, null, null, conn, null);
+
+		String sql = searchClauses.generateSQL(conn);
+
 		return search(searchParams.getRecordClass(), sql, searchClauses.getParameters(), conn);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public static <T extends VO> List<T> search_(Engine<EtlDatabaseObject> engine, Connection conn) throws DBException {
-		SearchClauses<T> searchClauses = (SearchClauses<T>) engine.getSearchParams().generateSearchClauses(null, null, null,
-		    conn, null);
-		
+		SearchClauses<T> searchClauses = (SearchClauses<T>) engine.getSearchParams().generateSearchClauses(null, null,
+				null, conn, null);
+
 		String sql = searchClauses.generateSQL(conn);
-		
-		List<T> records = (List<T>) search(engine.getSearchParams().getRecordClass(), sql, searchClauses.getParameters(),
-		    conn);
-		
+
+		List<T> records = (List<T>) search(engine.getSearchParams().getRecordClass(), sql,
+				searchClauses.getParameters(), conn);
+
 		return records;
 	}
 }
