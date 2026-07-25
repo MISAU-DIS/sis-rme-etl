@@ -252,6 +252,8 @@ public class QueryParameter extends Field {
 			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), conn);
 		}
 
+		stepIntoBreakpoint(getRelatedEtlConf(), map.getTransformerInstance() == null);
+
 		return map.getTransformerInstance().transform(null, fakeSrcObject, fakeSrcObject, avaliableSrcObjects, map,
 				conn, conn);
 	}

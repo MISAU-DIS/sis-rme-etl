@@ -153,6 +153,7 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 
 			if (srcField.getTransformingInfo() != null && srcField.getTransformingInfo().getTransformedValue() != null
 					&& srcField.getTransformingInfo().getTransformedValue().equals(value)) {
+				
 				return srcField.getTransformingInfo();
 			}
 

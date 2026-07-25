@@ -113,10 +113,6 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		boolean tryToLoadDataSourceAndTransformer = false;
 
-		if (providedTransformer != null || providedDataSourceName != null || target.hasDataSource()) {
-			tryToLoadDataSourceAndTransformer = true;
-		}
-
 		this.setOriginalSrcFieldDefinition(srcFieldFullName);
 		this.setTransformer(providedTransformer);
 		this.setSrcField(srcFieldFullName);
@@ -130,6 +126,14 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		init(target);
 
+		
+		String srcValueOrField = this.hasSrcField() ? this.getSrcField() : this.hasSrcValue() ? this.getSrcValue().toString() : "";
+		
+		if (providedTransformer != null || providedDataSourceName != null || target.hasDataSource() || srcValueOrField.startsWith("@") ) {
+			tryToLoadDataSourceAndTransformer = true;
+		}
+
+		
 		if (tryToLoadDataSourceAndTransformer) {
 			try {
 				tryToLoadDataSourceAndTransformer(conn);

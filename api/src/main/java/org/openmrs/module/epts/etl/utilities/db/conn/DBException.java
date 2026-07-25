@@ -294,11 +294,13 @@ public class DBException extends SQLException implements EtlException {
 					"Impossivel determinar o tipo de erro pois o nome da base de dados nao foi definido");
 
 		if (this.dataBaseName.equals(DBUtilities.ORACLE_DATABASE)) {
-			return this.SQLCodeError == ORACLE_CHECK_CONSTRAINT_VIOLATION;
+			return this.SQLCodeError == ORACLE_CHECK_CONSTRAINT_VIOLATION
+					|| this.SQLCodeError == ORACLE_INTEGRITY_CONSTRAINT_VIOLATION;
 		}
 
 		if (this.dataBaseName.equals(DBUtilities.MYSQL_DATABASE)) {
-			return this.SQLCodeError == MYSQL_CHECK_CONSTRAINT_VIOLATION;
+			return this.SQLCodeError == MYSQL_CHECK_CONSTRAINT_VIOLATION
+					|| this.SQLCodeError == MYSQL_INTEGRITY_CONSTRAINT_VIOLATION;
 		}
 
 		System.err.println("WARNING: Nao foi possivel determinar a base de dados");

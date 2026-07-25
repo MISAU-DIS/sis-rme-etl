@@ -2447,6 +2447,9 @@ public class SQLUtilities {
 		FastEtlTransformingTarget transformingTarget = FastEtlTransformingTarget.fastCreate(relatedEtlConf,
 				avaliableSrcObjects, conn);
 
+		relatedEtlConf.stepIntoBreakpoint(relatedEtlConf,
+				query.contains("orders_src_ds") && query.contains("scheduled_date"));
+
 		for (String element : srcObjectConditionElements) {
 
 			try {
