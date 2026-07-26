@@ -177,18 +177,17 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			throws EtlTransformationException, DBException {
 
 		if (!pkMapping.useDefaultTransformer()) {
-
 			FieldTransformingInfo info = pkMapping.transform(processor, srcRecord, transformedRec, availableSrcObjs,
 					srcConn, dstConn);
 
-			transformedRec.setFieldValue(pkField.getName(), info.getTransformedValue());
-			pkField.setTransformingInfo(info);
-
-			return true;
+			if (info.getTransformedValue() != null) {
+				transformedRec.setFieldValue(pkField.getName(), info.getTransformedValue());
+				pkField.setTransformingInfo(info);
+				return true;
+			}
 		}
 
 		if (dstConf.useManualGeneratedObjectId() && !dstConf.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
-
 			Object nextId = dstConf.retriveNextRecordId(processor);
 
 			transformedRec.getObjectId().asSimpleKey().setValue(nextId);

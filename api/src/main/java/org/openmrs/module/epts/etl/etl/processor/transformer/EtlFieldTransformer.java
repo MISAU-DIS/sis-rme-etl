@@ -207,4 +207,12 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 
 	}
 
+	default boolean isNullValueTransformer() {
+		return this instanceof NullValueTransformer;
+	}
+
+	default boolean isDefaultFieldTransformer() {
+		return this instanceof DefaultFieldTransformer;
+	}
+
 }

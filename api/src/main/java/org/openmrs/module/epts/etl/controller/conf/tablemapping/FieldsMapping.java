@@ -18,7 +18,6 @@ import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.transformer.AbstractEtlFieldTransformer;
-import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -126,14 +125,14 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		init(target);
 
-		
-		String srcValueOrField = this.hasSrcField() ? this.getSrcField() : this.hasSrcValue() ? this.getSrcValue().toString() : "";
-		
-		if (providedTransformer != null || providedDataSourceName != null || target.hasDataSource() || srcValueOrField.startsWith("@") ) {
+		String srcValueOrField = this.hasSrcField() ? this.getSrcField()
+				: this.hasSrcValue() ? this.getSrcValue().toString() : "";
+
+		if (providedTransformer != null || providedDataSourceName != null || target.hasDataSource()
+				|| srcValueOrField.startsWith("@")) {
 			tryToLoadDataSourceAndTransformer = true;
 		}
 
-		
 		if (tryToLoadDataSourceAndTransformer) {
 			try {
 				tryToLoadDataSourceAndTransformer(conn);
@@ -416,10 +415,6 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		}
 
 		return this.transformerInstance;
-	}
-
-	public Boolean useDefaultTransformer() {
-		return getTransformerInstance() instanceof DefaultFieldTransformer;
 	}
 
 	public void setTransformerInstance(EtlFieldTransformer transformerInstance) {

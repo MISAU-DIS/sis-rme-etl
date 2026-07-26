@@ -7,9 +7,12 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ArithmeticFieldTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.etl.processor.transformer.NullValueTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -236,6 +239,18 @@ public interface TransformableField {
 		this.setTransformer(newTransformer);
 		this.setTransformerInstance(null);
 		this.tryToLoadTransformer(dstConf, conn);
+	}
+
+	default Boolean useDefaultTransformer() {
+		return getTransformerInstance() instanceof DefaultFieldTransformer;
+	}
+
+	default Boolean useNullValueTransformer() {
+		return getTransformerInstance() instanceof NullValueTransformer;
+	}
+
+	default Boolean useSimpleValueTransformer() {
+		return getTransformerInstance() instanceof SimpleValueTransformer;
 	}
 
 	EtlDataSource getDataSource();

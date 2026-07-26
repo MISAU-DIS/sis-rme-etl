@@ -153,7 +153,8 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 				} catch (EtlTransformationException e) {
 				}
 
-				if (transformingInfo != null && transformingInfo.getTransformedValue() != null) {
+				if ((transformingInfo != null && transformingInfo.getTransformedValue() != null)
+						|| map.useNullValueTransformer()) {
 					return transformingInfo;
 				}
 			}
