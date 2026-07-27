@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.conf;
 
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -74,6 +75,17 @@ public class EtlConfCheckExpression {
 			}
 
 		}
+		
+		if (context instanceof TransformableDataSourceField) {
+			SrcConf ds = ((TransformableDataSourceField) context).getTransformationTargetObject().getSrcConf();
+
+			if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf(ds))) {
+				return;
+			}
+
+		}
+		
+		
 		if (relatedConfiguration == null) {
 			throw new EtlConfException("The related Etl Conf cannot be found within the given context " + this);
 		}
