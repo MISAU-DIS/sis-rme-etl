@@ -10,6 +10,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,6 +52,17 @@ import org.openmrs.module.epts.etl.utilities.FuncoesGenericas;
 public class SQLUtilities {
 
 	static CommonUtilities utilities = CommonUtilities.getInstance();
+
+	private static final Set<String> SQL_KEYWORDS = Set.of("and", "or", "not", "in", "is", "null", "like", "between",
+			"exists", "select", "from", "where", "join", "left", "right", "inner", "outer", "full", "cross", "on", "as",
+			"case", "when", "then", "else", "end", "distinct", "group", "by", "order", "having", "limit", "offset",
+			"true", "false", "asc", "desc", "union", "all");
+
+	private static final Pattern TOKEN_PATTERN = Pattern.compile("\\b[a-zA-Z_][a-zA-Z0-9_]*\\b");
+
+	private static final Pattern TABLE_ALIAS_PATTERN = Pattern
+			.compile("(?i)\\b(?:from|join)\\s+" + "([a-zA-Z_][a-zA-Z0-9_]*" + "(?:\\s*\\.\\s*[a-zA-Z_][a-zA-Z0-9_]*)*)"
+					+ "(?:\\s+(?:as\\s+)?([a-zA-Z_][a-zA-Z0-9_]*))?");
 
 	/**
 	 * Esta função devolve o próximo valor da sequencia passado por parâmetro
@@ -701,122 +713,206 @@ public class SQLUtilities {
 			return sql;
 		}
 
-		Set<String> SQL_KEYWORDS = Set.of("and", "or", "not", "in", "is", "null", "like", "between", "exists", "select",
-				"from", "where", "join", "left", "right", "inner", "outer", "on", "as", "case", "when", "then", "else",
-				"end", "distinct", "group", "by", "order", "having", "limit", "offset", "true", "false", "asc", "desc");
-
-		Pattern tokenPattern = Pattern.compile("\\b[a-zA-Z_][a-zA-Z0-9_]*\\b");
+		Set<String> aliases = extractTableAliases(sql);
 
 		StringBuilder result = new StringBuilder();
 
 		boolean inSingleQuote = false;
 		boolean inDoubleQuote = false;
 
-		int lastIndex = 0;
+		int segmentStart = 0;
 
 		for (int i = 0; i < sql.length(); i++) {
-			char c = sql.charAt(i);
 
-			if (c == '\'' && !inDoubleQuote) {
+			char current = sql.charAt(i);
+
+			if (current == '\'' && !inDoubleQuote && !isEscaped(sql, i)) {
+
+				if (!inSingleQuote) {
+					result.append(processSegment(sql.substring(segmentStart, i), tableName, aliases));
+
+					segmentStart = i;
+				}
+
 				inSingleQuote = !inSingleQuote;
-			} else if (c == '"' && !inSingleQuote) {
+
+				if (!inSingleQuote) {
+					result.append(sql, segmentStart, i + 1);
+					segmentStart = i + 1;
+				}
+
+			} else if (current == '"' && !inSingleQuote && !isEscaped(sql, i)) {
+
+				if (!inDoubleQuote) {
+					result.append(processSegment(sql.substring(segmentStart, i), tableName, aliases));
+
+					segmentStart = i;
+				}
+
 				inDoubleQuote = !inDoubleQuote;
-			}
 
-			// Quando entramos ou saímos de string, processamos o trecho anterior
-			if ((c == '\'' && !inDoubleQuote) || (c == '"' && !inSingleQuote)) {
-
-				if (!inSingleQuote && !inDoubleQuote) {
-					// acabou string → copiar direto
-					result.append(sql, lastIndex, i + 1);
-					lastIndex = i + 1;
-				} else {
-					// começou string → processar antes dela
-					String segment = sql.substring(lastIndex, i);
-					result.append(processSegment(segment, tableName, SQL_KEYWORDS, tokenPattern));
-					lastIndex = i;
+				if (!inDoubleQuote) {
+					result.append(sql, segmentStart, i + 1);
+					segmentStart = i + 1;
 				}
 			}
 		}
 
-		// último trecho
-		if (lastIndex < sql.length()) {
+		if (segmentStart < sql.length()) {
+
+			String remaining = sql.substring(segmentStart);
+
 			if (inSingleQuote || inDoubleQuote) {
-				result.append(sql.substring(lastIndex));
+				result.append(remaining);
 			} else {
-				result.append(processSegment(sql.substring(lastIndex), tableName, SQL_KEYWORDS, tokenPattern));
+				result.append(processSegment(remaining, tableName, aliases));
 			}
 		}
 
 		return result.toString();
 	}
 
-	private static String processSegment(String segment, String tableName, Set<String> SQL_KEYWORDS, Pattern pattern) {
+	private static Set<String> extractTableAliases(String sql) {
 
-		Matcher matcher = pattern.matcher(segment);
-		StringBuffer sb = new StringBuffer();
+		Set<String> aliases = new HashSet<>();
 
-		boolean expectTableName = false;
-		boolean expectTableAlias = false;
+		Matcher matcher = TABLE_ALIAS_PATTERN.matcher(sql);
+
+		while (matcher.find()) {
+
+			String alias = matcher.group(2);
+
+			if (alias == null) {
+				continue;
+			}
+
+			String normalizedAlias = alias.toLowerCase();
+
+			/*
+			 * Impede que palavras como WHERE, ON e JOIN sejam interpretadas como aliases
+			 * quando a tabela não possui alias.
+			 */
+			if (!SQL_KEYWORDS.contains(normalizedAlias)) {
+				aliases.add(normalizedAlias);
+			}
+		}
+
+		return aliases;
+	}
+
+	private static char previousNonWhitespaceCharacter(String value, int index) {
+
+		for (int i = index - 1; i >= 0; i--) {
+
+			char current = value.charAt(i);
+
+			if (!Character.isWhitespace(current)) {
+				return current;
+			}
+		}
+
+		return '\0';
+	}
+
+	private static char nextNonWhitespaceCharacter(String value, int index) {
+
+		for (int i = index; i < value.length(); i++) {
+
+			char current = value.charAt(i);
+
+			if (!Character.isWhitespace(current)) {
+				return current;
+			}
+		}
+
+		return '\0';
+	}
+
+	private static boolean isEscaped(String value, int index) {
+
+		int backslashCount = 0;
+
+		for (int i = index - 1; i >= 0 && value.charAt(i) == '\\'; i--) {
+
+			backslashCount++;
+		}
+
+		return backslashCount % 2 != 0;
+	}
+
+	private static String processSegment(String segment, String tableName, Set<String> aliases) {
+
+		Matcher matcher = TOKEN_PATTERN.matcher(segment);
+		StringBuffer result = new StringBuffer();
+
+		boolean readingTableReference = false;
+		boolean expectingTableAlias = false;
 
 		while (matcher.find()) {
 
 			String token = matcher.group();
-			String lower = token.toLowerCase();
+			String replacement = token;
+
+			String lowerToken = token.toLowerCase();
 
 			int start = matcher.start();
 			int end = matcher.end();
 
 			boolean hasDotBefore = start > 0 && segment.charAt(start - 1) == '.';
+
 			boolean hasDotAfter = end < segment.length() && segment.charAt(end) == '.';
-			boolean isKeyword = SQL_KEYWORDS.contains(lower);
-			boolean isFunction = end < segment.length() && segment.charAt(end) == '(';
-			boolean isParameter = start > 0 && segment.charAt(start - 1) == '@';
 
-			// detectar contexto FROM / JOIN
-			if (lower.equals("from") || lower.equals("join")) {
-				expectTableName = true;
-				expectTableAlias = false;
-				matcher.appendReplacement(sb, Matcher.quoteReplacement(token));
-				continue;
-			}
+			boolean isKeyword = SQL_KEYWORDS.contains(lowerToken);
 
-			// nome da tabela
-			if (expectTableName) {
-				expectTableName = false;
-				expectTableAlias = true;
-				matcher.appendReplacement(sb, Matcher.quoteReplacement(token));
-				continue;
-			}
+			boolean isFunction = nextNonWhitespaceCharacter(segment, end) == '(';
 
-			// suporte ao "AS"
-			if (expectTableAlias && lower.equals("as")) {
-				// mantém estado de alias
-				matcher.appendReplacement(sb, Matcher.quoteReplacement(token));
-				continue;
-			}
+			char previousCharacter = previousNonWhitespaceCharacter(segment, start);
 
-			// alias (com ou sem AS)
-			if (expectTableAlias) {
+			boolean isParameter = previousCharacter == '@' || previousCharacter == ':';
 
-				expectTableAlias = false;
+			boolean isKnownAlias = aliases.contains(lowerToken);
 
-				// se for keyword → não era alias
-				if (!isKeyword) {
-					matcher.appendReplacement(sb, Matcher.quoteReplacement(token));
-					continue;
+			if ("from".equals(lowerToken) || "join".equals(lowerToken)) {
+
+				readingTableReference = true;
+				expectingTableAlias = false;
+
+			} else if (readingTableReference) {
+
+				/*
+				 * Não qualifica nenhuma parte de:
+				 *
+				 * schema.table database.schema.table
+				 */
+				if (!hasDotAfter) {
+					readingTableReference = false;
+					expectingTableAlias = true;
 				}
+
+			} else if (expectingTableAlias && "as".equals(lowerToken)) {
+
+				// O próximo token poderá ser o alias.
+
+			} else if (expectingTableAlias) {
+
+				expectingTableAlias = false;
+
+				if (!isKnownAlias && !isKeyword && !hasDotBefore && !hasDotAfter && !isFunction && !isParameter) {
+
+					replacement = tableName + "." + token;
+				}
+
+			} else if (!hasDotBefore && !hasDotAfter && !isKeyword && !isFunction && !isParameter && !isKnownAlias) {
+
+				replacement = tableName + "." + token;
 			}
 
-			if (hasDotBefore || hasDotAfter || isKeyword || isFunction || isParameter) {
-				matcher.appendReplacement(sb, Matcher.quoteReplacement(token));
-			} else {
-				matcher.appendReplacement(sb, Matcher.quoteReplacement(tableName + "." + token));
-			}
+			matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
 		}
 
-		matcher.appendTail(sb);
-		return sb.toString();
+		matcher.appendTail(result);
+
+		return result.toString();
 	}
 
 	public static List<SqlConditionElement> extractSqlConditionElements(String sql) {
@@ -2692,17 +2788,6 @@ public class SQLUtilities {
 		}
 
 		return level == 0;
-	}
-
-	private static boolean isEscaped(String text, int index) {
-
-		int backslashCount = 0;
-
-		for (int i = index - 1; i >= 0 && text.charAt(i) == '\\'; i--) {
-			backslashCount++;
-		}
-
-		return backslashCount % 2 != 0;
 	}
 
 	private static List<String> extractTopLevelParenthesizedContents(String text) {

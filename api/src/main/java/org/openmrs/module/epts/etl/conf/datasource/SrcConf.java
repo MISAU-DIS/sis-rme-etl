@@ -224,9 +224,9 @@ public class SrcConf extends AbstractTableConfiguration
 							+ "but not both.");
 		}
 
-		initAllAvaliableExtraDataSource(srcConn, dstConn);
+		this.initAllAvaliableExtraDataSource(srcConn, dstConn);
 
-		setInitialized(true);
+		this.setInitialized(true);
 	}
 
 	@Override
@@ -317,10 +317,10 @@ public class SrcConf extends AbstractTableConfiguration
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
-		init(getParentConf(), conn, conn);
+		this.init(getParentConf(), conn, conn);
 
-		if (!hasManualMapPrimaryKeyOnField()) {
-			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
+		if (!this.hasManualMapPrimaryKeyOnField()) {
+			this.setManualMapPrimaryKeyOnField(this.getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
 
 		super.fullLoad(conn);
