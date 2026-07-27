@@ -161,7 +161,8 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 		} finally {
 			traceTransformationFinalization(field);
 		}
-		return null;
+
+		return handleValueNotFound(srcObject, transformedRecord, field);
 	}
 
 }

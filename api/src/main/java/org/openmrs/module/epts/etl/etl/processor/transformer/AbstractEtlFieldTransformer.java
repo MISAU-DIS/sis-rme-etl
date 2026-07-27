@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfiguration implements EtlFieldTransformer {
@@ -161,6 +162,44 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	@Override
 	public void setExtension(List<Extension> extension) {
+	}
+
+	protected FieldTransformingInfo handleValueNotFound(EtlDatabaseObject srcObject,
+			EtlDatabaseObject transformedRecord, TransformableField field) throws EtlTransformationException {
+
+		String objectName = transformedRecord != null && transformedRecord.getRelatedConfiguration() != null
+				? transformedRecord.getRelatedConfiguration().getObjectName()
+				: null;
+
+		String fieldName = objectName != null ? objectName + "(" + field.getDstField() + ")"
+				: "'" + field.getDstField() + "'";
+
+		String srcField = field.getDataSourceName() != null ? field.getDataSourceName() + "." : "";
+
+		srcField += field.hasSrcField() ? field.getSrcField().split("@")[0] : "";
+
+		String srcMessage = "the available source objects or previous destination records";
+
+		if (!srcField.isEmpty())
+			srcMessage = srcField;
+
+		String msg = "The field " + fieldName + " could not be resolved from " + srcMessage
+				+ ". The transformation would produce a null value, but this field is not configured to accept null values. "
+				+ "Configure an explicit mapping, allow null values, or ensure that a previous destination record is available as a data source.";
+
+		if (field.nullValueBehavior().markRecordAsFailed()) {
+			throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
+		}
+
+		if (field.nullValueBehavior().abort()) {
+			throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
+		}
+
+		if (field.nullValueBehavior().ignore()) {
+			return new FieldTransformingInfo(field, null, null);
+		}
+
+		throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
 	}
 
 }
