@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
@@ -63,6 +64,12 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 	private AutoIncrementHandlingType autoIncrementHandlingType;
 
+	private ActionOnEtlIssue onMultipleDataSourceForSameMapping;
+
+	private Map<String, Object> dynamicElements;
+
+	private String tableAlias;
+
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget,
 			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
@@ -86,7 +93,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		}
 
 		this.templateParams = new HashMap<>();
-
+		this.dynamicElements = new HashMap<>();
 		this.parentTableName = parameters.get(0).toString();
 
 		this.rawParameterDefinitions = parameters.size() > 1
@@ -135,9 +142,6 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 
 						this.onDemandCheckCondition = srcFieldOrValue;
-
-						this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition",
-								relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters(), conn);
 					} else if (dstField.equals("template")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The template has no value");
@@ -150,6 +154,14 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 
 						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue.toUpperCase());
+					} else if (dstField.equals("on_multiple_data_source_for_same_mapping")) {
+						if (!utilities.stringHasValue(srcFieldOrValue)) {
+							throw new ForbiddenOperationException(
+									"The on_multiple_data_source_for_same_mapping has no value");
+						}
+
+						this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue
+								.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("mapping_resolution_strategy")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The mapping_resolution_strategy has no value");
@@ -171,27 +183,40 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					} else if (dstField.equals("auto_increment_handling_type")) {
 						this.autoIncrementHandlingType = AutoIncrementHandlingType
 								.valueOf(srcFieldOrValue.toUpperCase());
+					} else if (dstField.equals("table_alias")) {
+						this.tableAlias = srcFieldOrValue;
 					} else {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)
 								|| srcFieldOrValue.toLowerCase().equals("null")) {
 							srcFieldOrValue = null;
 						}
 
-						FieldsMapping fm;
+						this.dynamicElements.put(dstField, srcFieldOrValue);
 
-						if (isTransformerExpression(relatedEtlTransformTarget.getRelatedEtlConf(), srcFieldOrValue)) {
-							fm = FieldsMapping.fastCreateWithTransformer(relatedEtlTransformTarget, dstField,
-									srcFieldOrValue, conn);
-						} else {
-							fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
+						try {
+							FieldsMapping fm;
+
+							if (isTransformerExpression(relatedEtlTransformTarget.getRelatedEtlConf(),
+									srcFieldOrValue)) {
+								fm = FieldsMapping.fastCreateWithTransformer(relatedEtlTransformTarget, dstField,
+										srcFieldOrValue, conn);
+							} else {
+								fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
+							}
+
+							if (onDemandParentFieldMappings == null) {
+								onDemandParentFieldMappings = new ArrayList<>();
+							}
+
+							this.onDemandParentFieldMappings.add(fm);
+						} catch (FieldAvaliableInMultipleDataSources e) {
+							if (this.onMultipleDataSourceForSameMapping != null
+									&& this.onMultipleDataSourceForSameMapping.ignore()) {
+
+							} else
+								throw e;
 						}
-
-						if (onDemandParentFieldMappings == null) {
-							onDemandParentFieldMappings = new ArrayList<>();
-						}
-
-						this.onDemandParentFieldMappings.add(fm);
-
 					}
 				}
 
@@ -199,8 +224,9 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 			}
 		}
 
-		if (!utilities.stringHasValue(this.onDemandCheckCondition)
-				&& !utilities.stringHasValue(this.parentSourceField)) {
+		if (!utilities.stringHasValue(this.onDemandCheckCondition) && !utilities.stringHasValue(this.parentSourceField))
+
+		{
 			throw new ForbiddenOperationException(
 					"At least on_demand_check_condition or parent_field_in_datasource_object must be specified");
 		}
@@ -210,6 +236,27 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					"Template parameters specified but no templated was defined with transformer: \n"
 							+ getTransformerDsc());
 		}
+
+		Map<String, Object> params = relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters();
+
+		if (this.tableAlias != null) {
+			this.dynamicElements.put("table_alias", this.tableAlias);
+		}
+
+		if (params != null && !params.isEmpty()) {
+			for (Entry<String, Object> p : params.entrySet()) {
+				this.dynamicElements.put(p.getKey(), p.getValue());
+			}
+		}
+
+		if (this.templateParams != null && !this.templateParams.isEmpty()) {
+			for (Entry<String, Object> p : this.templateParams.entrySet()) {
+				this.dynamicElements.put(p.getKey(), p.getValue());
+			}
+		}
+
+		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", dynamicElements, conn);
+
 	}
 
 	public AutoIncrementHandlingType getAutoIncrementHandlingType() {
@@ -243,8 +290,12 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 			if (utilities.isNumeric(parentFieldName)) {
 				fieldMap.setSrcValue(parentFieldName);
 			} else {
-				throw new EtlExceptionImpl("The value '" + parentFieldName + "' on " + getTransformerDsc()
-						+ " must be either a valid field datasource or number");
+				fieldMap.setSrcValue(parentFieldName);
+
+				/*
+				 * throw new EtlExceptionImpl("The value '" + parentFieldName + "' on " +
+				 * getTransformerDsc() + " must be either a valid field datasource or number");
+				 */
 			}
 		}
 

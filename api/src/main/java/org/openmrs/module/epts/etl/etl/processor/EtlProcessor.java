@@ -233,7 +233,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			tryToLogOrThrowNoDstForGivenSrcException(etlObjects, e, srcConn, dstConn);
 		}
 
-		if (loadHelper.hasDstConf()) {
+		if (loadHelper != null && loadHelper.hasDstConf()) {
 			loadHelper.load(srcConn, dstConn);
 
 			tryToPerfomeEtlOnChild(etlItemConf, loadHelper, srcConn, dstConn);
