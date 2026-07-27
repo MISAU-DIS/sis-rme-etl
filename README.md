@@ -1291,6 +1291,7 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
          "primaryKeyInitialIncrementValue":"",
          "mappingResolutionStrategy":"",
          "allowDuplicateDestinationMappings":"",
+		 "skipRelationshipResolution":"",
          "mapping":[
             {
                "dataSourceName":"",
@@ -1304,7 +1305,8 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
                "nullValueBehavior":"",
                "skipRelationshipResolution":"",
                "applyCondition":"", 
-               "transformer":""
+               "transformer":"",
+               "skipRelationshipResolution"
             }
          ],
          "joinFields":[
@@ -1347,7 +1349,10 @@ Bellow is the explanation for each field:
 
     When this property is set to true, multiple mappings for the same destination field are allowed, but each duplicated mapping must define an *applyCondition*. These conditions must be mutually exclusive, ensuring that only one mapping can be applied for a given source record.
     This is useful when the value of a destination field depends on different source conditions.
-  
+- **incompleteMappingBehavior** – Defines the default behavior to apply when one or more mappings within this destination configuration become incomplete after template parameter resolution. This behavior is inherited by all mappings in the **dstConf**, unless explicitly overridden by the mapping itself. Supported values are:
+  - **ABORT_PROCESS** – Treat incomplete mappings as configuration errors and abort the ETL configuration loading process.
+  - **DISCARD_MAPPING** – Automatically remove incomplete mappings and continue processing the remaining mappings.
+  - 
 - **mapping** defines explicit field mappings between one or more source data sources and the destination table. Manual mappings are typically required when a destination field cannot be automatically resolved by the configured mapping strategy.
 
   Each mapping supports the following properties:
@@ -1404,8 +1409,7 @@ Bellow is the explanation for each field:
     - **ABORT_PROCESS** – Treat the incomplete mapping as a configuration error and abort the ETL configuration loading process.
     - **DISCARD_MAPPING** – Remove the incomplete mapping from the configuration and continue processing the remaining mappings.
 
-    See <a href="#handling-incomplete-mappings">Handling Incomplete Mappings</a> for more details.
-   -  **joinFields** allow the specification of the joining fields to the srcConf. Usually the joining fields can be automatically generated if the src and dst use the same unique keys. The joining fields are important when it comes to determining if all the src records were processed. If the joining fields are not present then the final verification of the process will be skipped for that specific table. (See [The Joining Fields](#joinFields)) 
+-  **joinFields** allow the specification of the joining fields to the srcConf. Usually the joining fields can be automatically generated if the src and dst use the same unique keys. The joining fields are important when it comes to determining if all the src records were processed. If the joining fields are not present then the final verification of the process will be skipped for that specific table. (See [The Joining Fields](#joinFields)) 
 - **autoIncrementHandlingType**: define how the schema defined auto-increment will be handled. The possible values: (1) AS_SCHEMA_DEFINED meaning that the Etl process will respect the Auto-Increment as defined on table Schema definition. This is the default behavior of the Etl Configuration (2) IGNORE_SCHEMA_DEFINITION meaning that the auto-increment defined by table schema will be ignored and the application itself will handle the key values.
 - *primaryKeyInitialIncrementValue*: this override the same property defined on Etl Item Configuration.
 <a name="onConflict"></a>
