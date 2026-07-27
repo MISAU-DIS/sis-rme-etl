@@ -1292,6 +1292,7 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
          "mappingResolutionStrategy":"",
          "allowDuplicateDestinationMappings":"",
 		 "skipRelationshipResolution":"",
+		 "identifiedRecordAction",
          "mapping":[
             {
                "dataSourceName":"",
@@ -1349,6 +1350,11 @@ Bellow is the explanation for each field:
 
     When this property is set to true, multiple mappings for the same destination field are allowed, but each duplicated mapping must define an *applyCondition*. These conditions must be mutually exclusive, ensuring that only one mapping can be applied for a given source record.
     This is useful when the value of a destination field depends on different source conditions.
+- **identifiedRecordAction** – Defines how the ETL should persist records whose destination primary key is explicitly resolved during the transformation process. By default, identified records are treated as new records and are inserted into the destination table. Supported values are:
+  - **UPDATE** – Updates all destination fields that were materialized during the transformation.
+  - **PATCH_EXISTING** – Updates only the destination fields listed in **patchFields**.
+
+  See <a href="#updating-identified-records">Updating Identified Records</a> for more details.
 - **incompleteMappingBehavior** – Defines the default behavior to apply when one or more mappings within this destination configuration become incomplete after template parameter resolution. This behavior is inherited by all mappings in the **dstConf**, unless explicitly overridden by the mapping itself. Supported values are:
   - **ABORT_PROCESS** – Treat incomplete mappings as configuration errors and abort the ETL configuration loading process.
   - **DISCARD_MAPPING** – Automatically remove incomplete mappings and continue processing the remaining mappings.
@@ -1730,6 +1736,110 @@ In this example, all JSON files matching **/opt/etl/config/sync-child/*.json** w
 If *etlConfDir* is omitted, the same relative *srcPath* will be resolved from the directory where the main ETL configuration file is located.
 
 This mechanism differs from templates. Templates are intended for reusable and parameterized configuration blocks, while fragments are intended to split a large configuration into smaller files for better organization and team collaboration.
+
+
+```markdown
+### Updating Identified Records
+
+By default, every transformed record is treated as a new record and is inserted into the destination table.
+
+However, some migration and synchronization scenarios require the ETL to update an existing destination record instead of creating a new one. This is typically achieved by resolving the destination record identifier (primary key) during the transformation process.
+
+For example, a mapping may resolve the destination record identifier using a database lookup:
+
+```json
+{
+   "dstField":"obs_id",
+   "transformer":"FAST_SQL_TRANSFORMER(select obs_id from ${dst_db}.obs where uuid = person_complex_attribute_detail_src_ds.uuid)"
+}
+```
+
+A destination record is considered **identified** whenever the destination primary key field is assigned a non-null value during the transformation process.
+
+No additional configuration is required to identify a destination record. The ETL automatically detects when the destination primary key has been populated and switches from the normal insertion workflow to the identified record workflow.
+
+The action to perform on an identified record is controlled by the **identifiedRecordAction** property.
+
+#### identifiedRecordAction
+<a name="updating-identified-records"></a>
+
+Defines how the ETL should persist a record whose destination primary key has been resolved during the transformation process.
+
+Supported values are:
+
+| Value | Description |
+|--------|-------------|
+| **UPDATE** | Updates all destination fields that were materialized during the transformation. |
+| **PATCH_EXISTING** | Updates only the destination fields listed in **patchFields**. |
+
+If the destination primary key is not resolved, the ETL follows the normal insertion workflow.
+
+#### Example
+
+```json
+{
+   "dstConf":[
+      {
+         "tableName":"obs",
+         "identifiedRecordAction":"PATCH_EXISTING",
+         "patchFields":[
+            "obs_datetime",
+            "value_text",
+            "date_changed"
+         ],
+         "mapping":[
+            {
+               "dstField":"obs_id",
+               "transformer":"COALESCE_TRANSFORMER(
+                   FAST_SQL_TRANSFORMER(select obs_id from ${dst_db}.obs ob where ob.uuid = person_complex_attribute_detail_src_ds.uuid),
+                   FAST_SQL_TRANSFORMER(select obs_id from ${dst_db}.obs ob where ob.encounter_id = tarv_transferred_in_obs_dst_ds.encounter_id and ob.concept_id = 1369 limit 1)
+               )",
+               "nullValueBehavior":"IGNORE"
+            }
+         ]
+      }
+   ]
+}
+```
+
+In this example, the ETL first attempts to resolve the destination **obs_id**.
+
+- If no identifier is found, a new record is inserted.
+- If an identifier is found, the corresponding destination record is considered identified and the configured **identifiedRecordAction** is applied.
+
+#### Processing flow
+
+```
+Transform destination record
+          ↓
+Resolve destination primary key
+          ↓
+Was the primary key resolved?
+          │
+          ├── No
+          │      ↓
+          │   Insert new record
+          │
+          └── Yes
+                 ↓
+        Apply identifiedRecordAction
+```
+
+#### Relationship with Conflict Resolution
+
+The **identifiedRecordAction** mechanism is independent from **onConflict**.
+
+An identified record is intentionally selected during the transformation by resolving its primary key before persistence.
+
+A conflict, on the other hand, occurs when the ETL attempts to insert a new record and a uniqueness constraint (such as a UUID or another unique field) is violated.
+
+Therefore:
+
+- **identifiedRecordAction** handles records that are explicitly identified before persistence.
+- **onConflict** handles unexpected uniqueness conflicts detected during persistence.
+
+Both mechanisms are independent and may coexist within the same destination configuration.
+
 
 ## Default configuration files templates
 In this section are listed some templates for configuration files for specific etl processes. For demo please check [this session](https://github.com/csaude/openmrs-module-epts-etl/blob/master/docs/demo/README.md#etl-quick-examples).
