@@ -328,4 +328,15 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	public void setCondition(String condition) {
 		this.condition = condition;
 	}
+
+	@Override
+	public List<String> getExcludedFieldsFromObjectDesc() {
+		return null;
+	}
+
+	@Override
+	public ActionOnEtlIssue getIncompleteMappingBehavior() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

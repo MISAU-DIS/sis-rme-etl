@@ -38,6 +38,8 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	private String childField;
 
+	private List<String> excludedFieldsFromObjectDesc;
+
 	public String getChildField() {
 		return childField;
 	}
@@ -289,4 +291,14 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	public String getCondition() {
 		return null;
 	}
+
+	@Override
+	public List<String> getExcludedFieldsFromObjectDesc() {
+		return this.excludedFieldsFromObjectDesc;
+	}
+
+	public void setExcludedFieldsFromObjectDesc(List<String> excludedFieldsFromObjectDesc) {
+		this.excludedFieldsFromObjectDesc = excludedFieldsFromObjectDesc;
+	}
+
 }

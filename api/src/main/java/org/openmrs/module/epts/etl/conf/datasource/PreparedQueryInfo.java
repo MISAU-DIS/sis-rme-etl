@@ -6,6 +6,7 @@ import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
@@ -67,7 +68,16 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 		int qty = 0;
 
 		for (FieldTransformingInfo p : this.parameters) {
-			qty += determineQtyElementsWithinTheParamValue(p.getTransformedValue());
+
+			if (p == null) {
+				this.getRelatedEtlConf().err(
+						"Error while initializing PreparedQueryInfo for original query={}, prepared query={}, params={}",
+						this.originalQuery, this.preparedQuery, this.parameters);
+
+				throw new EtlExceptionImpl("Error while initializing PreparedQueryInfo: " + this);
+			} else {
+				qty += determineQtyElementsWithinTheParamValue(p.getTransformedValue());
+			}
 		}
 
 		return qty;
@@ -126,5 +136,35 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+	}
+
+	@Override
+	public String toString() {
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(getClass().getSimpleName()).append(" {\n");
+
+		sb.append("  originalQuery = ").append(originalQuery).append("\n");
+
+		sb.append("  preparedQuery = ").append(preparedQuery).append("\n");
+
+		sb.append("  parameters = ");
+
+		if (parameters == null || parameters.isEmpty()) {
+			sb.append("[]");
+		} else {
+			sb.append("[\n");
+
+			for (FieldTransformingInfo parameter : parameters) {
+				sb.append("    - ").append(parameter).append("\n");
+			}
+
+			sb.append("  ]");
+		}
+
+		sb.append("\n}");
+
+		return sb.toString();
 	}
 }

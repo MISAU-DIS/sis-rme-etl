@@ -119,8 +119,8 @@ public class EtlLogger {
 		log(Level.TRACE, msg, null);
 	}
 
-	public void err(String msg, Throwable throwable, Object... arguments) {
-		log(Level.ERROR, msg, throwable, arguments);
+	public void err(String msg, Object... arguments) {
+		log(Level.ERROR, msg, null, arguments);
 	}
 
 	public void info(String msg, Object... arguments) {
@@ -151,11 +151,15 @@ public class EtlLogger {
 
 		switch (msgLevel) {
 		case ERROR:
-			if (throwable == null) {
-				throw new EtlExceptionImpl("You should soecify throwable on error logging!");
+			if (throwable == null && arguments == null) {
+				throw new EtlExceptionImpl("You should specify throwable or arguments on error logging!");
 			}
 
-			logger.error(finalMsg, throwable);
+			if (arguments != null) {
+				logger.error(finalMsg, arguments);
+			} else {
+				logger.error(finalMsg, throwable);
+			}
 
 			break;
 

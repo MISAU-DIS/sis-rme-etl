@@ -249,8 +249,10 @@ public class QueryParameter extends Field {
 			}
 
 		} else {
-			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), true, conn);
+			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), conn);
 		}
+
+		stepIntoBreakpoint(getRelatedEtlConf(), map.getTransformerInstance() == null);
 
 		return map.getTransformerInstance().transform(null, fakeSrcObject, fakeSrcObject, avaliableSrcObjects, map,
 				conn, conn);

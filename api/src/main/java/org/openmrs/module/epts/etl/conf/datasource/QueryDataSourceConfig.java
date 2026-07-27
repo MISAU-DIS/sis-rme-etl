@@ -87,6 +87,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	private EtlConfiguration relatedEtlConfiguration;
 
+	private List<String> excludedFieldsFromObjectDesc;
+
 	public QueryDataSourceConfig() {
 		this.loadHealper = new DatabaseObjectLoaderHelper(this);
 
@@ -99,6 +101,15 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		setRelatedSrcConf(relatedSrcVonf);
 
 		setQuery(query);
+	}
+
+	@Override
+	public List<String> getExcludedFieldsFromObjectDesc() {
+		return this.excludedFieldsFromObjectDesc;
+	}
+
+	public void setExcludedFieldsFromObjectDesc(List<String> excludedFieldsFromObjectDesc) {
+		this.excludedFieldsFromObjectDesc = excludedFieldsFromObjectDesc;
 	}
 
 	public ActionOnEtlIssue getOnMultipleSrcObjectsFound() {
@@ -534,8 +545,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				objs.addAll(avaliableSrcObjects);
 			}
 
-			list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConf(), processor, srcObject,
-					dstObject, avaliableSrcObjects, srcConn);
+			list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConf(), processor, srcObject, dstObject,
+					avaliableSrcObjects, srcConn);
 
 			throw new ForbiddenOperationException("The query datasource (" + this.getDesc()
 					+ ") returned more than one src objects for src objects: " + objs);
@@ -546,7 +557,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		if (relationshipResolutionStrategy.skip()) {
 			for (Field f : result.getFields()) {
 				FieldsMapping tf = FieldsMapping.fastCreate((EtlTransformTarget) dstObject.getRelatedConfiguration(),
-						f.getName(), srcConn);
+						f.getName(), f.getName(), true, srcConn);
 				tf.setRelationshipResolutionStrategy(RelationshipResolutionStrategy.SKIP);
 
 				f.setTransformingInfo(new FieldTransformingInfo(tf, result.getFieldValue(f.getName()), this));

@@ -7,11 +7,17 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ArithmeticFieldTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.etl.processor.transformer.NullValueTransformer;
+import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.IncompleteFieldsMappingException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -209,7 +215,8 @@ public interface TransformableField {
 
 	Class<?> getTypeClass();
 
-	void init(EtlTransformTarget target);
+	void init(EtlTransformTarget target)
+			throws IncompleteFieldsMappingException, FieldsMappingException, EtlConfException;
 
 	default Boolean hasTransformerInstance() {
 		return this.getTransformerInstance() != null;
@@ -236,6 +243,18 @@ public interface TransformableField {
 		this.setTransformer(newTransformer);
 		this.setTransformerInstance(null);
 		this.tryToLoadTransformer(dstConf, conn);
+	}
+
+	default Boolean useDefaultTransformer() {
+		return getTransformerInstance() instanceof DefaultFieldTransformer;
+	}
+
+	default Boolean useNullValueTransformer() {
+		return getTransformerInstance() instanceof NullValueTransformer;
+	}
+
+	default Boolean useSimpleValueTransformer() {
+		return getTransformerInstance() instanceof SimpleValueTransformer;
 	}
 
 	EtlDataSource getDataSource();

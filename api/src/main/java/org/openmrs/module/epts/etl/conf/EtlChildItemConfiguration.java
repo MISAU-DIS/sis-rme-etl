@@ -395,4 +395,16 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 		return null;
 	}
 
+	@Override
+	public List<String> getExcludedFieldsFromObjectDesc() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ActionOnEtlIssue getIncompleteMappingBehavior() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

@@ -95,6 +95,10 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	private String applyCondition;
 
+	private List<String> excludedFieldsFromObjectDesc;
+
+	private ActionOnEtlIssue incompleteMappingBehavior;
+
 	public TransformableDataSource() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
 	}
@@ -105,6 +109,23 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		}
 
 		this.unmappedFieldBehavior = unmappedFieldBehavior;
+	}
+
+	@Override
+	public List<String> getExcludedFieldsFromObjectDesc() {
+		return this.excludedFieldsFromObjectDesc;
+	}
+
+	public ActionOnEtlIssue getIncompleteMappingBehavior() {
+		return incompleteMappingBehavior;
+	}
+
+	public void setIncompleteMappingBehavior(ActionOnEtlIssue incompleteMappingBehavior) {
+		this.incompleteMappingBehavior = incompleteMappingBehavior;
+	}
+
+	public void setExcludedFieldsFromObjectDesc(List<String> excludedFieldsFromObjectDesc) {
+		this.excludedFieldsFromObjectDesc = excludedFieldsFromObjectDesc;
 	}
 
 	public ActionOnEtlIssue getUnmappedFieldBehavior() {
@@ -205,6 +226,10 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 		if (!this.hasUnmappedFieldBehavior()) {
 			this.setUnmappedFieldBehavior(ActionOnEtlIssue.IGNORE);
+		}
+
+		if (hasIncompleteMappingBehavior()) {
+			getIncompleteMappingBehavior().validateOnIncompleteMapping("incompleteMappingBehavior");
 		}
 
 		this.loadDataSourceInfo(conn);

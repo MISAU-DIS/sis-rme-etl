@@ -10,7 +10,6 @@ import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -118,11 +117,17 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 						this.parentSourceField = srcFieldOrValue;
 
-						this.parentSourceIdMapping = utilities.stringHasValue(this.parentSourceField)
-								? new FieldsMapping(relatedEtlTransformTarget, this.parentSourceField,
-										relatedEtlTransformTarget.getSrcConf().getTableAlias(), field.getDstField(),
-										conn)
-								: null;
+						if (utilities.stringHasValue(this.parentSourceField)) {
+
+							String srcField = this.parentSourceField;
+							String dstField1 = field.getDstField();
+							String dataSourceName = relatedEtlTransformTarget.getSrcConf().getTableAlias();
+
+							this.parentSourceIdMapping = FieldsMapping.fastCreate(relatedEtlTransformTarget, srcField,
+									dataSourceName, dstField1, conn);
+						} else {
+							this.parentSourceIdMapping = null;
+						}
 
 					} else if (dstField.equals("on_demand_check_condition")) {
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
@@ -175,10 +180,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						FieldsMapping fm;
 
 						if (isTransformerExpression(relatedEtlTransformTarget.getRelatedEtlConf(), srcFieldOrValue)) {
-							fm = FieldsMapping.fastCreate(relatedEtlTransformTarget, dstField, dstField, false, conn);
-							fm.setTransformer(srcFieldOrValue);
-							fm.tryToLoadTransformer(relatedEtlTransformTarget, conn);
-
+							fm = FieldsMapping.fastCreateWithTransformer(relatedEtlTransformTarget, dstField,
+									srcFieldOrValue, conn);
 						} else {
 							fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
 						}

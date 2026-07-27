@@ -6,8 +6,20 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 public enum ActionOnEtlIssue {
 
-	USE_LAST, USE_FIRST, SET_TO_NULL, CREATE_ON_DST, USE_INPUT, USE_DEFAULT, LOG, IGNORE, MARK_RECORD_AS_FAILED,
-	USE_EXCEPTION_BEHAVIOR, ABORT_PROCESS;
+	// @formatter:off
+	DISCARD_MAPPING,
+	USE_LAST, 
+	USE_FIRST, 
+	SET_TO_NULL, 
+	CREATE_ON_DST, 
+	USE_INPUT, 
+	USE_DEFAULT, 
+	LOG, 
+	IGNORE, 
+	MARK_RECORD_AS_FAILED,
+	USE_EXCEPTION_BEHAVIOR, 
+	ABORT_PROCESS;
+	// @formatter:onn
 
 	public static final CommonUtilities utilities = CommonUtilities.getInstance();
 
@@ -36,6 +48,8 @@ public enum ActionOnEtlIssue {
 			CREATE_ON_DST };
 
 	public static final ActionOnEtlIssue[] LOGING = { MARK_RECORD_AS_FAILED, LOG };
+
+	public static final ActionOnEtlIssue[] INCOMPLETE_MAPPING_BEHAVIOR = { DISCARD_MAPPING, ABORT_PROCESS };
 
 	public boolean useInputOnMissingMapping() {
 		return this.equals(USE_INPUT);
@@ -69,6 +83,10 @@ public enum ActionOnEtlIssue {
 		return this.equals(IGNORE);
 	}
 
+	public boolean discardmapping() {
+		return this.equals(DISCARD_MAPPING);
+	}
+
 	public boolean useLast() {
 		return this.equals(USE_LAST);
 	}
@@ -87,6 +105,10 @@ public enum ActionOnEtlIssue {
 
 	public boolean useExceptionBehavior() {
 		return this.equals(USE_EXCEPTION_BEHAVIOR);
+	}
+
+	public boolean allowedOnincompleteMappingBehavior() {
+		return utilities.existOnArray(INCOMPLETE_MAPPING_BEHAVIOR, this);
 	}
 
 	public boolean allowedOnMultipleDataSourceFound() {
@@ -155,6 +177,10 @@ public enum ActionOnEtlIssue {
 
 	public void validateOnMissingRequiredObject(String field) throws EtlConfException {
 		validate(field, ON_MISSING_REQUIRED_OBJECT);
+	}
+
+	public void validateOnIncompleteMapping(String field) throws EtlConfException {
+		validate(field, INCOMPLETE_MAPPING_BEHAVIOR);
 	}
 
 	private void validate(String field, ActionOnEtlIssue[] against) throws EtlConfException {
