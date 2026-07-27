@@ -257,8 +257,8 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 						fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
 					} catch (MissingFieldException e) {
 						getRelatedEtlConf().err(
-								"Error while loading data source info within FieldsMapping {} transformer {} on target {}",
-								fm, fm.getTransformer(), this);
+								"Error while loading data source info within FieldsMapping {} transformer {} on target {} from object {}",
+								fm, fm.getTransformer(), this, defaultObject);
 
 						throw e;
 					}
