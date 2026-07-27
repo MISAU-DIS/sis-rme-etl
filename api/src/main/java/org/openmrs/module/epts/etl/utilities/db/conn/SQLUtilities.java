@@ -2493,7 +2493,8 @@ public class SQLUtilities {
 								if (checkIfFieldDefinitionIncludeQualifier(adjustedElement)) {
 									map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
 
-									if (utilities.contains(avaliableTableAliases, map.getDataSourceName())) {
+									if (utilities.contains(avaliableTableAliases, map.getDataSourceName())
+											|| !map.hasTransformer()) {
 										continue;
 									}
 								}
