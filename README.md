@@ -1347,53 +1347,64 @@ Bellow is the explanation for each field:
 
     When this property is set to true, multiple mappings for the same destination field are allowed, but each duplicated mapping must define an *applyCondition*. These conditions must be mutually exclusive, ensuring that only one mapping can be applied for a given source record.
     This is useful when the value of a destination field depends on different source conditions.
--  **mapping** is used to manually map the dataSource for specific fields in the dst table. The manual mapping is necessary if the dst field could not be automatically mapped because it does not appear in any dataSource in the srcConf. The relevant field for each mapping are:
-   - (1) **dataSourceName** the datasource from were the data will be picked-up; this can be omitted if there is only one datasource containing the srcField or if the "preferredDataSource" is defined. You can also specify the dataSourceName within the srcField like 'dataSourceName.srcFieldName'
-   - (2) **srcField** the field on the dataSource from where the value will be picked up; Note that directlty pass a Transformer here;
-   - (3) **srcValue** a constant value or transformer to be mapped to the dstField;
-   - (4) **dstField** the field in dst which we want to fill;
-   - (5) **defaultValue** default value to use when *value* is null;  
-   - (6) **mapToNullValue** a boolean which indicates that this field should be filled with null value;
-   - (7) **dataType** an optional token to specify the data type for value. By default, the type will match the final expression type from the transformer. Supported types: int, long, double, string, date, boolean      
-   - (8) **overrideTriggerValue** the value that triggers the override mechanism. If the transformed field value equals to this value, the  transformed value will be replaced by the configured "defaultValue"
-   - (9) **nullValueBehavior** Defines the behavior to be applied when the transformation of a field results in a null value. By default, null values are accepted and assigned to the destination field.
-     However, this attribute allows overriding that behavior on a per-field basis.
-	 Supported values:
-     - *ALLOW* – The null value is accepted and assigned to the destination field. No action is taken.
-     - *MARK_RECORD_AS_FAILED* – The record is marked as failed during the ETL process, but processing continues.
-     - *ABORT_PROCESS* – An exception is thrown and the ETL process is interrupted according to the configured error handling strategy.
-   - (10) **skipRelationshipResolution** defines whether the ETL engine should skip the resolution of relationships (foreign keys) for a given field.
-     By default, when a field represents a relationship, the ETL process attempts to resolve the corresponding parent record in the destination database. This typically involves looking up the destination record based on the transformed value.
-     When this attribute is set to *true* , the relationship resolution step is skipped, and the value is written directly to the destination field without performing any lookup or validation in the destination database.
-     This can improve performance and is useful in scenarios where:
-       - the value is already a valid destination identifier referential
-       - integrity is guaranteed externally
-       - relationship resolution is not required during the ETL process
-         
-     ⚠️ Warning:
-         Disabling relationship resolution may result in invalid foreign key references if the value does not correspond to an existing record in the destination database.
-   - (11) **applyCondition**: Optional SQL-like condition that determines whether this mapping should be executed. If the condition evaluates to **false**, the mapping is skipped and the destination field remains unmapped, allowing the configured mapping resolution strategy to determine its final value. For the supported condition syntax and examples, see <a href="#using-conditions">Using Conditions on Configurations</a>.
-
-     The condition is evaluated immediately before the mapping is applied. If the condition evaluates to *true*, the mapping is executed normally. If it evaluates to *false*, the mapping is ignored and no transformation is performed for the corresponding destination field.
   
-     When a mapping is ignored:
-       - the source value is not evaluated;
-       - transformers are not executed;
-       - the destination field remains unmapped;
-       - the final value of the field will depend on the configured *mappingResolutionStrategy* and any applicable default values.
+- **mapping** defines explicit field mappings between one or more source data sources and the destination table. Manual mappings are typically required when a destination field cannot be automatically resolved by the configured mapping strategy.
 
-       Example:
-     
-       ```
-       {
-          "srcField":"void_user_dst.user_id",
-          "dstField":"voided_by",
-          "applyCondition":"main_src_ds.voided = 1"
-       }
-      ```
-     In this example, the *voided_by* field will only be populated when the source record is marked as voided. For records where *main_src_ds.voided = 0*, the mapping will be skipped.       
-   
-   - (12) **transformer**: defines a transformation applied to the evaluated field value. Transformers allow complex processing such as expression evaluation, string manipulation, database lookups, or value mapping. Refere to [field transformers](#field-transformers) for more details,
+  Each mapping supports the following properties:
+
+  - **(1) dataSourceName** – Name of the data source from which the value should be obtained. This property can be omitted when the source field exists in only one available data source or when a preferred data source has been configured. Alternatively, the data source name may be specified directly as part of the **srcField**, for example: `patient_src_ds.patient_id`.
+
+  - **(2) srcField** – Source field whose value will be mapped to the destination field. A field transformer expression may also be specified instead of a plain field reference.
+
+  - **(3) srcValue** – Constant value or transformer expression to be assigned to the destination field.
+
+  - **(4) dstField** – Destination field that will receive the transformed value.
+
+  - **(5) defaultValue** – Value assigned when the evaluated source value is `null`.
+
+  - **(6) mapToNullValue** – When `true`, the destination field is explicitly assigned the value `null`.
+
+  - **(7) dataType** – Optional data type used to convert the final transformed value before assigning it to the destination field. By default, the data type is inferred from the evaluated expression. Supported values are: `int`, `long`, `double`, `string`, `date`, and `boolean`.
+
+  - **(8) overrideTriggerValue** – Value that activates the override mechanism. When the evaluated value equals this value, it is replaced by the configured **defaultValue**.
+
+  - **(9) nullValueBehavior** – Defines the behavior applied when the evaluated mapping results in a `null` value. By default, `null` values are accepted. Supported values are:
+    - **ALLOW** – Assign the `null` value to the destination field.
+    - **MARK_RECORD_AS_FAILED** – Mark the current record as failed while allowing the ETL process to continue.
+    - **ABORT_PROCESS** – Abort the ETL process according to the configured error handling strategy.
+
+  - **(10) skipRelationshipResolution** – Determines whether relationship (foreign key) resolution should be skipped for this field. When set to `true`, the transformed value is written directly to the destination field without validating or resolving the corresponding parent record in the destination database. This option should only be used when referential integrity is guaranteed externally.
+
+    **Warning:** Disabling relationship resolution may result in invalid foreign key references if the supplied value does not exist in the destination database.
+
+  - **(11) applyCondition** – Optional SQL-like condition that determines whether the mapping should be executed. If the condition evaluates to `false`, the mapping is skipped and the destination field remains unmapped. The final value is then determined by the configured **mappingResolutionStrategy** and any applicable default values. For the supported syntax and examples, see <a href="#using-conditions">Using Conditions on Configurations</a>.
+
+    When a mapping is skipped:
+
+    - the source value is not evaluated;
+    - transformers are not executed;
+    - the destination field remains unmapped;
+    - the final field value is determined by the configured mapping resolution strategy.
+
+    Example:
+
+    ```
+    {
+       "srcField":"void_user_dst.user_id",
+       "dstField":"voided_by",
+       "applyCondition":"main_src_ds.voided = 1"
+    }
+    ```
+
+    In this example, the **voided_by** field is populated only when the source record is marked as voided.
+
+  - **(12) transformer** – Defines an additional transformation applied to the evaluated value before it is assigned to the destination field. Transformers support operations such as expression evaluation, string manipulation, value conversion, database lookups, and custom business logic. See <a href="#field-transformers">Field Transformers</a> for more details.
+
+  - **(13) incompleteMappingBehavior** – Defines how the ETL should handle mappings that become incomplete after template parameter resolution. By default, incomplete mappings are treated as configuration errors. Supported values are:
+    - **ABORT_PROCESS** – Treat the incomplete mapping as a configuration error and abort the ETL configuration loading process.
+    - **DISCARD_MAPPING** – Remove the incomplete mapping from the configuration and continue processing the remaining mappings.
+
+    See <a href="#handling-incomplete-mappings">Handling Incomplete Mappings</a> for more details.
    -  **joinFields** allow the specification of the joining fields to the srcConf. Usually the joining fields can be automatically generated if the src and dst use the same unique keys. The joining fields are important when it comes to determining if all the src records were processed. If the joining fields are not present then the final verification of the process will be skipped for that specific table. (See [The Joining Fields](#joinFields)) 
 - **autoIncrementHandlingType**: define how the schema defined auto-increment will be handled. The possible values: (1) AS_SCHEMA_DEFINED meaning that the Etl process will respect the Auto-Increment as defined on table Schema definition. This is the default behavior of the Etl Configuration (2) IGNORE_SCHEMA_DEFINITION meaning that the auto-increment defined by table schema will be ignored and the application itself will handle the key values.
 - *primaryKeyInitialIncrementValue*: this override the same property defined on Etl Item Configuration.
