@@ -950,7 +950,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 			if (recordOnDB == null)
 				throw new ForbiddenOperationException("Atempt to update not existing record: " + record);
 
-			if (dstConf.hasActionWhenRecordIdIsSet() && dstConf.getActionWhenRecordIdIsSet().isPatchUpdate()) {
+			if (dstConf.hasActionWhenRecordIdIsSet() && dstConf.getIdentifiedRecordAction().isPatchUpdate()) {
 				for (Field field : dstConf.getFields()) {
 					if (!dstConf.getPatchFields().contains(field.getName())) {
 						record.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()));

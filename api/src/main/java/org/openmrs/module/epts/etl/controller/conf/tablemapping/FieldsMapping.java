@@ -20,11 +20,13 @@ import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.etl.processor.transformer.AbstractEtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.IncompleteFieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -87,6 +89,8 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	private Boolean srcValueSwitchedToSrcField;
 
 	private String applyCondition;
+
+	private ActionOnEtlIssue incompleteMappingBehavior;
 
 	public FieldsMapping() {
 		this.nullValueBehavior = ActionOnEtlIssue.ABORT_PROCESS;
@@ -176,6 +180,17 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		}
 
 		this.tryToLoadTransformer(target, conn);
+	}
+
+	public ActionOnEtlIssue getIncompleteMappingBehavior() {
+		return incompleteMappingBehavior != null ? this.incompleteMappingBehavior
+				: (this.getTransformationTargetObject() != null
+						? this.getTransformationTargetObject().getIncompleteMappingBehavior()
+						: null);
+	}
+
+	public void setIncompleteMappingBehavior(ActionOnEtlIssue incompleteMappingBehavior) {
+		this.incompleteMappingBehavior = incompleteMappingBehavior;
 	}
 
 	@Override
@@ -648,8 +663,12 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	}
 
 	@Override
-	public void init(EtlTransformTarget target) {
+	public void init(EtlTransformTarget target) throws IncompleteFieldsMappingException, EtlConfException {
 		this.setTransformationTargetObject(target);
+
+		if (hasIncompleteMappingBehavior()) {
+			getIncompleteMappingBehavior().validateOnIncompleteMapping("incompleteMappingBehavior");
+		}
 
 		if (!this.hasSrcField() && this.hasSrcValue()) {
 			// Try to switch from srcValue to srcField.
@@ -692,7 +711,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 				&& AbstractEtlFieldTransformer.isTransformerExpression(this.getSrcValue().toString());
 
 		if (srcFieldIsTransformer && srcValueIsTransformer) {
-			throw new EtlExceptionImpl("Only one of srcField or srcValue can define a transformer expression.");
+			throw new EtlConfException("Only one of srcField or srcValue can define a transformer expression.");
 		} else if (srcFieldIsTransformer) {
 			initTransformerFromField(this.getSrcField());
 			this.setSrcField(null);
@@ -703,10 +722,15 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		}
 
 		if (!hasDstField()) {
-			throw new FieldsMappingException("No dstField was defined withn the FieldsMapping");
+			throw new IncompleteFieldsMappingException(target);
 		}
 
 		this.markAsInitialized();
+	}
+
+	public boolean hasIncompleteMappingBehavior() {
+		return getIncompleteMappingBehavior() != null || getTransformationTargetObject() != null
+				&& getTransformationTargetObject().hasIncompleteMappingBehavior();
 	}
 
 	private void tryToReloadSrcFieldAndDataSourceName(String fullSrcFieldName) throws EtlExceptionImpl {

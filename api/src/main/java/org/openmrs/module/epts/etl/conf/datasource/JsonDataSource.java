@@ -457,4 +457,10 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 		this.condition = condition;
 	}
 
+	@Override
+	public ActionOnEtlIssue getIncompleteMappingBehavior() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

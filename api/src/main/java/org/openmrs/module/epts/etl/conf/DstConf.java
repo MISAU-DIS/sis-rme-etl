@@ -31,6 +31,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.IncompleteFieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -132,7 +133,9 @@ public class DstConf extends AbstractTableConfiguration
 
 	private Boolean allowDuplicateDestinationMappings;
 
-	private ActionOnLoad actionWhenRecordIdIsSet;
+	private ActionOnLoad identifiedRecordAction;
+
+	private ActionOnEtlIssue incompleteMappingBehavior;
 
 	public DstConf() {
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
@@ -153,6 +156,14 @@ public class DstConf extends AbstractTableConfiguration
 
 			this.targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
 		}
+	}
+
+	public ActionOnEtlIssue getIncompleteMappingBehavior() {
+		return incompleteMappingBehavior;
+	}
+
+	public void setIncompleteMappingBehavior(ActionOnEtlIssue incompleteMappingBehavior) {
+		this.incompleteMappingBehavior = incompleteMappingBehavior;
 	}
 
 	public Boolean getAllowDuplicateDestinationMappings() {
@@ -820,6 +831,10 @@ public class DstConf extends AbstractTableConfiguration
 			setMappingResolutionStrategy(FieldMappingResolutionStrategy.MANUAL_THEN_AUTO);
 		}
 
+		if (hasIncompleteMappingBehavior()) {
+			getIncompleteMappingBehavior().validateOnIncompleteMapping("incompleteMappingBehavior");
+		}
+
 		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
 
 		loadJoinFields(conn);
@@ -1278,24 +1293,50 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
+		if (isInitialized())
+			return;
 
-		if (!isInMemoryTable()) {
-			super.init(relatedItemConf, relatedItemConf.getRelatedEtlSchemaObject(), srcConn, dstConn);
+		synchronized (LOCK) {
+			if (isInitialized())
+				return;
 
-			if (this.hasAlias()) {
-				this.setUsingManualDefinedAlias(true);
+			if (!isInMemoryTable()) {
+				super.init(relatedItemConf, relatedItemConf.getRelatedEtlSchemaObject(), srcConn, dstConn);
 
-				this.getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
-			}
+				if (this.hasAlias()) {
+					this.setUsingManualDefinedAlias(true);
 
-			if (hasMapping()) {
-				for (FieldsMapping map : this.getMapping()) {
-					map.setTransformationTargetObject(this);
-					map.tryToLoadFromTemplate();
+					this.getRelatedEtlConf().tryToAddToBusyTableAliasName(this.getTableAlias());
 				}
-			}
 
-			getRelatedEtlConf().addConfiguredTable(this);
+				if (hasMapping()) {
+					List<FieldsMapping> filteredMapping = new ArrayList<>();
+
+					for (FieldsMapping map : this.getMapping()) {
+						map.setTransformationTargetObject(this);
+						map.tryToLoadFromTemplate();
+
+						try {
+							map.init(this);
+
+							filteredMapping.add(map);
+						} catch (IncompleteFieldsMappingException e) {
+							if (map.hasIncompleteMappingBehavior()
+									&& map.getIncompleteMappingBehavior().discardmapping()) {
+
+								// DISCARD
+							} else {
+								throw e;
+							}
+						}
+					}
+
+					this.setMapping(filteredMapping);
+				}
+
+				getRelatedEtlConf().addConfiguredTable(this);
+				setInitialized(true);
+			}
 		}
 	}
 
@@ -1387,20 +1428,20 @@ public class DstConf extends AbstractTableConfiguration
 		return str;
 	}
 
-	public boolean executeUpdateIfRecordIdIsSet() {
-		return actionWhenRecordIdIsSet != null && actionWhenRecordIdIsSet == ActionOnLoad.UPDATE;
+	public boolean executeUpdateOnIdentifiedRecordAction() {
+		return identifiedRecordAction != null && identifiedRecordAction == ActionOnLoad.UPDATE;
 	}
 
-	public boolean executePatchUpdateIfRecordIdIsSet() {
-		return actionWhenRecordIdIsSet != null && actionWhenRecordIdIsSet == ActionOnLoad.PATCH_UPDATE;
+	public boolean executePatchUpdateOnIdentifiedRecordAction() {
+		return identifiedRecordAction != null && identifiedRecordAction == ActionOnLoad.PATCH_UPDATE;
 	}
 
-	public ActionOnLoad getActionWhenRecordIdIsSet() {
-		return actionWhenRecordIdIsSet;
+	public ActionOnLoad getIdentifiedRecordAction() {
+		return identifiedRecordAction;
 	}
 
-	public void setActionWhenRecordIdIsSet(ActionOnLoad actionWhenRecordIdIsSet) {
-		this.actionWhenRecordIdIsSet = actionWhenRecordIdIsSet;
+	public void setIdentifiedRecordAction(ActionOnLoad identifiedRecordAction) {
+		this.identifiedRecordAction = identifiedRecordAction;
 	}
 
 	public EtlDataSource findParentDataSource(ParentTable ref) {
@@ -1420,6 +1461,6 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public boolean hasActionWhenRecordIdIsSet() {
-		return this.getActionWhenRecordIdIsSet() != null;
+		return this.getIdentifiedRecordAction() != null;
 	}
 }

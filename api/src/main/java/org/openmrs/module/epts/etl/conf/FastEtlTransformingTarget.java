@@ -333,4 +333,10 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	public List<String> getExcludedFieldsFromObjectDesc() {
 		return null;
 	}
+
+	@Override
+	public ActionOnEtlIssue getIncompleteMappingBehavior() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

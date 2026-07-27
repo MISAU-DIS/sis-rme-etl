@@ -13,8 +13,11 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerTyp
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.NullValueTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.IncompleteFieldsMappingException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -212,7 +215,8 @@ public interface TransformableField {
 
 	Class<?> getTypeClass();
 
-	void init(EtlTransformTarget target);
+	void init(EtlTransformTarget target)
+			throws IncompleteFieldsMappingException, FieldsMappingException, EtlConfException;
 
 	default Boolean hasTransformerInstance() {
 		return this.getTransformerInstance() != null;

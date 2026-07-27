@@ -59,6 +59,8 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 	FieldMappingResolutionStrategy mappingResolutionStrategy();
 
+	ActionOnEtlIssue getIncompleteMappingBehavior();
+
 	default Boolean useAsDataSource() {
 		return false;
 	}
@@ -485,6 +487,10 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 	default boolean hasDataSource() {
 		return utilities.listHasElement(this.getAllAvaliableDataSource());
+	}
+
+	default boolean hasIncompleteMappingBehavior() {
+		return getIncompleteMappingBehavior() != null;
 	}
 
 }
