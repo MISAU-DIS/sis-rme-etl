@@ -192,7 +192,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 					this.tableConfig = new GenericTableConfiguration(mappingTable,
 							(TableConfiguration) additionalSrcObjects.get(0).getRelatedConfiguration());
 
-					this.tableConfig.setExtraConditionForExtract(this.extraCondition);
+					this.tableConfig.setExtraConditionForExtract(utilities.removeEscapedQuotes(this.extraCondition));
 
 					try {
 						this.tableConfig.fullLoad(srcConn);

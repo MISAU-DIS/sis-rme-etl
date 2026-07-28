@@ -1276,6 +1276,15 @@ public class CommonUtilities implements Serializable {
 		return str;
 	}
 
+	public String removeEscapedQuotes(String value) {
+
+		if (value == null || value.isEmpty()) {
+			return value;
+		}
+
+		return value.replace("\\\"", "\"");
+	}
+
 	public String delemeterWithCotationMarks(String str) {
 		return quote(str);
 	}
