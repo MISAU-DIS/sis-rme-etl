@@ -5,10 +5,12 @@ import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 
 public class EtlConfCheckExpression {
 
@@ -68,14 +70,25 @@ public class EtlConfCheckExpression {
 		}
 
 		if (context instanceof FieldsMapping) {
-			SrcConf ds = ((FieldsMapping) context).getTransformationTargetObject().getSrcConf();
+			EtlTransformTarget t = ((FieldsMapping) context).getTransformationTargetObject();
+
+			EtlDataSource ds;
+
+			if (t instanceof DstConf) {
+
+				if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf((DstConf) t))) {
+					return;
+				}
+			}
+
+			ds = ((FieldsMapping) context).getTransformationTargetObject().getSrcConf();
 
 			if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf(ds))) {
 				return;
 			}
 
 		}
-		
+
 		if (context instanceof TransformableDataSourceField) {
 			SrcConf ds = ((TransformableDataSourceField) context).getTransformationTargetObject().getSrcConf();
 
@@ -84,8 +97,7 @@ public class EtlConfCheckExpression {
 			}
 
 		}
-		
-		
+
 		if (relatedConfiguration == null) {
 			throw new EtlConfException("The related Etl Conf cannot be found within the given context " + this);
 		}
@@ -118,6 +130,16 @@ public class EtlConfCheckExpression {
 				return ds1;
 			}
 		} catch (DatabaseResourceDoesNotExists e) {
+		} catch (EtlExceptionImpl e) {
+			throw e;
+		}
+
+		if (ds instanceof DstConf) {
+			EtlDataSource ds1 = ((DstConf) ds).findDataSource(this.confName);
+
+			if (ds1 != null) {
+				return ds1;
+			}
 		}
 
 		return null;
