@@ -115,6 +115,14 @@ public class EtlConfCheckExpression {
 	private EtlDataSource tryToLocateDsWithinSrcConf(EtlDataSource ds) {
 		SrcConf srcConf = null;
 
+		if (ds instanceof DstConf) {
+			EtlDataSource ds1 = ((DstConf) ds).findDataSource(this.confName);
+
+			if (ds1 != null) {
+				return ds1;
+			}
+		}
+
 		if (ds instanceof EtlAdditionalDataSource) {
 			srcConf = ((EtlAdditionalDataSource) ds).getRelatedSrcConf();
 		} else if (ds instanceof SrcConf) {
@@ -131,15 +139,6 @@ public class EtlConfCheckExpression {
 			}
 		} catch (DatabaseResourceDoesNotExists e) {
 		} catch (EtlExceptionImpl e) {
-			throw e;
-		}
-
-		if (ds instanceof DstConf) {
-			EtlDataSource ds1 = ((DstConf) ds).findDataSource(this.confName);
-
-			if (ds1 != null) {
-				return ds1;
-			}
 		}
 
 		return null;

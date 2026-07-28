@@ -573,7 +573,7 @@ public class DstConf extends AbstractTableConfiguration
 
 				if (etlField != null) {
 					fm = FieldsMapping.fastCreate(this, etlField.getSrcField().getName(), field.getName(), true, conn);
-					fm.setDataSourceName(etlField.getSrcDataSource().getName());
+					fm.setDataSourceName(etlField.getSrcDataSource().getAlias());
 				} else {
 					fm = FieldsMapping.fastCreate(this, field.getName(), field.getName(), true, conn);
 				}

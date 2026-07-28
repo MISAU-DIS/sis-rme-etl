@@ -71,8 +71,6 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 			availableObjects.addAll(additionalSrcObjects);
 		}
 
-		stepIntoBreakpoint(getRelatedEtlConf(), field.getName().equals("posologia"));
-
 		availableObjects.addAll(retrievePreviousDestinationRecordsUsableAsDataSource(srcObject, transformedRecord));
 
 		FieldTransformingInfo transformingInfo = tryResolveFromAvailableObjects(field, availableObjects);
