@@ -492,7 +492,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		getProgressMeter().setMaxRecordId(getController().getMaxRecordId(this));
 
 		logTrace("Extreme records set!");
-		
+
 		getProgressMeter().resetTotal();
 	}
 
@@ -894,7 +894,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					taskProcessor.getTaskResultInfo().documentErrors(srcConn, dstConn);
 				}
 
-				refreshProgressMeter(taskProcessor.getTaskResultInfo().countAllSuccessfulyProcessedRecords(), srcConn);
+				refreshProgressMeter(taskProcessor, srcConn);
 
 				taskProcessor.getLimits().markAsProcessed();
 
@@ -983,7 +983,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			conn.markAsSuccessifullyTerminated();
 
-			reportProgress();
+			reportProgress(null);
 		} catch (DBException e) {
 			stopOperationDueError(e);
 		} finally {
@@ -1246,7 +1246,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return 5;
 	}
 
-	public synchronized void refreshProgressMeter(int newlyProcessedRecords, Connection conn) throws DBException {
+	public synchronized void refreshProgressMeter(TaskProcessor<T> taskProcessor, Connection conn) throws DBException {
+		int newlyProcessedRecords = taskProcessor.getTaskResultInfo().countAllSuccessfulyProcessedRecords();
+
 		logDebug("REFRESHING PROGRESS METER FOR MORE " + newlyProcessedRecords + " RECORDS.");
 		this.getProgressMeter().refresh("RUNNING", this.getProgressMeter().getTotal(),
 				this.getProgressMeter().getProcessed() + newlyProcessedRecords,
@@ -1258,10 +1260,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		logDebug("PROGRESS METER REFRESHED");
 
-		reportProgress();
+		reportProgress(taskProcessor);
 	}
 
-	public void reportProgress() {
+	public void reportProgress(TaskProcessor<T> taskProcessor) {
 		EtlProgressMeter globalProgressMeter = this.getProgressMeter();
 
 		StringBuilder log = new StringBuilder();
@@ -1297,6 +1299,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		log.append("\n");
 
+		if (taskProcessor != null) {
+			log.append(formatReportLine("REPORTING LIMITS", taskProcessor.getLimits()));
+		}
+		
 		log.append(formatReportLine("PROCESSING TIME", globalProgressMeter.getHumanReadbleProcessingTime()));
 
 		log.append(formatReportLine("STOP TIME", globalProgressMeter.getHumanReadblePauseTime()));
