@@ -176,7 +176,9 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			this.setFieldValue("processing_status", this.status.name());
 			this.setFieldValue("processing_date", DateAndTimeUtilities.getCurrentSystemDate(srcConn));
 			this.setFieldValue("processing_error",
-					etlDefaultException != null ? etlDefaultException.getLocalizedMessage() : null);
+					etlDefaultException != null
+							? utilities.garantirXCaracteres(etlDefaultException.getLocalizedMessage(), 500)
+							: null);
 
 		} else {
 			throw new EtlExceptionImpl("Unsupported stage type (" + type + ")");
