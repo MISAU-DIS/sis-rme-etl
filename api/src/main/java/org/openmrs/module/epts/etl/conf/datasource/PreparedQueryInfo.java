@@ -26,6 +26,7 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 		this.preparedQuery = preparedQuery;
 		this.parameters = parameters;
 		this.relateConfiguration = relateConfiguration;
+		this.originalQuery = originalQuery;
 
 		if (relateConfiguration == null)
 			throw new ForbiddenOperationException(

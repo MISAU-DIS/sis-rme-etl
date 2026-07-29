@@ -548,17 +548,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			PreparedQueryInfo pq = this.getDefaultPreparedQuery().generatePreparedQuery(this.getRelatedEtlConf(),
 					processor, srcObject, dstObject, avaliableSrcObjects, this.getQuery(), srcConn);
 
-			Object[] params = pq.extractParametersValueToArray();
+			this.getRelatedEtlConf().err("The query datasource {} returned more than one src objects. ", pq);
 
-			list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConf(), processor, srcObject, dstObject,
-					avaliableSrcObjects, srcConn);
-
-			this.getRelatedEtlConf().err(
-					"The query datasource ({}) with params {} returned more than one src objects {}", this.getDesc(),
-					params, avaliableSrcObjects);
-
-			throw new ForbiddenOperationException("The query datasource (" + this.getDesc() + ") with params " + params
-					+ " returned more than one src objects for src objects: " + objs);
+			throw new ForbiddenOperationException(
+					"The query datasource" + pq + " returned more than one src objects for src objects: " + objs);
 		}
 
 		EtlDatabaseObject result = this.onMultipleSrcObjectsFound().useLast() ? list.get(list.size() - 1) : list.get(0);
