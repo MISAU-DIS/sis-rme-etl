@@ -405,7 +405,9 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 		Object[] params = record.getObjectId().parseValuesToArray();
 
-		String sql = " DELETE" + " FROM " + record.generateTableName() + " WHERE  "
+		TableConfiguration conf = (TableConfiguration) record.getRelatedConfiguration();
+
+		String sql = " DELETE" + " FROM " + conf.getFullTableName() + " WHERE  "
 				+ record.getObjectId().parseToParametrizedStringConditionWithoutAlias();
 
 		executeQueryWithRetryOnError(sql, params, conn);
@@ -930,9 +932,15 @@ public class DatabaseObjectDAO extends BaseDAO {
 				new IntervalExtremeRecord());
 
 		for (EtlDatabaseObject record : objects) {
-			record.delete(conn);
+			try {
+				record.delete(conn);
+			} catch (DBException e) {
+				if (!config.getRelatedEtlConf().getDefaultExceptionBehavior().ignore()) {
+					throw e;
+				}
+			}
 
-			result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
+			result.addToRecordsWithNoError(record.isSrcObject() ? record : record.getEtlInfo().getRelatedSrcObject());
 		}
 
 		return result;

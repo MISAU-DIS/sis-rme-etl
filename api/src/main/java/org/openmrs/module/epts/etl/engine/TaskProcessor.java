@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.IdGeneratorManager;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
@@ -20,6 +21,7 @@ import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtre
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
+import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
@@ -220,13 +222,37 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 			getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) records);
 
-			performeEtl(records, srcConn, dstConn);
-
+			if (getActionType().isDelete()) {
+				performeDelete(records, srcConn, dstConn);
+			} else {
+				performeEtl(records, srcConn, dstConn);
+			}
 			logDebug("TASK ON " + records.size() + " DONE!");
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
 
+	}
+
+	@SuppressWarnings("unchecked")
+	private void performeDelete(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
+		logDebug("Starting the deletion of " + records.size() + " " + getSrcConf().getTableName() + " on db...");
+
+		this.loadAndAddResult((EtlOperationResultHeader<T>) DatabaseObjectDAO
+				.deleteAll((List<EtlDatabaseObject>) records, getSrcConf(), dstConn));
+
+		logDebug(records.size() + " " + getSrcConf().getTableName() + "  deleted on db!");
+
+	}
+
+	void loadAndAddResult(EtlOperationResultHeader<T> result) {
+		if (result != null) {
+			this.getTaskResultInfo().addAllFromOtherResult(result);
+		}
+	}
+
+	public EtlActionType getActionType() {
+		return getRelatedEtlOperationConfig().getActionType();
 	}
 
 	public EtlDstType determineDstType(DstConf dstConf) {
