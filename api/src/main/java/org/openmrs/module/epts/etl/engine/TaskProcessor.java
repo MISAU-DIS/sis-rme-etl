@@ -182,53 +182,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				+ " For table " + dstConf.getFullTableName());
 	}
 
-	@SuppressWarnings("unchecked")
-	public void performe(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn) throws DBException {
-		if (getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
-				|| getRelatedEtlOperationConfig().getThreadingMode().isMultiThread()) {
-			useMultiThreadSearch = false;
-		}
-
-		String threads = useMultiThreadSearch ? " USING MULTI-THREAD" : " USING SINGLE THREAD";
-
-		if (getLimits() != null) {
-			logDebug("SERCHING NEXT RECORDS FOR LIMITS " + getLimits() + threads);
-		} else {
-			logDebug("SERCHING NEXT RECORDS " + threads);
-		}
-
-		List<T> records = null;
-
-		if (useMultiThreadSearch) {
-			records = getSearchParams().searchNextRecordsInMultiThreads(getLimits(), null, null, srcConn, dstConn);
-		} else {
-			records = getSearchParams().search(getLimits(), null, null, srcConn, dstConn);
-		}
-
-		logDebug("SERCH NEXT MIGRATION RECORDS FOR ETL '" + this.getEtlItemConfiguration().getConfigCode()
-				+ "' ON TABLE '" + getSrcConf().getTableName() + "' FINISHED. FOUND: '" + utilities.arraySize(records)
-				+ "' RECORDS.");
-
-		if (utilities.listHasElement(records)) {
-
-			this.tryToInitIdGenerator(records, dstConn);
-
-			logDebug("INITIALIZING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
-					+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getTableName() + "'");
-
-			beforeSync(records, srcConn, dstConn);
-
-			getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) records);
-
-			performeEtl(records, srcConn, dstConn);
-
-			logDebug("TASK ON " + records.size() + " DONE!");
-		} else {
-			logDebug("NO SRC RECORD FOUND FOR ETL!");
-		}
-
-	}
-
 	public EtlDstType determineDstType(DstConf dstConf) {
 		EtlDstType dstType = dstConf.getDstType();
 
@@ -373,7 +326,58 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		throw new ForbiddenOperationException("Unimplemented method!");
 	}
 
-	public abstract void performeEtl(List<T> records, Connection srcConn, Connection dstConn) throws DBException;
+	@SuppressWarnings("unchecked")
+	public void extractTransformAndLoad(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn)
+			throws DBException {
+
+		if (getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
+				|| getRelatedEtlOperationConfig().getParallelProcessingStrategy().rangePartitioning()) {
+			useMultiThreadSearch = false;
+		}
+
+		String threads = useMultiThreadSearch ? " USING MULTI-THREAD" : " USING SINGLE THREAD";
+
+		if (getLimits() != null) {
+			logDebug("SERCHING NEXT RECORDS FOR LIMITS " + getLimits() + threads);
+		} else {
+			logDebug("SERCHING NEXT RECORDS " + threads);
+		}
+
+		List<T> records = null;
+
+		if (useMultiThreadSearch) {
+			records = getSearchParams().searchNextRecordsInMultiThreads(getLimits(), null, null, srcConn, dstConn);
+		} else {
+			records = getSearchParams().search(getLimits(), null, null, srcConn, dstConn);
+		}
+
+		logDebug("SERCH NEXT MIGRATION RECORDS FOR ETL '" + this.getEtlItemConfiguration().getConfigCode()
+				+ "' ON TABLE '" + getSrcConf().getTableName() + "' FINISHED. FOUND: '" + utilities.arraySize(records)
+				+ "' RECORDS.");
+
+		if (utilities.listHasElement(records)) {
+
+			this.tryToInitIdGenerator(records, dstConn);
+
+			logDebug("INITIALIZING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
+					+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getTableName() + "'");
+
+			beforeSync(records, srcConn, dstConn);
+
+			getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) records);
+
+			transformAndLoad(records, srcConn, dstConn);
+
+			logDebug("TASK ON " + records.size() + " DONE!");
+		} else {
+			logDebug("NO SRC RECORD FOUND FOR ETL!");
+		}
+
+	}
+
+	public abstract void transformAndLoad(List<T> records, Connection srcConn, Connection dstConn) throws DBException;
+
+	public abstract void transform(List<T> records, Connection srcConn, Connection dstConn) throws DBException;
 
 	public abstract TaskProcessor<T> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits);
 

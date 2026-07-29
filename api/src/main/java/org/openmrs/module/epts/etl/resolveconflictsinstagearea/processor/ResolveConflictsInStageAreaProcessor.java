@@ -25,7 +25,7 @@ public class ResolveConflictsInStageAreaProcessor extends TaskProcessor<EtlStage
 	}
 	
 	@Override
-	public void performeEtl(List<EtlStageRecordVO> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlStageRecordVO> records, Connection srcConn, Connection dstConn) throws DBException {
 		
 		utilities.throwReviewMethodException();
 		

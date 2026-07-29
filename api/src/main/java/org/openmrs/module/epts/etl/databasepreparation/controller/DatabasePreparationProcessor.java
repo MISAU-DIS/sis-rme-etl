@@ -26,7 +26,7 @@ public class DatabasePreparationProcessor extends TaskProcessor<DatabasePreparat
 	}
 	
 	@Override
-	public void performeEtl(List<DatabasePreparationRecord> records, Connection srcConn, Connection dstConn)
+	public void transformAndLoad(List<DatabasePreparationRecord> records, Connection srcConn, Connection dstConn)
 	        throws DBException {
 		
 		getEtlItemConfiguration().ensureEtlStageTableExists(new EtlCounter(), getRelatedEtlOperationConfig(), srcConn,

@@ -31,7 +31,7 @@ public class TransportProcessor extends TaskProcessor<TransportRecord> {
 	}
 	
 	@Override
-	public void performeEtl(List<TransportRecord> migrationRecords, Connection srcConn, Connection dstConn)
+	public void transformAndLoad(List<TransportRecord> migrationRecords, Connection srcConn, Connection dstConn)
 	        throws DBException {
 		
 		List<TransportRecord> migrationRecordAsTransportRecord = utilities.parseList(migrationRecords,

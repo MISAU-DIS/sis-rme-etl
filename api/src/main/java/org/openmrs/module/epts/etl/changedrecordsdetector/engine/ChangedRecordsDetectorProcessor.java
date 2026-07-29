@@ -25,7 +25,7 @@ public class ChangedRecordsDetectorProcessor extends TaskProcessor<EtlDatabaseOb
 	}
 
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn)
+	public void transformAndLoad(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn)
 			throws DBException {
 
 		utilities.throwForbiddenMethodException();

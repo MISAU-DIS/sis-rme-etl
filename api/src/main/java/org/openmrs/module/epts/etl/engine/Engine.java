@@ -22,7 +22,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
-import org.openmrs.module.epts.etl.conf.types.ThreadingMode;
+import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
@@ -417,7 +417,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				? EtlTotalRecordsCountStrategy.COUNT_ONCE
 				: null);
 
-		this.doFirstSaveAllLimits();
+		logDebug("Saving ThreadRecordIntervalsManager...");
+
+		getSearchParams().getThreadRecordIntervalsManager().save();
+
+		logTrace("ThreadRecordIntervalsManager saved!");
 
 		this.logDebug("CREATING DEFAULT PARENT OBJECTS");
 
@@ -425,13 +429,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		this.logTrace("DEFAULT PARENT OBJECTS CREATED");
 
-		ThreadingMode threadingMode = this.getRelatedEtlOperationConfig().getThreadingMode();
+		ParallelProcessingStrategyType threadingMode = this.getRelatedEtlOperationConfig()
+				.getParallelProcessingStrategy();
 
-		if (this.getEtlItemConfiguration().hasThreadingMode()) {
-			threadingMode = this.getEtlItemConfiguration().getThreadingMode();
+		if (this.getEtlItemConfiguration().hasParallelProcessingStrategyType()) {
+			threadingMode = this.getEtlItemConfiguration().getParallelProcessingStrategyType();
 		}
 
-		if (threadingMode.isMultiThread() && this.getMaxSupportedProcessors() > 1) {
+		if (threadingMode.useMultiThreads() && this.getMaxSupportedProcessors() > 1) {
 			performeTaskInMultiProcessors();
 		} else {
 			this.performeTaskInSingleProcessor();
@@ -443,6 +448,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void ensureSearchParamInitialized() {
+		logDebug("Initializing search Params");
+
 		ThreadRecordIntervalsManager<T> t = null;
 
 		if (getRelatedOperationController().isResumable()) {
@@ -455,11 +462,29 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 
 		if (t == null) {
-			t = new ThreadRecordIntervalsManager<>(this);
+			ParallelProcessingStrategyType threadingMode = this.getRelatedEtlOperationConfig()
+					.getParallelProcessingStrategy();
+
+			if (this.getEtlItemConfiguration().hasParallelProcessingStrategyType()) {
+				threadingMode = this.getEtlItemConfiguration().getParallelProcessingStrategyType();
+			}
+
+			int processors = 1;
+
+			if (threadingMode.useMultiThreads() && this.getMaxSupportedProcessors() > 1) {
+				processors = this.getMaxSupportedProcessors();
+			} else {
+				processors = 1;
+			}
+
+			t = new ThreadRecordIntervalsManager<>(this, processors);
 		}
 
 		this.setSearchParams(controller.initMainSearchParams(t, this));
 		this.getSearchParams().setThreadRecordIntervalsManager(t);
+
+		logTrace("Search Params Initialized!");
+
 	}
 
 	private void prepareAndInitializeRerun() throws DBException {
@@ -476,13 +501,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		logWarn("Restarting the Operation...");
 
-		List<ThreadRecordIntervalsManager<T>> oldLImitsManagers = ThreadRecordIntervalsManager
-				.getAllSavedLimitsOfOperation(this);
+		ThreadRecordIntervalsManager<T> oldLImitsManagers = ThreadRecordIntervalsManager
+				.tryToLoadFromFile(this.getEngineId(), this);
 
 		if (oldLImitsManagers != null) {
-			for (ThreadRecordIntervalsManager<T> limits : oldLImitsManagers) {
-				limits.remove(this);
-			}
+			oldLImitsManagers.remove(this);
 		}
 
 		logDebug("Reseting minRecordId");
@@ -880,7 +903,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			logTrace("INITIALIZING TASK FOR INTERVAL " + taskProcessor.getLimits());
 
-			taskProcessor.performe(useMultiTreadSearch, srcConn, dstConn);
+			taskProcessor.extractTransformAndLoad(useMultiTreadSearch, srcConn, dstConn);
 
 			if (!taskProcessor.getTaskResultInfo().hasFatalError()) {
 				getController().afterEtl(taskProcessor.getTaskResultInfo().getAllSuccessfulyProcessedRecords(), srcConn,
@@ -1041,27 +1064,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void doFirstSaveAllLimits() {
-		List<ThreadRecordIntervalsManager<T>> newIntervals = new ArrayList<>();
-
-		List<ThreadRecordIntervalsManager<T>> oldLImitsManagers = ThreadRecordIntervalsManager
-				.getAllSavedLimitsOfOperation(this);
-
-		newIntervals.add(getSearchParams().getThreadRecordIntervalsManager());
-
-		if (oldLImitsManagers != null) {
-			for (ThreadRecordIntervalsManager<T> limits : oldLImitsManagers) {
-				if (!newIntervals.contains(limits)) {
-					limits.remove(this);
-				}
-			}
-		}
-
-		for (ThreadRecordIntervalsManager<T> i : newIntervals) {
-			i.save();
-		}
-	}
-
 	public File getThreadsDir() {
 		String subFolder = this.getRelatedOperationController().generateOperationStatusFolder();
 
@@ -1078,30 +1080,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		subFolder += FileUtilities.getPathSeparator() + getRelatedEtlConf().getOriginAppLocationCode();
 
 		return new File(subFolder);
-	}
-
-	@SuppressWarnings("unused")
-	private void tryToLoadExcludedRecordsLimits() {
-		List<ThreadRecordIntervalsManager<T>> limitsManagers = ThreadRecordIntervalsManager
-				.getAllSavedLimitsOfOperation(this);
-
-		if (utilities.listHasElement(limitsManagers)) {
-			this.setExcludedRecordsLimits(new ArrayList<>());
-
-			for (ThreadRecordIntervalsManager<T> threadLimits : limitsManagers) {
-				threadLimits.getCurrentLimits().setMinRecordId(threadLimits.getMinRecordId());
-
-				this.getExcludedRecordsIntervals().add(threadLimits.getCurrentLimits());
-
-				if (threadLimits.hasExcludedIntervals()) {
-					for (IntervalExtremeRecord l : threadLimits.getExcludedIntervals()) {
-						if (!this.getExcludedRecordsIntervals().contains(l)) {
-							this.getExcludedRecordsIntervals().add(l);
-						}
-					}
-				}
-			}
-		}
 	}
 
 	public int getMaxRecordsPerProcessing() {
@@ -1268,7 +1246,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		StringBuilder log = new StringBuilder();
 
-		int qtyThreads = this.getRelatedEtlOperationConfig().getThreadingMode().isMultiThread()
+		int qtyThreads = this.getRelatedEtlOperationConfig().getParallelProcessingStrategy().useMultiThreads()
 				? this.getThreadRecordIntervalsManager().getMaxSupportedProcessors()
 				: 1;
 
@@ -1302,7 +1280,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		if (taskProcessor != null) {
 			log.append(formatReportLine("REPORTING LIMITS", taskProcessor.getLimits()));
 		}
-		
+
 		log.append(formatReportLine("PROCESSING TIME", globalProgressMeter.getHumanReadbleProcessingTime()));
 
 		log.append(formatReportLine("STOP TIME", globalProgressMeter.getHumanReadblePauseTime()));

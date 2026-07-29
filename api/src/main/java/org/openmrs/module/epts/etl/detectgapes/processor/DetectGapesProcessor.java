@@ -37,7 +37,7 @@ public class DetectGapesProcessor extends EtlProcessor {
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
 		logDebug("DETECTING GAPES ON " + etlObjects.size() + "' " + getMainSrcTableName());
 		
 		if (this.prevRec == null) {

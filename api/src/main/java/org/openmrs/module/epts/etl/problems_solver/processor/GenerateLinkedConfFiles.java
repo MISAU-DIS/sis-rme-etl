@@ -60,7 +60,7 @@ public class GenerateLinkedConfFiles extends GenericProcessor {
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
 		
 		if (this.templateConfFilePath == null || fileWithListOfDBs == null) {
 			throw new ForbiddenOperationException(

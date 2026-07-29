@@ -27,7 +27,7 @@ public class CentralAndRemoteDataReconciliationProcessor extends TaskProcessor<E
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
 		
 		try {
 			this.getEngine()

@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlProcessingModeType;
 import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
-import org.openmrs.module.epts.etl.conf.types.ThreadingMode;
+import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.consolitation.controller.DatabaseIntegrityConsolidationController;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
@@ -96,7 +96,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	private int fisicalCpuMultiplier;
 
-	private ThreadingMode threadingMode;
+	private ParallelProcessingStrategyType parallelProcessingStrategy;
 
 	private boolean finishOnNoRemainRecordsToProcess;
 
@@ -120,7 +120,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		this.processingBatch = EtlOperationConfig.DEFAULT_BATCH_PROCESSING;
 		this.maxSupportedProcessors = utilities.getAvailableProcessors();
 		this.fisicalCpuMultiplier = 1;
-		this.threadingMode = ThreadingMode.MULTI_THREAD;
+		this.parallelProcessingStrategy = ParallelProcessingStrategyType.RANGE_PARTITIONING;
 		this.totalCountStrategy = EtlTotalRecordsCountStrategy.COUNT_ONCE;
 	}
 
@@ -177,12 +177,12 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		return isFinishOnNoRemainRecordsToProcess();
 	}
 
-	public ThreadingMode getThreadingMode() {
-		return threadingMode;
+	public ParallelProcessingStrategyType getParallelProcessingStrategy() {
+		return parallelProcessingStrategy;
 	}
 
-	public void setThreadingMode(ThreadingMode threadingMode) {
-		this.threadingMode = threadingMode;
+	public void setParallelProcessingStrategy(ParallelProcessingStrategyType parallelProcessingStrategy) {
+		this.parallelProcessingStrategy = parallelProcessingStrategy;
 	}
 
 	public int getFisicalCpuMultiplier() {
@@ -968,7 +968,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	public void recalculateThreads(List<EtlItemConfiguration> avaliableItems) {
 		getRelatedEtlConfig().info("Determining optimal threads...");
 
-		if (this.getThreadingMode().isMultiThread()) {
+		if (this.getParallelProcessingStrategy().useMultiThreads()) {
 
 			List<EtlItemConfiguration> allSync = getRelatedEtlConfig().getEtlItemConfiguration();
 

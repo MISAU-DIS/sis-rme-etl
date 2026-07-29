@@ -25,7 +25,7 @@ public class DatabaseIntegrityConsolidationProcessor extends TaskProcessor<EtlDa
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn) throws DBException {
 		
 		throw new ForbiddenOperationException("Rever este metodo!");
 		

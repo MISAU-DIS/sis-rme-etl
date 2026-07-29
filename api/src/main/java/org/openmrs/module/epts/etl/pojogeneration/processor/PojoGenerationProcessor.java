@@ -43,7 +43,7 @@ public class PojoGenerationProcessor extends TaskProcessor<PojoGenerationRecord>
 	}
 	
 	@Override
-	public void performeEtl(List<PojoGenerationRecord> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<PojoGenerationRecord> records, Connection srcConn, Connection dstConn) throws DBException {
 		
 		this.pojoGenerated = true;
 		

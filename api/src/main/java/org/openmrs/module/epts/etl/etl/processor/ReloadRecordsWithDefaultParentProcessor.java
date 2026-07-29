@@ -71,7 +71,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
 		
 		try {
 			

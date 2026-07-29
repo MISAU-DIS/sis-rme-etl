@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
-import org.openmrs.module.epts.etl.conf.types.ThreadingMode;
+import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDynamicItemSearchParams;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -57,7 +57,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private EtlDatabaseObject relatedEtlSchemaObject;
 
-	private ThreadingMode threadingMode;
+	private ParallelProcessingStrategyType threadingMode;
 
 	private AutoIncrementHandlingType autoIncrementHandlingType;
 
@@ -130,16 +130,16 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.autoIncrementHandlingType = autoIncrementHandlingType;
 	}
 
-	public ThreadingMode getThreadingMode() {
+	public ParallelProcessingStrategyType getParallelProcessingStrategyType() {
 		return threadingMode;
 	}
 
-	public void setThreadingMode(ThreadingMode threadingMode) {
+	public void setThreadingMode(ParallelProcessingStrategyType threadingMode) {
 		this.threadingMode = threadingMode;
 	}
 
-	public Boolean hasThreadingMode() {
-		return this.getThreadingMode() != null;
+	public Boolean hasParallelProcessingStrategyType() {
+		return this.getParallelProcessingStrategyType() != null;
 	}
 
 	public EtlDatabaseObject getRelatedEtlSchemaObject() {
@@ -692,7 +692,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		if (this.hasDstConf()) {
 			item.setDstConf(DstConf.cloneAll(this.getDstConf(), this, schemaInfoSrc, conn));
 		}
-		item.setThreadingMode(this.getThreadingMode());
+		item.setThreadingMode(this.getParallelProcessingStrategyType());
 		item.setDisabled(this.isDisabled());
 		item.setManualMapPrimaryKeyOnField(this.getManualMapPrimaryKeyOnField());
 		item.setCreateDstTableIfNotExists(this.isCreateDstTableIfNotExists());

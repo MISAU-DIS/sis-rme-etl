@@ -42,7 +42,6 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  */
 public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
-	private ReentrantLock dstConnectionLock = new ReentrantLock();
 	private ConnectionKeepAliveManager keepAliveManager = ConnectionKeepAliveManager.getInstance();
 
 	public EtlProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
@@ -68,7 +67,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
 			throws DBException {
 		try {
 			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
@@ -140,9 +139,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException {
 
-		ReentrantLock dstConnLock = new ReentrantLock();
-
-		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, dstConnLock, this)) {
+		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, new ReentrantLock(), this)) {
 
 			for (EtlDatabaseObject srcRecord : etlObjects) {
 				logTrace("Initializing the transformation process of record {} ", srcRecord);

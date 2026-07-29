@@ -24,7 +24,7 @@ public class DataBaseMergeFromJSONProcessor extends TaskProcessor<EtlStageRecord
 	}
 	
 	@Override
-	public void performeEtl(List<EtlStageRecordVO> records, Connection srcConn,
+	public void transformAndLoad(List<EtlStageRecordVO> records, Connection srcConn,
 	        Connection dstConn) throws DBException {
 		
 		throw new ForbiddenOperationException("Rever este metodo!");

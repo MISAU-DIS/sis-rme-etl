@@ -33,7 +33,7 @@ public class DuplicatedUsersProcessor extends EtlProcessor {
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
 		
 		logDebug("RESOLVING PROBLEM ON " + etlObjects.size() + "' " + getMainSrcTableName());
 		

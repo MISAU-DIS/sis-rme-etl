@@ -25,7 +25,7 @@ public class DataLoadProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn) throws DBException {
 		List<EtlStageRecordVO> migrationRecordAsSyncInfo = utilities.parseList(records, EtlStageRecordVO.class);
 		
 		logInfo("WRITING  '" + records.size() + "' " + getMainSrcTableName() + " TO STAGING TABLE");
