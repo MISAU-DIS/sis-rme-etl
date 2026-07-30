@@ -964,9 +964,10 @@ public class DatabaseObjectDAO extends BaseDAO {
 						record.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()));
 					}
 				}
-			} else {
-				record.update(dstConf, conn);
-			}
+			} 
+			
+			record.update(dstConf, conn);
+			
 			result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
 		}
 
