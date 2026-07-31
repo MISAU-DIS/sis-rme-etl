@@ -833,7 +833,7 @@ of the result set will be used as the destination field value. If the query retu
       - raise an ETL transformation exception otherwise.
     - **COALESCE_TRANSFORMER(fieldOrValue1, ..., fieldOrValuen)** Returns the first non-null value obtained from a sequence of candidate inputs. Each parameter is evaluated in order and transformed into a value; if the result of the first parameter is null, the transformer evaluates the second, and so on until a non-null value is found. If all evaluated parameters result in null, the final result is null.
 Parameters may represent fixed values, dynamic parameters, or fields from available data sources. When referencing a field, it can be specified using the simple form "field" or the qualified form "dataSourceName.field" when disambiguation between data sources is required.
-    - **SIMPLE_VALUE_TRANSFORMER** Performs direct assignment of the source value to the destination field. Any dynamic parameters present in the source value are resolved before assignment. This transformer is used automatically when no explicit transformer is defined for a field mapping.
+    - **SIMPLE_VALUE_TRANSFORMER(input:inputValue)** Performs a direct assignment to the destination field. When **input** is provided, the resolved input value is assigned. Otherwise, the resolved mapping **srcValue** is used. This transformer is applied automatically when no explicit transformer is defined..
     - **NULL_VALUE_TRANSFORMER()**: Explicitly maps the destination field to `null`.
       This transformer does not require any parameters and always returns `null` as the transformed value. It is useful when a destination field must intentionally be left empty or cleared during transformation.
 
