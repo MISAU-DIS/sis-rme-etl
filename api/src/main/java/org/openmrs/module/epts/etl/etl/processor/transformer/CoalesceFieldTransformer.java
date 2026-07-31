@@ -99,6 +99,8 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 					srcFieldName = fieldParts[0];
 				}
 
+				stepIntoBreakpoint(getRelatedEtlConf(), srcFieldName.contains("person_id"));
+
 				fm = FieldsMapping.fastCreate(transformTarget, srcFieldName, dataSourceName, field.getDstField(), conn);
 
 				if (!fm.hasDataSourceName()) {

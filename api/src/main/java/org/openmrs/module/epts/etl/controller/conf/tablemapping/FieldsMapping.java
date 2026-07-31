@@ -120,6 +120,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		this.setTransformer(providedTransformer);
 		this.setSrcField(srcFieldFullName);
 		this.setDstField(dstField);
+		this.setDataSourceName(providedDataSourceName);
 
 		if (!hasDstField() && hasSrcField()) {
 			String[] srcFieldParts = srcFieldFullName.toString().split("\\.");
