@@ -566,6 +566,10 @@ public class DstConf extends AbstractTableConfiguration
 					continue;
 				}
 
+				if (this.getMappingAsString().contains(field.getName())) {
+					continue;
+				}
+
 				FieldsMapping fm = null;
 
 				EtlField etlField = this.getSrcConf().doNotUseAsDatasource() ? null
@@ -616,6 +620,18 @@ public class DstConf extends AbstractTableConfiguration
 		}
 
 		this.setFieldsMappingAlredyGenerated(true);
+	}
+
+	private List<String> getMappingAsString() {
+		List<String> allAsString = new ArrayList<>();
+
+		if (hasMapping()) {
+			for (FieldsMapping fm : this.getMapping()) {
+				allAsString.add(fm.getDstField());
+			}
+		}
+
+		return allAsString;
 	}
 
 	public void setFieldsMappingAlredyGenerated(Boolean fieldsMappingAlredyGenerated) {
