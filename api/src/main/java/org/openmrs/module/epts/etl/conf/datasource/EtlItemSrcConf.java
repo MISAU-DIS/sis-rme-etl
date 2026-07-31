@@ -12,69 +12,75 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * This class represent a table which can act as source of {@link SrcConf} or {@link DstConf}. This
- * allow the dynamic configuration of {@link EtlItemConfiguration}
+ * This class represent a table which can act as source of {@link SrcConf} or
+ * {@link DstConf}. This allow the dynamic configuration of
+ * {@link EtlItemConfiguration}
  */
 public class EtlItemSrcConf extends SrcConf {
-	
+
 	private List<AuxExtractTable> auxExtractTable;
-	
+
 	private EtlItemConfiguration relatedItemConf;
-	
+
 	@Override
 	public Boolean isGeneric() {
 		return false_();
 	}
-	
+
+	@Override
+	public EtlItemConfiguration getParentConf() {
+		return this.relatedItemConf;
+	}
+
 	public List<AuxExtractTable> getAuxExtractTable() {
 		return auxExtractTable;
 	}
-	
+
 	public void setAuxExtractTable(List<AuxExtractTable> auxExtractTable) {
 		this.auxExtractTable = auxExtractTable;
 	}
-	
+
 	public EtlItemConfiguration getRelatedItemConf() {
 		return relatedItemConf;
 	}
-	
+
 	public void setRelatedItemConf(EtlItemConfiguration relatedItemConf) {
 		this.relatedItemConf = relatedItemConf;
 	}
-	
+
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 		this.tryToLoadAuxExtraJoinTable(schemaInfo, conn);
-		
+
 		this.setFullLoaded(true);
 	}
-	
+
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		return this.getRelatedItemConf().getSrcConnInfo();
 	}
-	
+
 	@Override
 	public List<? extends JoinableEntity> getJoiningTable() {
 		return this.getAuxExtractTable();
 	}
-	
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public void setJoiningTable(List<? extends JoinableEntity> joiningTable) {
 		setAuxExtractTable((List<AuxExtractTable>) joiningTable);
 	}
-	
+
 	@Override
 	public Boolean isJoinable() {
 		return false_();
 	}
-	
+
 	@Override
 	public Boolean doNotUseAsDatasource() {
 		return false_();
 	}
-	
+
 	@Override
 	public JoinableEntity parseToJoinable() throws ForbiddenOperationException {
 		throw new ForbiddenOperationException("Not joinable entity!!!");

@@ -798,7 +798,7 @@ public class SrcConf extends AbstractTableConfiguration
 	public void copyFromOther(TableConfiguration toClone, EtlDatabaseObject schemaInfoSrc,
 			EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
 
-		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
+ 		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
 
 		if (toClone instanceof SrcConf) {
 			SrcConf toCloneFrom = (SrcConf) toClone;
@@ -818,7 +818,7 @@ public class SrcConf extends AbstractTableConfiguration
 								SQLUtilities.tryToReplaceParamsInQuery(aux.getJoinExtraCondition(), schemaInfoSrc));
 					}
 
-					if (!aux.hasJoinFields()) {
+					if (!aux.hasJoinFields() && aux.isInitialized()) {
 						throw new ForbiddenOperationException("No join fields were difined between "
 								+ aux.getJoiningEntity().getTableName() + " And " + this.getTableName());
 					} else {
