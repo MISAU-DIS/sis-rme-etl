@@ -15,8 +15,12 @@ import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfiguration implements EtlFieldTransformer {
 
@@ -44,6 +48,51 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 		if (relatedEtlTargedConf.getRelatedEtlConf() == null)
 			throw new EtlConfException("The RelatedEtlConf conf withing the target of " + this + " is null");
+
+	}
+
+	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
+			TransformableField field, Connection conn)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+
+		this(parameters, relatedEtlTargedConf, field);
+
+		loadParameters(conn);
+	}
+
+	protected void loadParameters(Connection conn)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+
+		if (utilities.listHasElement(this.parameters)) {
+
+			for (Object fieldData : this.parameters) {
+				String[] mapping = fieldData.toString().split(":", 2);
+
+				if (mapping.length != 2) {
+					throw new EtlExceptionImpl(
+							"Wrong format for conditional parameters within the tranformer " + getTransformerDsc()
+									+ "\n" + "Each object param must be specified as paramName:paramValue");
+				}
+
+				String paramName = mapping[0];
+				String paramValue = mapping[1];
+
+				if (!utilities.stringHasValue(paramValue)) {
+					throw new EtlExceptionImpl("The paramValue for parameter " + paramName
+							+ " has no value on transformer:  " + getTransformerDsc());
+				}
+
+				if (paramName.equals("input")) {
+					if (isTransformerExpression(paramValue)) {
+						this.input = FieldsMapping.fastCreateWithTransformer(this.getRelatedEtlTransformTarget(),
+								field.getDstField(), paramValue, conn);
+					} else {
+						this.input = FieldsMapping.fastCreate(this.getRelatedEtlTransformTarget(), paramValue,
+								paramValue, conn);
+					}
+				}
+			}
+		}
 
 	}
 

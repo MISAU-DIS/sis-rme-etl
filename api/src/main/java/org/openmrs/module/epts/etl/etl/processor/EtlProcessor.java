@@ -42,7 +42,6 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  */
 public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
-	private ReentrantLock dstConnectionLock = new ReentrantLock();
 	private ConnectionKeepAliveManager keepAliveManager = ConnectionKeepAliveManager.getInstance();
 
 	public EtlProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
