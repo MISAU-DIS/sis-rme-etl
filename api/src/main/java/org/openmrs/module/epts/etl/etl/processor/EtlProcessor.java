@@ -70,7 +70,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
 			throws DBException {
 		try {
-			perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
+			this.perform(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
 
 			EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
 
@@ -135,7 +135,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 	}
 
-	public EtlLoadHelper perform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+	@Override
+	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException {
 
@@ -179,32 +180,25 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 					if (utilities.listHasElement(expansion)) {
 						for (EtlDatabaseObject expanded : expansion) {
-							// dstConnectionLock.lock();
+							if (srcConf.hasExpansionDs()) {
+								logTrace(
+										"Starting the transformation of record {} with expanstion {} within the dstConf {}",
+										srcRecord, expanded, dstConf);
+							} else {
+								logTrace("Starting the transformation of record {} within the dstConf {}", srcRecord,
+										dstConf);
+							}
 
-							try {
+							this.transformRecord(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
 
-								if (srcConf.hasExpansionDs()) {
-									logTrace(
-											"Starting the transformation of record {} with expanstion {} within the dstConf {}",
-											srcRecord, expanded, dstConf);
-								} else {
-									logTrace("Starting the transformation of record {} within the dstConf {}",
-											srcRecord, dstConf);
-								}
-
-								transform(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
-
-								if (srcConf.hasExpansionDs()) {
-									logTrace(
-											"Finished transformation of record {} with expanstion {} within the dstConf {}. Current transformed objects within the srcObject {}",
-											srcRecord, expanded, dstConf, srcRecord);
-								} else {
-									logTrace(
-											"Finished transformation of record {} within the dstConf {}. Current transformed objects within the srcObject {}",
-											srcRecord, dstConf, srcRecord);
-								}
-							} finally {
-								// dstConnectionLock.unlock();
+							if (srcConf.hasExpansionDs()) {
+								logTrace(
+										"Finished transformation of record {} with expanstion {} within the dstConf {}. Current transformed objects within the srcObject {}",
+										srcRecord, expanded, dstConf, srcRecord);
+							} else {
+								logTrace(
+										"Finished transformation of record {} within the dstConf {}. Current transformed objects within the srcObject {}",
+										srcRecord, dstConf, srcRecord);
 							}
 						}
 					} else {
@@ -218,8 +212,15 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				}
 			}
 		}
+	}
 
-		logDebug(
+	public EtlLoadHelper perform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+			throws DBException {
+
+		this.transform(etlItemConf, etlObjects, parentMigratedRec, loadingType, srcConn, dstConn);
+
+		this.logDebug(
 				"Initializing the loading of " + etlObjects.size() + " " + etlItemConf.getSrcConf().getFullTableName());
 
 		EtlLoadHelper loadHelper = null;
@@ -253,7 +254,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		return loadHelper;
 	}
 
-	private void transform(EtlDatabaseObject srcRecord, EtlDatabaseObject srcRecordExpansion,
+	private void transformRecord(EtlDatabaseObject srcRecord, EtlDatabaseObject srcRecordExpansion,
 			EtlDatabaseObject parentMigratedRec, DstConf dstConf, Connection srcConn, Connection dstConn)
 			throws DBException {
 
@@ -446,5 +447,4 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		// return p;
 	}
-
 }

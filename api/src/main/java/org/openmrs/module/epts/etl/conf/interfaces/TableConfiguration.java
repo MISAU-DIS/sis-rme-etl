@@ -391,7 +391,23 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			this.setUsingManualDefinedAlias(true);
 		}
 
-		this.tryToLoadSchemaInfo(schemaInfoSrc, conn);
+		try {
+			this.tryToLoadSchemaInfo(schemaInfoSrc, conn);
+		} catch (DatabaseResourceDoesNotExists e) {
+			if (toCloneFrom instanceof EtlItemConfigurationComponent) {
+				EtlItemConfiguration item = ((EtlItemConfigurationComponent) toCloneFrom).getParentEtlItemConf();
+
+				if (item != null && item.isDynamic()) {
+					item.getRelatedEtlConf()
+							.debug("Cloning from dynamic table {}. Ignoring DatabaseResourceDoesNotExists", toCloneFrom);
+				} else {
+					throw e;
+				}
+			} else {
+				throw e;
+			}
+
+		}
 
 		if (!this.hasSchema()) {
 			this.setSchema(toCloneFrom.getSchema());

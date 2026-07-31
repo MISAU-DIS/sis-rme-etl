@@ -122,7 +122,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private Map<String, String> params;
 
-	private boolean initialized;
+	private Boolean initialized;
 
 	private String classPath;
 
@@ -231,6 +231,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.disableDefaultObjectCreation = false;
 		this.defaultEtlItemConf = new EtlItemConfiguration();
 		this.defaultEtlItemConf.setRelatedEtlConf(this);
+	}
+
+	public Boolean isInitialized() {
+		return isTrue(initialized);
+	}
+
+	public Boolean getInitialized() {
+		return isTrue(initialized);
+	}
+
+	public void setInitialized(Boolean initialized) {
+		this.initialized = initialized;
 	}
 
 	public ActionOnEtlIssue getDefaultMissingRequiredObjectBehavior() {
@@ -861,11 +873,19 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public void init(OpenConnection conn) throws ForbiddenOperationException, DBException {
 		initLogger();
 
-		if (initialized || disabled) {
+		if (isInitialized() || isDisabled()) {
 			return;
 		}
 
+		if (isDynamic()) {
+			throw new EtlExceptionImpl("Initialization of dynamic EtlConf is forbidden!");
+		}
+
 		synchronized (LOCK_READ) {
+
+			if (isInitialized()) {
+				return;
+			}
 
 			OpenConnection srcConn = null;
 
@@ -955,7 +975,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 						item.setRelatedEtlConfig(this);
 
 						if (item.isDynamic()) {
-							List<EtlItemConfiguration> dynamicItems = item.generateDynamicItems(this, conn);
+							List<EtlItemConfiguration> dynamicItems = item.generateDynamicItems(this, srcConn);
 
 							if (utilities.listHasElement(dynamicItems)) {
 								debug("Found Dynamic Item on position [" + counter.getCounter() + "] whith "
@@ -1004,6 +1024,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 
 				DefaultEtlValidator.tryToValidate(this, srcConn, dstConn);
+
+				this.setInitialized(true);
 			} finally {
 				finalizeConnection(srcConn, this);
 				finalizeConnection(dstConn, this);
@@ -1240,12 +1262,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			EtlConfiguration etlConfiguration = new ObjectMapperProvider(types).getContext(EtlConfiguration.class)
 					.readValue(json, EtlConfiguration.class);
 
+			etlConfiguration.setConfigFilePath(srcFile.getAbsolutePath());
+
+			etlConfiguration.setRelatedConfFile(srcFile);
+
 			if (!etlConfiguration.isDynamic()) {
-				etlConfiguration.setConfigFilePath(srcFile.getAbsolutePath());
-
-				etlConfiguration.setRelatedConfFile(srcFile);
-
 				etlConfiguration.init(null);
+			} else {
+				etlConfiguration.initDynamic();
 			}
 
 			return etlConfiguration;
@@ -1264,6 +1288,40 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 			throw new RuntimeException(e);
 		}
+	}
+
+	private void initDynamic() {
+
+		if (!isDynamic()) {
+			throw new EtlExceptionImpl("This initialization is on only allowed for dynamic EtlConf!");
+		}
+
+		if (isInitialized())
+			return;
+
+		synchronized (LOCK_READ) {
+			if (isInitialized())
+				return;
+
+			initLogger();
+
+			this.getMainConnInfo().setRelatedEtlConf(this);
+
+			for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
+				item.setRelatedEtlConfig(this);
+
+				item.getSrcConf().setParentConf(item);
+
+				if (item.hasDstConf()) {
+					for (DstConf dst : item.getDstConf()) {
+						dst.setParentConf(item);
+					}
+				}
+			}
+
+			this.setInitialized(true);
+		}
+
 	}
 
 	public EtlItemConfiguration findSyncEtlConfiguration(String configCode) {
@@ -2055,6 +2113,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public EtlConfiguration cloneDynamic(EtlDatabaseObject schemaInfoSrc) {
+		if (!isInitialized())
+			throw new ForbiddenOperationException("The main EtlConfiguration is not initialized!");
+
 		EtlConfiguration clonedEtlConf = new EtlConfiguration();
 
 		clonedEtlConf.setEtlRootDirectory(tryToLoadPlaceHolders(this.getEtlRootDirectory(), schemaInfoSrc));
@@ -2095,6 +2156,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		clonedEtlConf.setRelationshipResolutionStrategy(this.getRelationshipResolutionStrategy());
 		clonedEtlConf.setPrimaryKeyInitialIncrementValue(this.getPrimaryKeyInitialIncrementValue());
 		clonedEtlConf.setAutoIncrementHandlingType(this.getAutoIncrementHandlingType());
+		clonedEtlConf.setConfigFilePath(this.getConfigFilePath());
 
 		OpenConnection conn = null;
 

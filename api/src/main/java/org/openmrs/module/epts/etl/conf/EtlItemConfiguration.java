@@ -207,9 +207,13 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		EtlItemConfiguration etl = new EtlItemConfiguration();
 
-		SrcConf src = SrcConf.fastCreate(tableConfig, etl, conn);
+		if (tableConfig instanceof SrcConf) {
+			etl.setSrcConf((SrcConf) tableConfig);
+		} else {
+			SrcConf src = SrcConf.fastCreate(tableConfig, etl, conn);
 
-		etl.setSrcConf(src);
+			etl.setSrcConf(src);
+		}
 
 		etl.setRelatedEtlConfig(tableConfig.getRelatedEtlConf());
 
@@ -364,14 +368,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 						}
 
 						if (refInfo.getDefaultObject(dstConn) == null) {
-							getRelatedEtlConf().debug(
-									"Creating default dstRecord for table " + refInfo.getFullTableDescription());
+							getRelatedEtlConf()
+									.debug("Creating default dstRecord for table " + refInfo.getFullTableDescription());
 
 							try {
 								refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
 							} catch (Exception e) {
-								getRelatedEtlConf().err(
-										"Error creating default record for table: " + refInfo.getTableAlias(), e);
+								getRelatedEtlConf()
+										.err("Error creating default record for table: " + refInfo.getTableAlias(), e);
 							}
 						}
 					}
@@ -538,8 +542,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public void setRelatedEtlConfig(EtlConfiguration relatedEtlConf) {
-		if (this.hasChildItemConf()) {
+		this.setRelatedEtlConf(relatedEtlConf);
 
+		if (this.hasChildItemConf()) {
 			for (EtlChildItemConfiguration child : this.getChildItemConf()) {
 				child.setRelatedEtlConf(relatedEtlConf);
 			}
@@ -674,7 +679,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		List<EtlItemConfiguration> items = new ArrayList<>(itemsSrc.size());
 
 		for (EtlDatabaseObject itemSrc : itemsSrc) {
-			items.add(cloneDynamic(itemSrc, relatedEtlConf, conn));
+			items.add(this.cloneDynamic(itemSrc, relatedEtlConf, conn));
 		}
 
 		return items;
@@ -782,7 +787,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		if (!this.getSrcConf().doNotUseAsDatasource()) {
 			this.getSrcConf().ensureEtlStageTableExists(counter, srcConn, dstConn);
 		}
-		
+
 		if (hasDstConf()) {
 			for (DstConf dstConf : this.getDstConf()) {
 

@@ -75,8 +75,8 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 		}
 
-		if (utilities.stringHasValue(getExtraCondition())) {
-			auxQueryInfo.getSearchClauses().addToClauses(getExtraCondition());
+		if (utilities.stringHasValue(this.getExtraCondition())) {
+			auxQueryInfo.getSearchClauses().addToClauses(this.getExtraCondition());
 		}
 
 		return auxQueryInfo.getSearchClauses();
