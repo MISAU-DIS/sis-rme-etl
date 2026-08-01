@@ -9,9 +9,11 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
 import org.openmrs.module.epts.etl.merge.controller.DataBaseMergeFromSourceDBController;
@@ -34,7 +36,8 @@ public class DataBasesMergeFromSourceProcessor extends TaskProcessor<EtlDatabase
 	}
 	
 	@Override
-	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
+	        throws DBException {
 		logInfo("PERFORMING MERGE ON " + etlObjects.size() + "' " + getMainSrcTableName());
 		
 		int i = 1;
@@ -64,5 +67,13 @@ public class DataBasesMergeFromSourceProcessor extends TaskProcessor<EtlDatabase
 	@Override
 	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
 		throw new ForbiddenOperationException("Forbiden Method");
+	}
+	
+	@Override
+	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+	        EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		
+		throw new ForbiddenOperationException("Unsupported method!");
 	}
 }
