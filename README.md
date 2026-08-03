@@ -840,7 +840,7 @@ Each **extraObjectDataSource** is defined by the following properties:
 		
 		 When a nested transformer is supplied as input, the nested transformer is executed first and its result is passed to the selected function.
 		
-		  **Syntax:**
+		**Syntax:**
 		
 		```
 		FUNCTION_TRANSFORMER(
