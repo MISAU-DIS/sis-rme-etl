@@ -720,6 +720,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	 * @throws InterruptedException
 	 */
 	public void performeTaskInMultiProcessors() throws DBException, InterruptedException, ExecutionException, Exception {
+		ParallelProcessingStrategyType strategy = getParallelProcessingStrategy();
+
+		if (!strategy.rangePartitioning()) {
+			performeResultPartitionedTask(strategy);
+			return;
+		}
 		
 		EtlProgressMeter globalProgressMeter = this.getProgressMeter();
 		
@@ -882,6 +888,222 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					}
 				}
 			}
+		}
+	}
+
+	private ParallelProcessingStrategyType getParallelProcessingStrategy() {
+		if (getEtlItemConfiguration().hasParallelProcessingStrategyType()) {
+			return getEtlItemConfiguration().getParallelProcessingStrategyType();
+		}
+
+		return getRelatedEtlOperationConfig().getParallelProcessingStrategy();
+	}
+
+	/**
+	 * Extracts each engine interval once, partitions the resulting list, and then
+	 * runs only the phases selected by the configured result-partitioning strategy.
+	 */
+	private void performeResultPartitionedTask(ParallelProcessingStrategyType strategy) throws Exception {
+		ThreadRecordIntervalsManager<T> intervalManager = getThreadRecordIntervalsManager();
+		EtlThreadFactory<T> threadFactory = new EtlThreadFactory<>(this);
+
+		while (intervalManager.canGoNext() || !intervalManager.getCurrentLimits().isFullProcessed()) {
+			if (stopRequested()) {
+				logWarn("Stopping the Task as Stop Requested!");
+				changeStatusToStopped();
+				return;
+			}
+
+			if (intervalManager.getCurrentLimits().isFullProcessed()) {
+				intervalManager.moveNext();
+			}
+
+			List<IntervalExtremeRecord> availableIntervals = intervalManager.getCurrentLimits().getAllNotProcessed();
+			if (availableIntervals.isEmpty()) {
+				tryToProcessSkippedrecords();
+				continue;
+			}
+
+			processExtractedInterval(strategy, availableIntervals, threadFactory);
+		}
+	}
+
+	private void processExtractedInterval(ParallelProcessingStrategyType strategy,
+	        List<IntervalExtremeRecord> availableIntervals, EtlThreadFactory<T> threadFactory) throws Exception {
+		boolean sharedConnections = getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
+		boolean persistWork = !getRelatedEtlConf().hasTestingItem();
+		OpenConnection extractionSrcConn = openSrcConn(this);
+		OpenConnection extractionDstConn = tryToOpenDstConn(this);
+		ExecutorService executor = null;
+
+		try {
+			List<T> extractedRecords = extract(getThreadRecordIntervalsManager().getCurrentLimits(), extractionSrcConn,
+			    extractionDstConn);
+
+			if (!utilities.listHasElement(extractedRecords)) {
+				getThreadRecordIntervalsManager().getCurrentLimits().markAsProcessed();
+				persistCompletedResultPartition(extractionSrcConn, extractionDstConn, persistWork);
+				return;
+			}
+
+			int processorCount = Math.min(availableIntervals.size(), extractedRecords.size());
+			List<List<T>> partitions = partitionRecords(extractedRecords, processorCount);
+			resetCurrentTaskProcessor(processorCount + (strategy.parallelTransformSerialPersist() ? 1 : 0));
+			executor = Executors.newFixedThreadPool(processorCount, threadFactory);
+			List<CompletableFuture<Void>> tasks = new ArrayList<>(processorCount);
+
+			for (int i = 0; i < processorCount; i++) {
+				TaskProcessor<T> processor = initTaskProcessor(availableIntervals.get(i), i);
+				List<T> records = partitions.get(i);
+				getCurrentTaskProcessor().add(processor);
+				tasks.add(CompletableFuture.runAsync(() -> processExtractedPartition(processor, records, strategy,
+				    sharedConnections, extractionSrcConn, extractionDstConn), executor));
+			}
+
+			CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
+			assertNoProcessorFailed(getCurrentTaskProcessor());
+
+			if (strategy.parallelTransformSerialPersist()) {
+				TaskProcessor<T> loader = initTaskProcessor(getThreadRecordIntervalsManager().getCurrentLimits(), processorCount);
+				loader.changeStatusToRunning();
+				loader.loadTransformedRecords(extractedRecords, extractionSrcConn, extractionDstConn);
+				completeExtractedTask(loader, extractionSrcConn, extractionDstConn, true);
+				getCurrentTaskProcessor().add(loader);
+				assertNoProcessorFailed(utilities.parseToList(loader));
+			}
+
+			getThreadRecordIntervalsManager().getCurrentLimits().markAsProcessed();
+			markSkippedRecordsWhenPossible(getCurrentTaskProcessor());
+			persistCompletedResultPartition(extractionSrcConn, extractionDstConn, persistWork);
+		}
+		catch (Exception e) {
+			stopOperationDueError(e);
+			throw e;
+		}
+		finally {
+			OpenConnection.finalizeAllConnections(this, extractionSrcConn, extractionDstConn);
+			shutdownExecutor(executor);
+		}
+	}
+
+	private TaskProcessor<T> initTaskProcessor(IntervalExtremeRecord interval, int index) {
+		TaskProcessor<T> processor = getController().initRelatedTaskProcessor(this, interval, true);
+		processor.setProcessorId(getEngineId() + "_" + utilities.garantirXCaracterOnNumber(index, 2));
+		return processor;
+	}
+
+	private List<List<T>> partitionRecords(List<T> records, int partitionCount) {
+		List<List<T>> partitions = new ArrayList<>(partitionCount);
+		int baseSize = records.size() / partitionCount;
+		int remainder = records.size() % partitionCount;
+		int fromIndex = 0;
+
+		for (int i = 0; i < partitionCount; i++) {
+			int size = baseSize + (i < remainder ? 1 : 0);
+			partitions.add(new ArrayList<>(records.subList(fromIndex, fromIndex + size)));
+			fromIndex += size;
+		}
+
+		return partitions;
+	}
+
+	private void processExtractedPartition(TaskProcessor<T> processor, List<T> records,
+	        ParallelProcessingStrategyType strategy, boolean sharedConnections, OpenConnection sharedSrcConn,
+	        OpenConnection sharedDstConn) {
+		OpenConnection srcConn = sharedSrcConn;
+		OpenConnection dstConn = sharedDstConn;
+
+		try {
+			if (!sharedConnections) {
+				srcConn = openSrcConn(this);
+				dstConn = tryToOpenDstConn(this);
+			}
+
+			processor.changeStatusToRunning();
+			if (strategy.resultPartitioning()) {
+				processor.transformAndLoadExtractedRecords(records, srcConn, dstConn);
+				completeExtractedTask(processor, srcConn, dstConn, true);
+			} else {
+				processor.transformExtractedRecords(records, srcConn, dstConn);
+				processor.changeStatusToFinished();
+			}
+
+			if (!sharedConnections && !getRelatedEtlConf().hasTestingItem()) {
+				OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+			}
+		}
+		catch (Exception e) {
+			processor.changeStatusToStopped();
+			processor.getTaskResultInfo().setFatalException(e);
+		}
+		finally {
+			if (!sharedConnections) {
+				OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+			}
+		}
+	}
+
+	private void completeExtractedTask(TaskProcessor<T> processor, OpenConnection srcConn, OpenConnection dstConn,
+	        boolean refreshProgress) throws DBException {
+		if (processor.getTaskResultInfo().hasFatalError()) {
+			processor.changeStatusToStopped();
+			return;
+		}
+
+		getController().afterEtl(processor.getTaskResultInfo().getAllSuccessfulyProcessedRecords(), srcConn, dstConn);
+		if (processor.getTaskResultInfo().hasRecordsWithErrors()) {
+			processor.getTaskResultInfo().documentErrors(srcConn, dstConn);
+		}
+		if (refreshProgress) {
+			refreshProgressMeter(processor, srcConn);
+		}
+		processor.changeStatusToFinished();
+	}
+
+	private void assertNoProcessorFailed(List<TaskProcessor<T>> processors) throws Exception {
+		List<EtlOperationResultHeader<T>> results = new ArrayList<>(processors.size());
+		for (TaskProcessor<T> processor : processors) {
+			results.add(processor.getTaskResultInfo());
+		}
+
+		if (EtlOperationResultHeader.hasAtLeastOneFatalError(results)) {
+			throw EtlOperationResultHeader.getDefaultResultWithFatalError(results).getFatalException();
+		}
+	}
+
+	private void markSkippedRecordsWhenPossible(List<TaskProcessor<T>> processors) {
+		List<EtlOperationResultHeader<T>> results = new ArrayList<>(processors.size());
+		for (TaskProcessor<T> processor : processors) {
+			results.add(processor.getTaskResultInfo());
+		}
+
+		if (!EtlOperationResultHeader.hasAtLeastOneRecordsWithRecursiveRelashionships(results)) {
+			getThreadRecordIntervalsManager().getCurrentLimits().markSkippedRecordsAsProcessed();
+		}
+	}
+
+	private void persistCompletedResultPartition(OpenConnection srcConn, OpenConnection dstConn, boolean persistWork)
+	        throws DBException {
+		if (persistWork) {
+			getThreadRecordIntervalsManager().save();
+			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+		}
+	}
+
+	private void shutdownExecutor(ExecutorService executor) {
+		if (executor == null) {
+			return;
+		}
+
+		executor.shutdown();
+		try {
+			if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+				executor.shutdownNow();
+			}
+		}
+		catch (InterruptedException e) {
+			executor.shutdownNow();
+			Thread.currentThread().interrupt();
 		}
 	}
 	

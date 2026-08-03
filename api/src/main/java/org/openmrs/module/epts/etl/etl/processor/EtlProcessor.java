@@ -48,18 +48,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
 	        throws DBException {
 		try {
-			this.performTransformationAndLoading(this.getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL,
-			    srcConn, dstConn);
-			
-			EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
-			
-			if (action == null || action.isUndefined()) {
-				return;
-			}
-			
-			for (EtlDatabaseObject obj : etlObjects) {
-				applyAfterEtlAction(obj, action, srcConn, dstConn);
-			}
+			transform(etlObjects, srcConn, dstConn);
+			load(etlObjects, srcConn, dstConn);
 		}
 		catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
@@ -77,6 +67,15 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	@Override
 	public void load(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
 		performLoading(this.getEtlItemConfiguration(), etlObjects, LoadingType.PRINCIPAL, srcConn, dstConn);
+
+		EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
+		if (action == null || action.isUndefined()) {
+			return;
+		}
+
+		for (EtlDatabaseObject obj : etlObjects) {
+			applyAfterEtlAction(obj, action, srcConn, dstConn);
+		}
 	}
 	
 	public EtlLoadHelper performTransformationAndLoading(EtlItemConfiguration etlItemConf,
