@@ -827,6 +827,86 @@ Each **extraObjectDataSource** is defined by the following properties:
 	  - The lookup is filtered using the condition `mapping_group="concept"`
 	  - If no mapping is found, the original input value is returned due to `USE_INPUT`
 
+    - **FUNCTION_TRANSFORMER(type:functionType,input:inputValue)** Executes a general-purpose utility function and returns its result as the transformed value.	
+		This transformer is intended for small, reusable operations that do not require a dedicated field transformer. Supported functions may convert values, produce special characters, or return commonly used utility values.
+		
+		The **type** parameter identifies the function to execute.
+		
+		The **input** parameter is optional or required depending on the selected function. When provided, the input may be:
+		  - a constant value;
+		  - a field from an available data source;
+		  - a dynamic ETL parameter;
+		  - the result of another transformer.
+		
+		  When a nested transformer is supplied as input, the nested transformer is executed first and its result is passed to the selected function.
+		
+		  **Syntax:**
+		
+		```
+    
+		FUNCTION_TRANSFORMER(
+		type:functionType,
+		input:inputValue
+		)
+
+    	```
+		
+		**Supported functions:**
+		
+		- **TO_STRING** – Converts the input value to its string representation. The **input** parameter is required.
+		- **EMPTY_STRING** – Returns an empty string. The **input** parameter is not required.
+		- **SPACE** – Returns a single space character. The **input** parameter is not required.
+		- **NEW_LINE** – Returns a line separator. The **input** parameter is not required.
+		- **TAB** – Returns a tab character. The **input** parameter is not required.
+		
+		**Examples:**
+		
+		Convert a value to string:
+		
+		```
+		
+		FUNCTION_TRANSFORMER(
+		type:TO_STRING,
+		input:123
+		)
+		
+		```
+		
+		Return a single space:
+		
+		```
+		
+		FUNCTION_TRANSFORMER(type:SPACE)
+		
+		```
+		
+		Return an empty string:
+		
+		```
+		
+		FUNCTION_TRANSFORMER(type:EMPTY_STRING)
+		
+		```
+		
+		Use the result of another transformer as input:
+		
+		```
+		
+		FUNCTION_TRANSFORMER(
+		type:TO_STRING,
+		input:COALESCE_TRANSFORMER(
+		value_text,
+		value_coded,
+		value_numeric
+		)
+		)
+		
+		```
+		
+		In the previous example, **COALESCE_TRANSFORMER** is executed first. Its result is then converted to a string by **FUNCTION_TRANSFORMER**.
+		
+		The **FUNCTION_TRANSFORMER** should be used only for small and generic utility operations. Complex operations, database lookups, date processing, string manipulation, or domain-specific logic should continue to use their corresponding specialized transformers.
+
     - **FAST_SQL_TRANSFORMER(sqlQuery)** Retrieves the field value by executing a SQL query against the source database. The SQL query must return at least one column; only the first column of the first row 
 of the result set will be used as the destination field value. If the query returns no rows or the resulting value is null, the transformer will:
       - apply the destination field default value if defined, or
