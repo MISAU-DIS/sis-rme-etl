@@ -29,6 +29,7 @@ public enum FieldTransformerType {
 			ParentOnDemandLoadWithDefaultsTransformer::getInstance),
 	DATE_TRANSFORMER(DateFieldTransformer.class.getCanonicalName(), DateFieldTransformer::getInstance),
 	UUID_ON_DEMAND_TRANSFORMER(UuidOnDemanTransformer.class.getCanonicalName(), UuidOnDemanTransformer::getInstance),
+	FUNCTION_TRANSFORMER(FunctionTransformer.class.getCanonicalName(), FunctionTransformer::getInstance),
 	NULL_VALUE_TRANSFORMER(NullValueTransformer.class.getCanonicalName(), NullValueTransformer::getInstance),
 	CUSTOM_TRANSFORMER(null, null);
 
@@ -212,8 +213,8 @@ public enum FieldTransformerType {
 
 		List<Object> params = new ArrayList<>();
 
-		def= def.trim();
-		
+		def = def.trim();
+
 		if (def == null || !def.contains("(") || !def.endsWith(")")) {
 			return params;
 		}

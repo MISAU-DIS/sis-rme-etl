@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.sql.Connection;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
@@ -23,6 +24,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfiguration implements EtlFieldTransformer {
+	private static final Pattern TRANSFORMER_EXPRESSION_PATTERN = Pattern
+			.compile("^[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(.*\\)$");
 
 	protected List<Object> parameters;
 
@@ -168,7 +171,12 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	}
 
 	public static boolean isTransformerExpression(String value) {
-		return value != null && value.contains("(") && value.endsWith(")");
+
+		if (value == null || value.isBlank()) {
+			return false;
+		}
+
+		return TRANSFORMER_EXPRESSION_PATTERN.matcher(value.trim()).matches();
 	}
 
 	@Override

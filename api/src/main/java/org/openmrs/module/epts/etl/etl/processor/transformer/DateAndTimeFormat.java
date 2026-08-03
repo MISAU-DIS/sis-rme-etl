@@ -1,7 +1,7 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 public enum DateAndTimeFormat {
-	
+	// @formatter:off
 	YEAR_FORMAT("yyyy"),
 	DAY_FORMAT("dd"),
 	MONTH_FORMAT("MM"),
@@ -16,36 +16,39 @@ public enum DateAndTimeFormat {
 	ORACLE_MINUTE_FORMAT("MI"),
 	ORACLE_HOUR_FORMAT("HH24");
 	
-	private final String format;
 	
+	// @formatter:onn
+	
+	private final String format;
+
 	DateAndTimeFormat(String format) {
 		this.format = format;
 	}
-	
+
 	public String getFormat() {
 		return format;
 	}
-	
+
 	public static DateAndTimeFormat resolve(String value) {
-		
+
 		if (value == null || value.isBlank()) {
 			return null;
 		}
-		
+
 		value = value.trim();
-		
+
 		for (DateAndTimeFormat f : values()) {
-			
+
 			if (f.name().equalsIgnoreCase(value)) {
 				return f;
 			}
-			
+
 			if (f.getFormat().equalsIgnoreCase(value)) {
 				return f;
 			}
 		}
-		
+
 		return DateAndTimeFormat.valueOf(value);
 	}
-	
+
 }

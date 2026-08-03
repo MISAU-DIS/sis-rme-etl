@@ -20,8 +20,10 @@ import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.RefType;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
+import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.conf.types.SqlOrderingType;
@@ -398,8 +400,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				EtlItemConfiguration item = ((EtlItemConfigurationComponent) toCloneFrom).getParentEtlItemConf();
 
 				if (item != null && item.isDynamic()) {
-					item.getRelatedEtlConf()
-							.debug("Cloning from dynamic table {}. Ignoring DatabaseResourceDoesNotExists", toCloneFrom);
+					item.getRelatedEtlConf().debug(
+							"Cloning from dynamic table {}. Ignoring DatabaseResourceDoesNotExists", toCloneFrom);
 				} else {
 					throw e;
 				}
@@ -2196,7 +2198,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				for (RefMapping map : ref.getRefMapping()) {
 					joinFields.add(FieldsMapping.fastCreate(target, map.getParentField().getName(),
-							map.getChildField().getName(), conn));
+							determineJoiningTableAlias(ref), map.getChildField().getName(), conn));
 				}
 			} else {
 				throw new ForbiddenOperationException(
@@ -2219,7 +2221,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 					for (RefMapping map : ref.getRefMapping()) {
 						joinFields.add(FieldsMapping.fastCreate(target, map.getChildField().getName(),
-								map.getParentField().getName(), conn));
+								determineJoiningTableAlias(ref), map.getParentField().getName(), conn));
 					}
 				} else {
 					throw new ForbiddenOperationException(
@@ -2235,6 +2237,57 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 
 		return joinFields;
+	}
+
+	default String determineJoiningTableAlias(RelatedTable rt) {
+		TableConfiguration t = retrieveConfiguredParentWithinTheSameEtl(rt);
+
+		if (t != null) {
+			t.getTableAlias();
+		}
+
+		throw new EtlConfException("No table found within configured etl table for related table " + rt);
+	}
+
+	default TableConfiguration retrieveConfiguredParentWithinTheSameEtl(TableConfiguration table) {
+		TableConfiguration found = null;
+
+		if (this instanceof TableDataSourceConfig) {
+			SrcConf srcConf = ((TableDataSourceConfig) this).getRelatedSrcConf();
+
+			found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf);
+
+			if (found == null && srcConf.hasParentItemConf()) {
+				found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf.getParentSrcConf());
+			}
+		} else if (this instanceof SrcConf) {
+			if (((SrcConf) this).hasParentItemConf()) {
+				found = retrieveConfiguredParentWithinTheSameSrcConf(table, ((SrcConf) this).getParentSrcConf());
+			}
+		}
+
+		return found;
+
+	}
+
+	public static TableConfiguration retrieveConfiguredParentWithinTheSameSrcConf(TableConfiguration table,
+			SrcConf srcConf) {
+
+		if (srcConf != null) {
+			if (srcConf.getTableName().equals(table.getTableName())) {
+				return srcConf;
+			} else {
+				if (srcConf.hasAuxExtractTable()) {
+					for (AuxExtractTable aux : srcConf.getAuxExtractTable()) {
+						if (aux.getTableName().equals(table.getTableName())) {
+							return aux;
+						}
+					}
+				}
+			}
+		}
+
+		return null;
 	}
 
 	default String generateConditionsFields(EtlDatabaseObject parentObject, List<FieldsMapping> joinFields,

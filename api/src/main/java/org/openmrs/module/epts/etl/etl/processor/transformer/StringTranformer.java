@@ -85,7 +85,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		}
 
 		int firstClose = expr.indexOf(")");
-
+  
 		if (firstClose == -1) {
 			throw new EtlExceptionImpl("Invalid expression: " + expr);
 		}
