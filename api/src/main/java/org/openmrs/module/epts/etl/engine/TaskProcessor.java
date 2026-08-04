@@ -274,7 +274,13 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 		tryToInitIdGenerator(records, dstConn);
 		beforeSync(records, null, dstConn);
-		getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) (List<?>) records);
+
+		List<EtlDatabaseObject> processedRecords = new ArrayList<>();
+		if (getTaskResultInfo().getProcessedRecords() != null) {
+			processedRecords.addAll(getTaskResultInfo().getProcessedRecords());
+		}
+		processedRecords.addAll((List<EtlDatabaseObject>) (List<?>) records);
+		getTaskResultInfo().setProcessedRecords(processedRecords);
 	}
 
 	@SuppressWarnings("unchecked")

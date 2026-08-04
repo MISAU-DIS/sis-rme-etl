@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -795,15 +797,15 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			int processorCount = getController().getOperationConfig().getMaxSupportedProcessors();
-
-			List<List<T>> partitions = partitionRecords(extractedRecords, processorCount);
+			
+			Queue<T> transformationQueue = new ConcurrentLinkedQueue<>(extractedRecords);
 
 			if (strategy.isResultPartitioning()) {
-				processResultPartitioning(availableInterval, partitions, threadFactory, extractionSrcConn,
-						extractionDstConn);
-			} else if (strategy.isParallelTransformSerialPersist()) {
-				processParallelTransformSerialPersist(availableInterval, extractedRecords, partitions, threadFactory,
+				processResultPartitioning(availableInterval, transformationQueue, processorCount, threadFactory,
 						extractionSrcConn, extractionDstConn);
+			} else if (strategy.isParallelTransformSerialPersist()) {
+				processParallelTransformSerialPersist(availableInterval, extractedRecords, transformationQueue,
+						processorCount, threadFactory, extractionSrcConn, extractionDstConn);
 			} else {
 				throw new ForbiddenOperationException("Unsupported result-partitioning strategy: " + strategy);
 			}
@@ -819,21 +821,20 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void processResultPartitioning(IntervalExtremeRecord interval, List<List<T>> partitions,
-			EtlThreadFactory<T> threadFactory, OpenConnection sharedSrcConn, OpenConnection sharedDstConn)
-			throws Exception {
+	private void processResultPartitioning(IntervalExtremeRecord interval, Queue<T> transformationQueue,
+			int processorCount, EtlThreadFactory<T> threadFactory, OpenConnection sharedSrcConn,
+			OpenConnection sharedDstConn) throws Exception {
 
 		boolean sharedConnections = getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
-		ExecutorService executor = Executors.newFixedThreadPool(partitions.size(), threadFactory);
-		resetCurrentTaskProcessor(partitions.size());
-		List<CompletableFuture<Void>> tasks = new ArrayList<>(partitions.size());
+		ExecutorService executor = Executors.newFixedThreadPool(processorCount, threadFactory);
+		resetCurrentTaskProcessor(processorCount);
+		List<CompletableFuture<Void>> tasks = new ArrayList<>(processorCount);
 
 		try {
-			for (int i = 0; i < partitions.size(); i++) {
+			for (int i = 0; i < processorCount; i++) {
 				TaskProcessor<T> processor = initTaskProcessor(interval, i);
-				List<T> records = partitions.get(i);
 				getCurrentTaskProcessor().add(processor);
-				tasks.add(CompletableFuture.runAsync(() -> transformAndLoadPartition(processor, records,
+				tasks.add(CompletableFuture.runAsync(() -> consumeTransformAndLoadQueue(processor, transformationQueue,
 						sharedConnections, sharedSrcConn, sharedDstConn), executor));
 			}
 
@@ -846,22 +847,20 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	private void processParallelTransformSerialPersist(IntervalExtremeRecord interval, List<T> extractedRecords,
-			List<List<T>> partitions, EtlThreadFactory<T> threadFactory, OpenConnection sharedSrcConn,
-			OpenConnection sharedDstConn) throws Exception {
+			Queue<T> transformationQueue, int processorCount, EtlThreadFactory<T> threadFactory,
+			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) throws Exception {
 
 		boolean sharedConnections = getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
-		ExecutorService executor = Executors.newFixedThreadPool(partitions.size(), threadFactory);
-		resetCurrentTaskProcessor(partitions.size() + 1);
-		List<CompletableFuture<Void>> transformationTasks = new ArrayList<>(partitions.size());
+		ExecutorService executor = Executors.newFixedThreadPool(processorCount, threadFactory);
+		resetCurrentTaskProcessor(processorCount + 1);
+		List<CompletableFuture<Void>> transformationTasks = new ArrayList<>(processorCount);
 
 		try {
-			for (int i = 0; i < partitions.size(); i++) {
+			for (int i = 0; i < processorCount; i++) {
 				TaskProcessor<T> transformer = initTaskProcessor(interval, i);
-				List<T> records = partitions.get(i);
 				getCurrentTaskProcessor().add(transformer);
-				transformationTasks.add(CompletableFuture.runAsync(
-						() -> transformPartition(transformer, records, sharedConnections, sharedSrcConn, sharedDstConn),
-						executor));
+				transformationTasks.add(CompletableFuture.runAsync(() -> consumeTransformationQueue(transformer,
+						transformationQueue, sharedConnections, sharedSrcConn, sharedDstConn), executor));
 			}
 
 			CompletableFuture.allOf(transformationTasks.toArray(new CompletableFuture[0])).get();
@@ -870,7 +869,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			shutdownExecutor(executor);
 		}
 
-		TaskProcessor<T> loader = initTaskProcessor(interval, partitions.size());
+		TaskProcessor<T> loader = initTaskProcessor(interval, processorCount);
 		getCurrentTaskProcessor().add(loader);
 		loader.changeStatusToRunning();
 		loader.loadTransformedRecords(extractedRecords, sharedSrcConn, sharedDstConn);
@@ -884,23 +883,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return processor;
 	}
 
-	private List<List<T>> partitionRecords(List<T> records, int partitionCount) {
-		List<List<T>> partitions = new ArrayList<>(partitionCount);
-		int baseSize = records.size() / partitionCount;
-		int remainder = records.size() % partitionCount;
-		int fromIndex = 0;
-
-		for (int i = 0; i < partitionCount; i++) {
-			int size = baseSize + (i < remainder ? 1 : 0);
-			partitions.add(new ArrayList<>(records.subList(fromIndex, fromIndex + size)));
-			fromIndex += size;
-		}
-
-		return partitions;
-	}
-
-	private void transformAndLoadPartition(TaskProcessor<T> processor, List<T> records, boolean sharedConnections,
-			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
+	@SuppressWarnings("unchecked")
+	private void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
+			boolean sharedConnections, OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
 		OpenConnection srcConn = sharedSrcConn;
 		OpenConnection dstConn = sharedDstConn;
 
@@ -911,7 +896,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			processor.changeStatusToRunning();
-			processor.transformAndLoadExtractedRecords(records, srcConn, dstConn);
+
+			T record;
+
+			while (!processor.getTaskResultInfo().hasFatalError() && (record = transformationQueue.poll()) != null) {
+				processor.transformAndLoadExtractedRecords(utilities.parseToList(record), srcConn, dstConn);
+			}
 			completeExtractedTask(processor, srcConn, dstConn, true);
 
 			if (!sharedConnections && !getRelatedEtlConf().hasTestingItem()) {
@@ -927,8 +917,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void transformPartition(TaskProcessor<T> processor, List<T> records, boolean sharedConnections,
-			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
+	@SuppressWarnings("unchecked")
+	private void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
+			boolean sharedConnections, OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
 		OpenConnection srcConn = sharedSrcConn;
 		OpenConnection dstConn = sharedDstConn;
 
@@ -939,7 +930,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			processor.changeStatusToRunning();
-			processor.transformExtractedRecords(records, srcConn, dstConn);
+			T record;
+			while ((record = transformationQueue.poll()) != null) {
+				processor.transformExtractedRecords(utilities.parseToList(record), srcConn, dstConn);
+			}
 			processor.changeStatusToFinished();
 
 			if (!sharedConnections && !getRelatedEtlConf().hasTestingItem()) {

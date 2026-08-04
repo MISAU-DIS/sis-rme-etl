@@ -56,10 +56,12 @@ public class ThreadRecordIntervalsManager<T extends EtlDatabaseObject> extends I
 		this.setCurrentLimits(new ThreadCurrentIntervals());
 	}
 
-	public ThreadRecordIntervalsManager(long firstRecordId, long lastRecordId, int qtyRecordsPerProcessing,
-			int maxAllowedProcessors) {
+	public ThreadRecordIntervalsManager(Engine<T> engine, long firstRecordId, long lastRecordId,
+			int qtyRecordsPerProcessing, int maxAllowedProcessors) {
 		super(firstRecordId, lastRecordId);
 
+		this.engine = engine;
+		
 		this.setCurrentLimits(new ThreadCurrentIntervals());
 
 		this.qtyRecordsPerProcessing = qtyRecordsPerProcessing;
@@ -94,7 +96,7 @@ public class ThreadRecordIntervalsManager<T extends EtlDatabaseObject> extends I
 	}
 
 	public ThreadRecordIntervalsManager(Engine<T> engine, int maxSupportedProcessors) {
-		this(engine.getMinRecordId(), engine.getMaxRecordId(), engine.getMaxRecordsPerProcessing(),
+		this(engine, engine.getMinRecordId(), engine.getMaxRecordId(), engine.getMaxRecordsPerProcessing(),
 				maxSupportedProcessors);
 
 		this.engine = engine;
