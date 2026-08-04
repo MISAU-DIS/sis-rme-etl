@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
@@ -36,6 +37,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	protected Connection overrideConnection;
 
 	protected FieldsMapping input;
+
+	protected String inputExpression;
 
 	protected ActionOnEtlIssue onNullTransformedvalue;
 
@@ -93,6 +96,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 						this.input = FieldsMapping.fastCreate(this.getRelatedEtlTransformTarget(), paramValue,
 								paramValue, conn);
 					}
+
+					this.inputExpression = paramValue;
 				}
 			}
 		}
@@ -129,6 +134,14 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	public boolean hasInput() {
 		return this.input != null;
+	}
+
+	public String getInputExpression() {
+		return inputExpression;
+	}
+
+	public void setInputExpression(String inputExpression) {
+		this.inputExpression = inputExpression;
 	}
 
 	public FieldsMapping getInput() {
@@ -200,7 +213,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	@Override
 	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
-		return null;
+		return this.getRelatedEtlTransformTarget().getRelatedEtlConf().getDefaultInconsistencyBehavior();
 	}
 
 	@Override
@@ -245,18 +258,18 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				+ "Configure an explicit mapping, allow null values, or ensure that a previous destination record is available as a data source.";
 
 		if (field.nullValueBehavior().markRecordAsFailed()) {
-			throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
+			throw new EmptyTransformedValueException(msg, srcObject, ActionOnEtlIssue.LOG);
 		}
 
 		if (field.nullValueBehavior().abort()) {
-			throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
+			throw new EmptyTransformedValueException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		}
 
 		if (field.nullValueBehavior().ignore()) {
 			return new FieldTransformingInfo(field, null, null);
 		}
 
-		throw new EtlTransformationException(msg, srcObject, ActionOnEtlIssue.LOG);
+		throw new EmptyTransformedValueException(msg, srcObject, ActionOnEtlIssue.LOG);
 	}
 
 }

@@ -43,11 +43,15 @@ public enum ParallelProcessingStrategyType {
 		return this == PARALLEL_TRANSFORM_SERIAL_PERSIST;
 	}
 
-	public boolean singleThread() {
+	public boolean useSingleThread() {
 		return this == SINGLE_THREAD;
 	}
 
 	public boolean useMultiThreads() {
 		return rangePartitioning() || resultPartitioning() || parallelTransformSerialPersist();
+	}
+
+	public boolean useMultiThreadsWithinSharedInterval() {
+		return resultPartitioning() || parallelTransformSerialPersist();
 	}
 }

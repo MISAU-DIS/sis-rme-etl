@@ -60,7 +60,7 @@
          "srcConf":{
             "tableName":"person",
             "tableAlias":"person_src_ds",
-            "extraConditionForExtract":"1=1",
+            "extraConditionForExtract":"person_id not in (273)",
             "extraTableDataSource":[
                {
                   "tableName":"person_name",
@@ -91,7 +91,7 @@
                "mapping":[
                   {
                      "dstField":"full_name",
-                     "transformer":"STRING_TRANSFORMER((person_name_src_ds.given_name).concat(FUNCTION_TRANSFORMER(type:SPACE)).concat(person_name_src_ds.family_name))"
+                     "transformer":"STRING_TRANSFORMER(input:(person_name_src_ds.given_name).concat(FUNCTION_TRANSFORMER(type:SPACE)).concat(person_name_src_ds.family_name), null_operand_behavior:USE_EMPTY_STRING)"
                   },
                   {
                      "dstField":"full_address",
@@ -107,11 +107,13 @@
                   },
                   {
                      "srcField":"person_address_src_ds.uuid",
-                     "dstField":"address_uuid"
+                     "dstField":"address_uuid",
+                     "nullValueBehavior":"IGNORE"
                   },
                   {
                      "srcField":"person_address_src_ds.date_created",
-                     "dstField":"address_creation_date"
+                     "dstField":"address_creation_date",
+                     "nullValueBehavior":"IGNORE"
                   }
                ],
                "ignorableFields":[

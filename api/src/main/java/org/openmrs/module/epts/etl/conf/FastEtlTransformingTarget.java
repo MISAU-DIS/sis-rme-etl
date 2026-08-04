@@ -178,6 +178,12 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 		return new FastEtlTransformingTarget(relatedEtlCOnf, ds);
 	}
 
+	public static FastEtlTransformingTarget fastCreate(EtlConfiguration relatedEtlCOnf,
+			List<EtlDataSource> avaliableDataSources) throws DBException {
+
+		return new FastEtlTransformingTarget(relatedEtlCOnf, avaliableDataSources);
+	}
+
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		return this.relatedEtlConf;

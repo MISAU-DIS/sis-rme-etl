@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.dbquickload.controller.DBQuickLoadController;
 import org.openmrs.module.epts.etl.detectgapes.controller.DetectGapesController;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.export.controller.DBExportController;
 import org.openmrs.module.epts.etl.inconsistenceresolver.controller.InconsistenceSolverController;
@@ -744,6 +745,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 					+ "'USE_PROVIDED_COUNT' count strategy is being used and no 'totalAvaliableRecordsToProcess' was specified! Please provide a total count using propertie 'totalAvaliableRecordsToProcess'";
 		}
 
+		if (this.getParallelProcessingStrategy().useMultiThreads() && this.getProcessingBatch() == 1) {
+			errorMsg += ++errNum + " 'parallelProcessingStrategy' is set to " + this.getParallelProcessingStrategy()
+					+ " while processingBatch is set to 1! Please provide a processingBatch  greater than 1 or set the parallelProcessingStrategy to SINGLE_THREAD";
+		}
+
 		try {
 			tryToLoadEngine();
 
@@ -1028,5 +1034,31 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public boolean hasActionAfterEtl() {
 		return this.getAfterEtlActionType() != null;
+	}
+
+	public void init() {
+		if (this.getMaxSupportedProcessors() == 1) {
+			this.setUseSharedConnectionPerThread(false);
+		}
+
+		if (this.isConsoleDst()) {
+			this.setDoNotSaveOperationProgress(true);
+		}
+
+		if (this.getTotalAvaliableRecordsToProcess() != null) {
+			this.setTotalCountStrategy(EtlTotalRecordsCountStrategy.USE_PROVIDED_COUNT);
+		}
+
+		if (this.getParallelProcessingStrategy().useMultiThreads()) {
+			if (this.getProcessingBatch() < this.getMaxSupportedProcessors()) {
+				throw new EtlConfException("The user defined processingBatch (" + this.getProcessingBatch()
+						+ ") must be higher or equals to maxSupportedProcessors (" + this.getMaxSupportedProcessors()
+						+ ") whin the EtlOperationConfig: " + this);
+			}
+		}
+
+		if (hasChild()) {
+			this.getChild().init();
+		}
 	}
 }

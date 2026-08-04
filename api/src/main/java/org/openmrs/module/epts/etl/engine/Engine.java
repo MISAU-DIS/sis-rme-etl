@@ -891,9 +891,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				}
 			}
 		}
+
+		logWarn("Current iteration finished {}" + iManager.getCurrentLimits());
 	}
 
-	private ParallelProcessingStrategyType getParallelProcessingStrategy() {
+	public ParallelProcessingStrategyType getParallelProcessingStrategy() {
 		if (getEtlItemConfiguration().hasParallelProcessingStrategyType()) {
 			return getEtlItemConfiguration().getParallelProcessingStrategyType();
 		}
@@ -981,7 +983,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	private void processResultPartitioning(IntervalExtremeRecord interval, List<List<T>> partitions,
 			EtlThreadFactory<T> threadFactory, OpenConnection sharedSrcConn, OpenConnection sharedDstConn)
 			throws Exception {
-		
+
 		boolean sharedConnections = getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
 		ExecutorService executor = Executors.newFixedThreadPool(partitions.size(), threadFactory);
 		resetCurrentTaskProcessor(partitions.size());

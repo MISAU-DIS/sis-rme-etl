@@ -4,11 +4,14 @@ import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
+import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -30,12 +33,12 @@ public class StringTranformerElements {
 
 	private Method method;
 
-	private DstConf relatedDstConf;
-
 	private boolean fullLoaded;
 
-	StringTranformerElements(DstConf relatedDstConf) {
-		this.relatedDstConf = relatedDstConf;
+	private StringTranformer relatedTransformer;
+
+	StringTranformerElements(StringTranformer relatedTransformer) {
+		this.relatedTransformer = relatedTransformer;
 	}
 
 	public Object getValueToTransform() {
@@ -50,15 +53,20 @@ public class StringTranformerElements {
 		this.valueToTransform = valueToTransform;
 	}
 
+	public ActionOnEtlIssue getNullOperandBehavior() {
+		return this.relatedTransformer.getNullOperandBehavior();
+	}
+
 	private synchronized void fullLoad(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		if (!fullLoaded) {
 			if (this.valueToTransform != null) {
 				try {
-					this.auxMapping = FieldsMapping.fastCreate(this.relatedDstConf, this.valueToTransform.toString(),
-							conn);
+					this.auxMapping = FieldsMapping.fastCreate(this.relatedTransformer.getRelatedEtlTransformTarget(),
+							this.valueToTransform.toString(), "anknown_field", conn);
 
 					if (!this.auxMapping.hasDataSourceName()) {
-						this.auxMapping = FieldsMapping.createSimpleFieldsMapping(this.relatedDstConf, "anknown_field",
+						this.auxMapping = FieldsMapping.createSimpleFieldsMapping(
+								this.relatedTransformer.getRelatedEtlTransformTarget(), "anknown_field",
 								this.valueToTransform, conn);
 					}
 				} catch (Exception e) {
@@ -137,7 +145,9 @@ public class StringTranformerElements {
 		throw new RuntimeException("No matching method found: " + methodName + " with " + paramCount + " params");
 	}
 
-	public Object evaluate(List<EtlDatabaseObject> additionalSrcObjects, Connection conn) throws Exception {
+	public Object evaluate(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
+			List<EtlDatabaseObject> additionalSrcObjects, TransformableField field, Connection srcConn,
+			Connection dstConn) throws Exception {
 
 		StringTranformerElements element = this;
 
@@ -148,22 +158,45 @@ public class StringTranformerElements {
 			Object[] methodParams = new Object[paramTypes.length];
 
 			for (int i = 0; i < paramTypes.length; i++) {
-				FieldTransformingInfo rawValue = params.get(i).getTransformerInstance().transform(null, null, null,
-						additionalSrcObjects, params.get(i), conn, conn);
+				FieldTransformingInfo rawValue = params.get(i).getTransformerInstance().transform(processor, srcObject,
+						transformedRecord, additionalSrcObjects, params.get(i), srcConn, dstConn);
 
 				methodParams[i] = convertToType(rawValue.getTransformedValue(), paramTypes[i]);
 			}
 
-			Object valueToTransform = this.getAuxMapping().getTransformerInstance()
-					.transform(null, null, null, additionalSrcObjects, auxMapping, conn, conn).getTransformedValue();
+			Object valueToTransform;
 
-			Object currentValue = method.invoke(valueToTransform.toString(), methodParams);
+			try {
+				valueToTransform = this.getAuxMapping().getTransformerInstance().transform(processor, srcObject,
+						transformedRecord, additionalSrcObjects, auxMapping, srcConn, dstConn).getTransformedValue();
+			} catch (EmptyTransformedValueException e) {
+				if (this.getNullOperandBehavior().useEmptyString()) {
+					valueToTransform = "";
+				} else
+					throw e;
+			}
+
+			Object currentValue = "";
+
+			try {
+				currentValue = method.invoke(valueToTransform.toString(), methodParams);
+			} catch (Exception e) {
+				if (e.getCause() instanceof NullPointerException) {
+					currentValue = valueToTransform;
+
+					field.getTransformationTargetObject().getRelatedEtlConf().warn(
+							"NullPointerException found while executing transformation within {} ",
+							this.relatedTransformer);
+				} else
+					throw e;
+			}
 
 			if (element.getNextElements() != null) {
 				element.getNextElements().setValueToTransform(currentValue);
-				element.getNextElements().fullLoad(conn);
+				element.getNextElements().fullLoad(srcConn);
 
-				return element.getNextElements().evaluate(additionalSrcObjects, conn);
+				return element.getNextElements().evaluate(processor, srcObject, transformedRecord, additionalSrcObjects,
+						element.getNextElements().getAuxMapping(), srcConn, dstConn);
 			}
 
 			return currentValue;
@@ -206,79 +239,205 @@ public class StringTranformerElements {
 		return value;
 	}
 
-	public static StringTranformerElements buildChain(Object value, String remaining, DstConf relatedDstConf,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public static StringTranformerElements buildChain(Object value, String remaining,
+			StringTranformer relatedTransformer, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
-		StringTranformerElements element = new StringTranformerElements(relatedDstConf);
+		StringTranformerElements element = new StringTranformerElements(relatedTransformer);
+
 		element.setValueToTransform(value);
 		element.fullLoad(conn);
 
 		if (remaining == null || remaining.isBlank()) {
-			return null;
-		}
-
-		Pattern pattern = Pattern.compile("^\\.(\\w+)\\(([^)]*)\\)(.*)$");
-		Matcher matcher = pattern.matcher(remaining);
-
-		if (!matcher.find()) {
 			return element;
 		}
 
-		String methodName = matcher.group(1);
-		String argsStr = matcher.group(2);
-		String next = matcher.group(3);
+		remaining = remaining.trim();
+
+		if (!remaining.startsWith(".")) {
+			throw new EtlExceptionImpl("Invalid string transformer chain: " + remaining);
+		}
+
+		int methodNameStart = 1;
+		int openingParenthesis = remaining.indexOf('(', methodNameStart);
+
+		if (openingParenthesis < 0) {
+			throw new EtlExceptionImpl("Missing opening parenthesis in transformer chain: " + remaining);
+		}
+
+		String methodName = remaining.substring(methodNameStart, openingParenthesis).trim();
+
+		if (!isValidIdentifier(methodName)) {
+			throw new EtlExceptionImpl("Invalid string transformer method: " + methodName);
+		}
+
+		int closingParenthesis = findMatchingClosingParenthesis(remaining, openingParenthesis);
+
+		if (closingParenthesis < 0) {
+			throw new EtlExceptionImpl(
+					"Missing closing parenthesis for method [" + methodName + "] in expression: " + remaining);
+		}
+
+		String argsStr = remaining.substring(openingParenthesis + 1, closingParenthesis);
+
+		String next = remaining.substring(closingParenthesis + 1).trim();
 
 		element.setFunction(methodName);
 
 		List<FieldsMapping> params = new ArrayList<>();
 
 		if (!argsStr.isBlank()) {
-			String[] args = splitArguments(argsStr);
-			for (String arg : args) {
-				params.add(parseArgument(arg, relatedDstConf, conn));
+			for (String arg : splitArguments(argsStr)) {
+				params.add(parseArgument(arg.trim(), relatedTransformer.getRelatedEtlTransformTarget(), conn));
 			}
 		}
 
 		element.setParams(params);
-
 		element.init(conn);
 
-		element.setNextElements(buildChain(null, next, relatedDstConf, conn));
+		if (!next.isBlank()) {
+			element.setNextElements(buildChain(null, next, relatedTransformer, conn));
+		}
 
 		return element;
 	}
 
-	private static String[] splitArguments(String args) {
+	public static int findMatchingClosingParenthesis(String expression, int openingParenthesisIndex) {
 
-		List<String> result = new ArrayList<>();
+		int depth = 0;
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+		boolean escaped = false;
 
-		StringBuilder current = new StringBuilder();
-		boolean inQuotes = false;
+		for (int i = openingParenthesisIndex; i < expression.length(); i++) {
 
-		for (char c : args.toCharArray()) {
+			char current = expression.charAt(i);
 
-			if (c == '"' || c == '\'') {
-				inQuotes = !inQuotes;
-			}
-
-			if (c == ',' && !inQuotes) {
-				result.add(current.toString().trim());
-				current.setLength(0);
+			if (escaped) {
+				escaped = false;
 				continue;
 			}
 
-			current.append(c);
+			if (current == '\\') {
+				escaped = true;
+				continue;
+			}
+
+			if (current == '\'' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote;
+				continue;
+			}
+
+			if (current == '"' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote;
+				continue;
+			}
+
+			if (inSingleQuote || inDoubleQuote) {
+				continue;
+			}
+
+			if (current == '(') {
+				depth++;
+			} else if (current == ')') {
+				depth--;
+
+				if (depth == 0) {
+					return i;
+				}
+			}
 		}
 
-		if (!current.isEmpty()) {
-			result.add(current.toString().trim());
-		}
-
-		return result.toArray(new String[0]);
+		return -1;
 	}
 
-	private static FieldsMapping parseArgument(String arg, DstConf dstConf, Connection conn)
+	private static boolean isValidIdentifier(String value) {
+
+		if (value == null || value.isBlank()) {
+			return false;
+		}
+
+		return value.matches("[a-zA-Z_][a-zA-Z0-9_]*");
+	}
+
+	private static String[] splitArguments(String argsStr) {
+
+		if (argsStr == null || argsStr.isBlank()) {
+			return new String[0];
+		}
+
+		List<String> arguments = new ArrayList<>();
+
+		int depth = 0;
+		int argumentStart = 0;
+
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+		boolean escaped = false;
+
+		for (int i = 0; i < argsStr.length(); i++) {
+
+			char current = argsStr.charAt(i);
+
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
+
+			if (current == '\\') {
+				escaped = true;
+				continue;
+			}
+
+			if (current == '\'' && !inDoubleQuote) {
+				inSingleQuote = !inSingleQuote;
+				continue;
+			}
+
+			if (current == '"' && !inSingleQuote) {
+				inDoubleQuote = !inDoubleQuote;
+				continue;
+			}
+
+			if (inSingleQuote || inDoubleQuote) {
+				continue;
+			}
+
+			switch (current) {
+			case '(':
+				depth++;
+				break;
+
+			case ')':
+				if (depth > 0) {
+					depth--;
+				}
+				break;
+
+			case ',':
+				if (depth == 0) {
+					arguments.add(argsStr.substring(argumentStart, i).trim());
+
+					argumentStart = i + 1;
+				}
+				break;
+
+			default:
+				break;
+			}
+		}
+
+		arguments.add(argsStr.substring(argumentStart).trim());
+
+		return arguments.toArray(new String[0]);
+	}
+
+	private static FieldsMapping parseArgument(String arg, EtlTransformTarget dstConf, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
+
+		if (FieldsMapping.isTransformerExpression(dstConf.getRelatedEtlConf(), arg)) {
+			return FieldsMapping.fastCreateWithTransformer(dstConf, "anknown_field", arg, conn);
+		}
 
 		arg = arg.trim();
 

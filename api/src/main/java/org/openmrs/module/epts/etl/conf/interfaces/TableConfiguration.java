@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.TableConfigurationUtils;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
@@ -2197,8 +2198,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(), null, conn);
 
 				for (RefMapping map : ref.getRefMapping()) {
-					joinFields.add(FieldsMapping.fastCreate(target, map.getParentField().getName(),
-							determineJoiningTableAlias(ref), map.getChildField().getName(), conn));
+					joinFields.add(FieldsMapping.fastCreate(target, map.getChildField().getName(),
+							determineJoiningTableAlias(ref), map.getParentField().getName(), conn));
 				}
 			} else {
 				throw new ForbiddenOperationException(
@@ -2217,11 +2218,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 					ParentTable ref = pInfo.get(0);
 
-					EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(), null, conn);
+					EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(),
+							this.retrieveAvaliableDataSources(conn));
 
 					for (RefMapping map : ref.getRefMapping()) {
-						joinFields.add(FieldsMapping.fastCreate(target, map.getChildField().getName(),
-								determineJoiningTableAlias(ref), map.getParentField().getName(), conn));
+						joinFields.add(FieldsMapping.fastCreate(target, map.getParentField().getName(),
+								determineJoiningTableAlias(ref), map.getChildField().getName(), conn));
 					}
 				} else {
 					throw new ForbiddenOperationException(
@@ -2239,14 +2241,18 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		return joinFields;
 	}
 
+	default List<EtlDataSource> retrieveAvaliableDataSources(Connection conn) {
+		return TableConfigurationUtils.retrieveAvaliableDataSourcesWithTable(this, conn);
+	}
+
 	default String determineJoiningTableAlias(RelatedTable rt) {
 		TableConfiguration t = retrieveConfiguredParentWithinTheSameEtl(rt);
 
 		if (t != null) {
-			t.getTableAlias();
+			return t.getTableAlias();
 		}
 
-		throw new EtlConfException("No table found within configured etl table for related table " + rt);
+		throw new EtlConfException("No table found within configured etl table for related " + rt);
 	}
 
 	default TableConfiguration retrieveConfiguredParentWithinTheSameEtl(TableConfiguration table) {
@@ -2314,10 +2320,14 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					} catch (ForbiddenOperationException e) {
 						value = parentObject.getFieldValue(field.getDstFieldAsClassField());
 					}
+
+					conditionFields += AttDefinedElements
+							.defineSqlAtribuitionString(this.tryToConvertFieldToAlias(field.getSrcField()), value);
+				} else {
+					conditionFields += utilities.concatCondition(this.tryToConvertFieldToAlias(field.getSrcField()),
+							field.getFullSrcField(), " = ");
 				}
 
-				conditionFields += AttDefinedElements
-						.defineSqlAtribuitionString(tryToConvertFieldToAlias(field.getSrcField()), value);
 			}
 		}
 

@@ -182,9 +182,10 @@ public class ThreadRecordIntervalsManager<T extends EtlDatabaseObject> extends I
 			if (currentLastRecordId < currentFirstRecordId) {
 				this.setStatus(ThreadIntervalsManagerStatusType.OUT_OF_LIMITS);
 			} else {
-
 				this.setCurrentLimits(new ThreadCurrentIntervals(currentFirstRecordId, currentLastRecordId,
-						this.maxSupportedProcessors));
+						this.getEngine().getParallelProcessingStrategy().useMultiThreadsWithinSharedInterval()
+								|| this.getEngine().getParallelProcessingStrategy().useSingleThread() ? 1
+										: this.maxSupportedProcessors));
 			}
 		}
 	}

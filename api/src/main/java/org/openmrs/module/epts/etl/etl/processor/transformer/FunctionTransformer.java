@@ -91,13 +91,11 @@ public class FunctionTransformer extends AbstractEtlFieldTransformer {
 			Object valueToTransform = null;
 			FieldTransformingInfo transformingInfo = null;
 
-			transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject, transformedRecord,
-					additionalSrcObjects, this.input, srcConn, dstConn);
+			if (hasInput()) {
+				transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject,
+						transformedRecord, additionalSrcObjects, this.input, srcConn, dstConn);
 
-			try {
 				valueToTransform = transformingInfo.getTransformedValue();
-			} catch (Exception e) {
-				throw e;
 			}
 
 			Object result = evaluate(srcObject, valueToTransform);
@@ -106,6 +104,7 @@ public class FunctionTransformer extends AbstractEtlFieldTransformer {
 
 			transformingInfo
 					.setLoadedWithDefaultValue(result != null && result.toString().equals(field.getValueToTransform()));
+
 			return transformingInfo;
 		} finally {
 			traceTransformationFinalization(field);

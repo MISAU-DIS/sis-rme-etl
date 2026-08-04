@@ -10,6 +10,7 @@ public enum ActionOnEtlIssue {
 	DISCARD_MAPPING,
 	USE_LAST, 
 	USE_FIRST, 
+	USE_EMPTY_STRING,
 	SET_TO_NULL, 
 	CREATE_ON_DST, 
 	USE_INPUT, 
@@ -30,7 +31,7 @@ public enum ActionOnEtlIssue {
 
 	public static final ActionOnEtlIssue[] ON_MULTIPLE_DATA_SOURCE_FOUND = { ABORT_PROCESS, USE_LAST, USE_FIRST };
 
-	public static final ActionOnEtlIssue[] ON_NULL = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, IGNORE };
+	public static final ActionOnEtlIssue[] ON_NULL = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, IGNORE, USE_EMPTY_STRING };
 
 	public static final ActionOnEtlIssue[] ON_INCONSISTENCY = { ABORT_PROCESS, MARK_RECORD_AS_FAILED, SET_TO_NULL };
 
@@ -77,6 +78,10 @@ public enum ActionOnEtlIssue {
 
 	public boolean abort() {
 		return this.equals(ABORT_PROCESS);
+	}
+
+	public boolean useEmptyString() {
+		return this.equals(USE_EMPTY_STRING);
 	}
 
 	public boolean ignore() {

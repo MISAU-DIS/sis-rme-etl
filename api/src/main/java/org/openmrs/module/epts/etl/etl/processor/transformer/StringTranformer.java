@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -13,45 +12,115 @@ import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * Field transformer that evaluates string manipulation expressions using
- * standard {@link String} methods.
+ * Field transformer that evaluates string expressions using standard
+ * {@link String} methods.
+ *
  * <p>
- * The transformer expects expressions that follow the format:
- * 
- * <pre>
- * (value).methodName(arg1, arg2, ...)
- * </pre>
- * 
- * where:
+ * The transformer evaluates a string expression supplied through the required
+ * <b>input</b> parameter. Expressions may contain:
+ * </p>
  * <ul>
- * <li><b>value</b> – the source string value</li>
- * <li><b>methodName</b> – the name of a method defined in {@link String}</li>
- * <li><b>arg1, arg2...</b> – optional arguments passed to the method</li>
+ * <li>constant string values;</li>
+ * <li>fields from available data sources;</li>
+ * <li>dynamic ETL parameters;</li>
+ * <li>nested field transformers;</li>
+ * <li>chained {@link String} method invocations.</li>
  * </ul>
- * </p>
+ *
  * <p>
- * Before evaluation, any dynamic parameters in the expression are resolved
- * using {@link EtlFieldTransformer#tryToReplaceParametersOnSrcValue}.
+ * Transformer syntax:
  * </p>
+ *
+ * <pre>
+ * STRING_TRANSFORMER(
+ *     input:expression,
+ *     null_operand_behavior:behavior
+ * )
+ * </pre>
+ *
  * <p>
- * The transformer uses Java reflection to invoke the specified method on the
- * {@link String} class.
+ * The expression supplied in the <b>input</b> parameter follows the format:
  * </p>
+ *
+ * <pre>
+ * (value)
+ *     .method1(arg1, arg2, ...)
+ *     .method2(...)
+ *     .methodN(...)
+ * </pre>
+ *
+ * <p>
+ * where:
+ * </p>
+ * <ul>
+ * <li><b>value</b> is the initial string value;</li>
+ * <li><b>methodX</b> is a method defined in {@link String};</li>
+ * <li><b>argX</b> represents optional method arguments.</li>
+ * </ul>
+ *
+ * <p>
+ * Before invoking each method, the transformer:
+ * </p>
+ * <ul>
+ * <li>resolves fields from the available data sources;</li>
+ * <li>resolves dynamic ETL parameters;</li>
+ * <li>executes nested transformers;</li>
+ * <li>converts method arguments to the parameter types expected by the target
+ * {@link String} method.</li>
+ * </ul>
+ *
+ * <p>
+ * Expressions are evaluated from left to right, where the result of each method
+ * invocation becomes the input of the next method in the chain.
+ * </p>
+ *
+ * <p>
+ * The optional <b>null_operand_behavior</b> parameter controls how the
+ * transformer behaves when the initial value or any method argument evaluates
+ * to {@code null}. Supported behaviors are:
+ * </p>
+ * <ul>
+ * <li><b>ABORT_PROCESS</b> – throws an {@link EtlTransformationException};</li>
+ * <li><b>USE_EMPTY_STRING</b> – replaces the null operand with an empty string
+ * and continues evaluating the expression;</li>
+ * <li><b>RETURN_NULL</b> – immediately returns {@code null}. The returned value
+ * is then handled according to the mapping's configured
+ * <code>nullValueBehavior</code>.</li>
+ * </ul>
+ *
  * <p>
  * Example expressions:
  * </p>
- * 
+ *
  * <pre>
- * (John).toUpperCase()
- * (hello world).substring(0,5)
- * (abc123).replace(123,XYZ)
+ * STRING_TRANSFORMER(
+ *     input:(John).toUpperCase()
+ * )
+ *
+ * STRING_TRANSFORMER(
+ *     input:(hello world).substring(0,5).toUpperCase()
+ * )
+ *
+ * STRING_TRANSFORMER(
+ *     input:(person_name_src_ds.given_name)
+ *         .concat(FUNCTION_TRANSFORMER(type:SPACE))
+ *         .concat(person_name_src_ds.family_name)
+ * )
  * </pre>
+ *
  * <p>
- * If the expression cannot be parsed or the method invocation fails, an
+ * Method invocation is performed dynamically using Java reflection.
+ * </p>
+ *
+ * <p>
+ * If the expression is invalid, a method cannot be resolved, an argument cannot
+ * be converted to the required type, or the configured
+ * <b>null_operand_behavior</b> requires the transformation to fail, an
  * {@link EtlTransformationException} is raised.
  * </p>
  */
@@ -59,43 +128,89 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 
 	protected static final Map<String, StringTranformer> INSTANCES = new ConcurrentHashMap<>();
 
-	private String transformationString;
+	private ActionOnEtlIssue nullOperandBehavior;
 
 	private StringTranformerElements transformerElements;
 
 	public StringTranformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
 			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-		super(parameters, relatedEtlTransformTarget, field);
 
-		if (utilities.listHasNoElement(parameters)) {
-			throw new EtlExceptionImpl("You must specify the string to transforn for STRING_TRANSFORMER");
-		}
-
-		this.transformationString = (String) parameters.get(0);
+		super(parameters, relatedEtlTransformTarget, field, conn);
 
 		loadTransformerElements(conn);
 	}
 
+	public ActionOnEtlIssue getNullOperandBehavior() {
+		return nullOperandBehavior;
+	}
+
+	@Override
+	protected void loadParameters(Connection conn)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+
+		if (utilities.listHasElement(this.parameters)) {
+
+			for (Object fieldData : this.parameters) {
+				String[] mapping = fieldData.toString().split(":", 2);
+
+				if (mapping.length != 2) {
+					throw new EtlExceptionImpl(
+							"Wrong format for conditional parameters within the tranformer " + getTransformerDsc()
+									+ "\n" + "Each object param must be specified as paramName:paramValue");
+				}
+
+				String paramName = mapping[0];
+				String paramValue = mapping[1];
+
+				if (!utilities.stringHasValue(paramValue)) {
+					throw new EtlExceptionImpl("The paramValue for parameter " + paramName
+							+ " has no value on transformer:  " + getTransformerDsc());
+				}
+
+				if (paramName.equals("null_operand_behavior")) {
+					try {
+						this.nullOperandBehavior = ActionOnEtlIssue.valueOf(paramValue);
+					} catch (Exception e) {
+						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
+								+ " on transformer:  " + getTransformerDsc());
+					}
+				} else if (paramName.equals("input")) {
+					try {
+						this.setInputExpression(paramValue);
+					} catch (Exception e) {
+						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
+								+ " on transformer:  " + getTransformerDsc());
+					}
+				}
+			}
+		}
+	}
+
 	private void loadTransformerElements(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		String expr = this.transformationString;
+		String expr = this.getInputExpression();
 
-		if (expr == null || !expr.startsWith("(")) {
-			throw new EtlExceptionImpl("Invalid string expression: " + expr);
+		if (expr == null || expr.isBlank() || !expr.startsWith("(")) {
+			throw new EtlExceptionImpl("Invalid input expression: " + expr);
 		}
 
-		int firstClose = expr.indexOf(")");
-  
-		if (firstClose == -1) {
-			throw new EtlExceptionImpl("Invalid expression: " + expr);
+		int firstClose = StringTranformerElements.findMatchingClosingParenthesis(expr, 0);
+
+		if (firstClose < 0) {
+			throw new EtlExceptionImpl("Unbalanced parentheses in expression: " + expr);
 		}
 
-		String initialValue = expr.substring(1, firstClose);
+		String initialValue = expr.substring(1, firstClose).trim();
 
-		String remaining = expr.substring(firstClose + 1);
+		String remaining = expr.substring(firstClose + 1).trim();
 
-		this.transformerElements = StringTranformerElements.buildChain(initialValue, remaining,
-				(DstConf) getRelatedEtlTransformTarget(), conn);
+		this.transformerElements = StringTranformerElements.buildChain(initialValue, remaining, this, conn);
+
+		if (this.getNullOperandBehavior() == null) {
+			setOnNullTransformedvalue(this.getGeneralBehaviourOnEtlException());
+		}
+
+		logTrace("StringTranformer elements loaded: {}", this.transformerElements);
 	}
 
 	public static String buildCacheKey(String transformationString) {
@@ -129,7 +244,8 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 
 		try {
 
-			Object result = this.transformerElements.evaluate(additionalSrcObjects, srcConn);
+			Object result = this.transformerElements.evaluate(processor, srcObject, transformedRecord,
+					additionalSrcObjects, field, srcConn, dstConn);
 
 			FieldTransformingInfo transformingInfo = new FieldTransformingInfo(field, result, null);
 
