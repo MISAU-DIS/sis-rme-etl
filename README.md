@@ -764,12 +764,12 @@ Each **extraObjectDataSource** is defined by the following properties:
 	
 	  **Syntax:**
 	
-	```
-	STRING_TRANSFORMER(
-	input:expression,
-	null_operand_behavior:behavior
-	)
-	````
+		```
+		STRING_TRANSFORMER(
+		input:expression,
+		null_operand_behavior:behavior
+		)
+		````
 	
 	**Parameters:**
 	
@@ -818,37 +818,38 @@ Each **extraObjectDataSource** is defined by the following properties:
 	
 	**Example using a simple expression:**
 	
-	````
-	STRING_TRANSFORMER(
-	input:(John).toUpperCase()
-	)
-	```
+		````
+		STRING_TRANSFORMER(
+		input:(John).toUpperCase()
+		)
+		```
 	
 	**Example using chained methods:**
 	
-	```
-	STRING_TRANSFORMER(
-	input:(hello world).substring(0,5).toUpperCase()
-	)
-	```
+		```
+		STRING_TRANSFORMER(
+		input:(hello world).substring(0,5).toUpperCase()
+		)
+		```
 	
 	**Example using a dynamic ETL parameter:**
+
 	
-	```
-	STRING_TRANSFORMER(
-	input:(@name).trim().toLowerCase()
-	)
-	```
+		```
+		STRING_TRANSFORMER(
+		input:(@name).trim().toLowerCase()
+		)
+		```
 	
 	**Example using fields and a nested transformer:**
 	
-	```
-	STRING_TRANSFORMER(
-	input:(person_name_src_ds.given_name)
-	.concat(FUNCTION_TRANSFORMER(type:SPACE))
-	.concat(person_name_src_ds.family_name)
-	)
-	```
+		```
+		STRING_TRANSFORMER(
+		input:(person_name_src_ds.given_name)
+		.concat(FUNCTION_TRANSFORMER(type:SPACE))
+		.concat(person_name_src_ds.family_name)
+		)
+		```
 	
 	The previous expression is evaluated in the following order:
 	
@@ -861,26 +862,26 @@ Each **extraObjectDataSource** is defined by the following properties:
 	
 	**Example using null operand handling:**
 	
-	```
-	STRING_TRANSFORMER(
-	input:(person_name_src_ds.given_name)
-	.concat(FUNCTION_TRANSFORMER(type:SPACE))
-	.concat(person_name_src_ds.family_name),
-	null_operand_behavior:USE_EMPTY_STRING
-	)
-	```
+		```
+		STRING_TRANSFORMER(
+		input:(person_name_src_ds.given_name)
+		.concat(FUNCTION_TRANSFORMER(type:SPACE))
+		.concat(person_name_src_ds.family_name),
+		null_operand_behavior:USE_EMPTY_STRING
+		)
+		```
 	
 	In this example, if `person_name_src_ds.family_name` resolves to `null`, it is replaced with an empty string and the expression continues.
 	
 	**Example returning null:**
 	
-	```
-	{
-	"dstField":"display_name",
-	"transformer":"STRING_TRANSFORMER(input:(person_name_src_ds.given_name).concat(FUNCTION_TRANSFORMER(type:SPACE)).concat(person_name_src_ds.family_name),null_operand_behavior:RETURN_NULL)",
-	"nullValueBehavior":"IGNORE"
-	}
-	```
+		```
+		{
+		"dstField":"display_name",
+		"transformer":"STRING_TRANSFORMER(input:(person_name_src_ds.given_name).concat(FUNCTION_TRANSFORMER(type:SPACE)).concat(person_name_src_ds.family_name),null_operand_behavior:RETURN_NULL)",
+		"nullValueBehavior":"IGNORE"
+		}
+		```
 	
 	In this example, if any operand resolves to `null`, the transformer stops evaluating the expression and returns `null`. The mapping-level **nullValueBehavior** then determines how the returned value should be handled.
 	
@@ -925,20 +926,22 @@ Each **extraObjectDataSource** is defined by the following properties:
        - When multiple transformers are used (nested transformers), execution occurs from inner to outer
 
       **Example:**
-	  ```
-	  MAPPING_TRANSFORMER(
-	      sesp_sisrme_metadata_mapping,
-	      sesp_value,
-	      sisrme_value,
-	      on_missing:USE_INPUT,
-	      extra_condition:mapping_group="concept",
-	      input:COALESCE_TRANSFORMER(
-	          ${aliases_prefix}_order_obs_src_ds_name.value_coded,
-	          ${aliases_prefix}_obs_src_ds_name.value_coded,
-	          ${aliases_prefix}_obs_src_ds_name.concept_id
-	      )
-	  )
-	  ```
+      
+		  ```
+		  MAPPING_TRANSFORMER(
+		      sesp_sisrme_metadata_mapping,
+		      sesp_value,
+		      sisrme_value,
+		      on_missing:USE_INPUT,
+		      extra_condition:mapping_group="concept",
+		      input:COALESCE_TRANSFORMER(
+		          ${aliases_prefix}_order_obs_src_ds_name.value_coded,
+		          ${aliases_prefix}_obs_src_ds_name.value_coded,
+		          ${aliases_prefix}_obs_src_ds_name.concept_id
+		      )
+		  )
+	 	 ```
+	 
 	  In this example:
 	  - The *COALESCE_TRANSFORMER* is executed first to determine the input value
 	  - The resulting value is used to lookup the mapping table *sesp_sisrme_metadata_mapping*
@@ -960,12 +963,12 @@ Each **extraObjectDataSource** is defined by the following properties:
 		
 		**Syntax:**
 		
-		```
-		FUNCTION_TRANSFORMER(
-		type:functionType,
-		input:inputValue
-		)
-    	```
+			```
+			FUNCTION_TRANSFORMER(
+			type:functionType,
+			input:inputValue
+			)
+    		```
 		
 		**Supported functions:**
 		
@@ -979,45 +982,37 @@ Each **extraObjectDataSource** is defined by the following properties:
 		
 		Convert a value to string:
 		
-		```
-		
-		FUNCTION_TRANSFORMER(
-		type:TO_STRING,
-		input:123
-		)
-		
-		```
+			```
+			FUNCTION_TRANSFORMER(
+			type:TO_STRING,
+			input:123
+			)
+			```
 		
 		Return a single space:
 		
-		```
-		
-		FUNCTION_TRANSFORMER(type:SPACE)
-		
-		```
+			```
+			FUNCTION_TRANSFORMER(type:SPACE)
+			```
 		
 		Return an empty string:
 		
-		```
-		
-		FUNCTION_TRANSFORMER(type:EMPTY_STRING)
-		
-		```
+			```
+			FUNCTION_TRANSFORMER(type:EMPTY_STRING)
+			```
 		
 		Use the result of another transformer as input:
 		
-		```
-		
-		FUNCTION_TRANSFORMER(
-		type:TO_STRING,
-		input:COALESCE_TRANSFORMER(
-		value_text,
-		value_coded,
-		value_numeric
-		)
-		)
-		
-		```
+			```
+			FUNCTION_TRANSFORMER(
+			type:TO_STRING,
+			input:COALESCE_TRANSFORMER(
+			value_text,
+			value_coded,
+			value_numeric
+			)
+			)
+			```
 		
 		In the previous example, **COALESCE_TRANSFORMER** is executed first. Its result is then converted to a string by **FUNCTION_TRANSFORMER**.
 		
