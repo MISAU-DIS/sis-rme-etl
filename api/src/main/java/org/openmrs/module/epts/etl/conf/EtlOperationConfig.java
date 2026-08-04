@@ -745,7 +745,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 					+ "'USE_PROVIDED_COUNT' count strategy is being used and no 'totalAvaliableRecordsToProcess' was specified! Please provide a total count using propertie 'totalAvaliableRecordsToProcess'";
 		}
 
-		if (this.getParallelProcessingStrategy().useMultiThreads() && this.getProcessingBatch() == 1) {
+		if (this.getParallelProcessingStrategy().isMultiThreaded() && this.getProcessingBatch() == 1) {
 			errorMsg += ++errNum + " 'parallelProcessingStrategy' is set to " + this.getParallelProcessingStrategy()
 					+ " while processingBatch is set to 1! Please provide a processingBatch  greater than 1 or set the parallelProcessingStrategy to SINGLE_THREAD";
 		}
@@ -974,7 +974,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	public void recalculateThreads(List<EtlItemConfiguration> avaliableItems) {
 		getRelatedEtlConfig().info("Determining optimal threads...");
 
-		if (this.getParallelProcessingStrategy().useMultiThreads()) {
+		if (this.getParallelProcessingStrategy().isMultiThreaded()) {
 
 			List<EtlItemConfiguration> allSync = getRelatedEtlConfig().getEtlItemConfiguration();
 
@@ -1049,7 +1049,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			this.setTotalCountStrategy(EtlTotalRecordsCountStrategy.USE_PROVIDED_COUNT);
 		}
 
-		if (this.getParallelProcessingStrategy().useMultiThreads()) {
+		if (this.getParallelProcessingStrategy().isMultiThreaded()) {
 			if (this.getProcessingBatch() < this.getMaxSupportedProcessors()) {
 				throw new EtlConfException("The user defined processingBatch (" + this.getProcessingBatch()
 						+ ") must be higher or equals to maxSupportedProcessors (" + this.getMaxSupportedProcessors()
