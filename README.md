@@ -750,28 +750,146 @@ Each **extraObjectDataSource** is defined by the following properties:
   <a name="field-transformers"></a>
   - (4) *transformer*: defines a transformation applied to the evaluated field value. Transformers allow complex processing such as expression evaluation, string manipulation, database lookups, or value mapping. The following transformer types are supported:
     - **ARITHMETIC_TRANSFORMER** Evaluates arithmetic expressions defined in the field value. The expression may contain numeric literals, arithmetic operators, and dynamic parameters referencing source fields. Before evaluation, any dynamic parameters are resolved and the resulting expression is evaluated using the exp4j expression engine.;
-    - **STRING_TRANSFORMER**: Applies string manipulation operations using standard Java `String` methods, supporting chained method execution. The transformation expression must follow the format: (value).method1(arg1, arg2, ...).method2(...).methodN(...)
-
-      Where:
-      - **value** is the initial string to be transformed (can include dynamic placeholders)
-      - **methodX** represents any valid method from the Java `String` class
-      - **argX** are optional method arguments
-        
-		The transformer evaluates the expression from left to right, where the result of each method invocation becomes the input of the next method in the chain.
-
-  		Before execution:
-      		- Dynamic placeholders within the expression are resolved using available source data
-      		- Method arguments are automatically converted to the expected parameter types of the target method
-  		The evaluation is performed using Java reflectin, dynamically resolving and invoking the appropriate `String` methods at runtime.
+ 	- **STRING_TRANSFORMER(input:expression,null_operand_behavior:behavior)**: Evaluates string expressions and applies string manipulation operations using standard Java `String` methods.
+	
+	  The transformer supports both simple and complex expressions containing:
+	
+	  - constant string values;
+	  - fields from available data sources;
+	  - dynamic ETL parameters;
+	  - nested transformers;
+	  - chained Java `String` method calls.
+	
+	  The transformer uses named parameters, allowing additional configuration options to be introduced without changing the parameter order.
+	
+	  **Syntax:**
+	
+	```
+	STRING_TRANSFORMER(
+	input:expression,
+	null_operand_behavior:behavior
+	)
+	````
+	
+	**Parameters:**
+	
+	- **input:expression** – Defines the string expression to evaluate. This parameter is required.
+	
+	  The expression may contain an initial value followed by one or more chained Java `String` method calls:
+	
+	  ```
+	  (value)
+	      .method1(arg1, arg2, ...)
+	      .method2(...)
+	      .methodN(...)
+	  ```
+	
+	  Where:
+	
+	  - **value** is the initial value to be transformed;
+	  - **methodX** is a supported method from the Java `String` class;
+	  - **argX** is an optional method argument.
+	
+	  The initial value and method arguments may contain:
+	
+	  - constant values;
+	  - fields from available data sources;
+	  - dynamic ETL parameters;
+	  - nested transformers.
+	
+	- **null_operand_behavior:behavior** – Optional parameter that defines how the transformer should behave when a `null` value is encountered while evaluating the initial value or any method argument.
+	
+	  Supported values are:
+	
+	  - **ABORT_PROCESS** – Raises an exception when a null operand is encountered.
+	  - **USE_EMPTY_STRING** – Replaces the null operand with an empty string (`""`) and continues evaluating the expression.
+	  - **RETURN_NULL** – Stops evaluating the expression and returns `null`. The mapping-level **nullValueBehavior** is then applied to the result.
+	
+	The expression is evaluated from left to right. The result of each method invocation becomes the input of the next method in the chain.
+	
+	Before invoking a string method, the ETL engine:
+	
+	- resolves fields from available data sources;
+	- resolves dynamic ETL parameters;
+	- executes nested transformers;
+	- converts method arguments to the parameter types expected by the selected Java `String` method.
+	
+	Nested transformers are evaluated before the string method in which they are used.
+	
+	**Example using a simple expression:**
+	
+	````
+	STRING_TRANSFORMER(
+	input:(John).toUpperCase()
+	)
+	```
+	
+	**Example using chained methods:**
+	
+	```
+	STRING_TRANSFORMER(
+	input:(hello world).substring(0,5).toUpperCase()
+	)
+	```
+	
+	**Example using a dynamic ETL parameter:**
+	
+	```
+	STRING_TRANSFORMER(
+	input:(@name).trim().toLowerCase()
+	)
+	```
+	
+	**Example using fields and a nested transformer:**
+	
+	```
+	STRING_TRANSFORMER(
+	input:(person_name_src_ds.given_name)
+	.concat(FUNCTION_TRANSFORMER(type:SPACE))
+	.concat(person_name_src_ds.family_name)
+	)
+	```
+	
+	The previous expression is evaluated in the following order:
+	
+	1. Resolve `person_name_src_ds.given_name`.
+	2. Execute `FUNCTION_TRANSFORMER(type:SPACE)`.
+	3. Concatenate the resulting space character.
+	4. Resolve `person_name_src_ds.family_name`.
+	5. Concatenate the family name.
+	6. Return the final string.
+	
+	**Example using null operand handling:**
+	
+	```
+	STRING_TRANSFORMER(
+	input:(person_name_src_ds.given_name)
+	.concat(FUNCTION_TRANSFORMER(type:SPACE))
+	.concat(person_name_src_ds.family_name),
+	null_operand_behavior:USE_EMPTY_STRING
+	)
+	```
+	
+	In this example, if `person_name_src_ds.family_name` resolves to `null`, it is replaced with an empty string and the expression continues.
+	
+	**Example returning null:**
+	
+	```
+	{
+	"dstField":"display_name",
+	"transformer":"STRING_TRANSFORMER(input:(person_name_src_ds.given_name).concat(FUNCTION_TRANSFORMER(type:SPACE)).concat(person_name_src_ds.family_name),null_operand_behavior:RETURN_NULL)",
+	"nullValueBehavior":"IGNORE"
+	}
+	```
+	
+	In this example, if any operand resolves to `null`, the transformer stops evaluating the expression and returns `null`. The mapping-level **nullValueBehavior** then determines how the returned value should be handled.
+	
+	The **null_operand_behavior** parameter controls only null values encountered while evaluating the string expression. It is different from **nullValueBehavior**, which is evaluated after the transformer has produced its final result.
+	
+	The transformer evaluates expressions using Java reflection, dynamically identifying and invoking the appropriate `String` methods at runtime.
+	
+	If the expression is invalid, a method cannot be resolved, an argument cannot be converted to the required type, or a null operand violates the configured **null_operand_behavior**, an exception is raised according to the ETL error-handling configuration.
   
-		  **Examples:**
-
-            - STRING_TRANSFORMER((John).toUpperCase())
-		    - STRING_TRANSFORMER(hello world).substring(0,5).toUpperCase()
-		    - STRING_TRANSFORMER(abc123).replace("123","XYZ").concat("-DONE")
-		    - STRING_TRANSFORMER(@name).trim().toLowerCase()
-        
-        If the expression is invalid or a method cannot be resolved/invoked, an exception is raised.
     - **MAPPING_TRANSFORMER(mapping_table,mapping_src_field,mapping_dst_field,extra_condition:extra_condition_value,on_missing:on_missing_value,input:valueOrTransformer)** performs value transformation using a lookup table stored in the database.
       The transformer searches for a record in the specified mapping table where the value of the input matches the configured *mapping_src_field*. If a matching record is found, the value of *mapping_dst_field* is returned as the transformed value.
       
