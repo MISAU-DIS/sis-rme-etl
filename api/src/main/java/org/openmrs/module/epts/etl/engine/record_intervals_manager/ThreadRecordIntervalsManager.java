@@ -58,10 +58,14 @@ public class ThreadRecordIntervalsManager<T extends EtlDatabaseObject> extends I
 
 	public ThreadRecordIntervalsManager(Engine<T> engine, long firstRecordId, long lastRecordId,
 			int qtyRecordsPerProcessing, int maxAllowedProcessors) {
+
 		super(firstRecordId, lastRecordId);
 
+		if (engine == null)
+			throw new ForbiddenOperationException("The Engine cannot be null!");
+
 		this.engine = engine;
-		
+
 		this.setCurrentLimits(new ThreadCurrentIntervals());
 
 		this.qtyRecordsPerProcessing = qtyRecordsPerProcessing;
