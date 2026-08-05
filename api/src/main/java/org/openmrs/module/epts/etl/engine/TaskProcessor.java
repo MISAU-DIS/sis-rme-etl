@@ -343,6 +343,10 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		monitor.logInfo(msg);
 	}
 
+	public void logInfo(String msg, Object... arguments) {
+		monitor.logInfo(msg, arguments);
+	}
+
 	public void logDebug(String msg) {
 		monitor.logDebug(msg);
 	}
@@ -361,6 +365,10 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	public void logWarn(String msg) {
 		monitor.logWarn(msg);
+	}
+
+	public void logWarn(String msg, Object... arguments) {
+		monitor.logWarn(msg, arguments);
 	}
 
 	@Override

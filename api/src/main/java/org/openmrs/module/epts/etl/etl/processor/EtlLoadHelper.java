@@ -3,7 +3,9 @@ package org.openmrs.module.epts.etl.etl.processor;
 import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
@@ -141,11 +143,25 @@ public class EtlLoadHelper {
 		boolean writeOperation = getEtlOperationConfig().writeOperationHistory();
 
 		writeOperation = writeOperation && (!this.loadingType.isParent()
-				|| this.getEtlOperationConfig().getParallelProcessingStrategy().usesSinglePersistenceWorker());
+				|| !this.getEtlOperationConfig().getParallelProcessingStrategy().isMultiThreaded());
 
 		if (writeOperation) {
+			logInfo("Starting stage info generation and wrinting within {}", generateAvaliableEtl());
+
 			EtlStageAreaObjectDAO.saveAll(this.generateStageInfoForAll(srcConn, dstConn), srcConn);
+
+			logDebug("Stage Info stored to database!");
 		}
+	}
+
+	private Set<EtlItemConfiguration> generateAvaliableEtl() {
+		Set<EtlItemConfiguration> itemConf = new HashSet<>();
+
+		for (DstConf dst : this.getDstConf()) {
+			itemConf.add(dst.getParentConf());
+		}
+
+		return itemConf;
 	}
 
 	private boolean hasUnresolvedError(DstConf dst) {
@@ -507,8 +523,16 @@ public class EtlLoadHelper {
 		getProcessor().logInfo(msg);
 	}
 
+	void logInfo(String msg, Object... arguments) {
+		getProcessor().logInfo(msg, arguments);
+	}
+
 	void logWarn(String msg) {
 		getProcessor().logWarn(msg);
+	}
+
+	void logWarn(String msg, Object... arguments) {
+		getProcessor().logWarn(msg, arguments);
 	}
 
 	void logError(String msg, Exception e) {

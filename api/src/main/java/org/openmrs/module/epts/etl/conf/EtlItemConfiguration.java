@@ -842,4 +842,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		return true;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof EtlItemConfiguration) {
+			EtlItemConfiguration objAsItem = (EtlItemConfiguration) obj;
+
+			if (this.getConfigCode() != null && objAsItem.getConfigCode() != null) {
+				return this.getConfigCode().equals(objAsItem.getConfigCode());
+			}
+		}
+
+		return super.equals(obj);
+	}
 }
