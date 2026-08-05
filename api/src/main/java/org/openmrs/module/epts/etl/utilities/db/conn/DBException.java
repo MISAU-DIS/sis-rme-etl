@@ -307,4 +307,26 @@ public class DBException extends SQLException implements EtlException {
 
 		return false;
 	}
+
+	public boolean isEtlStageAreaIssue() {
+		return messageContains("stage_record_id", "cannot be null");
+	}
+
+	private boolean messageContains(String... msg) {
+		if (this.getLocalizedMessage() == null)
+			return false;
+
+		if (msg != null && msg.length > 0) {
+			for (String m : msg) {
+				if (!getLocalizedMessage().contains(m)) {
+					return false;
+				}
+			}
+
+			return true;
+		} else {
+			return false;
+		}
+
+	}
 }

@@ -303,7 +303,6 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 		try {
 			DatabaseObjectDAO.insert(this, tableConfiguration, conn);
 		} catch (DBException | EtlExceptionImpl e) {
-
 			DBException rootException = null;
 
 			if (e instanceof DBException) {
@@ -335,7 +334,12 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						throw e;
 					}
 
-				} else
+				} else  if (rootException.isEtlStageAreaIssue() && tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
+					
+				}
+				
+				
+				else
 					throw e;
 
 			} else

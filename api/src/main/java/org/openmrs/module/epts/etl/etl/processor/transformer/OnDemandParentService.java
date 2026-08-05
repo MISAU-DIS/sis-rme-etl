@@ -37,6 +37,7 @@ public final class OnDemandParentService {
 
 		String parentKey = transformer.buildParentRequestKey(srcParent, srcObject, additionalSrcObjects, currentSrcConn,
 				currentDstConn);
+
 		ParentLock parentLock = retainLock(parentKey);
 		parentLock.lock.lock();
 
@@ -49,8 +50,8 @@ public final class OnDemandParentService {
 					throw e;
 				}
 
-				EtlDatabaseObject parent = retrieveInIndependentTransaction(transformer, processor, srcParent, srcObject,
-						transformedRecord, additionalSrcObjects);
+				EtlDatabaseObject parent = retrieveInIndependentTransaction(transformer, processor, srcParent,
+						srcObject, transformedRecord, additionalSrcObjects);
 				if (parent != null) {
 					return parent;
 				}
@@ -100,7 +101,6 @@ public final class OnDemandParentService {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private IndependentConnections openIndependentConnections(EtlProcessor processor) throws DBException {
 		Engine<EtlDatabaseObject> engine = (Engine<EtlDatabaseObject>) processor.getEngine();
 		OpenConnection srcConn = null;
