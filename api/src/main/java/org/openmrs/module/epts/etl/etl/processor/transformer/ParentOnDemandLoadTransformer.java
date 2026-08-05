@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -199,6 +200,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 	private OnDemandInfo onDemandInfo;
 
+	private final OnDemandParentService parentService = OnDemandParentService.getInstance();
+
 	public ParentOnDemandLoadTransformer(OnDemandInfo onDemandInfo, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
@@ -301,7 +304,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						}
 					}
 
-					dstParent = this.createParent(processor, srcParent, srcObject, transformedRecord,
+					dstParent = parentService.retrieveOrCreate(this, processor, srcParent, srcObject, transformedRecord,
 							additionalSrcObjects, field, srcConn, dstConn);
 
 				}
@@ -416,18 +419,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 			migratedRecs = loadHelper.getAllSuccedTransformedObjects((DstConf) etlTransformTarget);
 
-		} catch (DBException e) {
-			if (e.isDuplicatePrimaryOrUniqueKeyException()) {
-				EtlDatabaseObject dstParent = resolveParent(processor, srcParent, srcObject, transformedRecord,
-						additionalSrcObjects, srcConn, dstConn);
-
-				if (dstParent != null) {
-					migratedRecs = utilities.parseToList(dstParent);
-				} else
-					throw e;
-
-			} else
-				throw e;
 		} catch (ForbiddenOperationException e) {
 			e.printStackTrace();
 
@@ -442,7 +433,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 	}
 
-	private EtlDatabaseObject retrieveExistingOnDemandParent(EtlProcessor processor, EtlDatabaseObject srcObject,
+	EtlDatabaseObject retrieveExistingOnDemandParent(EtlProcessor processor, EtlDatabaseObject srcObject,
 			List<EtlDatabaseObject> srcObjects, Connection srcConn, Connection dstConn)
 			throws DBException, ForbiddenOperationException {
 
@@ -461,11 +452,46 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		logTrace(onDemand);
 
-		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
-				this.getOnDemandCheckCondition(), null, allObjs, getRelatedEtlConf(), dstConn);
+		PreparedQueryInfo p = prepareOnDemandParentLookup(allObjs, dstConn);
 
 		return dstConf.find(p.getPreparedQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
 				dstConn);
+	}
+
+	EtlDatabaseObject retrieveExistingParent(EtlProcessor processor, EtlDatabaseObject srcParent,
+			EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
+			List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn, Connection dstConn) throws DBException {
+		EtlDatabaseObject parent = srcParent != null
+				? resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects, srcConn, dstConn)
+				: null;
+
+		return parent != null ? parent
+				: retrieveExistingOnDemandParent(processor, srcObject, additionalSrcObjects, srcConn, dstConn);
+	}
+
+	String buildParentRequestKey(EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
+			List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn, Connection dstConn) throws DBException {
+		String keyPrefix = getRelatedEtlTransformTarget().getFullTableName() + "->" + getParentTableName();
+
+		if (utilities.stringHasValue(getOnDemandCheckCondition())) {
+			List<EtlDatabaseObject> allObjects = additionalSrcObjects != null ? additionalSrcObjects
+					: (srcObject != null ? utilities.parseToList(srcObject) : null);
+			PreparedQueryInfo lookup = prepareOnDemandParentLookup(allObjects, dstConn);
+			Object[] values = resolveDstValues(srcObject, lookup.getParameters(), srcConn, dstConn);
+			return keyPrefix + "|" + lookup.getPreparedQuery() + "|" + Arrays.deepToString(values);
+		}
+
+		if (srcParent != null && srcParent.getObjectId() != null) {
+			return keyPrefix + "|src-parent|" + srcParent.getObjectId();
+		}
+
+		return keyPrefix;
+	}
+
+	private PreparedQueryInfo prepareOnDemandParentLookup(List<EtlDatabaseObject> sourceObjects, Connection dstConn)
+			throws DBException {
+		return SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(getOnDemandCheckCondition(), null,
+				sourceObjects, getRelatedEtlConf(), dstConn);
 	}
 
 	private Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
