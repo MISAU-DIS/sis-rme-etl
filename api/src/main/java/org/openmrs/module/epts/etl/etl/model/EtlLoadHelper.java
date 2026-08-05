@@ -286,6 +286,20 @@ public class EtlLoadHelper {
 
 				for (EtlDatabaseObject obj : objects) {
 					if (obj.hasValuedObjectId()) {
+
+						if (obj.hasSharedPkObj()) {
+							// We want to prevent situation where the sharedObject is persisted but the
+							// child object is not yet persisted
+
+							EtlDatabaseObject recordOnDB = DatabaseObjectDAO.getByOid(dstConf, obj.getObjectId(),
+									dstConn);
+
+							if (recordOnDB == null) {
+								recordToCreate.add(obj);
+								continue;
+							}
+						}
+
 						recordToUpdate.add(obj);
 					} else {
 						recordToCreate.add(obj);
@@ -533,7 +547,8 @@ public class EtlLoadHelper {
 
 		EtlItemConfiguration conf = dstConf.getParentConf();
 
-		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null, LoadingType.INNER, srcConn, dstConn);
+		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,
+				LoadingType.INNER, srcConn, dstConn);
 	}
 
 	public boolean hasDstConf() {

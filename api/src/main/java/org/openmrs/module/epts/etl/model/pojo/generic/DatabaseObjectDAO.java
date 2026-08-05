@@ -953,7 +953,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 				new IntervalExtremeRecord());
 
 		for (EtlDatabaseObject record : objects) {
-			EtlDatabaseObject recordOnDB = getByOid(dstConf, record.getObjectId(), conn);
+			EtlDatabaseObject recordOnDB = DatabaseObjectDAO.getByOid(dstConf, record.getObjectId(), conn);
 
 			if (recordOnDB == null)
 				throw new ForbiddenOperationException("Atempt to update not existing record: " + record);
@@ -964,10 +964,10 @@ public class DatabaseObjectDAO extends BaseDAO {
 						record.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()));
 					}
 				}
-			} 
-			
+			}
+
 			record.update(dstConf, conn);
-			
+
 			result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
 		}
 
