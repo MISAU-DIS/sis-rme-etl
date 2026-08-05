@@ -334,12 +334,10 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						throw e;
 					}
 
-				} else  if (rootException.isEtlStageAreaIssue() && tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
-					
-				}
-				
-				
-				else
+				} else if (rootException.isEtlStageAreaIssue(this)
+						&& tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
+					tableConfiguration.logErr("Issue found while persisting stage record {}", e, this);
+				} else
 					throw e;
 
 			} else

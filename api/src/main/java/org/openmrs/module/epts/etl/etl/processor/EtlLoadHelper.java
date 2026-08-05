@@ -138,7 +138,12 @@ public class EtlLoadHelper {
 			}
 		}
 
-		if (getEtlOperationConfig().writeOperationHistory()) {
+		boolean writeOperation = getEtlOperationConfig().writeOperationHistory();
+
+		writeOperation = writeOperation && (!this.loadingType.isParent()
+				|| this.getEtlOperationConfig().getParallelProcessingStrategy().usesSinglePersistenceWorker());
+
+		if (writeOperation) {
 			EtlStageAreaObjectDAO.saveAll(this.generateStageInfoForAll(srcConn, dstConn), srcConn);
 		}
 	}
@@ -538,7 +543,7 @@ public class EtlLoadHelper {
 		etlInfo.getProcessor().logTrace(msg);
 
 		new EtlLoadHelper(etlInfo.getProcessor(), etlInfo.getSrcConf().getParentConf(),
-				utilities.parseToList(srcObject), LoadingType.INNER, false)
+				utilities.parseToList(srcObject), LoadingType.PARENT, false)
 				.load(etlInfo.getDstConf(), srcConn, dstConn);
 	}
 
@@ -549,7 +554,7 @@ public class EtlLoadHelper {
 		EtlItemConfiguration conf = dstConf.getParentConf();
 
 		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,
-				LoadingType.INNER, srcConn, dstConn);
+				LoadingType.PARENT, srcConn, dstConn);
 	}
 
 	public boolean hasDstConf() {

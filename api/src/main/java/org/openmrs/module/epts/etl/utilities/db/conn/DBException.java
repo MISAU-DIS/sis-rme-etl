@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -308,8 +309,12 @@ public class DBException extends SQLException implements EtlException {
 		return false;
 	}
 
-	public boolean isEtlStageAreaIssue() {
-		return messageContains("stage_record_id", "cannot be null");
+	public boolean isEtlStageAreaIssue(EtlDatabaseObject object) {
+		if (object instanceof EtlStageAreaObject) {
+			return messageContains("stage_record_id", "cannot be null");
+		} else {
+			return false;
+		}
 	}
 
 	private boolean messageContains(String... msg) {

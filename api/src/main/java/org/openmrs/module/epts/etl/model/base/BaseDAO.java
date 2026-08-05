@@ -27,204 +27,203 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBOperation;
 
 /**
- * Base DAO This class provides the base datasource & common functionaloty for all DAO's in the
- * application. All DAO's must extend this class to get access to the datasource.
+ * Base DAO This class provides the base datasource & common functionaloty for
+ * all DAO's in the application. All DAO's must extend this class to get access
+ * to the datasource.
  * 
  * @author Juliano Ipolito
  */
 public abstract class BaseDAO {
-	
+
 	public static EtlLogger logger = EtlLogger.getLogger(BaseDAO.class);
-	
+
 	public static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-	
+
 	public static final DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-	
+
 	public static final DateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	
+
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
-	
+
 	/**
 	 * Perform an SQL Select, using prepared statement.
 	 * 
 	 * @param loaderHelper the helper for loading extra information
-	 * @param dump string to perform.
-	 * @param params Array of objects to fill question marks in the update string.
+	 * @param dump         string to perform.
+	 * @param params       Array of objects to fill question marks in the update
+	 *                     string.
 	 * @return generated object with retrieved data from DB
 	 */
-	
+
 	public static <T extends VO> T find(VOLoaderHelper loaderHelper, Class<T> voClass, String sql, Object[] params,
-	        Connection conn) throws DBException {
-		
+			Connection conn) throws DBException {
+
 		List<T> result;
 		result = search(loaderHelper, voClass, sql, params, conn);
-		
+
 		if (utilities.listHasElement(result))
 			return result.get(0);
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Perform an database querying on the table related to the passed class.
 	 * 
 	 * @param condition the condition to use.
-	 * @param params Array of objects to fill question marks in the update string.
+	 * @param params    Array of objects to fill question marks in the update
+	 *                  string.
 	 * @return generated object with retrieved data from DB
 	 */
-	
+
 	public static <T extends VO> T find(Class<T> voClass, String condition, Connection conn) throws DBException {
 		return find(null, voClass, condition, conn);
 	}
-	
+
 	/**
 	 * Perform an SQL Select, using prepared statement.
 	 * 
-	 * @param dump string to perform.
+	 * @param dump   string to perform.
 	 * @param params Array of objects to fill question marks in the update string.
 	 * @return generated object with retrieved data from DB
 	 */
-	
-	public static <T extends VO> T find(Class<T> voClass, String sql, Object[] params, Connection conn) throws DBException {
+
+	public static <T extends VO> T find(Class<T> voClass, String sql, Object[] params, Connection conn)
+			throws DBException {
 		return find(null, voClass, sql, params, conn);
 	}
-	
+
 	/**
 	 * Perform an database querying on the table related to the passed class.
 	 * 
 	 * @param condition the condition to use.
-	 * @param params Array of objects to fill question marks in the update string.
+	 * @param params    Array of objects to fill question marks in the update
+	 *                  string.
 	 * @return generated object with retrieved data from DB
 	 */
-	
+
 	@SuppressWarnings("deprecation")
-	public static <T extends VO> T find(VOLoaderHelper loaderHelper, Class<T> voClass, String condition, Connection conn)
-	        throws DBException {
+	public static <T extends VO> T find(VOLoaderHelper loaderHelper, Class<T> voClass, String condition,
+			Connection conn) throws DBException {
 		T obj;
-		
+
 		try {
 			obj = voClass.newInstance();
-			
+
 			if (loaderHelper != null) {
 				loaderHelper.beforeLoad(obj);
 			}
-		}
-		catch (InstantiationException e) {
+		} catch (InstantiationException e) {
+			throw new RuntimeException(e);
+		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
-		catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-		
+
 		String sql = "";
-		
+
 		sql += " select * ";
 		sql += " from " + obj.generateTableName();
 		sql += " where " + condition;
-		
+
 		List<T> result;
 		result = search(loaderHelper, voClass, sql, null, conn);
-		
+
 		if (utilities.listHasElement(result))
 			return result.get(0);
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Perform an SQL Select, using prepared statement.
 	 * 
-	 * @param dump to perform.
+	 * @param dump   to perform.
 	 * @param params Array of objects to fill question marks in the update string.
 	 * @return generated list os object using retrived data from DB.
 	 */
 	public static <T extends VO> List<T> search(Class<T> voClass, String sql, Object[] params, Connection conn)
-	        throws DBException {
+			throws DBException {
 		return search(null, voClass, sql, params, conn);
 	}
-	
+
 	/**
 	 * Perform an SQL Select, using prepared statement.
 	 * 
 	 * @param voDataLoader the data loader for searched objects
-	 * @param voClass the class of searched records
-	 * @param dump to perform.
-	 * @param params Array of objects to fill question marks in the update string.
+	 * @param voClass      the class of searched records
+	 * @param dump         to perform.
+	 * @param params       Array of objects to fill question marks in the update
+	 *                     string.
 	 * @return generated list os object using retrived data from DB.
 	 */
-	public static <T extends VO> List<T> search(VOLoaderHelper voDataLoader, Class<T> voClass, String sql, Object[] params,
-	        Connection conn) throws DBException {
+	public static <T extends VO> List<T> search(VOLoaderHelper voDataLoader, Class<T> voClass, String sql,
+			Object[] params, Connection conn) throws DBException {
 		ArrayList<T> result = new ArrayList<T>();
 		ResultSet rs = null;
-		
+
 		PreparedStatement st = null;
-		
+
 		try {
 			Constructor<T> factory = voClass.getConstructor();
-			
+
 			st = conn.prepareStatement(sql);
-			
+
 			loadParamsToStatment(st, params, conn);
-			
+
 			logger.trace("Executing select: \n" + utilities.garantirXCaracteres(sql, 500));
-			
+
 			st.executeQuery();
-			
+
 			rs = st.getResultSet();
-			
+
 			while (rs.next()) {
 				T instance = factory.newInstance();
-				
+
 				result.add(instance);
-				
+
 				if (voDataLoader != null) {
 					voDataLoader.beforeLoad(instance);
 				}
-				
+
 				instance.load(rs);
-				
+
 				if (voDataLoader != null) {
 					voDataLoader.afterLoad(instance);
 				}
-				
+
 			}
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			throw new DBException(e);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			releaseDBResources(st, rs, conn);
 		}
-		
+
 		return result;
 	}
-	
+
 	private static void releaseDBResources(PreparedStatement st, ResultSet rs, Connection conn) {
 		try {
 			st.close();
 			rs.close();
-		}
-		catch (NullPointerException e) {
+		} catch (NullPointerException e) {
 			rs = null;
 			st = null;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			rs = null;
 			st = null;
-			
+
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
-		
+
 		rs = null;
 		st = null;
 	}
-	
+
 	/**
 	 * Helper function, for filling in executeUpdate(params)
 	 * 
@@ -236,116 +235,113 @@ public abstract class BaseDAO {
 			return null;
 		return Integer.valueOf(in);
 	}
-	
+
 	/**
 	 * Perform an SQL, using prepared statement.
 	 * 
-	 * @param dump string to perform.
-	 * @param params array of objects to fill question marks in the update string.
+	 * @param dump       string to perform.
+	 * @param params     array of objects to fill question marks in the update
+	 *                   string.
 	 * @param connection to use
 	 */
 	public static List<Long> executeQueryWithRetryOnError(String sql, Object[] params, Connection connection)
-	        throws DBException {
+			throws DBException {
 		try {
 			return executeQueryWithoutRetry(sql, params, connection);
-		}
-		catch (DBException e) {
-			if (!tryToSolveIssues(e, sql, params, connection)) {
+		} catch (DBException e) {
+
+			DBOperation dbOp = tryToSolveIssues(e, sql, params, connection);
+
+			if (dbOp == null) {
 				throw e;
 			} else
-				return null;
+				return dbOp.getGeneratedIds();
 		}
 	}
-	
+
 	public static void executeBatch(Connection conn, String... batches) throws DBException {
-		
+
 		try (Statement st = conn.createStatement()) {
-			
+
 			for (String batch : batches) {
 				if (batch != null && !batch.trim().isEmpty()) {
 					st.addBatch(batch);
 				}
 			}
-			
+
 			st.executeBatch();
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			if (!e.getLocalizedMessage().contains("Duplicate key name")) {
 				throw new DBException("Error executing batch", e);
 			}
 		}
 	}
-	
+
 	public static List<Long> executeQueryWithoutRetry(String sql, Object[] params, Connection connection)
-	        throws DBException {
-		
+			throws DBException {
+
 		PreparedStatement st = null;
-		
+
 		try {
-			
+
 			st = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			
+
 			logger.trace("Executing query: \n" + utilities.garantirXCaracteres(sql, 500));
-			
+
 			logger.trace("Loading Params");
-			
+
 			loadParamsToStatment(st, params, connection);
-			
+
 			logger.trace("Performing execution");
-			
+
 			st.execute();
-			
+
 			logger.trace("Done execution of query");
-			
+
 			List<Long> generatedKeys = new ArrayList<>();
-			
+
 			ResultSet rs = st.getGeneratedKeys();
-			
+
 			logger.trace("Retrieving the generated IDs");
-			
+
 			while (rs != null && rs.next()) {
 				generatedKeys.add(rs.getLong(1));
 			}
-			
+
 			logger.trace("Returning");
-			
+
 			return generatedKeys;
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			throw new DBException(e);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			try {
 				if (st != null) {
 					st.close();
 					st = null;
 				}
-			}
-			catch (NullPointerException e) {
+			} catch (NullPointerException e) {
 				st = null;
-			}
-			catch (SQLException e) {
+			} catch (SQLException e) {
 				st = null;
 				throw new DBException(e);
 			}
 			st = null;
 		}
 	}
-	
+
 	public static void loadParamsToStatment(PreparedStatement st, Object[] params, Connection conn)
-	        throws SQLException, IOException {
+			throws SQLException, IOException {
 		if (params == null)
 			return;
-		
+
 		for (int i = 0; i < params.length; i++) {
 			if (params[i] instanceof InputStream) {
 				st.setBinaryStream(i + 1, (InputStream) params[i], ((InputStream) params[i]).available());
 			} else if (params[i] instanceof FileItem) {
 				st.setBinaryStream(i + 1, ((FileItem) params[i]).getInputStream(),
-				    ((FileItem) params[i]).getInputStream().available());
+						((FileItem) params[i]).getInputStream().available());
 			} else if (params[i] instanceof Date) {
 				st.setTimestamp(i + 1, new Timestamp(((Date) params[i]).getTime()));
 			} else if (params[i] instanceof Character) {
@@ -354,40 +350,41 @@ public abstract class BaseDAO {
 				st.setObject(i + 1, params[i]);
 		}
 	}
-	
-	private static boolean tryToSolveIssues(DBException e, String sql, Object[] params, Connection conn) throws DBException {
+
+	private static DBOperation tryToSolveIssues(DBException e, String sql, Object[] params, Connection conn)
+			throws DBException {
 		if (e.isDeadLock(conn)) {
-			DBOperation dbOp = new DBOperation(sql, params, conn, 50);
+			DBOperation dbOp = new DBOperation(sql, params, conn, 25, e);
 			dbOp.retryDueTemporaryDBError("DEADLOCK");
-			
-			return true;
+
+			return dbOp;
 		} else if (e.isLockWaitTimeExceded(conn)) {
-			DBOperation dbOp = new DBOperation(sql, params, conn, 50);
+			DBOperation dbOp = new DBOperation(sql, params, conn, 25, e);
 			dbOp.retryDueTemporaryDBError("LOCK WAIT TIME EXCEED");
-			
-			return true;
+
+			return dbOp;
 		}
-		
-		return false;
+
+		return null;
 	}
-	
+
 	public static String generateMInimalQueryInfo(String sql, Object[] params) {
-		
+
 		if (sql == null) {
 			return "<null query>";
 		}
-		
+
 		String normalized = sql.replaceAll("\\s+", " ").trim();
-		
+
 		String operation = "UNKNOWN";
 		String table = "?";
-		
+
 		Matcher insertMatcher = Pattern.compile("(?i)^insert\\s+into\\s+([a-zA-Z0-9_\\.]+)").matcher(normalized);
-		
+
 		Matcher updateMatcher = Pattern.compile("(?i)^update\\s+([a-zA-Z0-9_\\.]+)").matcher(normalized);
-		
+
 		Matcher deleteMatcher = Pattern.compile("(?i)^delete\\s+from\\s+([a-zA-Z0-9_\\.]+)").matcher(normalized);
-		
+
 		if (insertMatcher.find()) {
 			operation = "INSERT INTO";
 			table = insertMatcher.group(1);
@@ -398,150 +395,144 @@ public abstract class BaseDAO {
 			operation = "DELETE FROM";
 			table = deleteMatcher.group(1);
 		}
-		
+
 		StringBuilder info = new StringBuilder();
-		
+
 		info.append(operation).append(" ").append(table);
-		
+
 		String shortenedSql = normalized;
-		
+
 		if (shortenedSql.length() > 200) {
 			shortenedSql = shortenedSql.substring(0, 200) + "...";
 		}
-		
+
 		info.append(" | SQL=[").append(shortenedSql).append("]");
-		
+
 		if (params != null && params.length > 0) {
-			
+
 			info.append(" | params=[");
-			
+
 			int maxParams = Math.min(params.length, 5);
-			
+
 			for (int i = 0; i < maxParams; i++) {
-				
+
 				if (i > 0) {
 					info.append(",");
 				}
-				
+
 				Object p = params[i];
-				
+
 				if (p == null) {
 					info.append("null");
 				} else {
 					String value = String.valueOf(p);
-					
+
 					if (value.length() > 50) {
 						value = value.substring(0, 50) + "...";
 					}
-					
+
 					info.append(value);
 				}
 			}
-			
+
 			if (params.length > maxParams) {
 				info.append(",...");
 			}
-			
+
 			info.append("]");
 		}
-		
+
 		return info.toString();
 	}
-	
+
 	public static void commitConnection(Connection conn) {
 		try {
 			if (conn == null)
 				return;
 			if (conn.isClosed())
 				return;
-			
+
 			conn.commit();
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void commitAndCloseConnection(Connection conn) {
 		try {
-			
+
 			if (conn == null)
 				return;
 			if (conn.isClosed())
 				return;
-			
+
 			conn.commit();
 			conn.close();
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void rollBackAndCloseConnection(Connection conn) {
 		try {
-			
+
 			if (conn == null)
 				return;
 			if (conn.isClosed())
 				return;
-			
+
 			conn.rollback();
 			conn.close();
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void closeConnection(Connection conn) {
 		try {
 			if (conn == null)
 				return;
 			if (conn.isClosed())
 				return;
-			
+
 			conn.close();
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void commit(Connection conn) {
 		try {
 			if (conn != null)
 				conn.commit();
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void rollback(Connection conn) {
 		rollback(conn, null);
 	}
-	
+
 	public static void rollback(Connection conn, Savepoint savepoint) {
 		try {
 			if (conn.isClosed())
 				return;
-			
+
 			if (savepoint != null)
 				conn.rollback(savepoint);
 			else
 				conn.rollback();
-			
-		}
-		catch (SQLException e) {
+
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
-	 * Insere na BD o registo em vo. NOTE: > O método irá tentar gerar o selfId se este for igual a
-	 * zero. > O id da reparticao é obrigatório caso o selfId não tenha sido definido. Se este nao
-	 * for especificado, uma excepcao sera lancada.
+	 * Insere na BD o registo em vo. NOTE: > O método irá tentar gerar o selfId se
+	 * este for igual a zero. > O id da reparticao é obrigatório caso o selfId não
+	 * tenha sido definido. Se este nao for especificado, uma excepcao sera lancada.
 	 * 
 	 * @param vo
 	 * @param dump
@@ -550,20 +541,20 @@ public abstract class BaseDAO {
 	 * @throws DBException
 	 */
 	public static void insert(BaseVO vo, String sql, Object[] params, Connection conn) throws DBException {
-		//logger.trace("INSERTING RECORD ON ["+vo.generateTableName() + "]");
-		
+		// logger.trace("INSERTING RECORD ON ["+vo.generateTableName() + "]");
+
 		executeQueryWithRetryOnError(sql, params, conn);
 	}
-	
+
 	private static void setParamsOnCallableStatement(CallableStatement call, int startFrom, Object... params)
-	        throws SQLException, IOException {
+			throws SQLException, IOException {
 		if (params != null && params.length > 0) {
 			for (int i = 0; i < params.length; i++) {
 				if (params[i] instanceof InputStream) {
 					call.setBinaryStream(i + startFrom, (InputStream) params[i], ((InputStream) params[i]).available());
 				} else if (params[i] instanceof FileItem) {
 					call.setBinaryStream(i + startFrom, ((FileItem) params[i]).getInputStream(),
-					    ((FileItem) params[i]).getInputStream().available());
+							((FileItem) params[i]).getInputStream().available());
 				} else if (params[i] instanceof Date) {
 					call.setTimestamp(i + startFrom, new Timestamp(((Date) params[i]).getTime()));
 				} else
@@ -571,91 +562,93 @@ public abstract class BaseDAO {
 			}
 		}
 	}
-	
+
 	private static String generateCallStatementString(String function, Object... params) {
 		String strCall = function + "(";
-		
+
 		if (params != null && params.length > 0) {
-			
+
 			strCall += "?";
 			for (int i = 1; i < params.length; i++) {
 				strCall += ",?";
 			}
 		}
-		
+
 		strCall += ")";
-		
+
 		return strCall;
 	}
-	
+
 	public static Object executeBDFunction(Connection conn, String functionName, Object... params)
-	        throws SQLException, IOException {
-		CallableStatement call = conn.prepareCall("{? = call " + generateCallStatementString(functionName, params) + "}");
-		
+			throws SQLException, IOException {
+		CallableStatement call = conn
+				.prepareCall("{? = call " + generateCallStatementString(functionName, params) + "}");
+
 		call.registerOutParameter(1, Types.DOUBLE);
-		
+
 		setParamsOnCallableStatement(call, 2, params);
-		
+
 		call.execute();
-		
+
 		Object result = call.getObject(1);
-		
+
 		call.close();
-		
+
 		return result;
 	}
-	
+
 	public static Object executeNonNumericBDFunction(Connection conn, String functionName, Object... params)
-	        throws SQLException, IOException {
-		CallableStatement call = conn.prepareCall("{? = call " + generateCallStatementString(functionName, params) + "}");
-		
+			throws SQLException, IOException {
+		CallableStatement call = conn
+				.prepareCall("{? = call " + generateCallStatementString(functionName, params) + "}");
+
 		call.registerOutParameter(1, Types.VARCHAR);
-		
+
 		setParamsOnCallableStatement(call, 2, params);
-		
+
 		call.execute();
-		
+
 		Object result = call.getObject(1);
-		
+
 		call.close();
-		
+
 		return result;
 	}
-	
+
 	public static void executeBDProcedure(Connection conn, String procedureName, Object... params)
-	        throws SQLException, IOException {
+			throws SQLException, IOException {
 		CallableStatement call = conn.prepareCall("{call " + generateCallStatementString(procedureName, params) + "}");
-		
+
 		setParamsOnCallableStatement(call, 1, params);
-		
+
 		call.execute();
-		
+
 		call.close();
 	}
-	
+
 	public static Object executeBDProcedureWithReturnValue(Connection conn, String procedureName, Object... params)
-	        throws SQLException, IOException {
+			throws SQLException, IOException {
 		Double valor = null;
-		
+
 		params = utilities.addToParams(params.length, params, valor);
-		
+
 		CallableStatement call = conn.prepareCall("{call " + generateCallStatementString(procedureName, params) + "}");
-		
+
 		setParamsOnCallableStatement(call, 1, params);
-		
+
 		call.registerOutParameter(params.length, Types.DOUBLE);
-		
+
 		call.execute();
-		
+
 		Object result = call.getObject(params.length);
-		
+
 		call.close();
-		
+
 		return result;
 	}
-	
+
 	public static <T extends BaseVO> T createInstance(Class<T> classe) {
 		return BaseVO.createInstance(classe);
 	}
-	
+
 }

@@ -797,7 +797,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			int processorCount = getController().getOperationConfig().getMaxSupportedProcessors();
-			
+
 			Queue<T> transformationQueue = new ConcurrentLinkedQueue<>(extractedRecords);
 
 			if (strategy.isResultPartitioning()) {
@@ -1437,7 +1437,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		log.append("\n");
 
-		log.append(formatReportLine("USING THREADS", qtyThreads));
+		log.append(formatReportLine("THREADING MODE",
+				this.determineProcessingStrategy().toString() + "(" + qtyThreads + ")"));
 
 		log.append(
 				"------------------------------------------------------------------------------------------------------\n");
