@@ -153,7 +153,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 			for (EtlOperationConfig operation : configuration.getOperations()) {
 				List<OperationController<? extends EtlDatabaseObject>> controller = operation.generateRelatedController(
-						this, operation.getRelatedEtlConfig().getOriginAppLocationCode(), conn);
+						this, operation.getRelatedEtlConf().getOriginAppLocationCode(), conn);
 
 				this.operationsControllers.addAll(controller);
 			}

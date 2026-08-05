@@ -56,8 +56,6 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	private EtlOperationConfig parent;
 
-	private EtlConfiguration relatedEtlConfig;
-
 	private boolean disabled;
 
 	private EtlProcessingModeType processingMode;
@@ -143,7 +141,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public String generateOperationId() {
-		return getOperationType().name().toLowerCase() + "_on_" + this.getRelatedEtlConfig().generateProcessId();
+		return getOperationType().name().toLowerCase() + "_on_" + this.getRelatedEtlConf().generateProcessId();
 	}
 
 	public Integer getTotalAvaliableRecordsToProcess() {
@@ -333,7 +331,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	@JsonIgnore
 	public String getDesignation() {
-		return this.getRelatedEtlConfig().getDesignation() + "_" + this.getOperationType();
+		return this.getRelatedEtlConf().getDesignation() + "_" + this.getOperationType();
 	}
 
 	public List<String> getSourceFolders() {
@@ -445,15 +443,6 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		return disabled;
 	}
 
-	@JsonIgnore
-	public EtlConfiguration getRelatedEtlConfig() {
-		return relatedEtlConfig;
-	}
-
-	public void setRelatedEtlConfig(EtlConfiguration relatedEtlConfig) {
-		this.relatedEtlConfig = relatedEtlConfig;
-	}
-
 	public EtlOperationType getOperationType() {
 		return operationType;
 	}
@@ -485,7 +474,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			EtlConfiguration relatedEtlConfig) {
 		EtlOperationConfig op = new EtlOperationConfig();
 		op.setOperationType(operationType);
-		op.setRelatedEtlConfig(relatedEtlConfig);
+		op.setRelatedEtlConf(relatedEtlConfig);
 
 		return op;
 	}
@@ -680,60 +669,60 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		String errorMsg = "";
 		int errNum = 0;
 
-		if (this.getRelatedEtlConfig().isEtlProcess()) {
+		if (this.getRelatedEtlConf().isEtlProcess()) {
 			if (!this.canBeRunInEtlProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in Etl process\n";
-		} else if (this.getRelatedEtlConfig().isDetectMissingRecords()) {
+		} else if (this.getRelatedEtlConf().isDetectMissingRecords()) {
 			if (!this.canBeRunInDetectMissingRecordsProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in Detect Missing Records process\n";
-		} else if (this.getRelatedEtlConfig().isDataBaseMergeFromJSONProcess()) {
+		} else if (this.getRelatedEtlConf().isDataBaseMergeFromJSONProcess()) {
 			if (!this.canBeRunInDestinationSyncProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in destination sync process\n";
 
 			if (this.isLoadOperation() && (this.getSourceFolders() == null || this.getSourceFolders().size() == 0))
 				errorMsg += ++errNum + ". There is no source folder defined";
-		} else if (this.getRelatedEtlConfig().isSourceSyncProcess()) {
+		} else if (this.getRelatedEtlConf().isSourceSyncProcess()) {
 			if (!this.canBeRunInSourceSyncProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in source sync process\n";
-		} else if (this.getRelatedEtlConfig().isDBReSyncProcess()) {
+		} else if (this.getRelatedEtlConf().isDBReSyncProcess()) {
 			if (!this.canBeRunInReSyncProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in re-sync process\n";
-		} else if (this.getRelatedEtlConfig().isDBQuickExportProcess()) {
+		} else if (this.getRelatedEtlConf().isDBQuickExportProcess()) {
 			if (!this.canBeRunInDBQuickExportProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in db quick export process\n";
-		} else if (this.getRelatedEtlConfig().isDBQuickLoadProcess()) {
+		} else if (this.getRelatedEtlConf().isDBQuickLoadProcess()) {
 			if (!this.canBeRunInDBQuickLoadProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in db quick load process\n";
-		} else if (this.getRelatedEtlConfig().isDataReconciliationProcess()) {
+		} else if (this.getRelatedEtlConf().isDataReconciliationProcess()) {
 			if (!this.canBeRunInDataReconciliationProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in data reconciliation process\n";
-		} else if (this.getRelatedEtlConfig().isDataBaseMergeFromSourceDBProcess()) {
+		} else if (this.getRelatedEtlConf().isDataBaseMergeFromSourceDBProcess()) {
 			if (!this.canBeRunInDataBasesMergeFromSourceDBProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in data reconciliation process\n";
-		} else if (this.getRelatedEtlConfig().isDBInconsistencyCheckProcess()) {
+		} else if (this.getRelatedEtlConf().isDBInconsistencyCheckProcess()) {
 			if (!this.canBeRunInDBInconsistencyCheckProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in db inconsistency check process\n";
-		} else if (this.getRelatedEtlConfig().isPojoGeneration()) {
+		} else if (this.getRelatedEtlConf().isPojoGeneration()) {
 			if (!this.canBeRunInDbPojoGenerationProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in pojo generation process\n";
 		}
 
-		else if (this.getRelatedEtlConfig().isDetectGapesOnDbTables()) {
+		else if (this.getRelatedEtlConf().isDetectGapesOnDbTables()) {
 			if (!this.canBeRunInDetectGapesOnDBTables())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in detect gapes on db tables process\n";
-		} else if (this.getRelatedEtlConfig().isResolveProblems()) {
+		} else if (this.getRelatedEtlConf().isResolveProblems()) {
 			if (!this.canBeRunInResolveProblemsProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in db problems resolution process\n";
@@ -753,7 +742,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		try {
 			tryToLoadEngine();
 
-			if (this.getRelatedEtlConfig().isResolveProblems()
+			if (this.getRelatedEtlConf().isResolveProblems()
 					&& !GenericProcessor.class.isAssignableFrom(this.processorClazz)) {
 				errorMsg += ++errNum + ". The processor class [" + this.getProcessorFullClassName()
 						+ "] is not any org.openmrs.module.epts.etl.problems_solver.processor.GenericProcessor \n";
@@ -765,7 +754,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 		if (utilities.stringHasValue(errorMsg)) {
 			errorMsg = "There are errors on dstConf operation configuration " + this.getOperationType() + "[File:  "
-					+ this.getRelatedEtlConfig().getRelatedConfFile().getAbsolutePath() + "]\n" + errorMsg;
+					+ this.getRelatedEtlConf().getRelatedConfFile().getAbsolutePath() + "]\n" + errorMsg;
 			throw new ForbiddenOperationException(errorMsg);
 		} else if (this.getChild() != null) {
 			this.getChild().validate();
@@ -774,7 +763,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public boolean requireEngine() {
-		return this.getRelatedEtlConfig().isResolveProblems();
+		return this.getRelatedEtlConf().isResolveProblems();
 	}
 
 	@JsonIgnore
@@ -930,11 +919,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	@Override
 	@JsonIgnore
 	public String toString() {
-		return (getRelatedEtlConfig().getDesignation() + "_" + this.operationType).toLowerCase();
+		return (getRelatedEtlConf().getDesignation() + "_" + this.operationType).toLowerCase();
 	}
 
 	public boolean isSupposedToHaveOriginAppCode() {
-		return this.getRelatedEtlConfig().isSupposedToHaveOriginAppCode();
+		return this.getRelatedEtlConf().isSupposedToHaveOriginAppCode();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -972,11 +961,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public void recalculateThreads(List<EtlItemConfiguration> avaliableItems) {
-		getRelatedEtlConfig().info("Determining optimal threads...");
+		getRelatedEtlConf().info("Determining optimal threads...");
 
 		if (this.getParallelProcessingStrategy().isMultiThreaded()) {
 
-			List<EtlItemConfiguration> allSync = getRelatedEtlConfig().getEtlItemConfiguration();
+			List<EtlItemConfiguration> allSync = getRelatedEtlConf().getEtlItemConfiguration();
 
 			double items = avaliableItems.size();
 
@@ -1003,7 +992,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			msg += "Thread to use per item          : " + treadPerItem + "\n";
 			msg += "------------------------------------";
 
-			this.getRelatedEtlConfig().info(msg);
+			this.getRelatedEtlConf().info(msg);
 
 			this.setMaxSupportedProcessors((int) treadPerItem);
 		} else {

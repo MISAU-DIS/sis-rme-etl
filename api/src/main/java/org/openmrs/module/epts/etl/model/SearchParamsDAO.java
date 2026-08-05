@@ -16,26 +16,11 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class SearchParamsDAO extends BaseDAO {
 
+	@SuppressWarnings("rawtypes")
 	public static <T extends VO> int countAll(AbstractSearchParams<T> parametros, IntervalExtremeRecord interval,
 			Connection conn) throws DBException {
-		SearchClauses<T> searchClauses = parametros.generateSearchClauses(interval, null, null, conn, null);
 
-		int bkpQtyRecsPerSelect = searchClauses.getSearchParameters().getQtdRecordPerSelected();
-		searchClauses.getSearchParameters().setQtdRecordPerSelected(0);
-
-		String sql = "select count(*) value from (" + searchClauses.generateSQL(conn) + ") inner_result;";
-
-		Object[] parameters = searchClauses.getParameters();
-
-		SimpleValue simpleValue = find(SimpleValue.class, sql, parameters, conn);
-
-		searchClauses.getSearchParameters().setQtdRecordPerSelected(bkpQtyRecsPerSelect);
-
-		if (simpleValue != null && CommonUtilities.getInstance().stringHasValue(simpleValue.getValue())) {
-			return simpleValue.intValue();
-		}
-
-		return 0;
+		return (int) retrieveExtremRecord((AbstractEtlSearchParams) parametros, SqlFunctionType.COUNT, interval, conn);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -1353,13 +1353,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public void setOperations(List<EtlOperationConfig> operations) {
 		for (EtlOperationConfig operation : operations) {
-			operation.setRelatedEtlConfig(this);
+			operation.setRelatedEtlConf(this);
 
 			if (operation.getChild() != null) {
 				EtlOperationConfig child = operation.getChild();
 
 				while (child != null) {
-					child.setRelatedEtlConfig(this);
+					child.setRelatedEtlConf(this);
 
 					child = child.getChild();
 				}

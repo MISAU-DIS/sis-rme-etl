@@ -235,16 +235,16 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		if (this.savedCount > 0)
 			return this.savedCount;
 
-		long qtyRecordsBetweenLimits = maxRecordId - minRecordId + 1;
-
 		int qtyProcessors = utilities.getAvailableProcessors();
 
-		if (getRelatedEtlOperationConfig().isDisableMultithreadingSearch()) {
+		if (this.getRelatedEtlOperationConfig().isDisableMultithreadingSearch()) {
 			qtyProcessors = 1;
-		}
 
-		if (qtyProcessors > qtyRecordsBetweenLimits) {
-			qtyProcessors = (int) qtyRecordsBetweenLimits;
+			this.getRelatedEtlOperationConfig().getRelatedEtlConf()
+					.warn("Performe count all records using single thread");
+		} else {
+			this.getRelatedEtlOperationConfig().getRelatedEtlConf()
+					.warn("Performe count all records using multi-thread({})", qtyProcessors);
 		}
 
 		ThreadCurrentIntervals currIntervas = new ThreadCurrentIntervals(minRecordId, maxRecordId, qtyProcessors);
