@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+    <property name="ETL_LOG_LEVEL" value="${log.level:-INFO}" />
+    <property name="LOGS_PATTERN" value="%-5level %date [%thread] %logger{8}:%line %msg%n" />
+
+    <appender name="CONSOLE"
+        class="ch.qos.logback.core.ConsoleAppender">
+
+        <encoder>
+          <pattern>${LOGS_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <logger
+        name="org.openmrs.module.epts.etl"
+        level="${ETL_LOG_LEVEL}"
+        additivity="true" />
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+</configuration>

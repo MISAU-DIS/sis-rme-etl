@@ -3,9 +3,11 @@ package org.openmrs.module.epts.etl.inconsistenceresolver.processor;
 import java.sql.Connection;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.inconsistenceresolver.controller.InconsistenceSolverController;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -24,7 +26,8 @@ public class InconsistenceSolverProcessor extends TaskProcessor<EtlDatabaseObjec
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
+	        throws DBException {
 		List<EtlDatabaseObject> syncRecordsAsOpenMRSObjects = utilities.parseList(etlObjects, EtlDatabaseObject.class);
 		
 		logInfo("DOING INCONSISTENCE SOLVER FOR '" + etlObjects.size() + "' " + getMainSrcTableName());
@@ -37,7 +40,8 @@ public class InconsistenceSolverProcessor extends TaskProcessor<EtlDatabaseObjec
 			}
 			catch (Exception e) {
 				logError(
-				    "Any error occurred processing dstRecord [uuid: " + obj.getUuid() + ", id: " + obj.getObjectId() + "]", e);
+				    "Any error occurred processing dstRecord [uuid: " + obj.getUuid() + ", id: " + obj.getObjectId() + "]",
+				    e);
 				
 				throw new RuntimeException(e);
 			}
@@ -46,9 +50,17 @@ public class InconsistenceSolverProcessor extends TaskProcessor<EtlDatabaseObjec
 		logInfo("INCONSISTENCE SOLVED FOR '" + etlObjects.size() + "' " + getMainSrcTableName() + "!");
 		
 	}
-
+	
 	@Override
 	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
 		throw new ForbiddenOperationException("Forbiden Method");
+	}
+	
+	@Override
+	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+	        EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		
+		throw new ForbiddenOperationException("Unsupported method!");
 	}
 }

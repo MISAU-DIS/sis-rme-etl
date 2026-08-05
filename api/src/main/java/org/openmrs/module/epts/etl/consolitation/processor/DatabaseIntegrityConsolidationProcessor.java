@@ -4,10 +4,12 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.consolitation.controller.DatabaseIntegrityConsolidationController;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -25,7 +27,8 @@ public class DatabaseIntegrityConsolidationProcessor extends TaskProcessor<EtlDa
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn)
+	        throws DBException {
 		
 		throw new ForbiddenOperationException("Rever este metodo!");
 		
@@ -46,10 +49,18 @@ public class DatabaseIntegrityConsolidationProcessor extends TaskProcessor<EtlDa
 	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}
-
+	
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+	        EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		
+		throw new ForbiddenOperationException("Unsupported method!");
 	}
 }

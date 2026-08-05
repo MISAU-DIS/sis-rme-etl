@@ -533,7 +533,7 @@ public class EtlLoadHelper {
 
 		EtlItemConfiguration conf = dstConf.getParentConf();
 
-		return processor.perform(conf, utilities.parseToList(srcRecord), null, LoadingType.INNER, srcConn, dstConn);
+		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null, LoadingType.INNER, srcConn, dstConn);
 	}
 
 	public boolean hasDstConf() {

@@ -18,6 +18,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
@@ -29,9 +30,8 @@ import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * Represent a Synchronization TaskProcessor. A Synchronization processor
- * performes the task which will end up producing or consuming the
- * synchronization info.
+ * Represent a task Processor. A task processor performs the task which will end
+ * up producing or consuming the the etl info.
  * <p>
  * There are several kinds of engines that performes diferents kind of
  * operations. All the avaliable operations are listed in
@@ -185,9 +185,11 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	@SuppressWarnings("unchecked")
-	public void performe(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn) throws DBException {
+	public void extractTransformAndLoad(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn)
+			throws DBException {
+
 		if (getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
-				|| getRelatedEtlOperationConfig().getThreadingMode().isMultiThread()) {
+				|| getRelatedEtlOperationConfig().getParallelProcessingStrategy().isRangePartitioning()) {
 			useMultiThreadSearch = false;
 		}
 
@@ -225,13 +227,60 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 			if (getActionType().isDelete()) {
 				performeDelete(records, srcConn, dstConn);
 			} else {
-				performeEtl(records, srcConn, dstConn);
+				transformAndLoad(records, srcConn, dstConn);
 			}
+
 			logDebug("TASK ON " + records.size() + " DONE!");
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
 
+	}
+
+	/**
+	 * Processes records that were already extracted by the engine. This is used by
+	 * result-partitioning strategies, where extraction must happen exactly once.
+	 */
+	public void transformAndLoadExtractedRecords(List<T> records, Connection srcConn, Connection dstConn)
+			throws DBException {
+		prepareExtractedRecords(records, dstConn);
+
+		if (getActionType().isDelete()) {
+			performeDelete(records, srcConn, dstConn);
+		} else {
+			transformAndLoad(records, srcConn, dstConn);
+		}
+	}
+
+	/** Prepares and transforms records already extracted by the engine. */
+	@SuppressWarnings("unchecked")
+	public void transformExtractedRecords(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
+		prepareExtractedRecords(records, dstConn);
+		transform((List<EtlDatabaseObject>) (List<?>) records, srcConn, dstConn);
+	}
+
+	/** Loads records previously transformed by one or more processors. */
+	@SuppressWarnings("unchecked")
+	public void loadTransformedRecords(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
+		getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) (List<?>) records);
+		load((List<EtlDatabaseObject>) (List<?>) records, srcConn, dstConn);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void prepareExtractedRecords(List<T> records, Connection dstConn) throws DBException {
+		if (!utilities.listHasElement(records)) {
+			return;
+		}
+
+		tryToInitIdGenerator(records, dstConn);
+		beforeSync(records, null, dstConn);
+
+		List<EtlDatabaseObject> processedRecords = new ArrayList<>();
+		if (getTaskResultInfo().getProcessedRecords() != null) {
+			processedRecords.addAll(getTaskResultInfo().getProcessedRecords());
+		}
+		processedRecords.addAll((List<EtlDatabaseObject>) (List<?>) records);
+		getTaskResultInfo().setProcessedRecords(processedRecords);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -399,7 +448,26 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		throw new ForbiddenOperationException("Unimplemented method!");
 	}
 
-	public abstract void performeEtl(List<T> records, Connection srcConn, Connection dstConn) throws DBException;
+	public abstract void transformAndLoad(List<T> records, Connection srcConn, Connection dstConn) throws DBException;
+
+	public void transform(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
+			throws DBException {
+		throw new ForbiddenOperationException("This processor does not support an independent transform phase");
+	}
+
+	/**
+	 * Compatibility hook used by processors whose transformation API includes the
+	 * complete ETL context.
+	 */
+	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+			throws DBException {
+		throw new ForbiddenOperationException("This processor does not support an independent transform phase");
+	}
+
+	public void load(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+		throw new ForbiddenOperationException("This processor does not support an independent load phase");
+	}
 
 	public abstract TaskProcessor<T> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits);
 

@@ -58,8 +58,9 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 		}
 
 		synchronized (LOCK) {
-			PreparedQuery query = PreparedQuery.prepare(this, extractDataSourceFromObjects(avaliableSrcObjects),
-					getRelatedEtlConf(), DbmsType.determineFromConnection(conn));
+			PreparedQuery query = PreparedQuery.prepare(this,
+					EtlDataSource.extractDataSourceFromObjects(avaliableSrcObjects), this.getRelatedEtlConf(),
+					DbmsType.determineFromConnection(conn));
 
 			setDefaultPreparedQuery(query);
 		}

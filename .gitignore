@@ -44,3 +44,12 @@ api/pom.xml.releaseBackup
 omod/pom.xml.releaseBackup
 pom.xml.releaseBackup
 release.properties
+
+
+#ETL ENV
+docs/demo/**/process_status/
+docs/demo/**/logs/
+docs/demo/**/data/
+env.properties*
+env.*
+/logs

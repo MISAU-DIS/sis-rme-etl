@@ -25,7 +25,6 @@ import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
-import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -837,6 +836,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		logger.warn(msg);
 	}
 
+	public void warn(String msg, Object... arguments) {
+		if (logger == null)
+			initLogger();
+
+		logger.warn(msg, arguments);
+	}
+
 	public void err(String msg, Exception e) {
 		if (logger == null)
 			initLogger();
@@ -944,17 +950,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 
 				for (EtlOperationConfig operation : this.getOperations()) {
-					if (operation.getMaxSupportedProcessors() == 1) {
-						operation.setUseSharedConnectionPerThread(false);
-					}
-
-					if (operation.isConsoleDst()) {
-						operation.setDoNotSaveOperationProgress(true);
-					}
-
-					if (operation.getTotalAvaliableRecordsToProcess() != null) {
-						operation.setTotalCountStrategy(EtlTotalRecordsCountStrategy.USE_PROVIDED_COUNT);
-					}
+					operation.init();
 				}
 
 				srcConn = openSrcConn(this);

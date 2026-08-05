@@ -30,7 +30,7 @@ public class DBQuickLoadProcessor extends EtlProcessor {
 	}
 	
 	@Override
-	public void performeEtl(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
 		List<EtlStageRecordVO> migrationRecordAsSyncInfo = utilities.parseList(etlObjects, EtlStageRecordVO.class);
 		
 		for (EtlStageRecordVO rec : migrationRecordAsSyncInfo)

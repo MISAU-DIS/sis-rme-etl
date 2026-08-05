@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlProcessingModeType;
 import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
-import org.openmrs.module.epts.etl.conf.types.ThreadingMode;
+import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.consolitation.controller.DatabaseIntegrityConsolidationController;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.dbquickload.controller.DBQuickLoadController;
 import org.openmrs.module.epts.etl.detectgapes.controller.DetectGapesController;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.export.controller.DBExportController;
 import org.openmrs.module.epts.etl.inconsistenceresolver.controller.InconsistenceSolverController;
@@ -96,7 +97,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	private int fisicalCpuMultiplier;
 
-	private ThreadingMode threadingMode;
+	private ParallelProcessingStrategyType parallelProcessingStrategy;
 
 	private boolean finishOnNoRemainRecordsToProcess;
 
@@ -120,7 +121,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		this.processingBatch = EtlOperationConfig.DEFAULT_BATCH_PROCESSING;
 		this.maxSupportedProcessors = utilities.getAvailableProcessors();
 		this.fisicalCpuMultiplier = 1;
-		this.threadingMode = ThreadingMode.MULTI_THREAD;
+		this.parallelProcessingStrategy = ParallelProcessingStrategyType.RANGE_PARTITIONING;
 		this.totalCountStrategy = EtlTotalRecordsCountStrategy.COUNT_ONCE;
 	}
 
@@ -177,12 +178,12 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		return isFinishOnNoRemainRecordsToProcess();
 	}
 
-	public ThreadingMode getThreadingMode() {
-		return threadingMode;
+	public ParallelProcessingStrategyType getParallelProcessingStrategy() {
+		return parallelProcessingStrategy;
 	}
 
-	public void setThreadingMode(ThreadingMode threadingMode) {
-		this.threadingMode = threadingMode;
+	public void setParallelProcessingStrategy(ParallelProcessingStrategyType parallelProcessingStrategy) {
+		this.parallelProcessingStrategy = parallelProcessingStrategy;
 	}
 
 	public int getFisicalCpuMultiplier() {
@@ -744,6 +745,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 					+ "'USE_PROVIDED_COUNT' count strategy is being used and no 'totalAvaliableRecordsToProcess' was specified! Please provide a total count using propertie 'totalAvaliableRecordsToProcess'";
 		}
 
+		if (this.getParallelProcessingStrategy().isMultiThreaded() && this.getProcessingBatch() == 1) {
+			errorMsg += ++errNum + " 'parallelProcessingStrategy' is set to " + this.getParallelProcessingStrategy()
+					+ " while processingBatch is set to 1! Please provide a processingBatch  greater than 1 or set the parallelProcessingStrategy to SINGLE_THREAD";
+		}
+
 		try {
 			tryToLoadEngine();
 
@@ -968,7 +974,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	public void recalculateThreads(List<EtlItemConfiguration> avaliableItems) {
 		getRelatedEtlConfig().info("Determining optimal threads...");
 
-		if (this.getThreadingMode().isMultiThread()) {
+		if (this.getParallelProcessingStrategy().isMultiThreaded()) {
 
 			List<EtlItemConfiguration> allSync = getRelatedEtlConfig().getEtlItemConfiguration();
 
@@ -1028,5 +1034,31 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public boolean hasActionAfterEtl() {
 		return this.getAfterEtlActionType() != null;
+	}
+
+	public void init() {
+		if (this.getMaxSupportedProcessors() == 1) {
+			this.setUseSharedConnectionPerThread(false);
+		}
+
+		if (this.isConsoleDst()) {
+			this.setDoNotSaveOperationProgress(true);
+		}
+
+		if (this.getTotalAvaliableRecordsToProcess() != null) {
+			this.setTotalCountStrategy(EtlTotalRecordsCountStrategy.USE_PROVIDED_COUNT);
+		}
+
+		if (this.getParallelProcessingStrategy().isMultiThreaded()) {
+			if (this.getProcessingBatch() < this.getMaxSupportedProcessors()) {
+				throw new EtlConfException("The user defined processingBatch (" + this.getProcessingBatch()
+						+ ") must be higher or equals to maxSupportedProcessors (" + this.getMaxSupportedProcessors()
+						+ ") whin the EtlOperationConfig: " + this);
+			}
+		}
+
+		if (hasChild()) {
+			this.getChild().init();
+		}
 	}
 }

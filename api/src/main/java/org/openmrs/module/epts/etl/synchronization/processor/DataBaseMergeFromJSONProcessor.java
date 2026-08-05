@@ -4,17 +4,21 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.TaskProcessor;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.synchronization.controller.DatabaseMergeFromJSONController;
 import org.openmrs.module.epts.etl.synchronization.model.DataBaseMergeFromJSONSearchParams;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class DataBaseMergeFromJSONProcessor extends TaskProcessor<EtlStageRecordVO> {
 	
-	public DataBaseMergeFromJSONProcessor(Engine<EtlStageRecordVO> monitor, IntervalExtremeRecord limits,  boolean runningInConcurrency) {
+	public DataBaseMergeFromJSONProcessor(Engine<EtlStageRecordVO> monitor, IntervalExtremeRecord limits,
+	    boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 	}
 	
@@ -24,8 +28,7 @@ public class DataBaseMergeFromJSONProcessor extends TaskProcessor<EtlStageRecord
 	}
 	
 	@Override
-	public void performeEtl(List<EtlStageRecordVO> records, Connection srcConn,
-	        Connection dstConn) throws DBException {
+	public void transformAndLoad(List<EtlStageRecordVO> records, Connection srcConn, Connection dstConn) throws DBException {
 		
 		throw new ForbiddenOperationException("Rever este metodo!");
 		
@@ -52,9 +55,16 @@ public class DataBaseMergeFromJSONProcessor extends TaskProcessor<EtlStageRecord
 		return (DataBaseMergeFromJSONSearchParams) super.getSearchParams();
 	}
 	
-	
 	@Override
 	public TaskProcessor<EtlStageRecordVO> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
 		throw new ForbiddenOperationException("Forbiden Method");
+	}
+	
+	@Override
+	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+	        EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+	        throws DBException {
+		
+		throw new ForbiddenOperationException("Unsupported method!");
 	}
 }

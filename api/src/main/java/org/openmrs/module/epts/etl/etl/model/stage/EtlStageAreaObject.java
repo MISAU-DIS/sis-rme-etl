@@ -177,7 +177,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			this.setFieldValue("processing_date", DateAndTimeUtilities.getCurrentSystemDate(srcConn));
 			this.setFieldValue("processing_error",
 					etlDefaultException != null
-							? utilities.garantirXCaracteres(etlDefaultException.getLocalizedMessage(), 500)
+							? utilities.garantirXCaracteres(etlDefaultException.getLocalizedMessage(), 65534)
 							: null);
 
 		} else {
