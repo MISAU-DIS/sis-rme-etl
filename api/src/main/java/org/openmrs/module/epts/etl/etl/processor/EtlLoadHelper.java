@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.etl.model;
+package org.openmrs.module.epts.etl.etl.processor;
 
 import java.io.File;
 import java.sql.Connection;
@@ -14,9 +14,10 @@ import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
+import org.openmrs.module.epts.etl.etl.model.EtlStatus;
+import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObjectDAO;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
-import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;

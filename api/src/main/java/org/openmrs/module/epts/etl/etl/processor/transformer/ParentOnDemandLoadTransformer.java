@@ -21,7 +21,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
-import org.openmrs.module.epts.etl.etl.model.EtlLoadHelper;
+import org.openmrs.module.epts.etl.etl.processor.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -298,8 +298,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 							}
 
 							srcParent = recs.get(0);
-						} else {
-							System.err.println();
 						}
 					}
 
