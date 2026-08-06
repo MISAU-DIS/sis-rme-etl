@@ -151,8 +151,14 @@
 		    <groupId>net.objecthunter</groupId>
 		    <artifactId>exp4j</artifactId>
 		    <version>0.4.8</version>
-		</dependency> 	   
-	</dependencies>
+		</dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 	
 	<build>
 		<resources>
@@ -204,8 +210,16 @@
 			      </execution>
 			  </executions>
 			</plugin>
-	        
-		</plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+
+        </plugins>
 	</build>
 
 </project>

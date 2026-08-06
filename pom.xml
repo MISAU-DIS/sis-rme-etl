@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.openmrs.module</groupId>
-	<artifactId>sisrme-etl</artifactId>
+	<artifactId>etl</artifactId>
 	<version>1.0</version>
 	<packaging>pom</packaging>
 	<name>Epts ETL Module</name>
@@ -29,10 +29,11 @@
 
 	<modules>
 		<module>api</module>
+		<module>omod</module>
 	</modules>
 	
 	<properties>
-		<openMRSVersion>1.11.5</openMRSVersion>
+		<openMRSVersion>2.6.11</openMRSVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
 		<maven.compiler.target>1.8</maven.compiler.target>

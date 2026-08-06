@@ -1,0 +1,9 @@
+| Classe                     | Papel                                                               |
+| -------------------------- | ------------------------------------------------------------------- |
+| `Engine`                   | Produtor dos dados (gera o estado da execução)                      |
+| `MonitorCollector`         | Orquestrador/Facade (coordena a coleta)                             |
+| `ProgressCollector`        | Mapper/Collector (converte `ProgressMeter` em `EtlMonitorSnapshot`) |
+| `TaskProcessorCollector`   | Mapper/Collector (converte `TaskProcessor` em `TaskMonitorInfo`)    |
+| `EtlMonitor`               | Modelo/Estado da monitoria                                          |
+| `EtlMonitorRegistry`       | Registry/Repositório em memória                                     |
+| `MonitorService` (no OMOD) | Camada de serviço para consulta                                     |

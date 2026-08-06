@@ -24,6 +24,8 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.OperationProgressInfo;
 import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
+import org.openmrs.module.epts.etl.monitor.context.EtlExecutionContext;
+import org.openmrs.module.epts.etl.monitor.context.EtlExecutionContextRegistry;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
@@ -85,6 +87,11 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 
 		this.controllerId = operationConfig.generateOperationId();
+
+		EtlExecutionContext context =
+				new EtlExecutionContext(this.controllerId);
+
+		EtlExecutionContextRegistry.register(context);
 
 		OpenConnection conn = null;
 		try {
@@ -291,6 +298,18 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				}
 
 				Engine<T> engine = Engine.init(this, config, progressInfo);
+
+				EtlExecutionContext context =
+						EtlExecutionContextRegistry.find(
+								this.controllerId
+						);
+
+
+				if(context != null){
+
+					context.addEngine(engine);
+
+				}
 
 				logTrace("Opening connection for saving Progress Info");
 
