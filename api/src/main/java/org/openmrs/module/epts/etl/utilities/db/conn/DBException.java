@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -306,5 +307,31 @@ public class DBException extends SQLException implements EtlException {
 		System.err.println("WARNING: Nao foi possivel determinar a base de dados");
 
 		return false;
+	}
+
+	public boolean isEtlStageAreaIssue(EtlDatabaseObject object) {
+		if (object instanceof EtlStageAreaObject) {
+			return messageContains("stage_record_id", "cannot be null");
+		} else {
+			return false;
+		}
+	}
+
+	private boolean messageContains(String... msg) {
+		if (this.getLocalizedMessage() == null)
+			return false;
+
+		if (msg != null && msg.length > 0) {
+			for (String m : msg) {
+				if (!getLocalizedMessage().contains(m)) {
+					return false;
+				}
+			}
+
+			return true;
+		} else {
+			return false;
+		}
+
 	}
 }

@@ -769,6 +769,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		this.getRelatedEtlConf().err(msg, throwable);
 	}
 
+	default void logErr(String msg, Throwable throwable, Object... arguments) {
+		this.getRelatedEtlConf().err(msg, throwable, arguments);
+	}
+
 	default int countParents(Connection conn) throws SQLException {
 		ResultSet foreignKeyRS = conn.getMetaData().getImportedKeys(this.getCatalog(conn), this.getSchema(),
 				this.getTableName());

@@ -1,9 +1,11 @@
-package org.openmrs.module.epts.etl.etl.model;
+package org.openmrs.module.epts.etl.etl.processor;
 
 import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
@@ -14,9 +16,10 @@ import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
+import org.openmrs.module.epts.etl.etl.model.EtlStatus;
+import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObjectDAO;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
-import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -137,9 +140,28 @@ public class EtlLoadHelper {
 			}
 		}
 
-		if (getEtlOperationConfig().writeOperationHistory()) {
+		boolean writeOperation = getEtlOperationConfig().writeOperationHistory();
+
+		writeOperation = writeOperation && (!this.loadingType.isParent()
+				|| !this.getEtlOperationConfig().getParallelProcessingStrategy().isMultiThreaded());
+
+		if (writeOperation) {
+			logInfo("Starting stage info generation and wrinting within {}", generateAvaliableEtl());
+
 			EtlStageAreaObjectDAO.saveAll(this.generateStageInfoForAll(srcConn, dstConn), srcConn);
+
+			logDebug("Stage Info stored to database!");
 		}
+	}
+
+	private Set<EtlItemConfiguration> generateAvaliableEtl() {
+		Set<EtlItemConfiguration> itemConf = new HashSet<>();
+
+		for (DstConf dst : this.getDstConf()) {
+			itemConf.add(dst.getParentConf());
+		}
+
+		return itemConf;
 	}
 
 	private boolean hasUnresolvedError(DstConf dst) {
@@ -501,8 +523,16 @@ public class EtlLoadHelper {
 		getProcessor().logInfo(msg);
 	}
 
+	void logInfo(String msg, Object... arguments) {
+		getProcessor().logInfo(msg, arguments);
+	}
+
 	void logWarn(String msg) {
 		getProcessor().logWarn(msg);
+	}
+
+	void logWarn(String msg, Object... arguments) {
+		getProcessor().logWarn(msg, arguments);
 	}
 
 	void logError(String msg, Exception e) {
@@ -537,7 +567,7 @@ public class EtlLoadHelper {
 		etlInfo.getProcessor().logTrace(msg);
 
 		new EtlLoadHelper(etlInfo.getProcessor(), etlInfo.getSrcConf().getParentConf(),
-				utilities.parseToList(srcObject), LoadingType.INNER, false)
+				utilities.parseToList(srcObject), LoadingType.PARENT, false)
 				.load(etlInfo.getDstConf(), srcConn, dstConn);
 	}
 
@@ -548,7 +578,7 @@ public class EtlLoadHelper {
 		EtlItemConfiguration conf = dstConf.getParentConf();
 
 		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,
-				LoadingType.INNER, srcConn, dstConn);
+				LoadingType.PARENT, srcConn, dstConn);
 	}
 
 	public boolean hasDstConf() {

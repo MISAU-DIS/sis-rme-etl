@@ -939,7 +939,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public void logInfo(String msg, Object... arguments) {
-		this.processController.logInfo(msg);
+		this.processController.logInfo(msg, arguments);
 	}
 
 	public void logInfo(String msg) {

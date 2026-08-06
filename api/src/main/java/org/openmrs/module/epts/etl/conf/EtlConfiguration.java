@@ -211,6 +211,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private Boolean doNotWarnOnNoDstObjectFound;
 
+	private ActionOnEtlIssue stageRecordIssueBehavior;
+
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 
@@ -227,9 +229,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.defaultExceptionBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 		this.defaultInconsistencyBehavior = ActionOnEtlIssue.ABORT_PROCESS;
+		this.stageRecordIssueBehavior = ActionOnEtlIssue.ABORT_PROCESS;
 		this.disableDefaultObjectCreation = false;
 		this.defaultEtlItemConf = new EtlItemConfiguration();
 		this.defaultEtlItemConf.setRelatedEtlConf(this);
+	}
+
+	public void setStageRecordIssueBehavior(ActionOnEtlIssue stageRecordIssueBehavior) {
+		this.stageRecordIssueBehavior = stageRecordIssueBehavior;
+	}
+
+	public ActionOnEtlIssue getStageRecordIssueBehavior() {
+		return this.stageRecordIssueBehavior;
 	}
 
 	public Boolean isInitialized() {
