@@ -462,7 +462,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
 			List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn, Connection dstConn) throws DBException {
 		EtlDatabaseObject parent = srcParent != null
-				? resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects, srcConn, dstConn)
+				? resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects, srcConn,
+						dstConn)
 				: null;
 
 		return parent != null ? parent

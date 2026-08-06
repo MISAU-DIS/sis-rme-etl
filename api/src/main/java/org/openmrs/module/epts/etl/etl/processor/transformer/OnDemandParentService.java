@@ -44,7 +44,7 @@ public final class OnDemandParentService {
 
 		try {
 			boolean useCurrentConnections = usesAutoCommit(currentDstConn)
-					|| connectionIsSharedByConcurrentProcessors(processor);
+					|| connectionIsSharedByConcurrentProcessors(processor) || !processor.isRunningInConcurrency();
 
 			if (!useCurrentConnections) {
 				commitCurrentDestinationBeforeIndependentTransaction(processor, currentDstConn, parentKey);
@@ -92,7 +92,8 @@ public final class OnDemandParentService {
 		}
 
 		try {
-			processor.logDebug("Committing current destination work before independent on-demand parent transaction: {}",
+			processor.logDebug(
+					"Committing current destination work before independent on-demand parent transaction: {}",
 					parentKey);
 			dstConn.commit();
 		} catch (SQLException e) {

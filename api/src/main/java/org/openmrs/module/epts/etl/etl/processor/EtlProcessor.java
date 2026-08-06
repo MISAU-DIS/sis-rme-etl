@@ -1,7 +1,6 @@
 package org.openmrs.module.epts.etl.etl.processor;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -185,8 +184,6 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		if (loadHelper != null && loadHelper.hasDstConf()) {
 			loadHelper.load(srcConn, dstConn);
 
-			checkpointDestinationBeforeChildEtl(etlItemConf, dstConn);
-
 			tryToPerfomeEtlOnChild(etlItemConf, loadHelper, srcConn, dstConn);
 
 			logInfo("ETL OPERATION [" + etlItemConf.getConfigCode() + "] DONE ON " + etlObjects.size() + "' RECORDS");
@@ -201,41 +198,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				logDebug(msg);
 			}
 
-			checkpointDestinationBeforeChildEtl(etlItemConf, dstConn);
-
 			tryToPerfomeEtlOnChild(etlItemConf, etlObjects, srcConn, dstConn);
 		}
 
 		return loadHelper;
-	}
-
-	/**
-	 * Makes the loaded parent visible before child ETLs open independent
-	 * transactions to resolve or create their own parents.
-	 */
-	private void checkpointDestinationBeforeChildEtl(EtlItemConfiguration etlItemConf, Connection dstConn)
-			throws DBException {
-		if (!etlItemConf.hasChildItemConf() || dstConn == null) {
-			return;
-		}
-
-		boolean connectionSharedByConcurrentProcessors = isRunningInConcurrency()
-				&& getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
-
-		if (connectionSharedByConcurrentProcessors) {
-			logWarn("Skipping destination checkpoint before child ETL because the connection is shared by concurrent processors");
-			return;
-		}
-
-		try {
-			if (!dstConn.getAutoCommit()) {
-				logDebug("Committing destination checkpoint before processing children of ETL {}",
-						etlItemConf.getConfigCode());
-				dstConn.commit();
-			}
-		} catch (SQLException e) {
-			throw new DBException("Could not commit destination checkpoint before child ETL", e);
-		}
 	}
 
 	private void transformRecord(EtlDatabaseObject srcRecord, EtlDatabaseObject srcRecordExpansion,
