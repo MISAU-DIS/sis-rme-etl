@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,7 +43,19 @@ public final class OnDemandParentService {
 		parentLock.lock.lock();
 
 		try {
+			boolean useCurrentConnections = usesAutoCommit(currentDstConn)
+					|| connectionIsSharedByConcurrentProcessors(processor);
+
+			if (!useCurrentConnections) {
+				commitCurrentDestinationBeforeIndependentTransaction(processor, currentDstConn, parentKey);
+			}
+
 			try {
+				if (useCurrentConnections) {
+					return retrieveOrCreateUsingConnections(transformer, processor, srcParent, srcObject,
+							transformedRecord, additionalSrcObjects, field, currentSrcConn, currentDstConn);
+				}
+
 				return retrieveOrCreateInIndependentTransaction(transformer, processor, srcParent, srcObject,
 						transformedRecord, additionalSrcObjects, field);
 			} catch (DBException e) {
@@ -50,8 +63,11 @@ public final class OnDemandParentService {
 					throw e;
 				}
 
-				EtlDatabaseObject parent = retrieveInIndependentTransaction(transformer, processor, srcParent,
-						srcObject, transformedRecord, additionalSrcObjects);
+				EtlDatabaseObject parent = useCurrentConnections
+						? retrieveUsingConnections(transformer, processor, srcParent, srcObject, transformedRecord,
+								additionalSrcObjects, currentSrcConn, currentDstConn)
+						: retrieveInIndependentTransaction(transformer, processor, srcParent, srcObject,
+								transformedRecord, additionalSrcObjects);
 				if (parent != null) {
 					return parent;
 				}
@@ -64,6 +80,62 @@ public final class OnDemandParentService {
 		}
 	}
 
+	private boolean connectionIsSharedByConcurrentProcessors(EtlProcessor processor) {
+		return processor.isRunningInConcurrency()
+				&& processor.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
+	}
+
+	private void commitCurrentDestinationBeforeIndependentTransaction(EtlProcessor processor, Connection dstConn,
+			String parentKey) throws DBException {
+		if (dstConn == null) {
+			return;
+		}
+
+		try {
+			processor.logDebug("Committing current destination work before independent on-demand parent transaction: {}",
+					parentKey);
+			dstConn.commit();
+		} catch (SQLException e) {
+			throw new DBException("Could not commit current destination work before creating on-demand parent", e);
+		}
+	}
+
+	private boolean usesAutoCommit(Connection dstConn) throws DBException {
+		if (dstConn == null) {
+			return false;
+		}
+
+		try {
+			return dstConn.getAutoCommit();
+		} catch (SQLException e) {
+			throw new DBException("Could not determine the destination connection auto-commit mode", e);
+		}
+	}
+
+	private EtlDatabaseObject retrieveOrCreateUsingConnections(ParentOnDemandLoadTransformer transformer,
+			EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
+			Connection srcConn, Connection dstConn) throws DBException {
+
+		EtlDatabaseObject parent = retrieveUsingConnections(transformer, processor, srcParent, srcObject,
+				transformedRecord, additionalSrcObjects, srcConn, dstConn);
+
+		if (parent == null) {
+			parent = transformer.createParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
+					field, srcConn, dstConn);
+		}
+
+		return parent;
+	}
+
+	private EtlDatabaseObject retrieveUsingConnections(ParentOnDemandLoadTransformer transformer,
+			EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
+		return transformer.retrieveExistingParent(processor, srcParent, srcObject, transformedRecord,
+				additionalSrcObjects, srcConn, dstConn);
+	}
+
 	private EtlDatabaseObject retrieveOrCreateInIndependentTransaction(ParentOnDemandLoadTransformer transformer,
 			EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field)
@@ -71,13 +143,8 @@ public final class OnDemandParentService {
 
 		IndependentConnections connections = openIndependentConnections(processor);
 		try {
-			EtlDatabaseObject parent = transformer.retrieveExistingParent(processor, srcParent, srcObject,
-					transformedRecord, additionalSrcObjects, connections.srcConn, connections.dstConn);
-
-			if (parent == null) {
-				parent = transformer.createParent(processor, srcParent, srcObject, transformedRecord,
-						additionalSrcObjects, field, connections.srcConn, connections.dstConn);
-			}
+			EtlDatabaseObject parent = retrieveOrCreateUsingConnections(transformer, processor, srcParent, srcObject,
+					transformedRecord, additionalSrcObjects, field, connections.srcConn, connections.dstConn);
 
 			connections.markSuccessful();
 			return parent;
@@ -92,7 +159,7 @@ public final class OnDemandParentService {
 
 		IndependentConnections connections = openIndependentConnections(processor);
 		try {
-			EtlDatabaseObject parent = transformer.retrieveExistingParent(processor, srcParent, srcObject,
+			EtlDatabaseObject parent = retrieveUsingConnections(transformer, processor, srcParent, srcObject,
 					transformedRecord, additionalSrcObjects, connections.srcConn, connections.dstConn);
 			connections.markSuccessful();
 			return parent;
