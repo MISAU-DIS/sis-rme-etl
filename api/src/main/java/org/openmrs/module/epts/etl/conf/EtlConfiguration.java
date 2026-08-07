@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 
+import org.openmrs.module.epts.etl.conf.datasource.EtlConfParamsAsDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfigurationSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
@@ -213,6 +214,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private ActionOnEtlIssue stageRecordIssueBehavior;
 
+	private EtlConfParamsAsDataSource paramsAsDataSource;
+
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 
@@ -233,6 +236,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.disableDefaultObjectCreation = false;
 		this.defaultEtlItemConf = new EtlItemConfiguration();
 		this.defaultEtlItemConf.setRelatedEtlConf(this);
+	}
+
+	public EtlConfParamsAsDataSource getParamsAsDataSource() {
+		return paramsAsDataSource;
+	}
+
+	public void setParamsAsDataSource(EtlConfParamsAsDataSource paramsAsDataSource) {
+		this.paramsAsDataSource = paramsAsDataSource;
 	}
 
 	public void setStageRecordIssueBehavior(ActionOnEtlIssue stageRecordIssueBehavior) {
@@ -1032,12 +1043,19 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				DefaultEtlValidator.tryToValidate(this, srcConn, dstConn);
 
+				initParamsDataSource(srcConn, dstConn);
+
 				this.setInitialized(true);
 			} finally {
 				finalizeConnection(srcConn, this);
 				finalizeConnection(dstConn, this);
 			}
 		}
+	}
+
+	private void initParamsDataSource(Connection srcConn, Connection dstConn) throws DBException {
+		this.paramsAsDataSource = new EtlConfParamsAsDataSource(this);
+		this.paramsAsDataSource.fullLoad(srcConn);
 	}
 
 	public boolean hasEtlItemsConf() {

@@ -8,6 +8,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
+import org.openmrs.module.epts.etl.conf.datasource.EtlConfParamsAsDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.interfaces.ConditionalEtlElement;
@@ -883,5 +884,19 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 	private boolean filedPathernIncludeDataSource() {
 		return this.getSrcField().split("\\.").length > 1;
+	}
+
+	public static FieldsMapping fastCreate(String token, EtlConfParamsAsDataSource paramsAsDataSource, Connection conn)
+			throws DBException {
+
+		FieldsMapping fm = new FieldsMapping();
+
+		fm.setDstField(token);
+		fm.setSrcValue(paramsAsDataSource.getParamValue(token));
+
+		fm.tryToLoadTransformer(FastEtlTransformingTarget.fastCreate(paramsAsDataSource.getRelatedEtlConf(), null),
+				conn);
+
+		return fm;
 	}
 }

@@ -2450,10 +2450,6 @@ public class SQLUtilities {
 
 		String preparedQuery = normalizeQuery(originalQuery);
 
-		preparedQuery = EtlFieldTransformer
-				.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, preparedQuery).toString()
-				.toLowerCase();
-
 		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
 
 		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(preparedQuery,
@@ -2523,11 +2519,15 @@ public class SQLUtilities {
 		return "'" + str + "'";
 	}
 
+	private static final Pattern QUERY_PARAMETER_PATTERN = Pattern.compile("@[a-zA-Z_][a-zA-Z0-9_]*");
+
 	private static List<ResolvedQueryElement> resolveTransformableQueryElements(String query,
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
 			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
+
+		Set<String> alreadyResolvedElements = new HashSet<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
 				" join ", " where ", " in ", " not ", " not in " };
@@ -2538,13 +2538,22 @@ public class SQLUtilities {
 			avaliableTableAliases.addAll(knownTableAliases);
 		}
 
-		String[] srcObjectConditionElements = utilities.splitByAnyAtTopLevel(query, arithmeticOperators);
-
 		FastEtlTransformingTarget transformingTarget = FastEtlTransformingTarget.fastCreate(relatedEtlConf,
 				avaliableSrcObjects, conn);
 
-		relatedEtlConf.stepIntoBreakpoint(relatedEtlConf,
-				query.contains("orders_src_ds") && query.contains("scheduled_date"));
+		for (String param : extractQueryParameters(query)) {
+
+			try {
+				resolveParameter(param, resolvedElements, alreadyResolvedElements, avaliableSrcObjects, relatedEtlConf,
+						conn);
+
+			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
+
+				continue;
+			}
+		}
+
+		String[] srcObjectConditionElements = utilities.splitByAnyAtTopLevel(query, arithmeticOperators);
 
 		for (String element : srcObjectConditionElements) {
 
@@ -2556,7 +2565,12 @@ public class SQLUtilities {
 
 				element = element.strip().trim();
 
+				if (isParam(element)) {
+					continue;
+				}
+
 				FieldsMapping map = null;
+
 				String adjustedElement;
 
 				if (isTransformerExpression(relatedEtlConf, element)) {
@@ -2566,11 +2580,11 @@ public class SQLUtilities {
 					map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
 
 				} else {
+
 					List<String> candidateElements = extractCandidateQueryElementsRecursively(relatedEtlConf, element,
 							arithmeticOperators);
 
 					for (String candidate : candidateElements) {
-						map = null;
 
 						if (candidate == null || candidate.isBlank()) {
 							continue;
@@ -2578,26 +2592,42 @@ public class SQLUtilities {
 
 						adjustedElement = candidate.strip().trim();
 
-						if (isTransformerExpression(relatedEtlConf, candidate)) {
+						if (isParam(adjustedElement)) {
+							continue;
+						}
+
+						if (alreadyResolvedElements.contains(adjustedElement)) {
+							continue;
+						}
+
+						map = null;
+
+						if (isTransformerExpression(relatedEtlConf, adjustedElement)) {
+
 							map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
+
 						} else if (!isValidQueryColumnDefinition(adjustedElement)) {
+
 							continue;
 						}
 
 						try {
-							if (map == null) {
-								if (checkIfFieldDefinitionIncludeQualifier(adjustedElement)) {
-									map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
 
-									if (utilities.contains(avaliableTableAliases, map.getDataSourceName())
-											|| !map.hasTransformer()) {
-										continue;
-									}
+							if (map == null && checkIfFieldDefinitionIncludeQualifier(adjustedElement)) {
+
+								map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
+
+								if (utilities.contains(avaliableTableAliases, map.getDataSourceName())
+										|| !map.hasTransformer()) {
+
+									continue;
 								}
 							}
+
 						} catch (InvalidDataSourceOnFieldDefifitionException e) {
 
 							if (utilities.contains(avaliableTableAliases, e.getDataSourceName())) {
+
 								continue;
 							}
 
@@ -2605,37 +2635,107 @@ public class SQLUtilities {
 						}
 
 						if (map == null || (!map.hasDataSourceName() && map.useDefaultTransformer())) {
+
 							continue;
 						}
 
-						EtlDatabaseObject obj = utilities.listHasElement(avaliableSrcObjects)
-								? avaliableSrcObjects.get(0)
-								: null;
-
-						FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null, obj, obj,
-								avaliableSrcObjects, map, conn, conn);
+						FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
 
 						resolvedElements.add(new ResolvedQueryElement(adjustedElement, valueInfo));
+
+						alreadyResolvedElements.add(adjustedElement);
 					}
 
 					continue;
 				}
 
-				if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
+				if (map == null || (!map.hasDataSourceName() && map.useDefaultTransformer())) {
+
 					continue;
 				}
 
-				FieldTransformingInfo valueInfo = map.getTransformerInstance().transform(null,
-						avaliableSrcObjects.get(0), avaliableSrcObjects.get(0), avaliableSrcObjects, map, conn, conn);
+				if (alreadyResolvedElements.contains(adjustedElement)) {
+
+					continue;
+				}
+
+				FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
 
 				resolvedElements.add(new ResolvedQueryElement(adjustedElement, valueInfo));
 
+				alreadyResolvedElements.add(adjustedElement);
+
 			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
+
 				continue;
 			}
 		}
 
 		return resolvedElements;
+	}
+
+	private static void resolveParameter(String param, List<ResolvedQueryElement> resolvedElements,
+			Set<String> alreadyResolvedElements, List<EtlDatabaseObject> avaliableSrcObjects,
+			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+
+		if (param == null || param.isBlank()) {
+			return;
+		}
+
+		param = param.strip().trim();
+
+		if (alreadyResolvedElements.contains(param)) {
+			return;
+		}
+
+		FieldsMapping map = FieldsMapping.fastCreate(param, relatedEtlConf.getParamsAsDataSource(), conn);
+
+		if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
+
+			return;
+		}
+
+		FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
+
+		resolvedElements.add(new ResolvedQueryElement(param, valueInfo));
+
+		alreadyResolvedElements.add(param);
+	}
+
+	private static List<String> extractQueryParameters(String query) {
+
+		if (query == null || query.isBlank()) {
+			return Collections.emptyList();
+		}
+
+		/*
+		 * LinkedHashSet:
+		 *
+		 * 1. evita parâmetros duplicados; 2. mantém a ordem em que aparecem na query.
+		 */
+		Set<String> parameters = new LinkedHashSet<>();
+
+		Matcher matcher = QUERY_PARAMETER_PATTERN.matcher(query);
+
+		while (matcher.find()) {
+			parameters.add(matcher.group());
+		}
+
+		return new ArrayList<>(parameters);
+	}
+
+	private static FieldTransformingInfo transformMapping(FieldsMapping map,
+			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+
+		EtlDatabaseObject obj = utilities.listHasElement(avaliableSrcObjects) ? avaliableSrcObjects.get(0) : null;
+
+		return map.getTransformerInstance().transform(null, obj, obj, avaliableSrcObjects, map, conn, conn);
+	}
+
+	private static boolean isParam(String element) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	private static FieldsMapping generateTransformerMapping(Connection conn,
