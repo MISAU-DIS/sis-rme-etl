@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlExpansionDataSource;
@@ -16,12 +17,20 @@ public class ExpansionQueryDataSource extends QueryDataSourceConfig implements E
 			List<EtlDatabaseObject> availableSourceObjects, EtlDatabaseObject dstObject, Connection srcConn)
 			throws DBException {
 
+		List<EtlDatabaseObject> full = new ArrayList<>();
+
+		full.add(primarySourceObject);
+
+		if (utilities.listHasElement(availableSourceObjects)) {
+			full.addAll(availableSourceObjects);
+		}
+
 		if (!isPrepared()) {
-			prepare(availableSourceObjects, srcConn);
+			prepare(full, srcConn);
 		}
 
 		return this.getDefaultPreparedQuery().query(processor.getRelatedEtlConfiguration(), processor,
-				primarySourceObject, dstObject, availableSourceObjects, srcConn);
+				primarySourceObject, dstObject, full, srcConn);
 	}
 
 	@Override
