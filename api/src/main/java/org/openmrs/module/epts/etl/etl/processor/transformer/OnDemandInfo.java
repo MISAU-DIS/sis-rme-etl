@@ -186,7 +186,6 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					} else if (dstField.equals("table_alias")) {
 						this.tableAlias = srcFieldOrValue;
 					} else {
-
 						if (!utilities.stringHasValue(srcFieldOrValue)
 								|| srcFieldOrValue.toLowerCase().equals("null")) {
 							srcFieldOrValue = null;
@@ -203,6 +202,11 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 										srcFieldOrValue, conn);
 							} else {
 								fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
+							}
+
+							if (srcFieldOrValue == null) {
+								fm.resetAndLoadTransformer(relatedEtlTransformTarget,
+										FieldTransformerType.NULL_VALUE_TRANSFORMER, conn);
 							}
 
 							if (onDemandParentFieldMappings == null) {

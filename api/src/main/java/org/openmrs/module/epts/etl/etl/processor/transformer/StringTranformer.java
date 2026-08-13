@@ -149,37 +149,40 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
 		if (utilities.listHasElement(this.parameters)) {
+			if (this.parameters.size() == 1) {
+				this.setInputExpression(this.parameters.get(0).toString());
+			} else {
+				for (Object fieldData : this.parameters) {
+					String[] mapping = fieldData.toString().split(":", 2);
 
-			for (Object fieldData : this.parameters) {
-				String[] mapping = fieldData.toString().split(":", 2);
-
-				if (mapping.length != 2) {
-					throw new EtlExceptionImpl(
-							"Wrong format for conditional parameters within the tranformer " + getTransformerDsc()
-									+ "\n" + "Each object param must be specified as paramName:paramValue");
-				}
-
-				String paramName = mapping[0];
-				String paramValue = mapping[1];
-
-				if (!utilities.stringHasValue(paramValue)) {
-					throw new EtlExceptionImpl("The paramValue for parameter " + paramName
-							+ " has no value on transformer:  " + getTransformerDsc());
-				}
-
-				if (paramName.equals("null_operand_behavior")) {
-					try {
-						this.nullOperandBehavior = ActionOnEtlIssue.valueOf(paramValue);
-					} catch (Exception e) {
-						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
-								+ " on transformer:  " + getTransformerDsc());
+					if (mapping.length != 2) {
+						throw new EtlExceptionImpl(
+								"Wrong format for conditional parameters within the tranformer " + getTransformerDsc()
+										+ "\n" + "Each object param must be specified as paramName:paramValue");
 					}
-				} else if (paramName.equals("input")) {
-					try {
-						this.setInputExpression(paramValue);
-					} catch (Exception e) {
-						throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
-								+ " on transformer:  " + getTransformerDsc());
+
+					String paramName = mapping[0];
+					String paramValue = mapping[1];
+
+					if (!utilities.stringHasValue(paramValue)) {
+						throw new EtlExceptionImpl("The paramValue for parameter " + paramName
+								+ " has no value on transformer:  " + getTransformerDsc());
+					}
+
+					if (paramName.equals("null_operand_behavior")) {
+						try {
+							this.nullOperandBehavior = ActionOnEtlIssue.valueOf(paramValue);
+						} catch (Exception e) {
+							throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
+									+ " on transformer:  " + getTransformerDsc());
+						}
+					} else if (paramName.equals("input")) {
+						try {
+							this.setInputExpression(paramValue);
+						} catch (Exception e) {
+							throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
+									+ " on transformer:  " + getTransformerDsc());
+						}
 					}
 				}
 			}

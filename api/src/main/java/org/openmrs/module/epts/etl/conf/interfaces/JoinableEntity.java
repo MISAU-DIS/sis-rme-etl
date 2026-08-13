@@ -88,7 +88,7 @@ public interface JoinableEntity extends TableConfiguration {
 
 	default void tryToLoadJoinFields(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 		if (!hasJoinFields()) {
-			this.setJoinFields(this.tryToLoadJoinFields(getJoiningEntity(), conn));
+			this.setJoinFields(this.tryToLoadJoinFields(this.getJoiningEntity(), conn));
 		}
 	}
 

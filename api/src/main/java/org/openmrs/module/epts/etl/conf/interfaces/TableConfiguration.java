@@ -2188,6 +2188,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default List<FieldsMapping> tryToLoadJoinFields(TableConfiguration relatedTabConf, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
+		stepIntoBreakpoint(getRelatedEtlConf(), relatedTabConf.getTableAlias().contains("lab_result"));
+
 		List<FieldsMapping> joinFields = new ArrayList<>();
 
 		// Assuming that this datasource is parent
@@ -2203,7 +2205,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				for (RefMapping map : ref.getRefMapping()) {
 					joinFields.add(FieldsMapping.fastCreate(target, map.getChildField().getName(),
-							determineJoiningTableAlias(ref), map.getParentField().getName(), conn));
+							determineJoiningTableAlias(relatedTabConf), map.getParentField().getName(), conn));
 				}
 			} else {
 				throw new ForbiddenOperationException(
@@ -2249,8 +2251,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		return TableConfigurationUtils.retrieveAvaliableDataSourcesWithTable(this, conn);
 	}
 
-	default String determineJoiningTableAlias(RelatedTable rt) {
-		TableConfiguration t = retrieveConfiguredParentWithinTheSameEtl(rt);
+	default String determineJoiningTableAlias(TableConfiguration rt) {
+		TableConfiguration t = this.retrieveConfiguredParentWithinTheSameEtl(rt);
 
 		if (t != null) {
 			return t.getTableAlias();

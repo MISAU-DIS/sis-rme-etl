@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.conf.types.ParameterContextType;
 import org.openmrs.module.epts.etl.conf.types.ParameterValueType;
@@ -248,14 +249,17 @@ public class QueryParameter extends Field {
 						+ " cannot be transformed as it does not occure in any datasource");
 			}
 
+			map.tryToLoadTransformer(target, conn);
+
 		} else {
 			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), conn);
 		}
 
-		stepIntoBreakpoint(getRelatedEtlConf(), map.getTransformerInstance() == null);
+		map.setNullValueBehavior(ActionOnEtlIssue.SET_TO_NULL);
 
 		return map.getTransformerInstance().transform(null, fakeSrcObject, fakeSrcObject, avaliableSrcObjects, map,
 				conn, conn);
+
 	}
 
 }

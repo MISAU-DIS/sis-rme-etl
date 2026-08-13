@@ -265,7 +265,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 			throw new EmptyTransformedValueException(msg, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		}
 
-		if (field.nullValueBehavior().ignore()) {
+		if (field.nullValueBehavior().ignore() || field.nullValueBehavior().setToNull()) {
 			return new FieldTransformingInfo(field, null, null);
 		}
 
