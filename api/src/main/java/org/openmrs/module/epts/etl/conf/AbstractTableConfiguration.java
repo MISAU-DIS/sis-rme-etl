@@ -226,14 +226,16 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	private void attachPhysicalTableConfiguration(Connection conn) throws DBException {
-		if (this.physicalTableConfiguration != null) return;
+		if (this.physicalTableConfiguration != null)
+			return;
 
 		try {
-			PhysicalTableIdentity identity = new PhysicalTableIdentity(conn.getMetaData().getURL(),
-			        conn.getMetaData().getUserName(), this.getCatalog(conn), this.getSchema(), this.getTableName());
+			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedEtlConf(),
+					conn.getMetaData().getURL(), conn.getMetaData().getUserName(), this.getCatalog(conn),
+					this.getSchema(), this.getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
-			        .getOrCreate(identity);
+					.getOrCreate(identity);
 		} catch (SQLException e) {
 			throw new DBException(e);
 		}
@@ -278,7 +280,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadPrimaryKeyInfo(Connection conn) throws DBException {
-		if (this.isPrimaryKeyInfoLoaded()) return;
+		if (this.isPrimaryKeyInfoLoaded())
+			return;
 
 		// Explicit/manual PK configuration is contextual and must not populate the
 		// physical cache for other usages of the same table.
@@ -306,7 +309,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadUniqueKeys(Connection conn) {
-		if (this.isUniqueKeyInfoLoaded()) return;
+		if (this.isUniqueKeyInfoLoaded())
+			return;
 
 		// Unique-key discovery currently observes contextual field exclusions and
 		// shared-PK relationships. Keep those cases local until physical FK DTOs exist.

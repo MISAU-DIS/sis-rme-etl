@@ -529,7 +529,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					if (parentInDst == null) {
 						throw new EtlTransformationException("The " + refInfo.getTableName() + "("
 								+ paramValueInfo.getTransformedValue() + ") of " + dstConf.getTableName() + "("
-								+ srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on src db",
+								+ srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on dst db",
 								srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 					}
 

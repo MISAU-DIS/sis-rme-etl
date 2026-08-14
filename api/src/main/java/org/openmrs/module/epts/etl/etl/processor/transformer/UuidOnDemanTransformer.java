@@ -353,7 +353,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 						throw new EtlTransformationException("The " + refInfo.getTableName() + "("
 								+ paramValueInfo.getTransformedValue() + ") of " + this.getTableConf().getTableName()
-								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on src db",
+								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on dst db",
 								srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 					}
 

@@ -2,6 +2,8 @@ package org.openmrs.module.epts.etl.conf.physical;
 
 import java.util.Objects;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+
 /**
  * Identifies a physical database table independently from the ETL context in
  * which that table is used.
@@ -13,14 +15,22 @@ public final class PhysicalTableIdentity {
 	private final String catalog;
 	private final String schema;
 	private final String tableName;
+	private EtlConfiguration etlConfiguration;
 
-	public PhysicalTableIdentity(String connectionUrl, String databaseUser, String catalog, String schema,
-	        String tableName) {
+	public PhysicalTableIdentity(EtlConfiguration etlConfiguration, String connectionUrl, String databaseUser,
+			String catalog, String schema, String tableName) {
 		this.connectionUrl = normalize(connectionUrl);
 		this.databaseUser = normalize(databaseUser);
 		this.catalog = normalize(catalog);
 		this.schema = normalize(schema);
 		this.tableName = normalize(tableName);
+
+		this.etlConfiguration = etlConfiguration;
+
+	}
+
+	public EtlConfiguration getEtlConfiguration() {
+		return etlConfiguration;
 	}
 
 	private static String normalize(String value) {
@@ -54,14 +64,15 @@ public final class PhysicalTableIdentity {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (!(obj instanceof PhysicalTableIdentity)) return false;
+		if (this == obj)
+			return true;
+		if (!(obj instanceof PhysicalTableIdentity))
+			return false;
 		PhysicalTableIdentity other = (PhysicalTableIdentity) obj;
-		return Objects.equals(connectionUrl, other.connectionUrl)
-		        && Objects.equals(databaseUser, other.databaseUser)
-		        && Objects.equals(catalog, other.catalog)
-		        && Objects.equals(schema, other.schema)
-		        && Objects.equals(tableName, other.tableName);
+
+		return Objects.equals(connectionUrl, other.connectionUrl) && Objects.equals(databaseUser, other.databaseUser)
+				&& Objects.equals(catalog, other.catalog) && Objects.equals(schema, other.schema)
+				&& Objects.equals(tableName, other.tableName);
 	}
 
 	@Override
