@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
@@ -31,7 +32,7 @@ public class PhysicalTableConfigurationRegistryTest {
 		PhysicalTableConfigurationRegistry registry = new PhysicalTableConfigurationRegistry();
 
 		assertNotSame(registry.getOrCreate(identity("openmrs", "person")),
-		        registry.getOrCreate(identity("reporting", "person")));
+				registry.getOrCreate(identity("reporting", "person")));
 		assertEquals(2, registry.size());
 	}
 
@@ -89,6 +90,7 @@ public class PhysicalTableConfigurationRegistryTest {
 	}
 
 	private PhysicalTableIdentity identity(String schema, String table) {
-		return new PhysicalTableIdentity("jdbc:mysql://localhost/openmrs", "etl", "openmrs", schema, table);
+		return new PhysicalTableIdentity(new EtlConfiguration(), "jdbc:mysql://localhost/openmrs", "etl", "openmrs",
+				schema, table);
 	}
 }

@@ -42,7 +42,7 @@ public class DBOperation {
 		if (qtyTry < maxTry) {
 			qtyTry++;
 
-			logAsErr(error);
+			logAsWarn(error);
 
 			try {
 				this.generatedIds = BaseDAO.executeQueryWithoutRetry(sql, params, conn);
@@ -67,7 +67,6 @@ public class DBOperation {
 		}
 	}
 
-	@SuppressWarnings("unused")
 	private void logAsWarn(String error) {
 		String queryInfo = BaseDAO.generateMInimalQueryInfo(sql, params);
 
@@ -75,6 +74,7 @@ public class DBOperation {
 				maxTry);
 	}
 
+	@SuppressWarnings("unused")
 	private void logAsErr(String error) {
 		String queryInfo = BaseDAO.generateMInimalQueryInfo(sql, params);
 

@@ -137,13 +137,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private List<TableConfiguration> fullLoadedTables;
 
-	@JsonIgnore
-	private final PhysicalTableConfigurationRegistry physicalTableConfigurationRegistry =
-	        new PhysicalTableConfigurationRegistry();
+	private static final PhysicalTableConfigurationRegistry physicalTableConfigurationRegistry = new PhysicalTableConfigurationRegistry();
 
 	@JsonIgnore
 	public PhysicalTableConfigurationRegistry getPhysicalTableConfigurationRegistry() {
-		return physicalTableConfigurationRegistry;
+		return EtlConfiguration.physicalTableConfigurationRegistry;
 	}
 
 	private List<String> busyTableAliasName;
