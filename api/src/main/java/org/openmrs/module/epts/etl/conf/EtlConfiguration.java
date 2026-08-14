@@ -20,6 +20,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableAliasesGenerator;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfigurationRegistry;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
@@ -135,6 +136,15 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private EtlConfigurationTableConf skippedRecordTabConf;
 
 	private List<TableConfiguration> fullLoadedTables;
+
+	@JsonIgnore
+	private final PhysicalTableConfigurationRegistry physicalTableConfigurationRegistry =
+	        new PhysicalTableConfigurationRegistry();
+
+	@JsonIgnore
+	public PhysicalTableConfigurationRegistry getPhysicalTableConfigurationRegistry() {
+		return physicalTableConfigurationRegistry;
+	}
 
 	private List<String> busyTableAliasName;
 

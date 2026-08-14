@@ -1428,7 +1428,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				if (!this.includePrimaryKeyOnInsert()) {
 
 					// Force the inclusion of primaryKey if the table is not autoincrement or if it
-					// uses shared pj
+					// uses shared pk
 					if ((!this.isAutoIncrementId() || this.useSharedPKKey()
 							|| this.getRelatedEtlConf().isDoNotTransformsPrimaryKeys())
 							&& !(this instanceof EtlConfigurationTableConf)) {

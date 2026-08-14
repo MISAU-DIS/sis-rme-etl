@@ -20,6 +20,12 @@
 	<description>API project for SISRME-Etl</description>
 		
 	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version>
+			<scope>test</scope>
+		</dependency>
 
 		<!-- Begin OpenMRS core -->
 		

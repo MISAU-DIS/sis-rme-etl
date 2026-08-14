@@ -396,6 +396,9 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 		this.allowNull = f.allowNull;
 		this.typeClass = f.typeClass;
 		this.precision = f.precision;
+		this.timeStamp = f.timeStamp;
+		this.autoIncrement = f.autoIncrement;
+		this.transformingInfo = f.transformingInfo;
 	}
 
 	@JsonIgnore
