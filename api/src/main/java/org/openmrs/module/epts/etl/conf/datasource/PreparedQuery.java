@@ -32,8 +32,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
  * Represents an prepared query ready to be executed. It alwas has a ready query

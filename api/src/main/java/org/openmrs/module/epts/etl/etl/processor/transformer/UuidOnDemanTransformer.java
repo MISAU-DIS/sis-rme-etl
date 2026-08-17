@@ -14,10 +14,8 @@ import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
-import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
-import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -312,61 +310,10 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		EtlDatabaseObject obj;
 
 		obj = getTableConf().find(p.getPreparedQuery(),
-				resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn), dstConn);
+				resolveDstValues(srcObject, p.getParameters(), getDefaultSrcConf(), getTableConf(), srcConn, dstConn),
+				dstConn);
 
 		return obj != null ? obj.getFieldValue("uuid").toString() : null;
-	}
-
-	private Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
-			Connection srcConn, Connection dstConn) throws DBException {
-
-		ensureTableInitialized(srcConn, dstConn);
-
-		Object[] resolvedParams = new Object[params.size()];
-
-		EtlDatabaseObject auxObject = this.getTableConf().createRecordInstance();
-
-		for (int i = 0; i < params.size(); i++) {
-			FieldTransformingInfo paramValueInfo = params.get(i);
-
-			if (!paramValueInfo.skipRelationshipResolution()) {
-				ParentTable refInfo = this.getTableConf()
-						.findParentRefInfoByField(paramValueInfo.getSrcField().getName());
-
-				if (refInfo != null) {
-					auxObject.setFieldValue(refInfo.getChildColumnOnSimpleMapping(),
-							paramValueInfo.getTransformedValue());
-
-					EtlDatabaseObject parentInSrc = auxObject.retrieveParentInSrcUsingDstParentInfo(refInfo,
-							this.getDefaultSrcConf(), srcConn);
-
-					EtlDatabaseObject parentInDst = null;
-
-					refInfo.fullLoad(dstConn);
-
-					if (parentInSrc != null) {
-						parentInDst = auxObject.retrieveParentInDestination(refInfo, parentInSrc, dstConn);
-					}
-
-					if (parentInDst == null) {
-						srcObject.loadObjectIdData();
-
-						throw new EtlTransformationException("The " + refInfo.getTableName() + "("
-								+ paramValueInfo.getTransformedValue() + ") of " + this.getTableConf().getTableName()
-								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on dst db",
-								srcObject, ActionOnEtlIssue.ABORT_PROCESS);
-					}
-
-					resolvedParams[i] = parentInDst.getObjectId().asSimpleNumericValue();
-				} else {
-					resolvedParams[i] = paramValueInfo.getTransformedValue();
-				}
-			} else {
-				resolvedParams[i] = paramValueInfo.getTransformedValue();
-			}
-		}
-
-		return resolvedParams;
 	}
 
 	@Override

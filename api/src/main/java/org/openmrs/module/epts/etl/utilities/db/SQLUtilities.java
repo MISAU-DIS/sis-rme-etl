@@ -2583,6 +2583,7 @@ public class SQLUtilities {
 		String[] srcObjectConditionElements = utilities.splitByAnyAtTopLevel(query, arithmeticOperators);
 
 		String previousAdjustedElement = null;
+		int topLevelSearchFromIndex = 0;
 
 		for (String element : srcObjectConditionElements) {
 
@@ -2591,6 +2592,14 @@ public class SQLUtilities {
 			}
 
 			element = element.strip().trim();
+			int elementIndex = query.indexOf(element, topLevelSearchFromIndex);
+			String equalityPreviousElement = isImmediatelyPrecededByEquality(query, element, topLevelSearchFromIndex)
+					? previousAdjustedElement
+					: null;
+
+			if (elementIndex >= 0) {
+				topLevelSearchFromIndex = elementIndex + element.length();
+			}
 
 			if (isParam(element)) {
 				previousAdjustedElement = element;
@@ -2608,12 +2617,12 @@ public class SQLUtilities {
 
 					String adjustedElement = element;
 
-					map = generateTransformerMapping(conn, transformingTarget, previousAdjustedElement,
+					map = generateTransformerMapping(conn, transformingTarget, equalityPreviousElement,
 							adjustedElement);
 
 					if (map != null && (map.hasDataSourceName() || !map.useDefaultTransformer())) {
 
-						addResolvedElement(previousAdjustedElement, adjustedElement, map, resolvedElements,
+						addResolvedElement(equalityPreviousElement, adjustedElement, map, resolvedElements,
 								alreadyResolvedElements, avaliableSrcObjects, conn);
 					}
 
@@ -2625,7 +2634,8 @@ public class SQLUtilities {
 				List<String> candidateElements = extractCandidateQueryElementsRecursively(relatedEtlConf, element,
 						arithmeticOperators);
 
-				String previousCandidateElement = previousAdjustedElement;
+				String previousCandidateElement = equalityPreviousElement;
+				int candidateSearchFromIndex = 0;
 
 				for (String candidate : candidateElements) {
 
@@ -2634,6 +2644,13 @@ public class SQLUtilities {
 					}
 
 					String candidateAdjustedElement = candidate.strip().trim();
+					int candidateIndex = element.indexOf(candidateAdjustedElement, candidateSearchFromIndex);
+					String candidatePreviousElement = isImmediatelyPrecededByEquality(element, candidateAdjustedElement,
+							candidateSearchFromIndex) ? previousCandidateElement : null;
+
+					if (candidateIndex >= 0) {
+						candidateSearchFromIndex = candidateIndex + candidateAdjustedElement.length();
+					}
 
 					/*
 					 * Very important:
@@ -2652,7 +2669,7 @@ public class SQLUtilities {
 
 						if (isParam(candidateAdjustedElement)) {
 
-							resolveParameter(previousCandidateElement, candidateAdjustedElement, resolvedElements,
+							resolveParameter(candidatePreviousElement, candidateAdjustedElement, resolvedElements,
 									alreadyResolvedElements, avaliableSrcObjects, relatedEtlConf, conn);
 
 							continue;
@@ -2662,7 +2679,7 @@ public class SQLUtilities {
 
 						if (isTransformerExpression(relatedEtlConf, candidateAdjustedElement)) {
 
-							map = generateTransformerMapping(conn, transformingTarget, previousCandidateElement,
+							map = generateTransformerMapping(conn, transformingTarget, candidatePreviousElement,
 									candidateAdjustedElement);
 
 						} else if (!isValidQueryColumnDefinition(candidateAdjustedElement)) {
@@ -2674,7 +2691,7 @@ public class SQLUtilities {
 
 							if (map == null && checkIfFieldDefinitionIncludeQualifier(candidateAdjustedElement)) {
 
-								map = generateMapping(transformingTarget, previousAdjustedElement,
+								map = generateMapping(transformingTarget, candidatePreviousElement,
 										candidateAdjustedElement, conn);
 
 								/*
@@ -2704,7 +2721,7 @@ public class SQLUtilities {
 							continue;
 						}
 
-						addResolvedElement(previousCandidateElement, candidateAdjustedElement, map, resolvedElements,
+						addResolvedElement(candidatePreviousElement, candidateAdjustedElement, map, resolvedElements,
 								alreadyResolvedElements, avaliableSrcObjects, conn);
 
 					} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
@@ -2751,6 +2768,44 @@ public class SQLUtilities {
 		return resolvedElements;
 	}
 
+	/*
+	 * Returns true only when the candidate itself is on the right-hand side of an
+	 * equality. The candidate list deliberately does not contain operators, so
+	 * using the previously visited candidate unconditionally can accidentally
+	 * associate expressions separated by AND, WHERE, or another operator.
+	 */
+	static boolean isImmediatelyPrecededByEquality(String expression, String candidate) {
+		return isImmediatelyPrecededByEquality(expression, candidate, 0);
+	}
+
+	static boolean isImmediatelyPrecededByEquality(String expression, String candidate, int fromIndex) {
+
+		if (expression == null || candidate == null || candidate.isBlank()) {
+			return false;
+		}
+
+		int candidateIndex = expression.indexOf(candidate, Math.max(0, fromIndex));
+
+		if (candidateIndex < 0) {
+			return false;
+		}
+
+		int operatorIndex = candidateIndex - 1;
+
+		while (operatorIndex >= 0 && Character.isWhitespace(expression.charAt(operatorIndex))) {
+			operatorIndex--;
+		}
+
+		if (operatorIndex >= 0 && expression.charAt(operatorIndex) == '=') {
+
+			char precedingChar = operatorIndex > 0 ? expression.charAt(operatorIndex - 1) : '\0';
+
+			return precedingChar != '>' && precedingChar != '<' && precedingChar != '!';
+		}
+
+		return false;
+	}
+
 	private static void addResolvedElement(String previousElement, String element, FieldsMapping map,
 			List<ResolvedQueryElement> resolvedElements, Set<ResolvedElementKey> alreadyResolvedElements,
 			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
@@ -2765,7 +2820,7 @@ public class SQLUtilities {
 
 		FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
 
-		resolvedElements.add(new ResolvedQueryElement(previousElement, element, valueInfo));
+		resolvedElements.add(new ResolvedQueryElement(new ResolvedElementKey(previousElement, element), valueInfo));
 	}
 
 	private static String normalizeQueryElement(String element) {
@@ -2893,15 +2948,15 @@ public class SQLUtilities {
 	private static List<String> extractCandidateQueryElementsRecursively(EtlConfiguration etlConfiguration,
 			String element, String[] splitTokens) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		Set<String> result = new LinkedHashSet<>();
+		List<String> result = new ArrayList<>();
 
 		extractCandidateQueryElementsRecursively(etlConfiguration, element, splitTokens, result);
 
-		return new ArrayList<>(result);
+		return result;
 	}
 
 	private static void extractCandidateQueryElementsRecursively(EtlConfiguration etlConfiguration, String element,
-			String[] splitTokens, Set<String> result) throws FieldAvaliableInMultipleDataSources, DBException {
+			String[] splitTokens, List<String> result) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (element == null || element.isBlank()) {
 			return;
@@ -3104,6 +3159,10 @@ public class SQLUtilities {
 			this.element = element;
 		}
 
+		String getElement() {
+			return this.element;
+		}
+
 		@Override
 		public boolean equals(Object obj) {
 
@@ -3128,22 +3187,16 @@ public class SQLUtilities {
 
 	private static class ResolvedQueryElement {
 
-		private final String token;
-		private final String prevToken;
+		private final ResolvedElementKey key;
 		private final FieldTransformingInfo valueInfo;
 
-		private ResolvedQueryElement(String prevToken, String token, FieldTransformingInfo valueInfo) {
-			this.token = token;
-			this.prevToken = prevToken;
+		private ResolvedQueryElement(ResolvedElementKey key, FieldTransformingInfo valueInfo) {
 			this.valueInfo = valueInfo;
-		}
-
-		public String getPrevToken() {
-			return prevToken;
+			this.key = key;
 		}
 
 		public String getToken() {
-			return token;
+			return key.getElement();
 		}
 
 		public FieldTransformingInfo getValueInfo() {

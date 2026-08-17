@@ -454,8 +454,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		PreparedQueryInfo p = prepareOnDemandParentLookup(allObjs, dstConn);
 
-		return dstConf.find(p.getPreparedQuery(), resolveDstValues(srcObject, p.getParameters(), srcConn, dstConn),
-				dstConn);
+		SrcConf srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+
+		return dstConf.find(p.getPreparedQuery(),
+				resolveDstValues(srcObject, p.getParameters(), srcConf, dstConf, srcConn, dstConn), dstConn);
 	}
 
 	EtlDatabaseObject retrieveExistingParent(EtlProcessor processor, EtlDatabaseObject srcParent,
@@ -475,10 +477,13 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		String keyPrefix = getRelatedEtlTransformTarget().getFullTableName() + "->" + getParentTableName();
 
 		if (utilities.stringHasValue(getOnDemandCheckCondition())) {
+			ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
+			SrcConf srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+			DstConf dstConf = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 			List<EtlDatabaseObject> allObjects = additionalSrcObjects != null ? additionalSrcObjects
 					: (srcObject != null ? utilities.parseToList(srcObject) : null);
 			PreparedQueryInfo lookup = prepareOnDemandParentLookup(allObjects, dstConn);
-			Object[] values = resolveDstValues(srcObject, lookup.getParameters(), srcConn, dstConn);
+			Object[] values = resolveDstValues(srcObject, lookup.getParameters(), srcConf, dstConf, srcConn, dstConn);
 			return keyPrefix + "|" + lookup.getPreparedQuery() + "|" + Arrays.deepToString(values);
 		}
 
@@ -493,56 +498,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			throws DBException {
 		return SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(getOnDemandCheckCondition(), null,
 				sourceObjects, getRelatedEtlConf(), dstConn);
-	}
-
-	private Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
-			Connection srcConn, Connection dstConn) throws DBException {
-
-		this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
-
-		SrcConf srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
-		DstConf dstConf = this.getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
-
-		Object[] resolvedParams = new Object[params.size()];
-
-		EtlDatabaseObject auxObject = dstConf.createRecordInstance();
-
-		for (int i = 0; i < params.size(); i++) {
-			FieldTransformingInfo paramValueInfo = params.get(i);
-
-			if (!paramValueInfo.isLoadedWithDstValue()) {
-				ParentTable refInfo = dstConf.findParentRefInfoByField(paramValueInfo.getSrcField().getName());
-
-				if (refInfo != null) {
-					auxObject.setFieldValue(refInfo.getChildColumnOnSimpleMapping(),
-							paramValueInfo.getTransformedValue());
-
-					EtlDatabaseObject parentInSrc = auxObject.retrieveParentInSrcUsingDstParentInfo(refInfo, srcConf,
-							srcConn);
-
-					EtlDatabaseObject parentInDst = null;
-
-					if (parentInSrc != null) {
-						parentInDst = auxObject.retrieveParentInDestination(refInfo, parentInSrc, dstConn);
-					}
-
-					if (parentInDst == null) {
-						throw new EtlTransformationException("The " + refInfo.getTableName() + "("
-								+ paramValueInfo.getTransformedValue() + ") of " + dstConf.getTableName() + "("
-								+ srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on dst db",
-								srcObject, ActionOnEtlIssue.ABORT_PROCESS);
-					}
-
-					resolvedParams[i] = parentInDst.getObjectId().asSimpleNumericValue();
-				} else {
-					resolvedParams[i] = paramValueInfo.getTransformedValue();
-				}
-			} else {
-				resolvedParams[i] = paramValueInfo.getTransformedValue();
-			}
-		}
-
-		return resolvedParams;
 	}
 
 	DstConf getEtlTransformTargetForExistingSrcParent(Connection srcConn, Connection dstConn) throws DBException {
