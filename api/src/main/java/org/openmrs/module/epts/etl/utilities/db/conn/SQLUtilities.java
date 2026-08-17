@@ -2358,17 +2358,23 @@ public class SQLUtilities {
 		return type != null;
 	}
 
-	private static String replaceFirstLiteralTokenWithQuestionMark(String query, String token) {
+	private static String replaceFirstLiteralTokenWithQuestionMark(String query, String token, int questionMarksCount) {
+
+		if (query == null || token == null || questionMarksCount <= 0) {
+			return query;
+		}
 
 		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token) + "(?![a-zA-Z0-9_\\.])");
 
 		Matcher matcher = pattern.matcher(query);
 
-		if (matcher.find()) {
-			return matcher.replaceFirst("?");
+		if (!matcher.find()) {
+			return query;
 		}
 
-		return query;
+		String replacement = String.join(", ", Collections.nCopies(questionMarksCount, "?"));
+
+		return matcher.replaceFirst(Matcher.quoteReplacement(replacement));
 	}
 
 	public static String replaceFirstParameterOccurrence(String query, String paramName, int qtyQuestionMarks) {
@@ -2456,13 +2462,28 @@ public class SQLUtilities {
 				knownTableAliases, avaliableSrcObjects, relatedEtlConf, conn);
 
 		for (ResolvedQueryElement element : resolvedElements) {
-
-			preparedQuery = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken());
+			preparedQuery = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken(),
+					determineQtyElementsWithinTheParamValue(element.getValueInfo().getTransformedValue()));
 
 			resolvedValues.add(element.getValueInfo());
 		}
 
 		return new PreparedQueryInfo(preparedQuery, originalQuery, relatedEtlConf, resolvedValues);
+	}
+
+	public static int determineQtyElementsWithinTheParamValue(Object paramValue) {
+		if (paramValue == null || !(paramValue instanceof String))
+			return 1;
+
+		String[] valueParts = paramValue.toString().split("\\,");
+
+		for (String p : valueParts) {
+			if (!utilities.isNumeric(p)) {
+				return 1;
+			}
+		}
+
+		return valueParts.length;
 	}
 
 	public static String ensureDataSourceElementsReplaced(String query, List<String> knownTableAliases,
