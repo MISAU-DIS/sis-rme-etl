@@ -33,7 +33,7 @@ import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 /**
  * Represents an prepared query ready to be executed. It alwas has a ready query
@@ -230,7 +230,6 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			throw new ForbiddenOperationException(
 					"Empty relatedEtlConfiguration was provided for PreparedQuery(" + query + ")");
 
-		
 		return this.generatePreparedQuery(relatedEtlConfiguration, null, null, null, null, conn);
 	}
 
@@ -292,8 +291,8 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 				params.add(paramTransformInfo);
 
-				replacement = buildQuestionMarkReplacement(PreparedQueryInfo
-						.determineQtyElementsWithinTheParamValue(paramTransformInfo.getTransformedValue()));
+				replacement = buildQuestionMarkReplacement(
+						SQLUtilities.determineQtyElementsWithinTheParamValue(paramTransformInfo.getTransformedValue()));
 
 			} else if (param.getContextType().dbResource()) {
 

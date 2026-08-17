@@ -168,7 +168,7 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 				: utilities.parseToList(obj);
 
 		try {
-			condition = org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities
+			condition = org.openmrs.module.epts.etl.utilities.db.SQLUtilities
 					.ensureDataSourceElementsReplaced(condition, null, list, this.getRelatedEtlConf(), dstConn);
 		} catch (MissingParameterOnEtlTransformationException | InvalidDataSourceOnFieldDefifitionException e) {
 

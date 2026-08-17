@@ -37,7 +37,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfigura
 import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 /**
  * Transformer responsible for resolving, reusing, or creating a parent record

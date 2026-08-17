@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.utilities.db.conn;
+package org.openmrs.module.epts.etl.utilities.db;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
@@ -42,6 +43,7 @@ import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.FuncoesGenericas;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
  * Esta classe possui funções utilitárias para operações na base de dados
@@ -2548,7 +2550,7 @@ public class SQLUtilities {
 
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
-		Set<String> alreadyResolvedElements = new HashSet<>();
+		Set<ResolvedElementKey> alreadyResolvedElements = new HashSet<>();
 
 		String[] arithmeticOperators = { ">=", "=", "<=", "!=", ">", "<", " and ", " limit ", " from ", " inner ",
 				" join ", " where ", " in ", " not ", " not in " };
@@ -2562,11 +2564,15 @@ public class SQLUtilities {
 		FastEtlTransformingTarget transformingTarget = FastEtlTransformingTarget.fastCreate(relatedEtlConf,
 				avaliableSrcObjects, conn);
 
+		/*
+		 * Parameters are resolved independently because they are explicitly identified
+		 * by '@'.
+		 */
 		for (String param : extractQueryParameters(query)) {
 
 			try {
-				resolveParameter(param, resolvedElements, alreadyResolvedElements, avaliableSrcObjects, relatedEtlConf,
-						conn);
+				resolveParameter(null, param, resolvedElements, alreadyResolvedElements, avaliableSrcObjects,
+						relatedEtlConf, conn);
 
 			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
 
@@ -2576,68 +2582,106 @@ public class SQLUtilities {
 
 		String[] srcObjectConditionElements = utilities.splitByAnyAtTopLevel(query, arithmeticOperators);
 
+		String previousAdjustedElement = null;
+
 		for (String element : srcObjectConditionElements) {
+
+			if (element == null || element.isBlank()) {
+				continue;
+			}
+
+			element = element.strip().trim();
+
+			if (isParam(element)) {
+				previousAdjustedElement = element;
+				continue;
+			}
 
 			try {
 
-				if (element == null || element.isBlank()) {
-					continue;
-				}
-
-				element = element.strip().trim();
-
-				if (isParam(element)) {
-					continue;
-				}
-
 				FieldsMapping map = null;
 
-				String adjustedElement;
-
+				/*
+				 * Transformer occurring directly at this level.
+				 */
 				if (isTransformerExpression(relatedEtlConf, element)) {
 
-					adjustedElement = element;
+					String adjustedElement = element;
 
-					map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
+					map = generateTransformerMapping(conn, transformingTarget, previousAdjustedElement,
+							adjustedElement);
 
-				} else {
+					if (map != null && (map.hasDataSourceName() || !map.useDefaultTransformer())) {
 
-					List<String> candidateElements = extractCandidateQueryElementsRecursively(relatedEtlConf, element,
-							arithmeticOperators);
+						addResolvedElement(previousAdjustedElement, adjustedElement, map, resolvedElements,
+								alreadyResolvedElements, avaliableSrcObjects, conn);
+					}
 
-					for (String candidate : candidateElements) {
+					previousAdjustedElement = adjustedElement;
 
-						if (candidate == null || candidate.isBlank()) {
-							continue;
-						}
+					continue;
+				}
 
-						adjustedElement = candidate.strip().trim();
+				List<String> candidateElements = extractCandidateQueryElementsRecursively(relatedEtlConf, element,
+						arithmeticOperators);
 
-						if (isParam(adjustedElement)) {
-							continue;
-						}
+				String previousCandidateElement = previousAdjustedElement;
 
-						if (alreadyResolvedElements.contains(adjustedElement)) {
+				for (String candidate : candidateElements) {
+
+					if (candidate == null || candidate.isBlank()) {
+						continue;
+					}
+
+					String candidateAdjustedElement = candidate.strip().trim();
+
+					/*
+					 * Very important:
+					 *
+					 * The current candidate becomes the context for the next candidate even when
+					 * the current one is NOT transformable.
+					 *
+					 * Example:
+					 *
+					 * pa.person_id = encounter_src_ds.patient_id
+					 *
+					 * pa.person_id may be ignored as a transformation source, but it must still be
+					 * preserved as context for encounter_src_ds.patient_id.
+					 */
+					try {
+
+						if (isParam(candidateAdjustedElement)) {
+
+							resolveParameter(previousCandidateElement, candidateAdjustedElement, resolvedElements,
+									alreadyResolvedElements, avaliableSrcObjects, relatedEtlConf, conn);
+
 							continue;
 						}
 
 						map = null;
 
-						if (isTransformerExpression(relatedEtlConf, adjustedElement)) {
+						if (isTransformerExpression(relatedEtlConf, candidateAdjustedElement)) {
 
-							map = generateTransformerMapping(conn, transformingTarget, adjustedElement);
+							map = generateTransformerMapping(conn, transformingTarget, previousCandidateElement,
+									candidateAdjustedElement);
 
-						} else if (!isValidQueryColumnDefinition(adjustedElement)) {
+						} else if (!isValidQueryColumnDefinition(candidateAdjustedElement)) {
 
 							continue;
 						}
 
 						try {
 
-							if (map == null && checkIfFieldDefinitionIncludeQualifier(adjustedElement)) {
+							if (map == null && checkIfFieldDefinitionIncludeQualifier(candidateAdjustedElement)) {
 
-								map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
+								map = generateMapping(transformingTarget, previousAdjustedElement,
+										candidateAdjustedElement, conn);
 
+								/*
+								 * A field belonging to a table/alias from the SQL query itself is not
+								 * transformed, but it remains important as contextual information for the next
+								 * element.
+								 */
 								if (utilities.contains(avaliableTableAliases, map.getDataSourceName())
 										|| !map.hasTransformer()) {
 
@@ -2660,44 +2704,83 @@ public class SQLUtilities {
 							continue;
 						}
 
-						FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
+						addResolvedElement(previousCandidateElement, candidateAdjustedElement, map, resolvedElements,
+								alreadyResolvedElements, avaliableSrcObjects, conn);
 
-						resolvedElements.add(new ResolvedQueryElement(adjustedElement, valueInfo));
+					} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
 
-						alreadyResolvedElements.add(adjustedElement);
+						continue;
+
+					} finally {
+
+						/*
+						 * Do not move this assignment to the successful resolution branch.
+						 *
+						 * Even an element that is ignored for transformation can provide the context of
+						 * the next element.
+						 */
+						previousCandidateElement = candidateAdjustedElement;
 					}
-
-					continue;
 				}
 
-				if (map == null || (!map.hasDataSourceName() && map.useDefaultTransformer())) {
+				if (utilities.listHasElement(candidateElements)) {
 
-					continue;
+					for (int i = candidateElements.size() - 1; i >= 0; i--) {
+
+						String lastCandidate = candidateElements.get(i);
+
+						if (lastCandidate != null && !lastCandidate.isBlank()) {
+
+							previousAdjustedElement = lastCandidate.strip().trim();
+
+							break;
+						}
+					}
 				}
-
-				if (alreadyResolvedElements.contains(adjustedElement)) {
-
-					continue;
-				}
-
-				FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
-
-				resolvedElements.add(new ResolvedQueryElement(adjustedElement, valueInfo));
-
-				alreadyResolvedElements.add(adjustedElement);
 
 			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
 
-				continue;
+				/*
+				 * The current top-level element must still be available as context for the
+				 * following element.
+				 */
+				previousAdjustedElement = element;
 			}
 		}
 
 		return resolvedElements;
 	}
 
-	private static void resolveParameter(String param, List<ResolvedQueryElement> resolvedElements,
-			Set<String> alreadyResolvedElements, List<EtlDatabaseObject> avaliableSrcObjects,
-			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	private static void addResolvedElement(String previousElement, String element, FieldsMapping map,
+			List<ResolvedQueryElement> resolvedElements, Set<ResolvedElementKey> alreadyResolvedElements,
+			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+
+		ResolvedElementKey key = new ResolvedElementKey(normalizeQueryElement(previousElement),
+				normalizeQueryElement(element));
+
+		if (!alreadyResolvedElements.add(key)) {
+			return;
+		}
+
+		FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
+
+		resolvedElements.add(new ResolvedQueryElement(previousElement, element, valueInfo));
+	}
+
+	private static String normalizeQueryElement(String element) {
+
+		if (element == null) {
+			return null;
+		}
+
+		return element.strip().trim();
+	}
+
+	private static void resolveParameter(String previousElement, String param,
+			List<ResolvedQueryElement> resolvedElements, Set<ResolvedElementKey> alreadyResolvedElements,
+			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (param == null || param.isBlank()) {
 			return;
@@ -2705,7 +2788,9 @@ public class SQLUtilities {
 
 		param = param.strip().trim();
 
-		if (alreadyResolvedElements.contains(param)) {
+		ResolvedElementKey key = new ResolvedElementKey(normalizeQueryElement(previousElement), param);
+
+		if (alreadyResolvedElements.contains(key)) {
 			return;
 		}
 
@@ -2716,11 +2801,8 @@ public class SQLUtilities {
 			return;
 		}
 
-		FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
-
-		resolvedElements.add(new ResolvedQueryElement(param, valueInfo));
-
-		alreadyResolvedElements.add(param);
+		addResolvedElement(previousElement, param, map, resolvedElements, alreadyResolvedElements, avaliableSrcObjects,
+				conn);
 	}
 
 	private static List<String> extractQueryParameters(String query) {
@@ -2755,15 +2837,21 @@ public class SQLUtilities {
 	}
 
 	private static boolean isParam(String element) {
-		// TODO Auto-generated method stub
-		return false;
+		return element != null && element.startsWith("@");
 	}
 
 	private static FieldsMapping generateTransformerMapping(Connection conn,
-			FastEtlTransformingTarget transformingTarget, String adjustedElement) throws DBException {
+			FastEtlTransformingTarget transformingTarget, String prevAdjustedElement, String adjustedElement)
+			throws DBException {
 		FieldsMapping map;
-		map = FieldsMapping.fastCreate(transformingTarget, "tmp_field", conn);
 
+		String dstField = tryToGenerateDstFieldForFieldsMapping(prevAdjustedElement);
+
+		if (dstField != null) {
+			map = FieldsMapping.fastCreate(transformingTarget, dstField, conn);
+		} else {
+			map = FieldsMapping.fastCreate(transformingTarget, "tmp_field", conn);
+		}
 		map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
 
 		map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
@@ -2773,6 +2861,33 @@ public class SQLUtilities {
 		}
 
 		return map;
+	}
+
+	private static FieldsMapping generateMapping(FastEtlTransformingTarget transformingTarget,
+			String prevAdjustedElement, String adjustedElement, Connection conn) throws DBException {
+
+		FieldsMapping map;
+
+		String dstField = tryToGenerateDstFieldForFieldsMapping(prevAdjustedElement);
+
+		if (dstField != null) {
+			map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, dstField, conn);
+		} else {
+			map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
+		}
+
+		return map;
+	}
+
+	private static String tryToGenerateDstFieldForFieldsMapping(String token) {
+
+		if (isValidQueryColumnDefinition(token)) {
+			String[] srcFieldParts = token.toString().split("\\.");
+
+			return srcFieldParts[srcFieldParts.length - 1];
+		}
+
+		return null;
 	}
 
 	private static List<String> extractCandidateQueryElementsRecursively(EtlConfiguration etlConfiguration,
@@ -2978,14 +3093,53 @@ public class SQLUtilities {
 		return result;
 	}
 
+	private static class ResolvedElementKey {
+
+		private final String previousElement;
+		private final String element;
+
+		public ResolvedElementKey(String previousElement, String element) {
+
+			this.previousElement = previousElement;
+			this.element = element;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+
+			if (this == obj) {
+				return true;
+			}
+
+			if (obj == null || getClass() != obj.getClass()) {
+				return false;
+			}
+
+			ResolvedElementKey other = (ResolvedElementKey) obj;
+
+			return Objects.equals(previousElement, other.previousElement) && Objects.equals(element, other.element);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(previousElement, element);
+		}
+	}
+
 	private static class ResolvedQueryElement {
 
 		private final String token;
+		private final String prevToken;
 		private final FieldTransformingInfo valueInfo;
 
-		private ResolvedQueryElement(String token, FieldTransformingInfo valueInfo) {
+		private ResolvedQueryElement(String prevToken, String token, FieldTransformingInfo valueInfo) {
 			this.token = token;
+			this.prevToken = prevToken;
 			this.valueInfo = valueInfo;
+		}
+
+		public String getPrevToken() {
+			return prevToken;
 		}
 
 		public String getToken() {

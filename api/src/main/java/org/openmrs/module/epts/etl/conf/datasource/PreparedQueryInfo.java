@@ -9,7 +9,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingIn
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
