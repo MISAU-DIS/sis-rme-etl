@@ -147,7 +147,8 @@ public class EtlTemplateConfiguration {
 			allowedParams = new HashSet<>();
 		}
 
-		List<String> missingParams = allowedParams.stream().filter(p -> !inputParams.containsKey(p)).toList();
+		List<String> missingParams = allowedParams.stream().filter(p -> !inputParams.containsKey(p))
+				.collect(java.util.stream.Collectors.toList());
 
 		if (!missingParams.isEmpty()) {
 			String childMsg = templateInfo.getChildTemplate() != null
@@ -168,7 +169,8 @@ public class EtlTemplateConfiguration {
 		Set<String> allowedSet = this.getParameters() != null ? new HashSet<>(this.getParameters())
 				: Collections.emptySet();
 
-		List<String> unknownParams = inputParams.keySet().stream().filter(key -> !allowedSet.contains(key)).toList();
+		List<String> unknownParams = inputParams.keySet().stream().filter(key -> !allowedSet.contains(key))
+				.collect(java.util.stream.Collectors.toList());
 
 		if (!unknownParams.isEmpty()) {
 			String childMsg = templateInfo.getChildTemplate() != null

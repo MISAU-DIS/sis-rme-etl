@@ -97,7 +97,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		this.parentTableName = parameters.get(0).toString();
 
 		this.rawParameterDefinitions = parameters.size() > 1
-				? parameters.subList(1, parameters.size()).stream().map(Object::toString).toList()
+				? parameters.subList(1, parameters.size()).stream().map(Object::toString)
+						.collect(java.util.stream.Collectors.toList())
 				: null;
 
 		if (utilities.listHasElement(this.rawParameterDefinitions)) {

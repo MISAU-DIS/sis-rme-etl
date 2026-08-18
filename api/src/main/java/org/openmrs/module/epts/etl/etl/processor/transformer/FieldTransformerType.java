@@ -243,7 +243,7 @@ public enum FieldTransformerType {
 			current.append(c);
 		}
 
-		if (!current.isEmpty()) {
+		if (current.length() > 0) {
 			params.add(current.toString().trim());
 		}
 

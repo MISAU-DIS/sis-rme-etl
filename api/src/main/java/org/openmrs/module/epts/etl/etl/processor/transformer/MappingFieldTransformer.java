@@ -131,7 +131,8 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 		this.mappingDstField = parameters.get(2).toString();
 
 		this.rawParameterDefinitions = parameters.size() > 3
-				? parameters.subList(3, parameters.size()).stream().map(Object::toString).toList()
+				? parameters.subList(3, parameters.size()).stream().map(Object::toString)
+						.collect(java.util.stream.Collectors.toList())
 				: null;
 
 		if (utilities.listHasElement(rawParameterDefinitions)) {

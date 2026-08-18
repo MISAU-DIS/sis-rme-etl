@@ -1092,7 +1092,7 @@ public class SQLUtilities {
 			current.append(c);
 		}
 
-		if (!current.isEmpty()) {
+		if (current.length() > 0) {
 			parts.add(current.toString().trim());
 		}
 
@@ -1995,7 +1995,7 @@ public class SQLUtilities {
 			current.append(c);
 		}
 
-		if (!current.isEmpty()) {
+		if (current.length() > 0) {
 			result.add(current.toString());
 		}
 
