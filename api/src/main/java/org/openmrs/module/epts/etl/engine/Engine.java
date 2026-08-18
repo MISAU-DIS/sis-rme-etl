@@ -29,6 +29,7 @@ import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtre
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.etl.model.stage.StageAreaPersistenceCoordinator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
@@ -80,6 +81,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	private int currentIteration;
 
+	private final StageAreaPersistenceCoordinator stageAreaPersistenceCoordinator;
+
 	public Engine(OperationController<T> controller, EtlItemConfiguration etlItemConfiguration,
 			TableOperationProgressInfo tableOperationProgressInfo) {
 		this.controller = controller;
@@ -92,6 +95,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		this.tableOperationProgressInfo = tableOperationProgressInfo;
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
+		this.stageAreaPersistenceCoordinator = new StageAreaPersistenceCoordinator();
+	}
+
+	public StageAreaPersistenceCoordinator getStageAreaPersistenceCoordinator() {
+		return stageAreaPersistenceCoordinator;
 	}
 
 	@Override
@@ -589,9 +597,21 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				return;
 			}
 
+			if (!getRelatedEtlConf().hasTestingItem()) {
+				if (useSharedConnection) {
+					flushStageArea(sharedSrcConn);
+				} else {
+					flushStageAreaUsingDedicatedConnection();
+				}
+			} else {
+				getStageAreaPersistenceCoordinator().discardPending();
+			}
+
 			if (useSharedConnection && !getRelatedEtlConf().hasTestingItem()) {
 				OpenConnection.markAllAsSuccessifullyTerminected(sharedSrcConn, sharedDstConn);
 				getThreadRecordIntervalsManager().getCurrentLimits().markAsProcessed();
+				getThreadRecordIntervalsManager().save();
+			} else if (!getRelatedEtlConf().hasTestingItem()) {
 				getThreadRecordIntervalsManager().save();
 			}
 
@@ -612,13 +632,22 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
+		OpenConnection srcConn = null;
+		OpenConnection dstConn = null;
+
 		try {
-			boolean persistWork = !getRelatedEtlConf().hasTestingItem();
-			performExtractTransformationAndLoading(processor, false, persistWork, openSrcConn(this),
-					tryToOpenDstConn(this));
+			srcConn = openSrcConn(this);
+			dstConn = tryToOpenDstConn(this);
+			performExtractTransformationAndLoading(processor, false, false, srcConn, dstConn);
+
+			if (!getRelatedEtlConf().hasTestingItem() && !processor.getTaskResultInfo().hasFatalError()) {
+				OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+			}
 		} catch (DBException e) {
 			processor.changeStatusToStopped();
 			processor.getTaskResultInfo().setFatalException(e);
+		} finally {
+			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
 		}
 	}
 
@@ -952,6 +981,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	private void completeExtractedTask(TaskProcessor<T> processor, OpenConnection srcConn, OpenConnection dstConn,
 			boolean refreshProgress) throws DBException {
 		if (processor.getTaskResultInfo().hasFatalError()) {
+			getStageAreaPersistenceCoordinator().discard(processor);
 			processor.changeStatusToStopped();
 			return;
 		}
@@ -980,8 +1010,36 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	private void persistCompletedResultPartition(OpenConnection srcConn, OpenConnection dstConn, boolean persistWork)
 			throws DBException {
 		if (persistWork) {
+			flushStageArea(srcConn);
 			getThreadRecordIntervalsManager().save();
 			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+		} else {
+			getStageAreaPersistenceCoordinator().discardPending();
+		}
+	}
+
+	private void flushStageArea(Connection srcConn) throws DBException {
+		int pending = getStageAreaPersistenceCoordinator().pendingCount();
+		if (pending == 0) {
+			return;
+		}
+
+		logInfo("Persisting {} pending StageArea records", pending);
+		getStageAreaPersistenceCoordinator().flush(srcConn);
+		logDebug("Pending StageArea records persisted");
+	}
+
+	private void flushStageAreaUsingDedicatedConnection() throws DBException {
+		if (getStageAreaPersistenceCoordinator().pendingCount() == 0) {
+			return;
+		}
+
+		OpenConnection stageConn = openSrcConn(this);
+		try {
+			flushStageArea(stageConn);
+			stageConn.markAsSuccessifullyTerminated();
+		} finally {
+			stageConn.finalizeConnection(this);
 		}
 	}
 
@@ -1065,6 +1123,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 				refreshProgressMeter(taskProcessor, srcConn);
 
+				if (persistTheWork) {
+					flushStageArea(srcConn);
+				} else if (getRelatedEtlConf().hasTestingItem()) {
+					getStageAreaPersistenceCoordinator().discardPending();
+				}
+
 				taskProcessor.getLimits().markAsProcessed();
 
 				if (persistTheWork) {
@@ -1079,9 +1143,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 				taskProcessor.changeStatusToFinished();
 			} else {
+				getStageAreaPersistenceCoordinator().discard(taskProcessor);
 				taskProcessor.changeStatusToStopped();
 			}
 		} catch (Exception e) {
+			getStageAreaPersistenceCoordinator().discard(taskProcessor);
 			taskProcessor.changeStatusToStopped();
 
 			stopOperationDueError(e);

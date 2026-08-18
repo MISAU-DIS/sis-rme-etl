@@ -18,7 +18,6 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
-import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObjectDAO;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
@@ -142,15 +141,13 @@ public class EtlLoadHelper {
 
 		boolean writeOperation = getEtlOperationConfig().writeOperationHistory();
 
-		writeOperation = writeOperation && (!this.loadingType.isParent()
-				|| !this.getEtlOperationConfig().getParallelProcessingStrategy().isMultiThreaded());
-
 		if (writeOperation) {
 			logInfo("Starting stage info generation and wrinting within {}", generateAvaliableEtl());
 
-			EtlStageAreaObjectDAO.saveAll(this.generateStageInfoForAll(srcConn, dstConn), srcConn);
+			getEngine().getStageAreaPersistenceCoordinator().register(getProcessor(),
+					this.generateStageInfoForAll(srcConn, dstConn));
 
-			logDebug("Stage Info stored to database!");
+			logDebug("Stage Info registered for centralized persistence!");
 		}
 	}
 
