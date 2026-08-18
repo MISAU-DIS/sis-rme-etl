@@ -18,7 +18,6 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
-import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -101,17 +100,6 @@ public class EtlLoadHelper {
 		return srcObjects;
 	}
 
-	public List<EtlStageObjectInfo> generateStageInfoForAll(Connection srcConn, Connection dstConn) throws DBException {
-
-		List<EtlStageObjectInfo> info = new ArrayList<>(this.getSrcObjects().size());
-
-		for (EtlDatabaseObject rec : this.getSrcObjects()) {
-			info.add(EtlStageObjectInfo.generate(rec, srcConn, dstConn));
-		}
-
-		return info;
-	}
-
 	public void load(Connection srcConn, Connection dstConn) throws ParentNotYetMigratedException, DBException {
 
 		if (this.hasDstConf()) {
@@ -142,12 +130,11 @@ public class EtlLoadHelper {
 		boolean writeOperation = getEtlOperationConfig().writeOperationHistory();
 
 		if (writeOperation) {
-			logInfo("Starting stage info generation and wrinting within {}", generateAvaliableEtl());
+			logInfo("Registering StageArea persistence within {}", generateAvaliableEtl());
 
-			getEngine().getStageAreaPersistenceCoordinator().register(getProcessor(),
-					this.generateStageInfoForAll(srcConn, dstConn));
+			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn, dstConn);
 
-			logDebug("Stage Info registered for centralized persistence!");
+			logDebug("StageArea persistence registered!");
 		}
 	}
 

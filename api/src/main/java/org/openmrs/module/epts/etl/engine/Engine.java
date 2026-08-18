@@ -7,10 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration;
@@ -35,7 +32,6 @@ import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.model.pojo.generic.RecordWithDefaultParentInfo;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
 import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
@@ -100,6 +96,20 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	public StageAreaPersistenceCoordinator getStageAreaPersistenceCoordinator() {
 		return stageAreaPersistenceCoordinator;
+	}
+
+	public void registerStageAreaPersistence(TaskProcessor<?> owner, List<EtlDatabaseObject> sourceObjects,
+			Connection srcConn, Connection dstConn) throws DBException {
+		getStageAreaPersistenceCoordinator().register(owner, sourceObjects);
+
+		if (canFlushStageAreaImmediately(owner)) {
+			flushStageArea(srcConn, dstConn);
+		}
+	}
+
+	private boolean canFlushStageAreaImmediately(TaskProcessor<?> owner) {
+		return !getRelatedEtlConf().hasTestingItem()
+				&& (!owner.isRunningInConcurrency() || determineProcessingStrategy().usesSinglePersistenceWorker());
 	}
 
 	@Override
@@ -537,118 +547,85 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		getProgressMeter().resetTotal();
 	}
 
-	public void processIntervalsInSingleProcessor(List<IntervalExtremeRecord> availableIntervals) throws Exception {
-		for (IntervalExtremeRecord interval : availableIntervals) {
-			if (stopRequested() || isStopped()) {
-				logWarn("Aborting engine as stop requested!", 10, true);
-				return;
-			}
+	void processRangePartition(TaskProcessor<T> processor, boolean useSharedConnection, OpenConnection sharedSrcConn,
+			OpenConnection sharedDstConn) {
 
-			TaskProcessor<T> taskProcessor = getController().initRelatedTaskProcessor(this, interval, false);
-			taskProcessor.setProcessorId(this.getEngineId());
-
-			boolean persistTheWork = !getRelatedEtlConf().hasTestingItem();
-			boolean useMultiThreadSearch = true;
-
-			performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork,
-					openSrcConn(this), tryToOpenDstConn(this));
-
-			if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-				stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
-			}
-		}
-	}
-
-	public void processRangePartitionedIntervals(List<IntervalExtremeRecord> availableIntervals) throws Exception {
-		logDebug("Initializing " + availableIntervals.size() + " processors to performe task on a interval "
-				+ getThreadRecordIntervalsManager().getCurrentLimits() + "!".toUpperCase());
-
-		EtlThreadFactory<T> threadFactory = new EtlThreadFactory<>(this);
-
-		boolean useSharedConnection = getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
-
-		resetCurrentTaskProcessor(availableIntervals.size());
-
-		List<CompletableFuture<Void>> tasks = new ArrayList<>(availableIntervals.size());
-
-		ExecutorService executor = Executors.newFixedThreadPool(availableIntervals.size(), threadFactory);
-
-		OpenConnection sharedSrcConn = openSrcConn(this);
-		OpenConnection sharedDstConn = tryToOpenDstConn(this);
-
-		try {
-			for (int i = 0; i < availableIntervals.size(); i++) {
-				TaskProcessor<T> processor = initTaskProcessor(availableIntervals.get(i), i);
-
-				getCurrentTaskProcessor().add(processor);
-
-				tasks.add(CompletableFuture.runAsync(
-						() -> processRangePartition(processor, useSharedConnection, sharedSrcConn, sharedDstConn),
-						executor));
-			}
-
-			CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
-
-			List<EtlOperationResultHeader<T>> results = collectProcessorResults(getCurrentTaskProcessor());
-
-			if (EtlOperationResultHeader.hasAtLeastOneFatalError(results)) {
-				stopOperationDueError(
-						EtlOperationResultHeader.getDefaultResultWithFatalError(results).getFatalException());
-				return;
-			}
-
-			if (!getRelatedEtlConf().hasTestingItem()) {
-				if (useSharedConnection) {
-					flushStageArea(sharedSrcConn);
-				} else {
-					flushStageAreaUsingDedicatedConnection();
-				}
-			} else {
-				getStageAreaPersistenceCoordinator().discardPending();
-			}
-
-			if (useSharedConnection && !getRelatedEtlConf().hasTestingItem()) {
-				OpenConnection.markAllAsSuccessifullyTerminected(sharedSrcConn, sharedDstConn);
-				getThreadRecordIntervalsManager().getCurrentLimits().markAsProcessed();
-				getThreadRecordIntervalsManager().save();
-			} else if (!getRelatedEtlConf().hasTestingItem()) {
-				getThreadRecordIntervalsManager().save();
-			}
-
-			if (!EtlOperationResultHeader.hasAtLeastOneRecordsWithRecursiveRelashionships(results)) {
-				getThreadRecordIntervalsManager().getCurrentLimits().markSkippedRecordsAsProcessed();
-			}
-		} finally {
-			OpenConnection.finalizeAllConnections(this, sharedSrcConn, sharedDstConn);
-
-			shutdownExecutor(executor);
-		}
-	}
-
-	private void processRangePartition(TaskProcessor<T> processor, boolean useSharedConnection,
-			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
 		if (useSharedConnection) {
 			performExtractTransformationAndLoading(processor, false, false, sharedSrcConn, sharedDstConn);
+
 			return;
 		}
 
 		OpenConnection srcConn = null;
 		OpenConnection dstConn = null;
 
+		boolean flushWorkerStageArea = false;
+
 		try {
 			srcConn = openSrcConn(this);
 			dstConn = tryToOpenDstConn(this);
+
 			performExtractTransformationAndLoading(processor, false, false, srcConn, dstConn);
 
 			if (!getRelatedEtlConf().hasTestingItem() && !processor.getTaskResultInfo().hasFatalError()) {
 				OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+				flushWorkerStageArea = true;
 			}
 		} catch (DBException e) {
-			processor.changeStatusToStopped();
-			processor.getTaskResultInfo().setFatalException(e);
+			failRangeProcessor(processor, e, true);
 		} finally {
-			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+			try {
+				finalizeRangeWorkerConnections(srcConn, dstConn);
+			} catch (RuntimeException e) {
+				flushWorkerStageArea = false;
+				failRangeProcessor(processor, e, true);
+			}
 		}
+
+		if (flushWorkerStageArea) {
+			try {
+				flushStageAreaUsingDedicatedConnection(processor);
+			} catch (Exception e) {
+				failRangeProcessor(processor, e, false);
+			}
+		}
+	}
+
+	private void finalizeRangeWorkerConnections(OpenConnection srcConn, OpenConnection dstConn) {
+		RuntimeException failure = null;
+
+		try {
+			if (srcConn != null) {
+				srcConn.finalizeConnection(this);
+			}
+		} catch (RuntimeException e) {
+			failure = e;
+		}
+
+		try {
+			if (dstConn != null) {
+				dstConn.finalizeConnection(this);
+			}
+		} catch (RuntimeException e) {
+			if (failure == null) {
+				failure = e;
+			} else {
+				failure.addSuppressed(e);
+			}
+		}
+
+		if (failure != null) {
+			throw failure;
+		}
+	}
+
+	private void failRangeProcessor(TaskProcessor<T> processor, Exception failure, boolean discardStageRequest) {
+		if (discardStageRequest) {
+			getStageAreaPersistenceCoordinator().discard(processor);
+		}
+
+		processor.changeStatusToStopped();
+		processor.getTaskResultInfo().setFatalException(failure);
 	}
 
 	private void process(ParallelProcessingStrategyType strategy) throws Exception {
@@ -684,14 +661,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			logWarn("Current iteration finished {}", intervalManager.getCurrentLimits());
 		}
-	}
-
-	private List<EtlOperationResultHeader<T>> collectProcessorResults(List<TaskProcessor<T>> processors) {
-		List<EtlOperationResultHeader<T>> results = new ArrayList<>(processors.size());
-		for (TaskProcessor<T> processor : processors) {
-			results.add(processor.getTaskResultInfo());
-		}
-		return results;
 	}
 
 	private synchronized void increaseIteration() {
@@ -790,130 +759,22 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return getRelatedEtlOperationConfig().getParallelProcessingStrategy();
 	}
 
-	/**
-	 * Extracts each engine interval once, partitions the resulting list, and then
-	 * runs only the phases selected by the configured result-partitioning strategy.
-	 */
-	public void processResultPartitionedIntervals(ParallelProcessingStrategyType strategy,
-			List<IntervalExtremeRecord> availableIntervals) throws Exception {
-
-		EtlThreadFactory<T> threadFactory = new EtlThreadFactory<>(this);
-
-		for (IntervalExtremeRecord availableInterval : availableIntervals) {
-			if (stopRequested()) {
-				logWarn("Stopping the Task as Stop Requested!");
-				changeStatusToStopped();
-				return;
-			}
-
-			processExtractedInterval(strategy, availableInterval, threadFactory);
-		}
-	}
-
-	private void processExtractedInterval(ParallelProcessingStrategyType strategy,
-			IntervalExtremeRecord availableInterval, EtlThreadFactory<T> threadFactory) throws Exception {
-		boolean persistWork = !getRelatedEtlConf().hasTestingItem();
-		OpenConnection extractionSrcConn = openSrcConn(this);
-		OpenConnection extractionDstConn = tryToOpenDstConn(this);
-
-		try {
-			List<T> extractedRecords = extract(availableInterval, extractionSrcConn, extractionDstConn);
-
-			if (!utilities.listHasElement(extractedRecords)) {
-				availableInterval.markAsProcessed();
-				persistCompletedResultPartition(extractionSrcConn, extractionDstConn, persistWork);
-				return;
-			}
-
-			int processorCount = getController().getOperationConfig().getMaxSupportedProcessors();
-
-			Queue<T> transformationQueue = new ConcurrentLinkedQueue<>(extractedRecords);
-
-			if (strategy.isResultPartitioning()) {
-				processResultPartitioning(availableInterval, transformationQueue, processorCount, threadFactory,
-						extractionSrcConn, extractionDstConn);
-			} else if (strategy.isParallelTransformSerialPersist()) {
-				processParallelTransformSerialPersist(availableInterval, extractedRecords, transformationQueue,
-						processorCount, threadFactory, extractionSrcConn, extractionDstConn);
-			} else {
-				throw new ForbiddenOperationException("Unsupported result-partitioning strategy: " + strategy);
-			}
-
-			availableInterval.markAsProcessed();
-
-			persistCompletedResultPartition(extractionSrcConn, extractionDstConn, persistWork);
-		} catch (Exception e) {
-			stopOperationDueError(e);
-			throw e;
-		} finally {
-			OpenConnection.finalizeAllConnections(this, extractionSrcConn, extractionDstConn);
-		}
-	}
-
-	private void processResultPartitioning(IntervalExtremeRecord interval, Queue<T> transformationQueue,
-			int processorCount, EtlThreadFactory<T> threadFactory, OpenConnection sharedSrcConn,
-			OpenConnection sharedDstConn) throws Exception {
-
-		boolean sharedConnections = getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
-		ExecutorService executor = Executors.newFixedThreadPool(processorCount, threadFactory);
-		resetCurrentTaskProcessor(processorCount);
-		List<CompletableFuture<Void>> tasks = new ArrayList<>(processorCount);
-
-		try {
-			for (int i = 0; i < processorCount; i++) {
-				TaskProcessor<T> processor = initTaskProcessor(interval, i);
-				getCurrentTaskProcessor().add(processor);
-				tasks.add(CompletableFuture.runAsync(() -> consumeTransformAndLoadQueue(processor, transformationQueue,
-						sharedConnections, sharedSrcConn, sharedDstConn), executor));
-			}
-
-			CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
-			assertNoProcessorFailed(getCurrentTaskProcessor());
-		} finally {
-			shutdownExecutor(executor);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private void processParallelTransformSerialPersist(IntervalExtremeRecord interval, List<T> extractedRecords,
-			Queue<T> transformationQueue, int processorCount, EtlThreadFactory<T> threadFactory,
-			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) throws Exception {
-
-		boolean sharedConnections = getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
-		ExecutorService executor = Executors.newFixedThreadPool(processorCount, threadFactory);
-		resetCurrentTaskProcessor(processorCount + 1);
-		List<CompletableFuture<Void>> transformationTasks = new ArrayList<>(processorCount);
-
-		try {
-			for (int i = 0; i < processorCount; i++) {
-				TaskProcessor<T> transformer = initTaskProcessor(interval, i);
-				getCurrentTaskProcessor().add(transformer);
-				transformationTasks.add(CompletableFuture.runAsync(() -> consumeTransformationQueue(transformer,
-						transformationQueue, sharedConnections, sharedSrcConn, sharedDstConn), executor));
-			}
-
-			CompletableFuture.allOf(transformationTasks.toArray(new CompletableFuture[0])).get();
-			assertNoProcessorFailed(getCurrentTaskProcessor());
-		} finally {
-			shutdownExecutor(executor);
-		}
-
-		TaskProcessor<T> loader = initTaskProcessor(interval, processorCount);
-		getCurrentTaskProcessor().add(loader);
-		loader.changeStatusToRunning();
-		loader.loadTransformedRecords(extractedRecords, sharedSrcConn, sharedDstConn);
-		completeExtractedTask(loader, sharedSrcConn, sharedDstConn, true);
-		assertNoProcessorFailed(utilities.parseToList(loader));
-	}
-
-	private TaskProcessor<T> initTaskProcessor(IntervalExtremeRecord interval, int index) {
+	TaskProcessor<T> initConcurrentTaskProcessor(IntervalExtremeRecord interval, int index) {
 		TaskProcessor<T> processor = getController().initRelatedTaskProcessor(this, interval, true);
 		processor.setProcessorId(getEngineId() + "_" + utilities.garantirXCaracterOnNumber(index, 2));
+
+		return processor;
+	}
+
+	TaskProcessor<T> initTaskProcessor(IntervalExtremeRecord interval, boolean runningInConcurrency,
+			String processorId) {
+		TaskProcessor<T> processor = getController().initRelatedTaskProcessor(this, interval, runningInConcurrency);
+		processor.setProcessorId(processorId);
 		return processor;
 	}
 
 	@SuppressWarnings("unchecked")
-	private void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
+	void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
 			boolean sharedConnections, OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
 		OpenConnection srcConn = sharedSrcConn;
 		OpenConnection dstConn = sharedDstConn;
@@ -931,6 +792,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			while (!processor.getTaskResultInfo().hasFatalError() && (record = transformationQueue.poll()) != null) {
 				processor.transformAndLoadExtractedRecords(utilities.parseToList(record), srcConn, dstConn);
 			}
+
 			completeExtractedTask(processor, srcConn, dstConn, true);
 
 			if (!sharedConnections && !getRelatedEtlConf().hasTestingItem()) {
@@ -947,8 +809,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	@SuppressWarnings("unchecked")
-	private void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
-			boolean sharedConnections, OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
+	void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue, boolean sharedConnections,
+			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
 		OpenConnection srcConn = sharedSrcConn;
 		OpenConnection dstConn = sharedDstConn;
 
@@ -978,7 +840,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void completeExtractedTask(TaskProcessor<T> processor, OpenConnection srcConn, OpenConnection dstConn,
+	void completeExtractedTask(TaskProcessor<T> processor, OpenConnection srcConn, OpenConnection dstConn,
 			boolean refreshProgress) throws DBException {
 		if (processor.getTaskResultInfo().hasFatalError()) {
 			getStageAreaPersistenceCoordinator().discard(processor);
@@ -996,7 +858,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		processor.changeStatusToFinished();
 	}
 
-	private void assertNoProcessorFailed(List<TaskProcessor<T>> processors) throws Exception {
+	void assertNoProcessorFailed(List<TaskProcessor<T>> processors) throws Exception {
 		List<EtlOperationResultHeader<T>> results = new ArrayList<>(processors.size());
 		for (TaskProcessor<T> processor : processors) {
 			results.add(processor.getTaskResultInfo());
@@ -1007,43 +869,55 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void persistCompletedResultPartition(OpenConnection srcConn, OpenConnection dstConn, boolean persistWork)
-			throws DBException {
-		if (persistWork) {
-			flushStageArea(srcConn);
-			getThreadRecordIntervalsManager().save();
-			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-		} else {
-			getStageAreaPersistenceCoordinator().discardPending();
-		}
-	}
-
-	private void flushStageArea(Connection srcConn) throws DBException {
+	void flushStageArea(Connection srcConn, Connection dstConn) throws DBException {
 		int pending = getStageAreaPersistenceCoordinator().pendingCount();
 		if (pending == 0) {
 			return;
 		}
 
 		logInfo("Persisting {} pending StageArea records", pending);
-		getStageAreaPersistenceCoordinator().flush(srcConn);
+		getStageAreaPersistenceCoordinator().flush(srcConn, dstConn);
 		logDebug("Pending StageArea records persisted");
 	}
 
-	private void flushStageAreaUsingDedicatedConnection() throws DBException {
+	void flushStageAreaUsingDedicatedConnection() throws DBException {
 		if (getStageAreaPersistenceCoordinator().pendingCount() == 0) {
 			return;
 		}
 
-		OpenConnection stageConn = openSrcConn(this);
+		OpenConnection stageSrcConn = null;
+		OpenConnection stageDstConn = null;
 		try {
-			flushStageArea(stageConn);
-			stageConn.markAsSuccessifullyTerminated();
+			stageSrcConn = openSrcConn(this);
+			stageDstConn = tryToOpenDstConn(this);
+			flushStageArea(stageSrcConn, stageDstConn);
+			OpenConnection.markAllAsSuccessifullyTerminected(stageSrcConn, stageDstConn);
 		} finally {
-			stageConn.finalizeConnection(this);
+			OpenConnection.finalizeAllConnections(this, stageSrcConn, stageDstConn);
 		}
 	}
 
-	private void shutdownExecutor(ExecutorService executor) {
+	private void flushStageAreaUsingDedicatedConnection(TaskProcessor<?> owner) throws DBException {
+		int pending = getStageAreaPersistenceCoordinator().pendingCount(owner);
+		if (pending == 0) {
+			return;
+		}
+
+		OpenConnection stageSrcConn = null;
+		OpenConnection stageDstConn = null;
+		try {
+			stageSrcConn = openSrcConn(this);
+			stageDstConn = tryToOpenDstConn(this);
+			logInfo("Persisting {} pending StageArea records for processor {}", pending, owner.getProcessorId());
+			getStageAreaPersistenceCoordinator().flush(owner, stageSrcConn, stageDstConn);
+			OpenConnection.markAllAsSuccessifullyTerminected(stageSrcConn, stageDstConn);
+			logDebug("Pending StageArea records persisted for processor {}", owner.getProcessorId());
+		} finally {
+			OpenConnection.finalizeAllConnections(this, stageSrcConn, stageDstConn);
+		}
+	}
+
+	void shutdownExecutor(ExecutorService executor) {
 		if (executor == null) {
 			return;
 		}
@@ -1099,7 +973,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	 * @param taskProcessor
 	 * @return
 	 */
-	private void performExtractTransformationAndLoading(TaskProcessor<T> taskProcessor, boolean useMultiTreadSearch,
+	void performExtractTransformationAndLoading(TaskProcessor<T> taskProcessor, boolean useMultiTreadSearch,
 			boolean persistTheWork, OpenConnection srcConn, OpenConnection dstConn) {
 
 		try {
@@ -1124,7 +998,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				refreshProgressMeter(taskProcessor, srcConn);
 
 				if (persistTheWork) {
-					flushStageArea(srcConn);
+					flushStageArea(srcConn, dstConn);
 				} else if (getRelatedEtlConf().hasTestingItem()) {
 					getStageAreaPersistenceCoordinator().discardPending();
 				}
@@ -1160,7 +1034,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void resetCurrentTaskProcessor(int qtyProcessors) {
+	void resetCurrentTaskProcessor(int qtyProcessors) {
 		this.currentTaskProcessor = new ArrayList<>(qtyProcessors);
 	}
 
@@ -1226,7 +1100,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void stopOperationDueError(Exception e) {
+	void stopOperationDueError(Exception e) {
 		getRelatedOperationController().requestStopDueError(this, e);
 	}
 
