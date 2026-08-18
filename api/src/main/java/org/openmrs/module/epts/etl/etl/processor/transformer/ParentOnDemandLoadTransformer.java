@@ -441,7 +441,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			return null;
 		}
 
-		this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(true, srcConn, dstConn);
+		this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
 
 		DstConf dstConf = this.getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 
