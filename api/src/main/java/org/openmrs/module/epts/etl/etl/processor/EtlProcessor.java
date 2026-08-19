@@ -286,17 +286,24 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		ActionOnEtlIssue exceptionBehavior = e.getAction();
 
 		if (defaultBehavior.abort()) {
+			logError("Error Happen while processing record {} \n\t -> {}", e, record, e.getLocalizedMessage());
+
 			throw e;
 		}
 
 		if (defaultBehavior.logging()) {
+			logWarn("Errror Happen while processing record {} \n\t -> {}", e, record, e.getLocalizedMessage());
+
 			createDefaultFailedDstObject(record, mappingInfo, e);
 		} else if (defaultBehavior.useExceptionBehavior()) {
+
 			if (exceptionBehavior == null) {
 				throw e;
 			}
 
 			if (exceptionBehavior.logging()) {
+				logWarn("Error Happen while processing record {} \n\t -> {}", e, record, e.getLocalizedMessage());
+
 				createDefaultFailedDstObject(record, mappingInfo, e);
 			} else {
 				throw e;
