@@ -98,12 +98,12 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			if (this.getRelatedEtlConf().checkIfIsValidDumpScript(fieldValue.toString())) {
 				fromFile = " from file " + fieldValue;
 				originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
-
-				queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
-						templateParameters, false);
-
-				utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 			}
+
+			queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
+					templateParameters, false);
+
+			utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 
 			String toValidate = queryWithReplacedParameters;
 
