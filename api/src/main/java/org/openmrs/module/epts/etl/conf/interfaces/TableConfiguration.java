@@ -2189,8 +2189,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default List<FieldsMapping> tryToLoadJoinFields(TableConfiguration relatedTabConf, DataSourceSide dsSide,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		stepIntoBreakpoint(getRelatedEtlConf(), relatedTabConf.getTableAlias().contains("lab_result"));
-
 		String dsName = this.determineDataSourceNameByDsSide(relatedTabConf, dsSide);
 
 		EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(),
@@ -2334,15 +2332,28 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				FieldsMapping field = joinFields.get(i);
 
+				String[] dstFieldParts = field.getDstField().split("\\.");
+
+				String dstFieldName = dstFieldParts[dstFieldParts.length - 1];
+				String dstTableAlias = dstFieldParts.length > 1 ? dstFieldParts[0] : null;
+
 				if (!field.hasSrcField()) {
-					field.setSrcField(field.getDstField());
+					field.setSrcField(dstFieldName);
 				}
 
-				Object value = field.getDstField();
+				Object value = dstFieldName;
 
 				if (parentObject != null) {
 					try {
-						value = parentObject.getFieldValue(field.getDstField());
+						if (dstTableAlias != null
+								&& !dstTableAlias.equals(parentObject.getRelatedConfiguration().getAlias())) {
+
+							throw new EtlExceptionImpl(
+									"The declared field source within dstField " + field.getDstField()
+											+ " differ from provided parent object name: " + parentObject);
+						}
+
+						value = parentObject.getFieldValue(dstFieldName);
 					} catch (ForbiddenOperationException e) {
 						value = parentObject.getFieldValue(field.getDstFieldAsClassField());
 					}
@@ -2365,7 +2376,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default String tryToConvertFieldToAlias(String fieldName) {
-		if (this.containsField(fieldName)) {
+		String[] fieldParts = fieldName.split("\\.");
+
+		if (fieldParts.length > 1) {
+			return fieldName;
+		} else if (this.containsField(fieldName)) {
 			return getTableAlias() + "." + fieldName;
 		}
 
