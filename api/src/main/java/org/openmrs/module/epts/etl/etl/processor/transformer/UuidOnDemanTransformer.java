@@ -108,7 +108,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 	private SrcConf defaultSrcConf;
 
-	private Map<String, Object> dynamicElements;
+	private Map<String, Object> placeholdersSrc;
 
 	public UuidOnDemanTransformer(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
@@ -126,7 +126,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					+ "UuidOnDemanTransformer(table:table_name,lookup_condition:sql_condition)");
 		}
 
-		this.dynamicElements = new HashMap<>();
+		this.placeholdersSrc = new HashMap<>();
 
 		for (Object fieldData : this.getParameters()) {
 			String[] mapping = fieldData.toString().split(":", 2);
@@ -164,7 +164,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 						srcFieldOrValue = null;
 					}
 
-					this.dynamicElements.put(dstField, srcFieldOrValue);
+					this.placeholdersSrc.put(dstField, srcFieldOrValue);
 				}
 			}
 		}
@@ -175,18 +175,18 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		if (this.tableAlias != null) {
-			this.dynamicElements.put("table_alias", this.tableAlias);
+			this.placeholdersSrc.put("table_alias", this.tableAlias);
 		}
 
 		Map<String, Object> params = relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters();
 
 		if (params != null && !params.isEmpty()) {
 			for (Entry<String, Object> p : params.entrySet()) {
-				this.dynamicElements.put(p.getKey(), p.getValue());
+				this.placeholdersSrc.put(p.getKey(), p.getValue());
 			}
 		}
 
-		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.dynamicElements, conn);
+		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.placeholdersSrc, conn);
 	}
 
 	@Override

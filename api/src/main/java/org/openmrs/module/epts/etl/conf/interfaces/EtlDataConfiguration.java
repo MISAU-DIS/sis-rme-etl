@@ -116,7 +116,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			if (!SQLUtilities.isValidSelectSqlQuery(toValidate, DBUtilities.determineDbmsType(conn))) {
 				String msg = "Ivalid sql " + sqlType + fromFile + " within the field '" + fieldName + "'.\n\t" + sqlType
 						+ "> " + originalScript;
-				
+
 				throw new EtlConfException(msg);
 			}
 		}
@@ -475,7 +475,8 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			}
 
 			if (value == null) {
-				throw new IllegalArgumentException("Missing placeholder value for: " + key);
+				throw new IllegalArgumentException(
+						"Missing placeholder value for: " + key + " while preparing data:\t" + text);
 			}
 
 			String replacement = value.toString();
