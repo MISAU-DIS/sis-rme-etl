@@ -94,8 +94,6 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, new ReentrantLock(), this)) {
 
 			for (EtlDatabaseObject srcRecord : etlObjects) {
-				logTrace("Initializing the transformation process of record {} ", srcRecord);
-
 				/*
 				 * if (srcRecord.isTrackable() &&
 				 * getRelatedEtlOperationConfig().hasActionAfterEtl() &&
@@ -209,6 +207,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			throws DBException {
 
 		try {
+			logDebug("Initializing the transformation process of record {} ", srcRecord);
+
 			EtlDatabaseObject transitionalTransformedObject = dstConf.createRecordInstance();
 
 			transitionalTransformedObject.markAsNotCollactable();
@@ -224,12 +224,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				throw (EtlExceptionImpl) transitionalTransformedObject.getEtlDefaultEtlException();
 			}
 
+			EtlDatabaseObject dstObject = null;
+
 			if (utilities.setHasElement(avaliableSrcObjects) || dstConf.isDoNotUseSrcConfAsDataSource()) {
 				if (dstConf.shouldBeProcessed(srcRecord, avaliableSrcObjects, srcConn, dstConn)) {
 
-					EtlDatabaseObject dstObject = dstConf.getTransformerInstance().transform(this, srcRecord,
-							avaliableSrcObjects, dstConf, parentMigratedRec, TransformationType.PRINCIPAL, srcConn,
-							dstConn);
+					dstObject = dstConf.getTransformerInstance().transform(this, srcRecord, avaliableSrcObjects,
+							dstConf, parentMigratedRec, TransformationType.PRINCIPAL, srcConn, dstConn);
 
 					if (dstObject != null) {
 						srcRecord.addDestinationRecord(dstObject);
@@ -241,6 +242,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 					}
 				}
 			}
+
+			logDebug("Transformation process of record {} is finalized! Transformed record -> {}", srcRecord,
+					dstObject);
+
 		} catch (MissingRequiredTransformationObject e) {
 			tryToLogOrThrowException(srcRecord, dstConf, e);
 		} catch (EtlTransformationException e) {
