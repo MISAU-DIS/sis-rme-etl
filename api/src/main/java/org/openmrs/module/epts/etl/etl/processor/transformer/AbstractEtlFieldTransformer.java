@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -45,6 +46,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	protected ActionOnEtlIssue onNullTransformedvalue;
 
+	protected List<String> skipRelationshipResolutionForFields;
+
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 			TransformableField field) {
 
@@ -58,6 +61,14 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		if (relatedEtlTargedConf.getRelatedEtlConf() == null)
 			throw new EtlConfException("The RelatedEtlConf conf withing the target of " + this + " is null");
 
+	}
+
+	public List<String> getSkipRelationshipResolutionForFields() {
+		return skipRelationshipResolutionForFields;
+	}
+
+	public void setSkipRelationshipResolutionForFields(List<String> skipRelationshipResolutionForFields) {
+		this.skipRelationshipResolutionForFields = skipRelationshipResolutionForFields;
 	}
 
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
@@ -101,6 +112,12 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 					}
 
 					this.inputExpression = paramValue;
+				} else if (paramName.equals("skip_relationship_resolution_for_fields")) {
+					if (!utilities.stringHasValue(paramValue)) {
+						throw new ForbiddenOperationException("The lookup_condition has no value");
+					}
+
+					this.skipRelationshipResolutionForFields = utilities.parseArrayToList(paramValue.split(","));
 				}
 			}
 		}
@@ -206,24 +223,30 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 			FieldTransformingInfo paramValueInfo = params.get(i);
 			Object transformedValue = paramValueInfo.getTransformedValue();
 
-			if (paramValueInfo.skipRelationshipResolution()) {
-				resolvedParams[i] = transformedValue;
-				continue;
-			}
-
 			TransformableField srcField = paramValueInfo.getSrcField();
 
 			ParentTable refInfo = dstConf.findParentRefInfoByField(srcField.getDstField());
 
+			String actuallyName = srcField.getDstField();
+
 			if (refInfo == null) {
 				refInfo = dstConf.findParentRefInfoByField(srcField.getSrcField());
+
+				actuallyName = srcField.getSrcField();
 			}
 
 			if (refInfo == null) {
 				refInfo = dstConf.findParentRefInfoByField(srcField.getName());
+
+				actuallyName = srcField.getName();
 			}
 
 			if (refInfo == null) {
+				resolvedParams[i] = transformedValue;
+				continue;
+			}
+
+			if (paramValueInfo.skipRelationshipResolution() || this.skipRelationshipResolution(actuallyName)) {
 				resolvedParams[i] = transformedValue;
 				continue;
 			}
@@ -237,6 +260,11 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 			if (parentInSrc != null) {
 				parentInDst = auxObject.retrieveParentInDestination(refInfo, parentInSrc, dstConn);
+			} else {
+				throw new EtlTransformationException(
+						"The " + refInfo.getTableName() + "(" + transformedValue + ") of " + dstConf.getTableName()
+								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on src db",
+						srcObject, srcConf.getRelatedEtlConf().getDefaultInconsistencyBehavior());
 			}
 
 			if (parentInDst == null) {
@@ -251,6 +279,11 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		}
 
 		return resolvedParams;
+	}
+
+	private boolean skipRelationshipResolution(String actuallyName) {
+		return this.skipRelationshipResolutionForFields != null
+				&& this.skipRelationshipResolutionForFields.contains(actuallyName);
 	}
 
 	@Override

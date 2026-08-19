@@ -158,6 +158,12 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					}
 
 					this.onDemandCheckCondition = srcFieldOrValue;
+				} else if (dstField.equals("skip_relationship_resolution_for_fields")) {
+					if (!utilities.stringHasValue(srcFieldOrValue)) {
+						throw new ForbiddenOperationException("The lookup_condition has no value");
+					}
+
+					this.skipRelationshipResolutionForFields = utilities.parseArrayToList(srcFieldOrValue.split(","));
 				}
 
 				else {
