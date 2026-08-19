@@ -197,7 +197,9 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	protected Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
 			SrcConf srcConf, TableConfiguration dstConf, Connection srcConn, Connection dstConn) throws DBException {
+
 		Object[] resolvedParams = new Object[params.size()];
+
 		EtlDatabaseObject auxObject = dstConf.createRecordInstance();
 
 		for (int i = 0; i < params.size(); i++) {
@@ -242,7 +244,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				throw new EtlTransformationException(
 						"The " + refInfo.getTableName() + "(" + transformedValue + ") of " + dstConf.getTableName()
 								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on dst db",
-						srcObject, ActionOnEtlIssue.ABORT_PROCESS);
+						srcObject, srcConf.getRelatedEtlConf().getDefaultInconsistencyBehavior());
 			}
 
 			resolvedParams[i] = parentInDst.getObjectId().asSimpleNumericValue();
