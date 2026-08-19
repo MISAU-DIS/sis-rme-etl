@@ -116,9 +116,23 @@ public class SrcConf extends AbstractTableConfiguration
 
 	private ActionOnEtlIssue missingRequiredObjectBehavior;
 
+	private Boolean doNotLoadJoiningFields;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
+	}
+
+	public Boolean getDoNotLoadJoiningFields() {
+		return doNotLoadJoiningFields;
+	}
+
+	public void setDoNotLoadJoiningFields(Boolean doNotLoadJoiningFields) {
+		this.doNotLoadJoiningFields = doNotLoadJoiningFields;
+	}
+
+	public Boolean doNotLoadJoiningFields() {
+		return isTrue(doNotLoadJoiningFields);
 	}
 
 	public ActionOnEtlIssue getMissingRequiredObjectBehavior() {
@@ -364,7 +378,7 @@ public class SrcConf extends AbstractTableConfiguration
 
 		this.setFullLoaded(true);
 
-		if (isJoinable()) {
+		if (isJoinable() && !doNotLoadJoiningFields()) {
 			this.loadJoinElements(schemaInfo, DataSourceSide.OTHER_IS_DATA_SOURCE, conn);
 		}
 

@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
@@ -270,8 +271,14 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 											+ this);
 					}
 
-					this.defaultSrcConf = SrcConf.fastCreate(defaultTable,
-							this.getRelatedEtlTransformTarget().getParentConf(), srcConn);
+					EtlItemConfiguration itemConf = this.getRelatedEtlTransformTarget().getParentConf();
+
+					this.defaultSrcConf = SrcConf.fastCreate(defaultTable, itemConf, srcConn);
+
+					this.defaultSrcConf.setTableAlias(defaultTable.getTableName() + "_for_on_demand_uuid_within_"
+							+ itemConf.getSrcConf().getTableAlias());
+
+					this.defaultSrcConf.setDoNotLoadJoiningFields(true);
 
 					this.defaultSrcConf.fullLoad(srcConn);
 
