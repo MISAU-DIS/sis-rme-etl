@@ -327,6 +327,9 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						resolveConflictWithExistingRecord(tableConfiguration, ConflictResolutionType.REJECT,
 								rootException, conn);
 					}
+				} else if (rootException.isEtlStageAreaIssue(this)
+						&& tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
+					tableConfiguration.logErr("Issue found while persisting stage record {}", e, this);
 				} else if (rootException.isInconsistentDataException()) {
 					if (tableConfiguration.getRelatedEtlConf().getDefaultInconsistencyBehavior().logging()) {
 						this.getEtlInfo().setExceptionOnEtl(e);
@@ -334,9 +337,6 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						throw e;
 					}
 
-				} else if (rootException.isEtlStageAreaIssue(this)
-						&& tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
-					tableConfiguration.logErr("Issue found while persisting stage record {}", e, this);
 				} else
 					throw e;
 
