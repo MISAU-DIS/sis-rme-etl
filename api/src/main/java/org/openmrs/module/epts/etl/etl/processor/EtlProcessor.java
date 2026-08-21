@@ -375,26 +375,32 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private void performeEtlOnChildItem(EtlChildItemConfiguration itemConf, EtlDatabaseObject transformedParent,
 			Connection srcConn, Connection dstConn) throws DBException {
 
-		EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
-				: transformedParent.getEtlInfo().getRelatedSrcObject();
+		try {
+			EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
+					: transformedParent.getEtlInfo().getRelatedSrcObject();
 
-		if (itemConf.shouldBeProcessed(srcObject, null, srcConn, dstConn)) {
+			if (itemConf.shouldBeProcessed(srcObject, null, srcConn, dstConn)) {
 
-			List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
-					: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
+				List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
+						: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
 
-			List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
-					avaliableSrcObjects, srcConn);
+				List<EtlDatabaseObject> etlObjects = itemConf.getSrcConf().searchRecords(this.getEngine(), srcObject,
+						avaliableSrcObjects, srcConn);
 
-			if (!etlObjects.isEmpty()) {
-				for (EtlDatabaseObject obj : etlObjects) {
-					srcObject.addChildObject(obj);
+				if (!etlObjects.isEmpty()) {
+					for (EtlDatabaseObject obj : etlObjects) {
+						srcObject.addChildObject(obj);
+					}
+
+					performTransformationAndLoading(itemConf, etlObjects,
+							transformedParent.isDstObject() ? transformedParent : null, LoadingType.CHILD, srcConn,
+							dstConn);
 				}
-
-				performTransformationAndLoading(itemConf, etlObjects,
-						transformedParent.isDstObject() ? transformedParent : null, LoadingType.CHILD, srcConn,
-						dstConn);
 			}
+		} catch (Exception e) {
+			logWarn("Error happened while perfoming etl within child {}", itemConf);
+
+			throw e;
 		}
 	}
 

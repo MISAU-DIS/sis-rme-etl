@@ -133,15 +133,15 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 				this.sqlQuery = paramValue;
 			} else if (paramName.equals("name")) {
 				this.name = paramValue;
-			} else if (paramName.equals("onNullTransformedvalue")) {
+			} else if (paramName.equals("onMultipleSrcObjectsFound")) {
 				try {
-					this.onNullTransformedvalue = ActionOnEtlIssue.valueOf(paramValue);
+					this.onMultipleSrcObjectsFound = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
 					throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
 							+ " on transformer:  " + getTransformerDsc());
 				}
 
-			} else if (paramName.equals("onEmptyTransformedValue")) {
+			} else if (paramName.equals("onNullTransformedvalue")) {
 				try {
 					this.onNullTransformedvalue = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
