@@ -35,7 +35,6 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
@@ -110,8 +109,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private ProcessController relatedController;
 
 	private List<AbstractTableConfiguration> allTables;
-
-	private static final EtlLogger LOG = EtlLogger.getLogger(EtlConfiguration.class);
 
 	private String syncStageSchema;
 
@@ -826,54 +823,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return conf;
 	}
 
-	void initLogger() {
-		// Kept temporarily for source compatibility with the existing initialization flow.
-	}
-
-	public void debug(String msg) {
-		LOG.debug(msg);
-	}
-
-	public void trace(String msg) {
-		LOG.trace(msg);
-	}
-
-	public void info(String msg) {
-		LOG.info(msg);
-	}
-
-	public void warn(String msg) {
-		LOG.warn(msg);
-	}
-
-	public void warn(String msg, Object... arguments) {
-		LOG.warn(msg, arguments);
-	}
-
-	public void err(String msg, Exception e) {
-		LOG.err(msg, e);
-	}
-
-	public void err(String msg, Throwable throwable, Object... arguments) {
-		LOG.err(msg, throwable, arguments);
-	}
-
-	public void err(String msg, Object... arguments) {
-		LOG.err(msg, arguments);
-	}
-
-	public void info(String msg, Object... arguments) {
-		LOG.info(msg, arguments);
-	}
-
-	public void trace(String msg, Object... arguments) {
-		LOG.trace(msg, arguments);
-	}
-
-	public void debug(String msg, Object... arguments) {
-		LOG.debug(msg, arguments);
-	}
-
 	/**
 	 * Loads the code for each
 	 * 
@@ -881,8 +830,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	 * @throws DBException
 	 */
 	public void init(OpenConnection conn) throws ForbiddenOperationException, DBException {
-		initLogger();
-
 		if (isInitialized() || isDisabled()) {
 			return;
 		}
@@ -1309,8 +1256,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		synchronized (LOCK_READ) {
 			if (isInitialized())
 				return;
-
-			initLogger();
 
 			this.getMainConnInfo().setRelatedEtlConf(this);
 

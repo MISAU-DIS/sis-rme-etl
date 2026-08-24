@@ -3,6 +3,7 @@
 <configuration>
 
     <property name="ETL_LOG_LEVEL" value="${log.level:-INFO}" />
+    <property name="ETL_CONFIGURATION_LOG_LEVEL" value="${log.level.configuration:-${ETL_LOG_LEVEL}}" />
     <property name="LOGS_PATTERN" value="%-5level %date [%thread] %logger{8}:%line %msg%n" />
 
     <appender name="CONSOLE"
@@ -16,6 +17,11 @@
     <logger
         name="org.openmrs.module.epts.etl"
         level="${ETL_LOG_LEVEL}"
+        additivity="true" />
+
+    <logger
+        name="org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration"
+        level="${ETL_CONFIGURATION_LOG_LEVEL}"
         additivity="true" />
 
     <root level="INFO">

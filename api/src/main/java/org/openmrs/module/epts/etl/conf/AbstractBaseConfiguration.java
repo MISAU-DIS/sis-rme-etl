@@ -6,9 +6,12 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public abstract class AbstractBaseConfiguration implements BaseConfiguration {
+
+	private static final EtlLogger LOG = EtlLogger.getLogger(AbstractBaseConfiguration.class);
 
 	private Object comments;
 
@@ -86,6 +89,50 @@ public abstract class AbstractBaseConfiguration implements BaseConfiguration {
 		}
 
 		return type != null;
+	}
+
+	public void debug(String msg) {
+		LOG.debug(msg);
+	}
+
+	public void debug(String msg, Object... arguments) {
+		LOG.debug(msg, arguments);
+	}
+
+	public void trace(String msg) {
+		LOG.trace(msg);
+	}
+
+	public void trace(String msg, Object... arguments) {
+		LOG.trace(msg, arguments);
+	}
+
+	public void info(String msg) {
+		LOG.info(msg);
+	}
+
+	public void info(String msg, Object... arguments) {
+		LOG.info(msg, arguments);
+	}
+
+	public void warn(String msg) {
+		LOG.warn(msg);
+	}
+
+	public void warn(String msg, Object... arguments) {
+		LOG.warn(msg, arguments);
+	}
+
+	public void err(String msg, Exception e) {
+		LOG.err(msg, e);
+	}
+
+	public void err(String msg, Throwable throwable, Object... arguments) {
+		LOG.err(msg, throwable, arguments);
+	}
+
+	public void err(String msg, Object... arguments) {
+		LOG.err(msg, arguments);
 	}
 
 }
