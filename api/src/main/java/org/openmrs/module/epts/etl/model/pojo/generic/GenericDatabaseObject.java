@@ -40,8 +40,6 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	 */
 	private List<EtlDatabaseObject> auxLoadObject;
 
-	private boolean loadedFromDb;
-
 	public GenericDatabaseObject() {
 	}
 

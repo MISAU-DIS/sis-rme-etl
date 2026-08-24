@@ -877,7 +877,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			return utilities.parseToList(obj);
 		}
 
-		PreparedQueryInfo pq = generatePreparedQuery(relatedEtlConfiguration, processor, srcObject, dstObject,
+		PreparedQueryInfo pq = this.generatePreparedQuery(relatedEtlConfiguration, processor, srcObject, dstObject,
 				srcObjects, this.getQuery(), conn);
 
 		Object[] params = pq.extractParametersValueToArray();

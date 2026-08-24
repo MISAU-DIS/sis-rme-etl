@@ -381,6 +381,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			transformedParent.loadObjectIdData();
 
+			if (getRelatedEtlConf().verifyRecordAfterCreate() && !transformedParent.isLoadedFromDb()) {
+				logWarn("The existence of parent record {} on db was not confirmed", transformedParent);
+
+				throw new EtlExceptionImpl(
+						"The existence of parent record " + transformedParent + "on db was not confirmed");
+			}
+
 			if (itemConf.shouldBeProcessed(srcObject, null, srcConn, dstConn)) {
 
 				List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null

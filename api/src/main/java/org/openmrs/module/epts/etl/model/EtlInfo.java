@@ -274,8 +274,12 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		}
 
 		if (this.relationshipResolutionStrategy().skip()) {
+			getRelatedEtlConf().debug("Skipping relationship resolution on object: {}", this.transformedObject);
+
 			return;
 		}
+
+		getRelatedEtlConf().debug("Starting relationship resolution on object: {}", this.transformedObject);
 
 		for (ParentTable refInfo : getDstConf().getParentRefInfo()) {
 			Field field = this.getTransformedObject().getField(refInfo);
@@ -365,6 +369,10 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 						if (parentInDst == null) {
 							parentInDst = refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
+						} else {
+							getRelatedEtlConf().trace(
+									"Parent In Destination For Record {} was successifuly resolved: {}",
+									this.getTransformedObject(), parentInDst);
 						}
 
 						// The parentInSrc will be null if it does not exists and were used default
@@ -379,6 +387,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			}
 		}
 
+		getRelatedEtlConf().debug("Finished relationship resolution on object: {}", this.transformedObject);
 	}
 
 	private RelationshipResolutionStrategy relationshipResolutionStrategy() {

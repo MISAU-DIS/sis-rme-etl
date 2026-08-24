@@ -471,4 +471,16 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 		// TODO Auto-generated method stub
 
 	}
+
+	@Override
+	public void setLoadedFromDb(boolean loadedFromDb) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean isLoadedFromDb() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

@@ -254,6 +254,10 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException;
 
+	void setLoadedFromDb(boolean loadedFromDb);
+
+	boolean isLoadedFromDb();
+
 	/**
 	 * Checks if there are recursive relashioship between the
 	 * {@link #getRelatedConfiguration()} and the one passed by parameter
@@ -1128,11 +1132,13 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		this.loadObjectIdData();
 
-		Object obj = DatabaseObjectDAO.getByOid(conf, this.getObjectId(), conn);
+		EtlDatabaseObject obj = DatabaseObjectDAO.getByOid(conf, this.getObjectId(), conn);
 
 		if (obj == null) {
 			throw new RecordNotFoundException(conf, this);
 		}
+
+		this.setLoadedFromDb(obj.isLoadedFromDb());
 	}
 
 }
