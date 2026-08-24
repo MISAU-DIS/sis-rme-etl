@@ -19,12 +19,15 @@ import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.SimpleValue;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 public class DatabaseObjectDAO extends BaseDAO {
+
+	private static final EtlLogger LOG = EtlLogger.getLogger(DatabaseObjectDAO.class);
 
 	private static void refreshLastSyncDate(EtlDatabaseObject syncRecord, TableConfiguration tableConfiguration,
 			String recordOriginLocationCode, Connection conn) throws DBException {
@@ -130,7 +133,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 					parentTableConfiguration.getSyncRecordClass(parentTableConfiguration.getSrcConnInfo()), sql, params,
 					conn);
 		} catch (Exception e) {
-			logger.info("Error trying do retrieve dstRecord on table " + parentTableConfiguration.getTableName() + "["
+			LOG.info("Error trying do retrieve dstRecord on table " + parentTableConfiguration.getTableName() + "["
 					+ e.getMessage() + "]");
 
 			TimeCountDown.sleep(2000);
@@ -577,7 +580,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 			sql += utilities.removeLastChar(values);
 
 			try {
-				logger.trace("Executing insertion of " + objects.size() + " " + tabConf.getTableName()
+				LOG.trace("Executing insertion of " + objects.size() + " " + tabConf.getTableName()
 						+ " Using query\n\n" + utilities.garantirXCaracteres(sql, 250));
 
 				List<Long> ids = executeQueryWithRetryOnError(sql, params, conn);
@@ -601,7 +604,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 							.parseFromEtlDatabaseObject(EtlDatabaseObject.collectAllSrcRelatedOBjects(objects)));
 				}
 
-				logger.trace("Inserted " + objects.size() + " " + tabConf.getTableName());
+				LOG.trace("Inserted " + objects.size() + " " + tabConf.getTableName());
 			} catch (DBException e) {
 				if (!tryToResolveException && objects.size() > 1) {
 					throw new ForbiddenOperationException(

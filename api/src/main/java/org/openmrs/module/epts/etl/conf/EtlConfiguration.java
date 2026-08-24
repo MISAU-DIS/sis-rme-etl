@@ -111,7 +111,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private List<AbstractTableConfiguration> allTables;
 
-	private EtlLogger logger;
+	private static final EtlLogger LOG = EtlLogger.getLogger(EtlConfiguration.class);
 
 	private String syncStageSchema;
 
@@ -827,79 +827,51 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	void initLogger() {
-		if (this.logger != null)
-			return;
-
-		synchronized (LOCK_READ) {
-
-			if (this.logger != null)
-				return;
-
-			this.logger = new EtlLogger(EtlConfiguration.class);
-		}
-
+		// Kept temporarily for source compatibility with the existing initialization flow.
 	}
 
 	public void debug(String msg) {
-		if (logger == null)
-			initLogger();
-
-		this.logger.debug(msg);
+		LOG.debug(msg);
 	}
 
 	public void trace(String msg) {
-		if (logger == null)
-			initLogger();
-
-		this.logger.trace(msg);
+		LOG.trace(msg);
 	}
 
 	public void info(String msg) {
-		if (logger == null)
-			initLogger();
-
-		logger.info(msg);
+		LOG.info(msg);
 	}
 
 	public void warn(String msg) {
-		if (logger == null)
-			initLogger();
-
-		logger.warn(msg);
+		LOG.warn(msg);
 	}
 
 	public void warn(String msg, Object... arguments) {
-		if (logger == null)
-			initLogger();
-
-		logger.warn(msg, arguments);
+		LOG.warn(msg, arguments);
 	}
 
 	public void err(String msg, Exception e) {
-		if (logger == null)
-			initLogger();
-
-		logger.err(msg, e);
+		LOG.err(msg, e);
 	}
 
 	public void err(String msg, Throwable throwable, Object... arguments) {
-		logger.err(msg, throwable, arguments);
+		LOG.err(msg, throwable, arguments);
 	}
 
 	public void err(String msg, Object... arguments) {
-		logger.err(msg, arguments);
+		LOG.err(msg, arguments);
 	}
 
 	public void info(String msg, Object... arguments) {
-		logger.info(msg, arguments);
+		LOG.info(msg, arguments);
 	}
 
 	public void trace(String msg, Object... arguments) {
-		logger.trace(msg, arguments);
+		LOG.trace(msg, arguments);
 	}
 
 	public void debug(String msg, Object... arguments) {
-		logger.debug(msg, arguments);
+		LOG.debug(msg, arguments);
 	}
 
 	/**

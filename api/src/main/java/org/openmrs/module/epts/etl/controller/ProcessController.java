@@ -39,6 +39,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public class ProcessController extends AbstractBaseConfiguration implements Controller, ControllerStarter {
 
+	private static final EtlLogger LOG = EtlLogger.getLogger(ProcessController.class);
+
 	private EtlConfiguration relatedEtlConf;
 
 	private EtlOperationStatus operationStatus;
@@ -61,8 +63,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	private ProcessInfo processInfo;
 
-	private EtlLogger logger;
-
 	private EtlDatabaseObject schemaInfoSrc;
 
 	private static final Object LOCK = new Object();
@@ -77,8 +77,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		this();
 
 		this.starter = starter;
-
-		this.logger = new EtlLogger(ProcessController.class);
 
 		init(configuration);
 	}
@@ -450,7 +448,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			while (running) {
 				TimeCountDown.sleep(getWaitTimeToCheckStatus());
 
-				this.logger.warn(("The process " + getControllerId() + " is still running...").toUpperCase(), 60 * 5,
+				LOG.warn(("The process " + getControllerId() + " is still running...").toUpperCase(), 60 * 5,
 						true);
 
 				if (this.isFinished()) {
@@ -594,7 +592,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			for (OperationController<? extends EtlDatabaseObject> operationController : this.operationsControllers) {
 				operationController.killSelfCreatedThreads();
 
-				ThreadPoolService.getInstance().terminateTread(logger, operationController.getControllerId(),
+				ThreadPoolService.getInstance().terminateTread(LOG, operationController.getControllerId(),
 						operationController);
 			}
 		}
@@ -654,47 +652,47 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	}
 
 	public void logDebug(String msg) {
-		logger.debug(msg);
+		LOG.debug(msg);
 	}
 
 	public void logDebug(String msg, Object... argments) {
-		logger.debug(msg, argments);
+		LOG.debug(msg, argments);
 	}
 
 	public void logInfo(String msg) {
-		logger.info(msg);
+		LOG.info(msg);
 	}
 
 	public void logInfo(String msg, Object... argments) {
-		logger.info(msg, argments);
+		LOG.info(msg, argments);
 	}
 
 	public void logWarn(String msg) {
-		logger.warn(msg);
+		LOG.warn(msg);
 	}
 
 	public void logTrace(String msg) {
-		logger.trace(msg);
+		LOG.trace(msg);
 	}
 
 	public void logTrace(String msg, Object... argments) {
-		logger.trace(msg, argments);
+		LOG.trace(msg, argments);
 	}
 
 	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
-		logger.warn(msg, interval, suppressIfAnyRecentLog);
+		LOG.warn(msg, interval, suppressIfAnyRecentLog);
 	}
 
 	public void logWarn(String msg, Object... argments) {
-		logger.warn(msg, argments);
+		LOG.warn(msg, argments);
 	}
 
 	public void logErr(String msg, Exception e) {
-		logger.err(msg, e);
+		LOG.err(msg, e);
 	}
 
 	public void logErr(String msg, Exception e, Object... arguments) {
-		logger.err(msg, e, arguments);
+		LOG.err(msg, e, arguments);
 	}
 
 	public boolean isProgressInfoLoaded() {
@@ -761,7 +759,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	@Override
 	public void logErr(String msg, Throwable throwable) {
-		logger.err(msg, throwable);
+		LOG.err(msg, throwable);
 	}
 
 }

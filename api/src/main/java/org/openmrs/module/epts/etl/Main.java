@@ -16,7 +16,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class Main implements Runnable {
 
-	static EtlLogger logger = new EtlLogger(Main.class);
+	private static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
 
 	public static void main(String[] synConfigFiles) throws IOException, DBException {
 
@@ -70,14 +70,14 @@ public class Main implements Runnable {
 				EtlConfiguration conf;
 
 				try {
-					logger.warn("LOADING CONF FILE " + file);
+					LOG.warn("LOADING CONF FILE " + file);
 
 					conf = EtlConfiguration.loadFromFile(file);
 
 					conf.validate();
 
 					if (!conf.existsOnArray(syncConfigs)) {
-						logger.warn("USING CONFIGURATION FILE " + conf.getRelatedConfFile().getAbsolutePath()
+						LOG.warn("USING CONFIGURATION FILE " + conf.getRelatedConfFile().getAbsolutePath()
 								+ " WITH PROCESS " + conf.getDesignation());
 						syncConfigs.add(conf);
 					} else

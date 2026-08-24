@@ -13,8 +13,6 @@
  */
 package org.openmrs.module.epts.etl.web.controller;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -26,8 +24,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
  */
 @Controller
 public class EptsEtlManageController {
-
-	protected final Log log = LogFactory.getLog(getClass());
 
 	@RequestMapping(value = "/module/epts/etl/manage", method = RequestMethod.GET)
 	public void manage(ModelMap model) {

@@ -14,57 +14,56 @@
 package org.openmrs.module.epts.etl;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.ModuleActivator;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
 /**
  * This class contains the logic that is run every time this module is either started or stopped.
  */
 public class EptsEtlActivator implements ModuleActivator{
 	
-	protected Log log = LogFactory.getLog(getClass());
+	private static final EtlLogger LOG = EtlLogger.getLogger(EptsEtlActivator.class);
 		
 	/**
 	 * @see ModuleActivator#willRefreshContext()
 	 */
 	public void willRefreshContext() {
-		log.info("Refreshing Epts Synchronize Module");
+		LOG.info("Refreshing Epts Synchronize Module");
 	}
 	
 	/**
 	 * @see ModuleActivator#contextRefreshed()
 	 */
 	public void contextRefreshed() {
-		log.info("Epts Synchronize Module refreshed");
+		LOG.info("Epts Synchronize Module refreshed");
 	}
 	
 	/**
 	 * @see ModuleActivator#willStart()
 	 */
 	public void willStart() {
-		log.info("Starting Epts Synchronize Module");
+		LOG.info("Starting Epts Synchronize Module");
 	}
 	
 	/**
 	 * @see ModuleActivator#started()
 	 */
 	public void started() {
-		log.info("Epts Synchronize Module started");
+		LOG.info("Epts Synchronize Module started");
 	}
 	
 	/**
 	 * @see ModuleActivator#willStop()
 	 */
 	public void willStop() {
-		log.info("Stopping Epts Synchronize Module");
+		LOG.info("Stopping Epts Synchronize Module");
 	}
 	
 	/**
 	 * @see ModuleActivator#stopped()
 	 */
 	public void stopped() {
-		log.info("Epts Synchronize Module stopped");
+		LOG.info("Epts Synchronize Module stopped");
 	}
 		
 }

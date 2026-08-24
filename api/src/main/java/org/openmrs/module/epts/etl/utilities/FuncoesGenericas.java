@@ -14,11 +14,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.logging.Logger;
 
 public class FuncoesGenericas {
 
-	public static Logger logger = Logger.getAnonymousLogger();
+	private static final EtlLogger LOG = EtlLogger.getLogger(FuncoesGenericas.class);
 
 	public static String garantirXCaracterOnNumber(long number, int x) {
 		String formatedNumber = "";
@@ -136,7 +135,7 @@ public class FuncoesGenericas {
 			return;
 
 		for (int i = 0; i < params.length; i++) {
-			logger.info("Param [" + i + "]=" + params[i]);
+			LOG.info("Param [" + i + "]=" + params[i]);
 		}
 	}
 
@@ -150,7 +149,7 @@ public class FuncoesGenericas {
 
 	public static void printParams(List<?> params) {
 		for (int i = 0; i < params.size(); i++) {
-			logger.info("Param [" + i + "]=" + params.get(i));
+			LOG.info("Param [" + i + "]=" + params.get(i));
 		}
 	}
 

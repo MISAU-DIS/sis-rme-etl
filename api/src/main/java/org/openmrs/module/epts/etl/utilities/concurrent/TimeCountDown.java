@@ -11,7 +11,7 @@ import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
 public class TimeCountDown extends ScheduledOperation {
 
-	public static EtlLogger logger = EtlLogger.getLogger(TimeCountDown.class);
+	private static final EtlLogger LOG = EtlLogger.getLogger(TimeCountDown.class);
 
 	private String message;
 
@@ -98,7 +98,7 @@ public class TimeCountDown extends ScheduledOperation {
 			try {
 				Thread.sleep(this.intervalForMessage * 1000);
 				if (this.message != null && !this.message.isEmpty()) {
-					logger.info(this.message + "[Remain" + this.remainTime / 1000 + "s] ");
+					LOG.info(this.message + "[Remain" + this.remainTime / 1000 + "s] ");
 				}
 
 				this.remainTime = this.remainTime - this.intervalForMessage * 1000;
@@ -113,7 +113,7 @@ public class TimeCountDown extends ScheduledOperation {
 		if (initializer != null)
 			initializer.onFinish();
 
-		logger.info("Wait finihed " + this.message);
+		LOG.info("Wait finihed " + this.message);
 	}
 
 	public void restart() {

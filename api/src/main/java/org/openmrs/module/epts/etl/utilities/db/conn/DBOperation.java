@@ -8,7 +8,7 @@ import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
 public class DBOperation {
 
-	public static EtlLogger logger = EtlLogger.getLogger(DBException.class);
+	private static final EtlLogger LOG = EtlLogger.getLogger(DBOperation.class);
 
 	private String sql;
 
@@ -47,7 +47,7 @@ public class DBOperation {
 			try {
 				this.generatedIds = BaseDAO.executeQueryWithoutRetry(sql, params, conn);
 
-				logger.warn("RECOVERED AFTER {}", error.toUpperCase());
+				LOG.warn("RECOVERED AFTER {}", error.toUpperCase());
 			} catch (DBException e) {
 				this.exception = e;
 
@@ -70,7 +70,7 @@ public class DBOperation {
 	private void logAsWarn(String error) {
 		String queryInfo = BaseDAO.generateMInimalQueryInfo(sql, params);
 
-		logger.warn("{} DETECTED WHILE EXECUTING: {} \nRETRYING OPERATION [{}] OF [{}]", error, queryInfo, qtyTry,
+		LOG.warn("{} DETECTED WHILE EXECUTING: {} \nRETRYING OPERATION [{}] OF [{}]", error, queryInfo, qtyTry,
 				maxTry);
 	}
 
@@ -78,7 +78,7 @@ public class DBOperation {
 	private void logAsErr(String error) {
 		String queryInfo = BaseDAO.generateMInimalQueryInfo(sql, params);
 
-		logger.err(error + " DETECTED WHILE EXECUTING: " + queryInfo + " \nRETRYING OPERATION [" + qtyTry + "] OF ["
+		LOG.err(error + " DETECTED WHILE EXECUTING: " + queryInfo + " \nRETRYING OPERATION [" + qtyTry + "] OF ["
 				+ maxTry + "]", exception);
 	}
 

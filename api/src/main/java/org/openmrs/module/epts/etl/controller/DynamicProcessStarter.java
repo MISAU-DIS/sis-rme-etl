@@ -8,12 +8,15 @@ import org.openmrs.module.epts.etl.etl.model.EtlDynamicSearchParams;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 public class DynamicProcessStarter extends ProcessStarter implements ControllerStarter {
+
+	private static final EtlLogger LOG = EtlLogger.getLogger(DynamicProcessStarter.class);
 
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
@@ -61,13 +64,13 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	ProcessController init(EtlDatabaseObject src) throws ForbiddenOperationException, DBException {
 		ProcessController currentController;
 
-		logger.debug("Initializing ProcessController using " + this.etlConfig.getConfigFilePath());
+		LOG.debug("Initializing ProcessController using " + this.etlConfig.getConfigFilePath());
 
 		currentController = new ProcessController(this, this.etlConfig.cloneDynamic(src));
 
 		currentController.setSchemaInfoSrc(src);
 
-		logger.debug("ProcessController Initialized");
+		LOG.debug("ProcessController Initialized");
 
 		return currentController;
 	}
@@ -89,14 +92,14 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 				while (!this.currentController.isFinalized()) {
 					TimeCountDown.sleep(30);
 
-					logger.warn("THE APPLICATION IS STILL RUNING...", 60 * 15, true);
+					LOG.warn("THE APPLICATION IS STILL RUNING...", 60 * 15, true);
 				}
 			}
 
 			if (this.currentController.isFinished()) {
-				logger.warn("ALL JOBS ARE FINISHED");
+				LOG.warn("ALL JOBS ARE FINISHED");
 			} else if (this.currentController.isStopped()) {
-				logger.warn("ALL JOBS ARE STOPPED");
+				LOG.warn("ALL JOBS ARE STOPPED");
 			}
 		} catch (ForbiddenOperationException e) {
 			throw e;
@@ -119,7 +122,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 				controller.handleFinalization();
 			}
 		} else if (c.isStopped()) {
-			logger.warn("THE APPLICATION IS STOPPING DUE STOP REQUESTED!");
+			LOG.warn("THE APPLICATION IS STOPPING DUE STOP REQUESTED!");
 			controller.handleFinalization();
 		}
 

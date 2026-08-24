@@ -48,7 +48,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	public static final Object LOCK = new Object();
 
-	protected EtlLogger logger;
+	private static final EtlLogger LOG = EtlLogger.getLogger(OperationController.class);
 
 	protected ProcessController processController;
 
@@ -77,8 +77,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	private List<EtlItemConfiguration> finalizedItems;
 
 	public OperationController(ProcessController processController, EtlOperationConfig operationConfig) {
-		this.logger = new EtlLogger(OperationController.class);
-
 		this.processController = processController;
 		this.operationConfig = operationConfig;
 
@@ -149,7 +147,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public EtlLogger getLogger() {
-		return logger;
+		return LOG;
 	}
 
 	public OperationController<? extends EtlDatabaseObject> getParentConf() {
@@ -788,7 +786,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 		if (this.enginesActivititieMonitor != null) {
 			for (Engine<T> monitor : this.getEnginesActivititieMonitor()) {
-				ThreadPoolService.getInstance().terminateTread(logger, monitor.getEngineId(), monitor);
+				ThreadPoolService.getInstance().terminateTread(LOG, monitor.getEngineId(), monitor);
 			}
 		}
 

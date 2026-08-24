@@ -25,14 +25,14 @@ public class ProcessStarter implements ControllerStarter {
 
 	protected ProcessController currentController;
 
-	protected EtlLogger logger;
+	private final EtlLogger logger;
 
 	private final Object LOCK = new Object();
 
 	public ProcessStarter(EtlConfiguration etlConfig) {
 		this.etlConfig = etlConfig;
 
-		this.logger = new EtlLogger(this.getClass());
+		this.logger = EtlLogger.getLogger(ProcessStarter.class);
 	}
 
 	public ProcessController getCurrentController() {

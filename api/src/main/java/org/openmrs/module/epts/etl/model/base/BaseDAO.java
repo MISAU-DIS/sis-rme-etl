@@ -35,7 +35,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBOperation;
  */
 public abstract class BaseDAO {
 
-	public static EtlLogger logger = EtlLogger.getLogger(BaseDAO.class);
+	private static final EtlLogger LOG = EtlLogger.getLogger(BaseDAO.class);
 
 	public static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -170,7 +170,7 @@ public abstract class BaseDAO {
 
 			loadParamsToStatment(st, params, conn);
 
-			logger.trace("Executing select: \n" + utilities.garantirXCaracteres(sql, 500));
+			LOG.trace("Executing select: \n" + utilities.garantirXCaracteres(sql, 500));
 
 			st.executeQuery();
 
@@ -286,29 +286,29 @@ public abstract class BaseDAO {
 
 			st = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
-			logger.trace("Executing query: \n" + utilities.garantirXCaracteres(sql, 500));
+			LOG.trace("Executing query: \n" + utilities.garantirXCaracteres(sql, 500));
 
-			logger.trace("Loading Params");
+			LOG.trace("Loading Params");
 
 			loadParamsToStatment(st, params, connection);
 
-			logger.trace("Performing execution");
+			LOG.trace("Performing execution");
 
 			st.execute();
 
-			logger.trace("Done execution of query");
+			LOG.trace("Done execution of query");
 
 			List<Long> generatedKeys = new ArrayList<>();
 
 			ResultSet rs = st.getGeneratedKeys();
 
-			logger.trace("Retrieving the generated IDs");
+			LOG.trace("Retrieving the generated IDs");
 
 			while (rs != null && rs.next()) {
 				generatedKeys.add(rs.getLong(1));
 			}
 
-			logger.trace("Returning");
+			LOG.trace("Returning");
 
 			return generatedKeys;
 		} catch (SQLException e) {
