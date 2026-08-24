@@ -20,6 +20,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableAliasesGenerator;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfigurationRegistry;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
@@ -37,11 +38,11 @@ import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -62,11 +63,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public static final String ETL_RECORD_ERROR_TABLE_NAME = "etl_record_error";
 
-	private static final String DEFAULT_ETL_ELEMENTS_TEMPLATE_FILE = "etl_elements_templates.json";
+	private static final String DEFAULT_ETL_ELEMENTS_TEMPLATE_DIR = "templates.*.json";
 
 	private String etlRootDirectory;
 
-	private String etlTemplatesFilePath;
+	private String templatesDir;
 
 	private String etlConfDir;
 
@@ -135,6 +136,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private EtlConfigurationTableConf skippedRecordTabConf;
 
 	private List<TableConfiguration> fullLoadedTables;
+
+	private static final PhysicalTableConfigurationRegistry physicalTableConfigurationRegistry = new PhysicalTableConfigurationRegistry();
+
+	@JsonIgnore
+	public PhysicalTableConfigurationRegistry getPhysicalTableConfigurationRegistry() {
+		return EtlConfiguration.physicalTableConfigurationRegistry;
+	}
 
 	private List<String> busyTableAliasName;
 
@@ -367,12 +375,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.relatedEtlSrcTables = relatedEtlSrcTables;
 	}
 
-	public String getEtlTemplatesFilePath() {
-		return etlTemplatesFilePath;
+	public String getTemplatesDir() {
+		return templatesDir;
 	}
 
-	public void setEtlTemplatesFilePath(String etlTemplatesFilePath) {
-		this.etlTemplatesFilePath = etlTemplatesFilePath;
+	public void setTemplatesDir(String templatesDir) {
+		this.templatesDir = templatesDir;
 	}
 
 	public String getEtlConfDir() {
@@ -962,9 +970,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					this.setPrimaryKeyInitialIncrementValue(0);
 				}
 
-				if (this.etlTemplatesFilePath == null) {
-					etlTemplatesFilePath = this.getRelatedConfFile().getParent() + File.separator
-							+ DEFAULT_ETL_ELEMENTS_TEMPLATE_FILE;
+				if (this.templatesDir == null) {
+					this.templatesDir = this.getRelatedConfFile().getParent() + File.separator
+							+ DEFAULT_ETL_ELEMENTS_TEMPLATE_DIR;
 				}
 
 				if (this.etlConfDir == null) {

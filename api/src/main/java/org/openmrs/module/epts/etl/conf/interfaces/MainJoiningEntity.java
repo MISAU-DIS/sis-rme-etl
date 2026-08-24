@@ -80,7 +80,7 @@ public interface MainJoiningEntity extends TableConfiguration {
 						t.parseToJoining().tryToLoadAuxExtraJoinTable(schemaInfo, conn);
 					}
 
-					t.loadJoinElements(schemaInfo, conn);
+					t.loadJoinElements(schemaInfo, DataSourceSide.NONE_IS_DATA_SOURCE, conn);
 				} finally {
 					srcConn.finalizeConnection(this);
 				}

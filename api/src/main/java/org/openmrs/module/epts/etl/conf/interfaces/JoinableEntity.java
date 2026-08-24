@@ -16,7 +16,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 /**
  * Represents an database object which can be joined to other database object
@@ -86,9 +86,11 @@ public interface JoinableEntity extends TableConfiguration {
 		return this.getJoinFields() != null && this.getJoinFields().size() > 0;
 	}
 
-	default void tryToLoadJoinFields(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-		if (!hasJoinFields()) {
-			this.setJoinFields(this.tryToLoadJoinFields(this.getJoiningEntity(), conn));
+	default void tryToLoadJoinFields(DataSourceSide dsSide, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+
+		if (!this.hasJoinFields()) {
+			this.setJoinFields(this.tryToLoadJoinFields(this.getJoiningEntity(), dsSide, conn));
 		}
 	}
 
@@ -132,17 +134,19 @@ public interface JoinableEntity extends TableConfiguration {
 		return conditionFields;
 	}
 
-	default void loadJoinElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
-		if (hasJoinExtraCondition()) {
+	default void loadJoinElements(EtlDatabaseObject schemaInfo, DataSourceSide dsSide, Connection conn)
+			throws DBException {
+		if (this.hasJoinExtraCondition()) {
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getJoinExtraCondition(), null)) {
 				throw new EtlConfException("Invalid joinExtraCondition \n" + this.getJoinExtraCondition());
 			}
 		}
 
-		tryToLoadJoinFields(conn);
+		this.tryToLoadJoinFields(dsSide, conn);
 
-		if (hasJoinExtraCondition() && !isUsingManualDefinedAlias()) {
-			setJoinExtraCondition(SQLUtilities.qualifyUnqualifiedSqlFields(getJoinExtraCondition(), getTableName()));
+		if (this.hasJoinExtraCondition() && !this.isUsingManualDefinedAlias()) {
+			setJoinExtraCondition(
+					SQLUtilities.qualifyUnqualifiedSqlFields(this.getJoinExtraCondition(), getTableName()));
 
 			this.setJoinExtraCondition(
 					this.getJoinExtraCondition().replaceAll(getTableName() + "\\.", getTableAlias() + "\\."));
@@ -172,7 +176,7 @@ public interface JoinableEntity extends TableConfiguration {
 		}
 
 		if (!hasJoinType()) {
-			setJoinType(determineJoinType());
+			this.setJoinType(determineJoinType());
 		}
 	}
 

@@ -36,6 +36,16 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	}
 
 	private EtlStageAreaObject(EtlStageAreaObject srcStageInfoObject, EtlDatabaseObject obj, EtlStageTableType type,
+			EtlConfigurationTableConf keyInfoTabConf, Connection srcConn, Connection dstConn) throws DBException {
+
+		this.type = type;
+
+		this.relatedEtlObject = obj;
+
+		this.setRelatedConfiguration(keyInfoTabConf);
+	}
+
+	private EtlStageAreaObject(EtlStageAreaObject srcStageInfoObject, EtlDatabaseObject obj, EtlStageTableType type,
 			Connection srcConn, Connection dstConn) throws DBException {
 
 		this.type = type;
@@ -355,7 +365,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 		return (TableConfiguration) this.getRelatedEtlObject().getRelatedConfiguration();
 	}
 
-	private void generateUniqueKeyInfoRecord(EtlConfigurationTableConf tabConf) {
+	private void generateUniqueKeyInfoRecord(EtlConfigurationTableConf tabConf) throws DBException {
 		List<UniqueKeyInfo> allKeys = new ArrayList<>();
 
 		UniqueKeyInfo pk = this.getRelatedEtlTableConf().getPrimaryKey();
@@ -373,7 +383,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			for (Key key : uKey.getFields()) {
 
 				if (key.hasValue()) {
-					GenericDatabaseObject obj = new GenericDatabaseObject(tabConf);
+					EtlStageAreaObject obj = new EtlStageAreaObject(this, relatedEtlObject, type, tabConf, null, null);
 
 					obj.setFieldValue("key_name", uKey.getKeyName());
 					obj.setFieldValue("column_name", key.getName());

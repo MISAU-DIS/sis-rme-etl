@@ -1,6 +1,8 @@
 package org.openmrs.module.epts.etl.conf;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
@@ -8,6 +10,8 @@ import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -17,10 +21,10 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -69,6 +73,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private String manualMapPrimaryKeyOnField;
 
 	private List<Field> fields;
+
+	@JsonIgnore
+	private PhysicalTableConfiguration physicalTableConfiguration;
 
 	private PreparedQuery defaultPreparedQuery;
 
@@ -212,7 +219,125 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this.tryToLoadDumpScriptContentToFieldAndValidate("extraConditionForExtract",
 				this.retrieveAllAvailableTemplateParameters(), conn);
 
+		this.tryToLoadSchemaInfo(null, conn);
+		this.attachPhysicalTableConfiguration(conn);
+
 		TableConfiguration.super.fullLoad(conn);
+	}
+
+	private void attachPhysicalTableConfiguration(Connection conn) throws DBException {
+		if (this.physicalTableConfiguration != null)
+			return;
+
+		try {
+			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedEtlConf(),
+					conn.getMetaData().getURL(), conn.getMetaData().getUserName(), this.getCatalog(conn),
+					this.getSchema(), this.getTableName());
+
+			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
+					.getOrCreate(identity);
+		} catch (SQLException e) {
+			throw new DBException(e);
+		}
+	}
+
+	@JsonIgnore
+	public PhysicalTableConfiguration getPhysicalTableConfiguration() {
+		return physicalTableConfiguration;
+	}
+
+	@Override
+	public void loadFields(Connection conn) throws DBException {
+		if (this.physicalTableConfiguration == null) {
+			this.tryToLoadSchemaInfo(null, conn);
+			this.attachPhysicalTableConfiguration(conn);
+		}
+
+		synchronized (this.physicalTableConfiguration) {
+			if (this.physicalTableConfiguration.hasFields()) {
+				this.fields = filterIgnorableFields(this.physicalTableConfiguration.copyFields());
+				this.setFieldsLoaded(true);
+				return;
+			}
+
+			this.logDebug("Loading physical fields for table " + getFullTableDescription());
+			List<Field> physicalFields = DBUtilities.getTableFields(this.getTableName(), this.getSchema(), conn);
+			this.physicalTableConfiguration.initializeFields(physicalFields);
+			this.fields = filterIgnorableFields(this.physicalTableConfiguration.copyFields());
+			this.setFieldsLoaded(true);
+		}
+	}
+
+	private List<Field> filterIgnorableFields(List<Field> physicalFields) {
+		List<Field> contextualFields = new ArrayList<>();
+		for (Field field : physicalFields) {
+			if (!this.isIgnorableField(field)) {
+				contextualFields.add(field);
+			}
+		}
+		return contextualFields;
+	}
+
+	@Override
+	public void loadPrimaryKeyInfo(Connection conn) throws DBException {
+		if (this.isPrimaryKeyInfoLoaded())
+			return;
+
+		// Explicit/manual PK configuration is contextual and must not populate the
+		// physical cache for other usages of the same table.
+		if (this.primaryKey != null || this.hasManualMapPrimaryKeyOnField()) {
+			TableConfiguration.super.loadPrimaryKeyInfo(conn);
+			return;
+		}
+
+		if (this.physicalTableConfiguration == null) {
+			this.tryToLoadSchemaInfo(null, conn);
+			this.attachPhysicalTableConfiguration(conn);
+		}
+
+		synchronized (this.physicalTableConfiguration) {
+			if (this.physicalTableConfiguration.isPrimaryKeyLoaded()) {
+				this.primaryKey = this.physicalTableConfiguration.copyPrimaryKey(this);
+				this.setPrimaryKeyInfoLoaded(true);
+				return;
+			}
+
+			TableConfiguration.super.loadPrimaryKeyInfo(conn);
+			this.physicalTableConfiguration.initializePrimaryKey(this.primaryKey);
+		}
+	}
+
+	@Override
+	public void loadUniqueKeys(Connection conn) {
+		if (this.isUniqueKeyInfoLoaded())
+			return;
+
+		// Unique-key discovery currently observes contextual field exclusions and
+		// shared-PK relationships. Keep those cases local until physical FK DTOs exist.
+		if (this.uniqueKeys != null || utilities.listHasElement(this.ignorableFields) || this.useSharedPKKey()) {
+			TableConfiguration.super.loadUniqueKeys(conn);
+			return;
+		}
+
+		if (this.physicalTableConfiguration == null) {
+			try {
+				this.tryToLoadSchemaInfo(null, conn);
+				this.attachPhysicalTableConfiguration(conn);
+			} catch (DBException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		synchronized (this.physicalTableConfiguration) {
+			if (this.physicalTableConfiguration.areUniqueKeysLoaded()) {
+				this.uniqueKeys = this.physicalTableConfiguration.copyUniqueKeys(this);
+				this.setUniqueKeyInfoLoaded(true);
+				return;
+			}
+
+			TableConfiguration.super.loadUniqueKeys(conn);
+			this.physicalTableConfiguration.initializeUniqueKeys(this.uniqueKeys);
+		}
 	}
 
 	@Override

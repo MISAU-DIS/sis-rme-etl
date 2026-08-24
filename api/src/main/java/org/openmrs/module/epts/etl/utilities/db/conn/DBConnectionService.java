@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

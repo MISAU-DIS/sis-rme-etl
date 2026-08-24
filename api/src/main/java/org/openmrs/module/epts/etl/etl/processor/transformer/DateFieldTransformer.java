@@ -49,7 +49,8 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 
 		this.onInvalid = ActionOnEtlIssue.ABORT_PROCESS;
 
-		this.rawParameterDefinitions = parameters != null ? parameters.stream().map(Object::toString).toList()
+		this.rawParameterDefinitions = parameters != null
+				? parameters.stream().map(Object::toString).collect(java.util.stream.Collectors.toList())
 				: Collections.emptyList();
 
 		if (utilities.listHasElement(this.rawParameterDefinitions)) {

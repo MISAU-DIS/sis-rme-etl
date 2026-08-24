@@ -258,6 +258,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	public void init(EtlConfiguration relatedEtlConf, boolean testing, Connection srcConn, Connection dstConn)
 			throws DBException {
 
+		if (isInitialized())
+			return;
+
 		this.setRelatedEtlConf(relatedEtlConf);
 
 		this.applyIncludes();
@@ -300,6 +303,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.setConfigCode(getRelatedEtlConf().finalizeItemCodeGeneration(codeElements));
 
 		this.tryToLoadChildItemConf(testing, srcConn, dstConn);
+
+		this.markAsInitialized();
 	}
 
 	protected String putOperationElementoOnCode(String codeElements) {
@@ -412,6 +417,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	public synchronized void fullLoad(EtlOperationConfig operationConfig, Connection srcConn, Connection dstConn)
 			throws DBException {
+
 		if (this.isFullLoaded()) {
 			return;
 		}

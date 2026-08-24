@@ -722,6 +722,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			subFolder = getOperationType().name().toLowerCase();
 		}
 
+		subFolder += FileUtilities.getPathSeparator() + this.getEtlConfiguration().getConfigFileName();
+
 		return rootFolder + FileUtilities.getPathSeparator() + subFolder;
 	}
 

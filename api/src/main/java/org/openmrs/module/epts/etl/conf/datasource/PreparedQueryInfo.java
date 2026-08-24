@@ -9,6 +9,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingIn
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
@@ -77,7 +78,7 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 
 				throw new EtlExceptionImpl("Error while initializing PreparedQueryInfo: " + this);
 			} else {
-				qty += determineQtyElementsWithinTheParamValue(p.getTransformedValue());
+				qty += SQLUtilities.determineQtyElementsWithinTheParamValue(p.getTransformedValue());
 			}
 		}
 
@@ -88,24 +89,9 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 		return utilities.listHasElement(this.parameters);
 	}
 
-	public static int determineQtyElementsWithinTheParamValue(Object paramValue) {
-		if (paramValue == null || !(paramValue instanceof String))
-			return 1;
-
-		String[] valueParts = paramValue.toString().split("\\,");
-
-		for (String p : valueParts) {
-			if (!utilities.isNumeric(p)) {
-				return 1;
-			}
-		}
-
-		return valueParts.length;
-	}
-
 	private Object[] determineParamsWithinParam(Object transformedValue) {
 
-		if (determineQtyElementsWithinTheParamValue(transformedValue) > 1) {
+		if (SQLUtilities.determineQtyElementsWithinTheParamValue(transformedValue) > 1) {
 			return transformedValue.toString().split("\\,");
 		}
 

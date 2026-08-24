@@ -37,6 +37,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -45,11 +46,11 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -765,6 +766,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		this.getRelatedEtlConf().warn(msg);
 	}
 
+	default void logWarn(String msg, Object... arguments) {
+		this.getRelatedEtlConf().warn(msg, arguments);
+	}
+
 	default void logErr(String msg, Throwable throwable) {
 		this.getRelatedEtlConf().err(msg, throwable);
 	}
@@ -1428,7 +1433,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				if (!this.includePrimaryKeyOnInsert()) {
 
 					// Force the inclusion of primaryKey if the table is not autoincrement or if it
-					// uses shared pj
+					// uses shared pk
 					if ((!this.isAutoIncrementId() || this.useSharedPKKey()
 							|| this.getRelatedEtlConf().isDoNotTransformsPrimaryKeys())
 							&& !(this instanceof EtlConfigurationTableConf)) {
@@ -2185,10 +2190,13 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		return utilities.stringHasValue(getSchema());
 	}
 
-	default List<FieldsMapping> tryToLoadJoinFields(TableConfiguration relatedTabConf, Connection conn)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+	default List<FieldsMapping> tryToLoadJoinFields(TableConfiguration relatedTabConf, DataSourceSide dsSide,
+			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		stepIntoBreakpoint(getRelatedEtlConf(), relatedTabConf.getTableAlias().contains("lab_result"));
+		String dsName = this.determineDataSourceNameByDsSide(relatedTabConf, dsSide);
+
+		EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(),
+				this.retrieveAvaliableDataSources(conn));
 
 		List<FieldsMapping> joinFields = new ArrayList<>();
 
@@ -2201,11 +2209,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				ParentTable ref = pInfo.get(0);
 
-				EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(), null, conn);
-
 				for (RefMapping map : ref.getRefMapping()) {
-					joinFields.add(FieldsMapping.fastCreate(target, map.getChildField().getName(),
-							determineJoiningTableAlias(relatedTabConf), map.getParentField().getName(), conn));
+					joinFields.add(generateJoinMapping(map.getChildField().getName(), map.getParentField().getName(),
+							target, dsName, conn));
 				}
 			} else {
 				throw new ForbiddenOperationException(
@@ -2224,12 +2230,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 					ParentTable ref = pInfo.get(0);
 
-					EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(getRelatedEtlConf(),
-							this.retrieveAvaliableDataSources(conn));
-
 					for (RefMapping map : ref.getRefMapping()) {
-						joinFields.add(FieldsMapping.fastCreate(target, map.getParentField().getName(),
-								determineJoiningTableAlias(ref), map.getChildField().getName(), conn));
+						joinFields.add(generateJoinMapping(map.getParentField().getName(),
+								map.getChildField().getName(), target, dsName, conn));
 					}
 				} else {
 					throw new ForbiddenOperationException(
@@ -2247,18 +2250,37 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		return joinFields;
 	}
 
-	default List<EtlDataSource> retrieveAvaliableDataSources(Connection conn) {
-		return TableConfigurationUtils.retrieveAvaliableDataSourcesWithTable(this, conn);
+	default String determineDataSourceNameByDsSide(TableConfiguration relatedTabConf, DataSourceSide dsSide) {
+
+		String dsName = null;
+
+		switch (dsSide) {
+		case THIS_IS_DATA_SOURCE:
+			dsName = this.getTableAlias();
+			break;
+		case OTHER_IS_DATA_SOURCE:
+			dsName = relatedTabConf.getTableAlias();
+			break;
+
+		default:
+			break;
+		}
+		return dsName;
 	}
 
-	default String determineJoiningTableAlias(TableConfiguration rt) {
-		TableConfiguration t = this.retrieveConfiguredParentWithinTheSameEtl(rt);
+	static FieldsMapping generateJoinMapping(String srcField, String dstField, EtlTransformTarget target, String dsName,
+			Connection conn)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
-		if (t != null) {
-			return t.getTableAlias();
+		if (utilities.stringHasValue(dsName)) {
+			return FieldsMapping.fastCreate(target, srcField, dsName, dstField, conn);
+		} else {
+			return FieldsMapping.fastCreate(target, srcField, dstField, conn);
 		}
+	}
 
-		throw new EtlConfException("No table found within configured etl table for related " + rt);
+	default List<EtlDataSource> retrieveAvaliableDataSources(Connection conn) {
+		return TableConfigurationUtils.retrieveAvaliableDataSourcesWithTable(this, conn);
 	}
 
 	default TableConfiguration retrieveConfiguredParentWithinTheSameEtl(TableConfiguration table) {
@@ -2314,15 +2336,28 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				FieldsMapping field = joinFields.get(i);
 
+				String[] dstFieldParts = field.getDstField().split("\\.");
+
+				String dstFieldName = dstFieldParts[dstFieldParts.length - 1];
+				String dstTableAlias = dstFieldParts.length > 1 ? dstFieldParts[0] : null;
+
 				if (!field.hasSrcField()) {
-					field.setSrcField(field.getDstField());
+					field.setSrcField(dstFieldName);
 				}
 
-				Object value = field.getDstField();
+				Object value = dstFieldName;
 
 				if (parentObject != null) {
 					try {
-						value = parentObject.getFieldValue(field.getDstField());
+						if (dstTableAlias != null
+								&& !dstTableAlias.equals(parentObject.getRelatedConfiguration().getAlias())) {
+
+							throw new EtlExceptionImpl(
+									"The declared field source within dstField " + field.getDstField()
+											+ " differ from provided parent object name: " + parentObject);
+						}
+
+						value = parentObject.getFieldValue(dstFieldName);
 					} catch (ForbiddenOperationException e) {
 						value = parentObject.getFieldValue(field.getDstFieldAsClassField());
 					}
@@ -2345,7 +2380,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default String tryToConvertFieldToAlias(String fieldName) {
-		if (this.containsField(fieldName)) {
+		String[] fieldParts = fieldName.split("\\.");
+
+		if (fieldParts.length > 1) {
+			return fieldName;
+		} else if (this.containsField(fieldName)) {
 			return getTableAlias() + "." + fieldName;
 		}
 

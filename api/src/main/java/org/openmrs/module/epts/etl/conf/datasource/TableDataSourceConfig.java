@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.DataSourceSide;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
@@ -219,7 +220,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
-		this.loadJoinElements(schemaInfo, conn);
+		this.loadJoinElements(schemaInfo, DataSourceSide.OTHER_IS_DATA_SOURCE, conn);
 		this.loadAlias();
 
 		this.tryToLoadAuxExtraJoinTable(schemaInfo, conn);

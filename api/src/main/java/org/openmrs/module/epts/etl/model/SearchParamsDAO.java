@@ -46,11 +46,13 @@ public class SearchParamsDAO extends BaseDAO {
 		searchClauses.setColumnsToSelect(selectClause);
 
 		String sql = searchClauses.generateSQL(conn);
-
+		
+		Object[] parameters = searchClauses.getParameters();
+		
 		SimpleValue simpleValue;
 
 		try {
-			simpleValue = find(SimpleValue.class, sql, searchClauses.getParameters(), conn);
+			simpleValue = find(SimpleValue.class, sql, parameters, conn);
 
 			searchClauses.getSearchParameters().setQtdRecordPerSelected(bkpQtyRecsPerSelect);
 

@@ -290,7 +290,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 				throw new EtlExceptionImpl("DstField for parent does not have FieldTransformingInfo: " + refInfo);
 			}
 
-			if (this.relationshipResolutionStrategy().validateOnly()) {
+			if (this.relationshipResolutionStrategy().validateOnly()
+					|| tinfo.getSrcField().relationshipResolutionStrategy().validateOnly()) {
 				Oid prentOid = refInfo.generateParentOidFromChild(this.getTransformedObject());
 
 				EtlDatabaseObject parent = DatabaseObjectDAO.getByOid(refInfo, prentOid, dstConn);
@@ -311,7 +312,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 				skipDstParentLoad = tinfo.skipRelationshipResolution() || parentIsDstParentConf;
 
 				if (!skipDstParentLoad) {
-					performeParentInfoInitialization(srcConn, refInfo);
+					this.performeParentInfoInitialization(srcConn, refInfo);
 
 					if (!getTransformedObject().hasAllPerentFieldsFilled(refInfo)) {
 						continue;

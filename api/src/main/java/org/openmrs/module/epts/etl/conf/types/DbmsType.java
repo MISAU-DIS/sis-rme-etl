@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf.types;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 
 public enum DbmsType {
 	// @formatter:off

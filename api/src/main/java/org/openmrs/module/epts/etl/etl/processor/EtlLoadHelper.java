@@ -18,8 +18,6 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
-import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObjectDAO;
-import org.openmrs.module.epts.etl.etl.model.stage.EtlStageObjectInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -102,22 +100,18 @@ public class EtlLoadHelper {
 		return srcObjects;
 	}
 
-	public List<EtlStageObjectInfo> generateStageInfoForAll(Connection srcConn, Connection dstConn) throws DBException {
-
-		List<EtlStageObjectInfo> info = new ArrayList<>(this.getSrcObjects().size());
-
-		for (EtlDatabaseObject rec : this.getSrcObjects()) {
-			info.add(EtlStageObjectInfo.generate(rec, srcConn, dstConn));
-		}
-
-		return info;
-	}
-
 	public void load(Connection srcConn, Connection dstConn) throws ParentNotYetMigratedException, DBException {
 
 		if (this.hasDstConf()) {
 			for (DstConf dst : this.getDstConf()) {
-				load(dst, srcConn, dstConn);
+				try {
+					load(dst, srcConn, dstConn);
+				} catch (Exception e) {
+					logWarn("Error happened while perfoming load within etl {} with dstConf {}", dst.getParentConf(),
+							dst);
+
+					throw e;
+				}
 
 				if (!dst.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
 					if (hasUnresolvedError(dst)) {
@@ -142,15 +136,12 @@ public class EtlLoadHelper {
 
 		boolean writeOperation = getEtlOperationConfig().writeOperationHistory();
 
-		writeOperation = writeOperation && (!this.loadingType.isParent()
-				|| !this.getEtlOperationConfig().getParallelProcessingStrategy().isMultiThreaded());
-
 		if (writeOperation) {
-			logInfo("Starting stage info generation and wrinting within {}", generateAvaliableEtl());
+			logInfo("Registering StageArea persistence within {}", generateAvaliableEtl());
 
-			EtlStageAreaObjectDAO.saveAll(this.generateStageInfoForAll(srcConn, dstConn), srcConn);
+			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn, dstConn);
 
-			logDebug("Stage Info stored to database!");
+			logDebug("StageArea persistence registered!");
 		}
 	}
 

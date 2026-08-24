@@ -150,6 +150,8 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 				FieldTransformingInfo transformingInfo = null;
 
 				try {
+					logTrace("Retrieving coalesce data from field {} within objects {}", map, additionalSrcObjects);
+
 					transformingInfo = map.getTransformerInstance().transform(processor, srcObject, transformedRecord,
 							additionalSrcObjects, map, srcConn, dstConn);
 				} catch (EtlTransformationException e) {

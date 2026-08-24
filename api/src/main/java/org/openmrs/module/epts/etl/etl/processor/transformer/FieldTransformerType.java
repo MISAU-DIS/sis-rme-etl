@@ -11,7 +11,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 public enum FieldTransformerType {
 
@@ -243,7 +243,7 @@ public enum FieldTransformerType {
 			current.append(c);
 		}
 
-		if (!current.isEmpty()) {
+		if (current.length() > 0) {
 			params.add(current.toString().trim());
 		}
 

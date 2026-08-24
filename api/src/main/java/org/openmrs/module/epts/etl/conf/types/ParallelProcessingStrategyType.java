@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.conf.types;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.engine.Engine;
+import org.openmrs.module.epts.etl.engine.EngineProcessingStrategies;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 
 /**
@@ -15,54 +16,26 @@ public enum ParallelProcessingStrategyType {
 	 * Divides the processing batch into identifier ranges. Each worker performs
 	 * search, transformation and persistence within its assigned range.
 	 */
-	RANGE_PARTITIONING(true, false, false) {
-
-		@Override
-		public void process(Engine<?> engine, List<IntervalExtremeRecord> intervals) throws Exception {
-
-			engine.processRangePartitionedIntervals(intervals);
-		}
-	},
+	RANGE_PARTITIONING(true, false, false),
 
 	/**
 	 * Searches the complete processing batch once and places the resulting source
 	 * records into a shared work queue. Workers dynamically consume records from
 	 * the queue and perform both transformation and persistence.
 	 */
-	RESULT_PARTITIONING(true, true, false) {
-
-		@Override
-		public void process(Engine<?> engine, List<IntervalExtremeRecord> intervals) throws Exception {
-
-			engine.processResultPartitionedIntervals(this, intervals);
-		}
-	},
+	RESULT_PARTITIONING(true, true, false),
 
 	/**
 	 * Searches the complete processing batch once and distributes records through a
 	 * shared transformation queue. Multiple workers perform transformations while a
 	 * single dedicated worker performs persistence.
 	 */
-	PARALLEL_TRANSFORM_SERIAL_PERSIST(true, true, true) {
-
-		@Override
-		public void process(Engine<?> engine, List<IntervalExtremeRecord> intervals) throws Exception {
-
-			engine.processResultPartitionedIntervals(this, intervals);
-		}
-	},
+	PARALLEL_TRANSFORM_SERIAL_PERSIST(true, true, true),
 
 	/**
 	 * Executes the complete ETL pipeline using a single worker.
 	 */
-	SINGLE_THREAD(false, false, true) {
-
-		@Override
-		public void process(Engine<?> engine, List<IntervalExtremeRecord> intervals) throws Exception {
-
-			engine.processIntervalsInSingleProcessor(intervals);
-		}
-	};
+	SINGLE_THREAD(false, false, true);
 
 	private final boolean multiThreaded;
 
@@ -78,7 +51,9 @@ public enum ParallelProcessingStrategyType {
 		this.singlePersistenceWorker = singlePersistenceWorker;
 	}
 
-	public abstract void process(Engine<?> engine, List<IntervalExtremeRecord> intervals) throws Exception;
+	public void process(Engine<?> engine, List<IntervalExtremeRecord> intervals) throws Exception {
+		EngineProcessingStrategies.resolve(this).process(engine, intervals);
+	}
 
 	/**
 	 * Indicates whether this strategy uses multiple processing workers.

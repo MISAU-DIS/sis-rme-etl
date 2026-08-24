@@ -335,6 +335,10 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		monitor.logErr(msg, e);
 	}
 
+	public void logError(String msg, Exception e, Object... arguments) {
+		monitor.logErr(msg, e, arguments);
+	}
+
 	public void logError(String msg, Throwable throwable) {
 		monitor.logErr(msg, throwable);
 	}

@@ -28,8 +28,8 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
 public interface EtlDataConfiguration extends BaseConfiguration {
@@ -98,12 +98,12 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			if (this.getRelatedEtlConf().checkIfIsValidDumpScript(fieldValue.toString())) {
 				fromFile = " from file " + fieldValue;
 				originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
-
-				queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
-						templateParameters, false);
-
-				utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 			}
+
+			queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
+					templateParameters, false);
+
+			utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 
 			String toValidate = queryWithReplacedParameters;
 
@@ -116,7 +116,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			if (!SQLUtilities.isValidSelectSqlQuery(toValidate, DBUtilities.determineDbmsType(conn))) {
 				String msg = "Ivalid sql " + sqlType + fromFile + " within the field '" + fieldName + "'.\n\t" + sqlType
 						+ "> " + originalScript;
-				
+
 				throw new EtlConfException(msg);
 			}
 		}
@@ -475,7 +475,8 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			}
 
 			if (value == null) {
-				throw new IllegalArgumentException("Missing placeholder value for: " + key);
+				throw new IllegalArgumentException(
+						"Missing placeholder value for: " + key + " while preparing data:\t" + text);
 			}
 
 			String replacement = value.toString();

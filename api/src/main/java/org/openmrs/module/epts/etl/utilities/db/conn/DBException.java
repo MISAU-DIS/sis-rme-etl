@@ -10,6 +10,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 
 /**
  * Exception is thrown when any DB error occurs.
@@ -309,9 +310,9 @@ public class DBException extends SQLException implements EtlException {
 		return false;
 	}
 
-	public boolean isEtlStageAreaIssue(EtlDatabaseObject object) {
+	public boolean isEtlStageAreaIssue(EtlDatabaseObject object) throws DBException {
 		if (object instanceof EtlStageAreaObject) {
-			return messageContains("stage_record_id", "cannot be null");
+			return messageContains("stage_record_id", "cannot be null") || messageContains("dst_stage_dst_unique_keys");
 		} else {
 			return false;
 		}

@@ -16,7 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 
 public class DateAndTimeUtilities {
 

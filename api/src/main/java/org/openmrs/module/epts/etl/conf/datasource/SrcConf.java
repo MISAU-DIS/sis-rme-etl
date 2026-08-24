@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.DataSourceSide;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -43,7 +44,7 @@ import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.openmrs.module.epts.etl.utilities.db.conn.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -115,9 +116,23 @@ public class SrcConf extends AbstractTableConfiguration
 
 	private ActionOnEtlIssue missingRequiredObjectBehavior;
 
+	private Boolean doNotLoadJoiningFields;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
+	}
+
+	public Boolean getDoNotLoadJoiningFields() {
+		return doNotLoadJoiningFields;
+	}
+
+	public void setDoNotLoadJoiningFields(Boolean doNotLoadJoiningFields) {
+		this.doNotLoadJoiningFields = doNotLoadJoiningFields;
+	}
+
+	public Boolean doNotLoadJoiningFields() {
+		return isTrue(doNotLoadJoiningFields);
 	}
 
 	public ActionOnEtlIssue getMissingRequiredObjectBehavior() {
@@ -363,8 +378,8 @@ public class SrcConf extends AbstractTableConfiguration
 
 		this.setFullLoaded(true);
 
-		if (isJoinable()) {
-			this.loadJoinElements(schemaInfo, conn);
+		if (isJoinable() && !doNotLoadJoiningFields()) {
+			this.loadJoinElements(schemaInfo, DataSourceSide.OTHER_IS_DATA_SOURCE, conn);
 		}
 
 		if (this.getMissingRequiredObjectBehavior() == null) {
@@ -379,9 +394,10 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	@Override
-	public void loadJoinElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
+	public void loadJoinElements(EtlDatabaseObject schemaInfo, DataSourceSide dsSide, Connection conn)
+			throws DBException {
 		try {
-			JoinableEntity.super.loadJoinElements(schemaInfo, conn);
+			JoinableEntity.super.loadJoinElements(schemaInfo, dsSide, conn);
 		} catch (MissingJoiningElementsException e) {
 			if (this.hasParentItemConf() && this.getPrimaryKey().equals(this.getParentSrcConf().getPrimaryKey())) {
 				this.setJoinFields(new ArrayList<>());
@@ -798,7 +814,7 @@ public class SrcConf extends AbstractTableConfiguration
 	public void copyFromOther(TableConfiguration toClone, EtlDatabaseObject schemaInfoSrc,
 			EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
 
- 		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
+		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
 
 		if (toClone instanceof SrcConf) {
 			SrcConf toCloneFrom = (SrcConf) toClone;

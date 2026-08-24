@@ -348,7 +348,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				for (EtlAdditionalDataSource ds : srcConf.getAvaliableExtraDataSource()) {
 
 					List<EtlDatabaseObject> avaliableObjects = ds.allowMultipleSrcObjectsForLoading()
-							? srcObjects.stream().toList()
+							? srcObjects.stream().collect(java.util.stream.Collectors.toList())
 							: utilities.parseToList(srcObject);
 
 					if (!ds.shouldBeProcessed(srcObject, srcObjects, srcConn, srcConn)) {

@@ -10,8 +10,11 @@ import org.openmrs.module.epts.etl.conf.DefaultEtlValidator;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.Extension;
+import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
+import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -20,6 +23,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -42,6 +46,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	protected ActionOnEtlIssue onNullTransformedvalue;
 
+	protected List<String> skipRelationshipResolutionForFields;
+
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
 			TransformableField field) {
 
@@ -55,6 +61,14 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		if (relatedEtlTargedConf.getRelatedEtlConf() == null)
 			throw new EtlConfException("The RelatedEtlConf conf withing the target of " + this + " is null");
 
+	}
+
+	public List<String> getSkipRelationshipResolutionForFields() {
+		return skipRelationshipResolutionForFields;
+	}
+
+	public void setSkipRelationshipResolutionForFields(List<String> skipRelationshipResolutionForFields) {
+		this.skipRelationshipResolutionForFields = skipRelationshipResolutionForFields;
 	}
 
 	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
@@ -98,6 +112,12 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 					}
 
 					this.inputExpression = paramValue;
+				} else if (paramName.equals("skip_relationship_resolution_for_fields")) {
+					if (!utilities.stringHasValue(paramValue)) {
+						throw new ForbiddenOperationException("The lookup_condition has no value");
+					}
+
+					this.skipRelationshipResolutionForFields = utilities.parseArrayToList(paramValue.split(","));
 				}
 			}
 		}
@@ -190,6 +210,80 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		}
 
 		return TRANSFORMER_EXPRESSION_PATTERN.matcher(value.trim()).matches();
+	}
+
+	protected Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
+			SrcConf srcConf, TableConfiguration dstConf, Connection srcConn, Connection dstConn) throws DBException {
+
+		Object[] resolvedParams = new Object[params.size()];
+
+		EtlDatabaseObject auxObject = dstConf.createRecordInstance();
+
+		for (int i = 0; i < params.size(); i++) {
+			FieldTransformingInfo paramValueInfo = params.get(i);
+			Object transformedValue = paramValueInfo.getTransformedValue();
+
+			TransformableField srcField = paramValueInfo.getSrcField();
+
+			ParentTable refInfo = dstConf.findParentRefInfoByField(srcField.getDstField());
+
+			String actuallyName = srcField.getDstField();
+
+			if (refInfo == null) {
+				refInfo = dstConf.findParentRefInfoByField(srcField.getSrcField());
+
+				actuallyName = srcField.getSrcField();
+			}
+
+			if (refInfo == null) {
+				refInfo = dstConf.findParentRefInfoByField(srcField.getName());
+
+				actuallyName = srcField.getName();
+			}
+
+			if (refInfo == null) {
+				resolvedParams[i] = transformedValue;
+				continue;
+			}
+
+			if (paramValueInfo.skipRelationshipResolution() || this.skipRelationshipResolution(actuallyName)) {
+				resolvedParams[i] = transformedValue;
+				continue;
+			}
+
+			auxObject.setFieldValue(refInfo.getChildColumnOnSimpleMapping(), transformedValue);
+
+			EtlDatabaseObject parentInSrc = auxObject.retrieveParentInSrcUsingDstParentInfo(refInfo, srcConf, srcConn);
+			EtlDatabaseObject parentInDst = null;
+
+			refInfo.fullLoad(dstConn);
+
+			if (parentInSrc != null) {
+				parentInDst = auxObject.retrieveParentInDestination(refInfo, parentInSrc, dstConn);
+			} else {
+				throw new EtlTransformationException(
+						"The " + refInfo.getTableName() + "(" + transformedValue + ") of " + dstConf.getTableName()
+								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on src db",
+						srcObject, srcConf.getRelatedEtlConf().getDefaultInconsistencyBehavior());
+			}
+
+			if (parentInDst == null) {
+				srcObject.loadObjectIdData();
+				throw new EtlTransformationException(
+						"The " + refInfo.getTableName() + "(" + transformedValue + ") of " + dstConf.getTableName()
+								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on dst db",
+						srcObject, srcConf.getRelatedEtlConf().getDefaultInconsistencyBehavior());
+			}
+
+			resolvedParams[i] = parentInDst.getObjectId().asSimpleNumericValue();
+		}
+
+		return resolvedParams;
+	}
+
+	private boolean skipRelationshipResolution(String actuallyName) {
+		return this.skipRelationshipResolutionForFields != null
+				&& this.skipRelationshipResolutionForFields.contains(actuallyName);
 	}
 
 	@Override
