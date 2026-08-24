@@ -1837,12 +1837,14 @@ Similarly, the following example loads the auxiliary data source only if the ref
 - If the condition evaluates to **false**, the element is ignored without raising an error.
 - Ignoring an element does not affect the processing of other configuration elements.
 
-### The Template
-Defines a reusable configuration template that can be applied to an ETL item or any of its nested elements. Templates allow the reuse of common configurations, reducing duplication and improving maintainability by parameterizing only the parts that vary (such as extraction conditions, table names, or filters).
+## The Template
 
-A template is referenced using its name and an optional list of parameters:
+Defines a reusable configuration template that can be applied to an ETL item or any of its nested configuration elements. Templates allow common configurations to be reused across different ETL processes, reducing duplication and improving maintainability by parameterizing only the parts that vary, such as extraction conditions, table names, mappings, or filters.
 
-```
+A template is referenced by its **name** and may optionally receive parameters:
+
+```json
+{
    "template":{
       "name":"template_name",
       "parameters":{
@@ -1850,41 +1852,184 @@ A template is referenced using its name and an optional list of parameters:
          "param2":"paramValue2"
       }
    }
+}
 ```
 
-Templates are defined externally in a JSON file with the following structure:
-```
-[
-   {
-      "name":"template_name",
-      "parameters":[
-         "param1",
-         "param2"
-      ],
-      "template":{
-         ...
-      }
+Templates are defined externally in JSON files and loaded from the configured templates directory.
+
+A template definition follows the structure:
+
+```json
+{
+   "name":"template_name",
+   "parameters":[
+      "param1",
+      "param2"
+   ],
+   "template":{
+      ...
    }
-]
+}
 ```
-By default, templates are loaded from a file named etl_elements_templates.json, which must be located in the same directory as the main ETL configuration file. If a different location is required, it can be specified using the global ETL configuration property:
+
+Multiple template definitions may be distributed across different JSON files within the templates directory. This allows templates to be organized by purpose or functional area instead of requiring all templates to be maintained in a single file.
+
+For example:
+
+```text
+config/
+├── migration.json
+├── templates/
+│   ├── encounter-templates.json
+│   ├── obs-templates.json
+│   ├── patient-templates.json
+│   └── synchronization/
+│       └── sync-templates.json
+└── sync-child/
+    └── ...
 ```
-etlTemplatesFilePath
+
+### Template Storage
+
+The directory from which template files are loaded is controlled by the global **templatesDir** configuration.
+
+```json
+{
+   "etlConfDir":"/opt/etl/config",
+   "templatesDir":"templates"
+}
 ```
-This property should contain the full path to the templates file.
 
-Templates can be used in any part of the EtlItemConfiguration, including but not limited to:
+The **templatesDir** may be specified as either a relative or absolute filesystem path.
 
-  - the root level of the item configuration
-  - srcConf
-  - dstConf
-  - childItemConf
-  - or any nested configuration element
+When a relative path is provided, it is resolved relative to **etlConfDir**.
 
-When a template is applied, its configuration is merged into the target element, replacing or complementing the existing configuration based on the provided parameters.
+For example:
 
-This mechanism is especially useful for scenarios where multiple ETL items share similar configurations, differing only in specific parameters such as extraction conditions, field mappings, or filters.
+```json
+{
+   "etlConfDir":"/opt/etl/config",
+   "templatesDir":"shared/templates"
+}
+```
 
+resolves the templates directory to:
+
+```text
+/opt/etl/config/shared/templates
+```
+
+When **templatesDir** is an absolute path, that path is used directly.
+
+For example:
+
+```json
+{
+   "templatesDir":"/opt/shared/etl-templates"
+}
+```
+
+uses:
+
+```text
+/opt/shared/etl-templates
+```
+
+regardless of the configured **etlConfDir**.
+
+#### Default Template Directory
+
+If **templatesDir** is not specified, the ETL engine uses:
+
+```text
+templates
+```
+
+as the default templates directory relative to **etlConfDir**.
+
+Therefore:
+
+```json
+{
+   "etlConfDir":"/opt/etl/config"
+}
+```
+
+implicitly resolves the templates directory to:
+
+```text
+/opt/etl/config/templates
+```
+
+If **etlConfDir** is also omitted, the directory containing the main ETL configuration file is used as the configuration root.
+
+For example, given:
+
+```text
+/opt/my-etl/
+├── migration.json
+└── templates/
+    ├── common.json
+    └── encounters.json
+```
+
+and no explicit **etlConfDir** or **templatesDir**, the ETL engine resolves the templates directory as:
+
+```text
+/opt/my-etl/templates
+```
+
+The effective templates directory can therefore be summarized as:
+
+```text
+templatesDir is absolute
+        ↓
+Use templatesDir directly
+
+templatesDir is relative
+        ↓
+Resolve from etlConfDir
+
+templatesDir is omitted
+        ↓
+Use <etlConfDir>/templates
+
+etlConfDir is also omitted
+        ↓
+Use <main configuration directory>/templates
+```
+
+### Template Discovery
+
+During configuration loading, the ETL engine discovers template definitions from the configured templates directory and makes them available by their **name**.
+
+Once loaded, templates are referenced from ETL configurations only by name:
+
+```json
+{
+   "template":{
+      "name":"encounter_to_encounter"
+   }
+}
+```
+
+The configuration using the template does not need to know which physical JSON file contains its definition.
+
+This separation allows template files to be reorganized without requiring changes to every ETL configuration that uses them.
+
+Templates can be applied to any supported configuration element, including but not limited to:
+
+* the root `EtlItemConfiguration`;
+* `srcConf`;
+* `dstConf`;
+* `childItemConf`;
+* data source configurations;
+* mappings;
+* other nested configuration elements that support templates.
+
+When a template is applied, its configuration is used to construct the target element and any supplied template parameters are resolved according to the template parameter rules.
+
+This mechanism is especially useful when multiple ETL configurations share similar structures but differ only in specific parameters such as extraction conditions, table names, field mappings, data source aliases, or filters.
 
 ## "includeFragments"
 
@@ -1927,6 +2072,21 @@ In this example, all JSON files matching **/opt/etl/config/sync-child/*.json** w
 If *etlConfDir* is omitted, the same relative *srcPath* will be resolved from the directory where the main ETL configuration file is located.
 
 This mechanism differs from templates. Templates are intended for reusable and parameterized configuration blocks, while fragments are intended to split a large configuration into smaller files for better organization and team collaboration.
+
+### Templates vs. includeFragments
+
+Templates and **includeFragments** both allow ETL configurations to be distributed across multiple files, but they serve different purposes.
+
+**Templates** provide reusable and optionally parameterized configuration definitions. A template may be referenced multiple times from different parts of one or more ETL configurations.
+
+**includeFragments**, on the other hand, is intended to physically split a large ETL configuration into smaller configuration fragments that are assembled during configuration loading.
+
+In general:
+
+* use **templates** when a configuration block is intended to be **reused**;
+* use **includeFragments** when a configuration is being **split into independently maintained parts**.
+
+Both mechanisms resolve their files from the ETL configuration structure, allowing large ETL processes to remain modular and easier to maintain.
 
 
 ```markdown
