@@ -379,6 +379,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
 					: transformedParent.getEtlInfo().getRelatedSrcObject();
 
+			transformedParent.loadObjectIdData();
+
 			if (itemConf.shouldBeProcessed(srcObject, null, srcConn, dstConn)) {
 
 				List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null

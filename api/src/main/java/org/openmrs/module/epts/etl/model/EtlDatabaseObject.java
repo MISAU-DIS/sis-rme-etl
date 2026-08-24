@@ -34,6 +34,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
+import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
@@ -1120,6 +1121,18 @@ public interface EtlDatabaseObject extends EtlObject {
 		srcConf.changeObjectStatus(this, status, srcConn);
 
 		this.save(srcConf, srcConn);
+	}
+
+	default void validateIfRecordExistsOnDB(Connection conn) throws RecordNotFoundException, DBException {
+		TableConfiguration conf = ((TableConfiguration) this.getRelatedConfiguration());
+
+		this.loadObjectIdData();
+
+		Object obj = DatabaseObjectDAO.getByOid(conf, this.getObjectId(), conn);
+
+		if (obj == null) {
+			throw new RecordNotFoundException(conf, this);
+		}
 	}
 
 }

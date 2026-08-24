@@ -63,7 +63,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public static final String ETL_RECORD_ERROR_TABLE_NAME = "etl_record_error";
 
-	private static final String DEFAULT_ETL_ELEMENTS_TEMPLATE_DIR = "templates.*.json";
+	private static final String DEFAULT_ETL_ELEMENTS_TEMPLATE_DIR = "templates/*.json";
 
 	private String etlRootDirectory;
 
@@ -223,6 +223,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private ActionOnEtlIssue stageRecordIssueBehavior;
 
 	private EtlConfParamsAsDataSource paramsAsDataSource;
+
+	private Boolean verifyRecordAfterCreate;
 
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
@@ -1591,14 +1593,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			return issues;
 		}
 
-		if (!getDefaultExceptionBehavior().log()) {
-			DBConnectionInfo connInfo = hasDstConnInfo() ? getDstConnInfo() : getSrcConnInfo();
-
-			if (connInfo.isAutoCommit()) {
-				return "DefaultAutoCommit is set to true. You must set defaultExceptionBehavior to LOG!";
-			}
-		}
-
 		return null;
 	}
 
@@ -2619,4 +2613,17 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public boolean doNotWarnOnNoDstObjectFound() {
 		return isTrue(doNotWarnOnNoDstObjectFound);
 	}
+
+	public Boolean verifyRecordAfterCreate() {
+		return isTrue(verifyRecordAfterCreate);
+	}
+
+	public Boolean getVerifyRecordAfterCreate() {
+		return verifyRecordAfterCreate;
+	}
+
+	public void setVerifyRecordAfterCreate(Boolean verifyRecordAfterCreate) {
+		this.verifyRecordAfterCreate = verifyRecordAfterCreate;
+	}
+
 }

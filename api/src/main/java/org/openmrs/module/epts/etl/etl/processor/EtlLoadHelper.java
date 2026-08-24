@@ -26,6 +26,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
 import org.openmrs.module.epts.etl.exceptions.NoDstForGivenSrcException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
+import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -254,6 +255,14 @@ public class EtlLoadHelper {
 
 				if (loadRec.getEtlInfo().hasParentsWithDefaultValues()) {
 					loadRec.getEtlInfo().saveRecordsWithDefaultsParents(srcConn, dstConn);
+				}
+
+				if (getEtlConfiguration().verifyRecordAfterCreate()) {
+					try {
+						loadRec.validateIfRecordExistsOnDB(dstConn);
+					} catch (RecordNotFoundException e) {
+						throw e;
+					}
 				}
 
 				loadRec.getEtlInfo().markAsSuccess();
