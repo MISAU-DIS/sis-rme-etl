@@ -766,6 +766,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		this.getRelatedEtlConf().warn(msg);
 	}
 
+	default void logWarn(String msg, Object... arguments) {
+		this.getRelatedEtlConf().warn(msg, arguments);
+	}
+
 	default void logErr(String msg, Throwable throwable) {
 		this.getRelatedEtlConf().err(msg, throwable);
 	}

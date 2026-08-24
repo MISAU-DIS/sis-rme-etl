@@ -392,13 +392,21 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 						srcObject.addChildObject(obj);
 					}
 
-					performTransformationAndLoading(itemConf, etlObjects,
-							transformedParent.isDstObject() ? transformedParent : null, LoadingType.CHILD, srcConn,
-							dstConn);
+					try {
+						performTransformationAndLoading(itemConf, etlObjects,
+								transformedParent.isDstObject() ? transformedParent : null, LoadingType.CHILD, srcConn,
+								dstConn);
+					} catch (Exception e) {
+						logWarn("Error happened while perfoming etl within child {} with dstConf {}", itemConf,
+								itemConf.getDstConf());
+
+						throw e;
+					}
 				}
 			}
 		} catch (Exception e) {
-			logWarn("Error happened while perfoming etl within child {}", itemConf);
+			logWarn("Error happened while perfoming etl within child {} with dstConf {}", itemConf,
+					itemConf.getDstConf());
 
 			throw e;
 		}

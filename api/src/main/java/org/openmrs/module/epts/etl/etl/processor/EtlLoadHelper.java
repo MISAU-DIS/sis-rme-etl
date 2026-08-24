@@ -104,7 +104,14 @@ public class EtlLoadHelper {
 
 		if (this.hasDstConf()) {
 			for (DstConf dst : this.getDstConf()) {
-				load(dst, srcConn, dstConn);
+				try {
+					load(dst, srcConn, dstConn);
+				} catch (Exception e) {
+					logWarn("Error happened while perfoming load within etl {} with dstConf {}", dst.getParentConf(),
+							dst);
+
+					throw e;
+				}
 
 				if (!dst.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
 					if (hasUnresolvedError(dst)) {

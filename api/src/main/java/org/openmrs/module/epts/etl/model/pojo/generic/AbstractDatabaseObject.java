@@ -348,7 +348,13 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	@Override
 	public void save(TableConfiguration tableConfiguration, Connection conn) throws DBException {
-		save(tableConfiguration, tableConfiguration.onConflict(), conn);
+		try {
+			save(tableConfiguration, tableConfiguration.onConflict(), conn);
+		} catch (Exception e) {
+			tableConfiguration.logWarn("Error happened while persisting record {}", this);
+
+			throw e;
+		}
 	}
 
 	@Override
