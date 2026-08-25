@@ -24,7 +24,6 @@ import org.apache.commons.fileupload.FileItem;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBOperation;
 
 /**
  * Base DAO This class provides the base datasource & common functionaloty for
@@ -35,7 +34,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBOperation;
  */
 public abstract class BaseDAO {
 
-	private static final EtlLogger LOG = EtlLogger.getLogger(BaseDAO.class);
+	public static final EtlLogger LOG = EtlLogger.getLogger(BaseDAO.class);
 
 	public static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 

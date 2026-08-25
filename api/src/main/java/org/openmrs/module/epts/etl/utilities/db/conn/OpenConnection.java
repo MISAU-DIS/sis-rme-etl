@@ -115,6 +115,7 @@ public class OpenConnection implements Connection, Closeable {
 				try {
 					conn.finalizeConnection(finalizer);
 				} catch (Exception e) {
+					DBConnectionInfo.logError("Error finalizing connection {} from a connection collection", e, conn);
 				}
 			}
 		}
@@ -189,7 +190,7 @@ public class OpenConnection implements Connection, Closeable {
 			connService.removeOpenConnection(this);
 
 		} catch (SQLException e) {
-			connService.getDbConnInfo().getRelatedEtlConf().err("Error while finalizing connection {}", e, this);
+			DBConnectionInfo.logError("Error while finalizing connection {}", e, this);
 
 			throw new RuntimeException(e);
 		} finally {
@@ -272,12 +273,12 @@ public class OpenConnection implements Connection, Closeable {
 
 	@Override
 	public void commit() throws SQLException {
-		connService.getDbConnInfo().getRelatedEtlConf().debug("Commiting connection {}", this);
+		DBConnectionInfo.logDebug("Committing connection {}", this);
 
 		if (!isClosed())
 			connection.commit();
 
-		connService.getDbConnInfo().getRelatedEtlConf().trace("Connection commited {}", this);
+		DBConnectionInfo.logTrace("Connection committed {}", this);
 	}
 
 	public void commitCurrentWork() throws DBException {
@@ -290,29 +291,30 @@ public class OpenConnection implements Connection, Closeable {
 
 	@Override
 	public void rollback() throws SQLException {
-		connService.getDbConnInfo().getRelatedEtlConf().debug("Rolling back connection {}", this);
+		DBConnectionInfo.logDebug("Rolling back connection {}", this);
 
 		if (!isClosed())
 			connection.rollback();
 
-		connService.getDbConnInfo().getRelatedEtlConf().trace("Connection rolled back{}", this);
+		DBConnectionInfo.logTrace("Connection rolled back {}", this);
 	}
 
 	@Override
 	public void close() {
 		try {
 
-			connService.getDbConnInfo().getRelatedEtlConf().debug("Closing connection {}", this);
+			DBConnectionInfo.logDebug("Closing connection {}", this);
 
 			if (!isClosed()) {
 				connection.close();
 
 				this.closeDate = new Date();
-				connService.getDbConnInfo().getRelatedEtlConf().trace("Connection closed {}", this);
+				DBConnectionInfo.logTrace("Connection closed {}", this);
 			}
 
 		} catch (SQLException e) {
-			throw new RuntimeException();
+			DBConnectionInfo.logError("Error closing connection {}", e, this);
+			throw new RuntimeException(e);
 		}
 	}
 

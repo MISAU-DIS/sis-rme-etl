@@ -91,7 +91,7 @@ public class DBConnectionService {
 		try {
 			this.dataSource.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			DBConnectionInfo.logError("Error closing the database connection pool", e);
 		}
 	}
 
@@ -184,14 +184,14 @@ public class DBConnectionService {
 
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 
-			getDbConnInfo().getRelatedEtlConf().debug(
+			DBConnectionInfo.logDebug(
 					"Obtendo conexao. attempt={}/{}, active={}, idle={}, size={}, waitCount={}", attempt, maxAttempts,
 					dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(), dataSource.getWaitCount());
 
 			try {
 				Connection connection = dataSource.getConnection();
 
-				getDbConnInfo().getRelatedEtlConf().trace(
+				DBConnectionInfo.logTrace(
 						"Conexão obtida. attempt={}, active={}, idle={}, size={}, waitCount={}", attempt,
 						dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(), dataSource.getWaitCount());
 
@@ -200,9 +200,8 @@ public class DBConnectionService {
 			} catch (SQLException e) {
 				lastException = e;
 
-				getDbConnInfo().getRelatedEtlConf()
-						.err("Falha ao obter conexão. attempt={}/{}, active={}, idle={}, "
-								+ "size={}, waitCount={}, sqlState={}, errorCode={}, message={}", e, attempt,
+				DBConnectionInfo.logError("Falha ao obter conexão. attempt={}/{}, active={}, idle={}, "
+						+ "size={}, waitCount={}, sqlState={}, errorCode={}, message={}", e, attempt,
 								maxAttempts, dataSource.getActive(), dataSource.getIdle(), dataSource.getSize(),
 								dataSource.getWaitCount(), e.getSQLState(), e.getErrorCode(), e.getMessage());
 
@@ -267,7 +266,7 @@ public class DBConnectionService {
 		int index = 1;
 
 		while (current != null) {
-			getDbConnInfo().getRelatedEtlConf().err("SQLException[{}]: type={}, sqlState={}, errorCode={}, message={}",
+			DBConnectionInfo.logError("SQLException[{}]: type={}, sqlState={}, errorCode={}, message={}",
 					current, index, current.getClass().getName(), current.getSQLState(), current.getErrorCode(),
 					current.getMessage());
 

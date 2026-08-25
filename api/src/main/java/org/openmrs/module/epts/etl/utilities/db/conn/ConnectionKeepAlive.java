@@ -40,7 +40,7 @@ public final class ConnectionKeepAlive implements AutoCloseable {
 
 	void pingSafely() {
 
-		this.processor.logDebug("Pinging connection: " + this.connection);
+		DBConnectionInfo.logDebug("Pinging connection {}", this.connection);
 
 		if (closed.get()) {
 			return;
@@ -66,7 +66,7 @@ public final class ConnectionKeepAlive implements AutoCloseable {
 			}
 
 		} catch (SQLException e) {
-			processor.logError("Destination connection keep-alive failed: " + e.getMessage(), e);
+			DBConnectionInfo.logError("Destination connection keep-alive failed: {}", e, e.getMessage());
 
 		} finally {
 			connectionLock.unlock();

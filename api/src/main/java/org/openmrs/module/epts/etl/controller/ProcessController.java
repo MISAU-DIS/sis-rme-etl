@@ -23,9 +23,9 @@ import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
@@ -178,7 +178,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		getRelatedEtlConf().finalizeAllApps();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void handleControllerFinalization(Controller c) {
 		c.killSelfCreatedThreads();
@@ -448,8 +447,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			while (running) {
 				TimeCountDown.sleep(getWaitTimeToCheckStatus());
 
-				LOG.warn(("The process " + getControllerId() + " is still running...").toUpperCase(), 60 * 5,
-						true);
+				LOG.warn(("The process " + getControllerId() + " is still running...").toUpperCase(), 60 * 5, true);
 
 				if (this.isFinished()) {
 					this.markAsFinished();

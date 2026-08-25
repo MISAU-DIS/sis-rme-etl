@@ -13,12 +13,38 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 
+	private static final EtlLogger LOG = EtlLogger.getLogger(DBConnectionInfo.class);
+
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
+
+	static void logDebug(String msg, Object... arguments) {
+		LOG.debug(msg, arguments);
+	}
+
+	static void logTrace(String msg, Object... arguments) {
+		LOG.trace(msg, arguments);
+	}
+
+	static void logInfo(String msg, Object... arguments) {
+		LOG.info(msg, arguments);
+	}
+
+	static void logWarn(String msg, Object... arguments) {
+		LOG.warn(msg, arguments);
+	}
+
+	static void logError(String msg, Throwable throwable, Object... arguments) {
+		Object[] argumentsWithThrowable = new Object[arguments.length + 1];
+		System.arraycopy(arguments, 0, argumentsWithThrowable, 0, arguments.length);
+		argumentsWithThrowable[arguments.length] = throwable;
+		LOG.err(msg, argumentsWithThrowable);
+	}
 
 	private String dataBaseUserName;
 
@@ -352,20 +378,21 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		String databaseName = this.determineSchema();
 		String databaseSchemaFullPath = etlConf.generateDatabaseSchemaFullPath(this);
 
-		etlConf.warn("Database '" + databaseName + "' Does not exist but schema exists.");
+		logWarn("Database '{}' does not exist but its schema file is available", databaseName);
 
-		etlConf.debug("Database '" + databaseName + "' created!");
+		logDebug("Creating database '{}' from its schema file", databaseName);
 
 		try {
 			DBUtilities.createDb(this, this.determineSchema());
 
 			DBUtilities.runScriptOnDbServer(this, databaseSchemaFullPath);
 		} catch (Exception e) {
-			etlConf.err("An error occurred restoring dump: " + databaseSchemaFullPath, e);
+			logError("An error occurred restoring dump: {}", e, databaseSchemaFullPath);
 
 			try {
 				DBUtilities.dropDB(this, this.determineSchema());
 			} catch (Exception e1) {
+				logError("Error dropping database '{}' after a failed dump restoration", e1, databaseName);
 			}
 
 			throw new EtlExceptionImpl(e);

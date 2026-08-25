@@ -177,7 +177,7 @@ public class DBException extends SQLException implements EtlException {
 		// SQL Error [1062] [23000]: Duplicate entry '1' for key 'tmp_unq'
 		// SQL Error [1062] [23000]: Duplicate entry '1' for key 'PRIMARY'
 
-		System.err.println("WARNING: Nao foi possivel determinar a base de dados");
+		DBConnectionInfo.logWarn("Nao foi possivel determinar a base de dados");
 		return false;
 	}
 
@@ -305,7 +305,7 @@ public class DBException extends SQLException implements EtlException {
 					|| this.SQLCodeError == MYSQL_INTEGRITY_CONSTRAINT_VIOLATION;
 		}
 
-		System.err.println("WARNING: Nao foi possivel determinar a base de dados");
+		DBConnectionInfo.logWarn("Nao foi possivel determinar a base de dados");
 
 		return false;
 	}

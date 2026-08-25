@@ -7,6 +7,7 @@
     <property name="ETL_CONTROLLER_LOG_LEVEL" value="${log.level.etl-controller:-${ETL_LOG_LEVEL}}" />
     <property name="ENGINE_LOG_LEVEL" value="${log.level.engine:-${ETL_LOG_LEVEL}}" />
     <property name="TASK_PROCESSOR_LOG_LEVEL" value="${log.level.task-processor:-${ETL_LOG_LEVEL}}" />
+    <property name="DB_CONNECTION_LOG_LEVEL" value="${log.level.db-connection:-${ETL_LOG_LEVEL}}" />
     <property name="LOGS_PATTERN" value="%-5level %date [%thread] %logger{8}:%line %msg%n" />
     <property name="LOGS_DIR" value="${eip.base.dir}" />
     <property name="LOGS_FILE_NAME" value="eptssync" />
@@ -55,6 +56,10 @@
     <logger
         name="org.openmrs.module.epts.etl.processor.TaskProcessor"
         level="${TASK_PROCESSOR_LOG_LEVEL}" />
+
+    <logger
+        name="org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo"
+        level="${DB_CONNECTION_LOG_LEVEL}" />
 
     <!-- Root Logger -->
     <root level="trace">
