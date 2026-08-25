@@ -77,7 +77,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		this.dbmsType = dbmsType;
 		this.setDataSource(dataSource);
 
-		this.logTrace("Starting Query preparation... " + dataSource.getName());
+		this.trace("Starting Query preparation... " + dataSource.getName());
 
 		this.original = true;
 
@@ -89,9 +89,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		setQuery(ensureDynamicElementsLoadedAsParameteres(this.getQuery()));
 		setQuery(autoDefineDataSourceParameters(this.getQuery()));
 
-		this.setQueryParams(extractParamOnQuery(this.getQuery()));
-
-		logTrace("Query Parameters Loaded!");
+		this.trace("Query Parameters Loaded!");
 	}
 
 	public boolean hasAvaliableDataSources() {
@@ -119,14 +117,6 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		this(queryDs, null, config, ignoreMissingParameters, dbmsType);
 	}
 
-	void logTrace(String msg) {
-		getRelatedEtlConf().trace(msg);
-	}
-
-	void logDebug(String msg) {
-		getRelatedEtlConf().debug(msg);
-	}
-
 	public void setQuery(String query) {
 		this.originalQuery = query;
 		this.query = utilities.removeDuplicatedEmptySpace(this.getOriginalQuery());
@@ -134,24 +124,24 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 		this.query = this.getQuery().replaceAll("\\s+", " ");
 
-		logTrace("Discovering subqueries on quey");
+		this.trace("Discovering subqueries on quey");
 
 		this.setSubqueries(SQLUtilities.findSubqueries(this.getQuery()));
 
 		if (hasSubQueries()) {
-			logTrace("Found Subqueries \n" + this.getSubqueries());
+			this.trace("Found Subqueries \n" + this.getSubqueries());
 		} else {
-			logTrace("No subquery found");
+			this.trace("No subquery found");
 		}
 
 		setMainQuery(this.getQuery());
 
 		if (hasSubQueries()) {
-			logTrace("Masking found Subqueries");
+			this.trace("Masking found Subqueries");
 			for (String sQuery : this.getSubqueries()) {
 				this.setMainQuery(utilities.maskToken(this.getMainQuery(), sQuery, '#'));
 			}
-			logTrace("Masking done");
+			this.trace("Masking done");
 		}
 	}
 
@@ -205,10 +195,6 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 	public void setOriginalQuery(String originalQuery) {
 		this.originalQuery = originalQuery;
-	}
-
-	private void setQueryParams(List<QueryParameter> queryParams) {
-		this.queryParams = queryParams;
 	}
 
 	public PreparedQueryInfo generatePreparedQuery(EtlConfiguration relatedEtlConfiguration, EtlProcessor processor,
@@ -415,7 +401,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	 */
 	private List<QueryParameter> extractParamOnQuery(String sqlQuery) {
 
-		logTrace("Extracting query parameters:\n-----------------\n" + sqlQuery + "\n---------------------");
+		this.trace("Extracting query parameters:\n-----------------\n" + sqlQuery + "\n---------------------");
 
 		List<QueryParameter> parameters = new ArrayList<>();
 
@@ -629,7 +615,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 				paramName = fullParam; // mantém expressão inteira
 				paramEnd = openParenIndex + fullParam.length();
 
-				logTrace("Found COMPOSITE parameter: " + paramName);
+				this.trace("Found COMPOSITE parameter: " + paramName);
 
 			}
 			// 🔥 CASO 2: parâmetro simples
@@ -638,19 +624,19 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 				paramName = matcher.group(1);
 				paramEnd = matcher.end();
 
-				logTrace("Found parameter: " + paramName);
+				this.trace("Found parameter: " + paramName);
 			}
 
 			QueryParameter params = new QueryParameter(this, paramName);
 
-			logTrace("Trying to extract subquery from starting position " + paramStart + "\nOn Query\n--------------\n"
-					+ subQuery);
+			this.trace("Trying to extract subquery from starting position " + paramStart
+					+ "\nOn Query\n--------------\n" + subQuery);
 
 			String containgSubquery = tryToExtractParameterContaingSubQuery(subQuery, paramStart, this.dbmsType);
 
 			if (utilities.stringHasValue(containgSubquery)) {
 
-				logTrace("Found subquery within the parameter " + params.getName());
+				this.trace("Found subquery within the parameter " + params.getName());
 
 				int paramStartInSubQuery = determineFirstParameterPositionInQuery(containgSubquery);
 
@@ -666,13 +652,13 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 			} else {
 
-				logTrace("No subquery found within the parameter on the current query");
+				this.trace("No subquery found within the parameter on the current query");
 
 				minAllowedParamStart = paramStart;
 
 				params.determineParameterContext(subQuery, paramStart, paramEnd, this.dbmsType);
 
-				logTrace("Context for " + paramName + " is " + params.getContextType());
+				this.trace("Context for " + paramName + " is " + params.getContextType());
 
 				parameters.add(params);
 			}

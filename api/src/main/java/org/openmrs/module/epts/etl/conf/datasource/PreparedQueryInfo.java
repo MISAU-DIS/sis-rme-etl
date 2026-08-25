@@ -34,7 +34,7 @@ public class PreparedQueryInfo extends AbstractEtlDataConfiguration {
 					"Empty relateConfiguration was provided for PreparedQueryInfo (" + originalQuery + "");
 
 		if (utilities.listHasElement(parameters)) {
-			this.getRelatedEtlConf().trace(
+			this.trace(
 					"Initializing PreparedQueryInfo for original query={}, prepared query={}, params={}", originalQuery,
 					preparedQuery, parameters);
 
