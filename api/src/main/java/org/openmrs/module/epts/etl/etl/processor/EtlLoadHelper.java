@@ -259,6 +259,9 @@ public class EtlLoadHelper {
 
 				if (getEtlConfiguration().verifyRecordAfterCreate()) {
 					try {
+
+						logDebug("Verifying record after load: {}", loadRec);
+
 						loadRec.validateIfRecordExistsOnDB(dstConn);
 					} catch (RecordNotFoundException e) {
 						throw e;
@@ -517,6 +520,10 @@ public class EtlLoadHelper {
 
 	void logDebug(String msg) {
 		getProcessor().logDebug(msg);
+	}
+
+	void logDebug(String msg, Object... arguments) {
+		getProcessor().logDebug(msg, arguments);
 	}
 
 	void logInfo(String msg) {
