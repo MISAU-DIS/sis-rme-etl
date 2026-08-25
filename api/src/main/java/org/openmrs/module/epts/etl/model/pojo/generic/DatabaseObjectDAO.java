@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.model.pojo.generic;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -537,12 +538,17 @@ public class DatabaseObjectDAO extends BaseDAO {
 		if (utilities.listHasNoElement(objects))
 			return result;
 
+		List<EtlDatabaseObject> recordsToInsert = collectRecordsEligibleForInsert(objects);
+		if (recordsToInsert.isEmpty()) {
+			return result;
+		}
+
 		String sql = null;
 
 		if (tabConf.includePrimaryKeyOnInsert()) {
-			sql = objects.get(0).getInsertSQLWithObjectId().split("VALUES")[0];
+			sql = recordsToInsert.get(0).getInsertSQLWithObjectId().split("VALUES")[0];
 		} else {
-			sql = objects.get(0).getInsertSQLWithoutObjectId().split("VALUES")[0];
+			sql = recordsToInsert.get(0).getInsertSQLWithoutObjectId().split("VALUES")[0];
 		}
 
 		if (tabConf.useMysqlInsertIgnore()) {
@@ -557,22 +563,17 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 		String values = "";
 
-		for (int i = 0; i < objects.size(); i++) {
-			EtlDatabaseObject obj = objects.get(i);
-
-			if (obj.isExcluded() || obj.isInEtlProcess() && obj.getEtlInfo().hasExceptionOnEtl())
-				continue;
-
-			objects.get(i).loadObjectIdData(tabConf);
+		for (EtlDatabaseObject record : recordsToInsert) {
+			record.loadObjectIdData(tabConf);
 
 			if (tabConf.includePrimaryKeyOnInsert()) {
-				values += "(" + objects.get(i).getInsertSQLQuestionMarksWithObjectId() + "),";
+				values += "(" + record.getInsertSQLQuestionMarksWithObjectId() + "),";
 
-				params = utilities.setParam(params, objects.get(i).getInsertParamsWithObjectId());
+				params = utilities.setParam(params, record.getInsertParamsWithObjectId());
 			} else {
-				values += "(" + objects.get(i).getInsertSQLQuestionMarksWithoutObjectId() + "),";
+				values += "(" + record.getInsertSQLQuestionMarksWithoutObjectId() + "),";
 
-				params = utilities.setParam(params, objects.get(i).getInsertParamsWithoutObjectId());
+				params = utilities.setParam(params, record.getInsertParamsWithoutObjectId());
 			}
 		}
 
@@ -580,39 +581,26 @@ public class DatabaseObjectDAO extends BaseDAO {
 			sql += utilities.removeLastChar(values);
 
 			try {
-				LOG.trace("Executing insertion of " + objects.size() + " " + tabConf.getTableName()
+				LOG.trace("Executing insertion of " + recordsToInsert.size() + " " + tabConf.getTableName()
 						+ " Using query\n\n" + utilities.garantirXCaracteres(sql, 250));
 
 				List<Long> ids = executeQueryWithRetryOnError(sql, params, conn);
-
-				if (utilities.listHasElement(ids) && objects.get(0).getObjectId().isSimpleId()
-						&& !tabConf.includePrimaryKeyOnInsert()) {
-
-					if (ids.size() == objects.size()) {
-						int i = 0;
-
-						for (EtlDatabaseObject record : objects) {
-							record.loadObjectIdData(tabConf, ids.get(i));
-
-							i += 1;
-						}
-					}
-				}
+				assignGeneratedIdsAfterBatchInsert(recordsToInsert, tabConf, ids);
 
 				if (generateOperationResult) {
 					result.addAllToRecordsWithNoError(EtlOperationItemResult
-							.parseFromEtlDatabaseObject(EtlDatabaseObject.collectAllSrcRelatedOBjects(objects)));
+							.parseFromEtlDatabaseObject(EtlDatabaseObject.collectAllSrcRelatedOBjects(recordsToInsert)));
 				}
 
-				LOG.trace("Inserted " + objects.size() + " " + tabConf.getTableName());
+				LOG.trace("Inserted " + recordsToInsert.size() + " " + tabConf.getTableName());
 			} catch (DBException e) {
-				if (!tryToResolveException && objects.size() > 1) {
+				if (!tryToResolveException && recordsToInsert.size() > 1) {
 					throw new ForbiddenOperationException(
 							"For multiple records you must explicity indicate that the exception must be resolved");
 				}
 
 				if (tryToResolveException) {
-					for (EtlDatabaseObject record : objects) {
+					for (EtlDatabaseObject record : recordsToInsert) {
 						try {
 							record.loadObjectIdData(tabConf);
 
@@ -630,16 +618,16 @@ public class DatabaseObjectDAO extends BaseDAO {
 								if (tabConf.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()
 										&& generateOperationResult) {
 
-									record.getEtlInfo().setExceptionOnEtl(e);
+									record.getEtlInfo().setExceptionOnEtl(e1);
 
 									result.addToRecordsWithUnresolvedErrors(record.getEtlInfo().getRelatedSrcObject(),
 											e1);
 								} else {
 
-									EtlExceptionImpl exc = new EtlExceptionImpl(e1, objects.get(0),
+									EtlExceptionImpl exc = new EtlExceptionImpl(e1, record,
 											ActionOnEtlIssue.ABORT_PROCESS);
 
-									tryToLoadObjToException(exc, objects.get(0));
+									tryToLoadObjToException(exc, record);
 
 									throw exc;
 								}
@@ -648,10 +636,11 @@ public class DatabaseObjectDAO extends BaseDAO {
 					}
 				} else {
 
-					if (objects.size() == 1) {
-						EtlExceptionImpl exc = new EtlExceptionImpl(e, objects.get(0), ActionOnEtlIssue.ABORT_PROCESS);
+					if (recordsToInsert.size() == 1) {
+						EtlExceptionImpl exc = new EtlExceptionImpl(e, recordsToInsert.get(0),
+								ActionOnEtlIssue.ABORT_PROCESS);
 
-						tryToLoadObjToException(exc, objects.get(0));
+						tryToLoadObjToException(exc, recordsToInsert.get(0));
 
 						throw exc;
 					}
@@ -662,6 +651,40 @@ public class DatabaseObjectDAO extends BaseDAO {
 		}
 
 		return result;
+	}
+
+	private static List<EtlDatabaseObject> collectRecordsEligibleForInsert(List<EtlDatabaseObject> objects) {
+		List<EtlDatabaseObject> recordsToInsert = new ArrayList<>(objects.size());
+		for (EtlDatabaseObject record : objects) {
+			if (record.isExcluded()
+					|| record.isInEtlProcess() && record.getEtlInfo().hasExceptionOnEtl()) {
+				continue;
+			}
+			recordsToInsert.add(record);
+		}
+		return recordsToInsert;
+	}
+
+	private static void assignGeneratedIdsAfterBatchInsert(List<EtlDatabaseObject> insertedRecords,
+			TableConfiguration tabConf, List<Long> generatedIds) {
+		if (tabConf.includePrimaryKeyOnInsert()) {
+			return;
+		}
+
+		if (!tabConf.useSimplePk()) {
+			throw new ForbiddenOperationException(
+					"Cannot assign generated IDs to a table with a composite primary key: " + tabConf.getTableName());
+		}
+
+		if (generatedIds == null || generatedIds.size() != insertedRecords.size()) {
+			throw new ForbiddenOperationException("Expected " + insertedRecords.size() + " generated IDs after inserting "
+					+ tabConf.getTableName() + " but received "
+					+ (generatedIds == null ? 0 : generatedIds.size()));
+		}
+
+		for (int i = 0; i < insertedRecords.size(); i++) {
+			insertedRecords.get(i).loadObjectIdData(tabConf, generatedIds.get(i));
+		}
 	}
 
 	static void tryToLoadObjToException(EtlExceptionImpl e, EtlDatabaseObject obj) {
