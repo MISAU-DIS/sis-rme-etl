@@ -176,8 +176,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
 			throws DBException {
 
-		if (!isPrepared()) {
-			prepare(avaliableSrcObjects, srcConn);
+		if (!this.isPrepared()) {
+			this.prepare(avaliableSrcObjects, srcConn);
 		}
 
 		List<EtlDatabaseObject> list = this.getDefaultPreparedQuery().query(this.getRelatedEtlConf(), processor,

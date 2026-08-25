@@ -89,6 +89,8 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		setQuery(ensureDynamicElementsLoadedAsParameteres(this.getQuery()));
 		setQuery(autoDefineDataSourceParameters(this.getQuery()));
 
+		this.queryParams = extractParamOnQuery(this.getQuery());
+
 		this.trace("Query Parameters Loaded!");
 	}
 

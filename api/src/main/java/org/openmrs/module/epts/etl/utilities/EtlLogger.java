@@ -20,7 +20,7 @@ public class EtlLogger {
 
 	private final Logger logger;
 
-	private final Level level;
+	// private final Level level;
 
 	private volatile boolean blocked;
 	private Class<?> clazz;
@@ -33,7 +33,7 @@ public class EtlLogger {
 
 	public EtlLogger(Logger logger) {
 		this.logger = logger;
-		this.level = determineLogLevel();
+		// this.level = determineLogLevel();
 		this.blocked = false;
 	}
 
@@ -245,10 +245,9 @@ public class EtlLogger {
 		this.blocked = false;
 	}
 
-	public Level getLevel() {
-		return level;
-	}
-
+	/*
+	 * public Level getLevel() { return level; }
+	 */
 	public Logger getLogger() {
 		return logger;
 	}
