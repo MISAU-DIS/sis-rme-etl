@@ -115,6 +115,10 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		this();
 
+		stepIntoBreakpoint(target.getRelatedEtlConf(),
+				target.getAlias().equals("seguimento_prep_data_grouped_gropped_obs_dst_ds")
+						&& dstField.equals("order_group_id"));
+
 		boolean tryToLoadDataSourceAndTransformer = false;
 
 		this.setOriginalSrcFieldDefinition(srcFieldFullName);
@@ -175,8 +179,16 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			try {
 				target.tryToLoadDataSourceToFieldMapping(this, conn);
 			} catch (FieldNotAvaliableInAnyDataSource e) {
-				this.setSrcValue(this.getSrcField());
-				this.setSrcField(null);
+
+				// If is not likely to be a table column then we have 70% of certainty that it
+				// is a text
+				if (!SQLUtilities.isValidQueryColumnDefinition(this.getSrcField())) {
+					this.setSrcValue(this.getSrcField());
+					this.setSrcField(null);
+				} else {
+					throw e;
+				}
+
 			}
 
 		}
@@ -395,23 +407,25 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 			Object paramValue = dsF.getParent().getRelatedEtlConf().getParamValue(fn);
 
-			if (paramValue == null) {
-				f.setSrcField(fn);
+			if (f != null) {
+				if (paramValue == null) {
+					f.setSrcField(fn);
 
-				EtlDataSource ds;
+					EtlDataSource ds;
 
-				if (dsF.getParent() instanceof TransformableDataSource) {
-					ds = dsF.getParent().getSrcConf();
-				} else if (dsF.getParent() instanceof EtlAdditionalDataSource) {
-					ds = ((EtlAdditionalDataSource) dsF.getParent()).getRelatedSrcConf();
+					if (dsF.getParent() instanceof TransformableDataSource) {
+						ds = dsF.getParent().getSrcConf();
+					} else if (dsF.getParent() instanceof EtlAdditionalDataSource) {
+						ds = ((EtlAdditionalDataSource) dsF.getParent()).getRelatedSrcConf();
+					} else {
+						throw new EtlExceptionImpl("Unsupported datasource type " + dsF.getParent());
+					}
+
+					f.setDataSourceName(ds.getAlias());
 				} else {
-					throw new EtlExceptionImpl("Unsupported datasource type " + dsF.getParent());
+					f.setSrcValue(paramValue);
+					f.setSrcField(null);
 				}
-
-				f.setDataSourceName(ds.getAlias());
-			} else {
-				f.setSrcValue(paramValue);
-				f.setSrcField(null);
 			}
 		}
 

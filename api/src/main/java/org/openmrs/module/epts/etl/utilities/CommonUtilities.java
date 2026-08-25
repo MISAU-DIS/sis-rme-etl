@@ -154,9 +154,8 @@ public class CommonUtilities implements Serializable {
 		return FuncoesGenericas.isStringIn(value, inValues);
 	}
 
-	@SuppressWarnings("removal")
 	public Character parseToCharacter(char chr) {
-		return new Character(chr);
+		return Character.valueOf(chr);
 	}
 
 	public Character[] parseToCharacter(char... toParse) {
