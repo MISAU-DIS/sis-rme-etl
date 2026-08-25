@@ -4,6 +4,9 @@
 
     <property name="ETL_LOG_LEVEL" value="${log.level:-INFO}" />
     <property name="ETL_CONFIGURATION_LOG_LEVEL" value="${log.level.configuration:-${ETL_LOG_LEVEL}}" />
+    <property name="ETL_CONTROLLER_LOG_LEVEL" value="${log.level.etl-controller:-${ETL_LOG_LEVEL}}" />
+    <property name="ENGINE_LOG_LEVEL" value="${log.level.engine:-${ETL_LOG_LEVEL}}" />
+    <property name="TASK_PROCESSOR_LOG_LEVEL" value="${log.level.task-processor:-${ETL_LOG_LEVEL}}" />
     <property name="LOGS_PATTERN" value="%-5level %date [%thread] %logger{8}:%line %msg%n" />
 
     <appender name="CONSOLE"
@@ -22,6 +25,21 @@
     <logger
         name="org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration"
         level="${ETL_CONFIGURATION_LOG_LEVEL}"
+        additivity="true" />
+
+    <logger
+        name="org.openmrs.module.epts.etl.etl.controller.EtlController"
+        level="${ETL_CONTROLLER_LOG_LEVEL}"
+        additivity="true" />
+
+    <logger
+        name="org.openmrs.module.epts.etl.engine.Engine"
+        level="${ENGINE_LOG_LEVEL}"
+        additivity="true" />
+
+    <logger
+        name="org.openmrs.module.epts.etl.processor.TaskProcessor"
+        level="${TASK_PROCESSOR_LOG_LEVEL}"
         additivity="true" />
 
     <root level="INFO">

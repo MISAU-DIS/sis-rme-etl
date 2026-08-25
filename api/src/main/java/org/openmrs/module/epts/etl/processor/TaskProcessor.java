@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.engine;
+package org.openmrs.module.epts.etl.processor;
 
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -17,6 +17,8 @@ import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.controller.OperationController;
+import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
+import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -25,6 +27,7 @@ import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -41,6 +44,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  */
 public abstract class TaskProcessor<T extends EtlDatabaseObject> extends AbstractEtlDataConfiguration
 		implements MonitoredOperation {
+
+	private static final EtlLogger LOG = EtlLogger.getLogger(TaskProcessor.class);
 
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
@@ -332,52 +337,52 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	public void logError(String msg, Exception e) {
-		monitor.logErr(msg, e);
+		LOG.err(msg, e);
 	}
 
 	public void logError(String msg, Exception e, Object... arguments) {
-		monitor.logErr(msg, e, arguments);
+		LOG.err(msg, e, arguments);
 	}
 
 	public void logError(String msg, Throwable throwable) {
-		monitor.logErr(msg, throwable);
+		LOG.err(msg, throwable);
 	}
 
 	public void logInfo(String msg) {
-		monitor.logInfo(msg);
+		LOG.info(msg);
 	}
 
 	public void logInfo(String msg, Object... arguments) {
-		monitor.logInfo(msg, arguments);
+		LOG.info(msg, arguments);
 	}
 
 	public void logDebug(String msg) {
-		monitor.logDebug(msg);
+		LOG.debug(msg);
 	}
 
 	public void logDebug(String msg, Object... arguments) {
-		monitor.logDebug(msg, arguments);
+		LOG.debug(msg, arguments);
 	}
 
 	public void logTrace(String msg) {
-		monitor.logTrace(msg);
+		LOG.trace(msg);
 	}
 
 	public void logTrace(String msg, Object... arguments) {
-		monitor.logTrace(msg, arguments);
+		LOG.trace(msg, arguments);
 	}
 
 	public void logWarn(String msg) {
-		monitor.logWarn(msg);
+		LOG.warn(msg);
 	}
 
 	public void logWarn(String msg, Object... arguments) {
-		monitor.logWarn(msg, arguments);
+		LOG.warn(msg, arguments);
 	}
 
 	@Override
 	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
-		monitor.logWarn(msg, interval, suppressIfAnyRecentLog);
+		LOG.warn(msg, interval, suppressIfAnyRecentLog);
 	}
 
 	public boolean writeOperationHistory() {

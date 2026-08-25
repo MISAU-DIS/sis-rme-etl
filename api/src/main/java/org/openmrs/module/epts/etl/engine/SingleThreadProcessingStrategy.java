@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.processor.TaskProcessor;
 
 /** Executes extraction, transformation and loading sequentially. */
 public class SingleThreadProcessingStrategy implements EngineProcessingStrategy {

@@ -573,7 +573,8 @@ public class CommonUtilities implements Serializable {
 	 * @param obj
 	 * @return
 	 */
-	public <T> List<T> parseToList(@SuppressWarnings("unchecked") T... obj) {
+	@SuppressWarnings("unchecked")
+	public <T> List<T> parseToList(T... obj) {
 		return FuncoesGenericas.parseToList(obj);
 	}
 

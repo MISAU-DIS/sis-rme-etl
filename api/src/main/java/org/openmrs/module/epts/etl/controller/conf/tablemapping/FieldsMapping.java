@@ -115,10 +115,6 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		this();
 
-		stepIntoBreakpoint(target.getRelatedEtlConf(),
-				target.getAlias().equals("seguimento_prep_data_grouped_gropped_obs_dst_ds")
-						&& dstField.equals("order_group_id"));
-
 		boolean tryToLoadDataSourceAndTransformer = false;
 
 		this.setOriginalSrcFieldDefinition(srcFieldFullName);

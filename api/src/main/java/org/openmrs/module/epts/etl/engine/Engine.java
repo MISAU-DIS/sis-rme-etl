@@ -24,20 +24,22 @@ import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
+import org.openmrs.module.epts.etl.etl.model.stage.StageAreaPersistenceCoordinator;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.etl.model.stage.StageAreaPersistenceCoordinator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.model.pojo.generic.RecordWithDefaultParentInfo;
+import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.MonitoredOperation;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeController;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
@@ -48,6 +50,8 @@ import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
  * @author jpboane
  */
 public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfiguration implements MonitoredOperation {
+
+	private static final EtlLogger LOG = EtlLogger.getLogger(Engine.class);
 
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 
@@ -1105,11 +1109,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public void logErr(String msg, Exception e) {
-		getRelatedOperationController().logErr(msg, e);
+		LOG.err(msg, e);
 	}
 
 	public void logErr(String msg, Exception e, Object... arguments) {
-		getRelatedOperationController().logErr(msg, e, arguments);
+		LOG.err(msg, e, arguments);
 	}
 
 	@Override
@@ -1189,7 +1193,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public void logErr(String msg, Throwable throwable) {
-		getRelatedOperationController().logErr(msg, throwable);
+		LOG.err(msg, throwable);
 	}
 
 	public OperationController<T> getRelatedOperationController() {
@@ -1201,40 +1205,40 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public void logInfo(String msg) {
-		getRelatedOperationController().logInfo(msg);
+		LOG.info(msg);
 	}
 
 	public void logInfo(String msg, Object... arguments) {
-		getRelatedOperationController().logInfo(msg, arguments);
+		LOG.info(msg, arguments);
 	}
 
 	public void logDebug(String msg) {
-		getRelatedOperationController().logDebug(msg);
+		LOG.debug(msg);
 	}
 
 	public void logDebug(String msg, Object... arguments) {
-		getRelatedOperationController().logDebug(msg, arguments);
+		LOG.debug(msg, arguments);
 	}
 
 	public void logWarn(String msg, Object... arguments) {
-		getRelatedOperationController().logWarn(msg, arguments);
+		LOG.warn(msg, arguments);
 	}
 
 	public void logWarn(String msg) {
-		getRelatedOperationController().logWarn(msg);
+		LOG.warn(msg);
 	}
 
 	public void logTrace(String msg, Object... arguments) {
-		getRelatedOperationController().logTrace(msg, arguments);
+		LOG.trace(msg, arguments);
 	}
 
 	public void logTrace(String msg) {
-		getRelatedOperationController().logTrace(msg);
+		LOG.trace(msg);
 	}
 
 	@Override
 	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
-		getRelatedOperationController().logWarn(msg, interval, suppressIfAnyRecentLog);
+		LOG.warn(msg, interval, suppressIfAnyRecentLog);
 	}
 
 	@Override
