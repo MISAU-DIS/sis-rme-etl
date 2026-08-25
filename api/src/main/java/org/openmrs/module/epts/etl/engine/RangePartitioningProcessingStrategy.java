@@ -55,7 +55,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 				return;
 			}
 
-			persistStageArea(engine, sharedConnections, sharedSrcConn, sharedDstConn);
+			persistPendingData(engine, sharedConnections, sharedSrcConn, sharedDstConn);
 
 			persistIntervalState(engine, sharedConnections, sharedSrcConn, sharedDstConn);
 
@@ -77,14 +77,14 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 		return results;
 	}
 
-	private void persistStageArea(Engine<?> engine, boolean sharedConnections, OpenConnection srcConn,
+	private void persistPendingData(Engine<?> engine, boolean sharedConnections, OpenConnection srcConn,
 			OpenConnection dstConn) throws Exception {
 		if (engine.getRelatedEtlConf().hasTestingItem()) {
-			engine.getStageAreaPersistenceCoordinator().discardPending();
+			engine.discardPendingPersistence();
 		} else if (sharedConnections) {
-			engine.flushStageArea(srcConn, dstConn);
+			engine.flushPendingPersistence(srcConn, dstConn);
 		} else {
-			engine.flushStageAreaUsingDedicatedConnection();
+			engine.flushPendingPersistenceUsingDedicatedConnection();
 		}
 	}
 

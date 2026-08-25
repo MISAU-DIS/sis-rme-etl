@@ -65,11 +65,11 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 	private void persistCompletedInterval(Engine<?> engine, OpenConnection srcConn, OpenConnection dstConn,
 			boolean persistWork) throws Exception {
 		if (persistWork) {
-			engine.flushStageArea(srcConn, dstConn);
+			engine.flushPendingPersistence(srcConn, dstConn);
 			engine.getThreadRecordIntervalsManager().save();
 			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
 		} else {
-			engine.getStageAreaPersistenceCoordinator().discardPending();
+			engine.discardPendingPersistence();
 		}
 	}
 }

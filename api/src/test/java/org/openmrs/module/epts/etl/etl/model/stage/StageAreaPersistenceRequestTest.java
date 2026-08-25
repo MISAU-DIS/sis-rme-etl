@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
+import org.openmrs.module.epts.etl.etl.model.persistence.EnginePersistenceCoordinator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 public class StageAreaPersistenceRequestTest {
@@ -37,10 +38,11 @@ public class StageAreaPersistenceRequestTest {
 	public void shouldKeepPendingRequestsIsolatedByOwner() {
 		Object firstOwner = new Object();
 		Object secondOwner = new Object();
-		StageAreaPersistenceCoordinator coordinator = new StageAreaPersistenceCoordinator();
+		EnginePersistenceCoordinator coordinator = new EnginePersistenceCoordinator();
 
-		coordinator.register(firstOwner, Arrays.asList(null, null));
-		coordinator.register(secondOwner, Arrays.asList((EtlDatabaseObject) null));
+		coordinator.register(firstOwner, new StageAreaPersistenceRequest(firstOwner, Arrays.asList(null, null)));
+		coordinator.register(secondOwner,
+				new StageAreaPersistenceRequest(secondOwner, Arrays.asList((EtlDatabaseObject) null)));
 
 		assertEquals(2, coordinator.pendingCount(firstOwner));
 		assertEquals(1, coordinator.pendingCount(secondOwner));

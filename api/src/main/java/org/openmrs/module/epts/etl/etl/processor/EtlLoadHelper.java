@@ -254,7 +254,7 @@ public class EtlLoadHelper {
 			for (EtlDatabaseObject loadRec : this.getAllReadyTransformedObjects(dstConf)) {
 
 				if (loadRec.getEtlInfo().hasParentsWithDefaultValues()) {
-					loadRec.getEtlInfo().saveRecordsWithDefaultsParents(srcConn, dstConn);
+					getEngine().registerDefaultParentPersistence(getProcessor(), loadRec.getEtlInfo());
 				}
 
 				if (getEtlConfiguration().verifyRecordAfterCreate()) {

@@ -295,7 +295,9 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			}
 
 			if (this.relationshipResolutionStrategy().validateOnly()
-					|| tinfo.getSrcField().relationshipResolutionStrategy().validateOnly()) {
+					|| tinfo.getSrcField().relationshipResolutionStrategy().validateOnly()
+					|| tinfo.isLoadedWithDstValue()) {
+
 				Oid prentOid = refInfo.generateParentOidFromChild(this.getTransformedObject());
 
 				EtlDatabaseObject parent = DatabaseObjectDAO.getByOid(refInfo, prentOid, dstConn);

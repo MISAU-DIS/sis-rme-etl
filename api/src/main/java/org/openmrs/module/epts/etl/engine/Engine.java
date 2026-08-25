@@ -24,10 +24,14 @@ import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
-import org.openmrs.module.epts.etl.etl.model.stage.StageAreaPersistenceCoordinator;
+import org.openmrs.module.epts.etl.etl.model.parent.DefaultParentPersistenceRequest;
+import org.openmrs.module.epts.etl.etl.model.persistence.EnginePersistenceCoordinator;
+import org.openmrs.module.epts.etl.etl.model.persistence.PersistenceType;
+import org.openmrs.module.epts.etl.etl.model.stage.StageAreaPersistenceRequest;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.model.pojo.generic.RecordWithDefaultParentInfo;
@@ -81,7 +85,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	private int currentIteration;
 
-	private final StageAreaPersistenceCoordinator stageAreaPersistenceCoordinator;
+	private final EnginePersistenceCoordinator persistenceCoordinator;
 
 	public Engine(OperationController<T> controller, EtlItemConfiguration etlItemConfiguration,
 			TableOperationProgressInfo tableOperationProgressInfo) {
@@ -95,16 +99,20 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		this.tableOperationProgressInfo = tableOperationProgressInfo;
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
-		this.stageAreaPersistenceCoordinator = new StageAreaPersistenceCoordinator();
+		this.persistenceCoordinator = new EnginePersistenceCoordinator();
 	}
 
-	public StageAreaPersistenceCoordinator getStageAreaPersistenceCoordinator() {
-		return stageAreaPersistenceCoordinator;
+	public EnginePersistenceCoordinator getPersistenceCoordinator() {
+		return persistenceCoordinator;
+	}
+
+	public void registerDefaultParentPersistence(TaskProcessor<?> owner, EtlInfo etlInfo) {
+		getPersistenceCoordinator().register(owner, new DefaultParentPersistenceRequest(etlInfo));
 	}
 
 	public void registerStageAreaPersistence(TaskProcessor<?> owner, List<EtlDatabaseObject> sourceObjects,
 			Connection srcConn, Connection dstConn) throws DBException {
-		getStageAreaPersistenceCoordinator().register(owner, sourceObjects);
+		getPersistenceCoordinator().register(owner, new StageAreaPersistenceRequest(owner, sourceObjects));
 
 		if (canFlushStageAreaImmediately(owner)) {
 			flushStageArea(srcConn, dstConn);
@@ -563,7 +571,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		OpenConnection srcConn = null;
 		OpenConnection dstConn = null;
 
-		boolean flushWorkerStageArea = false;
+		boolean flushWorkerPersistence = false;
 
 		try {
 			srcConn = openSrcConn(this);
@@ -573,7 +581,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			if (!getRelatedEtlConf().hasTestingItem() && !processor.getTaskResultInfo().hasFatalError()) {
 				OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-				flushWorkerStageArea = true;
+				flushWorkerPersistence = true;
 			}
 		} catch (DBException e) {
 			failRangeProcessor(processor, e, true);
@@ -581,12 +589,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			try {
 				finalizeRangeWorkerConnections(srcConn, dstConn);
 			} catch (RuntimeException e) {
-				flushWorkerStageArea = false;
+				flushWorkerPersistence = false;
 				failRangeProcessor(processor, e, true);
 			}
 		}
 
-		if (flushWorkerStageArea) {
+		if (flushWorkerPersistence) {
 			try {
 				flushStageAreaUsingDedicatedConnection(processor);
 			} catch (Exception e) {
@@ -623,9 +631,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void failRangeProcessor(TaskProcessor<T> processor, Exception failure, boolean discardStageRequest) {
-		if (discardStageRequest) {
-			getStageAreaPersistenceCoordinator().discard(processor);
+	private void failRangeProcessor(TaskProcessor<T> processor, Exception failure, boolean discardPersistence) {
+		if (discardPersistence) {
+			discardPendingPersistence(processor);
 		}
 
 		processor.changeStatusToStopped();
@@ -675,6 +683,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		if (stopRequested()) {
 			return;
 		}
+
+		// The reload query reads this auxiliary table, so it must only start after
+		// every successful worker registration is durable.
+		flushDefaultParentsUsingDedicatedConnection();
 
 		ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
 
@@ -847,7 +859,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	void completeExtractedTask(TaskProcessor<T> processor, OpenConnection srcConn, OpenConnection dstConn,
 			boolean refreshProgress) throws DBException {
 		if (processor.getTaskResultInfo().hasFatalError()) {
-			getStageAreaPersistenceCoordinator().discard(processor);
+			discardPendingPersistence(processor);
 			processor.changeStatusToStopped();
 			return;
 		}
@@ -874,51 +886,98 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void flushStageArea(Connection srcConn, Connection dstConn) throws DBException {
-		int pending = getStageAreaPersistenceCoordinator().pendingCount();
+		int pending = getPersistenceCoordinator().pendingCount(PersistenceType.STAGE_AREA);
 		if (pending == 0) {
 			return;
 		}
 
 		logInfo("Persisting {} pending StageArea records", pending);
-		getStageAreaPersistenceCoordinator().flush(srcConn, dstConn);
+		getPersistenceCoordinator().flush(PersistenceType.STAGE_AREA, srcConn, dstConn);
 		logDebug("Pending StageArea records persisted");
 	}
 
-	void flushStageAreaUsingDedicatedConnection() throws DBException {
-		if (getStageAreaPersistenceCoordinator().pendingCount() == 0) {
-			return;
-		}
-
-		OpenConnection stageSrcConn = null;
-		OpenConnection stageDstConn = null;
-		try {
-			stageSrcConn = openSrcConn(this);
-			stageDstConn = tryToOpenDstConn(this);
-			flushStageArea(stageSrcConn, stageDstConn);
-			OpenConnection.markAllAsSuccessifullyTerminected(stageSrcConn, stageDstConn);
-		} finally {
-			OpenConnection.finalizeAllConnections(this, stageSrcConn, stageDstConn);
-		}
-	}
-
-	private void flushStageAreaUsingDedicatedConnection(TaskProcessor<?> owner) throws DBException {
-		int pending = getStageAreaPersistenceCoordinator().pendingCount(owner);
+	void flushDefaultParents(Connection srcConn, Connection dstConn) throws DBException {
+		int pending = getPersistenceCoordinator().pendingCount(PersistenceType.DEFAULT_PARENT);
 		if (pending == 0) {
 			return;
 		}
 
-		OpenConnection stageSrcConn = null;
-		OpenConnection stageDstConn = null;
+		logInfo("Persisting {} pending records with default parents", pending);
+		getPersistenceCoordinator().flush(PersistenceType.DEFAULT_PARENT, srcConn, dstConn);
+		logDebug("Pending records with default parents persisted");
+	}
+
+	void flushPendingPersistence(Connection srcConn, Connection dstConn) throws DBException {
+		int pending = getPersistenceCoordinator().pendingCount();
+		if (pending == 0) {
+			return;
+		}
+
+		logInfo("Persisting {} pending auxiliary records", pending);
+		getPersistenceCoordinator().flush(srcConn, dstConn);
+		logDebug("Pending auxiliary records persisted");
+	}
+
+	void flushPendingPersistenceUsingDedicatedConnection() throws DBException {
+		if (getPersistenceCoordinator().pendingCount() == 0) {
+			return;
+		}
+
+		OpenConnection srcConn = null;
+		OpenConnection dstConn = null;
 		try {
-			stageSrcConn = openSrcConn(this);
-			stageDstConn = tryToOpenDstConn(this);
+			srcConn = openSrcConn(this);
+			dstConn = tryToOpenDstConn(this);
+			flushPendingPersistence(srcConn, dstConn);
+			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+		} finally {
+			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+		}
+	}
+
+	private void flushDefaultParentsUsingDedicatedConnection() throws DBException {
+		if (getPersistenceCoordinator().pendingCount(PersistenceType.DEFAULT_PARENT) == 0) {
+			return;
+		}
+
+		OpenConnection srcConn = null;
+		OpenConnection dstConn = null;
+		try {
+			srcConn = openSrcConn(this);
+			dstConn = tryToOpenDstConn(this);
+			flushDefaultParents(srcConn, dstConn);
+			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+		} finally {
+			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+		}
+	}
+
+	private void flushStageAreaUsingDedicatedConnection(TaskProcessor<?> owner) throws DBException {
+		int pending = getPersistenceCoordinator().pendingCount(owner, PersistenceType.STAGE_AREA);
+		if (pending == 0) {
+			return;
+		}
+
+		OpenConnection srcConn = null;
+		OpenConnection dstConn = null;
+		try {
+			srcConn = openSrcConn(this);
+			dstConn = tryToOpenDstConn(this);
 			logInfo("Persisting {} pending StageArea records for processor {}", pending, owner.getProcessorId());
-			getStageAreaPersistenceCoordinator().flush(owner, stageSrcConn, stageDstConn);
-			OpenConnection.markAllAsSuccessifullyTerminected(stageSrcConn, stageDstConn);
+			getPersistenceCoordinator().flush(owner, PersistenceType.STAGE_AREA, srcConn, dstConn);
+			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
 			logDebug("Pending StageArea records persisted for processor {}", owner.getProcessorId());
 		} finally {
-			OpenConnection.finalizeAllConnections(this, stageSrcConn, stageDstConn);
+			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
 		}
+	}
+
+	void discardPendingPersistence(Object owner) {
+		getPersistenceCoordinator().discard(owner);
+	}
+
+	void discardPendingPersistence() {
+		getPersistenceCoordinator().discardPending();
 	}
 
 	void shutdownExecutor(ExecutorService executor) {
@@ -1002,9 +1061,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				refreshProgressMeter(taskProcessor, srcConn);
 
 				if (persistTheWork) {
-					flushStageArea(srcConn, dstConn);
+					flushPendingPersistence(srcConn, dstConn);
 				} else if (getRelatedEtlConf().hasTestingItem()) {
-					getStageAreaPersistenceCoordinator().discardPending();
+					discardPendingPersistence();
 				}
 
 				taskProcessor.getLimits().markAsProcessed();
@@ -1021,11 +1080,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 				taskProcessor.changeStatusToFinished();
 			} else {
-				getStageAreaPersistenceCoordinator().discard(taskProcessor);
+				discardPendingPersistence(taskProcessor);
 				taskProcessor.changeStatusToStopped();
 			}
 		} catch (Exception e) {
-			getStageAreaPersistenceCoordinator().discard(taskProcessor);
+			discardPendingPersistence(taskProcessor);
 			taskProcessor.changeStatusToStopped();
 
 			stopOperationDueError(e);
