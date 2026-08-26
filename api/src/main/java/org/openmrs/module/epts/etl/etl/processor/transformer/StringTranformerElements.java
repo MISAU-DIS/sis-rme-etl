@@ -13,6 +13,8 @@ import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -461,10 +463,13 @@ public class StringTranformerElements {
 		FieldsMapping map = null;
 
 		if (argInstance instanceof String) {
-			map = FieldsMapping.fastCreate(dstConf, arg, conn);
+			try {
+				map = FieldsMapping.fastCreate(dstConf, arg, conn);
 
-			if (!map.hasDataSourceName()) {
-				map = null;
+				if (!map.hasDataSourceName()) {
+					map = null;
+				}
+			} catch (FieldsMappingException e) {
 			}
 		}
 

@@ -352,6 +352,17 @@ public abstract class BaseDAO {
 
 	private static DBOperation tryToSolveIssues(DBException e, String sql, Object[] params, Connection conn)
 			throws DBException {
+
+		try {
+			// A deadlock may roll back the complete transaction. Retrying only this
+			// statement would continue without the writes that preceded it.
+			if (!conn.getAutoCommit() && e.isTemporaryDBErrr(conn)) {
+				return null;
+			}
+		} catch (SQLException sqlException) {
+			throw new DBException(sqlException);
+		}
+
 		if (e.isDeadLock(conn)) {
 			DBOperation dbOp = new DBOperation(sql, params, conn, 25, e);
 			dbOp.retryDueTemporaryDBError("DEADLOCK");
@@ -367,7 +378,7 @@ public abstract class BaseDAO {
 		return null;
 	}
 
-	public static String generateMInimalQueryInfo(String sql, Object[] params) {
+	public static String generateMinimalQueryInfo(String sql, Object[] params) {
 
 		if (sql == null) {
 			return "<null query>";

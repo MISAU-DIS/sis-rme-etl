@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -23,6 +24,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  * Requests for the same logical parent are serialized inside this JVM.
  */
 public final class OnDemandParentService {
+	private static final int MAX_TRANSACTION_ATTEMPTS = 5;
 
 	private static final OnDemandParentService INSTANCE = new OnDemandParentService();
 
@@ -184,17 +186,62 @@ public final class OnDemandParentService {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field)
 			throws DBException {
 
-		IndependentConnections connections = openIndependentConnections(processor);
+		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
+			IndependentConnections connections = openIndependentConnections(processor);
+			boolean retry = false;
 
+			try {
+				EtlDatabaseObject parent = retrieveOrCreateUsingConnections(transformer, processor, srcParent,
+						srcObject, transformedRecord, additionalSrcObjects, field, connections.srcConn,
+						connections.dstConn);
+
+				connections.markSuccessful();
+				return parent;
+			} catch (DBException e) {
+				retry = attempt < MAX_TRANSACTION_ATTEMPTS
+						&& isTemporaryTransactionFailure(e, connections.dstConn);
+				if (!retry) {
+					throw e;
+				}
+			} finally {
+				connections.close(processor);
+			}
+
+			processor.logWarn("Retrying complete independent on-demand parent transaction after temporary database "
+					+ "error. Attempt {} of {}", attempt + 1, MAX_TRANSACTION_ATTEMPTS);
+			waitBeforeRetry(attempt);
+		}
+
+		throw new DBException("On-demand parent transaction retry exhausted", (SQLException) null);
+	}
+
+	private boolean isTemporaryTransactionFailure(Throwable failure, Connection conn) {
+		if (conn == null) {
+			return false;
+		}
+
+		Throwable current = failure;
+		while (current != null) {
+			if (current instanceof DBException) {
+				try {
+					return ((DBException) current).isTemporaryDBErrr(conn);
+				} catch (DBException ignored) {
+					return false;
+				}
+			}
+			current = current.getCause();
+		}
+
+		return false;
+	}
+
+	private void waitBeforeRetry(int failedAttempt) throws DBException {
 		try {
-			EtlDatabaseObject parent = retrieveOrCreateUsingConnections(transformer, processor, srcParent, srcObject,
-					transformedRecord, additionalSrcObjects, field, connections.srcConn, connections.dstConn);
-
-			connections.markSuccessful();
-
-			return parent;
-		} finally {
-			connections.close(processor);
+			TimeUnit.MILLISECONDS.sleep(500L * failedAttempt);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new DBException("Interrupted while waiting to retry on-demand parent transaction",
+					new SQLException(e));
 		}
 	}
 

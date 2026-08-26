@@ -1,6 +1,6 @@
 package org.openmrs.module.epts.etl.exceptions;
 
-public class InvalidDataSourceOnFieldDefifitionException extends EtlConfException {
+public class InvalidDataSourceOnFieldDefifitionException extends FieldsMappingException {
 
 	private static final long serialVersionUID = 3807657803283143320L;
 

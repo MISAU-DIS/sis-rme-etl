@@ -585,15 +585,23 @@ public class DatabaseObjectDAO extends BaseDAO {
 						+ " Using query\n\n" + utilities.garantirXCaracteres(sql, 250));
 
 				List<Long> ids = executeQueryWithRetryOnError(sql, params, conn);
+
 				assignGeneratedIdsAfterBatchInsert(recordsToInsert, tabConf, ids);
 
 				if (generateOperationResult) {
-					result.addAllToRecordsWithNoError(EtlOperationItemResult
-							.parseFromEtlDatabaseObject(EtlDatabaseObject.collectAllSrcRelatedOBjects(recordsToInsert)));
+					result.addAllToRecordsWithNoError(EtlOperationItemResult.parseFromEtlDatabaseObject(
+							EtlDatabaseObject.collectAllSrcRelatedOBjects(recordsToInsert)));
 				}
 
 				LOG.trace("Inserted " + recordsToInsert.size() + " " + tabConf.getTableName());
 			} catch (DBException e) {
+				// The database may already have rolled back the complete transaction.
+				// Let the engine retry the transactional unit instead of falling back to
+				// individual inserts on an invalidated transaction.
+				if (e.isTemporaryDBErrr(conn)) {
+					throw e;
+				}
+
 				if (!tryToResolveException && recordsToInsert.size() > 1) {
 					throw new ForbiddenOperationException(
 							"For multiple records you must explicity indicate that the exception must be resolved");
@@ -656,8 +664,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 	private static List<EtlDatabaseObject> collectRecordsEligibleForInsert(List<EtlDatabaseObject> objects) {
 		List<EtlDatabaseObject> recordsToInsert = new ArrayList<>(objects.size());
 		for (EtlDatabaseObject record : objects) {
-			if (record.isExcluded()
-					|| record.isInEtlProcess() && record.getEtlInfo().hasExceptionOnEtl()) {
+			if (record.isExcluded() || record.isInEtlProcess() && record.getEtlInfo().hasExceptionOnEtl()) {
 				continue;
 			}
 			recordsToInsert.add(record);
@@ -677,9 +684,9 @@ public class DatabaseObjectDAO extends BaseDAO {
 		}
 
 		if (generatedIds == null || generatedIds.size() != insertedRecords.size()) {
-			throw new ForbiddenOperationException("Expected " + insertedRecords.size() + " generated IDs after inserting "
-					+ tabConf.getTableName() + " but received "
-					+ (generatedIds == null ? 0 : generatedIds.size()));
+			throw new ForbiddenOperationException(
+					"Expected " + insertedRecords.size() + " generated IDs after inserting " + tabConf.getTableName()
+							+ " but received " + (generatedIds == null ? 0 : generatedIds.size()));
 		}
 
 		for (int i = 0; i < insertedRecords.size(); i++) {

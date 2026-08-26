@@ -103,6 +103,12 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		this.taskResultInfo = taskResultInfo;
 	}
 
+	public void resetForTransactionRetry() {
+		this.taskResultInfo = new EtlOperationResultHeader<>(limits);
+		this.idGeneratorManager = null;
+		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
+	}
+
 	public boolean isRunningInConcurrency() {
 		return runningInConcurrency;
 	}

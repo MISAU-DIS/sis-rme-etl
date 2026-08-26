@@ -20,19 +20,27 @@ public class ResultPartitioningProcessingStrategy extends AbstractResultPartitio
 	protected <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> records, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
 			OpenConnection srcConn, OpenConnection dstConn) throws Exception {
+
 		boolean sharedConnections = engine.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
+
 		ExecutorService executor = Executors.newFixedThreadPool(processorCount, threadFactory);
+
 		engine.resetCurrentTaskProcessor(processorCount);
+
 		List<CompletableFuture<Void>> tasks = new ArrayList<>(processorCount);
 
 		try {
 			for (int i = 0; i < processorCount; i++) {
 				TaskProcessor<T> processor = engine.initConcurrentTaskProcessor(interval, i);
+
 				engine.getCurrentTaskProcessor().add(processor);
+
 				tasks.add(CompletableFuture.runAsync(() -> engine.consumeTransformAndLoadQueue(processor, queue,
 						sharedConnections, srcConn, dstConn), executor));
 			}
+
 			CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
+
 			engine.assertNoProcessorFailed(engine.getCurrentTaskProcessor());
 		} finally {
 			engine.shutdownExecutor(executor);

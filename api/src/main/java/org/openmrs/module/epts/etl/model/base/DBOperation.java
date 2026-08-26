@@ -65,7 +65,7 @@ public class DBOperation {
 	}
 
 	private void logAsWarn(String error) {
-		String queryInfo = BaseDAO.generateMInimalQueryInfo(sql, params);
+		String queryInfo = BaseDAO.generateMinimalQueryInfo(sql, params);
 
 		BaseDAO.LOG.warn("{} DETECTED WHILE EXECUTING: {} \nRETRYING OPERATION [{}] OF [{}]", error, queryInfo, qtyTry,
 				maxTry);
@@ -73,7 +73,7 @@ public class DBOperation {
 
 	@SuppressWarnings("unused")
 	private void logAsErr(String error) {
-		String queryInfo = BaseDAO.generateMInimalQueryInfo(sql, params);
+		String queryInfo = BaseDAO.generateMinimalQueryInfo(sql, params);
 
 		BaseDAO.LOG.err(error + " DETECTED WHILE EXECUTING: " + queryInfo + " \nRETRYING OPERATION [" + qtyTry
 				+ "] OF [" + maxTry + "]", exception);

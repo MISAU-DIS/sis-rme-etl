@@ -57,6 +57,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	private static final EtlLogger LOG = EtlLogger.getLogger(Engine.class);
 
+	private static final int MAX_TRANSACTION_ATTEMPTS = 5;
+
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 
 	private final Object LOCK = new Object();
@@ -568,38 +570,97 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
-		OpenConnection srcConn = null;
-		OpenConnection dstConn = null;
+		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
+			OpenConnection srcConn = null;
+			OpenConnection dstConn = null;
+			boolean flushWorkerPersistence = false;
+			boolean retryTransaction = false;
 
-		boolean flushWorkerPersistence = false;
-
-		try {
-			srcConn = openSrcConn(this);
-			dstConn = tryToOpenDstConn(this);
-
-			performExtractTransformationAndLoading(processor, false, false, srcConn, dstConn);
-
-			if (!getRelatedEtlConf().hasTestingItem() && !processor.getTaskResultInfo().hasFatalError()) {
-				OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-				flushWorkerPersistence = true;
-			}
-		} catch (DBException e) {
-			failRangeProcessor(processor, e, true);
-		} finally {
 			try {
-				finalizeRangeWorkerConnections(srcConn, dstConn);
-			} catch (RuntimeException e) {
-				flushWorkerPersistence = false;
-				failRangeProcessor(processor, e, true);
+				srcConn = openSrcConn(this);
+				dstConn = tryToOpenDstConn(this);
+
+				performExtractTransformationAndLoading(processor, false, false, srcConn, dstConn);
+
+				Exception failure = processor.getTaskResultInfo().getFatalException();
+				retryTransaction = failure != null && isRetryableTransactionFailure(failure, dstConn)
+						&& attempt < MAX_TRANSACTION_ATTEMPTS;
+
+				if (!retryTransaction && !getRelatedEtlConf().hasTestingItem()
+						&& !processor.getTaskResultInfo().hasFatalError()) {
+					OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+					flushWorkerPersistence = true;
+				}
+			} catch (DBException e) {
+				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS && isRetryableTransactionFailure(e, dstConn);
+				if (!retryTransaction) {
+					failRangeProcessor(processor, e, true);
+				}
+			} finally {
+				try {
+					finalizeRangeWorkerConnections(srcConn, dstConn);
+				} catch (RuntimeException e) {
+					retryTransaction = false;
+					flushWorkerPersistence = false;
+					failRangeProcessor(processor, e, true);
+				}
 			}
+
+			if (retryTransaction) {
+				discardPendingPersistence(processor);
+				logWarn("Retrying complete transaction for processor {} on interval {} after temporary database error. "
+						+ "Attempt {} of {}", processor.getProcessorId(), processor.getLimits(), attempt + 1,
+						MAX_TRANSACTION_ATTEMPTS);
+				processor.resetForTransactionRetry();
+				if (!waitBeforeTransactionRetry(attempt, processor)) {
+					return;
+				}
+				continue;
+			}
+
+			if (flushWorkerPersistence) {
+				try {
+					flushStageAreaUsingDedicatedConnection(processor);
+				} catch (Exception e) {
+					failRangeProcessor(processor, e, false);
+				}
+			}
+			return;
+		}
+	}
+
+	private boolean isRetryableTransactionFailure(Throwable failure, Connection conn) {
+		if (conn == null) {
+			return false;
 		}
 
-		if (flushWorkerPersistence) {
-			try {
-				flushStageAreaUsingDedicatedConnection(processor);
-			} catch (Exception e) {
-				failRangeProcessor(processor, e, false);
+		Throwable current = failure;
+		while (current != null) {
+			if (current instanceof DBException) {
+				try {
+					return ((DBException) current).isTemporaryDBErrr(conn);
+				} catch (DBException classificationFailure) {
+					logWarn("Unable to classify database error for transaction retry: {}",
+							classificationFailure.getMessage());
+					return false;
+				}
 			}
+			if (current.getCause() == current) {
+				break;
+			}
+			current = current.getCause();
+		}
+		return false;
+	}
+
+	private boolean waitBeforeTransactionRetry(int failedAttempt, TaskProcessor<T> processor) {
+		try {
+			TimeUnit.MILLISECONDS.sleep(500L * failedAttempt);
+			return true;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			failRangeProcessor(processor, e, true);
+			return false;
 		}
 	}
 
@@ -792,15 +853,17 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	@SuppressWarnings("unchecked")
 	void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
 			boolean sharedConnections, OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
+
+		if (!sharedConnections) {
+			consumeTransformAndLoadQueueWithWorkerTransactionRetry(processor, transformationQueue);
+
+			return;
+		}
+
 		OpenConnection srcConn = sharedSrcConn;
 		OpenConnection dstConn = sharedDstConn;
 
 		try {
-			if (!sharedConnections) {
-				srcConn = openSrcConn(this);
-				dstConn = tryToOpenDstConn(this);
-			}
-
 			processor.changeStatusToRunning();
 
 			T record;
@@ -811,15 +874,80 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			completeExtractedTask(processor, srcConn, dstConn, true);
 
-			if (!sharedConnections && !getRelatedEtlConf().hasTestingItem()) {
-				OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-			}
 		} catch (Exception e) {
 			processor.changeStatusToStopped();
 			processor.getTaskResultInfo().setFatalException(e);
-		} finally {
-			if (!sharedConnections) {
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void consumeTransformAndLoadQueueWithWorkerTransactionRetry(TaskProcessor<T> processor,
+			Queue<T> transformationQueue) {
+		List<T> claimedRecords = new ArrayList<>();
+
+		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
+			OpenConnection srcConn = null;
+			OpenConnection dstConn = null;
+			boolean retryTransaction = false;
+
+			try {
+				srcConn = openSrcConn(this);
+				dstConn = tryToOpenDstConn(this);
+				processor.changeStatusToRunning();
+
+				if (attempt == 1) {
+					T sourceRecord;
+					while ((sourceRecord = transformationQueue.poll()) != null) {
+						claimedRecords.add(sourceRecord);
+						T attemptRecord = (T) sourceRecord.createACopy();
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), srcConn,
+								dstConn);
+						if (processor.getTaskResultInfo().hasFatalError()) {
+							break;
+						}
+					}
+				} else {
+					for (T sourceRecord : claimedRecords) {
+						T attemptRecord = (T) sourceRecord.createACopy();
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), srcConn,
+								dstConn);
+						if (processor.getTaskResultInfo().hasFatalError()) {
+							break;
+						}
+					}
+				}
+
+				completeExtractedTask(processor, srcConn, dstConn, true);
+
+				Exception failure = processor.getTaskResultInfo().getFatalException();
+				retryTransaction = failure != null && attempt < MAX_TRANSACTION_ATTEMPTS
+						&& isRetryableTransactionFailure(failure, dstConn);
+
+				if (!retryTransaction && !getRelatedEtlConf().hasTestingItem()
+						&& !processor.getTaskResultInfo().hasFatalError()) {
+					OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+				}
+			} catch (Exception e) {
+				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS && isRetryableTransactionFailure(e, dstConn);
+				if (!retryTransaction) {
+					processor.changeStatusToStopped();
+					processor.getTaskResultInfo().setFatalException(e);
+				}
+			} finally {
 				OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+			}
+
+			if (!retryTransaction) {
+				return;
+			}
+
+			discardPendingPersistence(processor);
+			logWarn("Retrying complete RESULT_PARTITIONING worker transaction for processor {} after temporary "
+					+ "database error. Attempt {} of {}", processor.getProcessorId(), attempt + 1,
+					MAX_TRANSACTION_ATTEMPTS);
+			processor.resetForTransactionRetry();
+			if (!waitBeforeTransactionRetry(attempt, processor)) {
+				return;
 			}
 		}
 	}
@@ -827,6 +955,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	@SuppressWarnings("unchecked")
 	void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue, boolean sharedConnections,
 			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
+
 		OpenConnection srcConn = sharedSrcConn;
 		OpenConnection dstConn = sharedDstConn;
 
@@ -837,10 +966,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			processor.changeStatusToRunning();
+
 			T record;
+
 			while ((record = transformationQueue.poll()) != null) {
 				processor.transformExtractedRecords(utilities.parseToList(record), srcConn, dstConn);
 			}
+
 			processor.changeStatusToFinished();
 
 			if (!sharedConnections && !getRelatedEtlConf().hasTestingItem()) {
@@ -1087,7 +1219,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			discardPendingPersistence(taskProcessor);
 			taskProcessor.changeStatusToStopped();
 
-			stopOperationDueError(e);
+			if (!canDeferFailureToWorkerTransactionRetry(taskProcessor, e, dstConn)) {
+				stopOperationDueError(e);
+			}
 
 			taskProcessor.getTaskResultInfo().setFatalException(e);
 		} finally {
@@ -1095,6 +1229,16 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
 			}
 		}
+	}
+
+	private boolean canDeferFailureToWorkerTransactionRetry(TaskProcessor<T> processor, Exception failure,
+			Connection dstConn) {
+		ParallelProcessingStrategyType strategy = getParallelProcessingStrategy();
+		boolean hasWorkerTransactionRetry = strategy.isRangePartitioning() || strategy.isResultPartitioning();
+
+		return processor.isRunningInConcurrency() && hasWorkerTransactionRetry
+				&& !getRelatedEtlOperationConfig().isUseSharedConnectionPerThread()
+				&& isRetryableTransactionFailure(failure, dstConn);
 	}
 
 	void resetCurrentTaskProcessor(int qtyProcessors) {
