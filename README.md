@@ -1484,6 +1484,7 @@ If the "dstConf '' has more than one element or if the mapping cannot be automat
          "allowDuplicateDestinationMappings":"",
 		 "skipRelationshipResolution":"",
 		 "identifiedRecordAction",
+		 "inconsistencyBehavior",
          "mapping":[
             {
                "dataSourceName":"",
@@ -1546,6 +1547,7 @@ Bellow is the explanation for each field:
   - **PATCH_EXISTING** – Updates only the destination fields listed in **patchFields**.
 
   See <a href="#updating-identified-records">Updating Identified Records</a> for more details.
+- *inconsistencyBehavior*: Overrides the global etl defaultInconsistencyBehavior;
 - **incompleteMappingBehavior** – Defines the default behavior to apply when one or more mappings within this destination configuration become incomplete after template parameter resolution. This behavior is inherited by all mappings in the **dstConf**, unless explicitly overridden by the mapping itself. Supported values are:
   - **ABORT_PROCESS** – Treat incomplete mappings as configuration errors and abort the ETL configuration loading process.
   - **DISCARD_MAPPING** – Automatically remove incomplete mappings and continue processing the remaining mappings.
