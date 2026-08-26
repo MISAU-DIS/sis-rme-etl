@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -156,6 +157,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private List<String> excludedFieldsFromObjectDesc;
 
+	private ActionOnEtlIssue inconsistencyBehavior;
+
 	public AbstractTableConfiguration() {
 		this.loadHealper = new DatabaseObjectLoaderHelper(this);
 	}
@@ -164,6 +167,19 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this();
 
 		this.tableName = tableName;
+	}
+
+	public ActionOnEtlIssue getInconsistencyBehavior() {
+		return inconsistencyBehavior;
+	}
+
+	public void setInconsistencyBehavior(ActionOnEtlIssue inconsistencyBehavior) {
+		this.inconsistencyBehavior = inconsistencyBehavior;
+	}
+
+	@Override
+	public ActionOnEtlIssue inconsistencyBehavior() {
+		return this.inconsistencyBehavior;
 	}
 
 	@Override
@@ -348,6 +364,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 					null)) {
 				throw new EtlConfException("Invalid extraConditionForExtract  \n" + this.getExtraConditionForExtract());
 			}
+		}
+
+		if (this.inconsistencyBehavior == null) {
+			this.inconsistencyBehavior = this.getRelatedEtlConf().getDefaultInconsistencyBehavior();
 		}
 
 		if (this.loadHealper == null) {

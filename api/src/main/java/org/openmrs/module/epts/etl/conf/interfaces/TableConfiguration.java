@@ -25,6 +25,7 @@ import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.TableConfigurationUtils;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.conf.types.SqlOrderingType;
@@ -3162,4 +3163,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine, Connection conn) throws DBException {
 		return this.getExtremeRecord(engine, SqlFunctionType.MAX, conn);
 	}
+
+	ActionOnEtlIssue inconsistencyBehavior();
 }

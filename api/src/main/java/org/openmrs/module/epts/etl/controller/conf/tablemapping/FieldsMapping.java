@@ -141,15 +141,18 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		if (tryToLoadDataSourceAndTransformer) {
 			try {
-				tryToLoadDataSourceAndTransformer(conn);
-			} catch (InvalidDataSourceOnFieldDefifitionException | FieldAvaliableInMultipleDataSources
-					| MissingFieldException e) {
+				this.tryToLoadDataSourceAndTransformer(conn);
+			} catch (FieldsMappingException | MissingFieldException e) {
+
+				if (!ignoreDataSourceIssues) {
+					throw e;
+				}
+			} catch (Exception e) {
 				if (!ignoreDataSourceIssues) {
 					throw e;
 				}
 			}
 		}
-
 	}
 
 	private void tryToLoadDataSourceAndTransformer(Connection conn)
@@ -315,7 +318,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	public static FieldsMapping createSimpleFieldsMapping(EtlTransformTarget target, String fieldName, Object value,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		FieldsMapping map = FieldsMapping.fastCreate(target, fieldName, null, conn);
+		FieldsMapping map = new FieldsMapping(target, fieldName, null, fieldName, null, true, conn);
 
 		map.setSrcField(null);
 		map.setSrcValue(value);

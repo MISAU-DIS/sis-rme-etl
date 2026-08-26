@@ -331,7 +331,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						&& tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
 					tableConfiguration.logErr("Issue found while persisting stage record {}", e, this);
 				} else if (rootException.isInconsistentDataException()) {
-					if (tableConfiguration.getRelatedEtlConf().getDefaultInconsistencyBehavior().logging()) {
+					if (tableConfiguration.inconsistencyBehavior().logging()) {
 						this.getEtlInfo().setExceptionOnEtl(e);
 					} else {
 						throw e;
