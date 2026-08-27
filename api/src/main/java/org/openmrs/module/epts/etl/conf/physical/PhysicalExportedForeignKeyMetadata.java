@@ -48,4 +48,11 @@ public final class PhysicalExportedForeignKeyMetadata {
 
 	@Override
 	public int hashCode() { return Objects.hash(name, childCatalog, childSchema, childTable, mappings); }
+
+	@Override
+	public String toString() {
+		return "PhysicalExportedForeignKeyMetadata{name='" + name + "', childCatalog='" + childCatalog
+				+ "', childSchema='" + childSchema + "', childTable='" + childTable + "', mappings=" + mappings
+				+ "}";
+	}
 }

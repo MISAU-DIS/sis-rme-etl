@@ -82,4 +82,11 @@ public final class PhysicalTableMetadata {
 		return Objects.hash(formatVersion, key, columns, primaryKey, uniqueKeys, importedForeignKeys,
 				exportedForeignKeys);
 	}
+
+	@Override
+	public String toString() {
+		return "PhysicalTableMetadata{formatVersion=" + formatVersion + ", key=" + key + ", columns=" + columns
+				+ ", primaryKey=" + primaryKey + ", uniqueKeys=" + uniqueKeys + ", importedForeignKeys="
+				+ importedForeignKeys + ", exportedForeignKeys=" + exportedForeignKeys + "}";
+	}
 }

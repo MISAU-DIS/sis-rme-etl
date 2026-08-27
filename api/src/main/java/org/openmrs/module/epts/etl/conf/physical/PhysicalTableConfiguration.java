@@ -153,4 +153,13 @@ public final class PhysicalTableConfiguration {
 		}
 		return new PhysicalTableMetadata(key, fields, primaryKey, uniqueKeys, importedForeignKeys, exportedForeignKeys);
 	}
+
+	@Override
+	public synchronized String toString() {
+		return "PhysicalTableConfiguration{identity=" + identity + ", fields=" + fields + ", primaryKeyLoaded="
+				+ primaryKeyLoaded + ", primaryKey=" + primaryKey + ", uniqueKeysLoaded=" + uniqueKeysLoaded
+				+ ", uniqueKeys=" + uniqueKeys + ", importedForeignKeysLoaded=" + importedForeignKeysLoaded
+				+ ", importedForeignKeys=" + importedForeignKeys + ", exportedForeignKeysLoaded="
+				+ exportedForeignKeysLoaded + ", exportedForeignKeys=" + exportedForeignKeys + "}";
+	}
 }

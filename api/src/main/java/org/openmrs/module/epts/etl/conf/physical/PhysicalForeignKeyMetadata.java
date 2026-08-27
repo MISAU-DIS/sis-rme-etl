@@ -51,6 +51,13 @@ public final class PhysicalForeignKeyMetadata {
 		return Objects.hash(name, referencedCatalog, referencedSchema, referencedTable, mappings);
 	}
 
+	@Override
+	public String toString() {
+		return "PhysicalForeignKeyMetadata{name='" + name + "', referencedCatalog='" + referencedCatalog
+				+ "', referencedSchema='" + referencedSchema + "', referencedTable='" + referencedTable
+				+ "', mappings=" + mappings + "}";
+	}
+
 	public static final class PhysicalForeignKeyMapping {
 		private final String childColumn;
 		private final String parentColumn;
@@ -75,5 +82,11 @@ public final class PhysicalForeignKeyMetadata {
 
 		@Override
 		public int hashCode() { return Objects.hash(childColumn, parentColumn); }
+
+		@Override
+		public String toString() {
+			return "PhysicalForeignKeyMapping{childColumn='" + childColumn + "', parentColumn='" + parentColumn
+					+ "'}";
+		}
 	}
 }

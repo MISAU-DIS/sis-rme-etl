@@ -49,6 +49,18 @@ public class FilePhysicalTableMetadataRepositoryTest {
 		assertEquals(expected, repository.find("source-openmrs", "openmrs", "person").get());
 	}
 
+	@Test
+	public void shouldDescribeTheCompletePhysicalMetadataGraph() {
+		String description = metadata(key("person")).toString();
+
+		assertTrue(description.contains("PhysicalTableMetadata{formatVersion=2"));
+		assertTrue(description.contains("PhysicalColumnMetadata{name='person_id'"));
+		assertTrue(description.contains("PhysicalKeyMetadata{name='PRIMARY'"));
+		assertTrue(description.contains("PhysicalForeignKeyMetadata{name='fk_person_location'"));
+		assertTrue(description.contains("PhysicalExportedForeignKeyMetadata{name='fk_obs_person'"));
+		assertTrue(description.contains("PhysicalForeignKeyMapping{childColumn='person_id', parentColumn='person_id'}"));
+	}
+
 	@Test(expected = java.io.IOException.class)
 	public void shouldRejectUnsafePathElements() throws Exception {
 		FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(

@@ -76,6 +76,12 @@ public final class PhysicalKeyMetadata {
 	@Override
 	public int hashCode() { return Objects.hash(name, columns, manuallyConfigured); }
 
+	@Override
+	public String toString() {
+		return "PhysicalKeyMetadata{name='" + name + "', columns=" + columns + ", manuallyConfigured="
+				+ manuallyConfigured + "}";
+	}
+
 	public static final class PhysicalKeyColumnMetadata {
 		private final String name;
 		private final String dataType;
@@ -100,5 +106,10 @@ public final class PhysicalKeyMetadata {
 
 		@Override
 		public int hashCode() { return Objects.hash(name, dataType); }
+
+		@Override
+		public String toString() {
+			return "PhysicalKeyColumnMetadata{name='" + name + "', dataType='" + dataType + "'}";
+		}
 	}
 }

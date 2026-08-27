@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.databasemodelgeneration;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,5 +28,7 @@ public class FileDatabaseModelManifestRepositoryTest {
 		assertEquals(2, manifest.getEntries().size());
 		assertEquals("source|mysql|a", manifest.getEntries().get(0).getMetadataKey());
 		assertEquals("model.NewZ", manifest.getEntries().get(1).getGeneratedClassName());
+		assertTrue(manifest.toString().contains("DatabaseModelManifest{formatVersion=2"));
+		assertTrue(manifest.toString().contains("Entry{metadataKey='source|mysql|a', generatedClassName='model.A'"));
 	}
 }

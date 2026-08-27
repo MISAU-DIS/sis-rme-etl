@@ -31,6 +31,11 @@ public final class DatabaseModelManifest {
 	public int getFormatVersion() { return formatVersion; }
 	public List<Entry> getEntries() { return entries; }
 
+	@Override
+	public String toString() {
+		return "DatabaseModelManifest{formatVersion=" + formatVersion + ", entries=" + entries + "}";
+	}
+
 	public static final class Entry {
 		private final String metadataKey;
 		private final String generatedClassName;
@@ -65,5 +70,11 @@ public final class DatabaseModelManifest {
 
 		@Override
 		public int hashCode() { return Objects.hash(metadataKey, generatedClassName, metadataFingerprint); }
+
+		@Override
+		public String toString() {
+			return "Entry{metadataKey='" + metadataKey + "', generatedClassName='" + generatedClassName
+					+ "', metadataFingerprint='" + metadataFingerprint + "'}";
+		}
 	}
 }

@@ -145,4 +145,19 @@ public class PhysicalTableConfigurationRegistryTest {
 
 		configuration.getExportedForeignKeys().add(foreignKey);
 	}
+
+	@Test
+	public void shouldDescribeLoadedAndPendingConfigurationSections() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "person"));
+		Field id = new Field("person_id");
+		id.setDataType("int");
+		configuration.initializeFields(Arrays.asList(id));
+
+		String description = configuration.toString();
+
+		org.junit.Assert.assertTrue(description.contains("identity="));
+		org.junit.Assert.assertTrue(description.contains("PhysicalColumnMetadata{name='person_id'"));
+		org.junit.Assert.assertTrue(description.contains("primaryKeyLoaded=false"));
+		org.junit.Assert.assertTrue(description.contains("exportedForeignKeysLoaded=false"));
+	}
 }

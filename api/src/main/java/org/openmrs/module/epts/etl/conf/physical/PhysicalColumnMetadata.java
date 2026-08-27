@@ -73,4 +73,11 @@ public final class PhysicalColumnMetadata {
 	public int hashCode() {
 		return Objects.hash(name, dataType, length, decimalDigits, nullable, autoIncrement, timestamp);
 	}
+
+	@Override
+	public String toString() {
+		return "PhysicalColumnMetadata{name='" + name + "', dataType='" + dataType + "', length=" + length
+				+ ", decimalDigits=" + decimalDigits + ", nullable=" + nullable + ", autoIncrement=" + autoIncrement
+				+ ", timestamp=" + timestamp + "}";
+	}
 }
