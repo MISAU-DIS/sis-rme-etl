@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
@@ -51,7 +50,8 @@ public class PhysicalTableConfigurationRegistryTest {
 
 		assertNotSame(first, second);
 		assertNotSame(first.get(0), second.get(0));
-		assertSame(first.get(0).getPrecision(), second.get(0).getPrecision());
+		assertNotSame(first.get(0).getPrecision(), second.get(0).getPrecision());
+		assertEquals(first.get(0).getPrecision().getLength(), second.get(0).getPrecision().getLength());
 		assertEquals(Boolean.TRUE, second.get(0).isAutoIncrement());
 		assertEquals(Boolean.TRUE, second.get(0).isTimeStamp());
 
@@ -90,7 +90,47 @@ public class PhysicalTableConfigurationRegistryTest {
 	}
 
 	private PhysicalTableIdentity identity(String schema, String table) {
-		return new PhysicalTableIdentity(new EtlConfiguration(), "jdbc:mysql://localhost/openmrs", "etl", "openmrs",
-				schema, table);
+		return new PhysicalTableIdentity("jdbc:mysql://localhost/openmrs", "etl", "openmrs", schema, table);
+	}
+
+	@Test
+	public void shouldCreatePersistentKeyWithoutRuntimeConnectionDetails() {
+		PhysicalTableIdentity runtimeIdentity = identity("openmrs", "person");
+
+		PhysicalTableKey persistentKey = runtimeIdentity.toPersistentKey("source-openmrs", "mysql");
+
+		assertEquals("source-openmrs", persistentKey.getLogicalDatabaseId());
+		assertEquals("mysql", persistentKey.getDatabaseDialect());
+		assertEquals("openmrs", persistentKey.getSchema());
+		assertEquals("person", persistentKey.getTableName());
+		org.junit.Assert.assertFalse(persistentKey.toString().contains("localhost"));
+		org.junit.Assert.assertFalse(persistentKey.toString().contains("etl"));
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void shouldKeepImportedForeignKeyMetadataImmutable() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "person"));
+		PhysicalForeignKeyMetadata foreignKey = new PhysicalForeignKeyMetadata("fk_person_location", "openmrs",
+				"openmrs", "location", Arrays.asList(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(
+						"location_id", "location_id")));
+
+		configuration.initializeImportedForeignKeys(Arrays.asList(foreignKey));
+
+		configuration.getImportedForeignKeys().add(foreignKey);
+	}
+
+	@Test
+	public void shouldRepresentCompositeForeignKeysWithoutContextReferences() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "person"));
+		PhysicalForeignKeyMetadata foreignKey = new PhysicalForeignKeyMetadata("fk_person_site_location", "openmrs",
+				"openmrs", "location", Arrays.asList(
+						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("site_id", "site_id"),
+						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("location_id", "location_id")));
+
+		configuration.initializeImportedForeignKeys(Arrays.asList(foreignKey));
+
+		assertEquals(1, configuration.getImportedForeignKeys().size());
+		assertEquals(2, configuration.getImportedForeignKeys().get(0).getMappings().size());
+		assertEquals("location", configuration.getImportedForeignKeys().get(0).getReferencedTable());
 	}
 }

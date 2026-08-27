@@ -246,8 +246,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			return;
 
 		try {
-			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedEtlConf(),
-					conn.getMetaData().getURL(), conn.getMetaData().getUserName(), this.getCatalog(conn),
+			PhysicalTableIdentity identity = new PhysicalTableIdentity(conn.getMetaData().getURL(),
+					conn.getMetaData().getUserName(), this.getCatalog(conn),
 					this.getSchema(), this.getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()

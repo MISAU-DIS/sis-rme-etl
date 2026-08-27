@@ -144,7 +144,9 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return false;
 	}
 
-	Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException;
+	default Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
+		throw new ForbiddenOperationException("Forbiden method! Please implement your own method!");
+	}
 
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> getSyncRecordClass(DBConnectionInfo connInfo)
@@ -162,6 +164,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 					throw new ForbiddenOperationException("The related POJO class for table " + this
 							+ " cannot be found. Make sure you have run the POJO_GENERATION operation.");
 				}
+
 			} else {
 				syncRecordClass = GenericDatabaseObject.class;
 			}

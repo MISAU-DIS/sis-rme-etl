@@ -16,11 +16,13 @@ import org.openmrs.module.epts.etl.model.Field;
 public final class PhysicalTableConfiguration {
 
 	private final PhysicalTableIdentity identity;
-	private List<Field> fields;
+	private List<PhysicalColumnMetadata> fields;
 	private boolean primaryKeyLoaded;
-	private PrimaryKey primaryKey;
+	private PhysicalKeyMetadata primaryKey;
 	private boolean uniqueKeysLoaded;
-	private List<UniqueKeyInfo> uniqueKeys;
+	private List<PhysicalKeyMetadata> uniqueKeys;
+	private boolean importedForeignKeysLoaded;
+	private List<PhysicalForeignKeyMetadata> importedForeignKeys;
 
 	public PhysicalTableConfiguration(PhysicalTableIdentity identity) {
 		this.identity = identity;
@@ -37,9 +39,9 @@ public final class PhysicalTableConfiguration {
 	public synchronized void initializeFields(List<Field> loadedFields) {
 		if (fields != null) return;
 
-		List<Field> copies = new ArrayList<>(loadedFields.size());
+		List<PhysicalColumnMetadata> copies = new ArrayList<>(loadedFields.size());
 		for (Field field : loadedFields) {
-			copies.add(field.cloneMe());
+			copies.add(PhysicalColumnMetadata.fromField(field));
 		}
 		fields = Collections.unmodifiableList(copies);
 	}
@@ -52,8 +54,8 @@ public final class PhysicalTableConfiguration {
 		if (fields == null) return null;
 
 		List<Field> copies = new ArrayList<>(fields.size());
-		for (Field field : fields) {
-			copies.add(field.cloneMe());
+		for (PhysicalColumnMetadata field : fields) {
+			copies.add(field.toField());
 		}
 		return copies;
 	}
@@ -64,22 +66,12 @@ public final class PhysicalTableConfiguration {
 
 	public synchronized void initializePrimaryKey(PrimaryKey loadedPrimaryKey) {
 		if (primaryKeyLoaded) return;
-		this.primaryKey = copyPrimaryKey(loadedPrimaryKey, null);
+		this.primaryKey = loadedPrimaryKey == null ? null : PhysicalKeyMetadata.fromKey(loadedPrimaryKey);
 		this.primaryKeyLoaded = true;
 	}
 
 	public synchronized PrimaryKey copyPrimaryKey(TableConfiguration context) {
-		return copyPrimaryKey(primaryKey, context);
-	}
-
-	private PrimaryKey copyPrimaryKey(PrimaryKey source, TableConfiguration context) {
-		if (source == null) return null;
-		PrimaryKey copy = new PrimaryKey();
-		copy.copy(source);
-		copy.setKeyName(source.getKeyName());
-		copy.setManualConfigured(source.isManualConfigured());
-		if (context != null) copy.setTabConf(context, false);
-		return copy;
+		return primaryKey == null ? null : primaryKey.toPrimaryKey(context);
 	}
 
 	public synchronized boolean areUniqueKeysLoaded() {
@@ -88,24 +80,35 @@ public final class PhysicalTableConfiguration {
 
 	public synchronized void initializeUniqueKeys(List<UniqueKeyInfo> loadedUniqueKeys) {
 		if (uniqueKeysLoaded) return;
-		this.uniqueKeys = copyUniqueKeys(loadedUniqueKeys, null);
+		if (loadedUniqueKeys == null) {
+			this.uniqueKeys = null;
+		} else {
+			List<PhysicalKeyMetadata> metadata = new ArrayList<>(loadedUniqueKeys.size());
+			for (UniqueKeyInfo key : loadedUniqueKeys) metadata.add(PhysicalKeyMetadata.fromKey(key));
+			this.uniqueKeys = Collections.unmodifiableList(metadata);
+		}
 		this.uniqueKeysLoaded = true;
 	}
 
 	public synchronized List<UniqueKeyInfo> copyUniqueKeys(TableConfiguration context) {
-		return copyUniqueKeys(uniqueKeys, context);
+		if (uniqueKeys == null) return null;
+		List<UniqueKeyInfo> copies = new ArrayList<>(uniqueKeys.size());
+		for (PhysicalKeyMetadata uniqueKey : uniqueKeys) copies.add(uniqueKey.toUniqueKey(context));
+		return copies;
 	}
 
-	private List<UniqueKeyInfo> copyUniqueKeys(List<UniqueKeyInfo> source, TableConfiguration context) {
-		if (source == null) return null;
-		List<UniqueKeyInfo> copies = new ArrayList<>(source.size());
-		for (UniqueKeyInfo uniqueKey : source) {
-			UniqueKeyInfo copy = uniqueKey.cloneMe();
-			copy.setKeyName(uniqueKey.getKeyName());
-			copy.setManualConfigured(uniqueKey.isManualConfigured());
-			if (context != null) copy.setTabConf(context, false);
-			copies.add(copy);
-		}
-		return copies;
+	public synchronized boolean areImportedForeignKeysLoaded() {
+		return importedForeignKeysLoaded;
+	}
+
+	public synchronized void initializeImportedForeignKeys(List<PhysicalForeignKeyMetadata> loadedForeignKeys) {
+		if (importedForeignKeysLoaded) return;
+		this.importedForeignKeys = loadedForeignKeys == null ? null
+				: Collections.unmodifiableList(new ArrayList<>(loadedForeignKeys));
+		this.importedForeignKeysLoaded = true;
+	}
+
+	public synchronized List<PhysicalForeignKeyMetadata> getImportedForeignKeys() {
+		return importedForeignKeys;
 	}
 }
