@@ -20,12 +20,4 @@ public class DatabaseModelGenerationCompatibilityTest {
 		assertTrue(operation.isDatabaseModelGeneration());
 		assertTrue(configuration.isDatabaseModelGeneration());
 	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void shouldKeepLegacyPojoGenerationNamesAsAliases() {
-		assertTrue(EtlOperationType.POJO_GENERATION.isDatabaseModelGeneration());
-		assertTrue(EtlProcessType.POJO_GENERATION.isDatabaseModelGeneration());
-		assertTrue(EtlOperationType.isDatabaseModelGeneration("POJO_GENERATION"));
-	}
 }

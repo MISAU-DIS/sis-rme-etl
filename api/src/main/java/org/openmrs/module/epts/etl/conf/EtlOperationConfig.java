@@ -799,8 +799,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public static List<EtlOperationType> getSupportedOperationsInSourceSyncProcess() {
 		EtlOperationType[] supported = { EtlOperationType.EXPORT, EtlOperationType.TRANSPORT,
-				EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.DATABASE_MODEL_GENERATION,
-				EtlOperationType.POJO_GENERATION };
+				EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -810,15 +809,14 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDatabaseModelGenerationProcess() {
-		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.POJO_GENERATION };
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInEtlProcess() {
 		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT,
-				EtlOperationType.DB_PREPARATION, EtlOperationType.DATABASE_MODEL_GENERATION,
-				EtlOperationType.POJO_GENERATION };
+				EtlOperationType.DB_PREPARATION, EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -849,8 +847,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDBInconsistencyCheckProcess() {
-		EtlOperationType[] supported = { EtlOperationType.INCONSISTENCY_SOLVER,
-				EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.POJO_GENERATION };
+		EtlOperationType[] supported = { EtlOperationType.INCONSISTENCY_SOLVER };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -895,8 +892,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDataReconciliationProcess() {
-		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION,
-				EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
 				EtlOperationType.MISSING_RECORDS_DETECTOR, EtlOperationType.OUTDATED_RECORDS_DETECTOR,
 				EtlOperationType.PHANTOM_RECORDS_DETECTOR };
 
@@ -909,8 +905,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDataBasesMergeFromSourceDBProcess() {
-		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION,
-				EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
 				EtlOperationType.DB_MERGE_FROM_SOURCE_DB };
 
 		return utilities.parseArrayToList(supported);
@@ -928,8 +923,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public static List<EtlOperationType> getSupportedOperationsInDestinationSyncProcess() {
 		EtlOperationType[] supported = { EtlOperationType.CONSOLIDATION, EtlOperationType.DB_MERGE_FROM_JSON,
-				EtlOperationType.LOAD, EtlOperationType.DATABASE_MODEL_GENERATION,
-				EtlOperationType.POJO_GENERATION };
+				EtlOperationType.LOAD, EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}

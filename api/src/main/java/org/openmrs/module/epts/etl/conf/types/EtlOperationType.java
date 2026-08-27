@@ -17,9 +17,6 @@ public enum EtlOperationType {
 	TRANSPORT,
 	PREPARATION,
 	DATABASE_MODEL_GENERATION,
-	/** @deprecated use DATABASE_MODEL_GENERATION. */
-	@Deprecated
-	POJO_GENERATION,
 	INCONSISTENCY_SOLVER,
 	CHANGED_RECORDS_DETECTOR,
 	NEW_RECORDS_DETECTOR,
@@ -132,7 +129,7 @@ public enum EtlOperationType {
 	}
 
 	public boolean isDatabaseModelGeneration() {
-		return this == DATABASE_MODEL_GENERATION || this == POJO_GENERATION;
+		return this == DATABASE_MODEL_GENERATION;
 	}
 
 	public boolean isInconsistencySolver() {

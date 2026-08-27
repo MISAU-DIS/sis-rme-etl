@@ -1018,7 +1018,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private void determineSchemaMetadataMode() {
-		if (this.schemaMetadataMode != null) return;
+		if (this.schemaMetadataMode != null)
+			return;
+
 		this.schemaMetadataMode = usesPrecompiledPojoObjects() ? SchemaMetadataMode.PRECOMPILED
 				: SchemaMetadataMode.LIVE_DATABASE;
 	}
@@ -1526,8 +1528,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					+ (this.getDefaultExceptionBehavior() + " is not allowed!");
 		}
 
-		if (this.containsOperation(EtlOperationType.DATABASE_MODEL_GENERATION)
-				|| this.containsOperation(EtlOperationType.POJO_GENERATION)) {
+		if (this.containsOperation(EtlOperationType.DATABASE_MODEL_GENERATION)) {
 			if (!utilities.stringHasValue(this.getClassPath())) {
 				errorMsg += ++errNum
 						+ ". ClassPath was not set! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
