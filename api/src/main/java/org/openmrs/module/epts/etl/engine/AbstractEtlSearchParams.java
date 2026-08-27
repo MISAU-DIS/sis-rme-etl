@@ -186,7 +186,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	@SuppressWarnings("unchecked")
 	public Class<T> getRecordClass() {
-		return (Class<T>) getSrcConf().getSyncRecordClass(getSrcConf().getSrcConnInfo());
+		return (Class<T>) getSrcConf().generateSyncRecordClass(getSrcConf().getSrcConnInfo());
 	}
 
 	public SrcConf getSrcConf() {

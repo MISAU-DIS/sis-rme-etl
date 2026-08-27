@@ -10,28 +10,27 @@ import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
+import org.openmrs.module.epts.etl.conf.physical.JdbcPhysicalTableMetadataRepository;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalExportedForeignKeyMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalForeignKeyMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalForeignKeyMetadata;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalExportedForeignKeyMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
-import org.openmrs.module.epts.etl.conf.physical.JdbcPhysicalTableMetadataRepository;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -880,12 +879,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	public Class<? extends EtlDatabaseObject> getSyncRecordClass() {
-
-		if (syncRecordClass == null) {
-			this.syncRecordClass = GenericDatabaseObject.class;
-		}
-
-		return getSyncRecordClass(getRelatedConnInfo());
+		return this.syncRecordClass;
 	}
 
 	public void setFullLoaded(Boolean fullLoaded) {

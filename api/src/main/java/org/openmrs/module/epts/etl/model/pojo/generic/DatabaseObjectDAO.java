@@ -131,7 +131,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 			sql += " WHERE 	record_origin_id = ? and record_origin_location_code = ? ";
 
 			return find(parentTableConfiguration.getLoadHealper(),
-					parentTableConfiguration.getSyncRecordClass(parentTableConfiguration.getSrcConnInfo()), sql, params,
+					parentTableConfiguration.generateSyncRecordClass(parentTableConfiguration.getSrcConnInfo()), sql, params,
 					conn);
 		} catch (Exception e) {
 			LOG.info("Error trying do retrieve dstRecord on table " + parentTableConfiguration.getTableName() + "["
@@ -244,7 +244,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 		@SuppressWarnings("unchecked")
 		Class<T> openMRSClass = (Class<T>) tableConfiguration
-				.getSyncRecordClass(tableConfiguration.getRelatedConnInfo());
+				.generateSyncRecordClass(tableConfiguration.getRelatedConnInfo());
 
 		String sql = "";
 
@@ -267,7 +267,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 				tabConf.fullLoad(conn);
 			}
 
-			Class<T> openMRSClass = (Class<T>) tabConf.getSyncRecordClass(tabConf.getRelatedConnInfo());
+			Class<T> openMRSClass = (Class<T>) tabConf.generateSyncRecordClass(tabConf.getRelatedConnInfo());
 
 			T record = openMRSClass.newInstance();
 
@@ -322,7 +322,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += " LIMIT 0, 1";
 
 		return find(tableConfiguration.getLoadHealper(),
-				tableConfiguration.getSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
+				tableConfiguration.generateSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
 	}
 
 	public static long countAll(TableConfiguration tableConfiguration, Connection conn) throws DBException {
@@ -401,7 +401,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 				+ tabConf.getPrimaryKey() + "\n)";
 		sql += "												   )";
 
-		return find(tabConf.getLoadHealper(), tabConf.getSyncRecordClass(tabConf.getSrcConnInfo()), sql, params, conn);
+		return find(tabConf.getLoadHealper(), tabConf.generateSyncRecordClass(tabConf.getSrcConnInfo()), sql, params, conn);
 	}
 
 	public static void remove(EtlDatabaseObject record, Connection conn) throws DBException {
@@ -466,7 +466,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += "			AND record_origin_location_code = ? ";
 
 		return search(tableConfiguration.getLoadHealper(),
-				tableConfiguration.getSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
+				tableConfiguration.generateSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
 	}
 
 	public static List<? extends EtlDatabaseObject> getByParentIdOnSpecificSchema(TableConfiguration tabConf,

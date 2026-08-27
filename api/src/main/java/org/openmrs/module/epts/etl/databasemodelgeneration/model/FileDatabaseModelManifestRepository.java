@@ -12,7 +12,7 @@ import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** Atomically maintains schema-metadata/manifest.json. */
+/** Atomically maintains database-model/schema-metadata/manifest.json. */
 public final class FileDatabaseModelManifestRepository {
 
 	private final Path manifestFile;

@@ -133,10 +133,10 @@ public class CentralAndRemoteDataReconciliationSearchParams extends AbstractEtlS
 			return DatabaseEntityPOJOGenerator
 			        .tryToGetExistingCLass("org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject");
 		} else if (type.isOutdatedRecordsDetector()) {
-			return (Class<EtlDatabaseObject>) getSrcConf().getSyncRecordClass(this.getConfig().getSrcConnInfo());
+			return (Class<EtlDatabaseObject>) getSrcConf().generateSyncRecordClass(this.getConfig().getSrcConnInfo());
 			
 		} else if (type.isPhantomRecordsDetector()) {
-			return (Class<EtlDatabaseObject>) this.getSrcConf().getSyncRecordClass(this.getConfig().getSrcConnInfo());
+			return (Class<EtlDatabaseObject>) this.getSrcConf().generateSyncRecordClass(this.getConfig().getSrcConnInfo());
 		}
 		
 		throw new ForbiddenOperationException("Unsupported operation type '" + type + "'");

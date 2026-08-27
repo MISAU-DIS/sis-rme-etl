@@ -1721,25 +1721,24 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
-	public File getPOJOCompiledFilesDirectory() {
-		String packageDir = getEtlRootDirectory() + FileUtilities.getPathSeparator() + "pojo"
-				+ FileUtilities.getPathSeparator();
+	public File getDatabaseModelDirectory() {
+		return new File(getEtlRootDirectory() + FileUtilities.getPathSeparator() + "database-model");
+	}
 
-		return new File(packageDir + "bin");
+	@JsonIgnore
+	public File getPOJOCompiledFilesDirectory() {
+		return new File(getDatabaseModelDirectory(), "bin");
 	}
 
 	@JsonIgnore
 	public File getPOJOSourceFilesDirectory() {
-		String packageDir = getEtlRootDirectory() + FileUtilities.getPathSeparator() + "pojo"
-				+ FileUtilities.getPathSeparator();
-
-		return new File(packageDir + FileUtilities.getPathSeparator() + "src");
+		return new File(getDatabaseModelDirectory(), "src");
 	}
 
 	/** Directory containing persistible physical-schema snapshots. */
 	@JsonIgnore
 	public File getSchemaMetadataDirectory() {
-		return new File(getEtlRootDirectory() + FileUtilities.getPathSeparator() + "schema-metadata");
+		return new File(getDatabaseModelDirectory(), "schema-metadata");
 	}
 
 	@JsonIgnore

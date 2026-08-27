@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** JSON file repository rooted at EtlConfiguration.getSchemaMetadataDirectory(). */
+/** JSON file repository rooted at database-model/schema-metadata. */
 public final class FilePhysicalTableMetadataRepository implements WritablePhysicalTableMetadataRepository {
 
 	private final Path rootDirectory;

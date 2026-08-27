@@ -149,29 +149,27 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default Class<? extends EtlDatabaseObject> getSyncRecordClass(DBConnectionInfo connInfo)
+	default Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
 			throws ForbiddenOperationException {
 
-		Class<? extends EtlDatabaseObject> syncRecordClass;
+		Class<? extends EtlDatabaseObject> syncRecordClass = null;
 
-		if (getSyncRecordClass() == null) {
+		if (getRelatedEtlConf().usesPrecompiledPojoObjects()) {
+			syncRecordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(this.generateFullClassName(connInfo),
+					this.getRelatedEtlConf());
 
-			if (getRelatedEtlConf().usesPrecompiledPojoObjects()) {
-				syncRecordClass = DatabaseEntityPOJOGenerator
-						.tryToGetExistingCLass(this.generateFullClassName(connInfo), this.getRelatedEtlConf());
-
-				if (syncRecordClass == null) {
-					throw new ForbiddenOperationException("The related POJO class for table " + this
-							+ " cannot be found. Make sure you have run the DATABASE_MODEL_GENERATION operation.");
-				}
-
-			} else {
-				syncRecordClass = GenericDatabaseObject.class;
+			if (syncRecordClass == null) {
+				throw new ForbiddenOperationException("The related POJO class for table " + this
+						+ " cannot be found. Make sure you have run the DATABASE_MODEL_GENERATION operation.");
 			}
 
-			this.setSyncRecordClass(syncRecordClass);
+		} else {
+			syncRecordClass = GenericDatabaseObject.class;
 		}
-		return getSyncRecordClass();
+
+		this.setSyncRecordClass(syncRecordClass);
+
+		return syncRecordClass;
 	}
 
 	default List<String> getParentRefInfoAsString() {

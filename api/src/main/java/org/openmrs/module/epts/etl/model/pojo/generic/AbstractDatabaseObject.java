@@ -592,7 +592,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				continue;
 
 			Integer qtyChildren = DatabaseObjectDAO.countAllOfParentId(
-					refInfo.getSyncRecordClass(syncTableInfo.getSrcConnInfo()),
+					refInfo.generateSyncRecordClass(syncTableInfo.getSrcConnInfo()),
 					refInfo.getSimpleRefMapping().getChildField().getName(), this.getObjectId().getSimpleValueAsInt(),
 					conn);
 

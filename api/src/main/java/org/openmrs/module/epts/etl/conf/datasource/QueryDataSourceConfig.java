@@ -341,11 +341,11 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	@Override
 	public Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
-		return this.getSyncRecordClass(this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedConnInfo() : null);
+		return this.generateSyncRecordClass(this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedConnInfo() : null);
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> getSyncRecordClass(DBConnectionInfo connInfo)
+	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
 			throws ForbiddenOperationException {
 		if (syncRecordClass == null)
 			syncRecordClass = GenericDatabaseObject.class;
@@ -361,7 +361,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	public Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
 		try {
-			return getSyncRecordClass(connInfo) != null;
+			return generateSyncRecordClass(connInfo) != null;
 		} catch (ForbiddenOperationException e) {
 
 			return false_();

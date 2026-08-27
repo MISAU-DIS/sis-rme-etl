@@ -1184,7 +1184,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	@JsonIgnore
 	default Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
 		try {
-			return this.getSyncRecordClass(connInfo) != null;
+			return this.generateSyncRecordClass(connInfo) != null;
 		} catch (ForbiddenOperationException e) {
 
 			return false;

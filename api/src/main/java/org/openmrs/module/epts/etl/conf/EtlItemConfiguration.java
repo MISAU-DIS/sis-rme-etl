@@ -618,7 +618,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			String sql = searchClauses.generateSQL(srcConn);
 
 			EtlDatabaseObject simpleValue = DatabaseObjectDAO.find(getSrcConf().getLoadHealper(),
-					getSrcConf().getSyncRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(), srcConn);
+					getSrcConf().generateSyncRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(), srcConn);
 
 			return simpleValue;
 		}
