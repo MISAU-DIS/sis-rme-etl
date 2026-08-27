@@ -36,7 +36,12 @@ public final class FileDatabaseModelManifestRepository {
 	}
 
 	public DatabaseModelManifest read() throws IOException {
-		return mapper.readValue(manifestFile.toFile(), DatabaseModelManifest.class);
+		DatabaseModelManifest manifest = mapper.readValue(manifestFile.toFile(), DatabaseModelManifest.class);
+		if (manifest.getFormatVersion() != DatabaseModelManifest.CURRENT_FORMAT_VERSION) {
+			throw new IOException("Unsupported database model manifest format version " + manifest.getFormatVersion()
+					+ " in " + manifestFile);
+		}
+		return manifest;
 	}
 
 	private void writeAtomically(DatabaseModelManifest manifest) throws IOException {

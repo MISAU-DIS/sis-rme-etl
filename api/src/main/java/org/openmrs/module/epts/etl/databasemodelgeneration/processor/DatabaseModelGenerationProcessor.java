@@ -25,6 +25,8 @@ import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -141,9 +143,11 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 			PhysicalTableKey key = PhysicalTableKeyFactory.create(table, app.getPojoPackageName(), connection);
 			FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
 					getRelatedEtlConfiguration().getSchemaMetadataDirectory());
-			repository.save(table.getPhysicalTableConfiguration().toMetadata(key));
+			PhysicalTableMetadata metadata = table.getPhysicalTableConfiguration().toMetadata(key);
+			repository.save(metadata);
 			new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
-					.record(new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app)));
+					.record(new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app),
+							PhysicalTableMetadataFingerprint.sha256(metadata)));
 		} catch (IOException | java.sql.SQLException exception) {
 			throw new RuntimeException("Could not persist physical metadata for " + table.getTableName(), exception);
 		}

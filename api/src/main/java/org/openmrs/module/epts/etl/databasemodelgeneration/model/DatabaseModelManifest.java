@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** Versioned index connecting generated classes to their physical snapshots. */
 public final class DatabaseModelManifest {
 
-	public static final int CURRENT_FORMAT_VERSION = 1;
+	public static final int CURRENT_FORMAT_VERSION = 2;
 
 	private final int formatVersion;
 	private final List<Entry> entries;
@@ -34,16 +34,24 @@ public final class DatabaseModelManifest {
 	public static final class Entry {
 		private final String metadataKey;
 		private final String generatedClassName;
+		private final String metadataFingerprint;
 
 		@JsonCreator
 		public Entry(@JsonProperty("metadataKey") String metadataKey,
-				@JsonProperty("generatedClassName") String generatedClassName) {
+				@JsonProperty("generatedClassName") String generatedClassName,
+				@JsonProperty("metadataFingerprint") String metadataFingerprint) {
 			this.metadataKey = metadataKey;
 			this.generatedClassName = generatedClassName;
+			this.metadataFingerprint = metadataFingerprint;
+		}
+
+		public Entry(String metadataKey, String generatedClassName) {
+			this(metadataKey, generatedClassName, null);
 		}
 
 		public String getMetadataKey() { return metadataKey; }
 		public String getGeneratedClassName() { return generatedClassName; }
+		public String getMetadataFingerprint() { return metadataFingerprint; }
 
 		@Override
 		public boolean equals(Object object) {
@@ -51,10 +59,11 @@ public final class DatabaseModelManifest {
 			if (!(object instanceof Entry)) return false;
 			Entry other = (Entry) object;
 			return Objects.equals(metadataKey, other.metadataKey)
-					&& Objects.equals(generatedClassName, other.generatedClassName);
+					&& Objects.equals(generatedClassName, other.generatedClassName)
+					&& Objects.equals(metadataFingerprint, other.metadataFingerprint);
 		}
 
 		@Override
-		public int hashCode() { return Objects.hash(metadataKey, generatedClassName); }
+		public int hashCode() { return Objects.hash(metadataKey, generatedClassName, metadataFingerprint); }
 	}
 }

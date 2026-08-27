@@ -225,6 +225,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private DatabaseObjectInstantiationMode databaseObjectInstantiationMode;
 
+	private SchemaMetadataMode schemaMetadataMode;
+
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 
@@ -249,6 +251,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public DatabaseObjectInstantiationMode getDatabaseObjectInstantiationMode() {
 		return databaseObjectInstantiationMode;
+	}
+
+	public SchemaMetadataMode getSchemaMetadataMode() {
+		return schemaMetadataMode;
+	}
+
+	public void setSchemaMetadataMode(SchemaMetadataMode schemaMetadataMode) {
+		this.schemaMetadataMode = schemaMetadataMode;
+	}
+
+	public boolean usesPrecompiledSchemaMetadata() {
+		return schemaMetadataMode != null && schemaMetadataMode.usesFilesFirst();
 	}
 
 	public EtlConfParamsAsDataSource getParamsAsDataSource() {
@@ -863,6 +877,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				this.applyIncludes();
 
 				this.determineDatabaseObjectInstantiationMode();
+				this.determineSchemaMetadataMode();
 
 				this.defaultGeneratedObjectKeyTabConf = new EtlConfigurationTableConf(
 						EtlConfiguration.DEFAULT_GENERATED_OBJECT_KEY_TABLE_NAME, this);
@@ -1000,6 +1015,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		} else {
 			this.databaseObjectInstantiationMode = DatabaseObjectInstantiationMode.DYNAMIC_GENERIC;
 		}
+	}
+
+	private void determineSchemaMetadataMode() {
+		if (this.schemaMetadataMode != null) return;
+		this.schemaMetadataMode = usesPrecompiledPojoObjects() ? SchemaMetadataMode.PRECOMPILED
+				: SchemaMetadataMode.LIVE_DATABASE;
 	}
 
 	public boolean usesPrecompiledPojoObjects() {

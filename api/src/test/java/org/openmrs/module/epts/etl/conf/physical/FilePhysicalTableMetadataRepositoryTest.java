@@ -39,6 +39,16 @@ public class FilePhysicalTableMetadataRepositoryTest {
 		assertFalse(repository.find(key("missing_table")).isPresent());
 	}
 
+	@Test
+	public void shouldFindMetadataWithoutKnowingDialectOrCatalog() throws Exception {
+		Path root = temporaryFolder.newFolder("schema-lookup").toPath();
+		FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(root.toFile());
+		PhysicalTableMetadata expected = metadata(key("person"));
+		repository.save(expected);
+
+		assertEquals(expected, repository.find("source-openmrs", "openmrs", "person").get());
+	}
+
 	@Test(expected = java.io.IOException.class)
 	public void shouldRejectUnsafePathElements() throws Exception {
 		FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(

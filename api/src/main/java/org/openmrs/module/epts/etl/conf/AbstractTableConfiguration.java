@@ -11,10 +11,16 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalForeignKeyMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.conf.physical.JdbcPhysicalTableMetadataRepository;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
@@ -221,6 +227,12 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isTableNameInfoLoaded())
 			return;
 
+		if (usesPrecompiledSchemaMetadata()) {
+			if (this.getSchema() == null) this.setSchema(this.getRelatedConnInfo().determineSchema());
+			this.setTableNameInfoLoaded(true);
+			return;
+		}
+
 		if (this.getSchema() == null) {
 			this.setSchema(DBUtilities.determineSchemaName(conn));
 		}
@@ -249,24 +261,72 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			return;
 
 		try {
-			PhysicalTableIdentity identity = new PhysicalTableIdentity(conn.getMetaData().getURL(),
-					conn.getMetaData().getUserName(), this.getCatalog(conn),
-					this.getSchema(), this.getTableName());
+			PhysicalTableMetadata metadata = resolvePhysicalTableMetadata(conn);
+			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedConnInfo().getConnectionURI(),
+					this.getRelatedConnInfo().getDataBaseUserName(), metadata.getKey().getCatalog(),
+					metadata.getKey().getSchema(), metadata.getKey().getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
 					.getOrCreate(identity);
 
-			if (!this.physicalTableConfiguration.hasFields()) {
-				PhysicalTableKey key = PhysicalTableKeyFactory.create(this,
-						this.getRelatedConnInfo().getPojoPackageName(), conn);
-				this.physicalTableConfiguration.initialize(new JdbcPhysicalTableMetadataRepository(conn).find(key)
-						.orElseThrow(() -> new java.io.IOException("Table metadata not found for " + key)));
-			}
+			if (!this.physicalTableConfiguration.hasFields()) this.physicalTableConfiguration.initialize(metadata);
 		} catch (java.io.IOException e) {
 			throw new DBException(new SQLException(e));
 		} catch (SQLException e) {
 			throw new DBException(e);
 		}
+	}
+
+	private PhysicalTableMetadata resolvePhysicalTableMetadata(Connection conn) throws java.io.IOException, SQLException {
+		SchemaMetadataMode mode = this.getRelatedEtlConf().getSchemaMetadataMode();
+		if (mode != null && mode.usesFilesFirst()) {
+			FilePhysicalTableMetadataRepository files = new FilePhysicalTableMetadataRepository(
+					this.getRelatedEtlConf().getSchemaMetadataDirectory());
+			java.util.Optional<PhysicalTableMetadata> stored = files.find(
+					this.getRelatedConnInfo().getPojoPackageName(), this.getSchema(), this.getTableName());
+			if (stored.isPresent()) {
+				try {
+					validateManifestAssociation(stored.get());
+					return stored.get();
+				} catch (java.io.IOException exception) {
+					if (!mode.allowsJdbcFallback()) throw exception;
+					this.logWarn("Ignoring incompatible precompiled metadata for {}.{}: {}", this.getSchema(),
+							this.getTableName(), exception.getMessage());
+				}
+			}
+			if (!mode.allowsJdbcFallback()) {
+				throw new java.io.IOException("Precompiled schema metadata not found for " + this.getSchema() + "."
+						+ this.getTableName() + " under " + this.getRelatedEtlConf().getSchemaMetadataDirectory()
+						+ ". Run DATABASE_MODEL_GENERATION to create it.");
+			}
+		}
+
+		PhysicalTableKey key = PhysicalTableKeyFactory.create(this,
+				this.getRelatedConnInfo().getPojoPackageName(), conn);
+		return new JdbcPhysicalTableMetadataRepository(conn).find(key)
+				.orElseThrow(() -> new java.io.IOException("Live table metadata not found for " + key));
+	}
+
+	private void validateManifestAssociation(PhysicalTableMetadata metadata) throws java.io.IOException {
+		DatabaseModelManifest manifest = new FileDatabaseModelManifestRepository(
+				this.getRelatedEtlConf().getSchemaMetadataDirectory()).read();
+		String expectedKey = metadata.getKey().toString();
+		String expectedClass = this.generateFullClassName(this.getRelatedConnInfo());
+		String expectedFingerprint = PhysicalTableMetadataFingerprint.sha256(metadata);
+		for (DatabaseModelManifest.Entry entry : manifest.getEntries()) {
+			if (expectedKey.equals(entry.getMetadataKey()) && expectedClass.equals(entry.getGeneratedClassName())
+					&& expectedFingerprint.equals(entry.getMetadataFingerprint())) return;
+		}
+		throw new java.io.IOException("No manifest association between " + expectedKey + " and " + expectedClass);
+	}
+
+	private boolean usesPrecompiledSchemaMetadata() {
+		return this.getRelatedEtlConf() != null && this.getRelatedEtlConf().usesPrecompiledSchemaMetadata();
+	}
+
+	private boolean usesStrictlyPrecompiledSchemaMetadata() {
+		return this.getRelatedEtlConf() != null && this.getRelatedEtlConf().getSchemaMetadataMode() != null
+				&& this.getRelatedEtlConf().getSchemaMetadataMode().isStrictlyPrecompiled();
 	}
 
 	@JsonIgnore
@@ -340,6 +400,19 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isUniqueKeyInfoLoaded())
 			return;
 
+		if (usesStrictlyPrecompiledSchemaMetadata()) {
+			if (this.uniqueKeys != null) {
+				TableConfiguration.super.loadUniqueKeys(conn);
+				return;
+			}
+			this.uniqueKeys = this.physicalTableConfiguration.copyUniqueKeys(this);
+			if (this.uniqueKeys != null && utilities.listHasElement(this.ignorableFields)) {
+				this.uniqueKeys.removeIf(key -> key.getFields().stream().anyMatch(this::isIgnorableField));
+			}
+			this.setUniqueKeyInfoLoaded(true);
+			return;
+		}
+
 		// Unique-key discovery currently observes contextual field exclusions and
 		// shared-PK relationships. Keep those cases local until physical FK DTOs exist.
 		if (this.uniqueKeys != null || utilities.listHasElement(this.ignorableFields) || this.useSharedPKKey()) {
@@ -366,6 +439,59 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			TableConfiguration.super.loadUniqueKeys(conn);
 			this.physicalTableConfiguration.initializeUniqueKeys(this.uniqueKeys);
 		}
+	}
+
+	@Override
+	public void loadParents(Connection conn) throws DBException {
+		if (!usesStrictlyPrecompiledSchemaMetadata()) {
+			TableConfiguration.super.loadParents(conn);
+			return;
+		}
+		if (this.isParentsLoaded()) return;
+		List<ParentTable> resolved = new ArrayList<>();
+		for (PhysicalForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getImportedForeignKeys()) {
+			ParentTableImpl parent = ParentTableImpl.init(foreignKey.getReferencedTable(), foreignKey.getName(), this);
+			parent.setSchema(utilities.stringHasValue(foreignKey.getReferencedSchema())
+					? foreignKey.getReferencedSchema() : foreignKey.getReferencedCatalog());
+			parent.setParentConf(this.getParentConf());
+			List<RefMapping> mappings = new ArrayList<>();
+			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
+				if (utilities.containsAll(this.getIgnorableFields(), physicalMapping.getChildColumn())) continue;
+				RefMapping mapping = RefMapping.fastCreate(physicalMapping.getChildColumn(),
+						physicalMapping.getParentColumn());
+				Field childField = this.getField(physicalMapping.getChildColumn());
+				if (childField != null) {
+					mapping.getChildField().setDataType(childField.getDataType());
+					mapping.getParentField().setDataType(childField.getDataType());
+				}
+				mapping.setParentTabConf(parent);
+				mappings.add(mapping);
+			}
+			parent.setRefMapping(mappings);
+			if (!mappings.isEmpty()) resolved.add(parent);
+		}
+		this.setParentRefInfo(resolved);
+		this.setParentsLoaded(true);
+	}
+
+	@Override
+	public void loadChildren(Connection conn) throws SQLException {
+		if (!usesStrictlyPrecompiledSchemaMetadata()) {
+			TableConfiguration.super.loadChildren(conn);
+			return;
+		}
+		if (this.isMustLoadChildrenInfo()) {
+			throw new SQLException("Precompiled exported foreign-key metadata is not available yet for "
+					+ this.getSchema() + "." + this.getTableName());
+		}
+	}
+
+	@Override
+	public Boolean useAutoIncrementId(Connection conn) throws DBException {
+		if (!usesStrictlyPrecompiledSchemaMetadata()) return TableConfiguration.super.useAutoIncrementId(conn);
+		if (this.getPrimaryKey() == null || this.getPrimaryKey().isCompositeKey()) return false;
+		Field primaryKeyField = this.getField(this.getPrimaryKey().retrieveSimpleKeyColumnName());
+		return primaryKeyField != null && Boolean.TRUE.equals(primaryKeyField.isAutoIncrement());
 	}
 
 	@Override
