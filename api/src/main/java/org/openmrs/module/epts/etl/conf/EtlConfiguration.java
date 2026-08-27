@@ -45,6 +45,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
@@ -122,7 +123,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private Boolean initialized;
 
-	private String classPath;
+	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+	private List<String> classPath = new ArrayList<>();
 
 	private EtlConfigurationTableConf defaultGeneratedObjectKeyTabConf;
 
@@ -1529,7 +1531,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		if (this.containsOperation(EtlOperationType.DATABASE_MODEL_GENERATION)) {
-			if (!utilities.stringHasValue(this.getClassPath())) {
+			if (!utilities.listHasElement(this.getClassPathAsFiles())) {
 				errorMsg += ++errNum
 						+ ". ClassPath was not set! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
 			}
@@ -1722,17 +1724,22 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@JsonIgnore
 	public File getDatabaseModelDirectory() {
-		return new File(getEtlRootDirectory() + FileUtilities.getPathSeparator() + "database-model");
+		return new File(getEtlRootDirectory(), "database-model");
+	}
+
+	@JsonIgnore
+	public File getDatabaseModelJavaDirectory() {
+		return new File(getDatabaseModelDirectory(), "java");
 	}
 
 	@JsonIgnore
 	public File getPOJOCompiledFilesDirectory() {
-		return new File(getDatabaseModelDirectory(), "bin");
+		return new File(getDatabaseModelJavaDirectory(), "bin");
 	}
 
 	@JsonIgnore
 	public File getPOJOSourceFilesDirectory() {
-		return new File(getDatabaseModelDirectory(), "src");
+		return new File(getDatabaseModelJavaDirectory(), "src");
 	}
 
 	/** Directory containing persistible physical-schema snapshots. */
@@ -1967,16 +1974,34 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return paramObject;
 	}
 
-	public String getClassPath() {
+	public List<String> getClassPath() {
 		return this.classPath;
 	}
 
-	public void setClassPath(String classPath) {
-		this.classPath = classPath;
+	public void setClassPath(List<String> classPath) {
+		this.classPath = classPath == null ? new ArrayList<>() : new ArrayList<>(classPath);
 	}
 
+	/** Files configured as external inputs for compilation and class loading. */
+	@JsonIgnore
+	public List<File> getClassPathAsFiles() {
+		List<File> files = new ArrayList<>();
+		if (classPath != null) {
+			for (String path : classPath) {
+				if (utilities.stringHasValue(path)) files.add(new File(path));
+			}
+		}
+		return files;
+	}
+
+	/**
+	 * Legacy writable class-path target. Operations that can update only one JAR
+	 * use the first configured entry.
+	 */
+	@JsonIgnore
 	public File getClassPathAsFile() {
-		return new File(this.getClassPath());
+		List<File> files = getClassPathAsFiles();
+		return files.isEmpty() ? null : files.get(0);
 	}
 
 	public TableConfiguration findTableInSrc_(TableConfiguration tableConf, Connection srcConn) throws DBException {

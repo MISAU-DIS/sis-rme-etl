@@ -134,7 +134,7 @@ public class SyncVM {
 			;
 		}
 		
-		this.activeConfiguration.setClassPath(ConfVM.retrieveClassPath());
+		this.activeConfiguration.setClassPath(java.util.Collections.singletonList(ConfVM.retrieveClassPath()));
 		this.activeConfiguration.setModuleRootDirectory(ConfVM.retrieveModuleFolder());
 		
 		saveConfigFile(this.activeConfiguration);

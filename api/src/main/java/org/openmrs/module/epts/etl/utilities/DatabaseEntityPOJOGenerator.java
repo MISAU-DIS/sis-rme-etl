@@ -357,6 +357,7 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import java.sql.ResultSet; \n \n";
 		classDefinition += "import java.util.List; \n \n";
 		classDefinition += "import java.sql.Connection; \n \n";
+		classDefinition += "org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration; \n \n";
 
 		classDefinition += "import com.fasterxml.jackson.annotation.JsonIgnore; \n \n";
 
@@ -391,6 +392,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonAttDefinition += "	private List<EtlDatabaseObject> auxLoadObject;\n";
 		commonAttDefinition += "	private EtlDatabaseObject sharedPkObj;\n";
+		commonAttDefinition += "	private TableConfiguration relatedConfiguration;\n";
 
 		return commonAttDefinition;
 	}
@@ -444,6 +446,18 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObject){ \n ";
 		commonMethods += "	 	this.auxLoadObject = auxLoadObject;\n";
+		commonMethods += "	} \n \n";
+
+		commonMethods += "	@JsonIgnore\n";
+		commonMethods += "	@Override\n";
+		commonMethods += "	public List<EtlDatabaseObjectConfiguration> getRelatedConfiguration(){ \n ";
+		commonMethods += "		return this.relatedConfiguration; \n";
+		commonMethods += "	} \n \n";
+
+		commonMethods += "	@JsonIgnore\n";
+		commonMethods += "	@Override\n";
+		commonMethods += "	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config){ \n ";
+		commonMethods += "	 	this.relatedConfiguration = relatedConfiguration;\n";
 		commonMethods += "	} \n \n";
 
 		commonMethods += "	@JsonIgnore\n";
@@ -548,7 +562,7 @@ public class DatabaseEntityPOJOGenerator {
 				clazz = tryToLoadFromClassPath(fullClassName, etlConfiguration.getModuleRootDirectory());
 
 			if (clazz == null) {
-				clazz = tryToLoadFromClassPath(fullClassName, etlConfiguration.getClassPathAsFile());
+				clazz = tryToLoadFromClassPath(fullClassName, etlConfiguration.getClassPathAsFiles());
 			}
 
 			if (clazz == null) {
@@ -574,6 +588,8 @@ public class DatabaseEntityPOJOGenerator {
 
 	@SuppressWarnings({ "unchecked" })
 	private static Class<EtlDatabaseObject> tryToLoadFromClassPath(String fullClassName, File classPath) {
+		if (classPath == null)
+			return null;
 		try (URLClassLoader loader = URLClassLoader.newInstance(new URL[] { classPath.toURI().toURL() })) {
 			return (Class<EtlDatabaseObject>) loader.loadClass(fullClassName);
 		} catch (ClassNotFoundException e) {
@@ -581,6 +597,24 @@ public class DatabaseEntityPOJOGenerator {
 		} catch (IOException e) {
 			e.printStackTrace();
 
+			return null;
+		}
+	}
+
+	private static Class<EtlDatabaseObject> tryToLoadFromClassPath(String fullClassName, List<File> classPath) {
+		try {
+			URL[] urls = new URL[classPath.size()];
+			for (int i = 0; i < classPath.size(); i++)
+				urls[i] = classPath.get(i).toURI().toURL();
+			try (URLClassLoader loader = URLClassLoader.newInstance(urls)) {
+				@SuppressWarnings("unchecked")
+				Class<EtlDatabaseObject> loaded = (Class<EtlDatabaseObject>) loader.loadClass(fullClassName);
+				return loaded;
+			}
+		} catch (ClassNotFoundException exception) {
+			return null;
+		} catch (IOException exception) {
+			exception.printStackTrace();
 			return null;
 		}
 	}
@@ -618,7 +652,8 @@ public class DatabaseEntityPOJOGenerator {
 
 			classPathFiles.add(destinationFile);
 
-			addAllToClassPath(classPathFiles, pojoble.getClassPath());
+			for (File entry : pojoble.getClassPath())
+				addAllToClassPath(classPathFiles, entry);
 
 			fileManager.setLocation(StandardLocation.CLASS_PATH, classPathFiles);
 

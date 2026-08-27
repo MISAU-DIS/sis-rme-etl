@@ -83,8 +83,8 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default File getClassPath() {
-		return new File(this.getParentConf().getRelatedEtlConf().getClassPath());
+	default List<File> getClassPath() {
+		return this.getParentConf().getRelatedEtlConf().getClassPathAsFiles();
 	}
 
 	String generateClassName();

@@ -505,8 +505,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public File getClassPath() {
-		return new File(getRelatedEtlConf().getClassPath());
+	public List<File> getClassPath() {
+		return getRelatedEtlConf().getClassPathAsFiles();
 	}
 
 	@Override

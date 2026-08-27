@@ -14,14 +14,16 @@ public class SchemaMetadataDirectoryTest {
 		configuration.setEtlRootDirectory(new File("etl-root").getPath());
 
 		File databaseModelDirectory = new File("etl-root", "database-model");
+		File javaDirectory = new File(databaseModelDirectory, "java");
 		assertEquals(databaseModelDirectory.getPath(), configuration.getDatabaseModelDirectory().getPath());
-		assertEquals(new File(databaseModelDirectory, "bin").getPath(),
+		assertEquals(javaDirectory.getPath(), configuration.getDatabaseModelJavaDirectory().getPath());
+		assertEquals(new File(javaDirectory, "bin").getPath(),
 				configuration.getPOJOCompiledFilesDirectory().getPath());
-		assertEquals(new File(databaseModelDirectory, "src").getPath(),
+		assertEquals(new File(javaDirectory, "src").getPath(),
 				configuration.getPOJOSourceFilesDirectory().getPath());
 		assertEquals(new File(databaseModelDirectory, "schema-metadata").getPath(),
 				configuration.getSchemaMetadataDirectory().getPath());
-		assertEquals(configuration.getPOJOSourceFilesDirectory().getParentFile(),
+		assertEquals(configuration.getDatabaseModelJavaDirectory().getParentFile(),
 				configuration.getSchemaMetadataDirectory().getParentFile());
 	}
 }
