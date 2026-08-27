@@ -302,7 +302,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	}
 
 	@Override
-	public String getSrcObjectCondition() {
+	public String applyCondition() {
 		return null;
 	}
 

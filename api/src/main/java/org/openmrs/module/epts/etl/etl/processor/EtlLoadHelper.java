@@ -26,7 +26,6 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
 import org.openmrs.module.epts.etl.exceptions.NoDstForGivenSrcException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
-import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -257,18 +256,17 @@ public class EtlLoadHelper {
 					getEngine().registerDefaultParentPersistence(getProcessor(), loadRec.getEtlInfo());
 				}
 
-				if (getEtlConfiguration().verifyRecordAfterCreate()) {
-					try {
-
-						logDebug("Verifying record after load: {}", loadRec);
-
-						loadRec.validateIfRecordExistsOnDB(dstConn);
-					} catch (RecordNotFoundException e) {
-						throw e;
-					}
+				if (loadRec.getEtlDefaultEtlException() == null) {
+					loadRec.getEtlInfo().markAsSuccess();
+				} else {
+					loadRec.getEtlInfo().markAsFailed();
 				}
 
-				loadRec.getEtlInfo().markAsSuccess();
+				if (loadRec.getEtlInfo().isInSuccessStatus() && getEtlConfiguration().verifyRecordAfterCreate()) {
+					logDebug("Verifying record after load: {}", loadRec);
+
+					loadRec.validateIfRecordExistsOnDB(dstConn);
+				}
 			}
 		}
 	}

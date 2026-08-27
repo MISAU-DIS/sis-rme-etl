@@ -648,7 +648,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			this.syncRecordClass = GenericDatabaseObject.class;
 		}
 
-		return syncRecordClass;
+		return getSyncRecordClass(getRelatedConnInfo());
 	}
 
 	public void setFullLoaded(Boolean fullLoaded) {

@@ -92,7 +92,7 @@ public class MergingRecord {
 			if (refInfo.isMetadata())
 				continue;
 			
-			Object parentIdInOrigin = record.getParentValue(refInfo);
+			Object parentIdInOrigin = record.getParentValue(refInfo.getChildFieldName());
 			
 			if (parentIdInOrigin != null) {
 				EtlDatabaseObject parent = record.retrieveParentInDestination(Integer.parseInt(parentIdInOrigin.toString()),

@@ -49,7 +49,7 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 	void setAllMapping(List<FieldsMapping> allMapping);
 
-	String getSrcObjectCondition();
+	String applyCondition();
 
 	Boolean isAutoIncrementId();
 

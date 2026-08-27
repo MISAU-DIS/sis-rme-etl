@@ -251,14 +251,8 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public Object getParentValue(ParentTable parent) {
-		if (!parent.useSimplePk()) {
-			throw new ForbiddenOperationException("The parent " + parent + " does not use simple pk");
-		}
-
-		RefMapping map = parent.getRefMapping().get(0);
-
-		return getFieldValue(map.getChildFieldName());
+	public Object getParentValue(String parentFieldName) {
+		return getFieldValue(parentFieldName);
 	}
 
 	@Override

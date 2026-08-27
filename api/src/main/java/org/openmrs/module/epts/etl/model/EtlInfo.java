@@ -498,7 +498,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			if (!refInfo.isMetadata())
 				continue;
 
-			Object oParentId = dstRecord.getParentValue(refInfo);
+			Object oParentId = dstRecord.getParentValue(refInfo.getChildFieldName());
 
 			if (oParentId != null) {
 				Integer parentId = (Integer) oParentId;
@@ -574,7 +574,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 				// Mean that the parent 'p' is the very same as the table of this record
 				if (p.getTableName().equals(this.getDstConf().getTableName())) {
-					Object parentValue = parentInOrigin.getParentValue(p);
+					Object parentValue = parentInOrigin.getParentValue(p.getChildFieldName());
 
 					if (parentValue != null) {
 						recursiveRelationship.add(RecordWithDefaultParentInfo.init(this.getRelatedSrcObject(),

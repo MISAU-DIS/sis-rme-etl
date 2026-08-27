@@ -503,19 +503,6 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				"\\t");
 	}
 
-	default void stepIntoBreakpoint(EtlConfiguration etlConf, boolean b) {
-		if (b) {
-			bPoint(etlConf);
-		}
-	}
-
-	default void bPoint(EtlConfiguration etlConf) {
-		if (etlConf != null)
-			etlConf.debug("Steped into the breakpoint");
-		else
-			System.err.println("Steped into the breakpoint");
-	}
-
 	public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
 		try {
 			return resolvePlaceholders(FileUtilities.realAllFileAsString(file), null, null, true);

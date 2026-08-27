@@ -203,8 +203,7 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 	}
 
 	@Override
-	public Object getParentValue(ParentTable refInfo) {
-		// TODO Auto-generated method stub
+	public Object getParentValue(String parentFieldName) {
 		return null;
 	}
 
@@ -475,7 +474,7 @@ public class PojoGenerationRecord implements EtlDatabaseObject {
 	@Override
 	public void setLoadedFromDb(boolean loadedFromDb) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override

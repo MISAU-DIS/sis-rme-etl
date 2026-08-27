@@ -156,7 +156,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	boolean hasParents();
 
-	Object getParentValue(ParentTable refInfo);
+	Object getParentValue(String parentFieldName);
 
 	String generateTableName();
 
@@ -818,8 +818,24 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default Field getField(String fieldName) {
+		String originalField = fieldName;
+		String camelField = utils.parsetoCamelCase(fieldName);
+		String snakeCase = utils.parsetoSnakeCase(fieldName);
+
 		for (Field field : this.getFields()) {
-			if (field.getName().trim().equals(fieldName.trim())) {
+			if (field.getName().trim().equals(originalField.trim())) {
+				return field;
+			}
+		}
+
+		for (Field field : this.getFields()) {
+			if (field.getName().trim().equals(camelField.trim())) {
+				return field;
+			}
+		}
+
+		for (Field field : this.getFields()) {
+			if (field.getName().trim().equals(snakeCase.trim())) {
 				return field;
 			}
 		}

@@ -223,6 +223,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private Boolean verifyRecordAfterCreate;
 
+	private DatabaseObjectInstantiationMode databaseObjectInstantiationMode;
+
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 
@@ -243,6 +245,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.disableDefaultObjectCreation = false;
 		this.defaultEtlItemConf = new EtlItemConfiguration();
 		this.defaultEtlItemConf.setRelatedEtlConf(this);
+	}
+
+	public DatabaseObjectInstantiationMode getDatabaseObjectInstantiationMode() {
+		return databaseObjectInstantiationMode;
 	}
 
 	public EtlConfParamsAsDataSource getParamsAsDataSource() {
@@ -852,6 +858,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				this.applyIncludes();
 
+				this.determineDatabaseObjectInstantiationMode();
+
 				this.defaultGeneratedObjectKeyTabConf = new EtlConfigurationTableConf(
 						EtlConfiguration.DEFAULT_GENERATED_OBJECT_KEY_TABLE_NAME, this);
 
@@ -980,6 +988,22 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				finalizeConnection(dstConn, this);
 			}
 		}
+	}
+
+	private void determineDatabaseObjectInstantiationMode() {
+		if (this.hasSrcConnInfo() && utilities.stringHasValue(this.getSrcConnInfo().getPojoPackageName())) {
+			this.databaseObjectInstantiationMode = DatabaseObjectInstantiationMode.PRECOMPILED_POJO;
+		} else {
+			this.databaseObjectInstantiationMode = DatabaseObjectInstantiationMode.DYNAMIC_GENERIC;
+		}
+	}
+
+	public boolean usesPrecompiledPojoObjects() {
+		return getDatabaseObjectInstantiationMode().isPreCompiled();
+	}
+
+	public boolean usesDynamicGenericObjects() {
+		return getDatabaseObjectInstantiationMode().isDynamic();
 	}
 
 	private void initParamsDataSource(Connection srcConn, Connection dstConn) throws DBException {
@@ -1477,6 +1501,24 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					+ (this.getDefaultExceptionBehavior() + " is not allowed!");
 		}
 
+		if (this.containsOperation(EtlOperationType.POJO_GENERATION)) {
+			if (!utilities.stringHasValue(this.getClassPath())) {
+				errorMsg += ++errNum
+						+ ". ClassPath was not set! Notice that this is necessary for POJO_GENERATION operation.";
+			}
+
+			if (hasSrcConnInfo() && !utilities.stringHasValue(this.getSrcConnInfo().getPojoPackageName())) {
+				errorMsg += ++errNum
+						+ ". PojoPackageName was not set for srcConnInfo! Notice that this is necessary for POJO_GENERATION operation.";
+			}
+
+			if (hasDstConnInfo() && !utilities.stringHasValue(this.getDstConnInfo().getPojoPackageName())) {
+				errorMsg += ++errNum
+						+ ". PojoPackageName was not set for dstConnInfo! Notice that this is necessary for POJO_GENERATION operation.";
+			}
+
+		}
+
 		if (utilities.stringHasValue(errorMsg)) {
 			errorMsg = "There are errors on Configuration file " + this.relatedConfFile.getAbsolutePath() + "\n"
 					+ errorMsg;
@@ -1485,6 +1527,23 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			this.childConfig.validate();
 		}
 
+	}
+
+	private boolean containsOperation(EtlOperationType operation) {
+		if (!hasOperation())
+			return false;
+
+		for (EtlOperationConfig op : this.getOperations()) {
+			if (op.getOperationType() == operation) {
+				return true;
+			}
+
+			if (op.containsChild(operation)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private String validateTransationConf() {
@@ -1608,7 +1667,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		boolean ok = false;
 
 		if (this.processType.isEtl()) {
-			if (operationType.isDatabasePreparation() || operationType.isDbExtract()) {
+			if (operationType.isDatabasePreparation() || operationType.isDbExtract()
+					|| operationType.isPojoGeneration()) {
 				return true;
 			}
 		}
@@ -1879,11 +1939,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return this.classPath;
 	}
 
-	public File getClassPathAsFile() {
-		return null;
+	public void setClassPath(String classPath) {
+		this.classPath = classPath;
 	}
 
-	public void setClassPath(String retrieveClassPath) {
+	public File getClassPathAsFile() {
+		return new File(this.getClassPath());
 	}
 
 	public TableConfiguration findTableInSrc_(TableConfiguration tableConf, Connection srcConn) throws DBException {

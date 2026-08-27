@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -143,17 +144,27 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return false;
 	}
 
-	@JsonIgnore
-	default Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
-		return this.getSyncRecordClass(getRelatedConnInfo());
-	}
+	Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException;
 
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> getSyncRecordClass(DBConnectionInfo connInfo)
 			throws ForbiddenOperationException {
 
+		Class<? extends EtlDatabaseObject> syncRecordClass;
+
 		if (getSyncRecordClass() == null) {
-			Class<? extends EtlDatabaseObject> syncRecordClass = GenericDatabaseObject.class;
+
+			if (getRelatedEtlConf().usesPrecompiledPojoObjects()) {
+				syncRecordClass = DatabaseEntityPOJOGenerator
+						.tryToGetExistingCLass(this.generateFullClassName(connInfo), this.getRelatedEtlConf());
+
+				if (syncRecordClass == null) {
+					throw new ForbiddenOperationException("The related POJO class for table " + this
+							+ " cannot be found. Make sure you have run the POJO_GENERATION operation.");
+				}
+			} else {
+				syncRecordClass = GenericDatabaseObject.class;
+			}
 
 			this.setSyncRecordClass(syncRecordClass);
 		}

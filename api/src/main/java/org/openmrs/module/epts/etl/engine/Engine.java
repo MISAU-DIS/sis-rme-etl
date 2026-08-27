@@ -380,7 +380,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private boolean runIteration() throws DBException, Exception {
-		ensureIterationIsInitialized();
+		this.ensureIterationIsInitialized();
 
 		// Currently this mean that the operation was finalized within the
 		// #ensureIterationIsInitialized
@@ -482,7 +482,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
-		if (getController().getOperationConfig().getMaxSupportedProcessors() > getMaxRecordsPerProcessing()) {
+		if (getController().getOperationConfig().getParallelProcessingStrategy().isMultiThreaded()
+				&& getController().getOperationConfig().getMaxSupportedProcessors() > getMaxRecordsPerProcessing()) {
 			setMaxRecordsPerProcessing(getController().getOperationConfig().getMaxSupportedProcessors());
 		}
 

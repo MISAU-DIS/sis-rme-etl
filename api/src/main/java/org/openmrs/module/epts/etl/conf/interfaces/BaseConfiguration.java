@@ -54,4 +54,17 @@ public interface BaseConfiguration {
 			}
 		}
 	}
+
+	default void stepIntoBreakpoint(EtlConfiguration etlConf, boolean b) {
+		if (b) {
+			bPoint(etlConf);
+		}
+	}
+
+	default void bPoint(EtlConfiguration etlConf) {
+		if (etlConf != null)
+			etlConf.debug("Steped into the breakpoint");
+		else
+			System.err.println("Steped into the breakpoint");
+	}
 }

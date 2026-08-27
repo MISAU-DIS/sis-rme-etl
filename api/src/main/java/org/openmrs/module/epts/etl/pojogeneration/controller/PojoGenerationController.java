@@ -24,43 +24,44 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * @author jpboane
  */
 public class PojoGenerationController extends OperationController<PojoGenerationRecord> {
-	
+
 	public PojoGenerationController(ProcessController processController, EtlOperationConfig operationConfig) {
 		super(processController, operationConfig);
 	}
-	
+
 	@Override
 	public TaskProcessor<PojoGenerationRecord> initRelatedTaskProcessor(Engine<PojoGenerationRecord> monitor,
-	        IntervalExtremeRecord limits,  boolean runningInConcurrency) {
+			IntervalExtremeRecord limits, boolean runningInConcurrency) {
+
 		return new PojoGenerationProcessor(monitor, limits, runningInConcurrency);
 	}
-	
+
 	@Override
-	public AbstractEtlSearchParams<PojoGenerationRecord> initMainSearchParams(ThreadRecordIntervalsManager<PojoGenerationRecord> intervalsMgt,
-	        Engine<PojoGenerationRecord> engine) {
-			
+	public AbstractEtlSearchParams<PojoGenerationRecord> initMainSearchParams(
+			ThreadRecordIntervalsManager<PojoGenerationRecord> intervalsMgt, Engine<PojoGenerationRecord> engine) {
+
 		return new PojoGenerationSearchParams(engine, intervalsMgt);
 	}
-	
+
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		return 1;
 	}
-	
+
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		return 1;
 	}
-	
+
 	@Override
 	public boolean mustRestartInTheEnd() {
 		return false;
 	}
-	
+
 	public EtlConfiguration getEtlConfiguration() {
 		return getProcessController().getRelatedEtlConf();
 	}
-	
+
 	@Override
 	public boolean canBeRunInMultipleEngines() {
 		return false;
@@ -68,7 +69,5 @@ public class PojoGenerationController extends OperationController<PojoGeneration
 
 	@Override
 	public void afterEtl(List<PojoGenerationRecord> objs, Connection srcConn, Connection dstConn) throws DBException {
-		// TODO Auto-generated method stub
-		
 	}
 }

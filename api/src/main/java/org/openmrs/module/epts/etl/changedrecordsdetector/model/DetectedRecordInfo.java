@@ -223,7 +223,7 @@ public class DetectedRecordInfo extends BaseVO implements ChangedRecord {
 	}
 
 	@Override
-	public Integer getParentValue(ParentTable parentInfo) {
+	public Object getParentValue(String parentFieldName) {
 		return null;
 	}
 

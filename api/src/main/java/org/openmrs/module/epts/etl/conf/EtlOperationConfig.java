@@ -808,7 +808,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public static List<EtlOperationType> getSupportedOperationsInEtlProcess() {
 		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT,
-				EtlOperationType.DB_PREPARATION };
+				EtlOperationType.DB_PREPARATION, EtlOperationType.POJO_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -1049,5 +1049,16 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		if (hasChild()) {
 			this.getChild().init();
 		}
+	}
+
+	public boolean containsChild(EtlOperationType operation) {
+		if (!hasChild())
+			return false;
+
+		if (this.getChild().getOperationType() == operation) {
+			return true;
+		}
+
+		return this.getChild().containsChild(operation);
 	}
 }

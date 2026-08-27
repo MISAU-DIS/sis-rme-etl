@@ -300,7 +300,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public String getSrcObjectCondition() {
+	public String applyCondition() {
 		return null;
 	}
 

@@ -27,7 +27,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 	private EtlItemConfiguration parentItemConf;
 
-	private String srcObjectCondition;
+	private String applyCondition;
 
 	private DstConf relatedParentDstConf;
 
@@ -43,12 +43,16 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 	private Boolean loadedDataSourceInfo;
 
-	public String getSrcObjectCondition() {
-		return srcObjectCondition;
+	public String applyCondition() {
+		return applyCondition;
 	}
 
-	public void setSrcObjectCondition(String srcObjectCondition) {
-		this.srcObjectCondition = srcObjectCondition;
+	public String getApplyCondition() {
+		return applyCondition;
+	}
+
+	public void setApplyCondition(String applyCondition) {
+		this.applyCondition = applyCondition;
 	}
 
 	public String getRelatedParentDstConfName() {
@@ -77,7 +81,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 	@Override
 	public String getCondition() {
-		return this.getSrcObjectCondition();
+		return this.applyCondition();
 	}
 
 	@Override

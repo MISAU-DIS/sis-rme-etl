@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.Key;
-import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.AbstractDatabaseObject;
@@ -97,8 +96,7 @@ public class TestEtlObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public Object getParentValue(ParentTable refInfo) {
-		// TODO Auto-generated method stub
+	public Object getParentValue(String parentFieldName) {
 		return null;
 	}
 

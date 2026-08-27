@@ -208,7 +208,7 @@ public class DatabasePreparationRecord implements EtlDatabaseObject {
 	}
 
 	@Override
-	public Object getParentValue(ParentTable refInfo) {
+	public Object getParentValue(String parentFieldName) {
 		return null;
 	}
 

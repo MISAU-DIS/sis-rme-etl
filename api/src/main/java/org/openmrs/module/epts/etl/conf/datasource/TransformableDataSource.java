@@ -660,7 +660,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public String getSrcObjectCondition() {
+	public String applyCondition() {
 		return null;
 	}
 

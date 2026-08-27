@@ -517,7 +517,7 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 	}
 
 	@Override
-	public Object getParentValue(ParentTable refInfo) {
+	public Object getParentValue(String parentFieldName) {
 		return null;
 	}
 

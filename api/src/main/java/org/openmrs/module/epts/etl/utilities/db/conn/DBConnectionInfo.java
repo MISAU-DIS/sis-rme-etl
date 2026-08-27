@@ -22,30 +22,6 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	private static final EtlLogger LOG = EtlLogger.getLogger(DBConnectionInfo.class);
 
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
-
-	static void logDebug(String msg, Object... arguments) {
-		LOG.debug(msg, arguments);
-	}
-
-	static void logTrace(String msg, Object... arguments) {
-		LOG.trace(msg, arguments);
-	}
-
-	static void logInfo(String msg, Object... arguments) {
-		LOG.info(msg, arguments);
-	}
-
-	static void logWarn(String msg, Object... arguments) {
-		LOG.warn(msg, arguments);
-	}
-
-	static void logError(String msg, Throwable throwable, Object... arguments) {
-		Object[] argumentsWithThrowable = new Object[arguments.length + 1];
-		System.arraycopy(arguments, 0, argumentsWithThrowable, 0, arguments.length);
-		argumentsWithThrowable[arguments.length] = throwable;
-		LOG.err(msg, argumentsWithThrowable);
-	}
-
 	private String dataBaseUserName;
 
 	private String dataBaseUserPassword;
@@ -77,6 +53,8 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	private Boolean defaultAutoCommit;
 
 	private EtlDBConnectionType connType;
+
+	private String pojoPackageName;
 
 	public DBConnectionInfo() {
 		isolationLevel = DBConnectionIsolationLevel.TRANSACTION_REPEATABLE_READ;
@@ -301,7 +279,11 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	}
 
 	public String getPojoPackageName() {
-		throw new ForbiddenOperationException("Rever esta logica");
+		return this.pojoPackageName;
+	}
+
+	public void setPojoPackageName(String pojoPackageName) {
+		this.pojoPackageName = pojoPackageName;
 	}
 
 	public void copyFromOther(DBConnectionInfo toCopyFrom) {
@@ -401,14 +383,34 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 
 	@Override
 	public EtlDataConfiguration getParentConf() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.relatedEtlConf;
 	}
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
-		// TODO Auto-generated method stub
+	}
 
+	static void logDebug(String msg, Object... arguments) {
+		LOG.debug(msg, arguments);
+	}
+
+	static void logTrace(String msg, Object... arguments) {
+		LOG.trace(msg, arguments);
+	}
+
+	static void logInfo(String msg, Object... arguments) {
+		LOG.info(msg, arguments);
+	}
+
+	static void logWarn(String msg, Object... arguments) {
+		LOG.warn(msg, arguments);
+	}
+
+	static void logError(String msg, Throwable throwable, Object... arguments) {
+		Object[] argumentsWithThrowable = new Object[arguments.length + 1];
+		System.arraycopy(arguments, 0, argumentsWithThrowable, 0, arguments.length);
+		argumentsWithThrowable[arguments.length] = throwable;
+		LOG.err(msg, argumentsWithThrowable);
 	}
 
 }

@@ -199,8 +199,8 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn)
 			throws DBException {
 
-		if (getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
-				|| getRelatedEtlOperationConfig().getParallelProcessingStrategy().isRangePartitioning()) {
+		if (this.getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
+				|| this.getRelatedEtlOperationConfig().getParallelProcessingStrategy().isRangePartitioning() || this.getRelatedEtlOperationConfig().getProcessingBatch() == 1) {
 			useMultiThreadSearch = false;
 		}
 

@@ -97,7 +97,7 @@ public class DstConf extends AbstractTableConfiguration
 	 */
 	private Boolean includeAllFieldsFromDataSource;
 
-	private String srcObjectCondition;
+	private String applyCondition;
 
 	private Boolean loadedDataSourceInfo;
 
@@ -221,7 +221,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public String getCondition() {
-		return this.getSrcObjectCondition();
+		return this.applyCondition();
 	}
 
 	public void setIgnoreNoDstIssue(Boolean ignoreNoDstIssue) {
@@ -340,12 +340,16 @@ public class DstConf extends AbstractTableConfiguration
 		return this.getParentConf().hasChildItemConf();
 	}
 
-	public String getSrcObjectCondition() {
-		return srcObjectCondition;
+	public String applyCondition() {
+		return this.applyCondition;
 	}
 
-	public void setSrcObjectCondition(String srcObjectCondition) {
-		this.srcObjectCondition = srcObjectCondition;
+	public String getApplyCondition() {
+		return applyCondition;
+	}
+
+	public void setSrcObjectCondition(String applyCondition) {
+		this.applyCondition = applyCondition;
 	}
 
 	public Boolean isIncludeAllFieldsFromDataSource() {
@@ -1297,11 +1301,11 @@ public class DstConf extends AbstractTableConfiguration
 			}
 
 			if (thisDstConf.hasCondition()) {
-				return thisDstConf.getSrcObjectCondition().equals(otherDstConf.getSrcObjectCondition());
+				return thisDstConf.applyCondition().equals(otherDstConf.applyCondition());
 			}
 
 			if (otherDstConf.hasCondition()) {
-				return otherDstConf.getSrcObjectCondition().equals(thisDstConf.getSrcObjectCondition());
+				return otherDstConf.applyCondition().equals(thisDstConf.applyCondition());
 			}
 		}
 
