@@ -5,6 +5,9 @@ import java.util.Objects;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.TypePrecision;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /** Immutable, context-free description of one physical database column. */
 public final class PhysicalColumnMetadata {
 
@@ -16,8 +19,11 @@ public final class PhysicalColumnMetadata {
 	private final boolean autoIncrement;
 	private final boolean timestamp;
 
-	public PhysicalColumnMetadata(String name, String dataType, Integer length, Integer decimalDigits, boolean nullable,
-			boolean autoIncrement, boolean timestamp) {
+	@JsonCreator
+	public PhysicalColumnMetadata(@JsonProperty("name") String name, @JsonProperty("dataType") String dataType,
+			@JsonProperty("length") Integer length, @JsonProperty("decimalDigits") Integer decimalDigits,
+			@JsonProperty("nullable") boolean nullable, @JsonProperty("autoIncrement") boolean autoIncrement,
+			@JsonProperty("timestamp") boolean timestamp) {
 		this.name = name;
 		this.dataType = dataType;
 		this.length = length;

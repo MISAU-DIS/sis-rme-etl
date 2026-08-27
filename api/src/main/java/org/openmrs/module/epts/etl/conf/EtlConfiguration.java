@@ -1709,6 +1709,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return new File(packageDir + FileUtilities.getPathSeparator() + "src");
 	}
 
+	/** Directory containing persistible physical-schema snapshots. */
+	@JsonIgnore
+	public File getSchemaMetadataDirectory() {
+		return new File(getEtlRootDirectory() + FileUtilities.getPathSeparator() + "schema-metadata");
+	}
+
 	@JsonIgnore
 	public File getSqlScriptsDirectory() {
 		String scriptsDir = getEtlRootDirectory() + FileUtilities.getPathSeparator() + "dump-scripts";

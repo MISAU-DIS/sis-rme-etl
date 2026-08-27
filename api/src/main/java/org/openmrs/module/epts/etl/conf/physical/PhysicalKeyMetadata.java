@@ -10,6 +10,9 @@ import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /** Immutable physical primary-key or unique-key description. */
 public final class PhysicalKeyMetadata {
 
@@ -17,7 +20,10 @@ public final class PhysicalKeyMetadata {
 	private final List<PhysicalKeyColumnMetadata> columns;
 	private final boolean manuallyConfigured;
 
-	public PhysicalKeyMetadata(String name, List<PhysicalKeyColumnMetadata> columns, boolean manuallyConfigured) {
+	@JsonCreator
+	public PhysicalKeyMetadata(@JsonProperty("name") String name,
+			@JsonProperty("columns") List<PhysicalKeyColumnMetadata> columns,
+			@JsonProperty("manuallyConfigured") boolean manuallyConfigured) {
 		this.name = name;
 		this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
 		this.manuallyConfigured = manuallyConfigured;
@@ -74,7 +80,9 @@ public final class PhysicalKeyMetadata {
 		private final String name;
 		private final String dataType;
 
-		public PhysicalKeyColumnMetadata(String name, String dataType) {
+		@JsonCreator
+		public PhysicalKeyColumnMetadata(@JsonProperty("name") String name,
+				@JsonProperty("dataType") String dataType) {
 			this.name = name;
 			this.dataType = dataType;
 		}

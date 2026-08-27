@@ -111,4 +111,21 @@ public final class PhysicalTableConfiguration {
 	public synchronized List<PhysicalForeignKeyMetadata> getImportedForeignKeys() {
 		return importedForeignKeys;
 	}
+
+	public synchronized void initialize(PhysicalTableMetadata metadata) {
+		if (!hasFields()) {
+			List<Field> loadedFields = new ArrayList<>();
+			for (PhysicalColumnMetadata column : metadata.getColumns()) loadedFields.add(column.toField());
+			initializeFields(loadedFields);
+		}
+		if (!isPrimaryKeyLoaded()) {
+			initializePrimaryKey(metadata.getPrimaryKey() == null ? null : metadata.getPrimaryKey().toPrimaryKey(null));
+		}
+		if (!areUniqueKeysLoaded()) {
+			List<UniqueKeyInfo> loadedKeys = new ArrayList<>();
+			for (PhysicalKeyMetadata key : metadata.getUniqueKeys()) loadedKeys.add(key.toUniqueKey(null));
+			initializeUniqueKeys(loadedKeys);
+		}
+		if (!areImportedForeignKeysLoaded()) initializeImportedForeignKeys(metadata.getImportedForeignKeys());
+	}
 }

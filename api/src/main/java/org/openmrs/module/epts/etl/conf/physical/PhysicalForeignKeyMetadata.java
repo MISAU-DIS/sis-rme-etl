@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /** Immutable description of an imported physical foreign key. */
 public final class PhysicalForeignKeyMetadata {
 
@@ -14,8 +17,12 @@ public final class PhysicalForeignKeyMetadata {
 	private final String referencedTable;
 	private final List<PhysicalForeignKeyMapping> mappings;
 
-	public PhysicalForeignKeyMetadata(String name, String referencedCatalog, String referencedSchema,
-			String referencedTable, List<PhysicalForeignKeyMapping> mappings) {
+	@JsonCreator
+	public PhysicalForeignKeyMetadata(@JsonProperty("name") String name,
+			@JsonProperty("referencedCatalog") String referencedCatalog,
+			@JsonProperty("referencedSchema") String referencedSchema,
+			@JsonProperty("referencedTable") String referencedTable,
+			@JsonProperty("mappings") List<PhysicalForeignKeyMapping> mappings) {
 		this.name = name;
 		this.referencedCatalog = referencedCatalog;
 		this.referencedSchema = referencedSchema;
@@ -48,7 +55,9 @@ public final class PhysicalForeignKeyMetadata {
 		private final String childColumn;
 		private final String parentColumn;
 
-		public PhysicalForeignKeyMapping(String childColumn, String parentColumn) {
+		@JsonCreator
+		public PhysicalForeignKeyMapping(@JsonProperty("childColumn") String childColumn,
+				@JsonProperty("parentColumn") String parentColumn) {
 			this.childColumn = childColumn;
 			this.parentColumn = parentColumn;
 		}

@@ -2,6 +2,9 @@ package org.openmrs.module.epts.etl.conf.physical;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Stable identity used by generated/persisted metadata. Unlike
  * {@link PhysicalTableIdentity}, it contains no connection URL or database user.
@@ -14,8 +17,10 @@ public final class PhysicalTableKey {
 	private final String schema;
 	private final String tableName;
 
-	public PhysicalTableKey(String logicalDatabaseId, String databaseDialect, String catalog, String schema,
-			String tableName) {
+	@JsonCreator
+	public PhysicalTableKey(@JsonProperty("logicalDatabaseId") String logicalDatabaseId,
+			@JsonProperty("databaseDialect") String databaseDialect, @JsonProperty("catalog") String catalog,
+			@JsonProperty("schema") String schema, @JsonProperty("tableName") String tableName) {
 		this.logicalDatabaseId = normalize(logicalDatabaseId);
 		this.databaseDialect = normalize(databaseDialect);
 		this.catalog = normalize(catalog);
