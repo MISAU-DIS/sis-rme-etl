@@ -16,6 +16,9 @@ public enum EtlOperationType {
 	DB_MERGE_FROM_JSON,
 	TRANSPORT,
 	PREPARATION,
+	DATABASE_MODEL_GENERATION,
+	/** @deprecated use DATABASE_MODEL_GENERATION. */
+	@Deprecated
 	POJO_GENERATION,
 	INCONSISTENCY_SOLVER,
 	CHANGED_RECORDS_DETECTOR,
@@ -56,7 +59,11 @@ public enum EtlOperationType {
 	}
 
 	public static boolean isPojoGeneration(String operationType) {
-		return EtlOperationType.valueOf(operationType).equals(POJO_GENERATION);
+		return isDatabaseModelGeneration(operationType);
+	}
+
+	public static boolean isDatabaseModelGeneration(String operationType) {
+		return EtlOperationType.valueOf(operationType).isDatabaseModelGeneration();
 	}
 
 	public static boolean isInconsistencySolver(String operationType) {
@@ -121,7 +128,11 @@ public enum EtlOperationType {
 	}
 
 	public boolean isPojoGeneration() {
-		return this.equals(POJO_GENERATION);
+		return isDatabaseModelGeneration();
+	}
+
+	public boolean isDatabaseModelGeneration() {
+		return this == DATABASE_MODEL_GENERATION || this == POJO_GENERATION;
 	}
 
 	public boolean isInconsistencySolver() {

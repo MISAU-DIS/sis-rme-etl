@@ -128,4 +128,11 @@ public final class PhysicalTableConfiguration {
 		}
 		if (!areImportedForeignKeysLoaded()) initializeImportedForeignKeys(metadata.getImportedForeignKeys());
 	}
+
+	public synchronized PhysicalTableMetadata toMetadata(PhysicalTableKey key) {
+		if (!hasFields() || !isPrimaryKeyLoaded() || !areUniqueKeysLoaded() || !areImportedForeignKeysLoaded()) {
+			throw new IllegalStateException("Physical table configuration is not completely loaded: " + identity);
+		}
+		return new PhysicalTableMetadata(key, fields, primaryKey, uniqueKeys, importedForeignKeys);
+	}
 }

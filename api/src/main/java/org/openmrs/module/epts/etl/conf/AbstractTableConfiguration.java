@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.JdbcPhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
@@ -256,13 +257,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 					.getOrCreate(identity);
 
 			if (!this.physicalTableConfiguration.hasFields()) {
-				String logicalDatabaseId = this.getRelatedConnInfo().getPojoPackageName();
-				if (!utilities.stringHasValue(logicalDatabaseId)) {
-					logicalDatabaseId = utilities.stringHasValue(this.getCatalog(conn)) ? this.getCatalog(conn)
-							: this.getSchema();
-				}
-				String dialect = conn.getMetaData().getDatabaseProductName().toLowerCase().replaceAll("[^a-z0-9]+", "-");
-				PhysicalTableKey key = identity.toPersistentKey(logicalDatabaseId, dialect);
+				PhysicalTableKey key = PhysicalTableKeyFactory.create(this,
+						this.getRelatedConnInfo().getPojoPackageName(), conn);
 				this.physicalTableConfiguration.initialize(new JdbcPhysicalTableMetadataRepository(conn).find(key)
 						.orElseThrow(() -> new java.io.IOException("Table metadata not found for " + key)));
 			}

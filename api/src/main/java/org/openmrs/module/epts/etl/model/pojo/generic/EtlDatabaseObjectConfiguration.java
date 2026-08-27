@@ -162,7 +162,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 				if (syncRecordClass == null) {
 					throw new ForbiddenOperationException("The related POJO class for table " + this
-							+ " cannot be found. Make sure you have run the POJO_GENERATION operation.");
+							+ " cannot be found. Make sure you have run the DATABASE_MODEL_GENERATION operation.");
 				}
 
 			} else {

@@ -1,10 +1,12 @@
-package org.openmrs.module.epts.etl.pojogeneration.processor;
+package org.openmrs.module.epts.etl.databasemodelgeneration.processor;
 
 import java.sql.Connection;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -14,10 +16,15 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationItemResult;
-import org.openmrs.module.epts.etl.pojogeneration.controller.PojoGenerationController;
-import org.openmrs.module.epts.etl.pojogeneration.model.PojoGenerationRecord;
-import org.openmrs.module.epts.etl.pojogeneration.model.PojoGenerationSearchParams;
+import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
+import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -34,13 +41,13 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  * 
  * @author jpboane
  */
-public class PojoGenerationProcessor extends TaskProcessor<PojoGenerationRecord> {
+public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseModelGenerationRecord> {
 
 	private List<String> alreadyGeneratedClasses;
 
-	private boolean pojoGenerated;
+	private boolean databaseModelGenerated;
 
-	public PojoGenerationProcessor(Engine<PojoGenerationRecord> monitor, IntervalExtremeRecord limits,
+	public DatabaseModelGenerationProcessor(Engine<DatabaseModelGenerationRecord> monitor, IntervalExtremeRecord limits,
 			boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 
@@ -48,8 +55,8 @@ public class PojoGenerationProcessor extends TaskProcessor<PojoGenerationRecord>
 	}
 
 	@Override
-	public PojoGenerationSearchParams getSearchParams() {
-		return (PojoGenerationSearchParams) super.getSearchParams();
+	public DatabaseModelGenerationSearchParams getSearchParams() {
+		return (DatabaseModelGenerationSearchParams) super.getSearchParams();
 	}
 
 	@Override
@@ -61,10 +68,10 @@ public class PojoGenerationProcessor extends TaskProcessor<PojoGenerationRecord>
 	}
 
 	@Override
-	public void transformAndLoad(List<PojoGenerationRecord> records, Connection srcConn, Connection dstConn)
+	public void transformAndLoad(List<DatabaseModelGenerationRecord> records, Connection srcConn, Connection dstConn)
 			throws DBException {
 
-		this.pojoGenerated = true;
+		this.databaseModelGenerated = true;
 
 		DBConnectionInfo mainApp = getEtlItemConfiguration().getSrcConnInfo();
 
@@ -105,13 +112,14 @@ public class PojoGenerationProcessor extends TaskProcessor<PojoGenerationRecord>
 
 		String fullClassName = tableConfiguration.generateFullClassName(app);
 
-		if (!checkIfIsAlredyGenerated(fullClassName)) {
+		if (!isAlreadyGenerated(fullClassName)) {
 			OpenConnection appConn = null;
 
 			try {
 				appConn = app.openConnection(this);
 
 				tableConfiguration.generateRecordClass(app, true);
+				persistPhysicalMetadata(app, tableConfiguration, appConn);
 
 				this.alreadyGeneratedClasses.add(fullClassName);
 			} catch (DBException e) {
@@ -122,21 +130,40 @@ public class PojoGenerationProcessor extends TaskProcessor<PojoGenerationRecord>
 		}
 	}
 
-	private boolean checkIfIsAlredyGenerated(String fullClassPath) {
+	private void persistPhysicalMetadata(DBConnectionInfo app,
+			EtlDatabaseObjectConfiguration tableConfiguration, Connection connection) {
+		if (!(tableConfiguration instanceof AbstractTableConfiguration)) return;
+
+		AbstractTableConfiguration table = (AbstractTableConfiguration) tableConfiguration;
+		if (table.getPhysicalTableConfiguration() == null) return;
+
+		try {
+			PhysicalTableKey key = PhysicalTableKeyFactory.create(table, app.getPojoPackageName(), connection);
+			FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
+					getRelatedEtlConfiguration().getSchemaMetadataDirectory());
+			repository.save(table.getPhysicalTableConfiguration().toMetadata(key));
+			new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
+					.record(new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app)));
+		} catch (IOException | java.sql.SQLException exception) {
+			throw new RuntimeException("Could not persist physical metadata for " + table.getTableName(), exception);
+		}
+	}
+
+	private boolean isAlreadyGenerated(String fullClassPath) {
 		return this.alreadyGeneratedClasses.contains(fullClassPath);
 	}
 
-	public boolean isPojoGenerated() {
-		return pojoGenerated;
+	public boolean isDatabaseModelGenerated() {
+		return databaseModelGenerated;
 	}
 
 	@Override
-	public PojoGenerationController getRelatedOperationController() {
-		return (PojoGenerationController) super.getRelatedOperationController();
+	public DatabaseModelGenerationController getRelatedOperationController() {
+		return (DatabaseModelGenerationController) super.getRelatedOperationController();
 	}
 
 	@Override
-	public TaskProcessor<PojoGenerationRecord> initReloadRecordsWithDefaultParentsTaskProcessor(
+	public TaskProcessor<DatabaseModelGenerationRecord> initReloadRecordsWithDefaultParentsTaskProcessor(
 			IntervalExtremeRecord limits) {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}

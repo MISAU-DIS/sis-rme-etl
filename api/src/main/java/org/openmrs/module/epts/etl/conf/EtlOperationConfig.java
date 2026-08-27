@@ -28,7 +28,7 @@ import org.openmrs.module.epts.etl.inconsistenceresolver.controller.Inconsistenc
 import org.openmrs.module.epts.etl.load.controller.DataLoadController;
 import org.openmrs.module.epts.etl.merge.controller.DataBaseMergeFromSourceDBController;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.pojogeneration.controller.PojoGenerationController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
 import org.openmrs.module.epts.etl.problems_solver.controller.GenericOperationController;
 import org.openmrs.module.epts.etl.problems_solver.processor.GenericProcessor;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
@@ -511,7 +511,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	@JsonIgnore
 	public boolean isPojoGeneration() {
-		return this.operationType.isPojoGeneration();
+		return isDatabaseModelGeneration();
+	}
+
+	public boolean isDatabaseModelGeneration() {
+		return this.operationType.isDatabaseModelGeneration();
 	}
 
 	@JsonIgnore
@@ -627,8 +631,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			return new DetectMissingRecordsController(parent, this, appOriginCode);
 		} else if (isEtl()) {
 			return new EtlController(parent, this, appOriginCode);
-		} else if (isPojoGeneration()) {
-			return new PojoGenerationController(parent, this);
+		} else if (isDatabaseModelGeneration()) {
+			return new DatabaseModelGenerationController(parent, this);
 		} else if (isExportOperation()) {
 			return new DBExportController(parent, this);
 		} else if (isTransportOperation()) {
@@ -712,8 +716,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			if (!this.canBeRunInDBInconsistencyCheckProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in db inconsistency check process\n";
-		} else if (this.getRelatedEtlConf().isPojoGeneration()) {
-			if (!this.canBeRunInDbPojoGenerationProcess())
+		} else if (this.getRelatedEtlConf().isDatabaseModelGeneration()) {
+			if (!this.canBeRunInDatabaseModelGenerationProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in pojo generation process\n";
 		}
@@ -795,20 +799,26 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public static List<EtlOperationType> getSupportedOperationsInSourceSyncProcess() {
 		EtlOperationType[] supported = { EtlOperationType.EXPORT, EtlOperationType.TRANSPORT,
-				EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.POJO_GENERATION };
+				EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.DATABASE_MODEL_GENERATION,
+				EtlOperationType.POJO_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInPojoGenerationProcess() {
-		EtlOperationType[] supported = { EtlOperationType.POJO_GENERATION };
+		return getSupportedOperationsInDatabaseModelGenerationProcess();
+	}
+
+	public static List<EtlOperationType> getSupportedOperationsInDatabaseModelGenerationProcess() {
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.POJO_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInEtlProcess() {
 		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT,
-				EtlOperationType.DB_PREPARATION, EtlOperationType.POJO_GENERATION };
+				EtlOperationType.DB_PREPARATION, EtlOperationType.DATABASE_MODEL_GENERATION,
+				EtlOperationType.POJO_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -821,7 +831,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	@JsonIgnore
 	public boolean canBeRunInDbPojoGenerationProcess() {
-		return utilities.existOnArray(getSupportedOperationsInPojoGenerationProcess(), this.operationType);
+		return canBeRunInDatabaseModelGenerationProcess();
+	}
+
+	public boolean canBeRunInDatabaseModelGenerationProcess() {
+		return utilities.existOnArray(getSupportedOperationsInDatabaseModelGenerationProcess(), this.operationType);
 	}
 
 	@JsonIgnore
@@ -835,7 +849,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDBInconsistencyCheckProcess() {
-		EtlOperationType[] supported = { EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.POJO_GENERATION };
+		EtlOperationType[] supported = { EtlOperationType.INCONSISTENCY_SOLVER,
+				EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.POJO_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -880,7 +895,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDataReconciliationProcess() {
-		EtlOperationType[] supported = { EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION,
+				EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
 				EtlOperationType.MISSING_RECORDS_DETECTOR, EtlOperationType.OUTDATED_RECORDS_DETECTOR,
 				EtlOperationType.PHANTOM_RECORDS_DETECTOR };
 
@@ -893,7 +909,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDataBasesMergeFromSourceDBProcess() {
-		EtlOperationType[] supported = { EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION,
+				EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
 				EtlOperationType.DB_MERGE_FROM_SOURCE_DB };
 
 		return utilities.parseArrayToList(supported);
@@ -911,7 +928,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public static List<EtlOperationType> getSupportedOperationsInDestinationSyncProcess() {
 		EtlOperationType[] supported = { EtlOperationType.CONSOLIDATION, EtlOperationType.DB_MERGE_FROM_JSON,
-				EtlOperationType.LOAD, EtlOperationType.POJO_GENERATION };
+				EtlOperationType.LOAD, EtlOperationType.DATABASE_MODEL_GENERATION,
+				EtlOperationType.POJO_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}

@@ -80,7 +80,7 @@ public class TableOperationProgressInfo extends BaseVO {
 			return ((SiteOperationController<? extends EtlDatabaseObject>) controller).getAppOriginLocationCode();
 		}
 		
-		if (controller.getOperationConfig().isPojoGeneration()
+		if (controller.getOperationConfig().isDatabaseModelGeneration()
 		        || controller.getOperationConfig().isResolveConflictsInStageArea()
 		        || controller.getOperationConfig().isMissingRecordsDetector()
 		        || controller.getOperationConfig().isOutdateRecordsDetector()

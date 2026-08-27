@@ -636,7 +636,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@JsonIgnore
 	public boolean isPojoGeneration() {
-		return processType.isPojoGeneration();
+		return isDatabaseModelGeneration();
+	}
+
+	public boolean isDatabaseModelGeneration() {
+		return processType.isDatabaseModelGeneration();
 	}
 
 	@JsonIgnore
@@ -1450,8 +1454,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			supportedOperations = EtlOperationConfig.getSupportedOperationsInDetectMissingRecordsProcess();
 		} else if (isEtlProcess()) {
 			supportedOperations = EtlOperationConfig.getSupportedOperationsInEtlProcess();
-		} else if (isPojoGeneration()) {
-			supportedOperations = EtlOperationConfig.getSupportedOperationsInPojoGenerationProcess();
+		} else if (isDatabaseModelGeneration()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDatabaseModelGenerationProcess();
 		} else if (isSourceSyncProcess()) {
 			supportedOperations = EtlOperationConfig.getSupportedOperationsInSourceSyncProcess();
 		} else if (isDataBaseMergeFromJSONProcess()) {
@@ -1501,20 +1505,21 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					+ (this.getDefaultExceptionBehavior() + " is not allowed!");
 		}
 
-		if (this.containsOperation(EtlOperationType.POJO_GENERATION)) {
+		if (this.containsOperation(EtlOperationType.DATABASE_MODEL_GENERATION)
+				|| this.containsOperation(EtlOperationType.POJO_GENERATION)) {
 			if (!utilities.stringHasValue(this.getClassPath())) {
 				errorMsg += ++errNum
-						+ ". ClassPath was not set! Notice that this is necessary for POJO_GENERATION operation.";
+						+ ". ClassPath was not set! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
 			}
 
 			if (hasSrcConnInfo() && !utilities.stringHasValue(this.getSrcConnInfo().getPojoPackageName())) {
 				errorMsg += ++errNum
-						+ ". PojoPackageName was not set for srcConnInfo! Notice that this is necessary for POJO_GENERATION operation.";
+						+ ". PojoPackageName was not set for srcConnInfo! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
 			}
 
 			if (hasDstConnInfo() && !utilities.stringHasValue(this.getDstConnInfo().getPojoPackageName())) {
 				errorMsg += ++errNum
-						+ ". PojoPackageName was not set for dstConnInfo! Notice that this is necessary for POJO_GENERATION operation.";
+						+ ". PojoPackageName was not set for dstConnInfo! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
 			}
 
 		}
@@ -1668,7 +1673,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		if (this.processType.isEtl()) {
 			if (operationType.isDatabasePreparation() || operationType.isDbExtract()
-					|| operationType.isPojoGeneration()) {
+					|| operationType.isDatabaseModelGeneration()) {
 				return true;
 			}
 		}

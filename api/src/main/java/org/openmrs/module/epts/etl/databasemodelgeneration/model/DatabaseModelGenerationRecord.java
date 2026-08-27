@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.pojogeneration.model;
+package org.openmrs.module.epts.etl.databasemodelgeneration.model;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,11 +25,11 @@ import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
 
-public class PojoGenerationRecord implements EtlDatabaseObject {
+public class DatabaseModelGenerationRecord implements EtlDatabaseObject {
 
 	private AbstractTableConfiguration tableConfiguration;
 
-	public PojoGenerationRecord(AbstractTableConfiguration tableConfiguration) {
+	public DatabaseModelGenerationRecord(AbstractTableConfiguration tableConfiguration) {
 		this.tableConfiguration = tableConfiguration;
 	}
 

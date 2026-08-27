@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.pojogeneration.controller;
+package org.openmrs.module.epts.etl.databasemodelgeneration.controller;
 
 import java.sql.Connection;
 import java.util.List;
@@ -12,9 +12,9 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.pojogeneration.model.PojoGenerationRecord;
-import org.openmrs.module.epts.etl.pojogeneration.model.PojoGenerationSearchParams;
-import org.openmrs.module.epts.etl.pojogeneration.processor.PojoGenerationProcessor;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
+import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -23,24 +23,24 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * 
  * @author jpboane
  */
-public class PojoGenerationController extends OperationController<PojoGenerationRecord> {
+public class DatabaseModelGenerationController extends OperationController<DatabaseModelGenerationRecord> {
 
-	public PojoGenerationController(ProcessController processController, EtlOperationConfig operationConfig) {
+	public DatabaseModelGenerationController(ProcessController processController, EtlOperationConfig operationConfig) {
 		super(processController, operationConfig);
 	}
 
 	@Override
-	public TaskProcessor<PojoGenerationRecord> initRelatedTaskProcessor(Engine<PojoGenerationRecord> monitor,
+	public TaskProcessor<DatabaseModelGenerationRecord> initRelatedTaskProcessor(Engine<DatabaseModelGenerationRecord> monitor,
 			IntervalExtremeRecord limits, boolean runningInConcurrency) {
 
-		return new PojoGenerationProcessor(monitor, limits, runningInConcurrency);
+		return new DatabaseModelGenerationProcessor(monitor, limits, runningInConcurrency);
 	}
 
 	@Override
-	public AbstractEtlSearchParams<PojoGenerationRecord> initMainSearchParams(
-			ThreadRecordIntervalsManager<PojoGenerationRecord> intervalsMgt, Engine<PojoGenerationRecord> engine) {
+	public AbstractEtlSearchParams<DatabaseModelGenerationRecord> initMainSearchParams(
+			ThreadRecordIntervalsManager<DatabaseModelGenerationRecord> intervalsMgt, Engine<DatabaseModelGenerationRecord> engine) {
 
-		return new PojoGenerationSearchParams(engine, intervalsMgt);
+		return new DatabaseModelGenerationSearchParams(engine, intervalsMgt);
 	}
 
 	@Override
@@ -68,6 +68,6 @@ public class PojoGenerationController extends OperationController<PojoGeneration
 	}
 
 	@Override
-	public void afterEtl(List<PojoGenerationRecord> objs, Connection srcConn, Connection dstConn) throws DBException {
+	public void afterEtl(List<DatabaseModelGenerationRecord> objs, Connection srcConn, Connection dstConn) throws DBException {
 	}
 }
