@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalForeignKeyMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalExportedForeignKeyMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.conf.physical.JdbcPhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
@@ -463,13 +464,19 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				if (childField != null) {
 					mapping.getChildField().setDataType(childField.getDataType());
 					mapping.getParentField().setDataType(childField.getDataType());
+					mapping.setIgnorable(childField.isAllowNull());
 				}
 				mapping.setParentTabConf(parent);
 				mappings.add(mapping);
 			}
 			parent.setRefMapping(mappings);
-			if (!mappings.isEmpty()) resolved.add(parent);
+			if (!mappings.isEmpty()) {
+				applyConfiguredParentContext(parent);
+				resolved.add(parent);
+				markSharedPrimaryKey(parent);
+			}
 		}
+		addManualOnlyParents(resolved);
 		this.setParentRefInfo(resolved);
 		this.setParentsLoaded(true);
 	}
@@ -480,9 +487,85 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			TableConfiguration.super.loadChildren(conn);
 			return;
 		}
-		if (this.isMustLoadChildrenInfo()) {
-			throw new SQLException("Precompiled exported foreign-key metadata is not available yet for "
-					+ this.getSchema() + "." + this.getTableName());
+		if (!this.isMustLoadChildrenInfo()) return;
+		List<ChildTable> children = new ArrayList<>();
+		for (PhysicalExportedForeignKeyMetadata foreignKey : this.physicalTableConfiguration
+				.getExportedForeignKeys()) {
+			ChildTable child = ChildTable.init(foreignKey.getChildTable(), foreignKey.getName(), this);
+			child.setSchema(utilities.stringHasValue(foreignKey.getChildSchema()) ? foreignKey.getChildSchema()
+					: foreignKey.getChildCatalog());
+			child.setParentConf(this.getParentConf());
+			List<RefMapping> mappings = new ArrayList<>();
+			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
+				RefMapping mapping = RefMapping.fastCreate(physicalMapping.getChildColumn(),
+						physicalMapping.getParentColumn());
+				Field parentField = this.getField(physicalMapping.getParentColumn());
+				if (parentField != null) {
+					mapping.getChildField().setDataType(parentField.getDataType());
+					mapping.getParentField().setDataType(parentField.getDataType());
+				}
+				mapping.setChildTabConf(child);
+				mappings.add(mapping);
+			}
+			child.setRefMapping(mappings);
+			children.add(child);
+		}
+		this.setChildRefInfo(children);
+	}
+
+	private void applyConfiguredParentContext(ParentTableImpl discovered) {
+		if (!utilities.listHasElement(this.getParents())) return;
+		for (ParentTable configured : this.getParents()) {
+			boolean sameReference = utilities.stringHasValue(configured.getRefCode())
+					&& configured.getRefCode().equals(discovered.getRefCode());
+			if (!sameReference && !configured.getTableName().equals(discovered.getTableName())) continue;
+			discovered.setConditionalFields(configured.getConditionalFields());
+			discovered.setDefaultValueDueInconsistency(configured.getDefaultValueDueInconsistency());
+			discovered.setSetNullDueInconsistency(configured.isSetNullDueInconsistency());
+			discovered.setIgnorableFields(configured.getIgnorableFields());
+			if (configured.hasMapping()) {
+				for (RefMapping mapping : discovered.getRefMapping()) {
+					RefMapping configuredMapping = configured.findRefMapping(mapping.getChildFieldName(),
+							mapping.getParentFieldName());
+					if (configuredMapping == null) {
+						throw new ForbiddenOperationException("Configured parent mapping " + mapping
+								+ " does not match physical foreign key " + discovered.getRefCode());
+					}
+					mapping.setIgnorable(configuredMapping.isIgnorable() || mapping.isIgnorable());
+					mapping.setDefaultValueDueInconsistency(configuredMapping.getDefaultValueDueInconsistency());
+					mapping.setSetNullDueInconsistency(configuredMapping.isSetNullDueInconsistency());
+				}
+			}
+			return;
+		}
+	}
+
+	private void addManualOnlyParents(List<ParentTable> resolved) {
+		if (!utilities.listHasElement(this.getParents())) return;
+		for (ParentTable configured : this.getParents()) {
+			boolean alreadyResolved = false;
+			for (ParentTable parent : resolved) {
+				if ((utilities.stringHasValue(configured.getRefCode()) && configured.getRefCode().equals(parent.getRefCode()))
+						|| configured.equals(parent)) {
+					alreadyResolved = true;
+					break;
+				}
+			}
+			if (!alreadyResolved && configured.hasMapping()) {
+				configured.setChildTableConf(this);
+				configured.setManualyConfigured(true);
+				resolved.add(configured);
+			}
+		}
+	}
+
+	private void markSharedPrimaryKey(ParentTableImpl parent) {
+		if (this.getPrimaryKey() == null || parent.getRefMapping() == null) return;
+		List<String> primaryKeyFields = this.getPrimaryKey().generateListFromFieldsNames();
+		List<String> childFields = new ArrayList<>();
+		for (RefMapping mapping : parent.getRefMapping()) childFields.add(mapping.getChildFieldName());
+		if (primaryKeyFields.size() == childFields.size() && childFields.containsAll(primaryKeyFields)) {
+			this.setSharePkWith(parent.getTableName());
 		}
 	}
 

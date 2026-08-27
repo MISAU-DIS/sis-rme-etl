@@ -23,6 +23,8 @@ public final class PhysicalTableConfiguration {
 	private List<PhysicalKeyMetadata> uniqueKeys;
 	private boolean importedForeignKeysLoaded;
 	private List<PhysicalForeignKeyMetadata> importedForeignKeys;
+	private boolean exportedForeignKeysLoaded;
+	private List<PhysicalExportedForeignKeyMetadata> exportedForeignKeys;
 
 	public PhysicalTableConfiguration(PhysicalTableIdentity identity) {
 		this.identity = identity;
@@ -112,6 +114,20 @@ public final class PhysicalTableConfiguration {
 		return importedForeignKeys;
 	}
 
+	public synchronized boolean areExportedForeignKeysLoaded() { return exportedForeignKeysLoaded; }
+
+	public synchronized void initializeExportedForeignKeys(
+			List<PhysicalExportedForeignKeyMetadata> loadedForeignKeys) {
+		if (exportedForeignKeysLoaded) return;
+		this.exportedForeignKeys = loadedForeignKeys == null ? null
+				: Collections.unmodifiableList(new ArrayList<>(loadedForeignKeys));
+		this.exportedForeignKeysLoaded = true;
+	}
+
+	public synchronized List<PhysicalExportedForeignKeyMetadata> getExportedForeignKeys() {
+		return exportedForeignKeys;
+	}
+
 	public synchronized void initialize(PhysicalTableMetadata metadata) {
 		if (!hasFields()) {
 			List<Field> loadedFields = new ArrayList<>();
@@ -127,12 +143,14 @@ public final class PhysicalTableConfiguration {
 			initializeUniqueKeys(loadedKeys);
 		}
 		if (!areImportedForeignKeysLoaded()) initializeImportedForeignKeys(metadata.getImportedForeignKeys());
+		if (!areExportedForeignKeysLoaded()) initializeExportedForeignKeys(metadata.getExportedForeignKeys());
 	}
 
 	public synchronized PhysicalTableMetadata toMetadata(PhysicalTableKey key) {
-		if (!hasFields() || !isPrimaryKeyLoaded() || !areUniqueKeysLoaded() || !areImportedForeignKeysLoaded()) {
+		if (!hasFields() || !isPrimaryKeyLoaded() || !areUniqueKeysLoaded() || !areImportedForeignKeysLoaded()
+				|| !areExportedForeignKeysLoaded()) {
 			throw new IllegalStateException("Physical table configuration is not completely loaded: " + identity);
 		}
-		return new PhysicalTableMetadata(key, fields, primaryKey, uniqueKeys, importedForeignKeys);
+		return new PhysicalTableMetadata(key, fields, primaryKey, uniqueKeys, importedForeignKeys, exportedForeignKeys);
 	}
 }

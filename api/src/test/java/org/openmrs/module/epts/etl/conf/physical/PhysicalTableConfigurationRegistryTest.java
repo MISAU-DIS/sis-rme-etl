@@ -133,4 +133,16 @@ public class PhysicalTableConfigurationRegistryTest {
 		assertEquals(2, configuration.getImportedForeignKeys().get(0).getMappings().size());
 		assertEquals("location", configuration.getImportedForeignKeys().get(0).getReferencedTable());
 	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void shouldKeepExportedForeignKeyMetadataImmutable() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "person"));
+		PhysicalExportedForeignKeyMetadata foreignKey = new PhysicalExportedForeignKeyMetadata("fk_obs_person",
+				"openmrs", "openmrs", "obs", Arrays.asList(
+						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("person_id", "person_id")));
+
+		configuration.initializeExportedForeignKeys(Arrays.asList(foreignKey));
+
+		configuration.getExportedForeignKeys().add(foreignKey);
+	}
 }

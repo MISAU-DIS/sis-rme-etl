@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelMa
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
+import org.openmrs.module.epts.etl.conf.physical.JdbcPhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
@@ -141,6 +142,10 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 		try {
 			PhysicalTableKey key = PhysicalTableKeyFactory.create(table, app.getPojoPackageName(), connection);
+			if (!table.getPhysicalTableConfiguration().areExportedForeignKeysLoaded()) {
+				table.getPhysicalTableConfiguration().initializeExportedForeignKeys(
+						new JdbcPhysicalTableMetadataRepository(connection).findExportedForeignKeys(key));
+			}
 			FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
 					getRelatedEtlConfiguration().getSchemaMetadataDirectory());
 			PhysicalTableMetadata metadata = table.getPhysicalTableConfiguration().toMetadata(key);

@@ -73,7 +73,10 @@ public class FilePhysicalTableMetadataRepositoryTest {
 		PhysicalForeignKeyMetadata foreignKey = new PhysicalForeignKeyMetadata("fk_person_location", "openmrs",
 				"openmrs", "location", Arrays.asList(
 						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("location_id", "location_id")));
+		PhysicalExportedForeignKeyMetadata exportedForeignKey = new PhysicalExportedForeignKeyMetadata("fk_obs_person",
+				"openmrs", "openmrs", "obs", Arrays.asList(
+						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("person_id", "person_id")));
 		return new PhysicalTableMetadata(key, Arrays.asList(id, location), primaryKey, Arrays.asList(uniqueKey),
-				Arrays.asList(foreignKey));
+				Arrays.asList(foreignKey), Arrays.asList(exportedForeignKey));
 	}
 }

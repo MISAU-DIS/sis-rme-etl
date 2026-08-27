@@ -12,6 +12,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.ParentTableImpl;
+import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.SchemaMetadataMode;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
@@ -43,13 +45,26 @@ public class PrecompiledSchemaFullLoadTest {
 		PhysicalForeignKeyMetadata parent = new PhysicalForeignKeyMetadata("fk_person_location", "openmrs",
 				"openmrs", "location", Arrays.asList(
 						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("location_id", "location_id")));
+		PhysicalForeignKeyMetadata sharedPrimaryKeyParent = new PhysicalForeignKeyMetadata("fk_person_base", "openmrs",
+				"openmrs", "base_person", Arrays.asList(
+						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("person_id", "person_id")));
+		PhysicalExportedForeignKeyMetadata child = new PhysicalExportedForeignKeyMetadata("fk_obs_person", "openmrs",
+				"openmrs", "obs", Arrays.asList(
+						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("person_id", "person_id")));
 		PhysicalTableMetadata metadata = new PhysicalTableMetadata(key, Arrays.asList(id, locationId), primaryKey,
-				Arrays.asList(uniqueKey), Arrays.asList(parent));
+				Arrays.asList(uniqueKey), Arrays.asList(parent, sharedPrimaryKeyParent), Arrays.asList(child));
 		new FilePhysicalTableMetadataRepository(etl.getSchemaMetadataDirectory()).save(metadata);
 
 		TestTable table = new TestTable(etl, connectionInfo);
 		table.setTableName("person");
 		table.setSchema("openmrs");
+		table.setMustLoadChildrenInfo(true);
+		ParentTableImpl configuredLocation = new ParentTableImpl("location", "fk_person_location");
+		RefMapping configuredMapping = RefMapping.fastCreate("location_id", "location_id");
+		configuredMapping.setIgnorable(true);
+		configuredMapping.setDefaultValueDueInconsistency(99);
+		configuredLocation.setRefMapping(Arrays.asList(configuredMapping));
+		table.setParents(Arrays.asList(configuredLocation));
 		new FileDatabaseModelManifestRepository(etl.getSchemaMetadataDirectory()).record(
 				new DatabaseModelManifest.Entry(key.toString(), table.generateFullClassName(connectionInfo),
 						PhysicalTableMetadataFingerprint.sha256(metadata)));
@@ -59,7 +74,15 @@ public class PrecompiledSchemaFullLoadTest {
 		assertEquals(2, table.getFields().size());
 		assertEquals("person_id", table.getPrimaryKey().retrieveSimpleKeyColumnName());
 		assertEquals(1, table.getUniqueKeys().size());
+		assertEquals(2, table.getParentRefInfo().size());
 		assertEquals("location", table.getParentRefInfo().get(0).getTableName());
+		assertTrue(table.getParentRefInfo().get(0).getRefMapping().get(0).isIgnorable());
+		assertEquals(99, table.getParentRefInfo().get(0).getRefMapping().get(0)
+				.getDefaultValueDueInconsistency());
+		assertEquals("base_person", table.getSharePkWith());
+		assertEquals(1, table.getChildRefInfo().size());
+		assertEquals("obs", table.getChildRefInfo().get(0).getTableName());
+		assertEquals("person_id", table.getChildRefInfo().get(0).getRefMapping().get(0).getChildFieldName());
 		assertTrue(table.isAutoIncrementId());
 	}
 

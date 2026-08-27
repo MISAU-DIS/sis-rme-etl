@@ -31,7 +31,9 @@ public final class JdbcPhysicalTableMetadataRepository implements PhysicalTableM
 			PhysicalKeyMetadata primaryKey = primaryKey(key, columns);
 			List<PhysicalKeyMetadata> uniqueKeys = uniqueKeys(key, columns, primaryKey);
 			List<PhysicalForeignKeyMetadata> foreignKeys = importedForeignKeys(key);
-			return Optional.of(new PhysicalTableMetadata(key, columns, primaryKey, uniqueKeys, foreignKeys));
+			List<PhysicalExportedForeignKeyMetadata> exportedForeignKeys = findExportedForeignKeys(key);
+			return Optional.of(new PhysicalTableMetadata(key, columns, primaryKey, uniqueKeys, foreignKeys,
+					exportedForeignKeys));
 		} catch (Exception exception) {
 			throw new IOException("Could not load JDBC schema metadata for " + key, exception);
 		}
@@ -98,6 +100,25 @@ public final class JdbcPhysicalTableMetadataRepository implements PhysicalTableM
 		return keys;
 	}
 
+	/** Loads relationships in which this table is the referenced parent. */
+	public List<PhysicalExportedForeignKeyMetadata> findExportedForeignKeys(PhysicalTableKey key) throws SQLException {
+		Map<String, ExportedForeignKeyBuilder> builders = new LinkedHashMap<>();
+		try (ResultSet result = metadata().getExportedKeys(catalogForMetadata(key), key.getSchema(), key.getTableName())) {
+			while (result.next()) {
+				String name = result.getString("FK_NAME");
+				String stableName = name == null ? result.getString("FKTABLE_NAME") : name;
+				ExportedForeignKeyBuilder builder = builders.computeIfAbsent(stableName,
+						ignored -> new ExportedForeignKeyBuilder(name, read(result, "FKTABLE_CAT"),
+								read(result, "FKTABLE_SCHEM"), read(result, "FKTABLE_NAME")));
+				builder.mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(
+						result.getString("FKCOLUMN_NAME"), result.getString("PKCOLUMN_NAME")));
+			}
+		}
+		List<PhysicalExportedForeignKeyMetadata> keys = new ArrayList<>(builders.size());
+		for (ExportedForeignKeyBuilder builder : builders.values()) keys.add(builder.build());
+		return keys;
+	}
+
 	private String read(ResultSet result, String column) {
 		try { return result.getString(column); } catch (SQLException exception) { return null; }
 	}
@@ -129,6 +150,22 @@ public final class JdbcPhysicalTableMetadataRepository implements PhysicalTableM
 
 		private PhysicalForeignKeyMetadata build() {
 			return new PhysicalForeignKeyMetadata(name, catalog, schema, table, mappings);
+		}
+	}
+
+	private static final class ExportedForeignKeyBuilder {
+		private final String name;
+		private final String catalog;
+		private final String schema;
+		private final String table;
+		private final List<PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping> mappings = new ArrayList<>();
+
+		private ExportedForeignKeyBuilder(String name, String catalog, String schema, String table) {
+			this.name = name; this.catalog = catalog; this.schema = schema; this.table = table;
+		}
+
+		private PhysicalExportedForeignKeyMetadata build() {
+			return new PhysicalExportedForeignKeyMetadata(name, catalog, schema, table, mappings);
 		}
 	}
 }
