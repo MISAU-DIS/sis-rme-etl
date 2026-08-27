@@ -1021,7 +1021,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (this.schemaMetadataMode != null)
 			return;
 
-		this.schemaMetadataMode = usesPrecompiledPojoObjects() ? SchemaMetadataMode.PRECOMPILED
+		this.schemaMetadataMode = usesPrecompiledPojoObjects() ? SchemaMetadataMode.PRECOMPILED_WITH_FALLBACK
 				: SchemaMetadataMode.LIVE_DATABASE;
 	}
 
