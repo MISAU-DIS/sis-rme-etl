@@ -371,14 +371,7 @@ public class DatabaseModelGenerationRecord implements EtlDatabaseObject {
 
 	@Override
 	public List<Field> getFields() {
-		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public void setFields(List<Field> fields) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override

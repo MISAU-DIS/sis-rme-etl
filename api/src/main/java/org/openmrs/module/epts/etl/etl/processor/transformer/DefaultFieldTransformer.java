@@ -164,7 +164,7 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 
 		String originalName = field.getName();
 		String snakeName = utilities.parsetoSnakeCase(originalName);
-		String camelName = utilities.parsetoCamelCase(originalName);
+		String camelName = utilities.parseToCamelCase(originalName);
 
 		String[] candidateNames = { originalName, snakeName, camelName };
 

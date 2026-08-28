@@ -64,6 +64,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private Boolean metadata;
 
 	protected Boolean fullLoaded;
+	private transient boolean fullLoadLogSuppressed;
+	private transient boolean physicalMetadataLoadedFromStaticData;
 
 	private Boolean removeForbidden;
 
@@ -248,14 +250,29 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
-		this.tryToLoadDumpScriptContentToFieldAndValidate("extraConditionForExtract",
-				this.retrieveAllAvailableTemplateParameters(), conn);
+		boolean alreadyLoaded = this.isFullLoaded();
+		try {
+			this.tryToLoadDumpScriptContentToFieldAndValidate("extraConditionForExtract",
+					this.retrieveAllAvailableTemplateParameters(), conn);
 
-		this.tryToLoadSchemaInfo(null, conn);
+			this.tryToLoadSchemaInfo(null, conn);
 
-		this.attachPhysicalTableConfiguration(conn);
+			this.attachPhysicalTableConfiguration(conn);
 
-		TableConfiguration.super.fullLoad(conn);
+			this.fullLoadLogSuppressed = physicalMetadataLoadedFromStaticData;
+			TableConfiguration.super.fullLoad(conn);
+		} finally {
+			this.fullLoadLogSuppressed = false;
+		}
+		if (physicalMetadataLoadedFromStaticData && !alreadyLoaded && this.isFullLoaded()) {
+			this.getRelatedEtlConf().info("Full load done using existing static data");
+		}
+	}
+
+	@Override
+	@JsonIgnore
+	public boolean isFullLoadLogSuppressed() {
+		return fullLoadLogSuppressed;
 	}
 
 	private void attachPhysicalTableConfiguration(Connection conn) throws DBException {
@@ -291,8 +308,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			if (stored.isPresent()) {
 				try {
 					validateManifestAssociation(stored.get());
+					this.physicalMetadataLoadedFromStaticData = true;
 					return stored.get();
 				} catch (java.io.IOException exception) {
+					this.physicalMetadataLoadedFromStaticData = false;
 					if (!mode.allowsJdbcFallback())
 						throw exception;
 					this.logWarn("Ignoring incompatible precompiled metadata for {}.{}: {}", this.getSchema(),
@@ -306,6 +325,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			}
 		}
 
+		this.physicalMetadataLoadedFromStaticData = false;
 		PhysicalTableKey key = PhysicalTableKeyFactory.create(this, this.getRelatedConnInfo().getPojoPackageName(),
 				conn);
 		return new JdbcPhysicalTableMetadataRepository(conn).find(key)
@@ -330,9 +350,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		return this.getRelatedEtlConf() != null && this.getRelatedEtlConf().usesPrecompiledSchemaMetadata();
 	}
 
-	private boolean usesStrictlyPrecompiledSchemaMetadata() {
-		return this.getRelatedEtlConf() != null && this.getRelatedEtlConf().getSchemaMetadataMode() != null
-				&& this.getRelatedEtlConf().getSchemaMetadataMode().isStrictlyPrecompiled();
+	private boolean usesResolvedStaticSchemaMetadata() {
+		return physicalMetadataLoadedFromStaticData;
 	}
 
 	@JsonIgnore
@@ -406,7 +425,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isUniqueKeyInfoLoaded())
 			return;
 
-		if (usesStrictlyPrecompiledSchemaMetadata()) {
+		if (usesResolvedStaticSchemaMetadata()) {
 			if (this.uniqueKeys != null) {
 				TableConfiguration.super.loadUniqueKeys(conn);
 				return;
@@ -449,7 +468,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadParents(Connection conn) throws DBException {
-		if (!usesStrictlyPrecompiledSchemaMetadata()) {
+		if (!usesResolvedStaticSchemaMetadata()) {
 			TableConfiguration.super.loadParents(conn);
 			return;
 		}
@@ -491,7 +510,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadChildren(Connection conn) throws SQLException {
-		if (!usesStrictlyPrecompiledSchemaMetadata()) {
+		if (!usesResolvedStaticSchemaMetadata()) {
 			TableConfiguration.super.loadChildren(conn);
 			return;
 		}
@@ -584,7 +603,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public Boolean useAutoIncrementId(Connection conn) throws DBException {
-		if (!usesStrictlyPrecompiledSchemaMetadata())
+		if (!usesResolvedStaticSchemaMetadata())
 			return TableConfiguration.super.useAutoIncrementId(conn);
 		if (this.getPrimaryKey() == null || this.getPrimaryKey().isCompositeKey())
 			return false;
@@ -609,6 +628,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.loadHealper == null) {
 			this.loadHealper = new DatabaseObjectLoaderHelper(this);
 		}
+
 		if (this.onConflict == null) {
 			this.onConflict = ConflictResolutionType.MAKE_YOUR_DECISION;
 		} else {
@@ -617,6 +637,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 						+ " is not allowed for table configuration [" + this.getTableAlias() + "]");
 			}
 		}
+
+		this.setSyncRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
 	}
 
 	@Override

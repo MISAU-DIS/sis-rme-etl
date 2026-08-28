@@ -18,6 +18,7 @@ import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
@@ -33,8 +34,8 @@ import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -61,10 +62,40 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	private Boolean collactable;
 
+	private EtlDatabaseObject sharedPkObj;
+
+	/**
+	 * If the {@link #relatedConfiguration} is instance of {@link EtlDataSource} the
+	 * the objects related to tables presents on
+	 * {@link EtlDataSource#getAuxExtractTable()} will be placed on this field.
+	 */
+	private List<EtlDatabaseObject> auxLoadObject;
+
 	public AbstractDatabaseObject() {
 		this.objectId = new Oid();
 
 		this.collactable = true;
+	}
+
+	@Override
+	@JsonIgnore
+	public EtlDatabaseObject getSharedPkObj() {
+		return sharedPkObj;
+	}
+
+	@Override
+	public void setSharedPkObj(EtlDatabaseObject sharedPkObj) {
+		this.sharedPkObj = sharedPkObj;
+	}
+
+	@Override
+	public List<EtlDatabaseObject> getAuxLoadObject() {
+		return auxLoadObject;
+	}
+
+	@Override
+	public void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObjects) {
+		this.auxLoadObject = auxLoadObjects;
 	}
 
 	public Boolean getCollactable() {
@@ -131,7 +162,20 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 		if (objectId != null) {
 			for (Key key : objectId.getFields()) {
-				setFieldValue(key.getName(), key.getValue());
+
+				String originalName = key.getName();
+				String camelName = utilities.parseToCamelCase(originalName);
+				String snakeName = utilities.parsetoSnakeCase(originalName);
+
+				try {
+					setFieldValue(originalName, key.getValue());
+				} catch (ForbiddenOperationException e) {
+					try {
+						setFieldValue(camelName, key.getValue());
+					} catch (ForbiddenOperationException e1) {
+						setFieldValue(snakeName, key.getValue());
+					}
+				}
 			}
 		}
 
@@ -208,8 +252,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 		try {
 
 			for (java.lang.reflect.Field field : getInstanceFields()) {
-
-				if (field.getName().equals(fieldName)) {
+				if (utilities.equalsFieldsName(field.getName(), fieldName)) {
 					if (value == null) {
 						field.set(this, null);
 					} else if (field.getType().equals(String.class)) {

@@ -748,36 +748,40 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void logInfo(String msg) {
-		this.getRelatedEtlConf().info(msg);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().info(msg);
 	}
 
 	default void logDebug(String msg) {
-		this.getRelatedEtlConf().debug(msg);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().debug(msg);
 	}
 
 	default void logTrace(String msg) {
-		this.getRelatedEtlConf().trace(msg);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().trace(msg);
 	}
 
 	default void logTrace(String msg, Object... arguments) {
-		this.getRelatedEtlConf().trace(msg, arguments);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().trace(msg, arguments);
 	}
 
 	default void logWarn(String msg) {
-		this.getRelatedEtlConf().warn(msg);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().warn(msg);
 	}
 
 	default void logWarn(String msg, Object... arguments) {
-		this.getRelatedEtlConf().warn(msg, arguments);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().warn(msg, arguments);
 	}
 
 	default void logErr(String msg, Throwable throwable) {
-		this.getRelatedEtlConf().err(msg, throwable);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().err(msg, throwable);
 	}
 
 	default void logErr(String msg, Throwable throwable, Object... arguments) {
-		this.getRelatedEtlConf().err(msg, throwable, arguments);
+		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().err(msg, throwable, arguments);
 	}
+
+	/** True only while logs from a non-JDBC full load must remain hidden. */
+	@JsonIgnore
+	default boolean isFullLoadLogSuppressed() { return false; }
 
 	default int countParents(Connection conn) throws SQLException {
 		ResultSet foreignKeyRS = conn.getMetaData().getImportedKeys(this.getCatalog(conn), this.getSchema(),

@@ -107,18 +107,6 @@ public class TestEtlObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public EtlDatabaseObject getSharedPkObj() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setSharedPkObj(EtlDatabaseObject sharedPkObj) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 	}
 

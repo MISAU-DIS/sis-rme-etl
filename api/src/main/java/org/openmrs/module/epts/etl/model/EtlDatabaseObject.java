@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.model;
 
-import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Date;
@@ -486,26 +485,6 @@ public interface EtlDatabaseObject extends EtlObject {
 		return getSharedPkObj() != null;
 	}
 
-	default void generateFields() {
-		List<Field> fields = new ArrayList<Field>();
-		Class<?> cl = getClass();
-
-		while (cl != null) {
-			java.lang.reflect.Field[] in = cl.getDeclaredFields();
-			for (int i = 0; i < in.length; i++) {
-				java.lang.reflect.Field field = in[i];
-				if (Modifier.isStatic(field.getModifiers()))
-					continue;
-
-				field.setAccessible(true);
-				fields.add(Field.fastCreateWithType(field.getName(), field.getType().getTypeName()));
-			}
-			cl = cl.getSuperclass();
-		}
-
-		setFields(fields);
-	}
-
 	default UniqueKeyInfo getUniqueKeyInfo(UniqueKeyInfo keyToFind) {
 		if (hasUniqueKeys()) {
 			for (UniqueKeyInfo key : this.getUniqueKeysInfo()) {
@@ -819,7 +798,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default Field getField(String fieldName) {
 		String originalField = fieldName;
-		String camelField = utils.parsetoCamelCase(fieldName);
+		String camelField = utils.parseToCamelCase(fieldName);
 		String snakeCase = utils.parsetoSnakeCase(fieldName);
 
 		for (Field field : this.getFields()) {

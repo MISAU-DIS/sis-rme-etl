@@ -33,8 +33,6 @@ public abstract class BaseVO implements VO {
 
 	protected boolean excluded;
 
-	protected List<Field> fields;
-
 	protected boolean loadedFromDb;
 
 	/**
@@ -159,15 +157,7 @@ public abstract class BaseVO implements VO {
 
 	@Override
 	public List<Field> getFields() {
-		if (fields == null)
-			generateFields();
-
-		return fields;
-	}
-
-	@Override
-	public void setFields(List<Field> fields) {
-		this.fields = fields;
+		return generateFields();
 	}
 
 	@JsonIgnore
@@ -233,8 +223,9 @@ public abstract class BaseVO implements VO {
 			} catch (IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
-
 		}
+
+		this.setLoadedFromDb(true);
 	}
 
 	public static Object retrieveFieldValue(String fieldName, String type, ResultSet resultSet) throws SQLException {
@@ -351,18 +342,18 @@ public abstract class BaseVO implements VO {
 		for (Object obj : getInstanceFields()) {
 			Field field = (Field) obj;
 
-			if (attName.equals(field.getName())) {
+			if (utilities.equalsFieldsName(field.getName(), attName)) {
 				return true;
 			}
-			;
 		}
 
 		for (Method method : this.getClass().getMethods()) {
 			if (method.getName().startsWith("get") && method.getParameterCount() == 0) {
 				String name = utilities.deCapitalize(method.getName().substring(3));
 
-				if (name.equals(attName))
+				if (utilities.equalsFieldsName(name, attName)) {
 					return true;
+				}
 			}
 		}
 

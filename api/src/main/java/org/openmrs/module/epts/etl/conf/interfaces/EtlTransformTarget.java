@@ -228,7 +228,7 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			}
 		}
 
-		if (this.getPrimaryKey() != null && this.getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField())
+		if (this.getPrimaryKey() != null && utilities.equalsFieldsName(this.getPrimaryKey().asSimpleKey().getName(), fm.getDstField())
 				&& this.isAutoIncrementId()) {
 			return;
 		}

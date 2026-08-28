@@ -99,11 +99,10 @@ public class DatabaseEntityPOJOGenerator {
 						attElements.getGetterDefinition());
 
 				gettersAndSetterDefinition += "\n \n";
-
-				createACopyComman += "			" + attElements.generateCopyToOtherCommand("copy") + "\n";
-				copyCommand += "			" + attElements.generateCopyToThisCommand("toCopyFromAs" + className)
-						+ "\n";
 			}
+
+			createACopyComman += "			" + attElements.generateCopyToOtherCommand("copy") + "\n";
+			copyCommand += "			" + attElements.generateCopyToThisCommand("toCopyFromAs" + className) + "\n";
 
 			if (!attElements.isPartOfObjectId()) {
 				insertSQLFieldsWithoutObjectId = utilities.concatStrings(insertSQLFieldsWithoutObjectId,
@@ -139,7 +138,7 @@ public class DatabaseEntityPOJOGenerator {
 			resultSetLoadDefinition = utilities.concatStrings(resultSetLoadDefinition,
 					"		" + attElements.getResultSetLoadDefinition());
 
-			resultSetLoadDefinition += "\n";
+			resultSetLoadDefinition += "\n\n";
 		}
 
 		Field field = pojoble.getFields().get(qtyAttrs - 1);
@@ -357,14 +356,14 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import java.sql.ResultSet; \n \n";
 		classDefinition += "import java.util.List; \n \n";
 		classDefinition += "import java.sql.Connection; \n \n";
-		classDefinition += "org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration; \n \n";
+		classDefinition += "import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration; \n \n";
 
 		classDefinition += "import com.fasterxml.jackson.annotation.JsonIgnore; \n \n";
 
 		classDefinition += "public class " + className
 				+ " extends AbstractDatabaseObject implements EtlDatabaseObject { \n";
 		classDefinition += attsDefinition + "\n \n";
-		classDefinition += generateCommonAttDefinition(pojoble);
+		classDefinition += generateCommonAttDefinition(pojoble) + "\n";
 		classDefinition += generateCommonMethods(pojoble) + "\n";
 		classDefinition += gettersAndSetterDefinition + "\n \n";
 		classDefinition += methodFromSuperClass + "\n";
@@ -390,9 +389,7 @@ public class DatabaseEntityPOJOGenerator {
 	private static String generateCommonAttDefinition(EtlDatabaseObjectConfiguration pojoble) {
 		String commonAttDefinition = "";
 
-		commonAttDefinition += "	private List<EtlDatabaseObject> auxLoadObject;\n";
-		commonAttDefinition += "	private EtlDatabaseObject sharedPkObj;\n";
-		commonAttDefinition += "	private TableConfiguration relatedConfiguration;\n";
+		commonAttDefinition += "	private EtlDatabaseObjectConfiguration relatedConfiguration;\n";
 
 		return commonAttDefinition;
 	}
@@ -438,38 +435,14 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonMethods += "	@JsonIgnore\n";
 		commonMethods += "	@Override\n";
-		commonMethods += "	public List<EtlDatabaseObject> getAuxLoadObject(){ \n ";
-		commonMethods += "		return this.auxLoadObject; \n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObject){ \n ";
-		commonMethods += "	 	this.auxLoadObject = auxLoadObject;\n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public List<EtlDatabaseObjectConfiguration> getRelatedConfiguration(){ \n ";
+		commonMethods += "	public EtlDatabaseObjectConfiguration getRelatedConfiguration(){ \n ";
 		commonMethods += "		return this.relatedConfiguration; \n";
 		commonMethods += "	} \n \n";
 
 		commonMethods += "	@JsonIgnore\n";
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config){ \n ";
-		commonMethods += "	 	this.relatedConfiguration = relatedConfiguration;\n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public EtlDatabaseObject getSharedPkObj(){ \n ";
-		commonMethods += "		return this.sharedPkObj; \n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public void setSharedPkObj(EtlDatabaseObject sharedPkObj){ \n ";
-		commonMethods += "	 	this.sharedPkObj = sharedPkObj;\n";
+		commonMethods += "	 	this.relatedConfiguration = config;\n";
 		commonMethods += "	} \n \n";
 
 		commonMethods += "	@JsonIgnore\n";
@@ -481,7 +454,7 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	@JsonIgnore\n";
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void tryToReplaceFieldWithKey(Key k){ \n ";
-		commonMethods += "	 	utilities.throwForbiddenMethodException();\n";
+		commonMethods += "	 	//utilities.throwForbiddenMethodException();\n";
 		commonMethods += "	} \n \n";
 
 		return commonMethods;

@@ -5,7 +5,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,9 +28,18 @@ public class PrecompiledSchemaFullLoadTest {
 
 	@Test
 	public void shouldFullLoadFromFilesWithoutJdbcMetadataIntrospection() throws Exception {
-		EtlConfiguration etl = new EtlConfiguration();
+		assertFullLoadFromFilesWithoutJdbcMetadataIntrospection(SchemaMetadataMode.PRECOMPILED);
+	}
+
+	@Test
+	public void shouldUseExistingFilesWithoutJdbcMetadataIntrospectionInFallbackMode() throws Exception {
+		assertFullLoadFromFilesWithoutJdbcMetadataIntrospection(SchemaMetadataMode.PRECOMPILED_WITH_FALLBACK);
+	}
+
+	private void assertFullLoadFromFilesWithoutJdbcMetadataIntrospection(SchemaMetadataMode mode) throws Exception {
+		RecordingEtlConfiguration etl = new RecordingEtlConfiguration();
 		etl.setEtlRootDirectory(temporaryFolder.getRoot().getAbsolutePath());
-		etl.setSchemaMetadataMode(SchemaMetadataMode.PRECOMPILED);
+		etl.setSchemaMetadataMode(mode);
 		DBConnectionInfo connectionInfo = new DBConnectionInfo();
 		connectionInfo.setConnectionURI("jdbc:mysql://unused/openmrs");
 		connectionInfo.setDataBaseUserName("etl");
@@ -84,6 +95,7 @@ public class PrecompiledSchemaFullLoadTest {
 		assertEquals("obs", table.getChildRefInfo().get(0).getTableName());
 		assertEquals("person_id", table.getChildRefInfo().get(0).getRefMapping().get(0).getChildFieldName());
 		assertTrue(table.isAutoIncrementId());
+		assertEquals(Arrays.asList("INFO:Full load done using existing static data"), etl.messages);
 	}
 
 	private Connection connectionRejectingMetadataCalls() {
@@ -114,5 +126,27 @@ public class PrecompiledSchemaFullLoadTest {
 
 		@Override
 		public DBConnectionInfo getRelatedConnInfo() { return connectionInfo; }
+	}
+
+	private static final class RecordingEtlConfiguration extends EtlConfiguration {
+		private final List<String> messages = new ArrayList<>();
+
+		@Override
+		public void info(String message) { messages.add("INFO:" + message); }
+
+		@Override
+		public void debug(String message) { messages.add("DEBUG:" + message); }
+
+		@Override
+		public void trace(String message) { messages.add("TRACE:" + message); }
+
+		@Override
+		public void trace(String message, Object... arguments) { messages.add("TRACE:" + message); }
+
+		@Override
+		public void warn(String message) { messages.add("WARN:" + message); }
+
+		@Override
+		public void warn(String message, Object... arguments) { messages.add("WARN:" + message); }
 	}
 }

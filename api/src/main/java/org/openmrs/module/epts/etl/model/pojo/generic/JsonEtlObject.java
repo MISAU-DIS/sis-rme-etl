@@ -24,7 +24,18 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 
 	private List<JsonEtlObject> parents;
 
+	private List<Field> fields;
+
 	public JsonEtlObject() {
+	}
+
+	@Override
+	public List<Field> getFields() {
+		return this.fields;
+	}
+
+	public void setFields(List<Field> fields) {
+		this.fields = fields;
 	}
 
 	@Override
@@ -49,12 +60,6 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	@JsonIgnore
-	public JsonEtlObject getSharedPkObj() {
-		return null;
-	}
-
-	@Override
 	public void setSharedPkObj(EtlDatabaseObject sharedPkObj) {
 	}
 
@@ -65,7 +70,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	@Override
 	public Object getFieldValue(String fieldName) {
 		String fieldNameInSnakeCase = utilities.parsetoSnakeCase(fieldName);
-		String fieldNameInCameCase = utilities.parsetoCamelCase(fieldName);
+		String fieldNameInCameCase = utilities.parseToCamelCase(fieldName);
 
 		try {
 			return utilities.getFieldValueOnFieldList(utilities.parseList(this.fields, Field.class),
@@ -321,7 +326,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public void generateFields() {
+	public List<Field> generateFields() {
 		throw new ForbiddenOperationException("Forbiden method!");
 	}
 

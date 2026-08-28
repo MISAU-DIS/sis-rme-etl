@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
@@ -1414,7 +1415,7 @@ public class CommonUtilities implements Serializable {
 
 		for (Field field : getInstanceFields(obj)) {
 
-			if (field.getName().equals(fieldName)) {
+			if (utilities.equalsFieldsName(field.getName(), fieldName)) {
 				try {
 					return field.get(obj);
 				} catch (IllegalArgumentException e) {
@@ -1604,19 +1605,44 @@ public class CommonUtilities implements Serializable {
 		return fieldName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
 	}
 
-	public String parsetoCamelCase(String snakeCase) {
+	public String parseToCamelCase(String token) {
+
+		if (token == null || token.isBlank()) {
+			return token;
+		}
+
+		// Already a single token: just ensure camelCase starts lowercase
+		if (!token.contains("_")) {
+			return Character.toLowerCase(token.charAt(0)) + token.substring(1);
+		}
+
 		StringBuilder camelCase = new StringBuilder();
 
-		// Split the string on underscores
-		String[] parts = snakeCase.split("_");
+		String[] parts = token.split("_+");
 
-		// Append the first word as is (in lowercase)
-		camelCase.append(parts[0].toLowerCase());
+		boolean firstPart = true;
 
-		// Capitalize the first letter of each subsequent word and append
-		for (int i = 1; i < parts.length; i++) {
-			camelCase.append(parts[i].substring(0, 1).toUpperCase());
-			camelCase.append(parts[i].substring(1).toLowerCase());
+		for (String part : parts) {
+
+			if (part.isEmpty()) {
+				continue;
+			}
+
+			if (firstPart) {
+
+				camelCase.append(part.toLowerCase(Locale.ROOT));
+
+				firstPart = false;
+
+				continue;
+			}
+
+			camelCase.append(Character.toUpperCase(part.charAt(0)));
+
+			if (part.length() > 1) {
+
+				camelCase.append(part.substring(1).toLowerCase(Locale.ROOT));
+			}
 		}
 
 		return camelCase.toString();
@@ -1718,6 +1744,13 @@ public class CommonUtilities implements Serializable {
 						.fastCreateWithType(instanceField.getName(), instanceField.getType().getTypeName());
 
 				f.setAttDefinedElements(null);
+
+				try {
+					f.setValue(instanceField.get(obj));
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new EtlExceptionImpl(e);
+				}
+
 				fields.add(f);
 			}
 			cl = cl.getSuperclass();
@@ -1760,5 +1793,12 @@ public class CommonUtilities implements Serializable {
 
 	public boolean hasNoElement(Collection<String> avaliableTableAliases) {
 		return !hasElement(avaliableTableAliases);
+	}
+
+	public boolean equalsFieldsName(String fieldName1, String fieldName2) {
+		String camelFieldName = utilities.parseToCamelCase(fieldName1);
+		String snakeFieldName = utilities.parsetoSnakeCase(fieldName1);
+
+		return camelFieldName.equals(fieldName2) || snakeFieldName.equals(fieldName2);
 	}
 }
