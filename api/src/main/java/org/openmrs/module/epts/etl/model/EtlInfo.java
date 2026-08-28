@@ -3,6 +3,8 @@ package org.openmrs.module.epts.etl.model;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -42,6 +44,9 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 public class EtlInfo extends AbstractEtlDataConfiguration {
 
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
+
+	private static final ThreadLocal<Set<EtlInfo>> ETL_INFO_BEING_DESCRIBED = ThreadLocal
+	        .withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<EtlInfo, Boolean>()));
 
 	/*
 	 * Indicate if there where parents which have been ingored
@@ -639,8 +644,22 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 	@Override
 	public String toString() {
-		return (this.getStatus() != null ? this.getStatus() + " " : "") + "Etl from [" + getRelatedSrcObject() + "] to "
-				+ getTransformedObject();
+		Set<EtlInfo> descriptionsInProgress = ETL_INFO_BEING_DESCRIBED.get();
+
+		if (!descriptionsInProgress.add(this)) {
+			return "EtlInfo[recursive reference]";
+		}
+
+		try {
+			return (this.getStatus() != null ? this.getStatus() + " " : "") + "Etl from ["
+			        + getRelatedSrcObject() + "] to " + getTransformedObject();
+		} finally {
+			descriptionsInProgress.remove(this);
+
+			if (descriptionsInProgress.isEmpty()) {
+				ETL_INFO_BEING_DESCRIBED.remove();
+			}
+		}
 	}
 
 	@Override
