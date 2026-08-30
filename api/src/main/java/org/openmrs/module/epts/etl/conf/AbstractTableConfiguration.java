@@ -28,6 +28,7 @@ import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseMod
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
@@ -638,7 +639,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			}
 		}
 
-		this.setSyncRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+		try {
+			this.setSyncRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+		} catch (PojoNotFoundException e) {
+		}
 	}
 
 	@Override

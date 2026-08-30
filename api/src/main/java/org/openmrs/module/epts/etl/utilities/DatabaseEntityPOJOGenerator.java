@@ -31,7 +31,7 @@ public class DatabaseEntityPOJOGenerator {
 
 	private static final CommonUtilities utilities = CommonUtilities.getInstance();
 
-	private static final String[] IGNORABLE_FIELDS = { "date_changed", "date_created", "uuid" };
+	private static final String[] IGNORABLE_FIELDS = { "date_changed", "date_created", "date_voided", "uuid" };
 
 	private DatabaseEntityPOJOGenerator() {
 		// Utility class.

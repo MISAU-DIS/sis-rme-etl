@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
@@ -159,8 +160,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 					this.getRelatedEtlConf());
 
 			if (syncRecordClass == null) {
-				throw new ForbiddenOperationException("The related POJO class for table " + this
-						+ " cannot be found. Make sure you have run the DATABASE_MODEL_GENERATION operation.");
+				throw new PojoNotFoundException(this);
 			}
 
 		} else {

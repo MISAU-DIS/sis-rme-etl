@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.conf.physical;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Proxy;
@@ -9,6 +10,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import org.junit.Rule;
@@ -56,6 +58,8 @@ public class PrecompiledSchemaFullLoadTest {
 		PhysicalColumnMetadata uuid = new PhysicalColumnMetadata("uuid", "varchar", 38, 0, false, false, false);
 		PhysicalColumnMetadata dateCreated = new PhysicalColumnMetadata("date_created", "datetime", null, null, true,
 				false, false);
+		PhysicalColumnMetadata dateVoided = new PhysicalColumnMetadata("date_voided", "datetime", null, null, true,
+				false, false);
 		PhysicalKeyMetadata primaryKey = new PhysicalKeyMetadata("PRIMARY", Arrays.asList(
 				new PhysicalKeyMetadata.PhysicalKeyColumnMetadata("person_id", "int")), false);
 		PhysicalKeyMetadata uniqueKey = new PhysicalKeyMetadata("uk_person_location", Arrays.asList(
@@ -69,7 +73,8 @@ public class PrecompiledSchemaFullLoadTest {
 		PhysicalExportedForeignKeyMetadata child = new PhysicalExportedForeignKeyMetadata("fk_obs_person", "openmrs",
 				"openmrs", "obs", Arrays.asList(
 						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("person_id", "person_id")));
-		PhysicalTableMetadata metadata = new PhysicalTableMetadata(key, Arrays.asList(id, locationId, uuid, dateCreated), primaryKey,
+		PhysicalTableMetadata metadata = new PhysicalTableMetadata(key,
+				Arrays.asList(id, locationId, uuid, dateCreated, dateVoided), primaryKey,
 				Arrays.asList(uniqueKey), Arrays.asList(parent, sharedPrimaryKeyParent), Arrays.asList(child));
 		new FilePhysicalTableMetadataRepository(etl.getSchemaMetadataDirectory()).save(metadata);
 
@@ -89,7 +94,7 @@ public class PrecompiledSchemaFullLoadTest {
 		table.fullLoad(connectionRejectingMetadataCalls());
 
 		assertTrue(table.isFullLoaded());
-		assertEquals(4, table.getFields().size());
+		assertEquals(5, table.getFields().size());
 		assertEquals("person_id", table.getPrimaryKey().retrieveSimpleKeyColumnName());
 		assertEquals(1, table.getUniqueKeys().size());
 		assertEquals(2, table.getParentRefInfo().size());
@@ -118,7 +123,13 @@ public class PrecompiledSchemaFullLoadTest {
 			generated.setFieldValue("person_id", 7);
 			assertEquals(27, generated.getFieldValue("locationId"));
 			assertTrue(Arrays.asList(generated.getInsertParamsWithObjectId()).contains(27));
-			assertEquals(4, generated.getFields().size());
+			assertEquals(5, generated.getFields().size());
+			Field inheritedDateVoided = generated.getField("date_voided");
+			assertSame(inheritedDateVoided, generated.getField("dateVoided"));
+			Date dateVoidedValue = new Date();
+			generated.setFieldValue("date_voided", dateVoidedValue);
+			assertSame(inheritedDateVoided, generated.getField("date_voided"));
+			assertSame(dateVoidedValue, inheritedDateVoided.getValue());
 			EtlDatabaseObject copy = generated.createACopy();
 			assertEquals(27, copy.getFieldValue("location_id"));
 			assertNotSame(generated.getField("location_id"), copy.getField("location_id"));

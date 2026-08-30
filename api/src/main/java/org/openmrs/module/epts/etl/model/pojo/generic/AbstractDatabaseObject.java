@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -64,6 +65,13 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	private Boolean collactable;
 
 	private EtlDatabaseObject sharedPkObj;
+
+	/**
+	 * Stable wrappers for configured columns represented by scalar fields inherited
+	 * from the base classes. Their identity must survive repeated getFields() calls
+	 * because ETL processing stores transient state such as transformingInfo here.
+	 */
+	private final Map<String, Field> inheritedFieldWrappers = new LinkedHashMap<>();
 
 	/**
 	 * If the {@link #relatedConfiguration} is instance of {@link EtlDataSource} the
@@ -260,15 +268,19 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				throw new RuntimeException(exception);
 			}
 		}
-		if (generatedFields.isEmpty()) return super.getFields();
 		EtlDatabaseObjectConfiguration configuration = getRelatedConfiguration();
 		if (configuration != null && configuration.getFields() != null) {
 			for (Field configured : configuration.getFields()) {
 				boolean present = generatedFields.stream()
 						.anyMatch(field -> utilities.equalsFieldsName(field.getName(), configured.getName()));
 				if (present) continue;
-				Field contextual = new Field();
-				contextual.copyFrom(configured);
+				String key = normalizeFieldName(configured.getName());
+				Field contextual = inheritedFieldWrappers.get(key);
+				if (contextual == null) {
+					contextual = new Field();
+					contextual.copyFrom(configured);
+					inheritedFieldWrappers.put(key, contextual);
+				}
 				try {
 					contextual.setValue(getFieldValue(configured.getName()));
 				} catch (ForbiddenOperationException ignored) {
@@ -277,13 +289,19 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				generatedFields.add(contextual);
 			}
 		}
+		if (generatedFields.isEmpty()) return super.getFields();
 		return generatedFields;
+	}
+
+	private String normalizeFieldName(String fieldName) {
+		return utilities.parsetoSnakeCase(fieldName).toLowerCase();
 	}
 
 	/** Enriches generated field wrappers with the complete runtime table metadata. */
 	protected void enrichGeneratedFields(EtlDatabaseObjectConfiguration configuration) {
 		if (configuration == null || configuration.getFields() == null) return;
 		for (Field configured : configuration.getFields()) {
+			boolean generatedFieldFound = false;
 			for (java.lang.reflect.Field instanceField : getInstanceFields()) {
 				if (!Field.class.isAssignableFrom(instanceField.getType())
 						|| !utilities.equalsFieldsName(instanceField.getName(), configured.getName())) continue;
@@ -294,10 +312,22 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 					generated.copyFrom(configured);
 					generated.setValue(value);
 					instanceField.set(this, generated);
+					generatedFieldFound = true;
 				} catch (IllegalAccessException exception) {
 					throw new RuntimeException(exception);
 				}
 				break;
+			}
+			if (!generatedFieldFound) {
+				String key = normalizeFieldName(configured.getName());
+				Field contextual = inheritedFieldWrappers.get(key);
+				if (contextual == null) {
+					contextual = new Field();
+					inheritedFieldWrappers.put(key, contextual);
+				}
+				Object value = contextual.getValue();
+				contextual.copyFrom(configured);
+				contextual.setValue(value);
 			}
 		}
 	}
@@ -349,6 +379,11 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						field.set(this, eValue);
 					} else {
 						field.set(this, value);
+					}
+
+					Field inheritedWrapper = inheritedFieldWrappers.get(normalizeFieldName(fieldName));
+					if (!Field.class.isAssignableFrom(field.getType()) && inheritedWrapper != null) {
+						inheritedWrapper.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 					}
 
 					return;
