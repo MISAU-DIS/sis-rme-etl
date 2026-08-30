@@ -86,7 +86,8 @@ public class DatabaseEntityPOJOGenerator {
 		for (int i = 0; i < qtyAttrs - 1; i++) {
 			Field field = pojoble.getFields().get(i);
 
-			attElements = AttDefinedElements.define(field.getName(), field.getDataType(), false, pojoble);
+			attElements = AttDefinedElements.define(field.getName(), field.getDataType(), false, pojoble,
+					!isIgnorableField(field.getName()));
 
 			if (!isIgnorableField(field.getName())) {
 				attsDefinition = utilities.concatStringsWithSeparator(attsDefinition, attElements.getAttDefinition(),
@@ -143,7 +144,8 @@ public class DatabaseEntityPOJOGenerator {
 
 		Field field = pojoble.getFields().get(qtyAttrs - 1);
 
-		attElements = AttDefinedElements.define(field.getName(), field.getDataType(), true, pojoble);
+		attElements = AttDefinedElements.define(field.getName(), field.getDataType(), true, pojoble,
+				!isIgnorableField(field.getName()));
 
 		if (!isIgnorableField(field.getName())) {
 			attsDefinition = utilities.concatStringsWithSeparator(attsDefinition, attElements.getAttDefinition(), "\n");
@@ -191,7 +193,7 @@ public class DatabaseEntityPOJOGenerator {
 			updateSQLDefinition += " WHERE " + pojoble.getPrimaryKey().parseToParametrizedStringConditionWithAlias();
 
 			for (Key key : pojoble.getPrimaryKey().getFields()) {
-				updateParamsDefinition += ", this." + key.getNameAsClassAtt();
+				updateParamsDefinition += ", this." + key.getNameAsClassAtt() + ".getValue()";
 			}
 
 			updateParamsDefinition += "};";
@@ -304,13 +306,8 @@ public class DatabaseEntityPOJOGenerator {
 
 				for (RefMapping map : refInfo.getRefMapping()) {
 
-					if (map.isPrimitieveRefColumn()) {
-						methodFromSuperClass += "		if (this." + map.getChildFieldNameAsAttClass()
-								+ " != 0) return true;\n\n";
-					} else {
-						methodFromSuperClass += "		if (this." + map.getChildFieldNameAsAttClass()
-								+ " != null) return true;\n\n";
-					}
+					methodFromSuperClass += "		if (this." + map.getChildFieldNameAsAttClass()
+							+ ".getValue() != null) return true;\n\n";
 				}
 			}
 		}
@@ -326,7 +323,7 @@ public class DatabaseEntityPOJOGenerator {
 			for (ParentTable refInfo : pojoble.getParentRefInfo()) {
 				methodFromSuperClass += "		\n		if (parentAttName.equals(\""
 						+ refInfo.getChildColumnAsClassAttOnSimpleMapping() + "\")) return this."
-						+ refInfo.getChildColumnAsClassAttOnSimpleMapping() + ";";
+						+ refInfo.getChildColumnAsClassAttOnSimpleMapping() + ".getValue();";
 			}
 		}
 
@@ -345,6 +342,8 @@ public class DatabaseEntityPOJOGenerator {
 
 		classDefinition += "import org.openmrs.module.epts.etl.model.pojo.generic.*; \n \n";
 		classDefinition += "import org.openmrs.module.epts.etl.model.EtlDatabaseObject; \n \n";
+		classDefinition += "import org.openmrs.module.epts.etl.model.Field; \n \n";
+		classDefinition += "import org.openmrs.module.epts.etl.model.base.BaseVO; \n \n";
 
 		if (pojoble.hasDateFields()) {
 			classDefinition += "import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities; \n \n";
@@ -443,6 +442,7 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config){ \n ";
 		commonMethods += "	 	this.relatedConfiguration = config;\n";
+		commonMethods += "		enrichGeneratedFields(config);\n";
 		commonMethods += "	} \n \n";
 
 		commonMethods += "	@JsonIgnore\n";

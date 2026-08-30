@@ -1,9 +1,11 @@
 package org.openmrs.module.epts.etl.conf.physical;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Proxy;
+import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +19,8 @@ import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.SchemaMetadataMode;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
@@ -44,11 +48,14 @@ public class PrecompiledSchemaFullLoadTest {
 		connectionInfo.setConnectionURI("jdbc:mysql://unused/openmrs");
 		connectionInfo.setDataBaseUserName("etl");
 		connectionInfo.setSchema("openmrs");
-		connectionInfo.setPojoPackageName("source-openmrs");
+		connectionInfo.setPojoPackageName("source_openmrs");
 
-		PhysicalTableKey key = new PhysicalTableKey("source-openmrs", "mysql", "openmrs", "openmrs", "person");
+		PhysicalTableKey key = new PhysicalTableKey("source_openmrs", "mysql", "openmrs", "openmrs", "person");
 		PhysicalColumnMetadata id = new PhysicalColumnMetadata("person_id", "int", 11, 0, false, true, false);
 		PhysicalColumnMetadata locationId = new PhysicalColumnMetadata("location_id", "int", 11, 0, false, false, false);
+		PhysicalColumnMetadata uuid = new PhysicalColumnMetadata("uuid", "varchar", 38, 0, false, false, false);
+		PhysicalColumnMetadata dateCreated = new PhysicalColumnMetadata("date_created", "datetime", null, null, true,
+				false, false);
 		PhysicalKeyMetadata primaryKey = new PhysicalKeyMetadata("PRIMARY", Arrays.asList(
 				new PhysicalKeyMetadata.PhysicalKeyColumnMetadata("person_id", "int")), false);
 		PhysicalKeyMetadata uniqueKey = new PhysicalKeyMetadata("uk_person_location", Arrays.asList(
@@ -62,7 +69,7 @@ public class PrecompiledSchemaFullLoadTest {
 		PhysicalExportedForeignKeyMetadata child = new PhysicalExportedForeignKeyMetadata("fk_obs_person", "openmrs",
 				"openmrs", "obs", Arrays.asList(
 						new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping("person_id", "person_id")));
-		PhysicalTableMetadata metadata = new PhysicalTableMetadata(key, Arrays.asList(id, locationId), primaryKey,
+		PhysicalTableMetadata metadata = new PhysicalTableMetadata(key, Arrays.asList(id, locationId, uuid, dateCreated), primaryKey,
 				Arrays.asList(uniqueKey), Arrays.asList(parent, sharedPrimaryKeyParent), Arrays.asList(child));
 		new FilePhysicalTableMetadataRepository(etl.getSchemaMetadataDirectory()).save(metadata);
 
@@ -82,7 +89,7 @@ public class PrecompiledSchemaFullLoadTest {
 		table.fullLoad(connectionRejectingMetadataCalls());
 
 		assertTrue(table.isFullLoaded());
-		assertEquals(2, table.getFields().size());
+		assertEquals(4, table.getFields().size());
 		assertEquals("person_id", table.getPrimaryKey().retrieveSimpleKeyColumnName());
 		assertEquals(1, table.getUniqueKeys().size());
 		assertEquals(2, table.getParentRefInfo().size());
@@ -96,6 +103,26 @@ public class PrecompiledSchemaFullLoadTest {
 		assertEquals("person_id", table.getChildRefInfo().get(0).getRefMapping().get(0).getChildFieldName());
 		assertTrue(table.isAutoIncrementId());
 		assertEquals(Arrays.asList("INFO:Full load done using existing static data"), etl.messages);
+
+		if (mode == SchemaMetadataMode.PRECOMPILED) {
+			etl.setClassPath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
+			table.generateRecordClass(connectionInfo, true);
+			EtlDatabaseObject generated = table.getSyncRecordClass().getConstructor().newInstance();
+			generated.setRelatedConfiguration(table);
+			Field generatedLocation = (Field) generated.getClass().getMethod("getLocationId").invoke(generated);
+			assertEquals("location_id", generatedLocation.getName());
+			assertEquals("int", generatedLocation.getDataType());
+			Field generatedId = (Field) generated.getClass().getMethod("getPersonId").invoke(generated);
+			assertTrue(generatedId.isAutoIncrement());
+			generated.setFieldValue("location_id", 27);
+			generated.setFieldValue("person_id", 7);
+			assertEquals(27, generated.getFieldValue("locationId"));
+			assertTrue(Arrays.asList(generated.getInsertParamsWithObjectId()).contains(27));
+			assertEquals(4, generated.getFields().size());
+			EtlDatabaseObject copy = generated.createACopy();
+			assertEquals(27, copy.getFieldValue("location_id"));
+			assertNotSame(generated.getField("location_id"), copy.getField("location_id"));
+		}
 	}
 
 	private Connection connectionRejectingMetadataCalls() {
@@ -126,6 +153,9 @@ public class PrecompiledSchemaFullLoadTest {
 
 		@Override
 		public DBConnectionInfo getRelatedConnInfo() { return connectionInfo; }
+
+		@Override
+		public List<File> getClassPath() { return etl.getClassPathAsFiles(); }
 	}
 
 	private static final class RecordingEtlConfiguration extends EtlConfiguration {

@@ -52,6 +52,7 @@ public class AttDefinedElements {
 	private boolean isPartOfObjectId;
 
 	private boolean isLast;
+	private boolean usesFieldWrapper;
 
 	private EtlDatabaseObjectConfiguration pojoble;
 
@@ -60,11 +61,12 @@ public class AttDefinedElements {
 	public static String aspasFechar = "\"";
 
 	private AttDefinedElements(String dbAttName, String dbAttType, boolean isLast,
-			EtlDatabaseObjectConfiguration pojoble) {
+			EtlDatabaseObjectConfiguration pojoble, boolean usesFieldWrapper) {
 		this.dbAttName = dbAttName;
 		this.dbAttType = dbAttType;
 		this.isLast = isLast;
 		this.pojoble = pojoble;
+		this.usesFieldWrapper = usesFieldWrapper;
 
 		Key key = new Key(dbAttName);
 
@@ -205,9 +207,9 @@ public class AttDefinedElements {
 			this.aliasedDbAttName = defineAliasedDbAttName(dbAttName);
 		}
 
-		this.attDefinition = defineAtt(attName, attType);
-		this.setterDefinition = defineSetterMethod(attName, attType);
-		this.getterDefinition = defineGetterMethod(attName, attType);
+		this.attDefinition = usesFieldWrapper ? defineAtt(attName, dbAttName, dbAttType) : defineAtt(attName, attType);
+		this.setterDefinition = usesFieldWrapper ? defineSetterMethod(attName, attType) : defineLegacySetterMethod(attName, attType);
+		this.getterDefinition = usesFieldWrapper ? defineGetterMethod(attName) : defineLegacyGetterMethod(attName, attType);
 		this.resultSetLoadDefinition = defineResultSetLoadDefinition(useAliasedDbAttName);
 
 		String aspasAbrir = "\"\\\"\"+";
@@ -217,19 +219,23 @@ public class AttDefinedElements {
 		this.sqlInsertLastEndPartDefinition = "?" + (isLast ? "" : ", ");
 		this.sqlUpdateDefinition = "`" + dbAttName + "`" + " = ?" + (isLast ? "" : ", ");
 
-		this.sqlInsertParamDefinifion = "this." + attName + (isLast ? "" : ", ");
-		this.sqlUpdateParamDefinifion = "this." + attName + (isLast ? "" : ", ");
+		String valueExpression = "this." + attName + (usesFieldWrapper ? ".getValue()" : "");
+		this.sqlInsertParamDefinifion = valueExpression + (isLast ? "" : ", ");
+		this.sqlUpdateParamDefinifion = valueExpression + (isLast ? "" : ", ");
 
 		if (isNumeric()) {
-			this.sqlInsertValues = "this." + attName;
+			this.sqlInsertValues = valueExpression;
 		} else if (isDate()) {
-			this.sqlInsertValues = "this." + attName + " != null ? " + aspasAbrir
-					+ " DateAndTimeUtilities.formatToYYYYMMDD_HHMISS(" + attName + ")  " + aspasFechar + " : null";
+			this.sqlInsertValues = valueExpression + " != null ? " + aspasAbrir
+					+ " DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) " + valueExpression
+					+ ")  " + aspasFechar + " : null";
 		} else if (isString()) {
-			this.sqlInsertValues = "this." + attName + " != null ? " + aspasAbrir + " utilities.scapeQuotationMarks("
-					+ attName + ")  " + aspasFechar + " : null";
+			this.sqlInsertValues = valueExpression + " != null ? " + aspasAbrir
+					+ " utilities.scapeQuotationMarks(" + valueExpression + ".toString())  " + aspasFechar
+					+ " : null";
 		} else {
-			this.sqlInsertValues = "this." + attName + " != null ? " + aspasAbrir + attName + aspasFechar + " : null";
+			this.sqlInsertValues = valueExpression + " != null ? " + aspasAbrir + valueExpression + aspasFechar
+					+ " : null";
 		}
 
 		this.sqlInsertValues = "(" + this.sqlInsertValues + (isLast ? ")" : ") + \",\" + ");
@@ -286,7 +292,10 @@ public class AttDefinedElements {
 		String loadStr = "String " + attDefinition + " = "
 				+ (useAlias ? this.aliasedDbAttName : "\"" + this.dbAttName + "\"") + ";\n\n";
 
-		if (attType.equals("Integer") || attType.toLowerCase().equals("int")) {
+		if (usesFieldWrapper) {
+			loadStr += "\t\tthis." + this.attName + ".setValue(BaseVO.retrieveFieldValue(" + attDefinition
+					+ ", \"" + removeStrangeCharactersOnString(this.dbAttType) + "\", rs));";
+		} else if (attType.equals("Integer") || attType.toLowerCase().equals("int")) {
 			loadStr += "		if (rs.getObject(" + attDefinition + ") != null){ \n";
 			loadStr += "			this." + this.attName + " = rs.getInt(" + attDefinition + ");\n";
 			loadStr += "		}";
@@ -374,29 +383,52 @@ public class AttDefinedElements {
 
 	public static AttDefinedElements define(String dbAttName, String dbAttType, boolean isLast,
 			EtlDatabaseObjectConfiguration pojoble) {
+		return define(dbAttName, dbAttType, isLast, pojoble, true);
+	}
 
-		AttDefinedElements elements = new AttDefinedElements(dbAttName, dbAttType, isLast, pojoble);
+	public static AttDefinedElements define(String dbAttName, String dbAttType, boolean isLast,
+			EtlDatabaseObjectConfiguration pojoble, boolean usesFieldWrapper) {
+
+		AttDefinedElements elements = new AttDefinedElements(dbAttName, dbAttType, isLast, pojoble, usesFieldWrapper);
 		elements.generateElemets(true);
 
 		return elements;
+	}
+
+	public static String defineAtt(String attName, String dbAttName, String dbAttType) {
+		return "	private Field " + attName + " = Field.fastCreateWithType(\""
+				+ removeStrangeCharactersOnString(dbAttName) + "\", \""
+				+ removeStrangeCharactersOnString(dbAttType) + "\");";
 	}
 
 	public static String defineAtt(String attName, String attType) {
 		return "	private " + attType + " " + attName + ";";
 	}
 
-	public static String defineGetterMethod(String attName, String attType) {
+	public static String defineGetterMethod(String attName) {
 		String cAttName = attName.toUpperCase().charAt(0) + attName.substring(1);
 
-		return "	public " + attType + " get" + cAttName + "(){ \n" + "		return this." + attName + ";\n" + "	}";
+		return "	public Field get" + cAttName + "(){ \n" + "		return this." + attName + ";\n" + "	}";
 
 	}
 
 	public static String defineSetterMethod(String attName, String attType) {
 		String cAttName = attName.toUpperCase().charAt(0) + attName.substring(1);
 
-		return "	public void set" + cAttName + "(" + attType + " " + attName + "){ \n" + "	 	this." + attName
-				+ " = " + attName + ";\n" + "	}";
+		return "	public void set" + cAttName + "(Field " + attName + "){ \n" + "	 	this." + attName
+				+ " = " + attName + ";\n" + "	}\n\n" + "	public void set" + cAttName + "Value(" + attType
+				+ " value){ \n		this." + attName + ".setValue(value);\n	}";
+	}
+
+	private static String defineLegacyGetterMethod(String attName, String attType) {
+		String cAttName = attName.toUpperCase().charAt(0) + attName.substring(1);
+		return "	public " + attType + " get" + cAttName + "(){ \n" + "		return this." + attName + ";\n" + "	}";
+	}
+
+	private static String defineLegacySetterMethod(String attName, String attType) {
+		String cAttName = attName.toUpperCase().charAt(0) + attName.substring(1);
+		return "	public void set" + cAttName + "(" + attType + " " + attName + "){ \n" + "	 	this."
+				+ attName + " = " + attName + ";\n" + "	}";
 	}
 
 	public static String defineDefaultGetterMethod(String attName, String attType) {
@@ -500,11 +532,15 @@ public class AttDefinedElements {
 	}
 
 	public String generateCopyToOtherCommand(String otheObjectIdentifier) {
-		return otheObjectIdentifier + "." + this.getAttName() + " = " + "this." + this.getAttName() + ";";
+		return otheObjectIdentifier + "." + this.getAttName() + " = "
+				+ (usesFieldWrapper ? "copyGeneratedField(this." + this.getAttName() + ")" : "this." + this.getAttName())
+				+ ";";
 	}
 
 	public String generateCopyToThisCommand(String toCopyFromObjectIdentifier) {
-		return "this." + this.getAttName() + " = " + toCopyFromObjectIdentifier + "." + this.getAttName() + ";";
+		return "this." + this.getAttName() + " = " + (usesFieldWrapper
+				? "copyGeneratedField(" + toCopyFromObjectIdentifier + "." + this.getAttName() + ")"
+				: toCopyFromObjectIdentifier + "." + this.getAttName()) + ";";
 	}
 
 }

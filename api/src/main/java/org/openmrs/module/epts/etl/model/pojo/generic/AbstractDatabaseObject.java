@@ -7,6 +7,7 @@ import java.net.URLClassLoader;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -248,12 +249,82 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	}
 
 	@Override
+	public List<Field> getFields() {
+		List<Field> generatedFields = new ArrayList<>();
+		for (java.lang.reflect.Field instanceField : getInstanceFields()) {
+			if (!Field.class.isAssignableFrom(instanceField.getType())) continue;
+			try {
+				Field field = (Field) instanceField.get(this);
+				if (field != null) generatedFields.add(field);
+			} catch (IllegalAccessException exception) {
+				throw new RuntimeException(exception);
+			}
+		}
+		if (generatedFields.isEmpty()) return super.getFields();
+		EtlDatabaseObjectConfiguration configuration = getRelatedConfiguration();
+		if (configuration != null && configuration.getFields() != null) {
+			for (Field configured : configuration.getFields()) {
+				boolean present = generatedFields.stream()
+						.anyMatch(field -> utilities.equalsFieldsName(field.getName(), configured.getName()));
+				if (present) continue;
+				Field contextual = new Field();
+				contextual.copyFrom(configured);
+				try {
+					contextual.setValue(getFieldValue(configured.getName()));
+				} catch (ForbiddenOperationException ignored) {
+					// The configuration may expose a contextual field not represented by this class.
+				}
+				generatedFields.add(contextual);
+			}
+		}
+		return generatedFields;
+	}
+
+	/** Enriches generated field wrappers with the complete runtime table metadata. */
+	protected void enrichGeneratedFields(EtlDatabaseObjectConfiguration configuration) {
+		if (configuration == null || configuration.getFields() == null) return;
+		for (Field configured : configuration.getFields()) {
+			for (java.lang.reflect.Field instanceField : getInstanceFields()) {
+				if (!Field.class.isAssignableFrom(instanceField.getType())
+						|| !utilities.equalsFieldsName(instanceField.getName(), configured.getName())) continue;
+				try {
+					Field generated = (Field) instanceField.get(this);
+					Object value = generated == null ? null : generated.getValue();
+					if (generated == null) generated = new Field();
+					generated.copyFrom(configured);
+					generated.setValue(value);
+					instanceField.set(this, generated);
+				} catch (IllegalAccessException exception) {
+					throw new RuntimeException(exception);
+				}
+				break;
+			}
+		}
+	}
+
+	protected static Field copyGeneratedField(Field source) {
+		if (source == null) return null;
+		Field copy = new Field();
+		copy.copyFrom(source);
+		return copy;
+	}
+
+	@Override
 	public void setFieldValue(String fieldName, Object value) {
 		try {
 
 			for (java.lang.reflect.Field field : getInstanceFields()) {
 				if (utilities.equalsFieldsName(field.getName(), fieldName)) {
-					if (value == null) {
+					if (Field.class.isAssignableFrom(field.getType())) {
+						Field generated = (Field) field.get(this);
+						if (value instanceof Field) {
+							field.set(this, value);
+						} else {
+							if (generated == null) generated = Field.fastCreateField(fieldName);
+							generated.setValue(value);
+							field.set(this, generated);
+						}
+					} else if (value == null) {
 						field.set(this, null);
 					} else if (field.getType().equals(String.class)) {
 						field.set(this, value.toString());
@@ -294,7 +365,8 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	@Override
 	public Object getFieldValue(String fieldsName) throws ForbiddenOperationException {
-		return utilities.getFieldValue(this, fieldsName);
+		Object value = utilities.getFieldValue(this, fieldsName);
+		return value instanceof Field ? ((Field) value).getValue() : value;
 	}
 
 	@Override
