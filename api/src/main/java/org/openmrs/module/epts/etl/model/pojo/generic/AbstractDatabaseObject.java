@@ -116,6 +116,13 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	}
 
 	@Override
+	public void tryToReplaceFieldWithKey(Key k) {
+		if (this.hasFields()) {
+			utilities.updateOnArray(this.getFields(), k, k);
+		}
+	}
+
+	@Override
 	public void markAsNotCollactable() {
 		setCollactable(false);
 	}
@@ -260,10 +267,12 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	public List<Field> getFields() {
 		List<Field> generatedFields = new ArrayList<>();
 		for (java.lang.reflect.Field instanceField : getInstanceFields()) {
-			if (!Field.class.isAssignableFrom(instanceField.getType())) continue;
+			if (!Field.class.isAssignableFrom(instanceField.getType()))
+				continue;
 			try {
 				Field field = (Field) instanceField.get(this);
-				if (field != null) generatedFields.add(field);
+				if (field != null)
+					generatedFields.add(field);
 			} catch (IllegalAccessException exception) {
 				throw new RuntimeException(exception);
 			}
@@ -273,7 +282,8 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 			for (Field configured : configuration.getFields()) {
 				boolean present = generatedFields.stream()
 						.anyMatch(field -> utilities.equalsFieldsName(field.getName(), configured.getName()));
-				if (present) continue;
+				if (present)
+					continue;
 				String key = normalizeFieldName(configured.getName());
 				Field contextual = inheritedFieldWrappers.get(key);
 				if (contextual == null) {
@@ -284,12 +294,14 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				try {
 					contextual.setValue(getFieldValue(configured.getName()));
 				} catch (ForbiddenOperationException ignored) {
-					// The configuration may expose a contextual field not represented by this class.
+					// The configuration may expose a contextual field not represented by this
+					// class.
 				}
 				generatedFields.add(contextual);
 			}
 		}
-		if (generatedFields.isEmpty()) return super.getFields();
+		if (generatedFields.isEmpty())
+			return super.getFields();
 		return generatedFields;
 	}
 
@@ -297,18 +309,23 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 		return utilities.parsetoSnakeCase(fieldName).toLowerCase();
 	}
 
-	/** Enriches generated field wrappers with the complete runtime table metadata. */
+	/**
+	 * Enriches generated field wrappers with the complete runtime table metadata.
+	 */
 	protected void enrichGeneratedFields(EtlDatabaseObjectConfiguration configuration) {
-		if (configuration == null || configuration.getFields() == null) return;
+		if (configuration == null || configuration.getFields() == null)
+			return;
 		for (Field configured : configuration.getFields()) {
 			boolean generatedFieldFound = false;
 			for (java.lang.reflect.Field instanceField : getInstanceFields()) {
 				if (!Field.class.isAssignableFrom(instanceField.getType())
-						|| !utilities.equalsFieldsName(instanceField.getName(), configured.getName())) continue;
+						|| !utilities.equalsFieldsName(instanceField.getName(), configured.getName()))
+					continue;
 				try {
 					Field generated = (Field) instanceField.get(this);
 					Object value = generated == null ? null : generated.getValue();
-					if (generated == null) generated = new Field();
+					if (generated == null)
+						generated = new Field();
 					generated.copyFrom(configured);
 					generated.setValue(value);
 					instanceField.set(this, generated);
@@ -333,7 +350,8 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	}
 
 	protected static Field copyGeneratedField(Field source) {
-		if (source == null) return null;
+		if (source == null)
+			return null;
 		Field copy = new Field();
 		copy.copyFrom(source);
 		return copy;
@@ -350,7 +368,8 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						if (value instanceof Field) {
 							field.set(this, value);
 						} else {
-							if (generated == null) generated = Field.fastCreateField(fieldName);
+							if (generated == null)
+								generated = Field.fastCreateField(fieldName);
 							generated.setValue(value);
 							field.set(this, generated);
 						}

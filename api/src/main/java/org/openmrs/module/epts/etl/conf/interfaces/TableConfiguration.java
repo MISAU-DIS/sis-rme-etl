@@ -40,6 +40,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
@@ -748,40 +749,50 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void logInfo(String msg) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().info(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().info(msg);
 	}
 
 	default void logDebug(String msg) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().debug(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().debug(msg);
 	}
 
 	default void logTrace(String msg) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().trace(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().trace(msg);
 	}
 
 	default void logTrace(String msg, Object... arguments) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().trace(msg, arguments);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().trace(msg, arguments);
 	}
 
 	default void logWarn(String msg) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().warn(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().warn(msg);
 	}
 
 	default void logWarn(String msg, Object... arguments) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().warn(msg, arguments);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().warn(msg, arguments);
 	}
 
 	default void logErr(String msg, Throwable throwable) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().err(msg, throwable);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().err(msg, throwable);
 	}
 
 	default void logErr(String msg, Throwable throwable, Object... arguments) {
-		if (!isFullLoadLogSuppressed()) this.getRelatedEtlConf().err(msg, throwable, arguments);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().err(msg, throwable, arguments);
 	}
 
 	/** True only while logs from a non-JDBC full load must remain hidden. */
 	@JsonIgnore
-	default boolean isFullLoadLogSuppressed() { return false; }
+	default boolean isFullLoadLogSuppressed() {
+		return false;
+	}
 
 	default int countParents(Connection conn) throws SQLException {
 		ResultSet foreignKeyRS = conn.getMetaData().getImportedKeys(this.getCatalog(conn), this.getSchema(),
@@ -2624,6 +2635,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	default EtlDatabaseObject createRecordInstance() {
 		try {
+
+			if (this.getSyncRecordClass() == null) {
+				throw new PojoNotFoundException(this);
+			}
+
 			@SuppressWarnings("deprecation")
 			EtlDatabaseObject rec = this.getSyncRecordClass().newInstance();
 

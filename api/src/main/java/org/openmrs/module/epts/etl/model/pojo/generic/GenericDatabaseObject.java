@@ -582,13 +582,6 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		return super.getDateVoided();
 	}
 
-	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
-		if (this.hasFields()) {
-			utilities.updateOnArray(this.getFields(), k, k);
-		}
-	}
-
 	public static List<EtlDatabaseObject> createDefaultObjectListUsingConfParams(EtlConfiguration etlConf) {
 		GenericDatabaseObject g = new GenericDatabaseObject();
 

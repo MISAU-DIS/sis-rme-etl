@@ -9,6 +9,8 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
@@ -108,12 +110,12 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 	}
 
-	private void generate(DBConnectionInfo app, EtlDatabaseObjectConfiguration tableConfiguration) {
+	private void generate(DBConnectionInfo app, EtlDatabaseObjectConfiguration objectConfiguration) {
 		if (!utilities.stringHasValue(app.getPojoPackageName())) {
 			throw new ForbiddenOperationException("The connInfo " + app + " has no package name!");
 		}
 
-		String fullClassName = tableConfiguration.generateFullClassName(app);
+		String fullClassName = objectConfiguration.generateFullClassName(app);
 
 		if (!isAlreadyGenerated(fullClassName)) {
 			OpenConnection appConn = null;
@@ -121,8 +123,8 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 			try {
 				appConn = app.openConnection(this);
 
-				tableConfiguration.generateRecordClass(app, true);
-				persistPhysicalMetadata(app, tableConfiguration, appConn);
+				objectConfiguration.generateRecordClass(app, true);
+				persistPhysicalMetadata(app, objectConfiguration, appConn);
 
 				this.alreadyGeneratedClasses.add(fullClassName);
 			} catch (DBException e) {
@@ -131,14 +133,26 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 				finalizeConnection(appConn);
 			}
 		}
+
+		if (objectConfiguration instanceof TableConfiguration) {
+			TableConfiguration tabConf = (TableConfiguration) objectConfiguration;
+
+			if (tabConf.hasParentRefInfo()) {
+				for (ParentTable p : tabConf.getParentRefInfo()) {
+					generate(app, p);
+				}
+			}
+		}
 	}
 
-	private void persistPhysicalMetadata(DBConnectionInfo app,
-			EtlDatabaseObjectConfiguration tableConfiguration, Connection connection) {
-		if (!(tableConfiguration instanceof AbstractTableConfiguration)) return;
+	private void persistPhysicalMetadata(DBConnectionInfo app, EtlDatabaseObjectConfiguration tableConfiguration,
+			Connection connection) {
+		if (!(tableConfiguration instanceof AbstractTableConfiguration))
+			return;
 
 		AbstractTableConfiguration table = (AbstractTableConfiguration) tableConfiguration;
-		if (table.getPhysicalTableConfiguration() == null) return;
+		if (table.getPhysicalTableConfiguration() == null)
+			return;
 
 		try {
 			PhysicalTableKey key = PhysicalTableKeyFactory.create(table, app.getPojoPackageName(), connection);
@@ -150,8 +164,8 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 					getRelatedEtlConfiguration().getSchemaMetadataDirectory());
 			PhysicalTableMetadata metadata = table.getPhysicalTableConfiguration().toMetadata(key);
 			repository.save(metadata);
-			new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
-					.record(new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app),
+			new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory()).record(
+					new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app),
 							PhysicalTableMetadataFingerprint.sha256(metadata)));
 		} catch (IOException | java.sql.SQLException exception) {
 			throw new RuntimeException("Could not persist physical metadata for " + table.getTableName(), exception);

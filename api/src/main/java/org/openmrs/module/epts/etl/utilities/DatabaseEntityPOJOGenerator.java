@@ -53,7 +53,11 @@ public class DatabaseEntityPOJOGenerator {
 
 		String fullClassName = pojoble.generateFullClassName(connInfo);
 
-		Class<EtlDatabaseObject> existingCLass = null;
+		Class<EtlDatabaseObject> existingCLass = tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
+
+		if (existingCLass != null) {
+			return existingCLass;
+		}
 
 		String attsDefinition = "";
 
@@ -353,7 +357,6 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import org.openmrs.module.epts.etl.conf.Key; \n \n";
 		classDefinition += "import java.sql.SQLException; \n";
 		classDefinition += "import java.sql.ResultSet; \n \n";
-		classDefinition += "import java.util.List; \n \n";
 		classDefinition += "import java.sql.Connection; \n \n";
 		classDefinition += "import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration; \n \n";
 
@@ -449,12 +452,6 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void loadWithDefaultValues(Connection srcConn, Connection dstConn){ \n ";
 		commonMethods += "	 	utilities.throwForbiddenMethodException();\n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public void tryToReplaceFieldWithKey(Key k){ \n ";
-		commonMethods += "	 	//utilities.throwForbiddenMethodException();\n";
 		commonMethods += "	} \n \n";
 
 		return commonMethods;
