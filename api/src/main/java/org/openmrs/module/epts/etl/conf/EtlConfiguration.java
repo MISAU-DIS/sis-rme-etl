@@ -1026,6 +1026,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				if (this.getDataModel() != null) {
 					this.getDataModel().setRelatedConf(this);
+					this.getDataModel().applyIncludes();
+					this.getDataModel().tryToLoadFromTemplate();
 				}
 
 				this.determineDatabaseObjectInstantiationMode();
@@ -1076,7 +1078,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 
 				for (EtlOperationConfig operation : this.getOperations()) {
-					operation.init();
+					operation.init(this);
 				}
 
 				srcConn = openSrcConn(this);
@@ -1703,17 +1705,17 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (this.containsOperation(EtlOperationType.DATABASE_MODEL_GENERATION)) {
 			if (!utilities.listHasElement(this.getClassPathAsFiles())) {
 				errorMsg += ++errNum
-						+ ". ClassPath was not set! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
+						+ ". classPath must contain the dependencies required to compile POJOs during the DATABASE_MODEL_GENERATION operation.";
 			}
 
 			if (hasSrcConnInfo() && !utilities.stringHasValue(this.getSrcPojoPackageName())) {
 				errorMsg += ++errNum
-						+ ". PojoPackageName was not set for srcConnInfo! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
+						+ ". dataModel.srcPojoPackageName must be set when srcConnInfo is configured for the DATABASE_MODEL_GENERATION operation.";
 			}
 
 			if (hasDstConnInfo() && !utilities.stringHasValue(this.getDstPojoPackageName())) {
 				errorMsg += ++errNum
-						+ ". PojoPackageName was not set for dstConnInfo! Notice that this is necessary for DATABASE_MODEL_GENERATION operation.";
+						+ ". dataModel.dstPojoPackageName must be set when dstConnInfo is configured for the DATABASE_MODEL_GENERATION operation.";
 			}
 
 		}

@@ -1030,7 +1030,13 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		return this.getAfterEtlActionType() != null;
 	}
 
-	public void init() {
+	public void init(EtlConfiguration etlConf) {
+
+		if (isInitialized())
+			return;
+
+		this.setRelatedEtlConf(etlConf);
+
 		this.applyIncludes();
 		this.tryToLoadFromTemplate();
 
@@ -1095,8 +1101,10 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasChild()) {
-			this.getChild().init();
+			this.getChild().init(this.getRelatedEtlConf());
 		}
+
+		this.setInitialized(true);
 	}
 
 	public boolean containsChild(EtlOperationType operation) {
