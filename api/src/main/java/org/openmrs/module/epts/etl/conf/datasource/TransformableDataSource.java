@@ -263,8 +263,21 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public String generateClassName() {
-		throw new ForbiddenOperationException("Forbiden Method");
+		return generateClassName(this.name + "_transformable_data_source");
 	}
+
+	private String generateClassName(String tableName) {
+		String[] nameParts = tableName.split("_");
+
+		String className = utilities.capitalize(nameParts[0]);
+
+		for (int i = 1; i < nameParts.length; i++) {
+			className += utilities.capitalize(nameParts[i]);
+		}
+
+		return className + "VO";
+	}
+
 
 	@Override
 	public EtlDataConfiguration getParentConf() {
@@ -406,8 +419,6 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 		for (TransformableDataSourceField field : this.getObjectFields()) {
 			FieldTransformingInfo valueInfo = values.get(field.getName());
-
-			stepIntoBreakpoint(getRelatedEtlConf(), valueInfo == null);
 
 			obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());
 

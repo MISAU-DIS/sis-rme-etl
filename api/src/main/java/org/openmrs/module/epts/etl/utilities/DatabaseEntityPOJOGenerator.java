@@ -345,7 +345,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		methodFromSuperClass += "\n\n";
 
-		methodFromSuperClass += "		throw new RuntimeException(\"No found parent for: \" + parentAttName);";
+		methodFromSuperClass += "		throw new RuntimeException(\"No found parent for: \" + parentAttName);\n";
 
 		methodFromSuperClass += "	}\n\n";
 
