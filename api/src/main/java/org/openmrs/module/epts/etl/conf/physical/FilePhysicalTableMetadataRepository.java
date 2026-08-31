@@ -83,6 +83,23 @@ public final class FilePhysicalTableMetadataRepository implements WritablePhysic
 	@Override
 	public void save(PhysicalTableMetadata metadata) throws IOException {
 		Path target = pathFor(metadata.getKey());
+		write(metadata, target);
+	}
+
+	/**
+	 * Saves metadata according to the data-model overwrite policy.
+	 *
+	 * @return true when the metadata file was written; false when an existing file
+	 *         was intentionally preserved
+	 */
+	public boolean save(PhysicalTableMetadata metadata, boolean overrideExisting) throws IOException {
+		Path target = pathFor(metadata.getKey());
+		if (!overrideExisting && Files.isRegularFile(target)) return false;
+		write(metadata, target);
+		return true;
+	}
+
+	private void write(PhysicalTableMetadata metadata, Path target) throws IOException {
 		Files.createDirectories(target.getParent());
 		Path temporary = Files.createTempFile(target.getParent(), target.getFileName().toString(), ".tmp");
 		try {

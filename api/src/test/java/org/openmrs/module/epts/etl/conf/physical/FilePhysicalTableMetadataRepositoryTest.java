@@ -40,6 +40,22 @@ public class FilePhysicalTableMetadataRepositoryTest {
 	}
 
 	@Test
+	public void shouldPreserveOrOverrideExistingMetadataAccordingToPolicy() throws Exception {
+		FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
+				temporaryFolder.newFolder("overwrite-policy").toPath().toFile());
+		PhysicalTableMetadata original = metadata(key("person"));
+		PhysicalTableMetadata replacement = new PhysicalTableMetadata(original.getKey(),
+				Arrays.asList(new PhysicalColumnMetadata("replacement_id", "int", 11, 0, false, true, false)),
+				null, null, null, null);
+
+		assertTrue(repository.save(original, false));
+		assertFalse(repository.save(replacement, false));
+		assertEquals(original, repository.find(original.getKey()).get());
+		assertTrue(repository.save(replacement, true));
+		assertEquals(replacement, repository.find(original.getKey()).get());
+	}
+
+	@Test
 	public void shouldFindMetadataWithoutKnowingDialectOrCatalog() throws Exception {
 		Path root = temporaryFolder.newFolder("schema-lookup").toPath();
 		FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(root.toFile());

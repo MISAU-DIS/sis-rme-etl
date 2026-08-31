@@ -55,7 +55,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		Class<EtlDatabaseObject> existingCLass = tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
 
-		if (existingCLass != null) {
+		if (existingCLass != null && !shouldOverrideExistingDataModelElement(pojoble)) {
 			return existingCLass;
 		}
 
@@ -376,7 +376,9 @@ public class DatabaseEntityPOJOGenerator {
 
 		compile(sourceFile, pojoble, connInfo);
 
-		existingCLass = tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
+		existingCLass = shouldOverrideExistingDataModelElement(pojoble)
+				? tryToLoadOverriddenClass(fullClassName, pojoble.getPOJOCopiledFilesDirectory())
+				: tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
 
 		if (existingCLass == null) {
 			throw new EtlExceptionImpl("The class for " + pojoble.getObjectName() + " was not created!") {
@@ -469,6 +471,11 @@ public class DatabaseEntityPOJOGenerator {
 		return false;
 	}
 
+	private static boolean shouldOverrideExistingDataModelElement(EtlDatabaseObjectConfiguration configuration) {
+		return configuration.getRelatedEtlConf() != null
+				&& configuration.getRelatedEtlConf().shouldOverrideExistingDataModelElement();
+	}
+
 	public static Class<EtlDatabaseObject> generateSkeleton(EtlDatabaseObjectConfiguration pojoable,
 			DBConnectionInfo connInfo) throws IOException, SQLException, ClassNotFoundException {
 		if (!pojoable.isFullLoaded())
@@ -491,7 +498,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		Class<EtlDatabaseObject> existingCLass = tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
 
-		if (existingCLass != null)
+		if (existingCLass != null && !shouldOverrideExistingDataModelElement(pojoable))
 			return existingCLass;
 
 		String classDefinition = "package org.openmrs.module.epts.etl.model.pojo.";
@@ -512,7 +519,30 @@ public class DatabaseEntityPOJOGenerator {
 
 		compile(sourceFile, pojoable, connInfo);
 
-		return tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
+		return shouldOverrideExistingDataModelElement(pojoable)
+				? tryToLoadOverriddenClass(fullClassName, pojoable.getPOJOCopiledFilesDirectory())
+				: tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Class<EtlDatabaseObject> tryToLoadOverriddenClass(String fullClassName, File compiledDirectory) {
+		try (URLClassLoader loader = new URLClassLoader(new URL[] { compiledDirectory.toURI().toURL() },
+				EtlDatabaseObject.class.getClassLoader()) {
+			@Override
+			protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+				if (!name.equals(fullClassName)) return super.loadClass(name, resolve);
+				synchronized (getClassLoadingLock(name)) {
+					Class<?> loaded = findLoadedClass(name);
+					if (loaded == null) loaded = findClass(name);
+					if (resolve) resolveClass(loaded);
+					return loaded;
+				}
+			}
+		}) {
+			return (Class<EtlDatabaseObject>) loader.loadClass(fullClassName);
+		} catch (IOException | ClassNotFoundException exception) {
+			return null;
+		}
 	}
 
 	private static void writeSourceFile(File sourceFile, String classDefinition) throws IOException {

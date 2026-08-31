@@ -69,7 +69,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	@JsonIgnore
 	default String getClasspackage(DBConnectionInfo connInfo) {
-		return connInfo.getPojoPackageName();
+		return getRelatedEtlConf().getPojoPackage(connInfo);
 	}
 
 	@JsonIgnore

@@ -111,7 +111,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	}
 
 	private void generate(DBConnectionInfo app, EtlDatabaseObjectConfiguration objectConfiguration) {
-		if (!utilities.stringHasValue(app.getPojoPackageName())) {
+		if (!utilities.stringHasValue(getRelatedEtlConfiguration().getPojoPackage(app))) {
 			throw new ForbiddenOperationException("The connInfo " + app + " has no package name!");
 		}
 
@@ -155,7 +155,8 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 			return;
 
 		try {
-			PhysicalTableKey key = PhysicalTableKeyFactory.create(table, app.getPojoPackageName(), connection);
+			PhysicalTableKey key = PhysicalTableKeyFactory.create(table,
+					getRelatedEtlConfiguration().getPojoPackage(app), connection);
 			if (!table.getPhysicalTableConfiguration().areExportedForeignKeysLoaded()) {
 				table.getPhysicalTableConfiguration().initializeExportedForeignKeys(
 						new JdbcPhysicalTableMetadataRepository(connection).findExportedForeignKeys(key));
@@ -163,10 +164,13 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 			FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
 					getRelatedEtlConfiguration().getSchemaMetadataDirectory());
 			PhysicalTableMetadata metadata = table.getPhysicalTableConfiguration().toMetadata(key);
-			repository.save(metadata);
-			new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory()).record(
-					new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app),
-							PhysicalTableMetadataFingerprint.sha256(metadata)));
+			boolean saved = repository.save(metadata,
+					getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement());
+			if (saved) {
+				new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory()).record(
+						new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app),
+								PhysicalTableMetadataFingerprint.sha256(metadata)));
+			}
 		} catch (IOException | java.sql.SQLException exception) {
 			throw new RuntimeException("Could not persist physical metadata for " + table.getTableName(), exception);
 		}

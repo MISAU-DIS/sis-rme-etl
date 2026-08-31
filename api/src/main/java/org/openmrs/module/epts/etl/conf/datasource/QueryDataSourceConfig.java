@@ -375,7 +375,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	@Override
 	public String getClasspackage(DBConnectionInfo connInfo) {
-		return connInfo.getPojoPackageName() + "._query_result";
+		return getRelatedEtlConf().getPojoPackage(connInfo) + "._query_result";
 	}
 
 	@JsonIgnore

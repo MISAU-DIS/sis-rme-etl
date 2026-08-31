@@ -54,6 +54,8 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 
 	private EtlDBConnectionType connType;
 
+	/** @deprecated Configure source and destination packages in DataModelConfiguration. */
+	@Deprecated
 	private String pojoPackageName;
 
 	public DBConnectionInfo() {
@@ -278,10 +280,14 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		return this.connectionURI.toUpperCase().contains("MYSQL");
 	}
 
+	/** @deprecated Use EtlConfiguration.getPojoPackage(DBConnectionInfo). */
+	@Deprecated
 	public String getPojoPackageName() {
 		return this.pojoPackageName;
 	}
 
+	/** @deprecated Configure source and destination packages in DataModelConfiguration. */
+	@Deprecated
 	public void setPojoPackageName(String pojoPackageName) {
 		this.pojoPackageName = pojoPackageName;
 	}
