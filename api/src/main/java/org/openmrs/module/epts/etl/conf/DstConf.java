@@ -995,7 +995,7 @@ public class DstConf extends AbstractTableConfiguration
 
 		if (utilities.listHasElement(this.getPreferredDataSource())) {
 			for (String dsName : this.getPreferredDataSource()) {
-				addToPrefferedDataSource(findDataSource(dsName));
+				addToPrefferedDataSource(this.findDataSource(dsName));
 			}
 		}
 

@@ -295,7 +295,7 @@ public class AttDefinedElements {
 
 		String attDefinition = utilities.parseToCamelCase(this.dbAttName) + "AttName";
 
-		String loadStr = "	String " + attDefinition + " = "
+		String loadStr = "String " + attDefinition + " = "
 				+ (useAlias ? this.aliasedDbAttName : "\"" + this.dbAttName + "\"") + ";\n\n";
 
 		if (usesFieldWrapper) {

@@ -341,7 +341,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	@Override
 	public Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
-		return this.generateSyncRecordClass(this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedConnInfo() : null);
+		return this
+				.generateSyncRecordClass(this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedConnInfo() : null);
 	}
 
 	@Override
@@ -586,7 +587,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@Override
 	public Boolean hasDateFields() {
 		for (Field t : this.fields) {
-			if (t.isDateField()) {
+			if (t.hasDataType() && t.isDateField()) {
 				return true;
 			}
 		}

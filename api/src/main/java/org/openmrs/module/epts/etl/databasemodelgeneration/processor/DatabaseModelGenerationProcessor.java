@@ -3,18 +3,24 @@ package org.openmrs.module.epts.etl.databasemodelgeneration.processor;
 import java.sql.Connection;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
+import org.openmrs.module.epts.etl.etl.processor.transformer.ParentOnDemandLoadTransformer;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationItemResult;
@@ -52,11 +58,14 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 	private boolean databaseModelGenerated;
 
+	private Set<EtlItemConfiguration> visitedItemConfigurations;
+
 	public DatabaseModelGenerationProcessor(Engine<DatabaseModelGenerationRecord> monitor, IntervalExtremeRecord limits,
 			boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 
 		this.alreadyGeneratedClasses = new ArrayList<String>();
+		this.visitedItemConfigurations = Collections.newSetFromMap(new IdentityHashMap<>());
 	}
 
 	@Override
@@ -81,36 +90,58 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 		}
 		this.databaseModelGenerated = true;
 
-		DBConnectionInfo mainApp = getEtlItemConfiguration().getSrcConnInfo();
-
-		if (!getEtlItemConfiguration().isFullLoaded()) {
-			getEtlItemConfiguration().fullLoad(this.getRelatedEtlOperationConfig());
-		}
-
-		generate(mainApp, getSrcConf());
-
-		List<EtlAdditionalDataSource> allAvaliableDataSources = getEtlItemConfiguration().getSrcConf()
-				.getAvaliableExtraDataSource();
-
-		for (EtlAdditionalDataSource t : allAvaliableDataSources) {
-			generate(mainApp, t);
-		}
-
-		DBConnectionInfo mappingAppInfo = null;
-
-		if (getRelatedEtlConfiguration().hasDstConnInfo()) {
-			mappingAppInfo = getRelatedEtlConfiguration().getDstConnInfo();
-
-			for (DstConf map : getEtlItemConfiguration().getDstConf()) {
-				map.setRelatedConnInfo(mappingAppInfo);
-
-				generate(mappingAppInfo, map);
-
-			}
-		}
+		generateConfigurationTree(getEtlItemConfiguration(), getRelatedEtlOperationConfig(), srcConn, dstConn);
 
 		getTaskResultInfo().addAllToRecordsWithNoError(EtlOperationItemResult.parseFromEtlDatabaseObject(records));
 
+	}
+
+	private void generateConfigurationTree(EtlItemConfiguration item, EtlOperationConfig operationConfig,
+			Connection srcConn, Connection dstConn) throws DBException {
+		if (item == null || !visitedItemConfigurations.add(item)) return;
+
+		item.fullLoad(operationConfig, srcConn, dstConn);
+		DBConnectionInfo sourceConnectionInfo = item.getSrcConnInfo();
+		if (!item.getSrcConf().doNotUseAsDatasource()) {
+			generate(sourceConnectionInfo, item.getSrcConf());
+			for (EtlAdditionalDataSource dataSource : item.getSrcConf().getAvaliableExtraDataSource()) {
+				generate(sourceConnectionInfo, dataSource);
+			}
+		}
+
+		if (item.hasDstConf() && getRelatedEtlConfiguration().hasDstConnInfo()) {
+			DBConnectionInfo destinationConnectionInfo = getRelatedEtlConfiguration().getDstConnInfo();
+			for (DstConf destination : item.getDstConf()) {
+				if (destination.isDisabled()) continue;
+				destination.setRelatedConnInfo(destinationConnectionInfo);
+				generate(destinationConnectionInfo, destination);
+				generateOnDemandConfigurationTrees(destination, operationConfig, srcConn, dstConn);
+			}
+		}
+
+		if (item.hasChildItemConf()) {
+			for (EtlItemConfiguration child : item.getChildItemConf()) {
+				generateConfigurationTree(child, operationConfig, srcConn, dstConn);
+			}
+		}
+	}
+
+	private void generateOnDemandConfigurationTrees(DstConf destination, EtlOperationConfig operationConfig,
+			Connection srcConn, Connection dstConn) throws DBException {
+		if (!destination.hasMapping()) return;
+		for (FieldsMapping mapping : destination.getMapping()) {
+			if (!mapping.hasTransformer()) continue;
+			mapping.tryToLoadTransformer(destination, srcConn);
+			mapping.getTransformerInstance().init(srcConn, dstConn);
+			mapping.getTransformerInstance().determineTransformerType();
+			if (!mapping.getTransformerType().isParentOnDemand()
+					&& !mapping.getTransformerType().isParentOnDemandWithDefaults()) continue;
+
+			ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) mapping.getTransformerInstance();
+			onDemand.init(srcConn, dstConn);
+			generateConfigurationTree(onDemand.getExistingParentItemConf(), operationConfig, srcConn, dstConn);
+			generateConfigurationTree(onDemand.getOnDemandCreateParentItemConf(), operationConfig, srcConn, dstConn);
+		}
 	}
 
 	private void generate(DBConnectionInfo app, EtlDatabaseObjectConfiguration objectConfiguration) {
