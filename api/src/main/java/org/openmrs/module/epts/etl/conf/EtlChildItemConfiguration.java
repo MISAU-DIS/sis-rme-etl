@@ -111,6 +111,12 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 			ds = new ArrayList<>();
 		}
 
+		List<EtlDataSource> allFromParent = this.getParentItemConf().collectAllAvaliableDataSources(conn);
+
+		if (utilities.listHasElement(allFromParent)) {
+			// ds.addAll(allFromParent);
+		}
+
 		DstConf parentDstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
 
 		if (!parentDstConf.isDisabled()) {

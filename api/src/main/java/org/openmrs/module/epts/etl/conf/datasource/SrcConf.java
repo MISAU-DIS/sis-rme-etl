@@ -619,6 +619,14 @@ public class SrcConf extends AbstractTableConfiguration
 			ds.addAll(this.getExtraObjectDataSource());
 		}
 
+		if (hasParentItemConf()) {
+			List<EtlAdditionalDataSource> allP = this.getParentSrcConf().getAvaliableExtraDataSource();
+
+			if (allP != null) {
+				ds.addAll(allP);
+			}
+		}
+
 		return ds;
 	}
 
