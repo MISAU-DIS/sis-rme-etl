@@ -39,6 +39,7 @@ The process configuration file is the core element of the application. Each proc
 ## The common configuration
 - *processType*: A string representing the process type. The supported types are listed in the section "Supported Process Types".
 - *etlRootDirectory*: The absolute path to the directory where all process-related files will be stored.
+- *dataModel*: Defines how database objects and physical schema metadata are represented and loaded, including the independent POJO packages and schemas for the source and destination databases. See [The Data Model configuration](#the-data-model-configuration).
 - *childConfigFilePath*: The absolute path to another JSON configuration file defining a process to be executed after the current one completes. This enables chaining multiple processes in sequence, which is useful for scenarios such as merging multiple databases.
 - *originAppLocationCode*: A token representing the location where the process is executed. In merge scenarios, this typically represents the source location.
 - *manualStart*: An optional boolean indicating whether the process should be started manually. If set to true, the process will not start automatically when the application starts.
@@ -77,7 +78,46 @@ The process configuration file is the core element of the application. Each proc
 
   This property is primarily used by on-demand mechanisms such as *PARENT_ON_DEMAND_TRANSFORMER* and *DEFAULT_PARENT_ON_DEMAND_TRANSFORMER*. When an on-demand record must be created and no corresponding source record exists in the source database, the ETL engine uses the table specified in *defaultSourceTable* as the source configuration for the generated record.
   The default source table provides the transformation context required by the ETL engine, including access to available data sources, parameters, relationship resolution, and field mappings.
-       
+
+## The Data Model configuration
+
+The optional *dataModel* element centralizes how database objects and physical schema metadata are represented and loaded. It also defines independent POJO packages and schemas for the source and destination connections.
+
+```json
+{
+  "dataModel": {
+    "databaseObjectInstantiationMode": "PRECOMPILED_POJO",
+    "schemaMetadataMode": "PRECOMPILED_WITH_FALLBACK",
+    "srcPojoPackageName": "source_openmrs",
+    "dstPojoPackageName": "destination_openmrs",
+    "srcSchema": "openmrs_source",
+    "dstSchema": "openmrs_destination",
+    "overrideExistingDataModelElement": false
+  }
+}
+```
+
+The element supports the following properties:
+
+- **databaseObjectInstantiationMode** – Defines how database records are instantiated.
+  - *DYNAMIC_GENERIC* – Creates generic database objects dynamically at runtime from the table schema.
+  - *PRECOMPILED_POJO* – Uses table-specific generated and compiled POJO classes.
+- **schemaMetadataMode** – Defines where the physical table metadata is loaded from.
+  - *LIVE_DATABASE* – Always loads metadata directly from JDBC.
+  - *PRECOMPILED* – Uses only the metadata files stored under `@etlRootDirectory/database-model/schema-metadata`. Missing or incompatible metadata causes the operation to fail.
+  - *PRECOMPILED_WITH_FALLBACK* – Uses existing metadata files first and accesses JDBC only when compatible static metadata is not available.
+- **srcPojoPackageName** – Package segment used for POJOs generated for source database objects.
+- **dstPojoPackageName** – Package segment used for POJOs generated for destination database objects.
+- **srcSchema** – Database schema associated with the source connection.
+- **dstSchema** – Database schema associated with the destination connection.
+- **overrideExistingDataModelElement** – Controls whether existing generated data-model artifacts may be replaced. The default is `false`.
+  - When `false`, existing POJOs and physical schema metadata files are preserved and reused.
+  - When `true`, existing POJO source and compiled classes are regenerated, and existing schema metadata files and their manifest entries are replaced.
+
+If *databaseObjectInstantiationMode* is omitted, it defaults to *PRECOMPILED_POJO* when a source POJO package is configured; otherwise it defaults to *DYNAMIC_GENERIC*. If *schemaMetadataMode* is omitted, it defaults to *PRECOMPILED_WITH_FALLBACK* for precompiled POJOs and to *LIVE_DATABASE* for dynamic objects.
+
+The source and destination settings are resolved independently. This allows the ETL to use different schemas and generated-class packages even when both databases use the same database engine or have tables with identical names.
+
 ## The Database configuration
 This section defines the database connection settings used by the ETL process. It supports configuration for both the source database (*srcConnConf*) and the destination database (*dstConnConf*).
 
@@ -87,7 +127,6 @@ Each of these elements accepts the following parameters:
 - *dataBaseUserPassword* – The password used for database authentication.
 - *connectionURI* – The JDBC connection URL used to establish the database connection.
 - *driverClassName* – The fully qualified name of the JDBC driver class.
-- *schema* – An optional parameter used to explicitly define the database schema. This is useful when the schema cannot be inferred from the connection URL or when it differs from the default schema.
 - *databaseSchemaPath* – An optional parameter specifying the path to a database schema script. If provided, and the target database does not exist, it will be created using this script.
 - Additional JDBC connection pool configurations (from *javax.sql.DataSource* / connection pool implementation), including:
   - *maxActiveConnections* – Maximum number of active connections allowed.
