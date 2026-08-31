@@ -72,6 +72,20 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return getRelatedEtlConf().getPojoPackage(connInfo);
 	}
 
+	default String getClasspackageForForder(DBConnectionInfo connInfo) {
+		String packageS = getRelatedEtlConf().getPojoPackage(connInfo);
+
+		String[] packageParts = packageS.split("\\.");
+
+		String pF = "";
+
+		for (String p : packageParts) {
+			pF = utilities.concatStringsWithSeparator(pF, p, "" + File.separatorChar);
+		}
+
+		return pF;
+	}
+
 	@JsonIgnore
 	default String generateFullClassName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";

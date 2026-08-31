@@ -75,7 +75,10 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	@Override
 	public void transformAndLoad(List<DatabaseModelGenerationRecord> records, Connection srcConn, Connection dstConn)
 			throws DBException {
-
+		if (!this.databaseModelGenerated
+				&& getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement()) {
+			getRelatedEtlConfiguration().resetDataModelClassLoader();
+		}
 		this.databaseModelGenerated = true;
 
 		DBConnectionInfo mainApp = getEtlItemConfiguration().getSrcConnInfo();

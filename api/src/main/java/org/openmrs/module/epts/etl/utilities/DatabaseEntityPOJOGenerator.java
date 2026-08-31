@@ -4,8 +4,6 @@ package org.openmrs.module.epts.etl.utilities;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,11 +47,12 @@ public class DatabaseEntityPOJOGenerator {
 
 		pojoRootFolder += "/org/openmrs/module/epts/etl/model/pojo/";
 
-		File sourceFile = new File(pojoRootFolder + pojoble.getClasspackage(connInfo) + "/" + className + ".java");
+		File sourceFile = new File(pojoRootFolder + pojoble.getClasspackageForForder(connInfo) + "/" + className + ".java");
 
 		String fullClassName = pojoble.generateFullClassName(connInfo);
 
-		Class<EtlDatabaseObject> existingCLass = tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
+		Class<EtlDatabaseObject> existingCLass = shouldOverrideExistingDataModelElement(pojoble) ? null
+				: tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
 
 		if (existingCLass != null && !shouldOverrideExistingDataModelElement(pojoble)) {
 			return existingCLass;
@@ -375,10 +374,9 @@ public class DatabaseEntityPOJOGenerator {
 		writeSourceFile(sourceFile, classDefinition);
 
 		compile(sourceFile, pojoble, connInfo);
+		pojoble.getRelatedEtlConf().refreshDataModelClassLoader();
 
-		existingCLass = shouldOverrideExistingDataModelElement(pojoble)
-				? tryToLoadOverriddenClass(fullClassName, pojoble.getPOJOCopiledFilesDirectory())
-				: tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
+		existingCLass = tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
 
 		if (existingCLass == null) {
 			throw new EtlExceptionImpl("The class for " + pojoble.getObjectName() + " was not created!") {
@@ -496,7 +494,8 @@ public class DatabaseEntityPOJOGenerator {
 		fullClassName += pojoable.getClasspackage(connInfo) + "."
 				+ FileUtilities.generateFileNameFromRealPathWithoutExtension(sourceFile.getName());
 
-		Class<EtlDatabaseObject> existingCLass = tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
+		Class<EtlDatabaseObject> existingCLass = shouldOverrideExistingDataModelElement(pojoable) ? null
+				: tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
 
 		if (existingCLass != null && !shouldOverrideExistingDataModelElement(pojoable))
 			return existingCLass;
@@ -518,31 +517,9 @@ public class DatabaseEntityPOJOGenerator {
 		writeSourceFile(sourceFile, classDefinition);
 
 		compile(sourceFile, pojoable, connInfo);
+		pojoable.getRelatedEtlConf().refreshDataModelClassLoader();
 
-		return shouldOverrideExistingDataModelElement(pojoable)
-				? tryToLoadOverriddenClass(fullClassName, pojoable.getPOJOCopiledFilesDirectory())
-				: tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
-	}
-
-	@SuppressWarnings("unchecked")
-	private static Class<EtlDatabaseObject> tryToLoadOverriddenClass(String fullClassName, File compiledDirectory) {
-		try (URLClassLoader loader = new URLClassLoader(new URL[] { compiledDirectory.toURI().toURL() },
-				EtlDatabaseObject.class.getClassLoader()) {
-			@Override
-			protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-				if (!name.equals(fullClassName)) return super.loadClass(name, resolve);
-				synchronized (getClassLoadingLock(name)) {
-					Class<?> loaded = findLoadedClass(name);
-					if (loaded == null) loaded = findClass(name);
-					if (resolve) resolveClass(loaded);
-					return loaded;
-				}
-			}
-		}) {
-			return (Class<EtlDatabaseObject>) loader.loadClass(fullClassName);
-		} catch (IOException | ClassNotFoundException exception) {
-			return null;
-		}
+		return tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
 	}
 
 	private static void writeSourceFile(File sourceFile, String classDefinition) throws IOException {
@@ -555,22 +532,12 @@ public class DatabaseEntityPOJOGenerator {
 
 	public static Class<EtlDatabaseObject> tryToGetExistingCLass(String fullClassName,
 			EtlConfiguration etlConfiguration) {
-		Class<EtlDatabaseObject> clazz = tryToLoadFromOpenMRSClassLoader(fullClassName);
-
-		if (clazz == null) {
-			if (etlConfiguration.getModuleRootDirectory() != null)
-				clazz = tryToLoadFromClassPath(fullClassName, etlConfiguration.getModuleRootDirectory());
-
-			if (clazz == null) {
-				clazz = tryToLoadFromClassPath(fullClassName, etlConfiguration.getClassPathAsFiles());
-			}
-
-			if (clazz == null) {
-				clazz = tryToLoadFromClassPath(fullClassName, etlConfiguration.getPOJOCompiledFilesDirectory());
-			}
+		if (etlConfiguration == null) return tryToLoadFromOpenMRSClassLoader(fullClassName);
+		try {
+			return (Class<EtlDatabaseObject>) etlConfiguration.loadDataModelClass(fullClassName);
+		} catch (ClassNotFoundException exception) {
+			return null;
 		}
-
-		return clazz;
 	}
 
 	public static Class<EtlDatabaseObject> tryToGetExistingCLass(String fullClassName) {
@@ -582,39 +549,6 @@ public class DatabaseEntityPOJOGenerator {
 		try {
 			return (Class<EtlDatabaseObject>) EtlDatabaseObject.class.getClassLoader().loadClass(fullClassName);
 		} catch (ClassNotFoundException e) {
-			return null;
-		}
-	}
-
-	@SuppressWarnings({ "unchecked" })
-	private static Class<EtlDatabaseObject> tryToLoadFromClassPath(String fullClassName, File classPath) {
-		if (classPath == null)
-			return null;
-		try (URLClassLoader loader = URLClassLoader.newInstance(new URL[] { classPath.toURI().toURL() })) {
-			return (Class<EtlDatabaseObject>) loader.loadClass(fullClassName);
-		} catch (ClassNotFoundException e) {
-			return null;
-		} catch (IOException e) {
-			e.printStackTrace();
-
-			return null;
-		}
-	}
-
-	private static Class<EtlDatabaseObject> tryToLoadFromClassPath(String fullClassName, List<File> classPath) {
-		try {
-			URL[] urls = new URL[classPath.size()];
-			for (int i = 0; i < classPath.size(); i++)
-				urls[i] = classPath.get(i).toURI().toURL();
-			try (URLClassLoader loader = URLClassLoader.newInstance(urls)) {
-				@SuppressWarnings("unchecked")
-				Class<EtlDatabaseObject> loaded = (Class<EtlDatabaseObject>) loader.loadClass(fullClassName);
-				return loaded;
-			}
-		} catch (ClassNotFoundException exception) {
-			return null;
-		} catch (IOException exception) {
-			exception.printStackTrace();
 			return null;
 		}
 	}

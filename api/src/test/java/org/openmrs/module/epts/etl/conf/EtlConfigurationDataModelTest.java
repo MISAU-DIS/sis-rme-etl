@@ -1,28 +1,22 @@
 package org.openmrs.module.epts.etl.conf;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
 public class EtlConfigurationDataModelTest {
 
 	@Test
 	public void shouldReadAndResolveSourceAndDestinationDataModelConfiguration() throws Exception {
-		String json = "{\"dataModel\":{" +
-				"\"databaseObjectInstantiationMode\":\"PRECOMPILED_POJO\"," +
-				"\"schemaMetadataMode\":\"PRECOMPILED_WITH_FALLBACK\"," +
-				"\"srcPojoPackageName\":\"source_openmrs\"," +
-				"\"dstPojoPackageName\":\"destination_openmrs\"," +
-				"\"srcSchema\":\"openmrs_source\"," +
-				"\"dstSchema\":\"openmrs_destination\"," +
-				"\"overrideExistingDataModelElement\":true}," +
-				"\"srcConnInfo\":{},\"dstConnInfo\":{}}";
-		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class)
-				.readValue(json, EtlConfiguration.class);
+		String json = "{\"dataModel\":{" + "\"databaseObjectInstantiationMode\":\"PRECOMPILED_POJO\","
+				+ "\"schemaMetadataMode\":\"PRECOMPILED_WITH_FALLBACK\"," + "\"srcPojoPackageName\":\"source_openmrs\","
+				+ "\"dstPojoPackageName\":\"destination_openmrs\"," + "\"srcSchema\":\"openmrs_source\","
+				+ "\"dstSchema\":\"openmrs_destination\"," + "\"overrideExistingDataModelElement\":true},"
+				+ "\"srcConnInfo\":{},\"dstConnInfo\":{}}";
+		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class).readValue(json,
+				EtlConfiguration.class);
 
 		assertEquals(DatabaseObjectInstantiationMode.PRECOMPILED_POJO,
 				configuration.getDatabaseObjectInstantiationMode());
@@ -32,18 +26,5 @@ public class EtlConfigurationDataModelTest {
 		assertEquals("openmrs_source", configuration.getSchema(configuration.getSrcConnInfo()));
 		assertEquals("openmrs_destination", configuration.getSchema(configuration.getDstConnInfo()));
 		assertTrue(configuration.shouldOverrideExistingDataModelElement());
-	}
-
-	@Test
-	public void shouldUseLegacyConnectionValuesAsFallback() {
-		EtlConfiguration configuration = new EtlConfiguration();
-		DBConnectionInfo source = new DBConnectionInfo();
-		source.setPojoPackageName("legacy_source");
-		source.setSchema("legacy_schema");
-		configuration.setSrcConnInfo(source);
-
-		assertEquals("legacy_source", configuration.getSrcPojoPackageName());
-		assertEquals("legacy_schema", configuration.getSrcSchema());
-		assertFalse(configuration.shouldOverrideExistingDataModelElement());
 	}
 }

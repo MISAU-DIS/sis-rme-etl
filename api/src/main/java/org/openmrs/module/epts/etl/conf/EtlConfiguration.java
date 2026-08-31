@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -35,6 +36,7 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
+import org.openmrs.module.epts.etl.utilities.DataModelClassLoader;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
@@ -231,6 +233,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private DataModelConfiguration dataModel;
 
+	private transient DataModelClassLoader dataModelClassLoader;
+
+	private transient Map<String, Class<? extends EtlDatabaseObject>> dataModelClasses = new ConcurrentHashMap<>();
+
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 
@@ -256,7 +262,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public DatabaseObjectInstantiationMode getDatabaseObjectInstantiationMode() {
 		return dataModel != null && dataModel.getDatabaseObjectInstantiationMode() != null
-				? dataModel.getDatabaseObjectInstantiationMode() : databaseObjectInstantiationMode;
+				? dataModel.getDatabaseObjectInstantiationMode()
+				: databaseObjectInstantiationMode;
 	}
 
 	public void setDatabaseObjectInstantiationMode(DatabaseObjectInstantiationMode mode) {
@@ -273,7 +280,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public DataModelConfiguration getDataModel() {
-		if (dataModel == null) dataModel = new DataModelConfiguration();
+		if (dataModel == null)
+			dataModel = new DataModelConfiguration();
 		return dataModel;
 	}
 
@@ -282,27 +290,81 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public String getSrcPojoPackageName() {
-		if (utilities.stringHasValue(getDataModel().getSrcPojoPackageName())) return getDataModel().getSrcPojoPackageName();
-		return hasSrcConnInfo() ? getSrcConnInfo().getPojoPackageName() : null;
+		if (utilities.stringHasValue(getDataModel().getSrcPojoPackageName()))
+			return getDataModel().getSrcPojoPackageName();
+		return null;
 	}
 
 	public String getDstPojoPackageName() {
-		if (utilities.stringHasValue(getDataModel().getDstPojoPackageName())) return getDataModel().getDstPojoPackageName();
-		return hasDstConnInfo() ? getDstConnInfo().getPojoPackageName() : null;
+		if (utilities.stringHasValue(getDataModel().getDstPojoPackageName()))
+			return getDataModel().getDstPojoPackageName();
+
+		return null;
 	}
 
 	public String getSrcSchema() {
-		if (utilities.stringHasValue(getDataModel().getSrcSchema())) return getDataModel().getSrcSchema();
+		if (utilities.stringHasValue(getDataModel().getSrcSchema()))
+			return getDataModel().getSrcSchema();
 		return hasSrcConnInfo() ? getSrcConnInfo().getSchema() : null;
 	}
 
 	public String getDstSchema() {
-		if (utilities.stringHasValue(getDataModel().getDstSchema())) return getDataModel().getDstSchema();
+		if (utilities.stringHasValue(getDataModel().getDstSchema()))
+			return getDataModel().getDstSchema();
 		return hasDstConnInfo() ? getDstConnInfo().getSchema() : null;
 	}
 
 	public boolean shouldOverrideExistingDataModelElement() {
 		return getDataModel().shouldOverrideExistingDataModelElement();
+	}
+
+	@JsonIgnore
+	public synchronized DataModelClassLoader getDataModelClassLoader() {
+		if (dataModelClassLoader == null) {
+			dataModelClassLoader = new DataModelClassLoader(getPOJOCompiledFilesDirectory(), getModuleRootDirectory(),
+					getClassPathAsFiles());
+		}
+		return dataModelClassLoader;
+	}
+
+	@JsonIgnore
+	public Class<? extends EtlDatabaseObject> loadDataModelClass(String fullClassName) throws ClassNotFoundException {
+		Class<? extends EtlDatabaseObject> loaded = getDataModelClasses().get(fullClassName);
+		if (loaded != null) return loaded;
+		synchronized (this) {
+			loaded = getDataModelClasses().get(fullClassName);
+			if (loaded == null) {
+				loaded = getDataModelClassLoader().loadDatabaseObjectClass(fullClassName);
+				getDataModelClasses().put(fullClassName, loaded);
+			}
+			return loaded;
+		}
+	}
+
+	private Map<String, Class<? extends EtlDatabaseObject>> getDataModelClasses() {
+		if (dataModelClasses == null) dataModelClasses = new ConcurrentHashMap<>();
+		return dataModelClasses;
+	}
+
+	/** Makes newly compiled classes visible without changing identities already cached. */
+	public synchronized void refreshDataModelClassLoader() {
+		closeDataModelClassLoader();
+		dataModelClassLoader = null;
+	}
+
+	public synchronized void resetDataModelClassLoader() {
+		closeDataModelClassLoader();
+		dataModelClassLoader = null;
+		getDataModelClasses().clear();
+	}
+
+	private void closeDataModelClassLoader() {
+		if (dataModelClassLoader == null) return;
+		try {
+			dataModelClassLoader.close();
+		} catch (IOException exception) {
+			throw new EtlExceptionImpl("Could not close the data-model class loader", exception);
+		}
 	}
 
 	public boolean usesPrecompiledSchemaMetadata() {
@@ -768,20 +830,26 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@JsonIgnore
 	public String getPojoPackage(DBConnectionInfo connInfo) {
-		if (connInfo == null) return null;
-		if (connInfo == getDstConnInfo() || connInfo.isDstConn()) return getDstPojoPackageName();
+		if (connInfo == null)
+			return null;
+		if (connInfo == getDstConnInfo() || connInfo.isDstConn())
+			return getDstPojoPackageName();
 		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
-				|| connInfo.isMainConn()) return getSrcPojoPackageName();
-		return utilities.stringHasValue(connInfo.getPojoPackageName()) ? connInfo.getPojoPackageName()
-				: getSrcPojoPackageName();
+				|| connInfo.isMainConn())
+			return getSrcPojoPackageName();
+
+		return null;
 	}
 
 	@JsonIgnore
 	public String getSchema(DBConnectionInfo connInfo) {
-		if (connInfo == null) return null;
-		if (connInfo == getDstConnInfo() || connInfo.isDstConn()) return getDstSchema();
+		if (connInfo == null)
+			return null;
+		if (connInfo == getDstConnInfo() || connInfo.isDstConn())
+			return getDstSchema();
 		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
-				|| connInfo.isMainConn()) return getSrcSchema();
+				|| connInfo.isMainConn())
+			return getSrcSchema();
 		return utilities.stringHasValue(connInfo.getSchema()) ? connInfo.getSchema() : getSrcSchema();
 	}
 
@@ -1068,13 +1136,16 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private void determineDatabaseObjectInstantiationMode() {
-		if (getDatabaseObjectInstantiationMode() != null) return;
-		setDatabaseObjectInstantiationMode(utilities.stringHasValue(getSrcPojoPackageName())
-				? DatabaseObjectInstantiationMode.PRECOMPILED_POJO : DatabaseObjectInstantiationMode.DYNAMIC_GENERIC);
+		if (getDatabaseObjectInstantiationMode() != null)
+			return;
+		setDatabaseObjectInstantiationMode(
+				utilities.stringHasValue(getSrcPojoPackageName()) ? DatabaseObjectInstantiationMode.PRECOMPILED_POJO
+						: DatabaseObjectInstantiationMode.DYNAMIC_GENERIC);
 	}
 
 	private void determineSchemaMetadataMode() {
-		if (getSchemaMetadataMode() != null) return;
+		if (getSchemaMetadataMode() != null)
+			return;
 		setSchemaMetadataMode(usesPrecompiledPojoObjects() ? SchemaMetadataMode.PRECOMPILED_WITH_FALLBACK
 				: SchemaMetadataMode.LIVE_DATABASE);
 	}
@@ -2044,7 +2115,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		List<File> files = new ArrayList<>();
 		if (classPath != null) {
 			for (String path : classPath) {
-				if (utilities.stringHasValue(path)) files.add(new File(path));
+				if (utilities.stringHasValue(path))
+					files.add(new File(path));
 			}
 		}
 		return files;

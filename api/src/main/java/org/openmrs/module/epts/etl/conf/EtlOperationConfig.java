@@ -1073,4 +1073,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 		return this.getChild().containsChild(operation);
 	}
+
+	public boolean usesDefaultRecords() {
+		return this.isEtl();
+	}
 }
