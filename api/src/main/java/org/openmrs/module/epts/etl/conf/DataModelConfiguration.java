@@ -1,9 +1,12 @@
 package org.openmrs.module.epts.etl.conf;
 
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+
 /**
  * Central configuration for the database model used by an ETL execution.
  */
-public class DataModelConfiguration {
+public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 
 	private DatabaseObjectInstantiationMode databaseObjectInstantiationMode;
 
@@ -18,6 +21,8 @@ public class DataModelConfiguration {
 	private String dstSchema;
 
 	private Boolean overrideExistingDataModelElement;
+
+	private EtlConfiguration relatedConf;
 
 	public DatabaseObjectInstantiationMode getDatabaseObjectInstantiationMode() {
 		return databaseObjectInstantiationMode;
@@ -83,7 +88,25 @@ public class DataModelConfiguration {
 	public String toString() {
 		return "DataModelConfiguration [databaseObjectInstantiationMode=" + databaseObjectInstantiationMode
 				+ ", schemaMetadataMode=" + schemaMetadataMode + ", srcPojoPackageName=" + srcPojoPackageName
-				+ ", dstPojoPackageName=" + dstPojoPackageName + ", srcSchema=" + srcSchema + ", dstSchema="
-				+ dstSchema + ", overrideExistingDataModelElement=" + overrideExistingDataModelElement + "]";
+				+ ", dstPojoPackageName=" + dstPojoPackageName + ", srcSchema=" + srcSchema + ", dstSchema=" + dstSchema
+				+ ", overrideExistingDataModelElement=" + overrideExistingDataModelElement + "]";
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		return this.relatedConf;
+	}
+
+	@Override
+	public EtlDataConfiguration getParentConf() {
+		return this.relatedConf;
+	}
+
+	public void setRelatedConf(EtlConfiguration relatedConf) {
+		this.relatedConf = relatedConf;
+	}
+
+	@Override
+	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 	}
 }

@@ -251,13 +251,13 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	@JsonIgnore\n";
 		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public String getInsertSQLQuestionMarksWithoutObjectId(){ \n ";
-		methodFromSuperClass += "		return " + insertSQLQuestionMarksWithoutObjectId + "; \n";
+		methodFromSuperClass += "		return \"" + insertSQLQuestionMarksWithoutObjectId + "\";\n";
 		methodFromSuperClass += "	} \n \n";
 
 		methodFromSuperClass += "	@JsonIgnore\n";
 		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public String getInsertSQLQuestionMarksWithObjectId(){ \n ";
-		methodFromSuperClass += "		return " + insertSQLQuestionMarksWithObjectId + "; \n";
+		methodFromSuperClass += "		return \"" + insertSQLQuestionMarksWithObjectId + "\"; \n";
 		methodFromSuperClass += "	} \n \n";
 
 		methodFromSuperClass += "	@JsonIgnore\n";

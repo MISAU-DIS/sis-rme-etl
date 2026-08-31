@@ -237,6 +237,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private transient Map<String, Class<? extends EtlDatabaseObject>> dataModelClasses = new ConcurrentHashMap<>();
 
+	private Boolean ignoreAllStartupScripts;
+
 	public EtlConfiguration() {
 		this.allTables = new ArrayList<AbstractTableConfiguration>();
 
@@ -318,6 +320,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return getDataModel().shouldOverrideExistingDataModelElement();
 	}
 
+	public Boolean getIgnoreAllStartupScripts() {
+		return ignoreAllStartupScripts;
+	}
+
+	public void setIgnoreAllStartupScripts(Boolean ignoreAllStartupScripts) {
+		this.ignoreAllStartupScripts = ignoreAllStartupScripts;
+	}
+
+	public Boolean ignoreAllStartupScripts() {
+		return isTrue(ignoreAllStartupScripts);
+	}
+
 	@JsonIgnore
 	public synchronized DataModelClassLoader getDataModelClassLoader() {
 		if (dataModelClassLoader == null) {
@@ -330,7 +344,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	@JsonIgnore
 	public Class<? extends EtlDatabaseObject> loadDataModelClass(String fullClassName) throws ClassNotFoundException {
 		Class<? extends EtlDatabaseObject> loaded = getDataModelClasses().get(fullClassName);
-		if (loaded != null) return loaded;
+		if (loaded != null)
+			return loaded;
 		synchronized (this) {
 			loaded = getDataModelClasses().get(fullClassName);
 			if (loaded == null) {
@@ -342,11 +357,15 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private Map<String, Class<? extends EtlDatabaseObject>> getDataModelClasses() {
-		if (dataModelClasses == null) dataModelClasses = new ConcurrentHashMap<>();
+		if (dataModelClasses == null)
+			dataModelClasses = new ConcurrentHashMap<>();
 		return dataModelClasses;
 	}
 
-	/** Makes newly compiled classes visible without changing identities already cached. */
+	/**
+	 * Makes newly compiled classes visible without changing identities already
+	 * cached.
+	 */
 	public synchronized void refreshDataModelClassLoader() {
 		closeDataModelClassLoader();
 		dataModelClassLoader = null;
@@ -359,7 +378,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private void closeDataModelClassLoader() {
-		if (dataModelClassLoader == null) return;
+		if (dataModelClassLoader == null)
+			return;
 		try {
 			dataModelClassLoader.close();
 		} catch (IOException exception) {
@@ -1000,7 +1020,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 			try {
 
+				this.ensureEtlConfDirResolved();
+
 				this.applyIncludes();
+
+				if (this.getDataModel() != null) {
+					this.getDataModel().setRelatedConf(this);
+				}
 
 				this.determineDatabaseObjectInstantiationMode();
 				this.determineSchemaMetadataMode();
@@ -1047,10 +1073,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				if (this.templatesDir == null) {
 					this.templatesDir = this.getRelatedConfFile().getParent() + File.separator
 							+ DEFAULT_ETL_ELEMENTS_TEMPLATE_DIR;
-				}
-
-				if (this.etlConfDir == null) {
-					etlConfDir = this.getRelatedConfFile().getParent();
 				}
 
 				for (EtlOperationConfig operation : this.getOperations()) {
@@ -1125,13 +1147,32 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				DefaultEtlValidator.tryToValidate(this, srcConn, dstConn);
 
-				initParamsDataSource(srcConn, dstConn);
+				this.initParamsDataSource(srcConn, dstConn);
 
 				this.setInitialized(true);
 			} finally {
 				finalizeConnection(srcConn, this);
 				finalizeConnection(dstConn, this);
 			}
+		}
+	}
+
+	private void ensureEtlConfDirResolved() {
+		if (this.etlConfDir == null) {
+			File currDir = new File(this.getRelatedConfFile().getParent());
+
+			while (this.etlConfDir == null && currDir != null) {
+				if (currDir.getName().equals("conf")) {
+					this.etlConfDir = currDir.getAbsolutePath();
+				} else {
+					currDir = currDir.getParentFile();
+				}
+			}
+
+			if (currDir == null) {
+				this.etlConfDir = this.getRelatedConfFile().getParent();
+			}
+
 		}
 	}
 
@@ -1250,6 +1291,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private void tryToExecuteStartupScripts(DBConnectionInfo srcConnInfo, DBConnectionInfo dstConnInfo)
 			throws DBException {
+
+		if (ignoreAllStartupScripts()) {
+			return;
+		}
 
 		if (!this.hasParentEtlConf()) {
 
@@ -1574,6 +1619,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		for (EtlOperationConfig operation : this.getOperations()) {
+			operation.setRelatedEtlConf(this);
+
 			operation.validate();
 
 			if (this.hasTestingItem()) {

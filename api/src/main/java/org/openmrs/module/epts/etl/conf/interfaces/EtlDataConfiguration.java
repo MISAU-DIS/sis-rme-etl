@@ -360,6 +360,11 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			return true;
 		}
 
+		try {
+			return utilities.getPosOnArray(SAFE_FIELDS, field.getName()) >= 0;
+		} catch (RuntimeException e) {
+		}
+
 		if (type.isPrimitive()) {
 			if (type == boolean.class)
 				return !(Boolean) value;
@@ -377,12 +382,6 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				return ((Float) value) == 0f;
 			if (type == double.class)
 				return ((Double) value) == 0d;
-		} else {
-			try {
-				return utilities.getPosOnArray(SAFE_FIELDS, field.getName()) >= 0;
-			} catch (RuntimeException e) {
-				return false;
-			}
 		}
 
 		return false;
@@ -452,7 +451,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			String key = m.group(1);
 
 			// whitelist
-			if (allowedPlaceholders != null && !allowedPlaceholders.contains(key)) {
+			if (allowedPlaceholders != null && !allowedPlaceholders.isEmpty() && !allowedPlaceholders.contains(key)) {
 				m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0)));
 
 				continue;

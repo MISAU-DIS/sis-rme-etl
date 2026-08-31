@@ -40,7 +40,7 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class EtlOperationConfig extends AbstractBaseConfiguration {
+public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private static final int DEFAULT_BATCH_PROCESSING = 1000;
 
@@ -111,16 +111,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	private EtlConfiguration relatedEtlConf;
 
 	public EtlOperationConfig() {
-		this.dstType = EtlDstType.db;
-		this.actionType = EtlActionType.CREATE;
-		this.afterEtlActionType = EtlActionType.UNDEFINED;
-		this.processingMode = EtlProcessingModeType.SERIAL;
-		this.operationType = EtlOperationType.ETL;
-		this.processingBatch = EtlOperationConfig.DEFAULT_BATCH_PROCESSING;
-		this.maxSupportedProcessors = utilities.getAvailableProcessors();
-		this.fisicalCpuMultiplier = 1;
-		this.parallelProcessingStrategy = ParallelProcessingStrategyType.RANGE_PARTITIONING;
-		this.totalCountStrategy = EtlTotalRecordsCountStrategy.COUNT_ONCE;
+
 	}
 
 	@Override
@@ -761,6 +752,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 					+ this.getRelatedEtlConf().getRelatedConfFile().getAbsolutePath() + "]\n" + errorMsg;
 			throw new ForbiddenOperationException(errorMsg);
 		} else if (this.getChild() != null) {
+			this.getChild().setRelatedEtlConf(this.getRelatedEtlConf());
+
 			this.getChild().validate();
 		}
 
@@ -1038,6 +1031,49 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public void init() {
+		this.applyIncludes();
+		this.tryToLoadFromTemplate();
+
+		if (this.dstType == null) {
+			this.dstType = EtlDstType.db;
+		}
+
+		if (this.actionType == null) {
+			this.actionType = EtlActionType.CREATE;
+		}
+
+		if (this.afterEtlActionType == null) {
+			this.afterEtlActionType = EtlActionType.UNDEFINED;
+		}
+
+		if (this.processingMode == null) {
+			this.processingMode = EtlProcessingModeType.SERIAL;
+		}
+
+		if (this.operationType == null) {
+			this.operationType = EtlOperationType.ETL;
+		}
+
+		if (this.processingBatch == 0) {
+			this.processingBatch = EtlOperationConfig.DEFAULT_BATCH_PROCESSING;
+		}
+
+		if (this.maxSupportedProcessors == 0) {
+			this.maxSupportedProcessors = utilities.getAvailableProcessors();
+		}
+
+		if (this.fisicalCpuMultiplier == 0) {
+			this.fisicalCpuMultiplier = 1;
+		}
+
+		if (this.parallelProcessingStrategy == null) {
+			this.parallelProcessingStrategy = ParallelProcessingStrategyType.RANGE_PARTITIONING;
+		}
+
+		if (this.totalCountStrategy == null) {
+			this.totalCountStrategy = EtlTotalRecordsCountStrategy.COUNT_ONCE;
+		}
+
 		if (this.getMaxSupportedProcessors() == 1) {
 			this.setUseSharedConnectionPerThread(false);
 		}
@@ -1076,5 +1112,9 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public boolean usesDefaultRecords() {
 		return this.isEtl();
+	}
+
+	@Override
+	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 	}
 }
