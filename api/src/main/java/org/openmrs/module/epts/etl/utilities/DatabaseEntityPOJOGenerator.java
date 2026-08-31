@@ -47,7 +47,8 @@ public class DatabaseEntityPOJOGenerator {
 
 		pojoRootFolder += "/org/openmrs/module/epts/etl/model/pojo/";
 
-		File sourceFile = new File(pojoRootFolder + pojoble.getClasspackageForForder(connInfo) + "/" + className + ".java");
+		File sourceFile = new File(
+				pojoRootFolder + pojoble.getClasspackageForForder(connInfo) + "/" + className + ".java");
 
 		String fullClassName = pojoble.generateFullClassName(connInfo);
 
@@ -79,7 +80,7 @@ public class DatabaseEntityPOJOGenerator {
 		String insertValuesWithoutObjectIdDefinition = "";
 		String insertValuesWithObjectIdDefinition = "";
 
-		String createACopyComman = "";
+		String createACopyCommand = "";
 		String copyCommand = "";
 
 		AttDefinedElements attElements;
@@ -105,7 +106,7 @@ public class DatabaseEntityPOJOGenerator {
 				gettersAndSetterDefinition += "\n \n";
 			}
 
-			createACopyComman += "			" + attElements.generateCopyToOtherCommand("copy") + "\n";
+			createACopyCommand += "		" + attElements.generateCopyToOtherCommand("copy") + "\n";
 			copyCommand += "			" + attElements.generateCopyToThisCommand("toCopyFromAs" + className) + "\n";
 
 			if (!attElements.isPartOfObjectId()) {
@@ -249,6 +250,18 @@ public class DatabaseEntityPOJOGenerator {
 
 		methodFromSuperClass += "	@JsonIgnore\n";
 		methodFromSuperClass += "	@Override\n";
+		methodFromSuperClass += "	public String getInsertSQLQuestionMarksWithoutObjectId(){ \n ";
+		methodFromSuperClass += "		return " + insertSQLQuestionMarksWithoutObjectId + "; \n";
+		methodFromSuperClass += "	} \n \n";
+
+		methodFromSuperClass += "	@JsonIgnore\n";
+		methodFromSuperClass += "	@Override\n";
+		methodFromSuperClass += "	public String getInsertSQLQuestionMarksWithObjectId(){ \n ";
+		methodFromSuperClass += "		return " + insertSQLQuestionMarksWithObjectId + "; \n";
+		methodFromSuperClass += "	} \n \n";
+
+		methodFromSuperClass += "	@JsonIgnore\n";
+		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public Object[]  getUpdateParams(){ \n ";
 
 		if (pojoble.getPrimaryKey() != null) {
@@ -287,7 +300,7 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public EtlDatabaseObject createACopy(){ \n ";
 		methodFromSuperClass += "		" + className + " copy = new " + className + "();\n\n";
-		methodFromSuperClass += "" + createACopyComman + "\n";
+		methodFromSuperClass += "" + createACopyCommand + "\n";
 		methodFromSuperClass += "		return copy; \n";
 		methodFromSuperClass += "	} \n \n";
 
@@ -407,7 +420,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonMethods += "	@JsonIgnore\n";
 		commonMethods += "	@Override\n";
-		commonMethods += "	public String getInsertSQLQuestionMarksWithoutObjectId(){ \n ";
+		commonMethods += "	public String generateFullFilledUpdateSql(){ \n ";
 		commonMethods += "		return null; \n";
 		commonMethods += "	} \n \n";
 
@@ -419,20 +432,8 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonMethods += "	@JsonIgnore\n";
 		commonMethods += "	@Override\n";
-		commonMethods += "	public String getInsertSQLQuestionMarksWithObjectId(){ \n ";
-		commonMethods += "		return null; \n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
 		commonMethods += "	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks){ \n ";
 		commonMethods += "	 \n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public String generateFullFilledUpdateSql(){ \n ";
-		commonMethods += "		return null; \n";
 		commonMethods += "	} \n \n";
 
 		commonMethods += "	@JsonIgnore\n";
@@ -530,9 +531,11 @@ public class DatabaseEntityPOJOGenerator {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public static Class<EtlDatabaseObject> tryToGetExistingCLass(String fullClassName,
 			EtlConfiguration etlConfiguration) {
-		if (etlConfiguration == null) return tryToLoadFromOpenMRSClassLoader(fullClassName);
+		if (etlConfiguration == null)
+			return tryToLoadFromOpenMRSClassLoader(fullClassName);
 		try {
 			return (Class<EtlDatabaseObject>) etlConfiguration.loadDataModelClass(fullClassName);
 		} catch (ClassNotFoundException exception) {
