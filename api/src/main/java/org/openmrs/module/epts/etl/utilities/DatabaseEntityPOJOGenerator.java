@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
@@ -17,7 +19,10 @@ import javax.tools.ToolProvider;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.RefMapping;
+import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
+import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -30,6 +35,9 @@ public class DatabaseEntityPOJOGenerator {
 	private static final CommonUtilities utilities = CommonUtilities.getInstance();
 
 	private static final String[] IGNORABLE_FIELDS = { "date_changed", "date_created", "date_voided", "uuid" };
+
+	private static final ThreadLocal<Set<String>> DEPENDENCIES_BEING_GENERATED = ThreadLocal
+			.withInitial(HashSet::new);
 
 	private DatabaseEntityPOJOGenerator() {
 		// Utility class.
@@ -58,6 +66,8 @@ public class DatabaseEntityPOJOGenerator {
 		if (existingCLass != null && !shouldOverrideExistingDataModelElement(pojoble)) {
 			return existingCLass;
 		}
+
+		generateCompileTimeDependencies(pojoble, connInfo, fullClassName);
 
 		String attsDefinition = "";
 
@@ -220,6 +230,9 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	public void load(ResultSet rs) throws SQLException{ \n";
 		methodFromSuperClass += "		super.load(rs);\n \n";
 		methodFromSuperClass += resultSetLoadDefinition;
+		methodFromSuperClass += generateSharedPkLoad(pojoble);
+		methodFromSuperClass += generateAuxLoadObjects(pojoble, connInfo);
+		methodFromSuperClass += "\t\tthis.loadedFromDb = true;\n";
 		methodFromSuperClass += "	} \n \n";
 
 		methodFromSuperClass += "	@JsonIgnore\n";
@@ -378,7 +391,7 @@ public class DatabaseEntityPOJOGenerator {
 				+ " extends AbstractDatabaseObject implements EtlDatabaseObject { \n";
 		classDefinition += attsDefinition + "\n \n";
 		classDefinition += generateCommonAttDefinition(pojoble) + "\n";
-		classDefinition += generateCommonMethods(pojoble) + "\n";
+		classDefinition += generateCommonMethods(pojoble, connInfo) + "\n";
 		classDefinition += gettersAndSetterDefinition + "\n \n";
 		classDefinition += methodFromSuperClass + "\n";
 
@@ -409,14 +422,28 @@ public class DatabaseEntityPOJOGenerator {
 		return commonAttDefinition;
 	}
 
-	private static String generateCommonMethods(EtlDatabaseObjectConfiguration pojoble) {
+	private static String generateCommonMethods(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo) {
 		String className = pojoble.generateClassName();
 
 		String commonMethods = "";
 
 		commonMethods += "	public " + className + "() { \n";
 		commonMethods += "		this.metadata = " + pojoble.isMetadata() + ";\n";
+		if (usesSharedPk(pojoble)) {
+			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
+			commonMethods += "\t\tsetSharedPkObj(new " + shared.generateFullClassName(connInfo) + "());\n";
+		}
 		commonMethods += "	} \n \n";
+
+		if (usesSharedPk(pojoble)) {
+			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
+			String sharedClass = shared.generateFullClassName(connInfo);
+			commonMethods += "\t@JsonIgnore\n";
+			commonMethods += "\t@Override\n";
+			commonMethods += "\tpublic " + sharedClass + " getSharedPkObj() {\n";
+			commonMethods += "\t\treturn (" + sharedClass + ") super.getSharedPkObj();\n";
+			commonMethods += "\t}\n\n";
+		}
 
 		commonMethods += "	@JsonIgnore\n";
 		commonMethods += "	@Override\n";
@@ -457,6 +484,82 @@ public class DatabaseEntityPOJOGenerator {
 
 		return commonMethods;
 
+	}
+
+	private static boolean usesSharedPk(EtlDatabaseObjectConfiguration configuration) {
+		return configuration instanceof TableConfiguration && ((TableConfiguration) configuration).useSharedPKKey();
+	}
+
+	private static void generateCompileTimeDependencies(EtlDatabaseObjectConfiguration configuration,
+			DBConnectionInfo connInfo, String currentClassName) throws IOException, SQLException, ClassNotFoundException {
+		Set<String> resolving = DEPENDENCIES_BEING_GENERATED.get();
+		if (!resolving.add(currentClassName)) {
+			throw new EtlExceptionImpl("Cyclic generated POJO dependency detected at " + currentClassName);
+		}
+		try {
+			if (usesSharedPk(configuration)) {
+				generate(resolveSharedPkConfiguration((TableConfiguration) configuration), connInfo);
+			}
+			if (configuration instanceof MainJoiningEntity) {
+				MainJoiningEntity joining = (MainJoiningEntity) configuration;
+				if (joining.hasAuxExtractTable()) {
+					for (JoinableEntity auxiliary : joining.getJoiningTable()) {
+						if (!auxiliary.doNotUseAsDatasource()) generate(auxiliary, connInfo);
+					}
+				}
+			}
+		} finally {
+			resolving.remove(currentClassName);
+			if (resolving.isEmpty()) DEPENDENCIES_BEING_GENERATED.remove();
+		}
+	}
+
+	private static String generateSharedPkLoad(EtlDatabaseObjectConfiguration configuration) {
+		if (!usesSharedPk(configuration)) return "";
+		String code = "\n\t\tif (!hasRelatedConfiguration()) throw new "
+				+ "org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException("
+				+ "\"The relatedConfiguration is not set\");\n";
+		code += "\t\torg.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = "
+				+ "(org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();\n";
+		code += "\t\tif (!getSharedPkObj().isLoadedFromDb()) getSharedPkObj().load(rs);\n";
+		code += "\t\tloadObjectIdData(tableConfiguration);\n";
+		return code;
+	}
+
+	private static ParentTable resolveSharedPkConfiguration(TableConfiguration configuration) {
+		if (configuration.hasParentRefInfo()) {
+			for (ParentTable parent : configuration.getParentRefInfo()) {
+				if (parent.getTableName().equalsIgnoreCase(configuration.getSharePkWith())) return parent;
+			}
+		}
+		throw new EtlExceptionImpl("The shared PK table " + configuration.getSharePkWith() + " of "
+				+ configuration.getTableName() + " is not present in the loaded parent relationships");
+	}
+
+	private static String generateAuxLoadObjects(EtlDatabaseObjectConfiguration configuration,
+			DBConnectionInfo connInfo) {
+		if (!(configuration instanceof MainJoiningEntity)) return "";
+		MainJoiningEntity joining = (MainJoiningEntity) configuration;
+		if (!joining.hasAuxExtractTable()) return "";
+		String code = "\n\t\tif (!hasRelatedConfiguration()) throw new "
+				+ "org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException("
+				+ "\"The relatedConfiguration is not set\");\n";
+		code += "\t\tsetAuxLoadObject(new java.util.ArrayList<>());\n";
+		int index = 0;
+		for (JoinableEntity auxiliary : joining.getJoiningTable()) {
+			if (!auxiliary.doNotUseAsDatasource()) {
+				String auxiliaryClass = auxiliary.generateFullClassName(connInfo);
+				String variable = "auxLoadObject" + index;
+				code += "\t\t" + auxiliaryClass + " " + variable + " = new " + auxiliaryClass + "();\n";
+				code += "\t\t" + variable
+						+ ".setRelatedConfiguration(((org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity) "
+						+ "getRelatedConfiguration()).getJoiningTable().get(" + index + "));\n";
+				code += "\t\t" + variable + ".load(rs);\n";
+				code += "\t\tgetAuxLoadObject().add(" + variable + ");\n";
+			}
+			index++;
+		}
+		return code;
 	}
 
 	private static boolean isIgnorableField(String columnName) {

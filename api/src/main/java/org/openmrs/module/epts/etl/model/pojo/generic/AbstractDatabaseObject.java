@@ -988,7 +988,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	@Override
 	public void changeParentValue(ParentTable refInfo, EtlDatabaseObject newParent) {
 		for (RefMapping map : refInfo.getRefMapping()) {
-			Object parentValue = newParent.getFieldValue(map.getChildFieldNameAsAttClass());
+			Object parentValue = newParent.getFieldValue(map.getParentFieldNameAsAttClass());
 			this.setFieldValue(map.getChildFieldNameAsAttClass(), parentValue);
 		}
 	}

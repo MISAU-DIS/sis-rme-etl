@@ -112,6 +112,10 @@ public class PrecompiledSchemaFullLoadTest {
 		assertEquals(Arrays.asList("INFO:Full load done using existing static data"), etl.messages);
 
 		if (mode == SchemaMetadataMode.PRECOMPILED) {
+			// This fixture validates compilation of one isolated generated class. Its
+			// synthetic shared-PK target has no corresponding metadata/POJO fixture;
+			// structural shared-PK generation is validated with complete model graphs.
+			table.setSharePkWith(null);
 			etl.setClassPath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
 			table.generateRecordClass(connectionInfo, true);
 			Class<? extends EtlDatabaseObject> generatedClass = table.getEtlRecordClass();
