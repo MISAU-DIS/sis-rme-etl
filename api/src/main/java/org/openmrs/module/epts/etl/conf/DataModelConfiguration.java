@@ -1,7 +1,12 @@
 package org.openmrs.module.epts.etl.conf;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * Central configuration for the database model used by an ETL execution.
@@ -23,6 +28,9 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 	private Boolean overrideExistingDataModelElement;
 
 	private String javaFormatterConfigurationFile;
+
+	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+	private List<String> classPath = new ArrayList<>();
 
 	private EtlConfiguration relatedConf;
 
@@ -94,13 +102,21 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 		this.javaFormatterConfigurationFile = javaFormatterConfigurationFile;
 	}
 
+	public List<String> getClassPath() {
+		return classPath;
+	}
+
+	public void setClassPath(List<String> classPath) {
+		this.classPath = classPath == null ? new ArrayList<>() : new ArrayList<>(classPath);
+	}
+
 	@Override
 	public String toString() {
 		return "DataModelConfiguration [databaseObjectInstantiationMode=" + databaseObjectInstantiationMode
 				+ ", schemaMetadataMode=" + schemaMetadataMode + ", srcPojoPackageName=" + srcPojoPackageName
 				+ ", dstPojoPackageName=" + dstPojoPackageName + ", srcSchema=" + srcSchema + ", dstSchema=" + dstSchema
 				+ ", overrideExistingDataModelElement=" + overrideExistingDataModelElement
-				+ ", javaFormatterConfigurationFile=" + javaFormatterConfigurationFile + "]";
+				+ ", javaFormatterConfigurationFile=" + javaFormatterConfigurationFile + ", classPath=" + classPath + "]";
 	}
 
 	@Override

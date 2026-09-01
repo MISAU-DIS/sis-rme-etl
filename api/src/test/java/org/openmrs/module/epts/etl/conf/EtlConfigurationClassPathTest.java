@@ -13,7 +13,8 @@ public class EtlConfigurationClassPathTest {
 	@Test
 	public void shouldConfigureMultipleClassPaths() throws Exception {
 		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class)
-				.readValue("{\"classPath\":[\"lib/api.jar\",\"lib/driver.jar\"]}", EtlConfiguration.class);
+				.readValue("{\"dataModel\":{\"classPath\":[\"lib/api.jar\",\"lib/driver.jar\"]}}",
+						EtlConfiguration.class);
 
 		assertEquals(Arrays.asList("lib/api.jar", "lib/driver.jar"), configuration.getClassPath());
 		assertEquals(Arrays.asList(new File("lib/api.jar"), new File("lib/driver.jar")),
@@ -24,7 +25,7 @@ public class EtlConfigurationClassPathTest {
 	@Test
 	public void shouldReadLegacySingleClassPathAsAList() throws Exception {
 		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class)
-				.readValue("{\"classPath\":\"lib/api.jar\"}", EtlConfiguration.class);
+				.readValue("{\"dataModel\":{\"classPath\":\"lib/api.jar\"}}", EtlConfiguration.class);
 
 		assertEquals(Arrays.asList("lib/api.jar"), configuration.getClassPath());
 	}

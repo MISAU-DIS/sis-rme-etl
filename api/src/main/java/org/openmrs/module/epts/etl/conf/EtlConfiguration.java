@@ -47,7 +47,6 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
@@ -124,9 +123,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private Map<String, String> params;
 
 	private Boolean initialized;
-
-	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-	private List<String> classPath = new ArrayList<>();
 
 	private EtlConfigurationTableConf defaultGeneratedObjectKeyTabConf;
 
@@ -1705,7 +1701,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (this.containsOperation(EtlOperationType.DATABASE_MODEL_GENERATION)) {
 			if (!utilities.listHasElement(this.getClassPathAsFiles())) {
 				errorMsg += ++errNum
-						+ ". classPath must contain the dependencies required to compile POJOs during the DATABASE_MODEL_GENERATION operation.";
+						+ ". dataModel.classPath must contain the dependencies required to compile POJOs during the DATABASE_MODEL_GENERATION operation.";
 			}
 
 			if (hasSrcConnInfo() && !utilities.stringHasValue(this.getSrcPojoPackageName())) {
@@ -2150,20 +2146,22 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return paramObject;
 	}
 
+	@JsonIgnore
 	public List<String> getClassPath() {
-		return this.classPath;
+		return getDataModel().getClassPath();
 	}
 
+	@JsonIgnore
 	public void setClassPath(List<String> classPath) {
-		this.classPath = classPath == null ? new ArrayList<>() : new ArrayList<>(classPath);
+		getDataModel().setClassPath(classPath);
 	}
 
 	/** Files configured as external inputs for compilation and class loading. */
 	@JsonIgnore
 	public List<File> getClassPathAsFiles() {
 		List<File> files = new ArrayList<>();
-		if (classPath != null) {
-			for (String path : classPath) {
+		if (getClassPath() != null) {
+			for (String path : getClassPath()) {
 				if (utilities.stringHasValue(path))
 					files.add(new File(path));
 			}
