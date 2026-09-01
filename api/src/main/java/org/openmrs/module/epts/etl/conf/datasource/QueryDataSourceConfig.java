@@ -340,7 +340,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@JsonIgnore
 	@Override
-	public Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
+	public Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
 		return this
 				.generateSyncRecordClass(this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedConnInfo() : null);
 	}
@@ -369,7 +369,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		}
 	}
 
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 		this.syncRecordClass = syncRecordClass;
 	}
 

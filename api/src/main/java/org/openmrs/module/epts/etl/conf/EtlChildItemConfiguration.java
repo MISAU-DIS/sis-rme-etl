@@ -229,7 +229,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	@Override
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
 

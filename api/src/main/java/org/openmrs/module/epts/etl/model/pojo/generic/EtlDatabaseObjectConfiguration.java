@@ -122,7 +122,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	DBConnectionInfo getRelatedConnInfo();
 
-	void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
+	void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
 
 	Boolean isDestinationInstallationType();
 
@@ -159,7 +159,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return false;
 	}
 
-	default Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
+	default Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
 		throw new ForbiddenOperationException("Forbiden method! Please implement your own method!");
 	}
 
@@ -181,7 +181,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 			syncRecordClass = GenericDatabaseObject.class;
 		}
 
-		this.setSyncRecordClass(syncRecordClass);
+		this.setEtlRecordClass(syncRecordClass);
 
 		return syncRecordClass;
 	}

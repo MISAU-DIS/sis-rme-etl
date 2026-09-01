@@ -435,7 +435,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 
 		this.setParentRefInfo(toCloneFrom.getParentRefInfo());
-		this.setSyncRecordClass(toCloneFrom.getSyncRecordClass());
+		this.setEtlRecordClass(toCloneFrom.getEtlRecordClass());
 		this.setParentConf(parent != null ? parent : toCloneFrom.getParentConf());
 		this.setFields(toCloneFrom.getFields());
 		this.setIgnorableFields(toCloneFrom.getIgnorableFields());
@@ -602,7 +602,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					}
 
 					for (Key key : defaultObject.getObjectId().getFields()) {
-						EtlDatabaseObject keyInfo = defaultGeneratedObjectKeyTabConf.getSyncRecordClass().newInstance();
+						EtlDatabaseObject keyInfo = defaultGeneratedObjectKeyTabConf.getEtlRecordClass().newInstance();
 
 						keyInfo.setRelatedConfiguration(defaultGeneratedObjectKeyTabConf);
 
@@ -636,7 +636,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 		try {
 			@SuppressWarnings("deprecation")
-			EtlDatabaseObject keyInfo = skippedRecordTabConf.getSyncRecordClass().newInstance();
+			EtlDatabaseObject keyInfo = skippedRecordTabConf.getEtlRecordClass().newInstance();
 
 			keyInfo.setRelatedConfiguration(skippedRecordTabConf);
 
@@ -1210,9 +1210,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {
-				this.setSyncRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));
+				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));
 			} else {
-				this.setSyncRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo));
+				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo));
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -1231,7 +1231,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	default void generateSkeletonRecordClass(DBConnectionInfo application) {
 		try {
-			this.setSyncRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, application));
+			this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, application));
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 
@@ -1732,7 +1732,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		String sql = generateSelectFromQuery();
 		sql += "WHERE " + condition;
 
-		return DatabaseObjectDAO.find(getLoadHealper(), this.getSyncRecordClass(), sql, params, conn);
+		return DatabaseObjectDAO.find(getLoadHealper(), this.getEtlRecordClass(), sql, params, conn);
 	}
 
 	default ParentTable findParentRefInfoByField(String fieldName) {
@@ -2637,12 +2637,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default EtlDatabaseObject createRecordInstance() {
 		try {
 
-			if (this.getSyncRecordClass() == null) {
+			if (this.getEtlRecordClass() == null) {
 				throw new PojoNotFoundException(this);
 			}
 
 			@SuppressWarnings("deprecation")
-			EtlDatabaseObject rec = this.getSyncRecordClass().newInstance();
+			EtlDatabaseObject rec = this.getEtlRecordClass().newInstance();
 
 			rec.setRelatedConfiguration(this);
 

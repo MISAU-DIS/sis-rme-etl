@@ -871,12 +871,12 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 		Object[] params = pq.extractParametersValueToArray();
 
-		if (this.getDataSource().getSyncRecordClass() == null) {
+		if (this.getDataSource().getEtlRecordClass() == null) {
 			throw new EtlConfException("No syncRecordClass was defined for PreparedQuery [" + this + "]");
 		}
 
 		return (List<EtlDatabaseObject>) DatabaseObjectDAO.search(this.getDataSource().getLoadHealper(),
-				this.getDataSource().getSyncRecordClass(), pq.getPreparedQuery(), params, conn);
+				this.getDataSource().getEtlRecordClass(), pq.getPreparedQuery(), params, conn);
 	}
 
 	@Override

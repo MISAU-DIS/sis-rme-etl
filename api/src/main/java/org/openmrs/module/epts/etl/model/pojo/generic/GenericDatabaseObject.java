@@ -174,7 +174,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 			Connection dstConn) throws DBException {
 
 		try {
-			EtlDatabaseObject defaultParent = conf.getSyncRecordClass().getDeclaredConstructor().newInstance();
+			EtlDatabaseObject defaultParent = conf.getEtlRecordClass().getDeclaredConstructor().newInstance();
 
 			defaultParent.setRelatedConfiguration(parent);
 

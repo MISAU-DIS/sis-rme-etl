@@ -177,7 +177,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += " FROM     " + tableConfiguration.generateFullTableNameWithAlias() + "\n";
 		sql += " WHERE 	" + conditionSQL;
 
-		T recOnDb = (T) find(tableConfiguration.getLoadHealper(), tableConfiguration.getSyncRecordClass(), sql, params,
+		T recOnDb = (T) find(tableConfiguration.getLoadHealper(), tableConfiguration.getEtlRecordClass(), sql, params,
 				conn);
 
 		if (recOnDb != null) {
@@ -473,7 +473,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 			String parentField, Integer parentId, String schema, Connection conn) throws DBException {
 		Object[] params = { parentId };
 
-		Class<? extends EtlDatabaseObject> clazz = tabConf.getSyncRecordClass();
+		Class<? extends EtlDatabaseObject> clazz = tabConf.getEtlRecordClass();
 
 		EtlDatabaseObject record = utilities.createInstance(clazz);
 

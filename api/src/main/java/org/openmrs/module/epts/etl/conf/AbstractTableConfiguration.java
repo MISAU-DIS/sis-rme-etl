@@ -54,7 +54,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private List<ChildTable> childRefInfo;
 
-	private Class<? extends EtlDatabaseObject> syncRecordClass;
+	private Class<? extends EtlDatabaseObject> etlRecordClass;
 
 	private EtlDataConfiguration parentConf;
 
@@ -646,7 +646,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		try {
-			this.setSyncRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+			this.setEtlRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
 		} catch (PojoNotFoundException e) {
 		}
 	}
@@ -910,8 +910,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this.allRelatedTablesFullLoaded = allRelatedTablesFullLoaded;
 	}
 
-	public Class<? extends EtlDatabaseObject> getSyncRecordClass() {
-		return this.syncRecordClass;
+	public Class<? extends EtlDatabaseObject> getEtlRecordClass() {
+		return this.etlRecordClass;
 	}
 
 	public void setFullLoaded(Boolean fullLoaded) {
@@ -1092,8 +1092,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this.tableName = tableName;
 	}
 
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
-		this.syncRecordClass = syncRecordClass;
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+		this.etlRecordClass = syncRecordClass;
 	}
 
 	@Override

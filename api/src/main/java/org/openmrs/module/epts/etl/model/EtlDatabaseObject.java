@@ -311,7 +311,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		sql += " WHERE " + pk.parseToParametrizedStringConditionWithAlias();
 
-		return DatabaseObjectDAO.find(tabConf.getLoadHealper(), tabConf.getSyncRecordClass(), sql,
+		return DatabaseObjectDAO.find(tabConf.getLoadHealper(), tabConf.getEtlRecordClass(), sql,
 				pk.parseValuesToArray(), conn);
 	}
 

@@ -57,7 +57,7 @@ public class EtlStageAreaObjectDAO extends DatabaseObjectDAO {
 		
 		Object[] params = { compactedObjectUk, recordOriginLocationCode };
 		
-		return (EtlStageAreaObject) BaseDAO.find(conf.getLoadHealper(), conf.getSyncRecordClass(), query, params, conn);
+		return (EtlStageAreaObject) BaseDAO.find(conf.getLoadHealper(), conf.getEtlRecordClass(), query, params, conn);
 	}
 	
 	public static EtlStageAreaObject get(EtlConfigurationTableConf conf, String condition, Object[] params, Connection conn)
@@ -65,7 +65,7 @@ public class EtlStageAreaObjectDAO extends DatabaseObjectDAO {
 		
 		String query = conf.generateSelectFromQuery() + " WHERE " + condition;
 		
-		return (EtlStageAreaObject) BaseDAO.find(conf.getLoadHealper(), conf.getSyncRecordClass(), query, params, conn);
+		return (EtlStageAreaObject) BaseDAO.find(conf.getLoadHealper(), conf.getEtlRecordClass(), query, params, conn);
 		
 	}
 	
@@ -75,7 +75,7 @@ public class EtlStageAreaObjectDAO extends DatabaseObjectDAO {
 		
 		String query = conf.generateSelectFromQuery() + " WHERE " + condition;
 		
-		return (List<EtlDatabaseObject>) BaseDAO.search(conf.getLoadHealper(), conf.getSyncRecordClass(), query, params,
+		return (List<EtlDatabaseObject>) BaseDAO.search(conf.getLoadHealper(), conf.getEtlRecordClass(), query, params,
 		    conn);
 	}
 }

@@ -114,7 +114,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 
 					if (defaultParent == null) {
 						try {
-							defaultParent = conf.getSyncRecordClass().newInstance();
+							defaultParent = conf.getEtlRecordClass().newInstance();
 							defaultParent.setRelatedConfiguration(p);
 
 							if (defaultParent.checkIfAllRelationshipCanBeresolved(conf, dstConn)) {

@@ -29,7 +29,7 @@ public class EtlConfigurationTableConf extends AbstractTableConfiguration {
 
 		setOnConflict(ConflictResolutionType.KEEP_EXISTING);
 
-		setSyncRecordClass(EtlStageAreaObject.class);
+		setEtlRecordClass(EtlStageAreaObject.class);
 	}
 
 	@Override

@@ -339,7 +339,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}
 
@@ -430,7 +430,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
+	public Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
 		return GenericDatabaseObject.class;
 	}
 

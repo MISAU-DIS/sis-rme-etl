@@ -114,12 +114,12 @@ public class PrecompiledSchemaFullLoadTest {
 		if (mode == SchemaMetadataMode.PRECOMPILED) {
 			etl.setClassPath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
 			table.generateRecordClass(connectionInfo, true);
-			Class<? extends EtlDatabaseObject> generatedClass = table.getSyncRecordClass();
+			Class<? extends EtlDatabaseObject> generatedClass = table.getEtlRecordClass();
 			assertSame(generatedClass, DatabaseEntityPOJOGenerator.tryToGetExistingCLass(
 					table.generateFullClassName(connectionInfo), etl));
 			assertSame(generatedClass, DatabaseEntityPOJOGenerator.tryToGetExistingCLass(
 					table.generateFullClassName(connectionInfo), etl));
-			EtlDatabaseObject generated = table.getSyncRecordClass().getConstructor().newInstance();
+			EtlDatabaseObject generated = table.getEtlRecordClass().getConstructor().newInstance();
 			generated.setRelatedConfiguration(table);
 			Field generatedLocation = (Field) generated.getClass().getMethod("getLocationId").invoke(generated);
 			assertEquals("location_id", generatedLocation.getName());
