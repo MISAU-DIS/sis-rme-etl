@@ -82,6 +82,7 @@ public class PrecompiledSchemaFullLoadTest {
 		new FilePhysicalTableMetadataRepository(etl.getSchemaMetadataDirectory()).save(metadata);
 
 		TestTable table = new TestTable(etl, connectionInfo);
+		table.setParentConf(etl);
 		table.setTableName("person");
 		table.setSchema("openmrs");
 		table.setMustLoadChildrenInfo(true);

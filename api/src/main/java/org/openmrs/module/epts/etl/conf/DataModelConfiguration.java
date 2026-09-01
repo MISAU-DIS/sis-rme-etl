@@ -22,6 +22,8 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 
 	private Boolean overrideExistingDataModelElement;
 
+	private String javaFormatterConfigurationFile;
+
 	private EtlConfiguration relatedConf;
 
 	public DatabaseObjectInstantiationMode getDatabaseObjectInstantiationMode() {
@@ -84,12 +86,21 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 		return Boolean.TRUE.equals(overrideExistingDataModelElement);
 	}
 
+	public String getJavaFormatterConfigurationFile() {
+		return javaFormatterConfigurationFile;
+	}
+
+	public void setJavaFormatterConfigurationFile(String javaFormatterConfigurationFile) {
+		this.javaFormatterConfigurationFile = javaFormatterConfigurationFile;
+	}
+
 	@Override
 	public String toString() {
 		return "DataModelConfiguration [databaseObjectInstantiationMode=" + databaseObjectInstantiationMode
 				+ ", schemaMetadataMode=" + schemaMetadataMode + ", srcPojoPackageName=" + srcPojoPackageName
 				+ ", dstPojoPackageName=" + dstPojoPackageName + ", srcSchema=" + srcSchema + ", dstSchema=" + dstSchema
-				+ ", overrideExistingDataModelElement=" + overrideExistingDataModelElement + "]";
+				+ ", overrideExistingDataModelElement=" + overrideExistingDataModelElement
+				+ ", javaFormatterConfigurationFile=" + javaFormatterConfigurationFile + "]";
 	}
 
 	@Override

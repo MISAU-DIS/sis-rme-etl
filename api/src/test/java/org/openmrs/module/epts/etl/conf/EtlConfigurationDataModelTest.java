@@ -12,8 +12,9 @@ public class EtlConfigurationDataModelTest {
 	public void shouldReadAndResolveSourceAndDestinationDataModelConfiguration() throws Exception {
 		String json = "{\"dataModel\":{" + "\"databaseObjectInstantiationMode\":\"PRECOMPILED_POJO\","
 				+ "\"schemaMetadataMode\":\"PRECOMPILED_WITH_FALLBACK\"," + "\"srcPojoPackageName\":\"source_openmrs\","
-				+ "\"dstPojoPackageName\":\"destination_openmrs\"," + "\"srcSchema\":\"openmrs_source\","
-				+ "\"dstSchema\":\"openmrs_destination\"," + "\"overrideExistingDataModelElement\":true},"
+				+ "\"dstPojoPackageName\":\"destination_openmrs\"," + "\"srcSchema\":\"openmrs_source\"," 
+				+ "\"dstSchema\":\"openmrs_destination\"," + "\"overrideExistingDataModelElement\":true,"
+				+ "\"javaFormatterConfigurationFile\":\"conf/eclipse-formatter.xml\"},"
 				+ "\"srcConnInfo\":{},\"dstConnInfo\":{}}";
 		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class).readValue(json,
 				EtlConfiguration.class);
@@ -26,5 +27,7 @@ public class EtlConfigurationDataModelTest {
 		assertEquals("openmrs_source", configuration.getSchema(configuration.getSrcConnInfo()));
 		assertEquals("openmrs_destination", configuration.getSchema(configuration.getDstConnInfo()));
 		assertTrue(configuration.shouldOverrideExistingDataModelElement());
+		assertEquals("conf/eclipse-formatter.xml",
+				configuration.getDataModel().getJavaFormatterConfigurationFile());
 	}
 }

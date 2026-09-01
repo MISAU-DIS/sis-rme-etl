@@ -92,7 +92,8 @@ The optional *dataModel* element centralizes how database objects and physical s
     "dstPojoPackageName": "destination_openmrs",
     "srcSchema": "openmrs_source",
     "dstSchema": "openmrs_destination",
-    "overrideExistingDataModelElement": false
+    "overrideExistingDataModelElement": false,
+    "javaFormatterConfigurationFile": "conf/eclipse-java-formatter.xml"
   }
 }
 ```
@@ -113,6 +114,7 @@ The element supports the following properties:
 - **overrideExistingDataModelElement** – Controls whether existing generated data-model artifacts may be replaced. The default is `false`.
   - When `false`, existing POJOs and physical schema metadata files are preserved and reused.
   - When `true`, existing POJO source and compiled classes are regenerated, and existing schema metadata files and their manifest entries are replaced.
+- **javaFormatterConfigurationFile** – Optional path to an Eclipse Java Formatter profile exported as XML. Relative paths are resolved from `etlRootDirectory`. When omitted, generated Java source is written without applying a formatter.
 
 If *databaseObjectInstantiationMode* is omitted, it defaults to *PRECOMPILED_POJO* when a source POJO package is configured; otherwise it defaults to *DYNAMIC_GENERIC*. If *schemaMetadataMode* is omitted, it defaults to *PRECOMPILED_WITH_FALLBACK* for precompiled POJOs and to *LIVE_DATABASE* for dynamic objects.
 

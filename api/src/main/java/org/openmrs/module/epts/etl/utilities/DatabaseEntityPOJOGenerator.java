@@ -2,8 +2,9 @@
 package org.openmrs.module.epts.etl.utilities;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -314,6 +315,7 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	public EtlDatabaseObject createACopy(){ \n ";
 		methodFromSuperClass += "		" + className + " copy = new " + className + "();\n\n";
 		methodFromSuperClass += "" + createACopyCommand + "\n";
+		methodFromSuperClass += generateSharedPkCreateACopy(pojoble);
 		methodFromSuperClass += "		return copy; \n";
 		methodFromSuperClass += "	} \n \n";
 
@@ -324,6 +326,7 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	    	" + className + " toCopyFromAs" + className + " = (" + className
 				+ ")toCopyFrom;\n\n";
 		methodFromSuperClass += "" + copyCommand + "\n";
+		methodFromSuperClass += generateSharedPkCopyFrom(pojoble, "toCopyFromAs" + className);
 		methodFromSuperClass += "	    }\n";
 		methodFromSuperClass += "	} \n \n";
 
@@ -397,7 +400,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		classDefinition += "}";
 
-		writeSourceFile(sourceFile, classDefinition);
+		writeSourceFile(sourceFile, classDefinition, pojoble.getRelatedEtlConf());
 
 		compile(sourceFile, pojoble, connInfo);
 		pojoble.getRelatedEtlConf().refreshDataModelClassLoader();
@@ -526,6 +529,21 @@ public class DatabaseEntityPOJOGenerator {
 		return code;
 	}
 
+	private static String generateSharedPkCreateACopy(EtlDatabaseObjectConfiguration configuration) {
+		if (!usesSharedPk(configuration)) return "";
+
+		return "\t\tif (getSharedPkObj() != null && copy.getSharedPkObj() != null) {\n"
+				+ "\t\t\tcopy.getSharedPkObj().copyFrom(getSharedPkObj());\n" + "\t\t}\n";
+	}
+
+	private static String generateSharedPkCopyFrom(EtlDatabaseObjectConfiguration configuration,
+			String sourceVariable) {
+		if (!usesSharedPk(configuration)) return "";
+
+		return "\t\t\tif (getSharedPkObj() != null && " + sourceVariable + ".getSharedPkObj() != null) {\n"
+				+ "\t\t\t\tgetSharedPkObj().copyFrom(" + sourceVariable + ".getSharedPkObj());\n" + "\t\t\t}\n";
+	}
+
 	private static ParentTable resolveSharedPkConfiguration(TableConfiguration configuration) {
 		if (configuration.hasParentRefInfo()) {
 			for (ParentTable parent : configuration.getParentRefInfo()) {
@@ -618,7 +636,7 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "	} \n \n";
 		classDefinition += "}";
 
-		writeSourceFile(sourceFile, classDefinition);
+		writeSourceFile(sourceFile, classDefinition, pojoable.getRelatedEtlConf());
 
 		compile(sourceFile, pojoable, connInfo);
 		pojoable.getRelatedEtlConf().refreshDataModelClassLoader();
@@ -626,12 +644,22 @@ public class DatabaseEntityPOJOGenerator {
 		return tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
 	}
 
-	private static void writeSourceFile(File sourceFile, String classDefinition) throws IOException {
+	private static void writeSourceFile(File sourceFile, String classDefinition, EtlConfiguration etlConfiguration)
+			throws IOException {
 		FileUtilities.tryToCreateDirectoryStructureForFile(sourceFile.getAbsolutePath());
+		File formatterProfile = resolveFormatterProfile(etlConfiguration);
+		String source = EclipseJavaSourceFormatter.format(classDefinition, formatterProfile);
+		Files.write(sourceFile.toPath(), source.getBytes(StandardCharsets.UTF_8));
+	}
 
-		try (FileWriter writer = new FileWriter(sourceFile)) {
-			writer.write(classDefinition);
-		}
+	private static File resolveFormatterProfile(EtlConfiguration etlConfiguration) {
+		if (etlConfiguration == null || !utilities
+				.stringHasValue(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile())) return null;
+
+		File configuredFile = new File(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile());
+		if (configuredFile.isAbsolute()) return configuredFile;
+
+		return new File(etlConfiguration.getEtlRootDirectory(), configuredFile.getPath());
 	}
 
 	@SuppressWarnings("unchecked")

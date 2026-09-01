@@ -1160,6 +1160,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 			if (existingRef == null) {
 				ref = (AbstractRelatedTable) parentTabConf;
+				ref.setParentConf(this.getParentConf());
 				ref.setMetadata(!ref.isConfigured());
 				this.getParentRefInfo().add((ParentTable) ref);
 			}
@@ -1171,6 +1172,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				ref = (AbstractRelatedTable) childTabConf;
 
 				ref.setRelatedTabConf(parentTabConf);
+				ref.setParentConf(this.getParentConf());
 				ref.setMetadata(!ref.isConfigured());
 
 				this.getChildRefInfo().add((ChildTable) ref);
@@ -1395,6 +1397,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default Boolean isConfigured() {
+		if (this.getRelatedEtlConf() == null) {
+			throw new EtlConfException("The relatedEtlConf was not set!");
+		}
+
 		for (TableConfiguration tabConf : this.getRelatedEtlConf().getConfiguredTables()) {
 			if (tabConf.getTableName().equals(this.getTableName()))
 				return true;
@@ -1405,6 +1411,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@Override
 	default void fullLoad(Connection conn) throws DBException {
+		if (this.getParentConf() == null) {
+			throw new EtlConfException("The parentConf is not set for " + this);
+		}
+
 		this.tryToGenerateTableAlias(this.getRelatedEtlConf());
 
 		synchronized (this) {
@@ -2877,6 +2887,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			}
 
 			if (!tabConf.isFullLoaded()) {
+				tabConf.setParentConf(this.getParentConf());
+
 				tabConf.fullLoad(conn);
 			}
 

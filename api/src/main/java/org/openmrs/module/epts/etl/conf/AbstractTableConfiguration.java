@@ -285,7 +285,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 					: PhysicalTableKeyFactory.create(this,
 							this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), conn);
 			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedConnInfo().getConnectionURI(),
-					this.getRelatedConnInfo().getDataBaseUserName(), key.getCatalog(), key.getSchema(), key.getTableName());
+					this.getRelatedConnInfo().getDataBaseUserName(), key.getCatalog(), key.getSchema(),
+					key.getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
 					.getOrCreate(identity);
@@ -592,12 +593,12 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	 */
 	public void synchronizePhysicalTableConfiguration() {
 		if (this.physicalTableConfiguration == null) {
-			throw new IllegalStateException("No physical table configuration attached to "
-					+ this.getFullTableDescription());
+			throw new IllegalStateException(
+					"No physical table configuration attached to " + this.getFullTableDescription());
 		}
 		if (!this.isFullLoaded()) {
-			throw new IllegalStateException("Cannot synchronize a table that is not full-loaded: "
-					+ this.getFullTableDescription());
+			throw new IllegalStateException(
+					"Cannot synchronize a table that is not full-loaded: " + this.getFullTableDescription());
 		}
 		this.physicalTableConfiguration.synchronizeFromLoadedTable(this.getFields(), this.getPrimaryKey(),
 				this.getUniqueKeys(), toPhysicalImportedForeignKeys(), toPhysicalExportedForeignKeys());
