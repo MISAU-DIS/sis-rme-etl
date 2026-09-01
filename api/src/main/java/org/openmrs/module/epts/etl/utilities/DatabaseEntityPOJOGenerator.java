@@ -229,9 +229,10 @@ public class DatabaseEntityPOJOGenerator {
 
 		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public void load(ResultSet rs) throws SQLException{ \n";
+		methodFromSuperClass += generateSharedPkLoad(pojoble);
 		methodFromSuperClass += "		super.load(rs);\n \n";
 		methodFromSuperClass += resultSetLoadDefinition;
-		methodFromSuperClass += generateSharedPkLoad(pojoble);
+		methodFromSuperClass += generateSharedPkPostLoad(pojoble);
 		methodFromSuperClass += generateAuxLoadObjects(pojoble, connInfo);
 		methodFromSuperClass += "\t\tthis.loadedFromDb = true;\n";
 		methodFromSuperClass += "	} \n \n";
@@ -517,14 +518,25 @@ public class DatabaseEntityPOJOGenerator {
 		}
 	}
 
-	private static String generateSharedPkLoad(EtlDatabaseObjectConfiguration configuration) {
+	static String generateSharedPkLoad(EtlDatabaseObjectConfiguration configuration) {
 		if (!usesSharedPk(configuration)) return "";
-		String code = "\n\t\tif (!hasRelatedConfiguration()) throw new "
+		String code = "\t\tif (!hasRelatedConfiguration()) throw new "
 				+ "org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException("
 				+ "\"The relatedConfiguration is not set\");\n";
-		code += "\t\torg.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = "
-				+ "(org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();\n";
 		code += "\t\tif (!getSharedPkObj().isLoadedFromDb()) getSharedPkObj().load(rs);\n";
+		return code;
+	}
+
+	static String generateSharedPkPostLoad(EtlDatabaseObjectConfiguration configuration) {
+		if (!usesSharedPk(configuration)) return "";
+		String code = "\n\t\torg.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = "
+				+ "(org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();\n";
+		if (configuration.containsField("uuid")) {
+			code += "\t\tif (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null "
+					+ "&& utilities.stringHasValue(getSharedPkObj().getUuid())) {\n";
+			code += "\t\t\tsetUuid(getSharedPkObj().getUuid());\n";
+			code += "\t\t}\n";
+		}
 		code += "\t\tloadObjectIdData(tableConfiguration);\n";
 		return code;
 	}

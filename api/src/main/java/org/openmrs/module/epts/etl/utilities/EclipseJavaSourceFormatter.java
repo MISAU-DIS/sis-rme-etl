@@ -25,7 +25,8 @@ public final class EclipseJavaSourceFormatter {
 	}
 
 	public static String format(String source, File profileFile) throws IOException {
-		if (profileFile == null) return source;
+		if (profileFile == null)
+			return source;
 		if (!profileFile.isFile()) {
 			throw new IOException("Eclipse Java formatter configuration file does not exist: " + profileFile);
 		}
@@ -36,9 +37,9 @@ public final class EclipseJavaSourceFormatter {
 		options.put("org.eclipse.jdt.core.compiler.codegen.targetPlatform", "11");
 
 		CodeFormatter formatter = new DefaultCodeFormatter(options);
-		TextEdit edit = formatter.format(CodeFormatter.K_COMPILATION_UNIT, source, 0, source.length(), 0,
-				null);
-		if (edit == null) throw new IOException("Eclipse JDT could not format the generated Java source");
+		TextEdit edit = formatter.format(CodeFormatter.K_COMPILATION_UNIT, source, 0, source.length(), 0, null);
+		if (edit == null)
+			throw new IOException("Eclipse JDT could not format the generated Java source");
 
 		Document document = new Document(source);
 		try {

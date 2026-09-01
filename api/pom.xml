@@ -111,10 +111,14 @@
 		            <groupId>org.slf4j</groupId>
 		            <artifactId>slf4j-log4j12</artifactId>
 		        </exclusion>
-			    <exclusion>
+		        <exclusion>
 		            <groupId>org.slf4j</groupId>
 		            <artifactId>jcl-over-slf4j</artifactId>
-		        </exclusion>	      
+		        </exclusion>
+		        <exclusion>
+		            <groupId>xml-apis</groupId>
+		            <artifactId>xml-apis</artifactId>
+		        </exclusion>
 		    </exclusions>	
 		</dependency>
 				
@@ -126,10 +130,14 @@
 		            <groupId>org.slf4j</groupId>
 		            <artifactId>slf4j-log4j12</artifactId>
 		        </exclusion>
-			    <exclusion>
+		        <exclusion>
 		            <groupId>org.slf4j</groupId>
 		            <artifactId>jcl-over-slf4j</artifactId>
-		        </exclusion>	      
+		        </exclusion>
+		        <exclusion>
+		            <groupId>xml-apis</groupId>
+		            <artifactId>xml-apis</artifactId>
+		        </exclusion>
 		    </exclusions>				
 			<type>test-jar</type>
 		</dependency>
