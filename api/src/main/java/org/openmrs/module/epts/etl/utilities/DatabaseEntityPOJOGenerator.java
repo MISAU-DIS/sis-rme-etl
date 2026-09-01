@@ -531,12 +531,10 @@ public class DatabaseEntityPOJOGenerator {
 		if (!usesSharedPk(configuration)) return "";
 		String code = "\n\t\torg.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = "
 				+ "(org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();\n";
-		if (configuration.containsField("uuid")) {
-			code += "\t\tif (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null "
-					+ "&& utilities.stringHasValue(getSharedPkObj().getUuid())) {\n";
-			code += "\t\t\tsetUuid(getSharedPkObj().getUuid());\n";
-			code += "\t\t}\n";
-		}
+		code += "\t\tif (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null "
+				+ "&& utilities.stringHasValue(getSharedPkObj().getUuid())) {\n";
+		code += "\t\t\tsetUuid(getSharedPkObj().getUuid());\n";
+		code += "\t\t}\n";
 		code += "\t\tloadObjectIdData(tableConfiguration);\n";
 		return code;
 	}

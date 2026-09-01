@@ -25,10 +25,11 @@ public class DatabaseEntityPOJOGeneratorSharedPkTest {
 	}
 
 	@Test
-	public void shouldNotGenerateUuidFallbackWhenTableHasNoUuidColumn() {
+	public void shouldGenerateInheritedUuidFallbackWhenTableHasNoUuidColumn() {
 		GenericTableConfiguration table = sharedPkTable(Field.fastCreateField("person_id"));
 
-		assertFalse(DatabaseEntityPOJOGenerator.generateSharedPkPostLoad(table).contains("setUuid"));
+		assertTrue(DatabaseEntityPOJOGenerator.generateSharedPkPostLoad(table)
+				.contains("setUuid(getSharedPkObj().getUuid())"));
 	}
 
 	private GenericTableConfiguration sharedPkTable(Field field) {
