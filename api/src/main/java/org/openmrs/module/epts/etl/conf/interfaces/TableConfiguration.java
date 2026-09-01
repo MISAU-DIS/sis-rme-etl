@@ -832,6 +832,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						for (ParentTable p : this.getParents()) {
 
 							p.setChildTableConf(this);
+							p.setParentConf(this.getParentConf());
 
 							if (p.getRefMapping() != null) {
 

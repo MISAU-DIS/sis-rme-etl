@@ -2,11 +2,10 @@ package org.openmrs.module.epts.etl.databasemodelgeneration.processor;
 
 import java.sql.Connection;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Set;
+import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
@@ -54,7 +53,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  */
 public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseModelGenerationRecord> {
 
-	private List<String> alreadyGeneratedClasses;
+	private final DatabaseModelGenerationVisitTracker generationVisitTracker;
 
 	private boolean databaseModelGenerated;
 
@@ -64,7 +63,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 			boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 
-		this.alreadyGeneratedClasses = new ArrayList<String>();
+		this.generationVisitTracker = new DatabaseModelGenerationVisitTracker();
 		this.visitedItemConfigurations = Collections.newSetFromMap(new IdentityHashMap<>());
 	}
 
@@ -84,8 +83,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	@Override
 	public void transformAndLoad(List<DatabaseModelGenerationRecord> records, Connection srcConn, Connection dstConn)
 			throws DBException {
-		if (!this.databaseModelGenerated
-				&& getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement()) {
+		if (!this.databaseModelGenerated && getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement()) {
 			getRelatedEtlConfiguration().resetDataModelClassLoader();
 		}
 		this.databaseModelGenerated = true;
@@ -98,7 +96,8 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 	private void generateConfigurationTree(EtlItemConfiguration item, EtlOperationConfig operationConfig,
 			Connection srcConn, Connection dstConn) throws DBException {
-		if (item == null || !visitedItemConfigurations.add(item)) return;
+		if (item == null || !visitedItemConfigurations.add(item))
+			return;
 
 		item.fullLoad(operationConfig, srcConn, dstConn);
 		DBConnectionInfo sourceConnectionInfo = item.getSrcConnInfo();
@@ -112,9 +111,15 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 		if (item.hasDstConf() && getRelatedEtlConfiguration().hasDstConnInfo()) {
 			DBConnectionInfo destinationConnectionInfo = getRelatedEtlConfiguration().getDstConnInfo();
 			for (DstConf destination : item.getDstConf()) {
-				if (destination.isDisabled()) continue;
+				if (destination.isDisabled())
+					continue;
+
 				destination.setRelatedConnInfo(destinationConnectionInfo);
+
+				stepIntoBreakpoint(getRelatedEtlConf(), destination.getTableAlias().equals("lab_result_orders_dst_ds"));
+
 				generate(destinationConnectionInfo, destination);
+
 				generateOnDemandConfigurationTrees(destination, operationConfig, srcConn, dstConn);
 			}
 		}
@@ -128,14 +133,18 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 	private void generateOnDemandConfigurationTrees(DstConf destination, EtlOperationConfig operationConfig,
 			Connection srcConn, Connection dstConn) throws DBException {
-		if (!destination.hasMapping()) return;
+		if (!destination.hasMapping())
+			return;
+
 		for (FieldsMapping mapping : destination.getMapping()) {
-			if (!mapping.hasTransformer()) continue;
+			if (!mapping.hasTransformer())
+				continue;
 			mapping.tryToLoadTransformer(destination, srcConn);
 			mapping.getTransformerInstance().init(srcConn, dstConn);
 			mapping.getTransformerInstance().determineTransformerType();
 			if (!mapping.getTransformerType().isParentOnDemand()
-					&& !mapping.getTransformerType().isParentOnDemandWithDefaults()) continue;
+					&& !mapping.getTransformerType().isParentOnDemandWithDefaults())
+				continue;
 
 			ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) mapping.getTransformerInstance();
 			onDemand.init(srcConn, dstConn);
@@ -150,22 +159,29 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 		}
 
 		String fullClassName = objectConfiguration.generateFullClassName(app);
+		if (!generationVisitTracker.begin(fullClassName))
+			return;
 
-		if (!isAlreadyGenerated(fullClassName)) {
-			OpenConnection appConn = null;
+		OpenConnection appConn = null;
 
-			try {
-				appConn = app.openConnection(this);
+		try {
 
-				objectConfiguration.generateRecordClass(app, true);
-				persistPhysicalMetadata(app, objectConfiguration, appConn);
+			appConn = app.openConnection(this);
 
-				this.alreadyGeneratedClasses.add(fullClassName);
-			} catch (DBException e) {
-				throw new RuntimeException(e);
-			} finally {
-				finalizeConnection(appConn);
-			}
+			objectConfiguration.fullLoad(appConn);
+
+			objectConfiguration.generateRecordClass(app, true);
+			persistPhysicalMetadata(app, objectConfiguration, appConn);
+			generationVisitTracker.complete(fullClassName);
+
+		} catch (DBException e) {
+			generationVisitTracker.fail(fullClassName);
+			throw new RuntimeException(e);
+		} catch (RuntimeException e) {
+			generationVisitTracker.fail(fullClassName);
+			throw e;
+		} finally {
+			finalizeConnection(appConn);
 		}
 
 		if (objectConfiguration instanceof TableConfiguration) {
@@ -201,17 +217,14 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 			boolean saved = repository.save(metadata,
 					getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement());
 			if (saved) {
-				new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory()).record(
-						new DatabaseModelManifest.Entry(key.toString(), tableConfiguration.generateFullClassName(app),
+				new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
+						.record(new DatabaseModelManifest.Entry(key.toString(),
+								tableConfiguration.generateFullClassName(app),
 								PhysicalTableMetadataFingerprint.sha256(metadata)));
 			}
 		} catch (IOException | java.sql.SQLException exception) {
 			throw new RuntimeException("Could not persist physical metadata for " + table.getTableName(), exception);
 		}
-	}
-
-	private boolean isAlreadyGenerated(String fullClassPath) {
-		return this.alreadyGeneratedClasses.contains(fullClassPath);
 	}
 
 	public boolean isDatabaseModelGenerated() {

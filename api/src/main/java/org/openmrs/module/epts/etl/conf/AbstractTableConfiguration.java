@@ -304,9 +304,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (mode != null && mode.usesFilesFirst()) {
 			FilePhysicalTableMetadataRepository files = new FilePhysicalTableMetadataRepository(
 					this.getRelatedEtlConf().getSchemaMetadataDirectory());
-			java.util.Optional<PhysicalTableMetadata> stored = files
-					.find(this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), this.getSchema(),
-							this.getTableName());
+			java.util.Optional<PhysicalTableMetadata> stored = files.find(
+					this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), this.getSchema(),
+					this.getTableName());
 			if (stored.isPresent()) {
 				try {
 					validateManifestAssociation(stored.get());
@@ -329,8 +329,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 		this.physicalMetadataLoadedFromStaticData = false;
 		PhysicalTableKey key = PhysicalTableKeyFactory.create(this,
-				this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()),
-				conn);
+				this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), conn);
 		return new JdbcPhysicalTableMetadataRepository(conn).find(key)
 				.orElseThrow(() -> new java.io.IOException("Live table metadata not found for " + key));
 	}
@@ -479,7 +478,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			return;
 		List<ParentTable> resolved = new ArrayList<>();
 		for (PhysicalForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getImportedForeignKeys()) {
+
 			ParentTableImpl parent = ParentTableImpl.init(foreignKey.getReferencedTable(), foreignKey.getName(), this);
+
 			parent.setSchema(
 					utilities.stringHasValue(foreignKey.getReferencedSchema()) ? foreignKey.getReferencedSchema()
 							: foreignKey.getReferencedCatalog());
@@ -577,9 +578,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			return;
 		for (ParentTable configured : this.getParents()) {
 			boolean alreadyResolved = false;
-			
+
 			configured.setRelatedTabConf(this);
-			
+
 			for (ParentTable parent : resolved) {
 				if ((utilities.stringHasValue(configured.getRefCode())
 						&& configured.getRefCode().equals(parent.getRefCode())) || configured.equals(parent)) {

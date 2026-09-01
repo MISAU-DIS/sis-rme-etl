@@ -888,9 +888,6 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
-		stepIntoBreakpoint(getRelatedEtlConf(), this.getTableAlias().equals("lab_result_on_demand_encounter_dst_ds")
-				|| this.getTableAlias().equals("lab_result_on_demand_encounter_provider_dst_ds"));
-
 		if (isLoadedDataSourceInfo())
 			return;
 
