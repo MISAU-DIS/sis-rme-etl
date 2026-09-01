@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -869,6 +870,10 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 				srcObjects, this.getQuery(), conn);
 
 		Object[] params = pq.extractParametersValueToArray();
+
+		if (this.getDataSource().getSyncRecordClass() == null) {
+			throw new EtlConfException("No syncRecordClass was defined for PreparedQuery [" + this + "]");
+		}
 
 		return (List<EtlDatabaseObject>) DatabaseObjectDAO.search(this.getDataSource().getLoadHealper(),
 				this.getDataSource().getSyncRecordClass(), pq.getPreparedQuery(), params, conn);

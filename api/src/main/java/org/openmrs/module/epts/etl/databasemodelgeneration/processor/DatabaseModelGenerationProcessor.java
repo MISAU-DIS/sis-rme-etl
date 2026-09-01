@@ -133,8 +133,11 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 	private void generateOnDemandConfigurationTrees(DstConf destination, EtlOperationConfig operationConfig,
 			Connection srcConn, Connection dstConn) throws DBException {
+
 		if (!destination.hasMapping())
 			return;
+
+		destination.fullLoad(dstConn);
 
 		for (FieldsMapping mapping : destination.getMapping()) {
 			if (!mapping.hasTransformer())
