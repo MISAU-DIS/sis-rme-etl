@@ -34,6 +34,7 @@ import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
@@ -283,6 +284,11 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 					conn));
 
 			this.debug("QueryDataSourceConfig [" + this.getDesc() + "] full loaded!");
+
+			try {
+				this.setEtlRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+			} catch (PojoNotFoundException e) {
+			}
 
 			this.fullLoaded = true;
 		} catch (ForbiddenOperationException | InvalidDataSourceOnFieldDefifitionException

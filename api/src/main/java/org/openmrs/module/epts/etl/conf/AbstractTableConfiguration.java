@@ -300,7 +300,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private PhysicalTableMetadata resolvePhysicalTableMetadata(Connection conn)
 			throws java.io.IOException, SQLException {
+
 		SchemaMetadataMode mode = this.getRelatedEtlConf().getSchemaMetadataMode();
+
 		if (mode != null && mode.usesFilesFirst()) {
 			FilePhysicalTableMetadataRepository files = new FilePhysicalTableMetadataRepository(
 					this.getRelatedEtlConf().getSchemaMetadataDirectory());
@@ -427,7 +429,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isUniqueKeyInfoLoaded())
 			return;
 
-		if (usesResolvedStaticSchemaMetadata()) {
+		if (usesResolvedStaticSchemaMetadata() && this.isFullLoaded()) {
 			if (this.uniqueKeys != null) {
 				TableConfiguration.super.loadUniqueKeys(conn);
 				return;
@@ -442,7 +444,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 		// Unique-key discovery currently observes contextual field exclusions and
 		// shared-PK relationships. Keep those cases local until physical FK DTOs exist.
-		if (this.uniqueKeys != null || utilities.listHasElement(this.ignorableFields) || this.useSharedPKKey()) {
+		if (this.uniqueKeys != null || this.useSharedPKKey()) {
 			TableConfiguration.super.loadUniqueKeys(conn);
 			return;
 		}

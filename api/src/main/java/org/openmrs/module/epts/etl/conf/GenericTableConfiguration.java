@@ -10,12 +10,12 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class GenericTableConfiguration extends AbstractTableConfiguration {
-	
+
 	private AbstractTableConfiguration relatedTableConf;
-	
+
 	public GenericTableConfiguration() {
 	}
-	
+
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		if (super.getRelatedEtlConf() != null) {
@@ -25,70 +25,72 @@ public class GenericTableConfiguration extends AbstractTableConfiguration {
 		} else {
 			return null;
 		}
-		
+
 	}
-	
+
 	public AbstractTableConfiguration getRelatedTableConf() {
 		return relatedTableConf;
 	}
-	
+
 	public GenericTableConfiguration(String tableName) {
 		setTableName(tableName);
 	}
-	
+
 	public GenericTableConfiguration(String tableName, TableConfiguration relatedTableConf) {
 		this(tableName);
-		
+
 		this.relatedTableConf = (AbstractTableConfiguration) relatedTableConf;
-		
+
+		this.setParentConf(relatedTableConf.getParentConf());
+
 		if (this.relatedTableConf.isGeneric()) {
 			throw new ForbiddenOperationException(
-			        "The generic table Conf cannot be related to another generic configuration");
+					"The generic table Conf cannot be related to another generic configuration");
 		}
-		
+
 	}
-	
+
 	@Override
 	public Boolean isGeneric() {
 		return true_();
 	}
-	
+
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		
+
 		if (this.relatedTableConf == null) {
 			throw new ForbiddenOperationException("The generic table Conf should have a related to use this method");
-			
+
 		}
-		
+
 		return this.relatedTableConf.getRelatedConnInfo();
 	}
-	
+
 	@Override
 	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo application)
-	        throws ForbiddenOperationException {
+			throws ForbiddenOperationException {
 		return GenericDatabaseObject.class;
 	}
-	
+
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 	}
-	
+
 	@Override
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
 	}
-	
+
 	@Override
 	public String getQuery() {
 		String condition = super.generateConditionsFields(null, null, null);
-		
+
 		condition += utilities.stringHasValue(this.getExtraConditionForExtract())
-		        ? " AND (" + this.getExtraConditionForExtract() + ")"
-		        : "";
-		
+				? " AND (" + this.getExtraConditionForExtract() + ")"
+				: "";
+
 		return this.generateSelectFromQuery() + " WHERE " + condition;
 	}
-	
+
 	@Override
 	public String getName() {
 		return this.getTableAlias() != null ? this.getTableAlias() : this.getTableName();

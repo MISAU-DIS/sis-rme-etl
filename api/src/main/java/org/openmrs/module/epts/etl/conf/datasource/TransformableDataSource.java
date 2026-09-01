@@ -30,6 +30,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransfor
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
@@ -259,6 +260,13 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 					"You must specify the 'objectFields' on extraObjectDataSource configuration (" + this.getName()
 							+ ")");
 		}
+
+		try {
+			this.setEtlRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+		} catch (PojoNotFoundException e) {
+		}
+
+		this.setFullLoaded(true);
 	}
 
 	@Override
@@ -277,7 +285,6 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 		return className + "VO";
 	}
-
 
 	@Override
 	public EtlDataConfiguration getParentConf() {

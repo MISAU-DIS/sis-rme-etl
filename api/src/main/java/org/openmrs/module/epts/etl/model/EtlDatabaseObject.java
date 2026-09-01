@@ -605,6 +605,10 @@ public interface EtlDatabaseObject extends EtlObject {
 
 			tabConfInSrc.fullLoad(srcConn);
 		}
+		
+		if (tabConfInSrc.getParentConf() == null) {
+			tabConfInSrc.setParentConf(refInfo.getParentConf());
+		}
 
 		return DatabaseObjectDAO.getByOid(tabConfInSrc, prentOid, srcConn);
 	}

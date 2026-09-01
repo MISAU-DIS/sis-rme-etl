@@ -220,6 +220,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
+		super.loadOwnElements(schemaInfo, conn);
+
 		this.loadJoinElements(schemaInfo, DataSourceSide.OTHER_IS_DATA_SOURCE, conn);
 		this.loadAlias();
 

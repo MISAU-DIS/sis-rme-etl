@@ -40,7 +40,6 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
-import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
@@ -687,6 +686,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		} finally {
 			finalizeConnection(conn, this);
 		}
+
 	}
 
 	@JsonIgnore
@@ -1474,11 +1474,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					this.createDefaultOrderingInfo();
 				}
 
-				this.setFullLoaded(true);
-
 				getRelatedEtlConf().addToFullLoadedTables(this);
 
 				logDebug("Table full loaded: " + this);
+
+				this.setFullLoaded(true);
 			} catch (SQLException e) {
 				e.printStackTrace();
 
@@ -1681,6 +1681,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		} else if (this.hasParentRefInfo()) {
 
 			for (ParentTable parent : this.getParentRefInfo()) {
+				parent.setParentConf(this.getParentConf());
+
 				if (parent.getTableName().equalsIgnoreCase(this.getSharePkWith())) {
 
 					if (!parent.isFullLoaded()) {
@@ -1689,6 +1691,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						try {
 							if (conn == null) {
 								localConn = this.getRelatedEtlConf().openSrcConn(this);
+
 								parent.fullLoad(localConn);
 							} else {
 								parent.fullLoad(conn);
@@ -2638,7 +2641,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		try {
 
 			if (this.getEtlRecordClass() == null) {
-				throw new PojoNotFoundException(this);
+				this.setEtlRecordClass(generateSyncRecordClass(getRelatedConnInfo()));
 			}
 
 			@SuppressWarnings("deprecation")
