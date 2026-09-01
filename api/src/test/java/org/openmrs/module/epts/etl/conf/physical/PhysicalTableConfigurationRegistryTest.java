@@ -3,6 +3,8 @@ package org.openmrs.module.epts.etl.conf.physical;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -159,5 +161,77 @@ public class PhysicalTableConfigurationRegistryTest {
 		org.junit.Assert.assertTrue(description.contains("PhysicalColumnMetadata{name='person_id'"));
 		org.junit.Assert.assertTrue(description.contains("primaryKeyLoaded=false"));
 		org.junit.Assert.assertTrue(description.contains("exportedForeignKeysLoaded=false"));
+	}
+
+	@Test
+	public void shouldCompleteEveryPendingSectionWhenFieldsWereLoadedEarlier() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "person"));
+		Field initialField = new Field("person_id");
+		initialField.setDataType("int");
+		configuration.initializeFields(Arrays.asList(initialField));
+
+		PhysicalTableMetadata complete = metadata("person", "bigint", "pk_person");
+		configuration.initialize(complete);
+
+		assertEquals("int", configuration.copyFields().get(0).getDataType());
+		assertEquals("pk_person", configuration.copyPrimaryKey(null).getKeyName());
+		assertEquals(1, configuration.copyUniqueKeys(null).size());
+		assertEquals(1, configuration.getImportedForeignKeys().size());
+		assertEquals(1, configuration.getExportedForeignKeys().size());
+	}
+
+	@Test
+	public void shouldReplaceInitialStateWithDefinitiveSnapshotBeforePersistence() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "person"));
+		configuration.initialize(metadata("person", "int", null));
+		assertNull(configuration.copyPrimaryKey(null));
+
+		PhysicalTableMetadata definitive = metadata("person", "bigint", "pk_person");
+		configuration.replaceWith(definitive);
+		PhysicalTableMetadata persisted = configuration.toMetadata(definitive.getKey());
+
+		assertEquals("bigint", persisted.getColumns().get(0).getDataType());
+		assertEquals("pk_person", persisted.getPrimaryKey().getName());
+		assertEquals(definitive, persisted);
+	}
+
+	@Test
+	public void shouldExplicitlySynchronizeEverySectionFromLoadedTableState() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "patient"));
+		Field id = new Field("patient_id");
+		id.setDataType("int");
+		PrimaryKey primaryKey = new PrimaryKey();
+		primaryKey.setKeyName("PRIMARY");
+		primaryKey.addKey(Key.fastCreateTyped("patient_id", "int"));
+
+		configuration.synchronizeFromLoadedTable(Arrays.asList(id), primaryKey, Arrays.asList(), Arrays.asList(),
+				Arrays.asList());
+		PhysicalTableKey key = identity("openmrs", "patient").toPersistentKey("source-openmrs", "mysql");
+		PhysicalTableMetadata metadata = configuration.toMetadata(key);
+
+		assertEquals(1, metadata.getColumns().size());
+		assertEquals("PRIMARY", metadata.getPrimaryKey().getName());
+		assertTrue(metadata.getUniqueKeys().isEmpty());
+		assertTrue(metadata.getImportedForeignKeys().isEmpty());
+		assertTrue(metadata.getExportedForeignKeys().isEmpty());
+	}
+
+	private PhysicalTableMetadata metadata(String table, String fieldType, String primaryKeyName) {
+		PhysicalTableKey key = identity("openmrs", table).toPersistentKey("source-openmrs", "mysql");
+		PhysicalColumnMetadata column = new PhysicalColumnMetadata("person_id", fieldType, 11, 0, false, true,
+				false);
+		PhysicalKeyMetadata primaryKey = primaryKeyName == null ? null
+				: new PhysicalKeyMetadata(primaryKeyName,
+						Arrays.asList(new PhysicalKeyMetadata.PhysicalKeyColumnMetadata("person_id", fieldType)), false);
+		PhysicalKeyMetadata uniqueKey = new PhysicalKeyMetadata("uk_person_id",
+				Arrays.asList(new PhysicalKeyMetadata.PhysicalKeyColumnMetadata("person_id", fieldType)), false);
+		PhysicalForeignKeyMetadata imported = new PhysicalForeignKeyMetadata("fk_person_creator", "openmrs",
+				"openmrs", "users", Arrays.asList(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(
+						"person_id", "user_id")));
+		PhysicalExportedForeignKeyMetadata exported = new PhysicalExportedForeignKeyMetadata("fk_obs_person",
+				"openmrs", "openmrs", "obs", Arrays.asList(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(
+						"person_id", "person_id")));
+		return new PhysicalTableMetadata(key, Arrays.asList(column), primaryKey, Arrays.asList(uniqueKey),
+				Arrays.asList(imported), Arrays.asList(exported));
 	}
 }

@@ -146,10 +146,62 @@ public final class PhysicalTableConfiguration {
 		if (!areExportedForeignKeysLoaded()) initializeExportedForeignKeys(metadata.getExportedForeignKeys());
 	}
 
+	/**
+	 * Replaces the cached physical state with a definitive, complete snapshot.
+	 * This is intended for database-model generation after the related table has
+	 * completed its loading lifecycle. Runtime/contextual table information must
+	 * not be passed through this method.
+	 */
+	public synchronized void replaceWith(PhysicalTableMetadata metadata) {
+		List<PhysicalColumnMetadata> replacementFields = new ArrayList<>(metadata.getColumns());
+		this.fields = Collections.unmodifiableList(replacementFields);
+		this.primaryKey = metadata.getPrimaryKey();
+		this.primaryKeyLoaded = true;
+		this.uniqueKeys = Collections.unmodifiableList(new ArrayList<>(metadata.getUniqueKeys()));
+		this.uniqueKeysLoaded = true;
+		this.importedForeignKeys = Collections
+				.unmodifiableList(new ArrayList<>(metadata.getImportedForeignKeys()));
+		this.importedForeignKeysLoaded = true;
+		this.exportedForeignKeys = Collections
+				.unmodifiableList(new ArrayList<>(metadata.getExportedForeignKeys()));
+		this.exportedForeignKeysLoaded = true;
+	}
+
+	/** Synchronizes the reusable physical state from an already full-loaded table. */
+	public synchronized void synchronizeFromLoadedTable(List<Field> loadedFields, PrimaryKey loadedPrimaryKey,
+			List<UniqueKeyInfo> loadedUniqueKeys, List<PhysicalForeignKeyMetadata> loadedImportedForeignKeys,
+			List<PhysicalExportedForeignKeyMetadata> loadedExportedForeignKeys) {
+		List<PhysicalColumnMetadata> synchronizedFields = new ArrayList<>();
+		if (loadedFields != null) {
+			for (Field field : loadedFields) synchronizedFields.add(PhysicalColumnMetadata.fromField(field));
+		}
+		this.fields = Collections.unmodifiableList(synchronizedFields);
+		this.primaryKey = loadedPrimaryKey == null ? null : PhysicalKeyMetadata.fromKey(loadedPrimaryKey);
+		this.primaryKeyLoaded = true;
+
+		List<PhysicalKeyMetadata> synchronizedUniqueKeys = new ArrayList<>();
+		if (loadedUniqueKeys != null) {
+			for (UniqueKeyInfo key : loadedUniqueKeys) synchronizedUniqueKeys.add(PhysicalKeyMetadata.fromKey(key));
+		}
+		this.uniqueKeys = Collections.unmodifiableList(synchronizedUniqueKeys);
+		this.uniqueKeysLoaded = true;
+		this.importedForeignKeys = Collections.unmodifiableList(new ArrayList<>(loadedImportedForeignKeys));
+		this.importedForeignKeysLoaded = true;
+		this.exportedForeignKeys = Collections.unmodifiableList(new ArrayList<>(loadedExportedForeignKeys));
+		this.exportedForeignKeysLoaded = true;
+	}
+
 	public synchronized PhysicalTableMetadata toMetadata(PhysicalTableKey key) {
 		if (!hasFields() || !isPrimaryKeyLoaded() || !areUniqueKeysLoaded() || !areImportedForeignKeysLoaded()
 				|| !areExportedForeignKeysLoaded()) {
-			throw new IllegalStateException("Physical table configuration is not completely loaded: " + identity);
+			List<String> pending = new ArrayList<>();
+			if (!hasFields()) pending.add("fields");
+			if (!isPrimaryKeyLoaded()) pending.add("primaryKey");
+			if (!areUniqueKeysLoaded()) pending.add("uniqueKeys");
+			if (!areImportedForeignKeysLoaded()) pending.add("importedForeignKeys");
+			if (!areExportedForeignKeysLoaded()) pending.add("exportedForeignKeys");
+			throw new IllegalStateException("Physical table configuration is not completely loaded: " + identity
+					+ ". Pending sections: " + pending);
 		}
 		return new PhysicalTableMetadata(key, fields, primaryKey, uniqueKeys, importedForeignKeys, exportedForeignKeys);
 	}

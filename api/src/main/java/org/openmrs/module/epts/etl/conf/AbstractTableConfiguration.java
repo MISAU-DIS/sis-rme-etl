@@ -11,7 +11,6 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
-import org.openmrs.module.epts.etl.conf.physical.JdbcPhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalExportedForeignKeyMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalForeignKeyMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
@@ -282,15 +281,20 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 		try {
 			PhysicalTableMetadata metadata = resolvePhysicalTableMetadata(conn);
+			PhysicalTableKey key = metadata != null ? metadata.getKey()
+					: PhysicalTableKeyFactory.create(this,
+							this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), conn);
 			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedConnInfo().getConnectionURI(),
-					this.getRelatedConnInfo().getDataBaseUserName(), metadata.getKey().getCatalog(),
-					metadata.getKey().getSchema(), metadata.getKey().getTableName());
+					this.getRelatedConnInfo().getDataBaseUserName(), key.getCatalog(), key.getSchema(), key.getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
 					.getOrCreate(identity);
 
-			if (!this.physicalTableConfiguration.hasFields())
+			if (metadata != null) {
+				// A static snapshot is already complete. A JDBC-backed configuration is
+				// deliberately populated by the normal TableConfiguration.fullLoad steps.
 				this.physicalTableConfiguration.initialize(metadata);
+			}
 		} catch (java.io.IOException e) {
 			throw new DBException(new SQLException(e));
 		} catch (SQLException e) {
@@ -330,10 +334,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		this.physicalMetadataLoadedFromStaticData = false;
-		PhysicalTableKey key = PhysicalTableKeyFactory.create(this,
-				this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), conn);
-		return new JdbcPhysicalTableMetadataRepository(conn).find(key)
-				.orElseThrow(() -> new java.io.IOException("Live table metadata not found for " + key));
+		return null;
 	}
 
 	private void validateManifestAssociation(PhysicalTableMetadata metadata) throws java.io.IOException {
@@ -429,11 +430,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isUniqueKeyInfoLoaded())
 			return;
 
-		if (usesResolvedStaticSchemaMetadata() && this.isFullLoaded()) {
-			if (this.uniqueKeys != null) {
-				TableConfiguration.super.loadUniqueKeys(conn);
-				return;
-			}
+		if (usesResolvedStaticSchemaMetadata()) {
 			this.uniqueKeys = this.physicalTableConfiguration.copyUniqueKeys(this);
 			if (this.uniqueKeys != null && utilities.listHasElement(this.ignorableFields)) {
 				this.uniqueKeys.removeIf(key -> key.getFields().stream().anyMatch(this::isIgnorableField));
@@ -474,6 +471,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	public void loadParents(Connection conn) throws DBException {
 		if (!usesResolvedStaticSchemaMetadata()) {
 			TableConfiguration.super.loadParents(conn);
+			this.physicalTableConfiguration.initializeImportedForeignKeys(toPhysicalImportedForeignKeys());
 			return;
 		}
 		if (this.isParentsLoaded())
@@ -518,6 +516,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	public void loadChildren(Connection conn) throws SQLException {
 		if (!usesResolvedStaticSchemaMetadata()) {
 			TableConfiguration.super.loadChildren(conn);
+			if (this.isMustLoadChildrenInfo()) {
+				this.physicalTableConfiguration.initializeExportedForeignKeys(toPhysicalExportedForeignKeys());
+			}
 			return;
 		}
 		if (!this.isMustLoadChildrenInfo())
@@ -544,6 +545,62 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			children.add(child);
 		}
 		this.setChildRefInfo(children);
+	}
+
+	private List<PhysicalForeignKeyMetadata> toPhysicalImportedForeignKeys() {
+		List<PhysicalForeignKeyMetadata> foreignKeys = new ArrayList<>();
+		if (!this.hasParentRefInfo())
+			return foreignKeys;
+
+		for (ParentTable parent : this.getParentRefInfo()) {
+			if (Boolean.TRUE.equals(parent.isManualyConfigured()) || !parent.hasMapping())
+				continue;
+			List<PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping> mappings = new ArrayList<>();
+			for (RefMapping mapping : parent.getRefMapping()) {
+				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
+						mapping.getParentFieldName()));
+			}
+			foreignKeys.add(new PhysicalForeignKeyMetadata(parent.getRefCode(), parent.getSchema(), parent.getSchema(),
+					parent.getTableName(), mappings));
+		}
+		return foreignKeys;
+	}
+
+	private List<PhysicalExportedForeignKeyMetadata> toPhysicalExportedForeignKeys() {
+		List<PhysicalExportedForeignKeyMetadata> foreignKeys = new ArrayList<>();
+		if (!this.hasChildRefInfo())
+			return foreignKeys;
+
+		for (ChildTable child : this.getChildRefInfo()) {
+			if (Boolean.TRUE.equals(child.isManualyConfigured()) || !child.hasMapping())
+				continue;
+			List<PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping> mappings = new ArrayList<>();
+			for (RefMapping mapping : child.getRefMapping()) {
+				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
+						mapping.getParentFieldName()));
+			}
+			foreignKeys.add(new PhysicalExportedForeignKeyMetadata(child.getRefCode(), child.getSchema(),
+					child.getSchema(), child.getTableName(), mappings));
+		}
+		return foreignKeys;
+	}
+
+	/**
+	 * Copies the definitive state produced by TableConfiguration.fullLoad into the
+	 * reusable physical representation. This also covers configurations that were
+	 * already full-loaded before the physical registry entry was attached.
+	 */
+	public void synchronizePhysicalTableConfiguration() {
+		if (this.physicalTableConfiguration == null) {
+			throw new IllegalStateException("No physical table configuration attached to "
+					+ this.getFullTableDescription());
+		}
+		if (!this.isFullLoaded()) {
+			throw new IllegalStateException("Cannot synchronize a table that is not full-loaded: "
+					+ this.getFullTableDescription());
+		}
+		this.physicalTableConfiguration.synchronizeFromLoadedTable(this.getFields(), this.getPrimaryKey(),
+				this.getUniqueKeys(), toPhysicalImportedForeignKeys(), toPhysicalExportedForeignKeys());
 	}
 
 	private void applyConfiguredParentContext(ParentTableImpl discovered) {
