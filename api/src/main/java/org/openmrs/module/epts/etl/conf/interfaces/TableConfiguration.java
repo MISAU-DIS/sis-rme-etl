@@ -1415,7 +1415,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					return;
 				}
 
-				tryToLoadSchemaInfo(null, conn);
+				this.tryToLoadSchemaInfo(null, conn);
+
+				if (!utilities.stringHasValue(this.getSchema())) {
+					throw new EtlConfException("The schema for table could not be resolved " + this);
+				}
 
 				this.loadFields(conn);
 
