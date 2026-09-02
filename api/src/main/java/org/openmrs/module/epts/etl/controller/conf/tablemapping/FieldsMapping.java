@@ -160,7 +160,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		EtlTransformTarget target = this.getTransformationTargetObject();
 
-		if (hasDataSourceName()) {
+		if (this.hasDataSourceName()) {
 			EtlDataSource ds = target.findDataSource(this.getDataSourceName());
 
 			if (ds != null) {

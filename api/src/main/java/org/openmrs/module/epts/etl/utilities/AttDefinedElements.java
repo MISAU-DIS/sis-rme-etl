@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.Key;
+import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
@@ -365,7 +366,7 @@ public class AttDefinedElements {
 			EtlDatabaseObjectConfiguration pojoble, boolean usesFieldWrapper) {
 
 		AttDefinedElements elements = new AttDefinedElements(dbAttName, dbAttType, isLast, pojoble, usesFieldWrapper);
-		elements.generateElemets(true);
+		elements.generateElemets(!(pojoble instanceof QueryDataSourceConfig));
 
 		return elements;
 	}

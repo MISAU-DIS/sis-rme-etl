@@ -194,11 +194,6 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 		return list.get(0);
 	}
 
-	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
-		return Boolean.FALSE;
-	}
-
 	public String generateJoinCondition() {
 		return super.generateJoinCondition(this.getRelatedSrcConf(), this.joinFields, this.joinExtraCondition);
 	}

@@ -447,11 +447,6 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
-		return true_();
-	}
-
-	@Override
 	public String getQuery() {
 		return null;
 	}

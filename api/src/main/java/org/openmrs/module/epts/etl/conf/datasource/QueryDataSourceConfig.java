@@ -413,11 +413,6 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		return fullPackageName;
 	}
 
-	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
-		return Boolean.TRUE;
-	}
-
 	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {

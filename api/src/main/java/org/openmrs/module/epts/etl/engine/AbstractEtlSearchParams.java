@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadCurrent
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.AbstractSearchParams;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -120,8 +121,14 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 			List<EtlDatabaseObject> ds = (List<EtlDatabaseObject>) collectDataSourceObjects(parentObject,
 					dataSourceObjects);
 
-			PreparedQueryInfo pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
-					utilities.parseToList(this.getSrcConf().getAlias()), ds, getRelatedEtlConf(), null);
+			PreparedQueryInfo pq = null;
+			
+			try {
+				pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
+						utilities.parseToList(this.getSrcConf().getAlias()), ds, getRelatedEtlConf(), null);
+			} catch (Exception e) {
+				throw e;
+			}
 
 			Object[] params = pq.extractParametersValueToArray();
 

@@ -255,11 +255,6 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
-		return false;
-	}
-
-	@Override
 	public SrcConf getRelatedSrcConf() {
 		return this.parent;
 	}
