@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -31,8 +30,6 @@ public class EncounterProviderVO extends AbstractGeneratedDatabaseObject {
 	private Field voided = Field.fastCreateWithType("voided", "BIT");
 	private Field voidedBy = Field.fastCreateWithType("voided_by", "INT");
 	private Field voidReason = Field.fastCreateWithType("void_reason", "VARCHAR");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public EncounterProviderVO() {
 		this.metadata = false;
@@ -54,19 +51,6 @@ public class EncounterProviderVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

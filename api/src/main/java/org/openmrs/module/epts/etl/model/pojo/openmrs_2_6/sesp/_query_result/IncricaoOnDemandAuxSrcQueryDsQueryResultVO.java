@@ -13,14 +13,11 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class IncricaoOnDemandAuxSrcQueryDsQueryResultVO extends AbstractGeneratedDatabaseObject {
 	private Field value = Field.fastCreateWithType("value", "BIGINT");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public IncricaoOnDemandAuxSrcQueryDsQueryResultVO() {
 		this.metadata = false;
@@ -42,19 +39,6 @@ public class IncricaoOnDemandAuxSrcQueryDsQueryResultVO extends AbstractGenerate
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

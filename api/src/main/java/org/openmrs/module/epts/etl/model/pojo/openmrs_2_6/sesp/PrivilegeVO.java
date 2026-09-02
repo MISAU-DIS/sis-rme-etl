@@ -15,15 +15,12 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 	private Field privilege = Field.fastCreateWithType("privilege", "VARCHAR");
 	private Field description = Field.fastCreateWithType("description", "TEXT");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public PrivilegeVO() {
 		this.metadata = false;
@@ -45,19 +42,6 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

@@ -15,14 +15,11 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDatabaseObject {
 	private Field batchNumber = Field.fastCreateWithType("batch_number", "VARCHAR");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public PrescriptionBatchSrcDsQueryResultVO() {
 		this.metadata = false;
@@ -44,19 +41,6 @@ public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDataba
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

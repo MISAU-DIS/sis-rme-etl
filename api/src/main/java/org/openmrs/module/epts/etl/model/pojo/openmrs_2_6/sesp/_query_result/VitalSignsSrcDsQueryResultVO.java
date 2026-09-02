@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -21,8 +20,6 @@ public class VitalSignsSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 	private Field temperature = Field.fastCreateWithType("temperature", "DOUBLE");
 	private Field bloodPressureSystolic = Field.fastCreateWithType("blood_pressure_systolic", "DOUBLE");
 	private Field bloodPressureDiastolic = Field.fastCreateWithType("blood_pressure_diastolic", "DOUBLE");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public VitalSignsSrcDsQueryResultVO() {
 		this.metadata = false;
@@ -44,19 +41,6 @@ public class VitalSignsSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

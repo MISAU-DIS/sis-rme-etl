@@ -375,13 +375,10 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import java.sql.SQLException; \n";
 		classDefinition += "import java.sql.ResultSet; \n \n";
 		classDefinition += "import java.sql.Connection; \n \n";
-		classDefinition += "import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration; \n \n";
-
 		classDefinition += "import com.fasterxml.jackson.annotation.JsonIgnore; \n \n";
 
 		classDefinition += "public class " + className + " extends AbstractGeneratedDatabaseObject{ \n";
 		classDefinition += attsDefinition + "\n \n";
-		classDefinition += generateCommonAttDefinition(pojoble) + "\n";
 		classDefinition += generateCommonMethods(pojoble, connInfo) + "\n";
 		classDefinition += gettersAndSetterDefinition + "\n \n";
 		classDefinition += methodFromSuperClass + "\n";
@@ -403,14 +400,6 @@ public class DatabaseEntityPOJOGenerator {
 		}
 
 		return existingCLass;
-	}
-
-	private static String generateCommonAttDefinition(EtlDatabaseObjectConfiguration pojoble) {
-		String commonAttDefinition = "";
-
-		commonAttDefinition += "	private EtlDatabaseObjectConfiguration relatedConfiguration;\n";
-
-		return commonAttDefinition;
 	}
 
 	private static String generateCommonMethods(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo) {
@@ -452,19 +441,6 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks){ \n ";
 		commonMethods += "	 \n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public EtlDatabaseObjectConfiguration getRelatedConfiguration(){ \n ";
-		commonMethods += "		return this.relatedConfiguration; \n";
-		commonMethods += "	} \n \n";
-
-		commonMethods += "	@JsonIgnore\n";
-		commonMethods += "	@Override\n";
-		commonMethods += "	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config){ \n ";
-		commonMethods += "	 	this.relatedConfiguration = config;\n";
-		commonMethods += "		enrichGeneratedFields(config);\n";
 		commonMethods += "	} \n \n";
 
 		commonMethods += "	@JsonIgnore\n";

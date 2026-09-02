@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -51,8 +50,6 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	private Field fulfillerComment = Field.fastCreateWithType("fulfiller_comment", "VARCHAR");
 	private Field fulfillerStatus = Field.fastCreateWithType("fulfiller_status", "VARCHAR");
 
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
-
 	public OrdersVO() {
 		this.metadata = false;
 	}
@@ -73,19 +70,6 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -26,8 +25,6 @@ public class DrugOrderVO extends AbstractGeneratedDatabaseObject {
 	private Field complex = Field.fastCreateWithType("complex", "BIT");
 	private Field drugId = Field.fastCreateWithType("drug_id", "BIGINT");
 	private Field prn = Field.fastCreateWithType("prn", "BIT");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public DrugOrderVO() {
 		this.metadata = false;
@@ -56,19 +53,6 @@ public class DrugOrderVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

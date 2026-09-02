@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -24,8 +23,6 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 	private Field posologia = Field.fastCreateWithType("posologia", "null");
 	private Field specifiedQty = Field.fastCreateWithType("specified_qty", "null");
 	private Field calculatedQty = Field.fastCreateWithType("calculated_qty", "null");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public PrescriptionItemDataSrcDsQueryResultVO() {
 		this.metadata = false;
@@ -47,19 +44,6 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

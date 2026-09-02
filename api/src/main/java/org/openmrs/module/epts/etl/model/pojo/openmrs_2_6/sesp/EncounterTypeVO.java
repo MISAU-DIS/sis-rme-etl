@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -33,8 +32,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 	private Field viewPrivilege = Field.fastCreateWithType("view_privilege", "VARCHAR");
 	private Field editPrivilege = Field.fastCreateWithType("edit_privilege", "VARCHAR");
 	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public EncounterTypeVO() {
 		this.metadata = false;
@@ -56,19 +53,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

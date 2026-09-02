@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -26,8 +25,6 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	private Field numberOfRepeats = Field.fastCreateWithType("number_of_repeats", "INT");
 	private Field conceptId = Field.fastCreateWithType("concept_id", "BIGINT");
 	private Field ordersId = Field.fastCreateWithType("orders_id", "BIGINT");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public TestOrderVO() {
 		this.metadata = false;
@@ -56,19 +53,6 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

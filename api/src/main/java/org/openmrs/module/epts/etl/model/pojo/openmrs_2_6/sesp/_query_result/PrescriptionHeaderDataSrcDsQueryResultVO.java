@@ -15,15 +15,12 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedDatabaseObject {
 	private Field nextPickupDate = Field.fastCreateWithType("next_pickup_date", "DATETIME");
 	private Field dispenseModeId = Field.fastCreateWithType("dispense_mode_id", "NULL");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public PrescriptionHeaderDataSrcDsQueryResultVO() {
 		this.metadata = false;
@@ -45,19 +42,6 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

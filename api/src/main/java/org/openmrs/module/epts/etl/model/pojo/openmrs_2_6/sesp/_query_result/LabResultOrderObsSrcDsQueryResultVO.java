@@ -15,7 +15,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -23,8 +22,6 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 	private Field conceptId = Field.fastCreateWithType("concept_id", "VARCHAR");
 	private Field valueCoded = Field.fastCreateWithType("value_coded", "VARCHAR");
 	private Field obsDatetime = Field.fastCreateWithType("obs_datetime", "DATETIME");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public LabResultOrderObsSrcDsQueryResultVO() {
 		this.metadata = false;
@@ -46,19 +43,6 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

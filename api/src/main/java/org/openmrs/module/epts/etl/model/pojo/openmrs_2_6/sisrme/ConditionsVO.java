@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -35,8 +34,6 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 	private Field patientId = Field.fastCreateWithType("patient_id", "INT");
 	private Field encounterId = Field.fastCreateWithType("encounter_id", "INT");
 	private Field formNamespaceAndPath = Field.fastCreateWithType("form_namespace_and_path", "VARCHAR");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public ConditionsVO() {
 		this.metadata = false;
@@ -58,19 +55,6 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

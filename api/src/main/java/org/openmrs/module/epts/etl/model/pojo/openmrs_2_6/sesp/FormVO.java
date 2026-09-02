@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -37,8 +36,6 @@ public class FormVO extends AbstractGeneratedDatabaseObject {
 	private Field retiredBy = Field.fastCreateWithType("retired_by", "INT");
 	private Field dateRetired = Field.fastCreateWithType("date_retired", "DATETIME");
 	private Field retiredReason = Field.fastCreateWithType("retired_reason", "VARCHAR");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public FormVO() {
 		this.metadata = false;
@@ -60,19 +57,6 @@ public class FormVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore

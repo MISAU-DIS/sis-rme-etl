@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -31,8 +30,6 @@ public class OrderFrequencyVO extends AbstractGeneratedDatabaseObject {
 	private Field dateRetired = Field.fastCreateWithType("date_retired", "DATETIME");
 	private Field retireReason = Field.fastCreateWithType("retire_reason", "VARCHAR");
 	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
-
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
 	public OrderFrequencyVO() {
 		this.metadata = false;
@@ -54,19 +51,6 @@ public class OrderFrequencyVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
 
-	}
-
-	@JsonIgnore
-	@Override
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
-		return this.relatedConfiguration;
-	}
-
-	@JsonIgnore
-	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
-		this.relatedConfiguration = config;
-		enrichGeneratedFields(config);
 	}
 
 	@JsonIgnore
