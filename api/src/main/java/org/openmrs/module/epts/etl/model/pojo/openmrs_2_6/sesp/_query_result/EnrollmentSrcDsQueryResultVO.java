@@ -115,28 +115,23 @@ public class EnrollmentSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String dateEnrolledAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"date_enrolled", "_");
+		String dateEnrolledAttName = "date_enrolled";
 
 		this.dateEnrolled.setValue(BaseVO.retrieveFieldValue(dateEnrolledAttName, "null", rs));
 
-		String startDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"start_date", "_");
+		String startDateAttName = "start_date";
 
 		this.startDate.setValue(BaseVO.retrieveFieldValue(startDateAttName, "null", rs));
 
-		String stateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "state",
-				"_");
+		String stateAttName = "state";
 
 		this.state.setValue(BaseVO.retrieveFieldValue(stateAttName, "null", rs));
 
-		String programIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"program_id", "_");
+		String programIdAttName = "program_id";
 
 		this.programId.setValue(BaseVO.retrieveFieldValue(programIdAttName, "null", rs));
 
-		String locationIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"location_id", "_");
+		String locationIdAttName = "location_id";
 
 		this.locationId.setValue(BaseVO.retrieveFieldValue(locationIdAttName, "null", rs));
 		this.loadedFromDb = true;

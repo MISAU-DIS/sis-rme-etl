@@ -76,13 +76,11 @@ public class PrescriptionSisrmeDrugDsQueryResultVO extends AbstractGeneratedData
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String drugIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"drug_id", "_");
+		String drugIdAttName = "drug_id";
 
 		this.drugId.setValue(BaseVO.retrieveFieldValue(drugIdAttName, "VARCHAR", rs));
 
-		String conceptIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"concept_id", "_");
+		String conceptIdAttName = "concept_id";
 
 		this.conceptId.setValue(BaseVO.retrieveFieldValue(conceptIdAttName, "INT", rs));
 		this.loadedFromDb = true;

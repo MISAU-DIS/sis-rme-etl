@@ -65,13 +65,11 @@ public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDataba
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String batchNumberAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"batch_number", "_");
+		String batchNumberAttName = "batch_number";
 
 		this.batchNumber.setValue(BaseVO.retrieveFieldValue(batchNumberAttName, "VARCHAR", rs));
 
-		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
-				"_");
+		String uuidAttName = "uuid";
 
 		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 		this.loadedFromDb = true;

@@ -128,33 +128,27 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String valueDrugAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"value_drug", "_");
+		String valueDrugAttName = "value_drug";
 
 		this.valueDrug.setValue(BaseVO.retrieveFieldValue(valueDrugAttName, "null", rs));
 
-		String formulacaoConceptIdAttName = utilities
-				.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "formulacao_concept_id", "_");
+		String formulacaoConceptIdAttName = "formulacao_concept_id";
 
 		this.formulacaoConceptId.setValue(BaseVO.retrieveFieldValue(formulacaoConceptIdAttName, "null", rs));
 
-		String packageDatetimeAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"package_datetime", "_");
+		String packageDatetimeAttName = "package_datetime";
 
 		this.packageDatetime.setValue(BaseVO.retrieveFieldValue(packageDatetimeAttName, "null", rs));
 
-		String posologiaAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"posologia", "_");
+		String posologiaAttName = "posologia";
 
 		this.posologia.setValue(BaseVO.retrieveFieldValue(posologiaAttName, "null", rs));
 
-		String specifiedQtyAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"specified_qty", "_");
+		String specifiedQtyAttName = "specified_qty";
 
 		this.specifiedQty.setValue(BaseVO.retrieveFieldValue(specifiedQtyAttName, "null", rs));
 
-		String calculatedQtyAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"calculated_qty", "_");
+		String calculatedQtyAttName = "calculated_qty";
 
 		this.calculatedQty.setValue(BaseVO.retrieveFieldValue(calculatedQtyAttName, "null", rs));
 		this.loadedFromDb = true;

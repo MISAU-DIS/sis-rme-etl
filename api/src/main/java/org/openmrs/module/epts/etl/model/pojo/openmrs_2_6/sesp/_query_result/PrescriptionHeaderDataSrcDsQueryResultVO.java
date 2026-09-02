@@ -78,13 +78,11 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String nextPickupDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"next_pickup_date", "_");
+		String nextPickupDateAttName = "next_pickup_date";
 
 		this.nextPickupDate.setValue(BaseVO.retrieveFieldValue(nextPickupDateAttName, "DATETIME", rs));
 
-		String dispenseModeIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"dispense_mode_id", "_");
+		String dispenseModeIdAttName = "dispense_mode_id";
 
 		this.dispenseModeId.setValue(BaseVO.retrieveFieldValue(dispenseModeIdAttName, "NULL", rs));
 		this.loadedFromDb = true;

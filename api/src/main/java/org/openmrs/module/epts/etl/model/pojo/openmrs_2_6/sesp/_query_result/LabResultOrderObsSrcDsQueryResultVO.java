@@ -91,18 +91,15 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String conceptIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"concept_id", "_");
+		String conceptIdAttName = "concept_id";
 
 		this.conceptId.setValue(BaseVO.retrieveFieldValue(conceptIdAttName, "VARCHAR", rs));
 
-		String valueCodedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"value_coded", "_");
+		String valueCodedAttName = "value_coded";
 
 		this.valueCoded.setValue(BaseVO.retrieveFieldValue(valueCodedAttName, "VARCHAR", rs));
 
-		String obsDatetimeAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"obs_datetime", "_");
+		String obsDatetimeAttName = "obs_datetime";
 
 		this.obsDatetime.setValue(BaseVO.retrieveFieldValue(obsDatetimeAttName, "DATETIME", rs));
 		this.loadedFromDb = true;

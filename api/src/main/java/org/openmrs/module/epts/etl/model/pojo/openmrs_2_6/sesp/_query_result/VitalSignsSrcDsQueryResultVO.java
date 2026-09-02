@@ -89,18 +89,15 @@ public class VitalSignsSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String temperatureAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"temperature", "_");
+		String temperatureAttName = "temperature";
 
 		this.temperature.setValue(BaseVO.retrieveFieldValue(temperatureAttName, "DOUBLE", rs));
 
-		String bloodPressureSystolicAttName = utilities
-				.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "blood_pressure_systolic", "_");
+		String bloodPressureSystolicAttName = "blood_pressure_systolic";
 
 		this.bloodPressureSystolic.setValue(BaseVO.retrieveFieldValue(bloodPressureSystolicAttName, "DOUBLE", rs));
 
-		String bloodPressureDiastolicAttName = utilities
-				.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "blood_pressure_diastolic", "_");
+		String bloodPressureDiastolicAttName = "blood_pressure_diastolic";
 
 		this.bloodPressureDiastolic.setValue(BaseVO.retrieveFieldValue(bloodPressureDiastolicAttName, "DOUBLE", rs));
 		this.loadedFromDb = true;

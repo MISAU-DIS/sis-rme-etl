@@ -63,8 +63,7 @@ public class LabResultAuxSrcQueryDsQueryResultVO extends AbstractGeneratedDataba
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
-		String valueAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "value",
-				"_");
+		String valueAttName = "value";
 
 		this.value.setValue(BaseVO.retrieveFieldValue(valueAttName, "BIGINT", rs));
 		this.loadedFromDb = true;
