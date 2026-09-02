@@ -17,30 +17,30 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 			throw new ForbiddenOperationException("You cannot copy from empty record!!!");
 		}
 
-		TableConfiguration destinationConfiguration = getDestinationTableConfiguration();
+		TableConfiguration destinationConfiguration = this.getDestinationTableConfiguration();
 
 		for (Field destinationField : getFields()) {
 			if (destinationConfiguration.isIgnorableField(destinationField)) {
 				continue;
 			}
 
-			copyCompatibleFieldValue(source, destinationField);
+			this.copyCompatibleFieldValue(source, destinationField);
 		}
 
-		loadUniqueKeyValues(destinationConfiguration);
-		copySharedPkFrom(source);
+		this.loadUniqueKeyValues(destinationConfiguration);
+		this.copySharedPkFrom(source);
 	}
 
 	private TableConfiguration getDestinationTableConfiguration() {
-		if (!hasRelatedConfiguration()) {
+		if (!this.hasRelatedConfiguration()) {
 			throw new ForbiddenOperationException(
 			        "The relatedConfiguration is not set for dstRecord [" + this + "]");
 		}
-		if (!(getRelatedConfiguration() instanceof TableConfiguration)) {
+		if (!(this.getRelatedConfiguration() instanceof TableConfiguration)) {
 			throw new ForbiddenOperationException("The relatedConfiguration is not a table configuration");
 		}
 
-		TableConfiguration configuration = (TableConfiguration) getRelatedConfiguration();
+		TableConfiguration configuration = (TableConfiguration) this.getRelatedConfiguration();
 		if (!configuration.isFullLoaded()) {
 			throw new ForbiddenOperationException("The relatedConfiguration is not full loaded");
 		}

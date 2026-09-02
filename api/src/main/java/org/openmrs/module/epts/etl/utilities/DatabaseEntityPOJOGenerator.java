@@ -37,8 +37,7 @@ public class DatabaseEntityPOJOGenerator {
 
 	private static final String[] IGNORABLE_FIELDS = { "date_changed", "date_created", "date_voided", "uuid" };
 
-	private static final ThreadLocal<Set<String>> DEPENDENCIES_BEING_GENERATED = ThreadLocal
-			.withInitial(HashSet::new);
+	private static final ThreadLocal<Set<String>> DEPENDENCIES_BEING_GENERATED = ThreadLocal.withInitial(HashSet::new);
 
 	private DatabaseEntityPOJOGenerator() {
 		// Utility class.
@@ -369,8 +368,10 @@ public class DatabaseEntityPOJOGenerator {
 			classDefinition += "import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities; \n \n";
 		}
 
-		classDefinition += "import org.openmrs.module.epts.etl.utilities.AttDefinedElements; \n \n";
-		classDefinition += "import org.openmrs.module.epts.etl.conf.Key; \n \n";
+		if (methodFromSuperClass.contains("removeStrangeCharactersOnString")) {
+			classDefinition += "import org.openmrs.module.epts.etl.utilities.AttDefinedElements; \n \n";
+		}
+
 		classDefinition += "import java.sql.SQLException; \n";
 		classDefinition += "import java.sql.ResultSet; \n \n";
 		classDefinition += "import java.sql.Connection; \n \n";
@@ -378,8 +379,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		classDefinition += "import com.fasterxml.jackson.annotation.JsonIgnore; \n \n";
 
-		classDefinition += "public class " + className
-				+ " extends AbstractGeneratedDatabaseObject{ \n";
+		classDefinition += "public class " + className + " extends AbstractGeneratedDatabaseObject{ \n";
 		classDefinition += attsDefinition + "\n \n";
 		classDefinition += generateCommonAttDefinition(pojoble) + "\n";
 		classDefinition += generateCommonMethods(pojoble, connInfo) + "\n";
@@ -482,7 +482,8 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	private static void generateCompileTimeDependencies(EtlDatabaseObjectConfiguration configuration,
-			DBConnectionInfo connInfo, String currentClassName) throws IOException, SQLException, ClassNotFoundException {
+			DBConnectionInfo connInfo, String currentClassName)
+			throws IOException, SQLException, ClassNotFoundException {
 		Set<String> resolving = DEPENDENCIES_BEING_GENERATED.get();
 		if (!resolving.add(currentClassName)) {
 			throw new EtlExceptionImpl("Cyclic generated POJO dependency detected at " + currentClassName);
@@ -495,18 +496,21 @@ public class DatabaseEntityPOJOGenerator {
 				MainJoiningEntity joining = (MainJoiningEntity) configuration;
 				if (joining.hasAuxExtractTable()) {
 					for (JoinableEntity auxiliary : joining.getJoiningTable()) {
-						if (!auxiliary.doNotUseAsDatasource()) generate(auxiliary, connInfo);
+						if (!auxiliary.doNotUseAsDatasource())
+							generate(auxiliary, connInfo);
 					}
 				}
 			}
 		} finally {
 			resolving.remove(currentClassName);
-			if (resolving.isEmpty()) DEPENDENCIES_BEING_GENERATED.remove();
+			if (resolving.isEmpty())
+				DEPENDENCIES_BEING_GENERATED.remove();
 		}
 	}
 
 	static String generateSharedPkLoad(EtlDatabaseObjectConfiguration configuration) {
-		if (!usesSharedPk(configuration)) return "";
+		if (!usesSharedPk(configuration))
+			return "";
 		String code = "\t\tif (!hasRelatedConfiguration()) throw new "
 				+ "org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException("
 				+ "\"The relatedConfiguration is not set\");\n";
@@ -515,7 +519,8 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	static String generateSharedPkPostLoad(EtlDatabaseObjectConfiguration configuration) {
-		if (!usesSharedPk(configuration)) return "";
+		if (!usesSharedPk(configuration))
+			return "";
 		String code = "\n\t\torg.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = "
 				+ "(org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();\n";
 		code += "\t\tif (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null "
@@ -527,7 +532,8 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	private static String generateSharedPkCreateACopy(EtlDatabaseObjectConfiguration configuration) {
-		if (!usesSharedPk(configuration)) return "";
+		if (!usesSharedPk(configuration))
+			return "";
 
 		return "\t\tif (getSharedPkObj() != null && copy.getSharedPkObj() != null) {\n"
 				+ "\t\t\tcopy.getSharedPkObj().copyFrom(getSharedPkObj());\n" + "\t\t}\n";
@@ -536,7 +542,8 @@ public class DatabaseEntityPOJOGenerator {
 	private static ParentTable resolveSharedPkConfiguration(TableConfiguration configuration) {
 		if (configuration.hasParentRefInfo()) {
 			for (ParentTable parent : configuration.getParentRefInfo()) {
-				if (parent.getTableName().equalsIgnoreCase(configuration.getSharePkWith())) return parent;
+				if (parent.getTableName().equalsIgnoreCase(configuration.getSharePkWith()))
+					return parent;
 			}
 		}
 		throw new EtlExceptionImpl("The shared PK table " + configuration.getSharePkWith() + " of "
@@ -545,9 +552,11 @@ public class DatabaseEntityPOJOGenerator {
 
 	private static String generateAuxLoadObjects(EtlDatabaseObjectConfiguration configuration,
 			DBConnectionInfo connInfo) {
-		if (!(configuration instanceof MainJoiningEntity)) return "";
+		if (!(configuration instanceof MainJoiningEntity))
+			return "";
 		MainJoiningEntity joining = (MainJoiningEntity) configuration;
-		if (!joining.hasAuxExtractTable()) return "";
+		if (!joining.hasAuxExtractTable())
+			return "";
 		String code = "\n\t\tif (!hasRelatedConfiguration()) throw new "
 				+ "org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException("
 				+ "\"The relatedConfiguration is not set\");\n";
@@ -642,11 +651,13 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	private static File resolveFormatterProfile(EtlConfiguration etlConfiguration) {
-		if (etlConfiguration == null || !utilities
-				.stringHasValue(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile())) return null;
+		if (etlConfiguration == null
+				|| !utilities.stringHasValue(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile()))
+			return null;
 
 		File configuredFile = new File(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile());
-		if (configuredFile.isAbsolute()) return configuredFile;
+		if (configuredFile.isAbsolute())
+			return configuredFile;
 
 		return new File(etlConfiguration.getEtlRootDirectory(), configuredFile.getPath());
 	}
