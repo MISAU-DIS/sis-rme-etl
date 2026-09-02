@@ -350,16 +350,6 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		return this.etlRecordClass;
 	}
 
-	@Override
-	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
-			throws ForbiddenOperationException {
-
-		if (etlRecordClass == null)
-			etlRecordClass = GenericDatabaseObject.class;
-
-		return etlRecordClass;
-	}
-
 	public EtlConfiguration getRelatedEtlConf() {
 		return this.relatedEtlConfiguration != null ? this.relatedEtlConfiguration
 				: this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedEtlConf() : null;
@@ -395,6 +385,21 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
 		return utilities.concatStringsWithSeparator(fullPackageName, generateClassName(), ".");
+	}
+
+	@Override
+	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
+			throws ForbiddenOperationException {
+
+		try {
+			return EtlAdditionalDataSource.super.generateSyncRecordClass(connInfo);
+		} catch (PojoNotFoundException e) {
+			if (this.name != null) {
+				throw e;
+			}
+
+			return GenericDatabaseObject.class;
+		}
 	}
 
 	@JsonIgnore

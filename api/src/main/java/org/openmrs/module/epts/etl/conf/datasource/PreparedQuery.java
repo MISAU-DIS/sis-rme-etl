@@ -35,6 +35,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
  * Represents an prepared query ready to be executed. It alwas has a ready query
@@ -870,6 +871,12 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 				srcObjects, this.getQuery(), conn);
 
 		Object[] params = pq.extractParametersValueToArray();
+
+		if (this.getDataSource().getEtlRecordClass() == null) {
+			if (conn instanceof OpenConnection) {
+				this.getDataSource().generateSyncRecordClass(((OpenConnection) conn).getDbConnInfo());
+			}
+		}
 
 		if (this.getDataSource().getEtlRecordClass() == null) {
 			throw new EtlConfException("No syncRecordClass was defined for PreparedQuery [" + this + "]");
