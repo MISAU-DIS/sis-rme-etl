@@ -800,24 +800,8 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default Field getField(String fieldName) {
-		String originalField = fieldName;
-		String camelField = utils.parseToCamelCase(fieldName);
-		String snakeCase = utils.parsetoSnakeCase(fieldName);
-
 		for (Field field : this.getFields()) {
-			if (field.getName().trim().equals(originalField.trim())) {
-				return field;
-			}
-		}
-
-		for (Field field : this.getFields()) {
-			if (field.getName().trim().equals(camelField.trim())) {
-				return field;
-			}
-		}
-
-		for (Field field : this.getFields()) {
-			if (field.getName().trim().equals(snakeCase.trim())) {
+			if (utils.equalsFieldsName(field.getName().trim(), fieldName.trim())) {
 				return field;
 			}
 		}
@@ -855,7 +839,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	 * 
 	 * @param key the correspondent key to replace the field
 	 */
-	void tryToReplaceFieldWithKey(Key k);
+	void tryToReplaceFieldValueWithKeyValue(Key k);
 
 	default Field getField(ParentTable refInfo) {
 		return refInfo.getChildInstanceField(this);

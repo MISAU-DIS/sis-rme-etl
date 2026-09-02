@@ -341,7 +341,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 		if (this.hasFields()) {
 			utilities.updateOnArray(this.getFields(), k, k);
 		}

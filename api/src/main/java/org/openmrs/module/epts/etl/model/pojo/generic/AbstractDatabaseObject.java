@@ -116,9 +116,11 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	}
 
 	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 		if (this.hasFields()) {
-			utilities.updateOnArray(this.getFields(), k, k);
+			Field f = this.getField(k.getName());
+
+			f.setValue(k.getValue());
 		}
 	}
 
@@ -266,18 +268,22 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	@Override
 	public List<Field> getFields() {
 		List<Field> generatedFields = new ArrayList<>();
+
 		for (java.lang.reflect.Field instanceField : getInstanceFields()) {
 			if (!Field.class.isAssignableFrom(instanceField.getType()))
 				continue;
 			try {
 				Field field = (Field) instanceField.get(this);
+
 				if (field != null)
 					generatedFields.add(field);
 			} catch (IllegalAccessException exception) {
 				throw new RuntimeException(exception);
 			}
 		}
+
 		EtlDatabaseObjectConfiguration configuration = getRelatedConfiguration();
+
 		if (configuration != null && configuration.getFields() != null) {
 			for (Field configured : configuration.getFields()) {
 				boolean present = generatedFields.stream()
@@ -302,6 +308,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 		}
 		if (generatedFields.isEmpty())
 			return super.getFields();
+
 		return generatedFields;
 	}
 

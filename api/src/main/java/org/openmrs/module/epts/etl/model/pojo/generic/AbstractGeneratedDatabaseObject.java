@@ -1,5 +1,8 @@
 package org.openmrs.module.epts.etl.model.pojo.generic;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -14,6 +17,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseObject {
 	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
+	/**
+	 * Stable collection containing the Field instances exposed by this generated
+	 * object, including contextual wrappers for scalar fields inherited from
+	 * BaseVO.
+	 */
+	private final List<Field> fields = new ArrayList<>();
+
 	@Override
 	@JsonIgnore
 	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
@@ -25,6 +35,23 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		this.relatedConfiguration = configuration;
 
 		enrichGeneratedFields(configuration);
+
+		refreshFields();
+	}
+
+	@Override
+	public List<Field> getFields() {
+		refreshFields();
+
+		return fields;
+	}
+
+	private void refreshFields() {
+		List<Field> currentFields = super.getFields();
+
+		fields.clear();
+
+		fields.addAll(currentFields);
 	}
 
 	@Override
