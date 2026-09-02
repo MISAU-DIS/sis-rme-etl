@@ -91,8 +91,7 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString(
-				rs.getString(uuidAttName) != null ? rs.getString(uuidAttName).trim() : null);
+		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 		this.loadedFromDb = true;
 	}
 

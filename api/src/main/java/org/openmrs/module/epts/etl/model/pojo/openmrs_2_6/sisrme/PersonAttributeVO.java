@@ -186,9 +186,7 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 		String dateCreatedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_created", "_");
 
-		this.dateCreated = rs.getTimestamp(dateCreatedAttName) != null
-				? new java.util.Date(rs.getTimestamp(dateCreatedAttName).getTime())
-				: null;
+		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "DATETIME", rs);
 
 		String voidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "voided",
 				"_");
@@ -203,9 +201,7 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 		String dateVoidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_voided", "_");
 
-		this.dateVoided = rs.getTimestamp(dateVoidedAttName) != null
-				? new java.util.Date(rs.getTimestamp(dateVoidedAttName).getTime())
-				: null;
+		this.dateVoided = (java.util.Date) BaseVO.retrieveFieldValue(dateVoidedAttName, "DATETIME", rs);
 
 		String voidReasonAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"void_reason", "_");
@@ -215,8 +211,7 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString(
-				rs.getString(uuidAttName) != null ? rs.getString(uuidAttName).trim() : null);
+		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 		this.loadedFromDb = true;
 	}
 

@@ -220,9 +220,7 @@ public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
 		String dateCreatedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_created", "_");
 
-		this.dateCreated = rs.getTimestamp(dateCreatedAttName) != null
-				? new java.util.Date(rs.getTimestamp(dateCreatedAttName).getTime())
-				: null;
+		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "DATETIME", rs);
 
 		String conceptNameIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"concept_name_id", "_");
@@ -242,9 +240,7 @@ public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
 		String dateVoidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_voided", "_");
 
-		this.dateVoided = rs.getTimestamp(dateVoidedAttName) != null
-				? new java.util.Date(rs.getTimestamp(dateVoidedAttName).getTime())
-				: null;
+		this.dateVoided = (java.util.Date) BaseVO.retrieveFieldValue(dateVoidedAttName, "DATETIME", rs);
 
 		String voidReasonAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"void_reason", "_");
@@ -254,8 +250,7 @@ public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString(
-				rs.getString(uuidAttName) != null ? rs.getString(uuidAttName).trim() : null);
+		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 
 		String conceptNameTypeAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"concept_name_type", "_");
@@ -270,9 +265,7 @@ public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
 		String dateChangedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_changed", "_");
 
-		this.dateChanged = rs.getTimestamp(dateChangedAttName) != null
-				? new java.util.Date(rs.getTimestamp(dateChangedAttName).getTime())
-				: null;
+		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "DATETIME", rs);
 
 		String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"changed_by", "_");

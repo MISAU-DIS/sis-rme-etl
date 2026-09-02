@@ -240,9 +240,7 @@ public class PharmacyPackageVO extends AbstractGeneratedDatabaseObject {
 		String dateCreatedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_created", "_");
 
-		this.dateCreated = rs.getTimestamp(dateCreatedAttName) != null
-				? new java.util.Date(rs.getTimestamp(dateCreatedAttName).getTime())
-				: null;
+		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "DATETIME", rs);
 
 		String voidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "voided",
 				"_");
@@ -262,8 +260,7 @@ public class PharmacyPackageVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString(
-				rs.getString(uuidAttName) != null ? rs.getString(uuidAttName).trim() : null);
+		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 		this.loadedFromDb = true;
 	}
 

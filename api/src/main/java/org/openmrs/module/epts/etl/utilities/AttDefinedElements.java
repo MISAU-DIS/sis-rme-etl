@@ -298,47 +298,16 @@ public class AttDefinedElements {
 		String loadStr = "String " + attDefinition + " = "
 				+ (useAlias ? this.aliasedDbAttName : "\"" + this.dbAttName + "\"") + ";\n\n";
 
+		String retrieveExpression = "BaseVO.retrieveFieldValue(" + attDefinition + ", \""
+				+ removeStrangeCharactersOnString(this.dbAttType) + "\", rs)";
+
 		if (usesFieldWrapper) {
-			loadStr += "\t\tthis." + this.attName + ".setValue(BaseVO.retrieveFieldValue(" + attDefinition + ", \""
-					+ removeStrangeCharactersOnString(this.dbAttType) + "\", rs));";
-		} else if (attType.equals("Integer") || attType.toLowerCase().equals("int")) {
-			loadStr += "		if (rs.getObject(" + attDefinition + ") != null){ \n";
-			loadStr += "			this." + this.attName + " = rs.getInt(" + attDefinition + ");\n";
-			loadStr += "		}";
-		} else if (attType.toLowerCase().equals("double")) {
-			loadStr += "		if (rs.getObject(" + attDefinition + ") != null)\n";
-			loadStr += "			this." + this.attName + " = rs.getDouble(" + attDefinition + ");\n";
-			loadStr += "		}";
-		} else if (attType.toLowerCase().equals("long")) {
-			loadStr += "		if (rs.getObject(" + attDefinition + ") != null){\n ";
-			loadStr += "			this." + this.attName + " = rs.getLong(" + attDefinition + ");\n";
-			loadStr += "		}";
-		} else if (attType.toLowerCase().equals("float")) {
-			loadStr += "		if (rs.getObject(" + attDefinition + ") != null) \n";
-			loadStr += "			this." + this.attName + " = rs.getFloat(" + attDefinition + ");\n";
-			loadStr += "		}";
-		} else if (attType.toLowerCase().equals("boolean")) {
-			loadStr += "		this." + this.attName + " = rs.getBoolean(" + attDefinition + ");";
+			loadStr += "\t\tthis." + this.attName + ".setValue(" + retrieveExpression + ");";
 		} else if (attType.equals("String")) {
-			loadStr += "		this." + this.attName
-					+ " = AttDefinedElements.removeStrangeCharactersOnString(rs.getString(" + attDefinition
-					+ ") != null ? rs.getString(" + attDefinition + ").trim() : null);";
-		} else if (attType.equals("java.util.Date")) {
-			loadStr += "		this." + this.attName + " =  rs.getTimestamp(" + attDefinition
-					+ ") != null ? new java.util.Date( rs.getTimestamp(" + attDefinition + ").getTime() ) : null;";
-		} else if (attType.equals("java.io.InputStream")) {
-			loadStr += "	this." + this.attName + " = rs.getBlob(" + attDefinition + ") != null ? rs.getBlob("
-					+ attDefinition + ").getBinaryStream() : null;";
-		} else if (attType.toLowerCase().equals("byte")) {
-			loadStr += "		this." + this.attName + " = rs.getByte(" + attDefinition + ");";
-		} else if (attType.toLowerCase().equals("short")) {
-			loadStr += "if (rs.getObject(" + attDefinition + ") != null)\n";
-			loadStr += "		this." + this.attName + " = rs.getShort(" + attDefinition + ");\n";
-			loadStr += "}";
-		} else if (attType.equals("byte[]")) {
-			loadStr += "		this." + this.attName + " = rs.getBytes(" + attDefinition + ");";
+			loadStr += "\t\tthis." + this.attName + " = AttDefinedElements.removeStrangeCharactersOnString((String) "
+					+ retrieveExpression + ");";
 		} else {
-			loadStr += "		this." + this.attName + " = rs.getObject(" + attDefinition + ");";
+			loadStr += "\t\tthis." + this.attName + " = (" + attType + ") " + retrieveExpression + ";";
 		}
 
 		return loadStr;
