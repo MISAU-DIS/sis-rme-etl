@@ -46,10 +46,6 @@ public class VitalSignsSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 		if (utilities.equalsFieldsName(fieldName, "blood_pressure_diastolic")) {
 			return this.bloodPressureDiastolic.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
-		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
-		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
-		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
 		return super.getFieldValue(fieldName);
 	}
 

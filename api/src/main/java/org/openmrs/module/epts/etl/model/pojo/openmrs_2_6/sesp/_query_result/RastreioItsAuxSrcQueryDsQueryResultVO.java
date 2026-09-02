@@ -36,10 +36,6 @@ public class RastreioItsAuxSrcQueryDsQueryResultVO extends AbstractGeneratedData
 		if (utilities.equalsFieldsName(fieldName, "value")) {
 			return this.value.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
-		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
-		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
-		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
 		return super.getFieldValue(fieldName);
 	}
 

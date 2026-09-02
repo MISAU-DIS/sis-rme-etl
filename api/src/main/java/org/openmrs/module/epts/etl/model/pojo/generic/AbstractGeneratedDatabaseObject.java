@@ -42,38 +42,6 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	}
 
 	@Override
-	public Object getFieldValue(String fieldName) {
-		String fieldNameInSnakeCase = utilities.parsetoSnakeCase(fieldName);
-		String fieldNameInCameCase = utilities.parseToCamelCase(fieldName);
-
-		try {
-			return utilities.getFieldValueOnFieldList(utilities.parseList(this.fields, Field.class),
-					fieldNameInSnakeCase);
-		} catch (ForbiddenOperationException e) {
-
-			try {
-				return utilities.getFieldValueOnFieldList(utilities.parseList(this.fields, Field.class),
-						fieldNameInCameCase);
-			} catch (ForbiddenOperationException e1) {
-				if (getRelatedConfiguration() instanceof TableConfiguration) {
-
-					if (((TableConfiguration) getRelatedConfiguration()).useSharedPKKey()) {
-
-						if (this.getSharedPkObj() == null) {
-							throw new ForbiddenOperationException("The sharedPkObj pk is not loaded");
-						}
-
-						return this.getSharedPkObj().getFieldValue(fieldName);
-					}
-				}
-				return super.getFieldValue(fieldName);
-
-			}
-		}
-
-	}
-
-	@Override
 	@JsonIgnore
 	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
 		return relatedConfiguration;
@@ -94,6 +62,23 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		refreshFields();
 
 		return fields;
+	}
+
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		if (getRelatedConfiguration() instanceof TableConfiguration
+				&& ((TableConfiguration) getRelatedConfiguration()).useSharedPKKey()) {
+			if (this.getSharedPkObj() == null) {
+				throw new ForbiddenOperationException("The sharedPkObj pk is not loaded");
+			}
+			return this.getSharedPkObj().getFieldValue(fieldName);
+		}
+
+		return super.getFieldValue(fieldName);
 	}
 
 	private void refreshFields() {

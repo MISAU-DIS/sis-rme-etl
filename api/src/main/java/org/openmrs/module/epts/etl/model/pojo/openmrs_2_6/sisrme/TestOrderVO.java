@@ -81,10 +81,6 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "orders_id")) {
 			return this.ordersId.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
-		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
-		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
-		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
 		return super.getFieldValue(fieldName);
 	}
 

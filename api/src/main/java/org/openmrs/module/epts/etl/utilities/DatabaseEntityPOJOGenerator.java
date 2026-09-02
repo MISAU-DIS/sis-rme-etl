@@ -444,7 +444,6 @@ public class DatabaseEntityPOJOGenerator {
 				commonMethods += "		}\n";
 			}
 		}
-		commonMethods += generateInheritedFieldValueAccess();
 		commonMethods += "		return super.getFieldValue(fieldName);\n";
 		commonMethods += "	}\n\n";
 
@@ -491,15 +490,6 @@ public class DatabaseEntityPOJOGenerator {
 			return "			this.uuid = k.getValue() == null ? null : k.getValue().toString();\n";
 		}
 		return "			this." + key.getNameAsClassAtt() + " = (java.util.Date) k.getValue();\n";
-	}
-
-	private static String generateInheritedFieldValueAccess() {
-		String code = "";
-		code += "		if (utilities.equalsFieldsName(fieldName, \"date_created\")) return this.dateCreated;\n";
-		code += "		if (utilities.equalsFieldsName(fieldName, \"date_changed\")) return this.dateChanged;\n";
-		code += "		if (utilities.equalsFieldsName(fieldName, \"date_voided\")) return this.dateVoided;\n";
-		code += "		if (utilities.equalsFieldsName(fieldName, \"uuid\")) return this.uuid;\n";
-		return code;
 	}
 
 	private static boolean usesSharedPk(EtlDatabaseObjectConfiguration configuration) {

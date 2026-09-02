@@ -43,10 +43,6 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 		if (utilities.equalsFieldsName(fieldName, "dispense_mode_id")) {
 			return this.dispenseModeId.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
-		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
-		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
-		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
 		return super.getFieldValue(fieldName);
 	}
 
