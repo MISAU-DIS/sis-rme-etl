@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -36,6 +38,26 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 
 	public VitalSignsVO() {
 		this.metadata = false;
+
+		this.fields.add(this.vitalSignsId);
+		this.fields.add(this.patientId);
+		this.fields.add(this.encounterId);
+		this.fields.add(this.locationId);
+		this.fields.add(this.temperature);
+		this.fields.add(this.bloodPressureSystolic);
+		this.fields.add(this.bloodPressureDiastolic);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "vital_signs_id")) {
+			this.vitalSignsId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

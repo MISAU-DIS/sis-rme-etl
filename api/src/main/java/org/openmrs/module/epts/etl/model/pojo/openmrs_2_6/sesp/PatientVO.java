@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -30,6 +32,21 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	public PatientVO() {
 		this.metadata = false;
 		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.PersonVO());
+
+		this.fields.add(this.patientId);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+		this.fields.add(this.allergyStatus);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "patient_id")) {
+			this.patientId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

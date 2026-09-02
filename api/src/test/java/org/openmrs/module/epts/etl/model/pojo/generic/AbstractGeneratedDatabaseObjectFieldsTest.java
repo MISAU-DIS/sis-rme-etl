@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.junit.Test;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.ConceptClassVO;
 
@@ -26,6 +27,8 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 		List<Field> firstResult = object.getFields();
 		Field id = find(firstResult, "concept_class_id");
 		Field inheritedDate = find(firstResult, "date_created");
+		Field inheritedDateChanged = find(firstResult, "date_changed");
+		Field inheritedDateVoided = find(firstResult, "date_voided");
 		Field inheritedUuid = find(firstResult, "uuid");
 
 		Date dateCreated = new Date();
@@ -36,9 +39,20 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 		assertSame(firstResult, secondResult);
 		assertSame(id, find(secondResult, "concept_class_id"));
 		assertSame(inheritedDate, find(secondResult, "date_created"));
+		assertSame(inheritedDateChanged, find(secondResult, "date_changed"));
+		assertSame(inheritedDateVoided, find(secondResult, "date_voided"));
 		assertSame(inheritedUuid, find(secondResult, "uuid"));
 		assertEquals(dateCreated, inheritedDate.getValue());
 		assertEquals("generated-uuid", inheritedUuid.getValue());
+	}
+
+	@Test
+	public void shouldReplaceTheGeneratedPrimaryKeyFieldDirectly() {
+		ConceptClassVO object = new ConceptClassVO();
+
+		object.tryToReplaceFieldValueWithKeyValue(Key.fastCreateValued("concept_class_id", 17));
+
+		assertEquals(17, object.getConceptClassId().getValue());
 	}
 
 	private Field find(List<Field> fields, String name) {

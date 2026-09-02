@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -51,6 +53,41 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 	public ObsVO() {
 		this.metadata = false;
+
+		this.fields.add(this.obsId);
+		this.fields.add(this.personId);
+		this.fields.add(this.conceptId);
+		this.fields.add(this.encounterId);
+		this.fields.add(this.orderId);
+		this.fields.add(this.obsDatetime);
+		this.fields.add(this.locationId);
+		this.fields.add(this.obsGroupId);
+		this.fields.add(this.accessionNumber);
+		this.fields.add(this.valueGroupId);
+		this.fields.add(this.valueCoded);
+		this.fields.add(this.valueCodedNameId);
+		this.fields.add(this.valueDrug);
+		this.fields.add(this.valueDatetime);
+		this.fields.add(this.valueNumeric);
+		this.fields.add(this.valueModifier);
+		this.fields.add(this.valueText);
+		this.fields.add(this.comments);
+		this.fields.add(this.creator);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+		this.fields.add(this.valueComplex);
+		this.fields.add(this.previousVersion);
+		this.fields.add(this.formNamespaceAndPath);
+		this.fields.add(this.status);
+		this.fields.add(this.interpretation);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "obs_id")) {
+			this.obsId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

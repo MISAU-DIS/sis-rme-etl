@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -35,6 +37,25 @@ public class PharmacyDeliveryNoteVO extends AbstractGeneratedDatabaseObject {
 
 	public PharmacyDeliveryNoteVO() {
 		this.metadata = false;
+
+		this.fields.add(this.deliveryNoteId);
+		this.fields.add(this.documentNumber);
+		this.fields.add(this.origin);
+		this.fields.add(this.locationId);
+		this.fields.add(this.transactionDate);
+		this.fields.add(this.subscriber);
+		this.fields.add(this.notes);
+		this.fields.add(this.creator);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidReason);
+		this.fields.add(this.voidedBy);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "delivery_note_id")) {
+			this.deliveryNoteId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

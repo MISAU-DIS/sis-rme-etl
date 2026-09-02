@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import java.sql.SQLException;
@@ -29,6 +31,22 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	public TestOrderVO() {
 		this.metadata = false;
 		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO());
+
+		this.fields.add(this.orderId);
+		this.fields.add(this.specimenSource);
+		this.fields.add(this.laterality);
+		this.fields.add(this.clinicalHistory);
+		this.fields.add(this.frequency);
+		this.fields.add(this.numberOfRepeats);
+		this.fields.add(this.conceptId);
+		this.fields.add(this.ordersId);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "order_id")) {
+			this.orderId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

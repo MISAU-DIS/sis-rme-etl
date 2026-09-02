@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -56,6 +58,46 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 
 	public LocationVO() {
 		this.metadata = false;
+
+		this.fields.add(this.locationId);
+		this.fields.add(this.name);
+		this.fields.add(this.description);
+		this.fields.add(this.address1);
+		this.fields.add(this.address2);
+		this.fields.add(this.cityVillage);
+		this.fields.add(this.stateProvince);
+		this.fields.add(this.postalCode);
+		this.fields.add(this.country);
+		this.fields.add(this.latitude);
+		this.fields.add(this.longitude);
+		this.fields.add(this.creator);
+		this.fields.add(this.countyDistrict);
+		this.fields.add(this.address3);
+		this.fields.add(this.address6);
+		this.fields.add(this.address5);
+		this.fields.add(this.address4);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+		this.fields.add(this.parentLocation);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.address7);
+		this.fields.add(this.address8);
+		this.fields.add(this.address9);
+		this.fields.add(this.address10);
+		this.fields.add(this.address11);
+		this.fields.add(this.address12);
+		this.fields.add(this.address13);
+		this.fields.add(this.address14);
+		this.fields.add(this.address15);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "location_id")) {
+			this.locationId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

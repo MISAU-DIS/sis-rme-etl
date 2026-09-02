@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -33,6 +35,23 @@ public class OrderFrequencyVO extends AbstractGeneratedDatabaseObject {
 
 	public OrderFrequencyVO() {
 		this.metadata = false;
+
+		this.fields.add(this.orderFrequencyId);
+		this.fields.add(this.conceptId);
+		this.fields.add(this.frequencyPerDay);
+		this.fields.add(this.creator);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+		this.fields.add(this.changedBy);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "order_frequency_id")) {
+			this.orderFrequencyId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

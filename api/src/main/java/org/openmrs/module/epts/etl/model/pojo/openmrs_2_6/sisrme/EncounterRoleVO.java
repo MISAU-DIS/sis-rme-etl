@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -33,6 +35,23 @@ public class EncounterRoleVO extends AbstractGeneratedDatabaseObject {
 
 	public EncounterRoleVO() {
 		this.metadata = false;
+
+		this.fields.add(this.encounterRoleId);
+		this.fields.add(this.name);
+		this.fields.add(this.description);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "encounter_role_id")) {
+			this.encounterRoleId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

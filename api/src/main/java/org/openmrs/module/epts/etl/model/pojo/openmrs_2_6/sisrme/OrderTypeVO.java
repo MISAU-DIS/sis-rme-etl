@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -35,6 +37,25 @@ public class OrderTypeVO extends AbstractGeneratedDatabaseObject {
 
 	public OrderTypeVO() {
 		this.metadata = false;
+
+		this.fields.add(this.orderTypeId);
+		this.fields.add(this.name);
+		this.fields.add(this.description);
+		this.fields.add(this.creator);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+		this.fields.add(this.javaClassName);
+		this.fields.add(this.parent);
+		this.fields.add(this.changedBy);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "order_type_id")) {
+			this.orderTypeId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import java.sql.SQLException;
@@ -21,6 +23,12 @@ public class LabResultOnDemandAuxSrcQueryDsQueryResultVO extends AbstractGenerat
 
 	public LabResultOnDemandAuxSrcQueryDsQueryResultVO() {
 		this.metadata = false;
+
+		this.fields.add(this.value);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@JsonIgnore

@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -37,6 +39,27 @@ public class ProviderVO extends AbstractGeneratedDatabaseObject {
 
 	public ProviderVO() {
 		this.metadata = false;
+
+		this.fields.add(this.providerId);
+		this.fields.add(this.personId);
+		this.fields.add(this.name);
+		this.fields.add(this.identifier);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+		this.fields.add(this.providerRoleId);
+		this.fields.add(this.roleId);
+		this.fields.add(this.specialityId);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "provider_id")) {
+			this.providerId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

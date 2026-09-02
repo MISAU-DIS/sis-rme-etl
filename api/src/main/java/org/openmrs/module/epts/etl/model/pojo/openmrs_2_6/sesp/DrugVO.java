@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -40,6 +42,30 @@ public class DrugVO extends AbstractGeneratedDatabaseObject {
 
 	public DrugVO() {
 		this.metadata = false;
+
+		this.fields.add(this.drugId);
+		this.fields.add(this.conceptId);
+		this.fields.add(this.name);
+		this.fields.add(this.combination);
+		this.fields.add(this.dosageForm);
+		this.fields.add(this.maximumDailyDose);
+		this.fields.add(this.minimumDailyDose);
+		this.fields.add(this.route);
+		this.fields.add(this.creator);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.strength);
+		this.fields.add(this.doseLimitUnits);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "drug_id")) {
+			this.drugId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

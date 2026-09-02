@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -33,6 +35,23 @@ public class PatientStateVO extends AbstractGeneratedDatabaseObject {
 
 	public PatientStateVO() {
 		this.metadata = false;
+
+		this.fields.add(this.patientStateId);
+		this.fields.add(this.patientProgramId);
+		this.fields.add(this.state);
+		this.fields.add(this.startDate);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "patient_state_id")) {
+			this.patientStateId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

@@ -333,9 +333,11 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default void loadObjectIdData(TableConfiguration tabConf, Object keyValue) {
 		if (tabConf.useSimplePk()) {
-			loadObjectIdData(tabConf);
+			this.loadObjectIdData(tabConf);
 
 			this.getObjectId().asSimpleKey().setValue(keyValue);
+			this.tryToReplaceFieldValueWithKeyValue(this.getObjectId().asSimpleKey());
+
 		} else
 			throw new ForbiddenOperationException("Method not allowed for complex PK!");
 	}

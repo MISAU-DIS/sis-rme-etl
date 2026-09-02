@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -46,6 +48,36 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 
 	public OrdersVO() {
 		this.metadata = false;
+
+		this.fields.add(this.orderId);
+		this.fields.add(this.orderTypeId);
+		this.fields.add(this.conceptId);
+		this.fields.add(this.orderer);
+		this.fields.add(this.encounterId);
+		this.fields.add(this.dateActivated);
+		this.fields.add(this.orderReason);
+		this.fields.add(this.creator);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+		this.fields.add(this.patientId);
+		this.fields.add(this.accessionNumber);
+		this.fields.add(this.urgency);
+		this.fields.add(this.orderNumber);
+		this.fields.add(this.orderAction);
+		this.fields.add(this.commentToFulfiller);
+		this.fields.add(this.careSetting);
+		this.fields.add(this.scheduledDate);
+		this.fields.add(this.discontinued);
+		this.fields.add(this.orderGroupId);
+		this.fields.add(this.fulfillerComment);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "order_id")) {
+			this.orderId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

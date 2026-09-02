@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -24,6 +26,13 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 
 	public PrescriptionHeaderDataSrcDsQueryResultVO() {
 		this.metadata = false;
+
+		this.fields.add(this.nextPickupDate);
+		this.fields.add(this.dispenseModeId);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@JsonIgnore

@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -25,6 +27,14 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 
 	public LabResultOrderObsSrcDsQueryResultVO() {
 		this.metadata = false;
+
+		this.fields.add(this.conceptId);
+		this.fields.add(this.valueCoded);
+		this.fields.add(this.obsDatetime);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@JsonIgnore

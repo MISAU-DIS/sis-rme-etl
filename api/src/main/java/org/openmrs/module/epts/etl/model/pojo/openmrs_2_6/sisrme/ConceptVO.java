@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -38,6 +40,28 @@ public class ConceptVO extends AbstractGeneratedDatabaseObject {
 
 	public ConceptVO() {
 		this.metadata = false;
+
+		this.fields.add(this.conceptId);
+		this.fields.add(this.retired);
+		this.fields.add(this.shortName);
+		this.fields.add(this.description);
+		this.fields.add(this.formText);
+		this.fields.add(this.datatypeId);
+		this.fields.add(this.classId);
+		this.fields.add(this.isSet);
+		this.fields.add(this.creator);
+		this.fields.add(this.version);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "concept_id")) {
+			this.conceptId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

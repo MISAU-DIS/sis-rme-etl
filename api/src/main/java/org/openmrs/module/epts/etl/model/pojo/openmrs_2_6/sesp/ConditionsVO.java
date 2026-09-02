@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -37,6 +39,27 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 
 	public ConditionsVO() {
 		this.metadata = false;
+
+		this.fields.add(this.conditionId);
+		this.fields.add(this.conditionCoded);
+		this.fields.add(this.conditionNonCoded);
+		this.fields.add(this.clinicalStatus);
+		this.fields.add(this.onsetDate);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidReason);
+		this.fields.add(this.creator);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.patientId);
+		this.fields.add(this.encounterId);
+		this.fields.add(this.formNamespaceAndPath);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "condition_id")) {
+			this.conditionId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

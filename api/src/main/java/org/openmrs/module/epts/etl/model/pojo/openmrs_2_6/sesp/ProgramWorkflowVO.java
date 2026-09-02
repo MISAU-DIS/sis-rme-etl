@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -30,6 +32,20 @@ public class ProgramWorkflowVO extends AbstractGeneratedDatabaseObject {
 
 	public ProgramWorkflowVO() {
 		this.metadata = false;
+
+		this.fields.add(this.programWorkflowId);
+		this.fields.add(this.programId);
+		this.fields.add(this.conceptId);
+		this.fields.add(this.creator);
+		this.fields.add(this.retired);
+		this.fields.add(this.changedBy);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "program_workflow_id")) {
+			this.programWorkflowId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

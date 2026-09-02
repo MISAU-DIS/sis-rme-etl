@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import java.sql.SQLException;
@@ -25,6 +27,16 @@ public class EnrollmentSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 
 	public EnrollmentSrcDsQueryResultVO() {
 		this.metadata = false;
+
+		this.fields.add(this.dateEnrolled);
+		this.fields.add(this.startDate);
+		this.fields.add(this.state);
+		this.fields.add(this.programId);
+		this.fields.add(this.locationId);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@JsonIgnore

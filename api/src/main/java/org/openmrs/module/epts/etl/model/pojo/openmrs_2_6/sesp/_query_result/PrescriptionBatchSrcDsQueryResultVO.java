@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
@@ -23,6 +25,12 @@ public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDataba
 
 	public PrescriptionBatchSrcDsQueryResultVO() {
 		this.metadata = false;
+
+		this.fields.add(this.batchNumber);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@JsonIgnore

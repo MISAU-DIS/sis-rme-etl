@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
@@ -24,6 +26,16 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 
 	public PrivilegeVO() {
 		this.metadata = false;
+
+		this.fields.add(this.privilege);
+		this.fields.add(this.description);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "privilege")) {
+			this.privilege.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

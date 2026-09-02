@@ -361,6 +361,7 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import org.openmrs.module.epts.etl.model.pojo.generic.*; \n \n";
 		classDefinition += "import org.openmrs.module.epts.etl.model.EtlDatabaseObject; \n \n";
 		classDefinition += "import org.openmrs.module.epts.etl.model.Field; \n \n";
+		classDefinition += "import org.openmrs.module.epts.etl.conf.Key; \n \n";
 		classDefinition += "import org.openmrs.module.epts.etl.model.base.BaseVO; \n \n";
 
 		if (pojoble.hasDateFields()) {
@@ -408,11 +409,31 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonMethods += "	public " + className + "() { \n";
 		commonMethods += "		this.metadata = " + pojoble.isMetadata() + ";\n";
+		for (Field field : pojoble.getFields()) {
+			if (!isIgnorableField(field.getName())) {
+				commonMethods += "		this.fields.add(this." + field.getNameAsClassAtt() + ");\n";
+			}
+		}
 		if (usesSharedPk(pojoble)) {
 			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
 			commonMethods += "\t\tsetSharedPkObj(new " + shared.generateFullClassName(connInfo) + "());\n";
 		}
 		commonMethods += "	} \n \n";
+
+		commonMethods += "	@Override\n";
+		commonMethods += "	public void tryToReplaceFieldValueWithKeyValue(Key k) {\n";
+		if (pojoble.getPrimaryKey() != null) {
+			for (Key key : pojoble.getPrimaryKey().getFields()) {
+				commonMethods += "		if (utilities.equalsFieldsName(k.getName(), \"" + key.getName() + "\")) {\n";
+				if (isIgnorableField(key.getName())) {
+					commonMethods += generateInheritedKeyAssignment(key);
+				} else {
+					commonMethods += "			this." + key.getNameAsClassAtt() + ".setValue(k.getValue());\n";
+				}
+				commonMethods += "		}\n";
+			}
+		}
+		commonMethods += "	}\n\n";
 
 		if (usesSharedPk(pojoble)) {
 			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
@@ -450,6 +471,13 @@ public class DatabaseEntityPOJOGenerator {
 
 		return commonMethods;
 
+	}
+
+	private static String generateInheritedKeyAssignment(Key key) {
+		if (utilities.equalsFieldsName(key.getName(), "uuid")) {
+			return "			this.uuid = k.getValue() == null ? null : k.getValue().toString();\n";
+		}
+		return "			this." + key.getNameAsClassAtt() + " = (java.util.Date) k.getValue();\n";
 	}
 
 	private static boolean usesSharedPk(EtlDatabaseObjectConfiguration configuration) {

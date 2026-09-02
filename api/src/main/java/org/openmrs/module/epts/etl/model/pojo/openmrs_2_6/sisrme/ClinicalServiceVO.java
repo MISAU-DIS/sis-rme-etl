@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -39,6 +41,29 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 
 	public ClinicalServiceVO() {
 		this.metadata = false;
+
+		this.fields.add(this.clinicalServiceId);
+		this.fields.add(this.locationId);
+		this.fields.add(this.serviceConceptId);
+		this.fields.add(this.active);
+		this.fields.add(this.hasQueue);
+		this.fields.add(this.hasPharmacy);
+		this.fields.add(this.isOneStop);
+		this.fields.add(this.pharmacyLocationId);
+		this.fields.add(this.displayOrder);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "clinical_service_id")) {
+			this.clinicalServiceId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

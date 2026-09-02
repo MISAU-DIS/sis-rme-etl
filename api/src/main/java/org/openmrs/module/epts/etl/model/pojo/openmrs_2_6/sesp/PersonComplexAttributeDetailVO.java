@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -33,6 +35,22 @@ public class PersonComplexAttributeDetailVO extends AbstractGeneratedDatabaseObj
 
 	public PersonComplexAttributeDetailVO() {
 		this.metadata = false;
+
+		this.fields.add(this.personComplexAttributeDetailId);
+		this.fields.add(this.personComplexAttributeId);
+		this.fields.add(this.attributeKey);
+		this.fields.add(this.attributeValue);
+		this.fields.add(this.creator);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "person_complex_attribute_detail_id")) {
+			this.personComplexAttributeDetailId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

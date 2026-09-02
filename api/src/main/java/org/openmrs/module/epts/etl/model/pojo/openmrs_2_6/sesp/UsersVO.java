@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -40,6 +42,30 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 
 	public UsersVO() {
 		this.metadata = false;
+
+		this.fields.add(this.userId);
+		this.fields.add(this.systemId);
+		this.fields.add(this.username);
+		this.fields.add(this.password);
+		this.fields.add(this.salt);
+		this.fields.add(this.secretQuestion);
+		this.fields.add(this.secretAnswer);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.personId);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+		this.fields.add(this.activationKey);
+		this.fields.add(this.email);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "user_id")) {
+			this.userId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

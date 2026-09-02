@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -32,6 +34,21 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 	public EncounterProgramVO() {
 		this.metadata = false;
 		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.EncounterVO());
+
+		this.fields.add(this.encounterId);
+		this.fields.add(this.programId);
+		this.fields.add(this.creator);
+		this.fields.add(this.changedBy);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "encounter_id")) {
+			this.encounterId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

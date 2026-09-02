@@ -22,7 +22,56 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	 * object, including contextual wrappers for scalar fields inherited from
 	 * BaseVO.
 	 */
-	private final List<Field> fields = new ArrayList<>();
+	protected final List<Field> fields = new ArrayList<>();
+
+	private final Field dateCreatedField;
+	private final Field dateChangedField;
+	private final Field dateVoidedField;
+	private final Field uuidField;
+
+	protected AbstractGeneratedDatabaseObject() {
+		dateCreatedField = Field.fastCreateWithType("date_created", "DATETIME");
+		dateChangedField = Field.fastCreateWithType("date_changed", "DATETIME");
+		dateVoidedField = Field.fastCreateWithType("date_voided", "DATETIME");
+		uuidField = Field.fastCreateWithType("uuid", "VARCHAR");
+
+		fields.add(dateCreatedField);
+		fields.add(dateChangedField);
+		fields.add(dateVoidedField);
+		fields.add(uuidField);
+	}
+
+	@Override
+	public Object getFieldValue(String fieldName) {
+		String fieldNameInSnakeCase = utilities.parsetoSnakeCase(fieldName);
+		String fieldNameInCameCase = utilities.parseToCamelCase(fieldName);
+
+		try {
+			return utilities.getFieldValueOnFieldList(utilities.parseList(this.fields, Field.class),
+					fieldNameInSnakeCase);
+		} catch (ForbiddenOperationException e) {
+
+			try {
+				return utilities.getFieldValueOnFieldList(utilities.parseList(this.fields, Field.class),
+						fieldNameInCameCase);
+			} catch (ForbiddenOperationException e1) {
+				if (getRelatedConfiguration() instanceof TableConfiguration) {
+
+					if (((TableConfiguration) getRelatedConfiguration()).useSharedPKKey()) {
+
+						if (this.getSharedPkObj() == null) {
+							throw new ForbiddenOperationException("The sharedPkObj pk is not loaded");
+						}
+
+						return this.getSharedPkObj().getFieldValue(fieldName);
+					}
+				}
+				return super.getFieldValue(fieldName);
+
+			}
+		}
+
+	}
 
 	@Override
 	@JsonIgnore
@@ -35,6 +84,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		this.relatedConfiguration = configuration;
 
 		enrichGeneratedFields(configuration);
+		enrichInheritedFields(configuration);
 
 		refreshFields();
 	}
@@ -47,11 +97,36 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	}
 
 	private void refreshFields() {
-		List<Field> currentFields = super.getFields();
+		dateCreatedField.setValue(this.dateCreated);
+		dateChangedField.setValue(this.dateChanged);
+		dateVoidedField.setValue(this.dateVoided);
+		uuidField.setValue(this.uuid);
+	}
 
-		fields.clear();
+	private void enrichInheritedFields(EtlDatabaseObjectConfiguration configuration) {
+		if (configuration == null || configuration.getFields() == null)
+			return;
 
-		fields.addAll(currentFields);
+		for (Field configured : configuration.getFields()) {
+			Field inherited = findInheritedField(configured.getName());
+			if (inherited == null)
+				continue;
+			Object value = inherited.getValue();
+			inherited.copyFrom(configured);
+			inherited.setValue(value);
+		}
+	}
+
+	private Field findInheritedField(String name) {
+		if (utilities.equalsFieldsName(name, "date_created"))
+			return dateCreatedField;
+		if (utilities.equalsFieldsName(name, "date_changed"))
+			return dateChangedField;
+		if (utilities.equalsFieldsName(name, "date_voided"))
+			return dateVoidedField;
+		if (utilities.equalsFieldsName(name, "uuid"))
+			return uuidField;
+		return null;
 	}
 
 	@Override

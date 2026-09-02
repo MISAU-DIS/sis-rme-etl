@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import java.sql.SQLException;
@@ -26,6 +28,17 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 
 	public PrescriptionItemDataSrcDsQueryResultVO() {
 		this.metadata = false;
+
+		this.fields.add(this.valueDrug);
+		this.fields.add(this.formulacaoConceptId);
+		this.fields.add(this.packageDatetime);
+		this.fields.add(this.posologia);
+		this.fields.add(this.specifiedQty);
+		this.fields.add(this.calculatedQty);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@JsonIgnore

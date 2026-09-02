@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -35,6 +37,25 @@ public class PharmacyPackageVO extends AbstractGeneratedDatabaseObject {
 
 	public PharmacyPackageVO() {
 		this.metadata = false;
+
+		this.fields.add(this.pharmacyPackageId);
+		this.fields.add(this.locationId);
+		this.fields.add(this.prescriptionEncounterId);
+		this.fields.add(this.packageDatetime);
+		this.fields.add(this.nextPickupDate);
+		this.fields.add(this.dispenseModeId);
+		this.fields.add(this.notes);
+		this.fields.add(this.creator);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidReason);
+		this.fields.add(this.voidedBy);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "pharmacy_package_id")) {
+			this.pharmacyPackageId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

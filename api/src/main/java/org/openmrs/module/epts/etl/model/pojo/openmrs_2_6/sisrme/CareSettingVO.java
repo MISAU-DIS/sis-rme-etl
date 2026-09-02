@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -34,6 +36,24 @@ public class CareSettingVO extends AbstractGeneratedDatabaseObject {
 
 	public CareSettingVO() {
 		this.metadata = false;
+
+		this.fields.add(this.careSettingId);
+		this.fields.add(this.name);
+		this.fields.add(this.description);
+		this.fields.add(this.careSettingType);
+		this.fields.add(this.creator);
+		this.fields.add(this.retired);
+		this.fields.add(this.retiredBy);
+		this.fields.add(this.dateRetired);
+		this.fields.add(this.retireReason);
+		this.fields.add(this.changedBy);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "care_setting_id")) {
+			this.careSettingId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore

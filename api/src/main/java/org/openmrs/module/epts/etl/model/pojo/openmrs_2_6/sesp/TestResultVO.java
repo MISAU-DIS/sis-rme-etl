@@ -6,6 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
+
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -44,6 +46,34 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 
 	public TestResultVO() {
 		this.metadata = false;
+
+		this.fields.add(this.testResultId);
+		this.fields.add(this.orderId);
+		this.fields.add(this.conceptId);
+		this.fields.add(this.patientId);
+		this.fields.add(this.encounterId);
+		this.fields.add(this.locationId);
+		this.fields.add(this.resultDate);
+		this.fields.add(this.valueNumeric);
+		this.fields.add(this.valueCoded);
+		this.fields.add(this.valueText);
+		this.fields.add(this.valueDatetime);
+		this.fields.add(this.valueComplex);
+		this.fields.add(this.valueModifier);
+		this.fields.add(this.status);
+		this.fields.add(this.interpretation);
+		this.fields.add(this.comments);
+		this.fields.add(this.creator);
+		this.fields.add(this.voided);
+		this.fields.add(this.voidedBy);
+		this.fields.add(this.voidReason);
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (utilities.equalsFieldsName(k.getName(), "test_result_id")) {
+			this.testResultId.setValue(k.getValue());
+		}
 	}
 
 	@JsonIgnore
