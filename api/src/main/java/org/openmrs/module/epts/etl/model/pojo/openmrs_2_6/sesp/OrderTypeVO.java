@@ -326,7 +326,7 @@ public class OrderTypeVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE order_type SET `order_type_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `java_class_name` = ?, `parent` = ?, `changed_by` = ?, `date_changed` = ? WHERE order_type_16.order_type_id = ? ";
+		return "UPDATE order_type SET `order_type_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `java_class_name` = ?, `parent` = ?, `changed_by` = ?, `date_changed` = ? WHERE order_type_id = ? ";
 	}
 
 	@JsonIgnore

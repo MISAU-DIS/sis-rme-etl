@@ -232,7 +232,7 @@ public class ProgramWorkflowVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE program_workflow SET `program_workflow_id` = ?, `program_id` = ?, `concept_id` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE program_workflow_1.program_workflow_id = ? ";
+		return "UPDATE program_workflow SET `program_workflow_id` = ?, `program_id` = ?, `concept_id` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE program_workflow_id = ? ";
 	}
 
 	@JsonIgnore

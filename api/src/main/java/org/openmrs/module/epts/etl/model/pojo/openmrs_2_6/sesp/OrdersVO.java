@@ -649,7 +649,7 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE orders SET `order_id` = ?, `order_type_id` = ?, `concept_id` = ?, `orderer` = ?, `encounter_id` = ?, `instructions` = ?, `date_activated` = ?, `auto_expire_date` = ?, `date_stopped` = ?, `order_reason` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `patient_id` = ?, `accession_number` = ?, `uuid` = ?, `order_reason_non_coded` = ?, `urgency` = ?, `order_number` = ?, `previous_order_id` = ?, `order_action` = ?, `comment_to_fulfiller` = ?, `care_setting` = ?, `scheduled_date` = ?, `order_group_id` = ?, `sort_weight` = ?, `fulfiller_comment` = ?, `fulfiller_status` = ? WHERE orders_37.order_id = ? ";
+		return "UPDATE orders SET `order_id` = ?, `order_type_id` = ?, `concept_id` = ?, `orderer` = ?, `encounter_id` = ?, `instructions` = ?, `date_activated` = ?, `auto_expire_date` = ?, `date_stopped` = ?, `order_reason` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `patient_id` = ?, `accession_number` = ?, `uuid` = ?, `order_reason_non_coded` = ?, `urgency` = ?, `order_number` = ?, `previous_order_id` = ?, `order_action` = ?, `comment_to_fulfiller` = ?, `care_setting` = ?, `scheduled_date` = ?, `order_group_id` = ?, `sort_weight` = ?, `fulfiller_comment` = ?, `fulfiller_status` = ? WHERE order_id = ? ";
 	}
 
 	@JsonIgnore

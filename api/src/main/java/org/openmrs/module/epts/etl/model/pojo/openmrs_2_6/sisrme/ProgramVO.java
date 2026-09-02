@@ -270,7 +270,7 @@ public class ProgramVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE program SET `program_id` = ?, `concept_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `name` = ?, `description` = ?, `uuid` = ?, `outcomes_concept_id` = ? WHERE program_11.program_id = ? ";
+		return "UPDATE program SET `program_id` = ?, `concept_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `name` = ?, `description` = ?, `uuid` = ?, `outcomes_concept_id` = ? WHERE program_id = ? ";
 	}
 
 	@JsonIgnore

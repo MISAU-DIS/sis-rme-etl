@@ -313,7 +313,7 @@ public class PatientProgramVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE patient_program SET `patient_program_id` = ?, `patient_id` = ?, `program_id` = ?, `date_enrolled` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `location_id` = ? WHERE patient_program_dst_ds.patient_program_id = ? ";
+		return "UPDATE patient_program SET `patient_program_id` = ?, `patient_id` = ?, `program_id` = ?, `date_enrolled` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `location_id` = ? WHERE patient_program_id = ? ";
 	}
 
 	@JsonIgnore

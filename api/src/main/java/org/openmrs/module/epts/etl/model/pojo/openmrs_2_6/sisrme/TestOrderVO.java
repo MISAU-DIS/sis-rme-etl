@@ -269,7 +269,7 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE test_order SET `order_id` = ?, `specimen_source` = ?, `laterality` = ?, `clinical_history` = ?, `frequency` = ?, `number_of_repeats` = ?, `concept_id` = ?, `orders_id` = ? WHERE test_order_1.order_id = ? ";
+		return "UPDATE test_order SET `order_id` = ?, `specimen_source` = ?, `laterality` = ?, `clinical_history` = ?, `frequency` = ?, `number_of_repeats` = ?, `concept_id` = ?, `orders_id` = ? WHERE order_id = ? ";
 	}
 
 	@JsonIgnore

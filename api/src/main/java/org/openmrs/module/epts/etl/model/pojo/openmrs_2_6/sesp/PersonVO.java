@@ -408,7 +408,7 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE person SET `person_id` = ?, `gender` = ?, `birthdate` = ?, `birthdate_estimated` = ?, `dead` = ?, `death_date` = ?, `cause_of_death` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `deathdate_estimated` = ?, `birthtime` = ?, `cause_of_death_non_coded` = ? WHERE person_97.person_id = ? ";
+		return "UPDATE person SET `person_id` = ?, `gender` = ?, `birthdate` = ?, `birthdate_estimated` = ?, `dead` = ?, `death_date` = ?, `cause_of_death` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `deathdate_estimated` = ?, `birthtime` = ?, `cause_of_death_non_coded` = ? WHERE person_id = ? ";
 	}
 
 	@JsonIgnore

@@ -402,7 +402,7 @@ public class FormVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE form SET `form_id` = ?, `name` = ?, `version` = ?, `build` = ?, `published` = ?, `description` = ?, `encounter_type` = ?, `template` = ?, `xslt` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retired_reason` = ?, `uuid` = ? WHERE form_36.form_id = ? ";
+		return "UPDATE form SET `form_id` = ?, `name` = ?, `version` = ?, `build` = ?, `published` = ?, `description` = ?, `encounter_type` = ?, `template` = ?, `xslt` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retired_reason` = ?, `uuid` = ? WHERE form_id = ? ";
 	}
 
 	@JsonIgnore

@@ -144,7 +144,7 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE privilege SET `privilege` = ?, `description` = ?, `uuid` = ? WHERE privilege_20.privilege = ? ";
+		return "UPDATE privilege SET `privilege` = ?, `description` = ?, `uuid` = ? WHERE privilege = ? ";
 	}
 
 	@JsonIgnore

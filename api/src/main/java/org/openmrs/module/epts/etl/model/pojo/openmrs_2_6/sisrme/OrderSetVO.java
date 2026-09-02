@@ -329,7 +329,7 @@ public class OrderSetVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE order_set SET `order_set_id` = ?, `operator` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ?, `category` = ? WHERE order_set_8.order_set_id = ? ";
+		return "UPDATE order_set SET `order_set_id` = ?, `operator` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ?, `category` = ? WHERE order_set_id = ? ";
 	}
 
 	@JsonIgnore

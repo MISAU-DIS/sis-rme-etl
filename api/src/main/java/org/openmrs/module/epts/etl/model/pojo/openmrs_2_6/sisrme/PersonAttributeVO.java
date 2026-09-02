@@ -271,7 +271,7 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE person_attribute SET `person_attribute_id` = ?, `person_id` = ?, `value` = ?, `person_attribute_type_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ? WHERE prep_key_pop_person_attribute_dst_ds.person_attribute_id = ? ";
+		return "UPDATE person_attribute SET `person_attribute_id` = ?, `person_id` = ?, `value` = ?, `person_attribute_type_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ? WHERE person_attribute_id = ? ";
 	}
 
 	@JsonIgnore

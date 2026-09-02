@@ -724,7 +724,7 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE location SET `location_id` = ?, `name` = ?, `description` = ?, `address1` = ?, `address2` = ?, `city_village` = ?, `state_province` = ?, `postal_code` = ?, `country` = ?, `latitude` = ?, `longitude` = ?, `creator` = ?, `date_created` = ?, `county_district` = ?, `address3` = ?, `address6` = ?, `address5` = ?, `address4` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `parent_location` = ?, `uuid` = ?, `changed_by` = ?, `date_changed` = ?, `address7` = ?, `address8` = ?, `address9` = ?, `address10` = ?, `address11` = ?, `address12` = ?, `address13` = ?, `address14` = ?, `address15` = ? WHERE location_90.location_id = ? ";
+		return "UPDATE location SET `location_id` = ?, `name` = ?, `description` = ?, `address1` = ?, `address2` = ?, `city_village` = ?, `state_province` = ?, `postal_code` = ?, `country` = ?, `latitude` = ?, `longitude` = ?, `creator` = ?, `date_created` = ?, `county_district` = ?, `address3` = ?, `address6` = ?, `address5` = ?, `address4` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `parent_location` = ?, `uuid` = ?, `changed_by` = ?, `date_changed` = ?, `address7` = ?, `address8` = ?, `address9` = ?, `address10` = ?, `address11` = ?, `address12` = ?, `address13` = ?, `address14` = ?, `address15` = ? WHERE location_id = ? ";
 	}
 
 	@JsonIgnore

@@ -422,7 +422,7 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE users SET `user_id` = ?, `system_id` = ?, `username` = ?, `password` = ?, `salt` = ?, `secret_question` = ?, `secret_answer` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `person_id` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `activation_key` = ?, `email` = ? WHERE users_325.user_id = ? ";
+		return "UPDATE users SET `user_id` = ?, `system_id` = ?, `username` = ?, `password` = ?, `salt` = ?, `secret_question` = ?, `secret_answer` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `person_id` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `activation_key` = ?, `email` = ? WHERE user_id = ? ";
 	}
 
 	@JsonIgnore

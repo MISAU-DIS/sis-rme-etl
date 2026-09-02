@@ -371,7 +371,7 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE encounter_diagnosis SET `diagnosis_id` = ?, `diagnosis_coded` = ?, `diagnosis_non_coded` = ?, `encounter_id` = ?, `patient_id` = ?, `condition_id` = ?, `certainty` = ?, `rank` = ?, `uuid` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ? WHERE encounter_diagnosis_1.diagnosis_id = ? ";
+		return "UPDATE encounter_diagnosis SET `diagnosis_id` = ?, `diagnosis_coded` = ?, `diagnosis_non_coded` = ?, `encounter_id` = ?, `patient_id` = ?, `condition_id` = ?, `certainty` = ?, `rank` = ?, `uuid` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ? WHERE diagnosis_id = ? ";
 	}
 
 	@JsonIgnore

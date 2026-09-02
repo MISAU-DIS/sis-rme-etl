@@ -308,7 +308,7 @@ public class CareSettingVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE care_setting SET `care_setting_id` = ?, `name` = ?, `description` = ?, `care_setting_type` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE care_setting_17.care_setting_id = ? ";
+		return "UPDATE care_setting SET `care_setting_id` = ?, `name` = ?, `description` = ?, `care_setting_type` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE care_setting_id = ? ";
 	}
 
 	@JsonIgnore

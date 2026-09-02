@@ -321,7 +321,7 @@ public class PharmacyBatchVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE pharmacy_batch SET `batch_id` = ?, `drug_id` = ?, `batch_number` = ?, `expiry_date` = ?, `quantity` = ?, `balance` = ?, `location_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `void_reason` = ?, `voided_by` = ?, `uuid` = ? WHERE pharmacy_batch_1.batch_id = ? ";
+		return "UPDATE pharmacy_batch SET `batch_id` = ?, `drug_id` = ?, `batch_number` = ?, `expiry_date` = ?, `quantity` = ?, `balance` = ?, `location_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `void_reason` = ?, `voided_by` = ?, `uuid` = ? WHERE batch_id = ? ";
 	}
 
 	@JsonIgnore

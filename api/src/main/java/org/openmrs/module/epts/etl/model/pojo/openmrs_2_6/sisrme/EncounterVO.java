@@ -333,7 +333,7 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE encounter SET `encounter_id` = ?, `encounter_type` = ?, `patient_id` = ?, `location_id` = ?, `encounter_datetime` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `changed_by` = ?, `date_changed` = ?, `visit_id` = ? WHERE encounter_65.encounter_id = ? ";
+		return "UPDATE encounter SET `encounter_id` = ?, `encounter_type` = ?, `patient_id` = ?, `location_id` = ?, `encounter_datetime` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `changed_by` = ?, `date_changed` = ?, `visit_id` = ? WHERE encounter_id = ? ";
 	}
 
 	@JsonIgnore

@@ -288,7 +288,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE patient SET `patient_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `allergy_status` = ?, `dde_sync_pending` = ? WHERE patient_68.patient_id = ? ";
+		return "UPDATE patient SET `patient_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `allergy_status` = ?, `dde_sync_pending` = ? WHERE patient_id = ? ";
 	}
 
 	@JsonIgnore

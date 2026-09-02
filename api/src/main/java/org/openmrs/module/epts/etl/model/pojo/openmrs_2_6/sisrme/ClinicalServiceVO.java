@@ -403,7 +403,7 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE clinical_service SET `clinical_service_id` = ?, `location_id` = ?, `service_concept_id` = ?, `active` = ?, `has_queue` = ?, `has_pharmacy` = ?, `is_one_stop` = ?, `pharmacy_location_id` = ?, `display_order` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE clinical_service_1.clinical_service_id = ? ";
+		return "UPDATE clinical_service SET `clinical_service_id` = ?, `location_id` = ?, `service_concept_id` = ?, `active` = ?, `has_queue` = ?, `has_pharmacy` = ?, `is_one_stop` = ?, `pharmacy_location_id` = ?, `display_order` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE clinical_service_id = ? ";
 	}
 
 	@JsonIgnore

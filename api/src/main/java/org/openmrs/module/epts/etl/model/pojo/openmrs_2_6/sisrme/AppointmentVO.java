@@ -271,7 +271,7 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE appointment SET `appointment_id` = ?, `patient_id` = ?, `provider_id` = ?, `reason_for_admission` = ?, `service_id` = ?, `speciality_id` = ?, `status` = ?, `notes` = ?, `appointment_date` = ? WHERE prep_data_appointment_dst_ds.appointment_id = ? ";
+		return "UPDATE appointment SET `appointment_id` = ?, `patient_id` = ?, `provider_id` = ?, `reason_for_admission` = ?, `service_id` = ?, `speciality_id` = ?, `status` = ?, `notes` = ?, `appointment_date` = ? WHERE appointment_id = ? ";
 	}
 
 	@JsonIgnore

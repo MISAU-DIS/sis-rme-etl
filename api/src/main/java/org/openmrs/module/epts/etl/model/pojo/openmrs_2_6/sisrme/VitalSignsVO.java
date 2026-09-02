@@ -352,7 +352,7 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE vital_signs SET `vital_signs_id` = ?, `patient_id` = ?, `encounter_id` = ?, `location_id` = ?, `temperature` = ?, `blood_pressure_systolic` = ?, `blood_pressure_diastolic` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `void_reason` = ?, `date_voided` = ?, `uuid` = ? WHERE vital_signs_dst_ds.vital_signs_id = ? ";
+		return "UPDATE vital_signs SET `vital_signs_id` = ?, `patient_id` = ?, `encounter_id` = ?, `location_id` = ?, `temperature` = ?, `blood_pressure_systolic` = ?, `blood_pressure_diastolic` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `void_reason` = ?, `date_voided` = ?, `uuid` = ? WHERE vital_signs_id = ? ";
 	}
 
 	@JsonIgnore

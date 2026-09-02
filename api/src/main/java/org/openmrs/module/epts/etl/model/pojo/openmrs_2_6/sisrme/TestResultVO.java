@@ -498,7 +498,7 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE test_result SET `test_result_id` = ?, `order_id` = ?, `concept_id` = ?, `patient_id` = ?, `encounter_id` = ?, `location_id` = ?, `result_date` = ?, `value_numeric` = ?, `value_coded` = ?, `value_text` = ?, `value_datetime` = ?, `value_complex` = ?, `value_modifier` = ?, `status` = ?, `interpretation` = ?, `comments` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ? WHERE lab_result_test_result_dst_ds.test_result_id = ? ";
+		return "UPDATE test_result SET `test_result_id` = ?, `order_id` = ?, `concept_id` = ?, `patient_id` = ?, `encounter_id` = ?, `location_id` = ?, `result_date` = ?, `value_numeric` = ?, `value_coded` = ?, `value_text` = ?, `value_datetime` = ?, `value_complex` = ?, `value_modifier` = ?, `status` = ?, `interpretation` = ?, `comments` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ? WHERE test_result_id = ? ";
 	}
 
 	@JsonIgnore

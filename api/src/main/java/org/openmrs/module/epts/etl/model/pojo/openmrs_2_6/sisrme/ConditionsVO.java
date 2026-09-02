@@ -371,7 +371,7 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE conditions SET `condition_id` = ?, `condition_coded` = ?, `condition_non_coded` = ?, `clinical_status` = ?, `onset_date` = ?, `date_created` = ?, `voided` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `creator` = ?, `voided_by` = ?, `changed_by` = ?, `patient_id` = ?, `date_changed` = ?, `encounter_id` = ?, `form_namespace_and_path` = ? WHERE its_diagnose_conditions_dst_ds.condition_id = ? ";
+		return "UPDATE conditions SET `condition_id` = ?, `condition_coded` = ?, `condition_non_coded` = ?, `clinical_status` = ?, `onset_date` = ?, `date_created` = ?, `voided` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `creator` = ?, `voided_by` = ?, `changed_by` = ?, `patient_id` = ?, `date_changed` = ?, `encounter_id` = ?, `form_namespace_and_path` = ? WHERE condition_id = ? ";
 	}
 
 	@JsonIgnore

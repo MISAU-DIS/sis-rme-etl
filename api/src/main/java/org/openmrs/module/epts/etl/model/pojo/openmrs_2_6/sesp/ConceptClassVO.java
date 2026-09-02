@@ -289,7 +289,7 @@ public class ConceptClassVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE concept_class SET `concept_class_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `date_changed` = ?, `changed_by` = ? WHERE concept_class_19.concept_class_id = ? ";
+		return "UPDATE concept_class SET `concept_class_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `date_changed` = ?, `changed_by` = ? WHERE concept_class_id = ? ";
 	}
 
 	@JsonIgnore

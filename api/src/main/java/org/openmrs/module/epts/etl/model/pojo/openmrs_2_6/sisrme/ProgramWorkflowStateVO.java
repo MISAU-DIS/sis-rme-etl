@@ -270,7 +270,7 @@ public class ProgramWorkflowStateVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE program_workflow_state SET `program_workflow_state_id` = ?, `program_workflow_id` = ?, `concept_id` = ?, `initial` = ?, `terminal` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE program_workflow_state_1.program_workflow_state_id = ? ";
+		return "UPDATE program_workflow_state SET `program_workflow_state_id` = ?, `program_workflow_id` = ?, `concept_id` = ?, `initial` = ?, `terminal` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE program_workflow_state_id = ? ";
 	}
 
 	@JsonIgnore

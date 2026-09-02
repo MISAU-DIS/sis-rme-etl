@@ -327,7 +327,7 @@ public class PharmacyDeliveryNoteVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE pharmacy_delivery_note SET `delivery_note_id` = ?, `uuid` = ?, `document_number` = ?, `origin` = ?, `location_id` = ?, `transaction_date` = ?, `subscriber` = ?, `notes` = ?, `creator` = ?, `date_created` = ?, `date_changed` = ?, `voided` = ?, `void_reason` = ?, `voided_by` = ? WHERE pharmacy_delivery_note_1.delivery_note_id = ? ";
+		return "UPDATE pharmacy_delivery_note SET `delivery_note_id` = ?, `uuid` = ?, `document_number` = ?, `origin` = ?, `location_id` = ?, `transaction_date` = ?, `subscriber` = ?, `notes` = ?, `creator` = ?, `date_created` = ?, `date_changed` = ?, `voided` = ?, `void_reason` = ?, `voided_by` = ? WHERE delivery_note_id = ? ";
 	}
 
 	@JsonIgnore

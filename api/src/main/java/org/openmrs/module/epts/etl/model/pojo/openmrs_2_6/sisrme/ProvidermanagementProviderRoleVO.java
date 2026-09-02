@@ -289,7 +289,7 @@ public class ProvidermanagementProviderRoleVO extends AbstractGeneratedDatabaseO
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE providermanagement_provider_role SET `provider_role_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE providermanagement_provider_role_18.provider_role_id = ? ";
+		return "UPDATE providermanagement_provider_role SET `provider_role_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE provider_role_id = ? ";
 	}
 
 	@JsonIgnore

@@ -294,7 +294,7 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE order_group SET `order_group_id` = ?, `order_set_id` = ?, `patient_id` = ?, `encounter_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE order_group_16.order_group_id = ? ";
+		return "UPDATE order_group SET `order_group_id` = ?, `order_set_id` = ?, `patient_id` = ?, `encounter_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE order_group_id = ? ";
 	}
 
 	@JsonIgnore

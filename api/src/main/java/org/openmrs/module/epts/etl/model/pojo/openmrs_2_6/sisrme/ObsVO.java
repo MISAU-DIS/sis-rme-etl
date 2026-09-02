@@ -593,7 +593,7 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE obs SET `obs_id` = ?, `person_id` = ?, `concept_id` = ?, `encounter_id` = ?, `order_id` = ?, `obs_datetime` = ?, `location_id` = ?, `accession_number` = ?, `value_group_id` = ?, `value_coded` = ?, `value_coded_name_id` = ?, `value_drug` = ?, `value_datetime` = ?, `value_numeric` = ?, `value_modifier` = ?, `value_text` = ?, `comments` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `value_complex` = ?, `uuid` = ?, `form_namespace_and_path` = ?, `status` = ?, `interpretation` = ? WHERE saude_reprodutiva_obs_dst_ds.obs_id = ? ";
+		return "UPDATE obs SET `obs_id` = ?, `person_id` = ?, `concept_id` = ?, `encounter_id` = ?, `order_id` = ?, `obs_datetime` = ?, `location_id` = ?, `accession_number` = ?, `value_group_id` = ?, `value_coded` = ?, `value_coded_name_id` = ?, `value_drug` = ?, `value_datetime` = ?, `value_numeric` = ?, `value_modifier` = ?, `value_text` = ?, `comments` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `value_complex` = ?, `uuid` = ?, `form_namespace_and_path` = ?, `status` = ?, `interpretation` = ? WHERE obs_id = ? ";
 	}
 
 	@JsonIgnore

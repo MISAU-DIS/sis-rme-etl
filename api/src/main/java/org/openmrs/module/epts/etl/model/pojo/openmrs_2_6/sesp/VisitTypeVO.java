@@ -289,7 +289,7 @@ public class VisitTypeVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE visit_type SET `visit_type_id` = ?, `name` = ?, `description` = ?, `uuid` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ? WHERE visit_type_26.visit_type_id = ? ";
+		return "UPDATE visit_type SET `visit_type_id` = ?, `name` = ?, `description` = ?, `uuid` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ? WHERE visit_type_id = ? ";
 	}
 
 	@JsonIgnore

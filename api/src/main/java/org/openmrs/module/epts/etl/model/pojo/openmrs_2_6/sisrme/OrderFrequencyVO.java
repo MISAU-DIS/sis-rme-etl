@@ -289,7 +289,7 @@ public class OrderFrequencyVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE order_frequency SET `order_frequency_id` = ?, `concept_id` = ?, `frequency_per_day` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE order_frequency_2.order_frequency_id = ? ";
+		return "UPDATE order_frequency SET `order_frequency_id` = ?, `concept_id` = ?, `frequency_per_day` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `changed_by` = ?, `date_changed` = ?, `uuid` = ? WHERE order_frequency_id = ? ";
 	}
 
 	@JsonIgnore

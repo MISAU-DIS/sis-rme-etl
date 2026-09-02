@@ -323,7 +323,7 @@ public class PharmacyPackageVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE pharmacy_package SET `pharmacy_package_id` = ?, `location_id` = ?, `prescription_encounter_id` = ?, `package_datetime` = ?, `next_pickup_date` = ?, `dispense_mode_id` = ?, `notes` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `void_reason` = ?, `voided_by` = ?, `uuid` = ? WHERE prescription_pharmacy_package_dst_ds.pharmacy_package_id = ? ";
+		return "UPDATE pharmacy_package SET `pharmacy_package_id` = ?, `location_id` = ?, `prescription_encounter_id` = ?, `package_datetime` = ?, `next_pickup_date` = ?, `dispense_mode_id` = ?, `notes` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `void_reason` = ?, `voided_by` = ?, `uuid` = ? WHERE pharmacy_package_id = ? ";
 	}
 
 	@JsonIgnore

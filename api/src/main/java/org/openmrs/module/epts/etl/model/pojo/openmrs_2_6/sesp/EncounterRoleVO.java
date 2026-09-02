@@ -289,7 +289,7 @@ public class EncounterRoleVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE encounter_role SET `encounter_role_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE encounter_role_17.encounter_role_id = ? ";
+		return "UPDATE encounter_role SET `encounter_role_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE encounter_role_id = ? ";
 	}
 
 	@JsonIgnore

@@ -365,7 +365,7 @@ public class ProviderVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE provider SET `provider_id` = ?, `person_id` = ?, `name` = ?, `identifier` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `provider_role_id` = ?, `role_id` = ?, `speciality_id` = ? WHERE provider_20.provider_id = ? ";
+		return "UPDATE provider SET `provider_id` = ?, `person_id` = ?, `name` = ?, `identifier` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `provider_role_id` = ?, `role_id` = ?, `speciality_id` = ? WHERE provider_id = ? ";
 	}
 
 	@JsonIgnore

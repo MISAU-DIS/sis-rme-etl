@@ -274,7 +274,7 @@ public class PersonComplexAttributeDetailVO extends AbstractGeneratedDatabaseObj
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE person_complex_attribute_detail SET `person_complex_attribute_detail_id` = ?, `person_complex_attribute_id` = ?, `attribute_key` = ?, `attribute_value` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ? WHERE prep_key_pop_concept_person_complex_attribute_detail_dst_ds.person_complex_attribute_detail_id = ? ";
+		return "UPDATE person_complex_attribute_detail SET `person_complex_attribute_detail_id` = ?, `person_complex_attribute_id` = ?, `attribute_key` = ?, `attribute_value` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ? WHERE person_complex_attribute_detail_id = ? ";
 	}
 
 	@JsonIgnore

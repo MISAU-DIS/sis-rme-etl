@@ -283,7 +283,7 @@ public class ConceptDatatypeVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE concept_datatype SET `concept_datatype_id` = ?, `name` = ?, `hl7_abbreviation` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE concept_datatype_19.concept_datatype_id = ? ";
+		return "UPDATE concept_datatype SET `concept_datatype_id` = ?, `name` = ?, `hl7_abbreviation` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ? WHERE concept_datatype_id = ? ";
 	}
 
 	@JsonIgnore

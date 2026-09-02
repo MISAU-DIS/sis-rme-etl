@@ -267,7 +267,7 @@ public class DrugOrderVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE drug_order SET `order_id` = ?, `dose` = ?, `as_needed` = ?, `quantity` = ?, `frequency` = ?, `complex` = ?, `drug_id` = ?, `prn` = ? WHERE drug_order_1.order_id = ? ";
+		return "UPDATE drug_order SET `order_id` = ?, `dose` = ?, `as_needed` = ?, `quantity` = ?, `frequency` = ?, `complex` = ?, `drug_id` = ?, `prn` = ? WHERE order_id = ? ";
 	}
 
 	@JsonIgnore

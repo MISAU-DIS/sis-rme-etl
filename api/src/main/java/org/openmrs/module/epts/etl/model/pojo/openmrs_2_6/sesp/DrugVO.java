@@ -421,7 +421,7 @@ public class DrugVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE drug SET `drug_id` = ?, `concept_id` = ?, `name` = ?, `combination` = ?, `dosage_form` = ?, `maximum_daily_dose` = ?, `minimum_daily_dose` = ?, `route` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `date_changed` = ?, `changed_by` = ?, `strength` = ?, `dose_limit_units` = ? WHERE drug_34.drug_id = ? ";
+		return "UPDATE drug SET `drug_id` = ?, `concept_id` = ?, `name` = ?, `combination` = ?, `dosage_form` = ?, `maximum_daily_dose` = ?, `minimum_daily_dose` = ?, `route` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `date_changed` = ?, `changed_by` = ?, `strength` = ?, `dose_limit_units` = ? WHERE drug_id = ? ";
 	}
 
 	@JsonIgnore
