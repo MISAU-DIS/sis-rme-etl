@@ -55,7 +55,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	default String generateFullPackageName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClasspackage(connInfo);
+		String packageName = getClassPackage(connInfo);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -68,12 +68,12 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default String getClasspackage(DBConnectionInfo connInfo) {
+	default String getClassPackage(DBConnectionInfo connInfo) {
 		return getRelatedEtlConf().getPojoPackage(connInfo);
 	}
 
-	default String getClasspackageForForder(DBConnectionInfo connInfo) {
-		String packageS = getRelatedEtlConf().getPojoPackage(connInfo);
+	default String getClassPackageForForder(DBConnectionInfo connInfo) {
+		String packageS =  this.getClassPackage(connInfo);
 
 		String[] packageParts = packageS.split("\\.");
 
@@ -90,7 +90,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	default String generateFullClassName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClasspackage(connInfo);
+		String packageName = getClassPackage(connInfo);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 

@@ -41,15 +41,15 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Represents a query configuration. A query is used on data mapping between
+ * Represents a query configuration. A qu ery is used on data mapping between
  * source and destination table
  */
 public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
@@ -69,7 +69,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	private SrcConf relatedSrcConf;
 
-	private Class<? extends EtlDatabaseObject> syncRecordClass;
+	private Class<? extends EtlDatabaseObject> etlRecordClass;
 
 	private Boolean required;
 
@@ -347,17 +347,17 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	@Override
 	public Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
-		return this
-				.generateSyncRecordClass(this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedConnInfo() : null);
+		return this.etlRecordClass;
 	}
 
 	@Override
 	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
 			throws ForbiddenOperationException {
-		if (syncRecordClass == null)
-			syncRecordClass = GenericDatabaseObject.class;
 
-		return syncRecordClass;
+		if (etlRecordClass == null)
+			etlRecordClass = GenericDatabaseObject.class;
+
+		return etlRecordClass;
 	}
 
 	public EtlConfiguration getRelatedEtlConf() {
@@ -376,12 +376,12 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
-		this.syncRecordClass = syncRecordClass;
+		this.etlRecordClass = syncRecordClass;
 	}
 
 	@JsonIgnore
 	@Override
-	public String getClasspackage(DBConnectionInfo connInfo) {
+	public String getClassPackage(DBConnectionInfo connInfo) {
 		return getRelatedEtlConf().getPojoPackage(connInfo) + "._query_result";
 	}
 
@@ -390,7 +390,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	public String generateFullClassName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClasspackage(connInfo);
+		String packageName = getClassPackage(connInfo);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -401,7 +401,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	public String generateFullPackageName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClasspackage(connInfo);
+		String packageName = getClassPackage(connInfo);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -416,9 +416,9 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {
-				this.syncRecordClass = DatabaseEntityPOJOGenerator.generate(this, connInfo);
+				this.etlRecordClass = DatabaseEntityPOJOGenerator.generate(this, connInfo);
 			} else {
-				this.syncRecordClass = DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo);
+				this.etlRecordClass = DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo);
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -437,7 +437,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	public void generateSkeletonRecordClass(DBConnectionInfo connInfo) {
 		try {
-			this.syncRecordClass = DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo);
+			this.etlRecordClass = DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 
