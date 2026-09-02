@@ -54,6 +54,42 @@ public class OrderFrequencyVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "order_frequency_id")) {
+			return this.orderFrequencyId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			return this.conceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "frequency_per_day")) {
+			return this.frequencyPerDay.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired")) {
+			return this.retired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired_by")) {
+			return this.retiredBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_retired")) {
+			return this.dateRetired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retire_reason")) {
+			return this.retireReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

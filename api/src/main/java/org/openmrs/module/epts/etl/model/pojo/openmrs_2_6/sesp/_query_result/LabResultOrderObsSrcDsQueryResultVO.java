@@ -37,6 +37,24 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			return this.conceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_coded")) {
+			return this.valueCoded.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "obs_datetime")) {
+			return this.obsDatetime.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

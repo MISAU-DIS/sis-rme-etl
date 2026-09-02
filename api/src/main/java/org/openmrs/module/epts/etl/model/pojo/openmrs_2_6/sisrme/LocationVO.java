@@ -102,6 +102,114 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "location_id")) {
+			return this.locationId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "name")) {
+			return this.name.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "description")) {
+			return this.description.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address1")) {
+			return this.address1.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address2")) {
+			return this.address2.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "city_village")) {
+			return this.cityVillage.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "state_province")) {
+			return this.stateProvince.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "postal_code")) {
+			return this.postalCode.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "country")) {
+			return this.country.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "latitude")) {
+			return this.latitude.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "longitude")) {
+			return this.longitude.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "county_district")) {
+			return this.countyDistrict.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address3")) {
+			return this.address3.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address6")) {
+			return this.address6.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address5")) {
+			return this.address5.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address4")) {
+			return this.address4.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired")) {
+			return this.retired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired_by")) {
+			return this.retiredBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_retired")) {
+			return this.dateRetired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retire_reason")) {
+			return this.retireReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "parent_location")) {
+			return this.parentLocation.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address7")) {
+			return this.address7.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address8")) {
+			return this.address8.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address9")) {
+			return this.address9.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address10")) {
+			return this.address10.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address11")) {
+			return this.address11.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address12")) {
+			return this.address12.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address13")) {
+			return this.address13.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address14")) {
+			return this.address14.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "address15")) {
+			return this.address15.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "location_type_concept_id")) {
+			return this.locationTypeConceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

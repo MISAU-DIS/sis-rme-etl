@@ -41,6 +41,33 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "value_drug")) {
+			return this.valueDrug.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "formulacao_concept_id")) {
+			return this.formulacaoConceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "package_datetime")) {
+			return this.packageDatetime.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "posologia")) {
+			return this.posologia.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "specified_qty")) {
+			return this.specifiedQty.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "calculated_qty")) {
+			return this.calculatedQty.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

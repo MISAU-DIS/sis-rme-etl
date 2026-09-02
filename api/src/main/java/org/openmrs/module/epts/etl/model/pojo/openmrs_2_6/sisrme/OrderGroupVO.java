@@ -52,6 +52,39 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "order_group_id")) {
+			return this.orderGroupId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "patient_id")) {
+			return this.patientId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "encounter_id")) {
+			return this.encounterId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "notes")) {
+			return this.notes.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

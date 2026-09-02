@@ -55,6 +55,39 @@ public class DrugOrderVO extends AbstractGeneratedDatabaseObject {
 		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO) super.getSharedPkObj();
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "order_id")) {
+			return this.orderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "dose")) {
+			return this.dose.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "as_needed")) {
+			return this.asNeeded.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "quantity")) {
+			return this.quantity.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "frequency")) {
+			return this.frequency.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "complex")) {
+			return this.complex.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "drug_id")) {
+			return this.drugId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "prn")) {
+			return this.prn.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

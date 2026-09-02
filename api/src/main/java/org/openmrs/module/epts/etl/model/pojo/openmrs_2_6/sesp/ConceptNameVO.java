@@ -58,6 +58,48 @@ public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			return this.conceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "name")) {
+			return this.name.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "locale")) {
+			return this.locale.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "concept_name_id")) {
+			return this.conceptNameId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "concept_name_type")) {
+			return this.conceptNameType.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "locale_preferred")) {
+			return this.localePreferred.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

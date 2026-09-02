@@ -52,6 +52,42 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "appointment_id")) {
+			return this.appointmentId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "patient_id")) {
+			return this.patientId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "provider_id")) {
+			return this.providerId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "reason_for_admission")) {
+			return this.reasonForAdmission.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "service_id")) {
+			return this.serviceId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "speciality_id")) {
+			return this.specialityId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "status")) {
+			return this.status.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "notes")) {
+			return this.notes.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "appointment_date")) {
+			return this.appointmentDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

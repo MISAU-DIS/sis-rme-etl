@@ -64,6 +64,57 @@ public class PharmacyTransactionVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "pharmacy_transaction_id")) {
+			return this.pharmacyTransactionId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "batch_id")) {
+			return this.batchId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "transaction_type_id")) {
+			return this.transactionTypeId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "quantity")) {
+			return this.quantity.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "delivery_note_id")) {
+			return this.deliveryNoteId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "document_number")) {
+			return this.documentNumber.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "notes")) {
+			return this.notes.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "subscriber")) {
+			return this.subscriber.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "origin")) {
+			return this.origin.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "location_id")) {
+			return this.locationId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

@@ -62,6 +62,54 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "condition_id")) {
+			return this.conditionId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "condition_coded")) {
+			return this.conditionCoded.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "condition_non_coded")) {
+			return this.conditionNonCoded.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "clinical_status")) {
+			return this.clinicalStatus.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "onset_date")) {
+			return this.onsetDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "patient_id")) {
+			return this.patientId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "encounter_id")) {
+			return this.encounterId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "form_namespace_and_path")) {
+			return this.formNamespaceAndPath.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

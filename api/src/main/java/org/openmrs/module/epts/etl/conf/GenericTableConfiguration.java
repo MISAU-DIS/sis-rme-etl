@@ -69,7 +69,17 @@ public class GenericTableConfiguration extends AbstractTableConfiguration {
 	@Override
 	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo application)
 			throws ForbiddenOperationException {
-		return GenericDatabaseObject.class;
+		
+		if (this.getEtlRecordClass() == null) {
+			super.generateSyncRecordClass(application);
+			
+			if (this.getEtlRecordClass() == null) {
+				this.setEtlRecordClass(GenericDatabaseObject.class);
+			}
+			
+		}
+		
+		return this.getEtlRecordClass();
 	}
 
 	@Override

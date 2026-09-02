@@ -53,6 +53,39 @@ public class PersonComplexAttributeDetailVO extends AbstractGeneratedDatabaseObj
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "person_complex_attribute_detail_id")) {
+			return this.personComplexAttributeDetailId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "person_complex_attribute_id")) {
+			return this.personComplexAttributeId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "attribute_key")) {
+			return this.attributeKey.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "attribute_value")) {
+			return this.attributeValue.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

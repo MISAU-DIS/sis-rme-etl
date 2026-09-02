@@ -64,6 +64,57 @@ public class ConceptVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			return this.conceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired")) {
+			return this.retired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "short_name")) {
+			return this.shortName.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "description")) {
+			return this.description.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "form_text")) {
+			return this.formText.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "datatype_id")) {
+			return this.datatypeId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "class_id")) {
+			return this.classId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "is_set")) {
+			return this.isSet.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "version")) {
+			return this.version.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired_by")) {
+			return this.retiredBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_retired")) {
+			return this.dateRetired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retire_reason")) {
+			return this.retireReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

@@ -35,6 +35,24 @@ public class VitalSignsSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "temperature")) {
+			return this.temperature.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "blood_pressure_systolic")) {
+			return this.bloodPressureSystolic.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "blood_pressure_diastolic")) {
+			return this.bloodPressureDiastolic.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

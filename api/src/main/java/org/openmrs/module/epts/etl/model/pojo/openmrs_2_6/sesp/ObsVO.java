@@ -90,6 +90,96 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "obs_id")) {
+			return this.obsId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "person_id")) {
+			return this.personId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			return this.conceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "encounter_id")) {
+			return this.encounterId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_id")) {
+			return this.orderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "obs_datetime")) {
+			return this.obsDatetime.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "location_id")) {
+			return this.locationId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "obs_group_id")) {
+			return this.obsGroupId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "accession_number")) {
+			return this.accessionNumber.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_group_id")) {
+			return this.valueGroupId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_coded")) {
+			return this.valueCoded.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_coded_name_id")) {
+			return this.valueCodedNameId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_drug")) {
+			return this.valueDrug.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_datetime")) {
+			return this.valueDatetime.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_numeric")) {
+			return this.valueNumeric.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_modifier")) {
+			return this.valueModifier.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_text")) {
+			return this.valueText.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "comments")) {
+			return this.comments.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_complex")) {
+			return this.valueComplex.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
+			return this.previousVersion.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "form_namespace_and_path")) {
+			return this.formNamespaceAndPath.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "status")) {
+			return this.status.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "interpretation")) {
+			return this.interpretation.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

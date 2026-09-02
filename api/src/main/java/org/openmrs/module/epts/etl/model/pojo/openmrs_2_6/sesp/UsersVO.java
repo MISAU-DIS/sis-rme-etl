@@ -68,6 +68,63 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "user_id")) {
+			return this.userId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "system_id")) {
+			return this.systemId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "username")) {
+			return this.username.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "password")) {
+			return this.password.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "salt")) {
+			return this.salt.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "secret_question")) {
+			return this.secretQuestion.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "secret_answer")) {
+			return this.secretAnswer.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "person_id")) {
+			return this.personId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired")) {
+			return this.retired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired_by")) {
+			return this.retiredBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_retired")) {
+			return this.dateRetired.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "retire_reason")) {
+			return this.retireReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "activation_key")) {
+			return this.activationKey.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "email")) {
+			return this.email.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

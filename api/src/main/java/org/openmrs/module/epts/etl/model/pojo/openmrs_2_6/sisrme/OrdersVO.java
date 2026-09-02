@@ -80,6 +80,81 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "order_id")) {
+			return this.orderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_type_id")) {
+			return this.orderTypeId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			return this.conceptId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "orderer")) {
+			return this.orderer.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "encounter_id")) {
+			return this.encounterId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_activated")) {
+			return this.dateActivated.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_reason")) {
+			return this.orderReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "patient_id")) {
+			return this.patientId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "accession_number")) {
+			return this.accessionNumber.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "urgency")) {
+			return this.urgency.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_number")) {
+			return this.orderNumber.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_action")) {
+			return this.orderAction.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "comment_to_fulfiller")) {
+			return this.commentToFulfiller.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "care_setting")) {
+			return this.careSetting.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "scheduled_date")) {
+			return this.scheduledDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "discontinued")) {
+			return this.discontinued.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_group_id")) {
+			return this.orderGroupId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "fulfiller_comment")) {
+			return this.fulfillerComment.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

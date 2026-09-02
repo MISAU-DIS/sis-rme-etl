@@ -55,6 +55,20 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 		assertEquals(17, object.getConceptClassId().getValue());
 	}
 
+	@Test
+	public void shouldRetrieveGeneratedAndInheritedFieldValuesDirectly() {
+		ConceptClassVO object = new ConceptClassVO();
+		Date created = new Date();
+		object.setConceptClassIdValue(23);
+		object.setDateCreated(created);
+		object.setUuid("direct-uuid");
+
+		assertEquals(23, object.getFieldValue("concept_class_id"));
+		assertEquals(23, object.getFieldValue("conceptClassId"));
+		assertSame(created, object.getFieldValue("date_created"));
+		assertEquals("direct-uuid", object.getFieldValue("uuid"));
+	}
+
 	private Field find(List<Field> fields, String name) {
 		return fields.stream().filter(field -> name.equalsIgnoreCase(field.getName())).findFirst()
 				.orElseThrow(() -> new AssertionError("Field not found: " + name));

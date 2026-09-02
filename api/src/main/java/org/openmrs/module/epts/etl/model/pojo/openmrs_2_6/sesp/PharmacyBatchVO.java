@@ -58,6 +58,48 @@ public class PharmacyBatchVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
+	@Override
+	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "batch_id")) {
+			return this.batchId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "drug_id")) {
+			return this.drugId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "batch_number")) {
+			return this.batchNumber.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "expiry_date")) {
+			return this.expiryDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "quantity")) {
+			return this.quantity.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "balance")) {
+			return this.balance.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "location_id")) {
+			return this.locationId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			return this.creator.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			return this.voided.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			return this.voidReason.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		return super.getFieldValue(fieldName);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {
