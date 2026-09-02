@@ -43,6 +43,8 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 			this.copyCompatibleFieldValue(source, destinationField);
 		}
 
+		this.setUuid(source.getUuid());
+
 		this.loadUniqueKeyValues(destinationConfiguration);
 		this.copySharedPkFrom(source);
 	}

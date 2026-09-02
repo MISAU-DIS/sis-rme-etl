@@ -14,6 +14,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -251,7 +252,18 @@ public abstract class BaseVO implements VO {
 		else if (utilities.isStringIn(type.toUpperCase(), "BOOLEAN"))
 			type = "java.util.Boolean";
 
-		Object value = resultSet.getObject(fieldName);
+		Object value = null;
+
+		try {
+			value = resultSet.getObject(fieldName);
+		} catch (SQLException e) {
+			DBException bdE = new DBException(e);
+
+			if (!bdE.messageContains("Column", "not found")) {
+				throw e;
+			}
+
+		}
 
 		if (value != null) {
 			if (type.equals("java.util.Boolean")) {

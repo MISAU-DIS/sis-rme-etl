@@ -68,6 +68,11 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 					.loadUniqueKeyValues((TableConfiguration) voAsEtlDatabaseObject.getRelatedConfiguration());
 			voAsEtlDatabaseObject
 					.loadObjectIdData((TableConfiguration) voAsEtlDatabaseObject.getRelatedConfiguration());
+
+			if (voAsEtlDatabaseObject.getSharedPkObj() != null && voAsEtlDatabaseObject.getUuid() == null
+					&& voAsEtlDatabaseObject.getSharedPkObj().getUuid() != null) {
+				voAsEtlDatabaseObject.setUuid(voAsEtlDatabaseObject.getSharedPkObj().getUuid());
+			}
 		}
 	}
 
