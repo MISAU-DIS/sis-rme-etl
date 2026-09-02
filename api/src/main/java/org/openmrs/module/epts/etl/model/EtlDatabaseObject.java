@@ -341,12 +341,12 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default void loadObjectIdData() throws ForbiddenOperationException {
-		TableConfiguration tabConf = (TableConfiguration) getRelatedConfiguration();
+		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
 
 		if (tabConf == null)
 			throw new ForbiddenOperationException("The related tabConf is not specified!");
 
-		loadObjectIdData(tabConf);
+		this.loadObjectIdData(tabConf);
 	}
 
 	/**

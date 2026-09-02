@@ -675,6 +675,10 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 	private static void assignGeneratedIdsAfterBatchInsert(List<EtlDatabaseObject> insertedRecords,
 			TableConfiguration tabConf, List<Long> generatedIds) {
+
+		tabConf.stepIntoBreakpoint(tabConf.getRelatedEtlConf(),
+				tabConf.getTableAlias().equals("prep_data_appointment_dst_ds"));
+
 		if (tabConf.includePrimaryKeyOnInsert()) {
 			return;
 		}
