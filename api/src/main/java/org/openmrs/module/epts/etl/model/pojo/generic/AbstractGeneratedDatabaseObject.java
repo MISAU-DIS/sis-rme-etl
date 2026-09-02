@@ -23,6 +23,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	@Override
 	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration configuration) {
 		this.relatedConfiguration = configuration;
+
 		enrichGeneratedFields(configuration);
 	}
 
@@ -48,8 +49,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 	private TableConfiguration getDestinationTableConfiguration() {
 		if (!this.hasRelatedConfiguration()) {
-			throw new ForbiddenOperationException(
-			        "The relatedConfiguration is not set for dstRecord [" + this + "]");
+			throw new ForbiddenOperationException("The relatedConfiguration is not set for dstRecord [" + this + "]");
 		}
 		if (!(this.getRelatedConfiguration() instanceof TableConfiguration)) {
 			throw new ForbiddenOperationException("The relatedConfiguration is not a table configuration");

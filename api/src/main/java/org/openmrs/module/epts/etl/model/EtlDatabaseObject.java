@@ -644,7 +644,6 @@ public interface EtlDatabaseObject extends EtlObject {
 			Connection dstConn) throws DBException {
 
 		EtlDatabaseObject recInDst = refInfo.createRecordInstance();
-		recInDst.setRelatedConfiguration(refInfo);
 		recInDst.copyFrom(parentInOrigin);
 		recInDst.loadUniqueKeyValues(refInfo);
 		recInDst.loadObjectIdData(refInfo);

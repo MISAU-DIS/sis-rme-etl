@@ -131,8 +131,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 			sql += " WHERE 	record_origin_id = ? and record_origin_location_code = ? ";
 
 			return find(parentTableConfiguration.getLoadHealper(),
-					parentTableConfiguration.generateSyncRecordClass(parentTableConfiguration.getSrcConnInfo()), sql, params,
-					conn);
+					parentTableConfiguration.generateSyncRecordClass(parentTableConfiguration.getSrcConnInfo()), sql,
+					params, conn);
 		} catch (Exception e) {
 			LOG.info("Error trying do retrieve dstRecord on table " + parentTableConfiguration.getTableName() + "["
 					+ e.getMessage() + "]");
@@ -194,7 +194,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		TableConfiguration tableConfiguration = (TableConfiguration) record.getRelatedConfiguration();
 
 		if (!record.hasAtLeastOnUniqueKeyWIthAllFieldsFilled()) {
-			throw new ForbiddenOperationException("The object " + record + " has no valued uniqueKey");
+			throw new ForbiddenOperationException("No valued uniqueKey found within object: " + record);
 		}
 
 		Object[] params = {};
@@ -401,7 +401,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 				+ tabConf.getPrimaryKey() + "\n)";
 		sql += "												   )";
 
-		return find(tabConf.getLoadHealper(), tabConf.generateSyncRecordClass(tabConf.getSrcConnInfo()), sql, params, conn);
+		return find(tabConf.getLoadHealper(), tabConf.generateSyncRecordClass(tabConf.getSrcConnInfo()), sql, params,
+				conn);
 	}
 
 	public static void remove(EtlDatabaseObject record, Connection conn) throws DBException {
