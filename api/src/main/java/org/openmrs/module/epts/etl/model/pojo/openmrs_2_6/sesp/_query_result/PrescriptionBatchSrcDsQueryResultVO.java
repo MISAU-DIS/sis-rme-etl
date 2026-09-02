@@ -152,9 +152,11 @@ public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDataba
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PrescriptionBatchSrcDsQueryResultVO copy = new PrescriptionBatchSrcDsQueryResultVO();
-
-		copy.batchNumber = copyGeneratedField(this.batchNumber);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

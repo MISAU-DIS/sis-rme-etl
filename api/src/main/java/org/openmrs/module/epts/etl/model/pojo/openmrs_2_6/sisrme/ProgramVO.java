@@ -329,18 +329,11 @@ public class ProgramVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ProgramVO copy = new ProgramVO();
-
-		copy.programId = copyGeneratedField(this.programId);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.name = copyGeneratedField(this.name);
-		copy.description = copyGeneratedField(this.description);
-		copy.uuid = this.uuid;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

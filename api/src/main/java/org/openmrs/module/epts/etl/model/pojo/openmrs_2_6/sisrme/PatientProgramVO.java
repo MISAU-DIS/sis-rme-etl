@@ -384,21 +384,11 @@ public class PatientProgramVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PatientProgramVO copy = new PatientProgramVO();
-
-		copy.patientProgramId = copyGeneratedField(this.patientProgramId);
-		copy.patientId = copyGeneratedField(this.patientId);
-		copy.programId = copyGeneratedField(this.programId);
-		copy.dateEnrolled = copyGeneratedField(this.dateEnrolled);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.dateVoided = this.dateVoided;
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.uuid = this.uuid;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

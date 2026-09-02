@@ -176,10 +176,11 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PrivilegeVO copy = new PrivilegeVO();
-
-		copy.privilege = copyGeneratedField(this.privilege);
-		copy.description = copyGeneratedField(this.description);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

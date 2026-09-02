@@ -765,37 +765,11 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ObsVO copy = new ObsVO();
-
-		copy.obsId = copyGeneratedField(this.obsId);
-		copy.personId = copyGeneratedField(this.personId);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.encounterId = copyGeneratedField(this.encounterId);
-		copy.orderId = copyGeneratedField(this.orderId);
-		copy.obsDatetime = copyGeneratedField(this.obsDatetime);
-		copy.locationId = copyGeneratedField(this.locationId);
-		copy.obsGroupId = copyGeneratedField(this.obsGroupId);
-		copy.accessionNumber = copyGeneratedField(this.accessionNumber);
-		copy.valueGroupId = copyGeneratedField(this.valueGroupId);
-		copy.valueCoded = copyGeneratedField(this.valueCoded);
-		copy.valueCodedNameId = copyGeneratedField(this.valueCodedNameId);
-		copy.valueDrug = copyGeneratedField(this.valueDrug);
-		copy.valueDatetime = copyGeneratedField(this.valueDatetime);
-		copy.valueNumeric = copyGeneratedField(this.valueNumeric);
-		copy.valueModifier = copyGeneratedField(this.valueModifier);
-		copy.valueText = copyGeneratedField(this.valueText);
-		copy.comments = copyGeneratedField(this.comments);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.dateVoided = this.dateVoided;
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.valueComplex = copyGeneratedField(this.valueComplex);
-		copy.uuid = this.uuid;
-		copy.previousVersion = copyGeneratedField(this.previousVersion);
-		copy.formNamespaceAndPath = copyGeneratedField(this.formNamespaceAndPath);
-		copy.status = copyGeneratedField(this.status);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

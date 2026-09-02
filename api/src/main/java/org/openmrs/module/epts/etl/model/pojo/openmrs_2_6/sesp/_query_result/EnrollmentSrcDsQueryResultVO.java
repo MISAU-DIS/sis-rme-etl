@@ -248,12 +248,11 @@ public class EnrollmentSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 	@Override
 	public EtlDatabaseObject createACopy() {
 		EnrollmentSrcDsQueryResultVO copy = new EnrollmentSrcDsQueryResultVO();
-
-		copy.dateEnrolled = copyGeneratedField(this.dateEnrolled);
-		copy.startDate = copyGeneratedField(this.startDate);
-		copy.state = copyGeneratedField(this.state);
-		copy.programId = copyGeneratedField(this.programId);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

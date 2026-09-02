@@ -418,23 +418,11 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		VitalSignsVO copy = new VitalSignsVO();
-
-		copy.vitalSignsId = copyGeneratedField(this.vitalSignsId);
-		copy.patientId = copyGeneratedField(this.patientId);
-		copy.encounterId = copyGeneratedField(this.encounterId);
-		copy.locationId = copyGeneratedField(this.locationId);
-		copy.temperature = copyGeneratedField(this.temperature);
-		copy.bloodPressureSystolic = copyGeneratedField(this.bloodPressureSystolic);
-		copy.bloodPressureDiastolic = copyGeneratedField(this.bloodPressureDiastolic);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.dateVoided = this.dateVoided;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

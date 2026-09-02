@@ -408,21 +408,11 @@ public class OrderTypeVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		OrderTypeVO copy = new OrderTypeVO();
-
-		copy.orderTypeId = copyGeneratedField(this.orderTypeId);
-		copy.name = copyGeneratedField(this.name);
-		copy.description = copyGeneratedField(this.description);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-		copy.uuid = this.uuid;
-		copy.javaClassName = copyGeneratedField(this.javaClassName);
-		copy.parent = copyGeneratedField(this.parent);
-		copy.changedBy = copyGeneratedField(this.changedBy);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

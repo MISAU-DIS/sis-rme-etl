@@ -379,20 +379,11 @@ public class PharmacyBatchVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PharmacyBatchVO copy = new PharmacyBatchVO();
-
-		copy.batchId = copyGeneratedField(this.batchId);
-		copy.drugId = copyGeneratedField(this.drugId);
-		copy.batchNumber = copyGeneratedField(this.batchNumber);
-		copy.expiryDate = copyGeneratedField(this.expiryDate);
-		copy.quantity = copyGeneratedField(this.quantity);
-		copy.balance = copyGeneratedField(this.balance);
-		copy.locationId = copyGeneratedField(this.locationId);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

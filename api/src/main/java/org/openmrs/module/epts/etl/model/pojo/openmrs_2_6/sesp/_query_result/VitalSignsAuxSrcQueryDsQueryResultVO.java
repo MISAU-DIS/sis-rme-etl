@@ -136,7 +136,11 @@ public class VitalSignsAuxSrcQueryDsQueryResultVO extends AbstractGeneratedDatab
 	@Override
 	public EtlDatabaseObject createACopy() {
 		VitalSignsAuxSrcQueryDsQueryResultVO copy = new VitalSignsAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

@@ -444,22 +444,11 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		EncounterTypeVO copy = new EncounterTypeVO();
-
-		copy.encounterTypeId = copyGeneratedField(this.encounterTypeId);
-		copy.name = copyGeneratedField(this.name);
-		copy.description = copyGeneratedField(this.description);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-		copy.uuid = this.uuid;
-		copy.viewPrivilege = copyGeneratedField(this.viewPrivilege);
-		copy.editPrivilege = copyGeneratedField(this.editPrivilege);
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

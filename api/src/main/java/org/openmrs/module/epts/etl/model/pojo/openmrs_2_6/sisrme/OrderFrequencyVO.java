@@ -349,19 +349,11 @@ public class OrderFrequencyVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		OrderFrequencyVO copy = new OrderFrequencyVO();
-
-		copy.orderFrequencyId = copyGeneratedField(this.orderFrequencyId);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.frequencyPerDay = copyGeneratedField(this.frequencyPerDay);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

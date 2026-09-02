@@ -136,7 +136,11 @@ public class PrescriptionAuxSrcQueryDsQueryResultVO extends AbstractGeneratedDat
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PrescriptionAuxSrcQueryDsQueryResultVO copy = new PrescriptionAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

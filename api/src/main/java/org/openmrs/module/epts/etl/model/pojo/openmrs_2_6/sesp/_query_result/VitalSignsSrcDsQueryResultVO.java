@@ -176,10 +176,11 @@ public class VitalSignsSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 	@Override
 	public EtlDatabaseObject createACopy() {
 		VitalSignsSrcDsQueryResultVO copy = new VitalSignsSrcDsQueryResultVO();
-
-		copy.temperature = copyGeneratedField(this.temperature);
-		copy.bloodPressureSystolic = copyGeneratedField(this.bloodPressureSystolic);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

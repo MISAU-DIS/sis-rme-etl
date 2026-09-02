@@ -276,16 +276,11 @@ public class ProgramWorkflowVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ProgramWorkflowVO copy = new ProgramWorkflowVO();
-
-		copy.programWorkflowId = copyGeneratedField(this.programWorkflowId);
-		copy.programId = copyGeneratedField(this.programId);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

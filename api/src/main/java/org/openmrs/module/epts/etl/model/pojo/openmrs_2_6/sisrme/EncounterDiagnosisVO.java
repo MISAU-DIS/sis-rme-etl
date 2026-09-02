@@ -451,24 +451,11 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		EncounterDiagnosisVO copy = new EncounterDiagnosisVO();
-
-		copy.diagnosisId = copyGeneratedField(this.diagnosisId);
-		copy.diagnosisCoded = copyGeneratedField(this.diagnosisCoded);
-		copy.diagnosisNonCoded = copyGeneratedField(this.diagnosisNonCoded);
-		copy.encounterId = copyGeneratedField(this.encounterId);
-		copy.patientId = copyGeneratedField(this.patientId);
-		copy.conditionId = copyGeneratedField(this.conditionId);
-		copy.certainty = copyGeneratedField(this.certainty);
-		copy.rank = copyGeneratedField(this.rank);
-		copy.uuid = this.uuid;
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.dateVoided = this.dateVoided;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

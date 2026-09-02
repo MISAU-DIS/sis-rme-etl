@@ -516,26 +516,11 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PersonVO copy = new PersonVO();
-
-		copy.personId = copyGeneratedField(this.personId);
-		copy.gender = copyGeneratedField(this.gender);
-		copy.birthdate = copyGeneratedField(this.birthdate);
-		copy.birthdateEstimated = copyGeneratedField(this.birthdateEstimated);
-		copy.dead = copyGeneratedField(this.dead);
-		copy.deathDate = copyGeneratedField(this.deathDate);
-		copy.causeOfDeath = copyGeneratedField(this.causeOfDeath);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.dateVoided = this.dateVoided;
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.uuid = this.uuid;
-		copy.deathdateEstimated = copyGeneratedField(this.deathdateEstimated);
-		copy.birthtime = copyGeneratedField(this.birthtime);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

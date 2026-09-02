@@ -564,27 +564,11 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		UsersVO copy = new UsersVO();
-
-		copy.userId = copyGeneratedField(this.userId);
-		copy.systemId = copyGeneratedField(this.systemId);
-		copy.username = copyGeneratedField(this.username);
-		copy.password = copyGeneratedField(this.password);
-		copy.salt = copyGeneratedField(this.salt);
-		copy.secretQuestion = copyGeneratedField(this.secretQuestion);
-		copy.secretAnswer = copyGeneratedField(this.secretAnswer);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.personId = copyGeneratedField(this.personId);
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-		copy.uuid = this.uuid;
-		copy.creatorId = copyGeneratedField(this.creatorId);
-		copy.activationKey = copyGeneratedField(this.activationKey);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

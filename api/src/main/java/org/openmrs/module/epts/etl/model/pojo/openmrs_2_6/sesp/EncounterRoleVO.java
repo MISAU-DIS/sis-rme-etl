@@ -363,19 +363,11 @@ public class EncounterRoleVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		EncounterRoleVO copy = new EncounterRoleVO();
-
-		copy.encounterRoleId = copyGeneratedField(this.encounterRoleId);
-		copy.name = copyGeneratedField(this.name);
-		copy.description = copyGeneratedField(this.description);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

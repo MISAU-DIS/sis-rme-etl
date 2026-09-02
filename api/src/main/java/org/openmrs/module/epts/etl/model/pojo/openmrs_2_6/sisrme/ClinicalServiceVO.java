@@ -474,25 +474,11 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ClinicalServiceVO copy = new ClinicalServiceVO();
-
-		copy.clinicalServiceId = copyGeneratedField(this.clinicalServiceId);
-		copy.locationId = copyGeneratedField(this.locationId);
-		copy.serviceConceptId = copyGeneratedField(this.serviceConceptId);
-		copy.active = copyGeneratedField(this.active);
-		copy.hasQueue = copyGeneratedField(this.hasQueue);
-		copy.hasPharmacy = copyGeneratedField(this.hasPharmacy);
-		copy.isOneStop = copyGeneratedField(this.isOneStop);
-		copy.pharmacyLocationId = copyGeneratedField(this.pharmacyLocationId);
-		copy.displayOrder = copyGeneratedField(this.displayOrder);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

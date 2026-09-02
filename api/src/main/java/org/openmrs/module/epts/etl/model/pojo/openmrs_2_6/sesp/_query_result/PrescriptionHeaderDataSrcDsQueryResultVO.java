@@ -170,9 +170,11 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PrescriptionHeaderDataSrcDsQueryResultVO copy = new PrescriptionHeaderDataSrcDsQueryResultVO();
-
-		copy.nextPickupDate = copyGeneratedField(this.nextPickupDate);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

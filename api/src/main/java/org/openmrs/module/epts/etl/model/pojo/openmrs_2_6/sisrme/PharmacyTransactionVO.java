@@ -454,23 +454,11 @@ public class PharmacyTransactionVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PharmacyTransactionVO copy = new PharmacyTransactionVO();
-
-		copy.pharmacyTransactionId = copyGeneratedField(this.pharmacyTransactionId);
-		copy.batchId = copyGeneratedField(this.batchId);
-		copy.transactionTypeId = copyGeneratedField(this.transactionTypeId);
-		copy.quantity = copyGeneratedField(this.quantity);
-		copy.deliveryNoteId = copyGeneratedField(this.deliveryNoteId);
-		copy.documentNumber = copyGeneratedField(this.documentNumber);
-		copy.notes = copyGeneratedField(this.notes);
-		copy.subscriber = copyGeneratedField(this.subscriber);
-		copy.origin = copyGeneratedField(this.origin);
-		copy.locationId = copyGeneratedField(this.locationId);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

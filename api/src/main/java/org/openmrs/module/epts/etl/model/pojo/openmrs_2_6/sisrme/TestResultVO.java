@@ -613,30 +613,11 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		TestResultVO copy = new TestResultVO();
-
-		copy.testResultId = copyGeneratedField(this.testResultId);
-		copy.orderId = copyGeneratedField(this.orderId);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.patientId = copyGeneratedField(this.patientId);
-		copy.encounterId = copyGeneratedField(this.encounterId);
-		copy.locationId = copyGeneratedField(this.locationId);
-		copy.resultDate = copyGeneratedField(this.resultDate);
-		copy.valueNumeric = copyGeneratedField(this.valueNumeric);
-		copy.valueCoded = copyGeneratedField(this.valueCoded);
-		copy.valueText = copyGeneratedField(this.valueText);
-		copy.valueDatetime = copyGeneratedField(this.valueDatetime);
-		copy.valueComplex = copyGeneratedField(this.valueComplex);
-		copy.valueModifier = copyGeneratedField(this.valueModifier);
-		copy.status = copyGeneratedField(this.status);
-		copy.interpretation = copyGeneratedField(this.interpretation);
-		copy.comments = copyGeneratedField(this.comments);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.dateVoided = this.dateVoided;
-		copy.voidReason = copyGeneratedField(this.voidReason);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

@@ -136,7 +136,11 @@ public class MeioContactoAuxSrcQueryDsQueryResultVO extends AbstractGeneratedDat
 	@Override
 	public EtlDatabaseObject createACopy() {
 		MeioContactoAuxSrcQueryDsQueryResultVO copy = new MeioContactoAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

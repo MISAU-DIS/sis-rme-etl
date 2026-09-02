@@ -136,7 +136,11 @@ public class IncricaoOnDemandAuxSrcQueryDsQueryResultVO extends AbstractGenerate
 	@Override
 	public EtlDatabaseObject createACopy() {
 		IncricaoOnDemandAuxSrcQueryDsQueryResultVO copy = new IncricaoOnDemandAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

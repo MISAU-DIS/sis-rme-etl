@@ -136,7 +136,11 @@ public class PrepDataAuxSrcQueryDsQueryResultVO extends AbstractGeneratedDatabas
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PrepDataAuxSrcQueryDsQueryResultVO copy = new PrepDataAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

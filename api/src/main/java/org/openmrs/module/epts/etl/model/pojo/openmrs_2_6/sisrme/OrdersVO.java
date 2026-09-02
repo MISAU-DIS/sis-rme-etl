@@ -651,32 +651,11 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		OrdersVO copy = new OrdersVO();
-
-		copy.orderId = copyGeneratedField(this.orderId);
-		copy.orderTypeId = copyGeneratedField(this.orderTypeId);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.orderer = copyGeneratedField(this.orderer);
-		copy.encounterId = copyGeneratedField(this.encounterId);
-		copy.dateActivated = copyGeneratedField(this.dateActivated);
-		copy.orderReason = copyGeneratedField(this.orderReason);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.dateVoided = this.dateVoided;
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.patientId = copyGeneratedField(this.patientId);
-		copy.accessionNumber = copyGeneratedField(this.accessionNumber);
-		copy.uuid = this.uuid;
-		copy.urgency = copyGeneratedField(this.urgency);
-		copy.orderNumber = copyGeneratedField(this.orderNumber);
-		copy.orderAction = copyGeneratedField(this.orderAction);
-		copy.commentToFulfiller = copyGeneratedField(this.commentToFulfiller);
-		copy.careSetting = copyGeneratedField(this.careSetting);
-		copy.scheduledDate = copyGeneratedField(this.scheduledDate);
-		copy.discontinued = copyGeneratedField(this.discontinued);
-		copy.orderGroupId = copyGeneratedField(this.orderGroupId);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

@@ -462,24 +462,11 @@ public class ProviderVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ProviderVO copy = new ProviderVO();
-
-		copy.providerId = copyGeneratedField(this.providerId);
-		copy.encounterRoleId = copyGeneratedField(this.encounterRoleId);
-		copy.personId = copyGeneratedField(this.personId);
-		copy.name = copyGeneratedField(this.name);
-		copy.identifier = copyGeneratedField(this.identifier);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-		copy.uuid = this.uuid;
-		copy.providerRoleId = copyGeneratedField(this.providerRoleId);
-		copy.roleId = copyGeneratedField(this.roleId);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

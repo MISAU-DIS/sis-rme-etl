@@ -158,9 +158,11 @@ public class PrescriptionSisrmeDrugDsQueryResultVO extends AbstractGeneratedData
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PrescriptionSisrmeDrugDsQueryResultVO copy = new PrescriptionSisrmeDrugDsQueryResultVO();
-
-		copy.drugId = copyGeneratedField(this.drugId);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

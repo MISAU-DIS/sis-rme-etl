@@ -470,24 +470,11 @@ public class ConceptVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ConceptVO copy = new ConceptVO();
-
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.retired = copyGeneratedField(this.retired);
-		copy.shortName = copyGeneratedField(this.shortName);
-		copy.description = copyGeneratedField(this.description);
-		copy.formText = copyGeneratedField(this.formText);
-		copy.datatypeId = copyGeneratedField(this.datatypeId);
-		copy.classId = copyGeneratedField(this.classId);
-		copy.isSet = copyGeneratedField(this.isSet);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.version = copyGeneratedField(this.version);
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

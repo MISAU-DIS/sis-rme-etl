@@ -318,16 +318,11 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		AppointmentVO copy = new AppointmentVO();
-
-		copy.appointmentId = copyGeneratedField(this.appointmentId);
-		copy.patientId = copyGeneratedField(this.patientId);
-		copy.providerId = copyGeneratedField(this.providerId);
-		copy.reasonForAdmission = copyGeneratedField(this.reasonForAdmission);
-		copy.serviceId = copyGeneratedField(this.serviceId);
-		copy.specialityId = copyGeneratedField(this.specialityId);
-		copy.status = copyGeneratedField(this.status);
-		copy.notes = copyGeneratedField(this.notes);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

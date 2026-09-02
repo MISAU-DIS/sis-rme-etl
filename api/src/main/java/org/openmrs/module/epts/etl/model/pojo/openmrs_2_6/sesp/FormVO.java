@@ -502,25 +502,11 @@ public class FormVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		FormVO copy = new FormVO();
-
-		copy.formId = copyGeneratedField(this.formId);
-		copy.name = copyGeneratedField(this.name);
-		copy.version = copyGeneratedField(this.version);
-		copy.build = copyGeneratedField(this.build);
-		copy.published = copyGeneratedField(this.published);
-		copy.description = copyGeneratedField(this.description);
-		copy.encounterType = copyGeneratedField(this.encounterType);
-		copy.template = copyGeneratedField(this.template);
-		copy.xslt = copyGeneratedField(this.xslt);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retiredReason = copyGeneratedField(this.retiredReason);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

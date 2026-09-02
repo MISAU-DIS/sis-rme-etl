@@ -503,26 +503,11 @@ public class DrugVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		DrugVO copy = new DrugVO();
-
-		copy.drugId = copyGeneratedField(this.drugId);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.name = copyGeneratedField(this.name);
-		copy.combination = copyGeneratedField(this.combination);
-		copy.dosageForm = copyGeneratedField(this.dosageForm);
-		copy.maximumDailyDose = copyGeneratedField(this.maximumDailyDose);
-		copy.minimumDailyDose = copyGeneratedField(this.minimumDailyDose);
-		copy.route = copyGeneratedField(this.route);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-		copy.uuid = this.uuid;
-		copy.dateChanged = this.dateChanged;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.strength = copyGeneratedField(this.strength);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

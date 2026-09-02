@@ -196,10 +196,11 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 	@Override
 	public EtlDatabaseObject createACopy() {
 		LabResultOrderObsSrcDsQueryResultVO copy = new LabResultOrderObsSrcDsQueryResultVO();
-
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.valueCoded = copyGeneratedField(this.valueCoded);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

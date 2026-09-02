@@ -90,8 +90,6 @@ public class DatabaseEntityPOJOGenerator {
 		String insertValuesWithoutObjectIdDefinition = "";
 		String insertValuesWithObjectIdDefinition = "";
 
-		String createACopyCommand = "";
-
 		AttDefinedElements attElements;
 
 		int qtyAttrs = pojoble.getFields().size();
@@ -114,8 +112,6 @@ public class DatabaseEntityPOJOGenerator {
 
 				gettersAndSetterDefinition += "\n \n";
 			}
-
-			createACopyCommand += "		" + attElements.generateCopyToOtherCommand("copy") + "\n";
 
 			if (!attElements.isPartOfObjectId()) {
 				insertSQLFieldsWithoutObjectId = utilities.concatStrings(insertSQLFieldsWithoutObjectId,
@@ -311,9 +307,12 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	@JsonIgnore\n";
 		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public EtlDatabaseObject createACopy(){ \n ";
-		methodFromSuperClass += "		" + className + " copy = new " + className + "();\n\n";
-		methodFromSuperClass += "" + createACopyCommand + "\n";
-		methodFromSuperClass += generateSharedPkCreateACopy(pojoble);
+		methodFromSuperClass += "		" + className + " copy = new " + className + "();\n";
+		methodFromSuperClass += "		copy.setRelatedConfiguration(getRelatedConfiguration());\n";
+		methodFromSuperClass += "		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {\n";
+		methodFromSuperClass += "			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());\n";
+		methodFromSuperClass += "		}\n";
+		methodFromSuperClass += "		copy.copyFrom(this);\n";
 		methodFromSuperClass += "		return copy; \n";
 		methodFromSuperClass += "	} \n \n";
 
@@ -505,14 +504,6 @@ public class DatabaseEntityPOJOGenerator {
 		code += "\t\t}\n";
 		code += "\t\tloadObjectIdData(tableConfiguration);\n";
 		return code;
-	}
-
-	private static String generateSharedPkCreateACopy(EtlDatabaseObjectConfiguration configuration) {
-		if (!usesSharedPk(configuration))
-			return "";
-
-		return "\t\tif (getSharedPkObj() != null && copy.getSharedPkObj() != null) {\n"
-				+ "\t\t\tcopy.getSharedPkObj().copyFrom(getSharedPkObj());\n" + "\t\t}\n";
 	}
 
 	private static ParentTable resolveSharedPkConfiguration(TableConfiguration configuration) {

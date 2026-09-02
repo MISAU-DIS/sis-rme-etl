@@ -276,13 +276,11 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 	@Override
 	public EtlDatabaseObject createACopy() {
 		PrescriptionItemDataSrcDsQueryResultVO copy = new PrescriptionItemDataSrcDsQueryResultVO();
-
-		copy.valueDrug = copyGeneratedField(this.valueDrug);
-		copy.formulacaoConceptId = copyGeneratedField(this.formulacaoConceptId);
-		copy.packageDatetime = copyGeneratedField(this.packageDatetime);
-		copy.posologia = copyGeneratedField(this.posologia);
-		copy.specifiedQty = copyGeneratedField(this.specifiedQty);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

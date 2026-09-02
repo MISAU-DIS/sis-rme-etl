@@ -136,7 +136,11 @@ public class RastreioItsAuxSrcQueryDsQueryResultVO extends AbstractGeneratedData
 	@Override
 	public EtlDatabaseObject createACopy() {
 		RastreioItsAuxSrcQueryDsQueryResultVO copy = new RastreioItsAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

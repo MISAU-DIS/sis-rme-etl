@@ -463,24 +463,11 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ConditionsVO copy = new ConditionsVO();
-
-		copy.conditionId = copyGeneratedField(this.conditionId);
-		copy.conditionCoded = copyGeneratedField(this.conditionCoded);
-		copy.conditionNonCoded = copyGeneratedField(this.conditionNonCoded);
-		copy.clinicalStatus = copyGeneratedField(this.clinicalStatus);
-		copy.onsetDate = copyGeneratedField(this.onsetDate);
-		copy.dateCreated = this.dateCreated;
-		copy.voided = copyGeneratedField(this.voided);
-		copy.dateVoided = this.dateVoided;
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.uuid = this.uuid;
-		copy.creator = copyGeneratedField(this.creator);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.patientId = copyGeneratedField(this.patientId);
-		copy.dateChanged = this.dateChanged;
-		copy.encounterId = copyGeneratedField(this.encounterId);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

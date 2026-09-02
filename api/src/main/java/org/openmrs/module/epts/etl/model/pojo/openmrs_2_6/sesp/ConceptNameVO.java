@@ -422,22 +422,11 @@ public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ConceptNameVO copy = new ConceptNameVO();
-
-		copy.conceptId = copyGeneratedField(this.conceptId);
-		copy.name = copyGeneratedField(this.name);
-		copy.locale = copyGeneratedField(this.locale);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.conceptNameId = copyGeneratedField(this.conceptNameId);
-		copy.voided = copyGeneratedField(this.voided);
-		copy.voidedBy = copyGeneratedField(this.voidedBy);
-		copy.dateVoided = this.dateVoided;
-		copy.voidReason = copyGeneratedField(this.voidReason);
-		copy.uuid = this.uuid;
-		copy.conceptNameType = copyGeneratedField(this.conceptNameType);
-		copy.localePreferred = copyGeneratedField(this.localePreferred);
-		copy.dateChanged = this.dateChanged;
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

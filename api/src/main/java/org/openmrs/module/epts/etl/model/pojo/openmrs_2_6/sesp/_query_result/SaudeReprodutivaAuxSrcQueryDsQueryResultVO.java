@@ -136,7 +136,11 @@ public class SaudeReprodutivaAuxSrcQueryDsQueryResultVO extends AbstractGenerate
 	@Override
 	public EtlDatabaseObject createACopy() {
 		SaudeReprodutivaAuxSrcQueryDsQueryResultVO copy = new SaudeReprodutivaAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

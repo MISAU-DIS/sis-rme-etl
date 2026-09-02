@@ -136,7 +136,11 @@ public class LabResultOnDemandAuxSrcQueryDsQueryResultVO extends AbstractGenerat
 	@Override
 	public EtlDatabaseObject createACopy() {
 		LabResultOnDemandAuxSrcQueryDsQueryResultVO copy = new LabResultOnDemandAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

@@ -294,18 +294,11 @@ public class DrugOrderVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		DrugOrderVO copy = new DrugOrderVO();
-
-		copy.orderId = copyGeneratedField(this.orderId);
-		copy.dose = copyGeneratedField(this.dose);
-		copy.asNeeded = copyGeneratedField(this.asNeeded);
-		copy.quantity = copyGeneratedField(this.quantity);
-		copy.frequency = copyGeneratedField(this.frequency);
-		copy.complex = copyGeneratedField(this.complex);
-		copy.drugId = copyGeneratedField(this.drugId);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
 		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
-			copy.getSharedPkObj().copyFrom(getSharedPkObj());
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
 		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

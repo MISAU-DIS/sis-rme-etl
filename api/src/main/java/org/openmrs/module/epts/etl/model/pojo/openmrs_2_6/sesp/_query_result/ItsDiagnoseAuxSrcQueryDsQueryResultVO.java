@@ -136,7 +136,11 @@ public class ItsDiagnoseAuxSrcQueryDsQueryResultVO extends AbstractGeneratedData
 	@Override
 	public EtlDatabaseObject createACopy() {
 		ItsDiagnoseAuxSrcQueryDsQueryResultVO copy = new ItsDiagnoseAuxSrcQueryDsQueryResultVO();
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

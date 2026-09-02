@@ -306,18 +306,11 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		TestOrderVO copy = new TestOrderVO();
-
-		copy.orderId = copyGeneratedField(this.orderId);
-		copy.specimenSource = copyGeneratedField(this.specimenSource);
-		copy.laterality = copyGeneratedField(this.laterality);
-		copy.clinicalHistory = copyGeneratedField(this.clinicalHistory);
-		copy.frequency = copyGeneratedField(this.frequency);
-		copy.numberOfRepeats = copyGeneratedField(this.numberOfRepeats);
-		copy.conceptId = copyGeneratedField(this.conceptId);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
 		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
-			copy.getSharedPkObj().copyFrom(getSharedPkObj());
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
 		}
+		copy.copyFrom(this);
 		return copy;
 	}
 

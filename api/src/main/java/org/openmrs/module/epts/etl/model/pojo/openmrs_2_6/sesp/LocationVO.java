@@ -976,42 +976,11 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public EtlDatabaseObject createACopy() {
 		LocationVO copy = new LocationVO();
-
-		copy.locationId = copyGeneratedField(this.locationId);
-		copy.name = copyGeneratedField(this.name);
-		copy.description = copyGeneratedField(this.description);
-		copy.address1 = copyGeneratedField(this.address1);
-		copy.address2 = copyGeneratedField(this.address2);
-		copy.cityVillage = copyGeneratedField(this.cityVillage);
-		copy.stateProvince = copyGeneratedField(this.stateProvince);
-		copy.postalCode = copyGeneratedField(this.postalCode);
-		copy.country = copyGeneratedField(this.country);
-		copy.latitude = copyGeneratedField(this.latitude);
-		copy.longitude = copyGeneratedField(this.longitude);
-		copy.creator = copyGeneratedField(this.creator);
-		copy.dateCreated = this.dateCreated;
-		copy.countyDistrict = copyGeneratedField(this.countyDistrict);
-		copy.address3 = copyGeneratedField(this.address3);
-		copy.address6 = copyGeneratedField(this.address6);
-		copy.address5 = copyGeneratedField(this.address5);
-		copy.address4 = copyGeneratedField(this.address4);
-		copy.retired = copyGeneratedField(this.retired);
-		copy.retiredBy = copyGeneratedField(this.retiredBy);
-		copy.dateRetired = copyGeneratedField(this.dateRetired);
-		copy.retireReason = copyGeneratedField(this.retireReason);
-		copy.parentLocation = copyGeneratedField(this.parentLocation);
-		copy.uuid = this.uuid;
-		copy.changedBy = copyGeneratedField(this.changedBy);
-		copy.dateChanged = this.dateChanged;
-		copy.address7 = copyGeneratedField(this.address7);
-		copy.address8 = copyGeneratedField(this.address8);
-		copy.address9 = copyGeneratedField(this.address9);
-		copy.address10 = copyGeneratedField(this.address10);
-		copy.address11 = copyGeneratedField(this.address11);
-		copy.address12 = copyGeneratedField(this.address12);
-		copy.address13 = copyGeneratedField(this.address13);
-		copy.address14 = copyGeneratedField(this.address14);
-
+		copy.setRelatedConfiguration(getRelatedConfiguration());
+		if (getSharedPkObj() != null && copy.getSharedPkObj() != null) {
+			copy.getSharedPkObj().setRelatedConfiguration(getSharedPkObj().getRelatedConfiguration());
+		}
+		copy.copyFrom(this);
 		return copy;
 	}
 
