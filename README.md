@@ -93,6 +93,8 @@ The optional *dataModel* element centralizes how database objects and physical s
     "srcSchema": "openmrs_source",
     "dstSchema": "openmrs_destination",
 	"overrideExistingDataModelElement": false,
+	"srcPojoDirectory": "../api/src/main/java",
+	"binPojoDirectory": "../api/target/classes",
 	"classPath": ["lib/sisrme-etl-api.jar", "lib/database-driver.jar"],
     "javaFormatterConfigurationFile": "conf/eclipse-java-formatter.xml"
   }
@@ -115,6 +117,8 @@ The element supports the following properties:
 - **overrideExistingDataModelElement** – Controls whether existing generated data-model artifacts may be replaced. The default is `false`.
   - When `false`, existing POJOs and physical schema metadata files are preserved and reused.
   - When `true`, existing POJO source and compiled classes are regenerated, and existing schema metadata files and their manifest entries are replaced.
+- **srcPojoDirectory** – Optional directory where generated POJO `.java` files are written directly. The package hierarchy is created inside this directory. Relative paths are resolved from `etlRootDirectory`; absolute paths are used directly. The default is `@etlRootDirectory/database-model/java/src`.
+- **binPojoDirectory** – Optional directory where generated POJO `.class` files are written directly. The package hierarchy is created inside this directory. Relative paths are resolved from `etlRootDirectory`; absolute paths are used directly. The default is `@etlRootDirectory/database-model/java/bin`.
 - **classPath** – List of external directories or JAR files used to compile and load generated POJOs. A single string is also accepted.
 - **javaFormatterConfigurationFile** – Optional path to an Eclipse Java Formatter profile exported as XML. Relative paths are resolved from `etlRootDirectory`. When omitted, generated Java source is written without applying a formatter.
 

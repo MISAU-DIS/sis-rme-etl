@@ -26,4 +26,32 @@ public class SchemaMetadataDirectoryTest {
 		assertEquals(configuration.getDatabaseModelJavaDirectory().getParentFile(),
 				configuration.getSchemaMetadataDirectory().getParentFile());
 	}
+
+	@Test
+	public void shouldAllowSourceAndCompiledPojoStorageInIndependentDirectories() {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setEtlRootDirectory(new File("etl-root").getPath());
+		configuration.getDataModel().setSrcPojoDirectory(new File("project", "src/main/java").getPath());
+		configuration.getDataModel().setBinPojoDirectory(new File("project", "target/classes").getPath());
+
+		assertEquals(new File("etl-root", new File("project", "src/main/java").getPath()).getPath(),
+				configuration.getPOJOSourceFilesDirectory().getPath());
+		assertEquals(new File("etl-root", new File("project", "target/classes").getPath()).getPath(),
+				configuration.getPOJOCompiledFilesDirectory().getPath());
+		assertEquals(new File(new File("etl-root", "database-model"), "schema-metadata").getPath(),
+				configuration.getSchemaMetadataDirectory().getPath());
+	}
+
+	@Test
+	public void shouldUseAbsolutePojoDirectoriesAsConfigured() {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setEtlRootDirectory(new File("etl-root").getPath());
+		File absoluteSource = new File(System.getProperty("java.io.tmpdir"), "etl-pojo-src").getAbsoluteFile();
+		File absoluteBin = new File(System.getProperty("java.io.tmpdir"), "etl-pojo-bin").getAbsoluteFile();
+		configuration.getDataModel().setSrcPojoDirectory(absoluteSource.getPath());
+		configuration.getDataModel().setBinPojoDirectory(absoluteBin.getPath());
+
+		assertEquals(absoluteSource.getPath(), configuration.getPOJOSourceFilesDirectory().getPath());
+		assertEquals(absoluteBin.getPath(), configuration.getPOJOCompiledFilesDirectory().getPath());
+	}
 }

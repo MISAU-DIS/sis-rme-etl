@@ -1906,12 +1906,25 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@JsonIgnore
 	public File getPOJOCompiledFilesDirectory() {
+		String configuredDirectory = getDataModel().getBinPojoDirectory();
+		if (utilities.stringHasValue(configuredDirectory)) {
+			return resolveDirectoryFromEtlRoot(configuredDirectory);
+		}
 		return new File(getDatabaseModelJavaDirectory(), "bin");
 	}
 
 	@JsonIgnore
 	public File getPOJOSourceFilesDirectory() {
+		String configuredDirectory = getDataModel().getSrcPojoDirectory();
+		if (utilities.stringHasValue(configuredDirectory)) {
+			return resolveDirectoryFromEtlRoot(configuredDirectory);
+		}
 		return new File(getDatabaseModelJavaDirectory(), "src");
+	}
+
+	private File resolveDirectoryFromEtlRoot(String configuredDirectory) {
+		File directory = new File(configuredDirectory);
+		return directory.isAbsolute() ? directory : new File(getEtlRootDirectory(), configuredDirectory);
 	}
 
 	/** Directory containing persistible physical-schema snapshots. */

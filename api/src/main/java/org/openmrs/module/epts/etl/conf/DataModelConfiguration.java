@@ -29,6 +29,12 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 
 	private String javaFormatterConfigurationFile;
 
+	/** Optional directory where generated POJO source files are written. */
+	private String srcPojoDirectory;
+
+	/** Optional directory where compiled POJO classes are written. */
+	private String binPojoDirectory;
+
 	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 	private List<String> classPath = new ArrayList<>();
 
@@ -102,6 +108,22 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 		this.javaFormatterConfigurationFile = javaFormatterConfigurationFile;
 	}
 
+	public String getSrcPojoDirectory() {
+		return srcPojoDirectory;
+	}
+
+	public void setSrcPojoDirectory(String srcPojoDirectory) {
+		this.srcPojoDirectory = srcPojoDirectory;
+	}
+
+	public String getBinPojoDirectory() {
+		return binPojoDirectory;
+	}
+
+	public void setBinPojoDirectory(String binPojoDirectory) {
+		this.binPojoDirectory = binPojoDirectory;
+	}
+
 	public List<String> getClassPath() {
 		return classPath;
 	}
@@ -116,7 +138,8 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 				+ ", schemaMetadataMode=" + schemaMetadataMode + ", srcPojoPackageName=" + srcPojoPackageName
 				+ ", dstPojoPackageName=" + dstPojoPackageName + ", srcSchema=" + srcSchema + ", dstSchema=" + dstSchema
 				+ ", overrideExistingDataModelElement=" + overrideExistingDataModelElement
-				+ ", javaFormatterConfigurationFile=" + javaFormatterConfigurationFile + ", classPath=" + classPath + "]";
+				+ ", javaFormatterConfigurationFile=" + javaFormatterConfigurationFile + ", srcPojoDirectory="
+				+ srcPojoDirectory + ", binPojoDirectory=" + binPojoDirectory + ", classPath=" + classPath + "]";
 	}
 
 	@Override
