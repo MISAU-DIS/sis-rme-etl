@@ -92,7 +92,6 @@ public class DatabaseEntityPOJOGenerator {
 		String insertValuesWithObjectIdDefinition = "";
 
 		String createACopyCommand = "";
-		String copyCommand = "";
 
 		AttDefinedElements attElements;
 
@@ -118,7 +117,6 @@ public class DatabaseEntityPOJOGenerator {
 			}
 
 			createACopyCommand += "		" + attElements.generateCopyToOtherCommand("copy") + "\n";
-			copyCommand += "			" + attElements.generateCopyToThisCommand("toCopyFromAs" + className) + "\n";
 
 			if (!attElements.isPartOfObjectId()) {
 				insertSQLFieldsWithoutObjectId = utilities.concatStrings(insertSQLFieldsWithoutObjectId,
@@ -320,17 +318,6 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "		return copy; \n";
 		methodFromSuperClass += "	} \n \n";
 
-		methodFromSuperClass += "	@JsonIgnore\n";
-		methodFromSuperClass += "	@Override\n";
-		methodFromSuperClass += "	public void copyFrom(EtlDatabaseObject toCopyFrom){ \n ";
-		methodFromSuperClass += "		if (toCopyFrom instanceof " + className + "){\n";
-		methodFromSuperClass += "	    	" + className + " toCopyFromAs" + className + " = (" + className
-				+ ")toCopyFrom;\n\n";
-		methodFromSuperClass += "" + copyCommand + "\n";
-		methodFromSuperClass += generateSharedPkCopyFrom(pojoble, "toCopyFromAs" + className);
-		methodFromSuperClass += "	    }\n";
-		methodFromSuperClass += "	} \n \n";
-
 		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public boolean hasParents() {\n";
 
@@ -392,7 +379,7 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import com.fasterxml.jackson.annotation.JsonIgnore; \n \n";
 
 		classDefinition += "public class " + className
-				+ " extends AbstractDatabaseObject implements EtlDatabaseObject { \n";
+				+ " extends AbstractGeneratedDatabaseObject{ \n";
 		classDefinition += attsDefinition + "\n \n";
 		classDefinition += generateCommonAttDefinition(pojoble) + "\n";
 		classDefinition += generateCommonMethods(pojoble, connInfo) + "\n";
@@ -546,14 +533,6 @@ public class DatabaseEntityPOJOGenerator {
 				+ "\t\t\tcopy.getSharedPkObj().copyFrom(getSharedPkObj());\n" + "\t\t}\n";
 	}
 
-	private static String generateSharedPkCopyFrom(EtlDatabaseObjectConfiguration configuration,
-			String sourceVariable) {
-		if (!usesSharedPk(configuration)) return "";
-
-		return "\t\t\tif (getSharedPkObj() != null && " + sourceVariable + ".getSharedPkObj() != null) {\n"
-				+ "\t\t\t\tgetSharedPkObj().copyFrom(" + sourceVariable + ".getSharedPkObj());\n" + "\t\t\t}\n";
-	}
-
 	private static ParentTable resolveSharedPkConfiguration(TableConfiguration configuration) {
 		if (configuration.hasParentRefInfo()) {
 			for (ParentTable parent : configuration.getParentRefInfo()) {
@@ -641,7 +620,7 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import org.openmrs.module.epts.etl.model.pojo.generic.*; \n \n";
 
 		classDefinition += "public abstract class " + pojoable.generateClassName()
-				+ " extends AbstractDatabaseObject implements EtlDatabaseObject { \n";
+				+ " extends AbstractGeneratedDatabaseObject implements EtlDatabaseObject { \n";
 		classDefinition += "	public " + pojoable.generateClassName() + "() { \n";
 		classDefinition += "	} \n \n";
 		classDefinition += "}";
