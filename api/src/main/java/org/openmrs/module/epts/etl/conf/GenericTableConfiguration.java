@@ -4,6 +4,7 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -68,17 +69,19 @@ public class GenericTableConfiguration extends AbstractTableConfiguration {
 
 	@Override
 	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo application)
-			throws ForbiddenOperationException {
-		
+			throws PojoNotFoundException {
+
 		if (this.getEtlRecordClass() == null) {
-			super.generateSyncRecordClass(application);
-			
+			try {
+				super.generateSyncRecordClass(application);
+			} catch (PojoNotFoundException e) {
+			}
+
 			if (this.getEtlRecordClass() == null) {
 				this.setEtlRecordClass(GenericDatabaseObject.class);
 			}
-			
 		}
-		
+
 		return this.getEtlRecordClass();
 	}
 

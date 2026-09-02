@@ -73,7 +73,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	default String getClassPackageForForder(DBConnectionInfo connInfo) {
-		String packageS =  this.getClassPackage(connInfo);
+		String packageS = this.getClassPackage(connInfo);
 
 		String[] packageParts = packageS.split("\\.");
 
@@ -165,7 +165,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
-			throws ForbiddenOperationException {
+			throws PojoNotFoundException {
 
 		Class<? extends EtlDatabaseObject> syncRecordClass = null;
 
