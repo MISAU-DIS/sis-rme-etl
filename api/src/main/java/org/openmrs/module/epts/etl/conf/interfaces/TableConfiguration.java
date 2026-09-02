@@ -2663,6 +2663,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 			rec.setRelatedConfiguration(this);
 
+			if (this.useSharedPKKey()) {
+				rec.getSharedPkObj().setRelatedConfiguration(this.getSharedTableConf(null));
+			}
+
 			return rec;
 		} catch (Exception e) {
 			throw new RuntimeException(e);

@@ -226,8 +226,8 @@ public class DatabaseEntityPOJOGenerator {
 
 		methodFromSuperClass += "	@Override\n";
 		methodFromSuperClass += "	public void load(ResultSet rs) throws SQLException{ \n";
-		methodFromSuperClass += generateSharedPkLoad(pojoble);
 		methodFromSuperClass += "		super.load(rs);\n \n";
+		methodFromSuperClass += generateSharedPkLoad(pojoble);
 		methodFromSuperClass += resultSetLoadDefinition;
 		methodFromSuperClass += generateSharedPkPostLoad(pojoble);
 		methodFromSuperClass += generateAuxLoadObjects(pojoble, connInfo);
