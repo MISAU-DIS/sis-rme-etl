@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.openmrs.api.context.Context;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
@@ -20,6 +21,7 @@ public class Main implements Runnable {
 	public static final String STARTUP_FILE_GLOBAL_PROPERTY = "epts.etl.startup_file";
 
 	private static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
+	private static final AtomicBoolean OPENMRS_START_TRIGGERED = new AtomicBoolean(false);
 
 	public static void main(String[] synConfigFiles) throws IOException, DBException {
 
@@ -51,15 +53,25 @@ public class Main implements Runnable {
 	 * @throws IllegalStateException if the global property is not configured
 	 */
 	public static void startFromOpenMRS() throws IOException, DBException {
-		String startupFile = Context.getAdministrationService()
-		        .getGlobalProperty(STARTUP_FILE_GLOBAL_PROPERTY);
-
-		if (startupFile == null || startupFile.trim().isEmpty()) {
-			throw new IllegalStateException("The OpenMRS global property '"
-			        + STARTUP_FILE_GLOBAL_PROPERTY + "' must contain the ETL startup file path");
+		if (!OPENMRS_START_TRIGGERED.compareAndSet(false, true)) {
+			LOG.warn("ETL startup ignored because it was already triggered by OpenMRS");
+			return;
 		}
 
-		main(new String[] { startupFile.trim() });
+		try {
+			String startupFile = Context.getAdministrationService()
+			        .getGlobalProperty(STARTUP_FILE_GLOBAL_PROPERTY);
+
+			if (startupFile == null || startupFile.trim().isEmpty()) {
+				throw new IllegalStateException("The OpenMRS global property '"
+				        + STARTUP_FILE_GLOBAL_PROPERTY + "' must contain the ETL startup file path");
+			}
+
+			main(new String[] { startupFile.trim() });
+		} catch (IOException | DBException | RuntimeException e) {
+			OPENMRS_START_TRIGGERED.set(false);
+			throw e;
+		}
 	}
 
 	public static List<EtlConfiguration> loadSyncConfig(File[] syncConfigFiles)
