@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.model;
 
-import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Date;
@@ -312,7 +311,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		sql += " WHERE " + pk.parseToParametrizedStringConditionWithAlias();
 
-		return DatabaseObjectDAO.find(tabConf.getLoadHealper(), tabConf.getSyncRecordClass(), sql,
+		return DatabaseObjectDAO.find(tabConf.getLoadHealper(), tabConf.getEtlRecordClass(), sql,
 				pk.parseValuesToArray(), conn);
 	}
 
@@ -334,20 +333,22 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default void loadObjectIdData(TableConfiguration tabConf, Object keyValue) {
 		if (tabConf.useSimplePk()) {
-			loadObjectIdData(tabConf);
+			this.loadObjectIdData(tabConf);
 
 			this.getObjectId().asSimpleKey().setValue(keyValue);
+			this.tryToReplaceFieldValueWithKeyValue(this.getObjectId().asSimpleKey());
+
 		} else
 			throw new ForbiddenOperationException("Method not allowed for complex PK!");
 	}
 
 	default void loadObjectIdData() throws ForbiddenOperationException {
-		TableConfiguration tabConf = (TableConfiguration) getRelatedConfiguration();
+		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
 
 		if (tabConf == null)
 			throw new ForbiddenOperationException("The related tabConf is not specified!");
 
-		loadObjectIdData(tabConf);
+		this.loadObjectIdData(tabConf);
 	}
 
 	/**
@@ -486,26 +487,6 @@ public interface EtlDatabaseObject extends EtlObject {
 		return getSharedPkObj() != null;
 	}
 
-	default void generateFields() {
-		List<Field> fields = new ArrayList<Field>();
-		Class<?> cl = getClass();
-
-		while (cl != null) {
-			java.lang.reflect.Field[] in = cl.getDeclaredFields();
-			for (int i = 0; i < in.length; i++) {
-				java.lang.reflect.Field field = in[i];
-				if (Modifier.isStatic(field.getModifiers()))
-					continue;
-
-				field.setAccessible(true);
-				fields.add(Field.fastCreateWithType(field.getName(), field.getType().getTypeName()));
-			}
-			cl = cl.getSuperclass();
-		}
-
-		setFields(fields);
-	}
-
 	default UniqueKeyInfo getUniqueKeyInfo(UniqueKeyInfo keyToFind) {
 		if (hasUniqueKeys()) {
 			for (UniqueKeyInfo key : this.getUniqueKeysInfo()) {
@@ -627,6 +608,10 @@ public interface EtlDatabaseObject extends EtlObject {
 			tabConfInSrc.fullLoad(srcConn);
 		}
 
+		if (tabConfInSrc.getParentConf() == null) {
+			tabConfInSrc.setParentConf(refInfo.getParentConf());
+		}
+
 		return DatabaseObjectDAO.getByOid(tabConfInSrc, prentOid, srcConn);
 	}
 
@@ -661,7 +646,6 @@ public interface EtlDatabaseObject extends EtlObject {
 			Connection dstConn) throws DBException {
 
 		EtlDatabaseObject recInDst = refInfo.createRecordInstance();
-		recInDst.setRelatedConfiguration(refInfo);
 		recInDst.copyFrom(parentInOrigin);
 		recInDst.loadUniqueKeyValues(refInfo);
 		recInDst.loadObjectIdData(refInfo);
@@ -818,24 +802,8 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default Field getField(String fieldName) {
-		String originalField = fieldName;
-		String camelField = utils.parsetoCamelCase(fieldName);
-		String snakeCase = utils.parsetoSnakeCase(fieldName);
-
 		for (Field field : this.getFields()) {
-			if (field.getName().trim().equals(originalField.trim())) {
-				return field;
-			}
-		}
-
-		for (Field field : this.getFields()) {
-			if (field.getName().trim().equals(camelField.trim())) {
-				return field;
-			}
-		}
-
-		for (Field field : this.getFields()) {
-			if (field.getName().trim().equals(snakeCase.trim())) {
+			if (utils.equalsFieldsName(field.getName().trim(), fieldName.trim())) {
 				return field;
 			}
 		}
@@ -873,7 +841,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	 * 
 	 * @param key the correspondent key to replace the field
 	 */
-	void tryToReplaceFieldWithKey(Key k);
+	void tryToReplaceFieldValueWithKeyValue(Key k);
 
 	default Field getField(ParentTable refInfo) {
 		return refInfo.getChildInstanceField(this);

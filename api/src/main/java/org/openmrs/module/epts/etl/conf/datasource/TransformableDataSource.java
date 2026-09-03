@@ -30,6 +30,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransfor
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
@@ -259,11 +260,30 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 					"You must specify the 'objectFields' on extraObjectDataSource configuration (" + this.getName()
 							+ ")");
 		}
+
+		try {
+			this.setEtlRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+		} catch (PojoNotFoundException e) {
+		}
+
+		this.setFullLoaded(true);
 	}
 
 	@Override
 	public String generateClassName() {
-		throw new ForbiddenOperationException("Forbiden Method");
+		return generateClassName(this.name + "_transformable_data_source");
+	}
+
+	private String generateClassName(String tableName) {
+		String[] nameParts = tableName.split("_");
+
+		String className = utilities.capitalize(nameParts[0]);
+
+		for (int i = 1; i < nameParts.length; i++) {
+			className += utilities.capitalize(nameParts[i]);
+		}
+
+		return className + "VO";
 	}
 
 	@Override
@@ -326,7 +346,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 		throw new ForbiddenOperationException("Forbiden Method");
 	}
 
@@ -407,8 +427,6 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		for (TransformableDataSourceField field : this.getObjectFields()) {
 			FieldTransformingInfo valueInfo = values.get(field.getName());
 
-			stepIntoBreakpoint(getRelatedEtlConf(), valueInfo == null);
-
 			obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());
 
 			obj.getField(field.getName()).setTransformingInfo(valueInfo);
@@ -419,18 +437,13 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException {
+	public Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
 		return GenericDatabaseObject.class;
 	}
 
 	@Override
 	public Boolean isRequired() {
 		return isTrue(required);
-	}
-
-	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
-		return true_();
 	}
 
 	@Override

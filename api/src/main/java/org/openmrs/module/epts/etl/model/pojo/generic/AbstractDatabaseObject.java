@@ -7,6 +7,8 @@ import java.net.URLClassLoader;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,6 +20,7 @@ import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
@@ -33,8 +36,8 @@ import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -61,10 +64,47 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	private Boolean collactable;
 
+	private EtlDatabaseObject sharedPkObj;
+
+	/**
+	 * Stable wrappers for configured columns represented by scalar fields inherited
+	 * from the base classes. Their identity must survive repeated getFields() calls
+	 * because ETL processing stores transient state such as transformingInfo here.
+	 */
+	private final Map<String, Field> inheritedFieldWrappers = new LinkedHashMap<>();
+
+	/**
+	 * If the {@link #relatedConfiguration} is instance of {@link EtlDataSource} the
+	 * the objects related to tables presents on
+	 * {@link EtlDataSource#getAuxExtractTable()} will be placed on this field.
+	 */
+	private List<EtlDatabaseObject> auxLoadObject;
+
 	public AbstractDatabaseObject() {
 		this.objectId = new Oid();
 
 		this.collactable = true;
+	}
+
+	@Override
+	@JsonIgnore
+	public EtlDatabaseObject getSharedPkObj() {
+		return sharedPkObj;
+	}
+
+	@Override
+	public void setSharedPkObj(EtlDatabaseObject sharedPkObj) {
+		this.sharedPkObj = sharedPkObj;
+	}
+
+	@Override
+	public List<EtlDatabaseObject> getAuxLoadObject() {
+		return auxLoadObject;
+	}
+
+	@Override
+	public void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObjects) {
+		this.auxLoadObject = auxLoadObjects;
 	}
 
 	public Boolean getCollactable() {
@@ -73,6 +113,15 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	public void setCollactable(Boolean collactable) {
 		this.collactable = collactable;
+	}
+
+	@Override
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+		if (this.hasFields()) {
+			Field f = this.getField(k.getName());
+
+			f.setValue(k.getValue());
+		}
 	}
 
 	@Override
@@ -131,7 +180,20 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 		if (objectId != null) {
 			for (Key key : objectId.getFields()) {
-				setFieldValue(key.getName(), key.getValue());
+
+				String originalName = key.getName();
+				String camelName = utilities.parseToCamelCase(originalName);
+				String snakeName = utilities.parsetoSnakeCase(originalName);
+
+				try {
+					setFieldValue(originalName, key.getValue());
+				} catch (ForbiddenOperationException e) {
+					try {
+						setFieldValue(camelName, key.getValue());
+					} catch (ForbiddenOperationException e1) {
+						setFieldValue(snakeName, key.getValue());
+					}
+				}
 			}
 		}
 
@@ -204,13 +266,121 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	}
 
 	@Override
+	public List<Field> getFields() {
+		List<Field> generatedFields = new ArrayList<>();
+
+		for (java.lang.reflect.Field instanceField : getInstanceFields()) {
+			if (!Field.class.isAssignableFrom(instanceField.getType()))
+				continue;
+			try {
+				Field field = (Field) instanceField.get(this);
+
+				if (field != null)
+					generatedFields.add(field);
+			} catch (IllegalAccessException exception) {
+				throw new RuntimeException(exception);
+			}
+		}
+
+		EtlDatabaseObjectConfiguration configuration = getRelatedConfiguration();
+
+		if (configuration != null && configuration.getFields() != null) {
+			for (Field configured : configuration.getFields()) {
+				boolean present = generatedFields.stream()
+						.anyMatch(field -> utilities.equalsFieldsName(field.getName(), configured.getName()));
+				if (present)
+					continue;
+				String key = normalizeFieldName(configured.getName());
+				Field contextual = inheritedFieldWrappers.get(key);
+				if (contextual == null) {
+					contextual = new Field();
+					contextual.copyFrom(configured);
+					inheritedFieldWrappers.put(key, contextual);
+				}
+				try {
+					contextual.setValue(getFieldValue(configured.getName()));
+				} catch (ForbiddenOperationException ignored) {
+					// The configuration may expose a contextual field not represented by this
+					// class.
+				}
+				generatedFields.add(contextual);
+			}
+		}
+		if (generatedFields.isEmpty())
+			return super.getFields();
+
+		return generatedFields;
+	}
+
+	private String normalizeFieldName(String fieldName) {
+		return utilities.parsetoSnakeCase(fieldName).toLowerCase();
+	}
+
+	/**
+	 * Enriches generated field wrappers with the complete runtime table metadata.
+	 */
+	protected void enrichGeneratedFields(EtlDatabaseObjectConfiguration configuration) {
+		if (configuration == null || configuration.getFields() == null)
+			return;
+		for (Field configured : configuration.getFields()) {
+			boolean generatedFieldFound = false;
+			for (java.lang.reflect.Field instanceField : getInstanceFields()) {
+				if (!Field.class.isAssignableFrom(instanceField.getType())
+						|| !utilities.equalsFieldsName(instanceField.getName(), configured.getName()))
+					continue;
+				try {
+					Field generated = (Field) instanceField.get(this);
+					Object value = generated == null ? null : generated.getValue();
+					if (generated == null)
+						generated = new Field();
+					generated.copyFrom(configured);
+					generated.setValue(value);
+					instanceField.set(this, generated);
+					generatedFieldFound = true;
+				} catch (IllegalAccessException exception) {
+					throw new RuntimeException(exception);
+				}
+				break;
+			}
+			if (!generatedFieldFound) {
+				String key = normalizeFieldName(configured.getName());
+				Field contextual = inheritedFieldWrappers.get(key);
+				if (contextual == null) {
+					contextual = new Field();
+					inheritedFieldWrappers.put(key, contextual);
+				}
+				Object value = contextual.getValue();
+				contextual.copyFrom(configured);
+				contextual.setValue(value);
+			}
+		}
+	}
+
+	protected static Field copyGeneratedField(Field source) {
+		if (source == null)
+			return null;
+		Field copy = new Field();
+		copy.copyFrom(source);
+		return copy;
+	}
+
+	@Override
 	public void setFieldValue(String fieldName, Object value) {
 		try {
 
 			for (java.lang.reflect.Field field : getInstanceFields()) {
-
-				if (field.getName().equals(fieldName)) {
-					if (value == null) {
+				if (utilities.equalsFieldsName(field.getName(), fieldName)) {
+					if (Field.class.isAssignableFrom(field.getType())) {
+						Field generated = (Field) field.get(this);
+						if (value instanceof Field) {
+							field.set(this, value);
+						} else {
+							if (generated == null)
+								generated = Field.fastCreateField(fieldName);
+							generated.setValue(value);
+							field.set(this, generated);
+						}
+					} else if (value == null) {
 						field.set(this, null);
 					} else if (field.getType().equals(String.class)) {
 						field.set(this, value.toString());
@@ -237,6 +407,11 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 						field.set(this, value);
 					}
 
+					Field inheritedWrapper = inheritedFieldWrappers.get(normalizeFieldName(fieldName));
+					if (!Field.class.isAssignableFrom(field.getType()) && inheritedWrapper != null) {
+						inheritedWrapper.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+					}
+
 					return;
 				}
 			}
@@ -251,7 +426,8 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 	@Override
 	public Object getFieldValue(String fieldsName) throws ForbiddenOperationException {
-		return utilities.getFieldValue(this, fieldsName);
+		Object value = utilities.getFieldValue(this, fieldsName);
+		return value instanceof Field ? ((Field) value).getValue() : value;
 	}
 
 	@Override
@@ -592,7 +768,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				continue;
 
 			Integer qtyChildren = DatabaseObjectDAO.countAllOfParentId(
-					refInfo.getSyncRecordClass(syncTableInfo.getSrcConnInfo()),
+					refInfo.generateSyncRecordClass(syncTableInfo.getSrcConnInfo()),
 					refInfo.getSimpleRefMapping().getChildField().getName(), this.getObjectId().getSimpleValueAsInt(),
 					conn);
 
@@ -819,7 +995,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	@Override
 	public void changeParentValue(ParentTable refInfo, EtlDatabaseObject newParent) {
 		for (RefMapping map : refInfo.getRefMapping()) {
-			Object parentValue = newParent.getFieldValue(map.getChildFieldNameAsAttClass());
+			Object parentValue = newParent.getFieldValue(map.getParentFieldNameAsAttClass());
 			this.setFieldValue(map.getChildFieldNameAsAttClass(), parentValue);
 		}
 	}

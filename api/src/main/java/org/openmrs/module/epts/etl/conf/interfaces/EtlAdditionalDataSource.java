@@ -72,18 +72,6 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 	 */
 	Boolean isRequired();
 
-	/**
-	 * Indicates whether multiple source objects can be used when loading related
-	 * data.
-	 * <p>
-	 * If {@code false}, only the primary source object will be considered when
-	 * invoking {@link #loadRelatedSrcObject(List, Connection)}.
-	 *
-	 * @return {@code true} if multiple source objects are allowed; {@code false}
-	 *         otherwise
-	 */
-	Boolean allowMultipleSrcObjectsForLoading();
-
 	@Override
 	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> allParameters = new HashMap<>();

@@ -234,8 +234,9 @@ public class ClassPathUtilities {
 	
 	public static void addClassToClassPath(File[] clazzFiless, String path, EtlConfiguration etlConfiguration) {
 		try {
-			if (etlConfiguration.getClassPathAsFile().exists())
-				ClassPathUtilities.addFilesToZip(etlConfiguration.getClassPathAsFile(), clazzFiless, path);
+			File writableClassPath = etlConfiguration.getClassPathAsFile();
+			if (writableClassPath != null && writableClassPath.exists())
+				ClassPathUtilities.addFilesToZip(writableClassPath, clazzFiless, path);
 		}
 		catch (Exception e) {}
 		

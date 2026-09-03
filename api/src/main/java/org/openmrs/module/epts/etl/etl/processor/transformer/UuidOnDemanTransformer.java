@@ -319,7 +319,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
 				this.getOnDemandCheckCondition(), utilities.parseToList(this.getTableConf().getAlias()), allObjs,
 				getRelatedEtlConf(), dstConn);
-
+ 
 		EtlDatabaseObject obj;
 
 		obj = getTableConf().find(p.getPreparedQuery(),

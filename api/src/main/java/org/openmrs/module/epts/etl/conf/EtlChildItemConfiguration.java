@@ -111,6 +111,12 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 			ds = new ArrayList<>();
 		}
 
+		List<EtlDataSource> allFromParent = this.getParentItemConf().collectAllAvaliableDataSources(conn);
+
+		if (utilities.listHasElement(allFromParent)) {
+			// ds.addAll(allFromParent);
+		}
+
 		DstConf parentDstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
 
 		if (!parentDstConf.isDisabled()) {
@@ -223,7 +229,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	@Override
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
 

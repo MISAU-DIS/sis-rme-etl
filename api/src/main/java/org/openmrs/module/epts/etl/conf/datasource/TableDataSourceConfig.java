@@ -194,11 +194,6 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 		return list.get(0);
 	}
 
-	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
-		return Boolean.FALSE;
-	}
-
 	public String generateJoinCondition() {
 		return super.generateJoinCondition(this.getRelatedSrcConf(), this.joinFields, this.joinExtraCondition);
 	}
@@ -220,6 +215,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
+		super.loadOwnElements(schemaInfo, conn);
+
 		this.loadJoinElements(schemaInfo, DataSourceSide.OTHER_IS_DATA_SOURCE, conn);
 		this.loadAlias();
 

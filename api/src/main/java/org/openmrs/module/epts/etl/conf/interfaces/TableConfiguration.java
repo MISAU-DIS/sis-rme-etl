@@ -434,7 +434,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 
 		this.setParentRefInfo(toCloneFrom.getParentRefInfo());
-		this.setSyncRecordClass(toCloneFrom.getSyncRecordClass());
+		this.setEtlRecordClass(toCloneFrom.getEtlRecordClass());
 		this.setParentConf(parent != null ? parent : toCloneFrom.getParentConf());
 		this.setFields(toCloneFrom.getFields());
 		this.setIgnorableFields(toCloneFrom.getIgnorableFields());
@@ -601,7 +601,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					}
 
 					for (Key key : defaultObject.getObjectId().getFields()) {
-						EtlDatabaseObject keyInfo = defaultGeneratedObjectKeyTabConf.getSyncRecordClass().newInstance();
+						EtlDatabaseObject keyInfo = defaultGeneratedObjectKeyTabConf.getEtlRecordClass().newInstance();
 
 						keyInfo.setRelatedConfiguration(defaultGeneratedObjectKeyTabConf);
 
@@ -635,7 +635,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 		try {
 			@SuppressWarnings("deprecation")
-			EtlDatabaseObject keyInfo = skippedRecordTabConf.getSyncRecordClass().newInstance();
+			EtlDatabaseObject keyInfo = skippedRecordTabConf.getEtlRecordClass().newInstance();
 
 			keyInfo.setRelatedConfiguration(skippedRecordTabConf);
 
@@ -686,6 +686,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		} finally {
 			finalizeConnection(conn, this);
 		}
+
 	}
 
 	@JsonIgnore
@@ -748,35 +749,49 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void logInfo(String msg) {
-		this.getRelatedEtlConf().info(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().info(msg);
 	}
 
 	default void logDebug(String msg) {
-		this.getRelatedEtlConf().debug(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().debug(msg);
 	}
 
 	default void logTrace(String msg) {
-		this.getRelatedEtlConf().trace(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().trace(msg);
 	}
 
 	default void logTrace(String msg, Object... arguments) {
-		this.getRelatedEtlConf().trace(msg, arguments);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().trace(msg, arguments);
 	}
 
 	default void logWarn(String msg) {
-		this.getRelatedEtlConf().warn(msg);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().warn(msg);
 	}
 
 	default void logWarn(String msg, Object... arguments) {
-		this.getRelatedEtlConf().warn(msg, arguments);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().warn(msg, arguments);
 	}
 
 	default void logErr(String msg, Throwable throwable) {
-		this.getRelatedEtlConf().err(msg, throwable);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().err(msg, throwable);
 	}
 
 	default void logErr(String msg, Throwable throwable, Object... arguments) {
-		this.getRelatedEtlConf().err(msg, throwable, arguments);
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().err(msg, throwable, arguments);
+	}
+
+	/** True only while logs from a non-JDBC full load must remain hidden. */
+	@JsonIgnore
+	default boolean isFullLoadLogSuppressed() {
+		return false;
 	}
 
 	default int countParents(Connection conn) throws SQLException {
@@ -817,6 +832,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						for (ParentTable p : this.getParents()) {
 
 							p.setChildTableConf(this);
+							p.setParentConf(this.getParentConf());
 
 							if (p.getRefMapping() != null) {
 
@@ -1144,6 +1160,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 			if (existingRef == null) {
 				ref = (AbstractRelatedTable) parentTabConf;
+				ref.setParentConf(this.getParentConf());
 				ref.setMetadata(!ref.isConfigured());
 				this.getParentRefInfo().add((ParentTable) ref);
 			}
@@ -1155,6 +1172,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				ref = (AbstractRelatedTable) childTabConf;
 
 				ref.setRelatedTabConf(parentTabConf);
+				ref.setParentConf(this.getParentConf());
 				ref.setMetadata(!ref.isConfigured());
 
 				this.getChildRefInfo().add((ChildTable) ref);
@@ -1184,7 +1202,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	@JsonIgnore
 	default Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
 		try {
-			return this.getSyncRecordClass(connInfo) != null;
+			return this.generateSyncRecordClass(connInfo) != null;
 		} catch (ForbiddenOperationException e) {
 
 			return false;
@@ -1194,9 +1212,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {
-				this.setSyncRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));
+				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));
 			} else {
-				this.setSyncRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo));
+				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo));
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -1215,7 +1233,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	default void generateSkeletonRecordClass(DBConnectionInfo application) {
 		try {
-			this.setSyncRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, application));
+			this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, application));
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 
@@ -1379,6 +1397,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default Boolean isConfigured() {
+		if (this.getRelatedEtlConf() == null) {
+			throw new EtlConfException("The relatedEtlConf was not set!");
+		}
+
 		for (TableConfiguration tabConf : this.getRelatedEtlConf().getConfiguredTables()) {
 			if (tabConf.getTableName().equals(this.getTableName()))
 				return true;
@@ -1389,6 +1411,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@Override
 	default void fullLoad(Connection conn) throws DBException {
+		if (this.getParentConf() == null) {
+			throw new EtlConfException("The parentConf is not set for " + this);
+		}
+
 		this.tryToGenerateTableAlias(this.getRelatedEtlConf());
 
 		synchronized (this) {
@@ -1399,7 +1425,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					return;
 				}
 
-				tryToLoadSchemaInfo(null, conn);
+				this.tryToLoadSchemaInfo(null, conn);
+
+				if (!utilities.stringHasValue(this.getSchema())) {
+					throw new EtlConfException("The schema for table could not be resolved " + this);
+				}
 
 				this.loadFields(conn);
 
@@ -1458,11 +1488,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					this.createDefaultOrderingInfo();
 				}
 
-				this.setFullLoaded(true);
-
 				getRelatedEtlConf().addToFullLoadedTables(this);
 
 				logDebug("Table full loaded: " + this);
+
+				this.setFullLoaded(true);
 			} catch (SQLException e) {
 				e.printStackTrace();
 
@@ -1665,6 +1695,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		} else if (this.hasParentRefInfo()) {
 
 			for (ParentTable parent : this.getParentRefInfo()) {
+				parent.setParentConf(this.getParentConf());
+
 				if (parent.getTableName().equalsIgnoreCase(this.getSharePkWith())) {
 
 					if (!parent.isFullLoaded()) {
@@ -1673,6 +1705,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						try {
 							if (conn == null) {
 								localConn = this.getRelatedEtlConf().openSrcConn(this);
+
 								parent.fullLoad(localConn);
 							} else {
 								parent.fullLoad(conn);
@@ -1716,7 +1749,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		String sql = generateSelectFromQuery();
 		sql += "WHERE " + condition;
 
-		return DatabaseObjectDAO.find(getLoadHealper(), this.getSyncRecordClass(), sql, params, conn);
+		return DatabaseObjectDAO.find(getLoadHealper(), this.getEtlRecordClass(), sql, params, conn);
 	}
 
 	default ParentTable findParentRefInfoByField(String fieldName) {
@@ -2620,10 +2653,19 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	default EtlDatabaseObject createRecordInstance() {
 		try {
+
+			if (this.getEtlRecordClass() == null) {
+				this.setEtlRecordClass(generateSyncRecordClass(getRelatedConnInfo()));
+			}
+
 			@SuppressWarnings("deprecation")
-			EtlDatabaseObject rec = this.getSyncRecordClass().newInstance();
+			EtlDatabaseObject rec = this.getEtlRecordClass().newInstance();
 
 			rec.setRelatedConfiguration(this);
+
+			if (this.useSharedPKKey()) {
+				rec.getSharedPkObj().setRelatedConfiguration(this.getSharedTableConf(null));
+			}
 
 			return rec;
 		} catch (Exception e) {
@@ -2849,6 +2891,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			}
 
 			if (!tabConf.isFullLoaded()) {
+				tabConf.setParentConf(this.getParentConf());
+
 				tabConf.fullLoad(conn);
 			}
 

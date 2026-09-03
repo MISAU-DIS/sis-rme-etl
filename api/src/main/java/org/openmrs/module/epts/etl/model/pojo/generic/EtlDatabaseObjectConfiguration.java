@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
@@ -54,7 +55,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	default String generateFullPackageName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClasspackage(connInfo);
+		String packageName = getClassPackage(connInfo);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -67,15 +68,29 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default String getClasspackage(DBConnectionInfo connInfo) {
-		return connInfo.getPojoPackageName();
+	default String getClassPackage(DBConnectionInfo connInfo) {
+		return getRelatedEtlConf().getPojoPackage(connInfo);
+	}
+
+	default String getClassPackageForForder(DBConnectionInfo connInfo) {
+		String packageS = this.getClassPackage(connInfo);
+
+		String[] packageParts = packageS.split("\\.");
+
+		String pF = "";
+
+		for (String p : packageParts) {
+			pF = utilities.concatStringsWithSeparator(pF, p, "" + File.separatorChar);
+		}
+
+		return pF;
 	}
 
 	@JsonIgnore
 	default String generateFullClassName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClasspackage(connInfo);
+		String packageName = getClassPackage(connInfo);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -83,8 +98,8 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default File getClassPath() {
-		return new File(this.getParentConf().getRelatedEtlConf().getClassPath());
+	default List<File> getClassPath() {
+		return this.getParentConf().getRelatedEtlConf().getClassPathAsFiles();
 	}
 
 	String generateClassName();
@@ -107,7 +122,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	DBConnectionInfo getRelatedConnInfo();
 
-	void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
+	void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
 
 	Boolean isDestinationInstallationType();
 
@@ -144,31 +159,31 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return false;
 	}
 
-	Class<? extends EtlDatabaseObject> getSyncRecordClass() throws ForbiddenOperationException;
+	default Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
+		throw new ForbiddenOperationException("Forbiden method! Please implement your own method!");
+	}
 
 	@JsonIgnore
-	default Class<? extends EtlDatabaseObject> getSyncRecordClass(DBConnectionInfo connInfo)
-			throws ForbiddenOperationException {
+	default Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
+			throws PojoNotFoundException {
 
-		Class<? extends EtlDatabaseObject> syncRecordClass;
+		Class<? extends EtlDatabaseObject> syncRecordClass = null;
 
-		if (getSyncRecordClass() == null) {
+		if (getRelatedEtlConf().usesPrecompiledPojoObjects()) {
+			syncRecordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(this.generateFullClassName(connInfo),
+					this.getRelatedEtlConf());
 
-			if (getRelatedEtlConf().usesPrecompiledPojoObjects()) {
-				syncRecordClass = DatabaseEntityPOJOGenerator
-						.tryToGetExistingCLass(this.generateFullClassName(connInfo), this.getRelatedEtlConf());
-
-				if (syncRecordClass == null) {
-					throw new ForbiddenOperationException("The related POJO class for table " + this
-							+ " cannot be found. Make sure you have run the POJO_GENERATION operation.");
-				}
-			} else {
-				syncRecordClass = GenericDatabaseObject.class;
+			if (syncRecordClass == null) {
+				throw new PojoNotFoundException(this);
 			}
 
-			this.setSyncRecordClass(syncRecordClass);
+		} else {
+			syncRecordClass = GenericDatabaseObject.class;
 		}
-		return getSyncRecordClass();
+
+		this.setEtlRecordClass(syncRecordClass);
+
+		return syncRecordClass;
 	}
 
 	default List<String> getParentRefInfoAsString() {

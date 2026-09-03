@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -34,6 +35,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
  * Represents an prepared query ready to be executed. It alwas has a ready query
@@ -870,8 +872,18 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 		Object[] params = pq.extractParametersValueToArray();
 
+		if (this.getDataSource().getEtlRecordClass() == null) {
+			if (conn instanceof OpenConnection) {
+				this.getDataSource().generateSyncRecordClass(((OpenConnection) conn).getDbConnInfo());
+			}
+		}
+
+		if (this.getDataSource().getEtlRecordClass() == null) {
+			throw new EtlConfException("No syncRecordClass was defined for PreparedQuery [" + this + "]");
+		}
+
 		return (List<EtlDatabaseObject>) DatabaseObjectDAO.search(this.getDataSource().getLoadHealper(),
-				this.getDataSource().getSyncRecordClass(), pq.getPreparedQuery(), params, conn);
+				this.getDataSource().getEtlRecordClass(), pq.getPreparedQuery(), params, conn);
 	}
 
 	@Override

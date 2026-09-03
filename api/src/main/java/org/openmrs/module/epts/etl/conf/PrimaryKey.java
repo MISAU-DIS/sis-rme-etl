@@ -50,7 +50,7 @@ public class PrimaryKey extends UniqueKeyInfo {
 			
 			oid.addKey(k);
 			
-			obj.tryToReplaceFieldWithKey(k);
+			obj.tryToReplaceFieldValueWithKeyValue(k);
 		}
 		
 		return oid;

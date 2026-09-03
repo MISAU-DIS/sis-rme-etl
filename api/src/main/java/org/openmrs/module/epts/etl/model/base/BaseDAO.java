@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.fileupload.FileItem;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -163,6 +164,12 @@ public abstract class BaseDAO {
 		PreparedStatement st = null;
 
 		try {
+
+			if (voClass == null) {
+				throw new EtlConfException(
+						"No voClass was provided to execute the searching..." + generateMinimalQueryInfo(sql, params));
+			}
+
 			Constructor<T> factory = voClass.getConstructor();
 
 			st = conn.prepareStatement(sql);

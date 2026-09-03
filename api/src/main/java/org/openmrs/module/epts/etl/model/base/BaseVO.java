@@ -14,6 +14,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -32,8 +33,6 @@ public abstract class BaseVO implements VO {
 	protected Date dateVoided;
 
 	protected boolean excluded;
-
-	protected List<Field> fields;
 
 	protected boolean loadedFromDb;
 
@@ -159,15 +158,7 @@ public abstract class BaseVO implements VO {
 
 	@Override
 	public List<Field> getFields() {
-		if (fields == null)
-			generateFields();
-
-		return fields;
-	}
-
-	@Override
-	public void setFields(List<Field> fields) {
-		this.fields = fields;
+		return generateFields();
 	}
 
 	@JsonIgnore
@@ -233,16 +224,19 @@ public abstract class BaseVO implements VO {
 			} catch (IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
-
 		}
+
+		this.setLoadedFromDb(true);
 	}
 
 	public static Object retrieveFieldValue(String fieldName, String type, ResultSet resultSet) throws SQLException {
 
 		if (utilities.isStringIn(type.toUpperCase(), "INT", "MEDIUMINT", "INT8", "BIGINT", "SERIAL", "SERIAL4"))
 			type = "java.lang.Integer";
-		else if (utilities.isStringIn(type.toUpperCase(), "TINYINT", "BIT"))
+		else if (utilities.isStringIn(type.toUpperCase(), "TINYINT"))
 			type = "java.lang.Byte";
+		else if (utilities.isStringIn(type.toUpperCase(), "BIT", "BOOLEAN"))
+			type = "java.lang.Boolean";
 		else if (utilities.isStringIn(type.toUpperCase(), "YEAR", "SMALLINT"))
 			type = "java.lang.Short";
 		else if (utilities.isStringIn(type.toUpperCase(), "BIGINT", "INT8", "SERIAL"))
@@ -257,39 +251,56 @@ public abstract class BaseVO implements VO {
 			type = "[B";
 		else if (utilities.isStringIn(type.toUpperCase(), "DATE", "DATETIME", "TIME", "TIMESTAMP"))
 			type = "java.util.Date";
-		else if (utilities.isStringIn(type.toUpperCase(), "BOOLEAN"))
-			type = "java.util.Boolean";
+		Object value = null;
 
-		Object value = resultSet.getObject(fieldName);
+		try {
+			value = resultSet.getObject(fieldName);
+		} catch (SQLException e) {
+			DBException bdE = new DBException(e);
 
-		if (value != null) {
-			if (type.equals("java.util.Boolean")) {
-				int number = resultSet.getInt(fieldName);
-
-				return number > 0;
-			} else if (type.equals("java.lang.Double"))
-				return resultSet.getDouble(fieldName);
-			else if (type.equals("java.lang.Float"))
-				return resultSet.getFloat(fieldName);
-			else if (type.equals("java.lang.Integer"))
-				return resultSet.getInt(fieldName);
-			else if (type.equals("java.lang.String")) {
-				return resultSet.getString(fieldName).trim();
-			} else if (value instanceof Timestamp || value instanceof Date || value instanceof LocalDateTime) {
-
-				return new java.util.Date(resultSet.getTimestamp(fieldName).getTime());
-
-			} else if (type.equals("java.io.InputStream")) {
-
-				Blob blob = resultSet.getBlob(fieldName);
-
-				return blob.getBinaryStream();
-
-			} else if (type.equals("[B")) {
-				return resultSet.getBytes(fieldName);
+			if (!bdE.messageContains("Column", "not found")) {
+				throw e;
 			}
 
 		}
+
+		if (value == null)
+			return null;
+
+		if (type.equals("java.lang.Boolean")) {
+			if (value instanceof Boolean)
+				return value;
+			if (value instanceof Number)
+				return ((Number) value).intValue() > 0;
+			return Boolean.valueOf(value.toString());
+		}
+		if (value instanceof Number) {
+			Number number = (Number) value;
+			if (type.equals("java.lang.Byte"))
+				return number.byteValue();
+			if (type.equals("java.lang.Short"))
+				return number.shortValue();
+			if (type.equals("java.lang.Integer"))
+				return number.intValue();
+			if (type.equals("java.lang.Long"))
+				return number.longValue();
+			if (type.equals("java.lang.Float"))
+				return number.floatValue();
+			if (type.equals("java.lang.Double"))
+				return number.doubleValue();
+		}
+		if (type.equals("java.lang.String"))
+			return value.toString().trim();
+		if (type.equals("java.util.Date")) {
+			if (value instanceof java.util.Date)
+				return new java.util.Date(((java.util.Date) value).getTime());
+			if (value instanceof LocalDateTime)
+				return Timestamp.valueOf((LocalDateTime) value);
+		}
+		if (type.equals("java.io.InputStream") && value instanceof Blob)
+			return ((Blob) value).getBinaryStream();
+		if (type.equals("[B") && value instanceof Blob)
+			return ((Blob) value).getBytes(1, (int) ((Blob) value).length());
 
 		return value;
 
@@ -351,18 +362,18 @@ public abstract class BaseVO implements VO {
 		for (Object obj : getInstanceFields()) {
 			Field field = (Field) obj;
 
-			if (attName.equals(field.getName())) {
+			if (utilities.equalsFieldsName(field.getName(), attName)) {
 				return true;
 			}
-			;
 		}
 
 		for (Method method : this.getClass().getMethods()) {
 			if (method.getName().startsWith("get") && method.getParameterCount() == 0) {
 				String name = utilities.deCapitalize(method.getName().substring(3));
 
-				if (name.equals(attName))
+				if (utilities.equalsFieldsName(name, attName)) {
 					return true;
+				}
 			}
 		}
 

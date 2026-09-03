@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadCurrent
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.AbstractSearchParams;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -120,8 +121,14 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 			List<EtlDatabaseObject> ds = (List<EtlDatabaseObject>) collectDataSourceObjects(parentObject,
 					dataSourceObjects);
 
-			PreparedQueryInfo pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
-					utilities.parseToList(this.getSrcConf().getAlias()), ds, getRelatedEtlConf(), null);
+			PreparedQueryInfo pq = null;
+			
+			try {
+				pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
+						utilities.parseToList(this.getSrcConf().getAlias()), ds, getRelatedEtlConf(), null);
+			} catch (Exception e) {
+				throw e;
+			}
 
 			Object[] params = pq.extractParametersValueToArray();
 
@@ -186,7 +193,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	@SuppressWarnings("unchecked")
 	public Class<T> getRecordClass() {
-		return (Class<T>) getSrcConf().getSyncRecordClass(getSrcConf().getSrcConnInfo());
+		return (Class<T>) getSrcConf().generateSyncRecordClass(getSrcConf().getSrcConnInfo());
 	}
 
 	public SrcConf getSrcConf() {

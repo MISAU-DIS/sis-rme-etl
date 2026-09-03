@@ -131,8 +131,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 			sql += " WHERE 	record_origin_id = ? and record_origin_location_code = ? ";
 
 			return find(parentTableConfiguration.getLoadHealper(),
-					parentTableConfiguration.getSyncRecordClass(parentTableConfiguration.getSrcConnInfo()), sql, params,
-					conn);
+					parentTableConfiguration.generateSyncRecordClass(parentTableConfiguration.getSrcConnInfo()), sql,
+					params, conn);
 		} catch (Exception e) {
 			LOG.info("Error trying do retrieve dstRecord on table " + parentTableConfiguration.getTableName() + "["
 					+ e.getMessage() + "]");
@@ -177,7 +177,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += " FROM     " + tableConfiguration.generateFullTableNameWithAlias() + "\n";
 		sql += " WHERE 	" + conditionSQL;
 
-		T recOnDb = (T) find(tableConfiguration.getLoadHealper(), tableConfiguration.getSyncRecordClass(), sql, params,
+		T recOnDb = (T) find(tableConfiguration.getLoadHealper(), tableConfiguration.getEtlRecordClass(), sql, params,
 				conn);
 
 		if (recOnDb != null) {
@@ -194,7 +194,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		TableConfiguration tableConfiguration = (TableConfiguration) record.getRelatedConfiguration();
 
 		if (!record.hasAtLeastOnUniqueKeyWIthAllFieldsFilled()) {
-			throw new ForbiddenOperationException("The object " + record + " has no valued uniqueKey");
+			throw new ForbiddenOperationException("No valued uniqueKey found within object: " + record);
 		}
 
 		Object[] params = {};
@@ -244,7 +244,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 		@SuppressWarnings("unchecked")
 		Class<T> openMRSClass = (Class<T>) tableConfiguration
-				.getSyncRecordClass(tableConfiguration.getRelatedConnInfo());
+				.generateSyncRecordClass(tableConfiguration.getRelatedConnInfo());
 
 		String sql = "";
 
@@ -267,7 +267,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 				tabConf.fullLoad(conn);
 			}
 
-			Class<T> openMRSClass = (Class<T>) tabConf.getSyncRecordClass(tabConf.getRelatedConnInfo());
+			Class<T> openMRSClass = (Class<T>) tabConf.generateSyncRecordClass(tabConf.getRelatedConnInfo());
 
 			T record = openMRSClass.newInstance();
 
@@ -322,7 +322,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += " LIMIT 0, 1";
 
 		return find(tableConfiguration.getLoadHealper(),
-				tableConfiguration.getSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
+				tableConfiguration.generateSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
 	}
 
 	public static long countAll(TableConfiguration tableConfiguration, Connection conn) throws DBException {
@@ -401,7 +401,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 				+ tabConf.getPrimaryKey() + "\n)";
 		sql += "												   )";
 
-		return find(tabConf.getLoadHealper(), tabConf.getSyncRecordClass(tabConf.getSrcConnInfo()), sql, params, conn);
+		return find(tabConf.getLoadHealper(), tabConf.generateSyncRecordClass(tabConf.getSrcConnInfo()), sql, params,
+				conn);
 	}
 
 	public static void remove(EtlDatabaseObject record, Connection conn) throws DBException {
@@ -466,14 +467,14 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += "			AND record_origin_location_code = ? ";
 
 		return search(tableConfiguration.getLoadHealper(),
-				tableConfiguration.getSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
+				tableConfiguration.generateSyncRecordClass(tableConfiguration.getSrcConnInfo()), sql, params, conn);
 	}
 
 	public static List<? extends EtlDatabaseObject> getByParentIdOnSpecificSchema(TableConfiguration tabConf,
 			String parentField, Integer parentId, String schema, Connection conn) throws DBException {
 		Object[] params = { parentId };
 
-		Class<? extends EtlDatabaseObject> clazz = tabConf.getSyncRecordClass();
+		Class<? extends EtlDatabaseObject> clazz = tabConf.getEtlRecordClass();
 
 		EtlDatabaseObject record = utilities.createInstance(clazz);
 
@@ -674,6 +675,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 	private static void assignGeneratedIdsAfterBatchInsert(List<EtlDatabaseObject> insertedRecords,
 			TableConfiguration tabConf, List<Long> generatedIds) {
+
 		if (tabConf.includePrimaryKeyOnInsert()) {
 			return;
 		}

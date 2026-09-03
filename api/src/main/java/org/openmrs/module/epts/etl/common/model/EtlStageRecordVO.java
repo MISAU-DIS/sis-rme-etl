@@ -333,11 +333,11 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 		EtlDatabaseObject rec = null;
 
 		try {
-			rec = utilities.loadObjectFormJSON(tableInfo.getSyncRecordClass(tableInfo.getSrcConnInfo()), modifiedJSON);
+			rec = utilities.loadObjectFormJSON(tableInfo.generateSyncRecordClass(tableInfo.getSrcConnInfo()), modifiedJSON);
 		} catch (Exception e) {
 			// try to resolve pattern problems
 			modifiedJSON = utilities.resolveScapeCharacter(modifiedJSON);
-			rec = utilities.loadObjectFormJSON(tableInfo.getSyncRecordClass(tableInfo.getSrcConnInfo()), modifiedJSON);
+			rec = utilities.loadObjectFormJSON(tableInfo.generateSyncRecordClass(tableInfo.getSrcConnInfo()), modifiedJSON);
 		}
 
 		if (!tableInfo.isMetadata()) {
@@ -656,7 +656,7 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 	}
 
 	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@Override

@@ -28,7 +28,7 @@ import org.openmrs.module.epts.etl.inconsistenceresolver.controller.Inconsistenc
 import org.openmrs.module.epts.etl.load.controller.DataLoadController;
 import org.openmrs.module.epts.etl.merge.controller.DataBaseMergeFromSourceDBController;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.pojogeneration.controller.PojoGenerationController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
 import org.openmrs.module.epts.etl.problems_solver.controller.GenericOperationController;
 import org.openmrs.module.epts.etl.problems_solver.processor.GenericProcessor;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
@@ -40,7 +40,7 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class EtlOperationConfig extends AbstractBaseConfiguration {
+public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private static final int DEFAULT_BATCH_PROCESSING = 1000;
 
@@ -111,16 +111,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	private EtlConfiguration relatedEtlConf;
 
 	public EtlOperationConfig() {
-		this.dstType = EtlDstType.db;
-		this.actionType = EtlActionType.CREATE;
-		this.afterEtlActionType = EtlActionType.UNDEFINED;
-		this.processingMode = EtlProcessingModeType.SERIAL;
-		this.operationType = EtlOperationType.ETL;
-		this.processingBatch = EtlOperationConfig.DEFAULT_BATCH_PROCESSING;
-		this.maxSupportedProcessors = utilities.getAvailableProcessors();
-		this.fisicalCpuMultiplier = 1;
-		this.parallelProcessingStrategy = ParallelProcessingStrategyType.RANGE_PARTITIONING;
-		this.totalCountStrategy = EtlTotalRecordsCountStrategy.COUNT_ONCE;
+
 	}
 
 	@Override
@@ -511,7 +502,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	@JsonIgnore
 	public boolean isPojoGeneration() {
-		return this.operationType.isPojoGeneration();
+		return isDatabaseModelGeneration();
+	}
+
+	public boolean isDatabaseModelGeneration() {
+		return this.operationType.isDatabaseModelGeneration();
 	}
 
 	@JsonIgnore
@@ -627,8 +622,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			return new DetectMissingRecordsController(parent, this, appOriginCode);
 		} else if (isEtl()) {
 			return new EtlController(parent, this, appOriginCode);
-		} else if (isPojoGeneration()) {
-			return new PojoGenerationController(parent, this);
+		} else if (isDatabaseModelGeneration()) {
+			return new DatabaseModelGenerationController(parent, this);
 		} else if (isExportOperation()) {
 			return new DBExportController(parent, this);
 		} else if (isTransportOperation()) {
@@ -712,8 +707,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 			if (!this.canBeRunInDBInconsistencyCheckProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in db inconsistency check process\n";
-		} else if (this.getRelatedEtlConf().isPojoGeneration()) {
-			if (!this.canBeRunInDbPojoGenerationProcess())
+		} else if (this.getRelatedEtlConf().isDatabaseModelGeneration()) {
+			if (!this.canBeRunInDatabaseModelGenerationProcess())
 				errorMsg += ++errNum + ". This operation [" + this.getOperationType()
 						+ "] Cannot be configured in pojo generation process\n";
 		}
@@ -757,6 +752,8 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 					+ this.getRelatedEtlConf().getRelatedConfFile().getAbsolutePath() + "]\n" + errorMsg;
 			throw new ForbiddenOperationException(errorMsg);
 		} else if (this.getChild() != null) {
+			this.getChild().setRelatedEtlConf(this.getRelatedEtlConf());
+
 			this.getChild().validate();
 		}
 
@@ -795,20 +792,24 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public static List<EtlOperationType> getSupportedOperationsInSourceSyncProcess() {
 		EtlOperationType[] supported = { EtlOperationType.EXPORT, EtlOperationType.TRANSPORT,
-				EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.POJO_GENERATION };
+				EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInPojoGenerationProcess() {
-		EtlOperationType[] supported = { EtlOperationType.POJO_GENERATION };
+		return getSupportedOperationsInDatabaseModelGenerationProcess();
+	}
+
+	public static List<EtlOperationType> getSupportedOperationsInDatabaseModelGenerationProcess() {
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInEtlProcess() {
 		EtlOperationType[] supported = { EtlOperationType.ETL, EtlOperationType.DB_EXTRACT,
-				EtlOperationType.DB_PREPARATION, EtlOperationType.POJO_GENERATION };
+				EtlOperationType.DB_PREPARATION, EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -821,7 +822,11 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	@JsonIgnore
 	public boolean canBeRunInDbPojoGenerationProcess() {
-		return utilities.existOnArray(getSupportedOperationsInPojoGenerationProcess(), this.operationType);
+		return canBeRunInDatabaseModelGenerationProcess();
+	}
+
+	public boolean canBeRunInDatabaseModelGenerationProcess() {
+		return utilities.existOnArray(getSupportedOperationsInDatabaseModelGenerationProcess(), this.operationType);
 	}
 
 	@JsonIgnore
@@ -835,7 +840,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDBInconsistencyCheckProcess() {
-		EtlOperationType[] supported = { EtlOperationType.INCONSISTENCY_SOLVER, EtlOperationType.POJO_GENERATION };
+		EtlOperationType[] supported = { EtlOperationType.INCONSISTENCY_SOLVER };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -880,7 +885,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDataReconciliationProcess() {
-		EtlOperationType[] supported = { EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
 				EtlOperationType.MISSING_RECORDS_DETECTOR, EtlOperationType.OUTDATED_RECORDS_DETECTOR,
 				EtlOperationType.PHANTOM_RECORDS_DETECTOR };
 
@@ -893,7 +898,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 	}
 
 	public static List<EtlOperationType> getSupportedOperationsInDataBasesMergeFromSourceDBProcess() {
-		EtlOperationType[] supported = { EtlOperationType.POJO_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
+		EtlOperationType[] supported = { EtlOperationType.DATABASE_MODEL_GENERATION, EtlOperationType.RESOLVE_CONFLICTS,
 				EtlOperationType.DB_MERGE_FROM_SOURCE_DB };
 
 		return utilities.parseArrayToList(supported);
@@ -911,7 +916,7 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 
 	public static List<EtlOperationType> getSupportedOperationsInDestinationSyncProcess() {
 		EtlOperationType[] supported = { EtlOperationType.CONSOLIDATION, EtlOperationType.DB_MERGE_FROM_JSON,
-				EtlOperationType.LOAD, EtlOperationType.POJO_GENERATION };
+				EtlOperationType.LOAD, EtlOperationType.DATABASE_MODEL_GENERATION };
 
 		return utilities.parseArrayToList(supported);
 	}
@@ -1025,7 +1030,56 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		return this.getAfterEtlActionType() != null;
 	}
 
-	public void init() {
+	public void init(EtlConfiguration etlConf) {
+
+		if (isInitialized())
+			return;
+
+		this.setRelatedEtlConf(etlConf);
+
+		this.applyIncludes();
+		this.tryToLoadFromTemplate();
+
+		if (this.dstType == null) {
+			this.dstType = EtlDstType.db;
+		}
+
+		if (this.actionType == null) {
+			this.actionType = EtlActionType.CREATE;
+		}
+
+		if (this.afterEtlActionType == null) {
+			this.afterEtlActionType = EtlActionType.UNDEFINED;
+		}
+
+		if (this.processingMode == null) {
+			this.processingMode = EtlProcessingModeType.SERIAL;
+		}
+
+		if (this.operationType == null) {
+			this.operationType = EtlOperationType.ETL;
+		}
+
+		if (this.processingBatch == 0) {
+			this.processingBatch = EtlOperationConfig.DEFAULT_BATCH_PROCESSING;
+		}
+
+		if (this.maxSupportedProcessors == 0) {
+			this.maxSupportedProcessors = utilities.getAvailableProcessors();
+		}
+
+		if (this.fisicalCpuMultiplier == 0) {
+			this.fisicalCpuMultiplier = 1;
+		}
+
+		if (this.parallelProcessingStrategy == null) {
+			this.parallelProcessingStrategy = ParallelProcessingStrategyType.RANGE_PARTITIONING;
+		}
+
+		if (this.totalCountStrategy == null) {
+			this.totalCountStrategy = EtlTotalRecordsCountStrategy.COUNT_ONCE;
+		}
+
 		if (this.getMaxSupportedProcessors() == 1) {
 			this.setUseSharedConnectionPerThread(false);
 		}
@@ -1047,8 +1101,10 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		}
 
 		if (hasChild()) {
-			this.getChild().init();
+			this.getChild().init(this.getRelatedEtlConf());
 		}
+
+		this.setInitialized(true);
 	}
 
 	public boolean containsChild(EtlOperationType operation) {
@@ -1060,5 +1116,13 @@ public class EtlOperationConfig extends AbstractBaseConfiguration {
 		}
 
 		return this.getChild().containsChild(operation);
+	}
+
+	public boolean usesDefaultRecords() {
+		return this.isEtl();
+	}
+
+	@Override
+	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 	}
 }

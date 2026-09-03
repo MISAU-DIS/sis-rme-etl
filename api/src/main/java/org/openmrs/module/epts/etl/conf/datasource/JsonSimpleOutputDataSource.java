@@ -195,7 +195,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 	}
 
 	@Override
@@ -251,11 +251,6 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public Boolean isRequired() {
-		return false;
-	}
-
-	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
 		return false;
 	}
 

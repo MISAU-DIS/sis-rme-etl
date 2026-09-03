@@ -46,8 +46,12 @@ public class ModuleContentUpdater {
 		newJar.close();
 		newJarFileOut.close();
 		
-		FileUtilities.removeFile(etlConfiguration.getClassPath());
-		FileUtilities.copyFile(new File(omodFileName), etlConfiguration.getClassPathAsFile());
+		File writableClassPath = etlConfiguration.getClassPathAsFile();
+		if (writableClassPath == null) {
+			throw new IOException("No writable class path was configured");
+		}
+		FileUtilities.removeFile(writableClassPath.getAbsolutePath());
+		FileUtilities.copyFile(new File(omodFileName), writableClassPath);
 	}
 	
 	public static void copyEntryToJar(File source, JarOutputStream jarOut, File jarLocationRootFolder) throws IOException {
