@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.openmrs.GlobalProperty;
+import org.openmrs.api.context.Context;
 import org.openmrs.module.epts.etl.conf.DefaultEtlValidator;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlFragmentInclude;
@@ -35,6 +37,7 @@ import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 public interface EtlDataConfiguration extends BaseConfiguration {
 
 	Pattern PLACEHOLDER = Pattern.compile("\\$\\{([A-Za-z0-9_.-]+)}");
+	String ETL_GLOBAL_PROPERTY_PREFIX = "epts.etl.";
 
 	EtlConfiguration getRelatedEtlConf();
 
@@ -434,6 +437,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			boolean escapeJsonValues) {
 
 		Properties prefProps = utilities.toProperties(env);
+		Properties openMrsProps = loadOpenMrsGlobalProperties();
 		Properties appProps = loadProperties(System.getProperty("etl.env.file"));
 		Properties javaProps = System.getProperties();
 		Properties sysProps = utilities.toProperties(System.getenv());
@@ -460,6 +464,10 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			Object value = null;
 
 			value = prefProps.get(key);
+
+			if (value == null) {
+				value = openMrsProps.getProperty(key);
+			}
 
 			if (value == null) {
 				value = appProps.getProperty(key);
@@ -490,6 +498,36 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		m.appendTail(sb);
 
 		return sb.toString();
+	}
+
+	/**
+	 * Loads the ETL properties exposed by OpenMRS. The prefix is removed so that, for
+	 * example, {@code epts.etl.location_name} can resolve {@code ${location_name}}.
+	 * The complete property name is also retained to support
+	 * {@code ${epts.etl.location_name}}.
+	 */
+	public static Properties loadOpenMrsGlobalProperties() {
+		Properties properties = new Properties();
+
+		// A session is available when this code is running inside OpenMRS. Keeping this
+		// check preserves standalone/javaw execution without requiring OpenMRS startup.
+		if (!Context.isSessionOpen()) {
+			return properties;
+		}
+
+		for (GlobalProperty globalProperty : Context.getAdministrationService()
+		        .getGlobalPropertiesByPrefix(ETL_GLOBAL_PROPERTY_PREFIX)) {
+			String name = globalProperty.getProperty();
+			String value = globalProperty.getPropertyValue();
+
+			if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
+				String normalizedValue = stripWrappingQuotes(value);
+				properties.setProperty(name, normalizedValue);
+				properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
+			}
+		}
+
+		return properties;
 	}
 
 	public static String escapeJsonString(String value) {

@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -18,7 +18,6 @@ import java.sql.SQLException;
 import java.sql.ResultSet;
 
 import java.sql.Connection;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -40,7 +39,6 @@ public class ConceptVO extends AbstractGeneratedDatabaseObject {
 
 	public ConceptVO() {
 		this.metadata = false;
-
 		this.fields.add(this.conceptId);
 		this.fields.add(this.retired);
 		this.fields.add(this.shortName);
@@ -390,7 +388,8 @@ public class ConceptVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 

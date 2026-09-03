@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -18,7 +18,6 @@ import java.sql.SQLException;
 import java.sql.ResultSet;
 
 import java.sql.Connection;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -42,7 +41,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 
 	public UsersVO() {
 		this.metadata = false;
-
 		this.fields.add(this.userId);
 		this.fields.add(this.systemId);
 		this.fields.add(this.username);
@@ -424,7 +422,8 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String activationKeyAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"activation_key", "_");

@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -18,7 +18,6 @@ import java.sql.SQLException;
 import java.sql.ResultSet;
 
 import java.sql.Connection;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -53,7 +52,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 	public ObsVO() {
 		this.metadata = false;
-
 		this.fields.add(this.obsId);
 		this.fields.add(this.personId);
 		this.fields.add(this.conceptId);
@@ -656,7 +654,8 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String previousVersionAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"previous_version", "_");
@@ -677,6 +676,17 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 				"interpretation", "_");
 
 		this.interpretation.setValue(BaseVO.retrieveFieldValue(interpretationAttName, "VARCHAR", rs));
+
+		if (!hasRelatedConfiguration())
+			throw new org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException(
+					"The relatedConfiguration is not set");
+		setAuxLoadObject(new java.util.ArrayList<>());
+		org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.EncounterVO auxLoadObject0 = new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.EncounterVO();
+		auxLoadObject0.setRelatedConfiguration(
+				((org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity) getRelatedConfiguration())
+						.getJoiningTable().get(0));
+		auxLoadObject0.load(rs);
+		getAuxLoadObject().add(auxLoadObject0);
 		this.loadedFromDb = true;
 	}
 
