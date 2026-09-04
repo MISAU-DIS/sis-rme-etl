@@ -18,7 +18,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class Main implements Runnable {
 
-	public static final String STARTUP_FILE_GLOBAL_PROPERTY = "epts.etl.startup_file";
+	public static final String STARTUP_FILE_GLOBAL_PROPERTY = "epts.etl.startup.file";
 
 	private static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
 	private static final AtomicBoolean OPENMRS_START_TRIGGERED = new AtomicBoolean(false);
