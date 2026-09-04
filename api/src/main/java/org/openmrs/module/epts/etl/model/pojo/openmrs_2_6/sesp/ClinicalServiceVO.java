@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -134,10 +136,24 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.clinicalServiceId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.locationId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.serviceConceptId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.active, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.hasQueue, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.hasPharmacy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.isOneStop, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.pharmacyLocationId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.displayOrder, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retiredBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateRetired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retireReason, srcConn, dstConn);
 	}
 
 	public void setClinicalServiceId(Field clinicalServiceId) {

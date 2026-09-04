@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -224,10 +226,42 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.locationId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.name, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.description, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address1, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address2, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.cityVillage, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.stateProvince, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.postalCode, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.country, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.latitude, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.longitude, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.countyDistrict, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address3, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address6, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address5, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address4, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retiredBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateRetired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retireReason, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.parentLocation, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address7, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address8, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address9, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address10, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address11, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address12, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address13, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address14, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.address15, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.locationTypeConceptId, srcConn, dstConn);
 	}
 
 	public void setLocationId(Field locationId) {

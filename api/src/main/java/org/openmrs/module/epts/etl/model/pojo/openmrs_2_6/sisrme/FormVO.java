@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class FormVO extends AbstractGeneratedDatabaseObject {
@@ -132,10 +134,24 @@ public class FormVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.formId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.name, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.version, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.build, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.published, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.description, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.encounterType, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.template, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.xslt, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retiredBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateRetired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retiredReason, srcConn, dstConn);
 	}
 
 	public void setFormId(Field formId) {

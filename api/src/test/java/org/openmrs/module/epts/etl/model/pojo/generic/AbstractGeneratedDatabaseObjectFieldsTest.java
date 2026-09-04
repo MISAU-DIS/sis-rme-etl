@@ -69,6 +69,20 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 		assertEquals("direct-uuid", object.getFieldValue("uuid"));
 	}
 
+	@Test
+	public void shouldLoadDefaultsDirectlyIntoGeneratedFields() throws Exception {
+		GenericTableConfiguration configuration = new GenericTableConfiguration();
+		configuration.setFields(Arrays.asList(Field.fastCreateWithType("concept_class_id", "INT"),
+				Field.fastCreateWithType("name", "VARCHAR")));
+
+		ConceptClassVO object = new ConceptClassVO();
+		object.setRelatedConfiguration(configuration);
+		object.loadWithDefaultValues(null, null);
+
+		assertEquals(Integer.valueOf(0), object.getConceptClassId().getValue());
+		assertEquals(Field.DEFAULT_STRING_VALUE, object.getName().getValue());
+	}
+
 	private Field find(List<Field> fields, String name) {
 		return fields.stream().filter(field -> name.equalsIgnoreCase(field.getName())).findFirst()
 				.orElseThrow(() -> new AssertionError("Field not found: " + name));

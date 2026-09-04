@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PersonVO extends AbstractGeneratedDatabaseObject {
@@ -132,10 +134,24 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.personId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.gender, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.birthdate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.birthdateEstimated, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dead, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.deathDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.causeOfDeath, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.deathdateEstimated, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.birthtime, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.causeOfDeathNonCoded, srcConn, dstConn);
 	}
 
 	public void setPersonId(Field personId) {

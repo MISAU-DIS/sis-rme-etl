@@ -1,6 +1,8 @@
 package org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp;
 
 import java.sql.Connection;
+
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -96,10 +98,18 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.appointmentId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.providerId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.reasonForAdmission, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.serviceId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.specialityId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.status, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.notes, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.appointmentDate, srcConn, dstConn);
 	}
 
 	public void setAppointmentId(Field appointmentId) {

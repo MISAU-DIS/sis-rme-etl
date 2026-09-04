@@ -17,6 +17,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class SisRmeSyncMsgVO extends AbstractGeneratedDatabaseObject {
@@ -120,10 +122,22 @@ public class SisRmeSyncMsgVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.id, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.tableName, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.identifier, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.originSiteUuid, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.entityPayload, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.operation, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateSent, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateReceived, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.messageUuid, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.processingStatus, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.processingDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.processingError, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retryCount, srcConn, dstConn);
 	}
 
 	public void setId(Field id) {

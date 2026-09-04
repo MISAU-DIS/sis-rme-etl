@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -114,10 +116,20 @@ public class PharmacyBatchVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.batchId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.drugId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.batchNumber, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.expiryDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.quantity, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.balance, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.locationId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 	}
 
 	public void setBatchId(Field batchId) {

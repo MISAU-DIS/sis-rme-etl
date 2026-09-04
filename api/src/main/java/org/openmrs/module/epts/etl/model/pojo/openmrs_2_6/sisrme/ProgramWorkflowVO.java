@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -89,10 +91,15 @@ public class ProgramWorkflowVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.programWorkflowId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.programId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
 	}
 
 	public void setProgramWorkflowId(Field programWorkflowId) {

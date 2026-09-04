@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
@@ -112,10 +114,20 @@ public class ConceptNameVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.name, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.locale, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptNameId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptNameType, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.localePreferred, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
 	}
 
 	public void setConceptId(Field conceptId) {

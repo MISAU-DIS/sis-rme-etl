@@ -375,6 +375,7 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import java.sql.SQLException; \n";
 		classDefinition += "import java.sql.ResultSet; \n \n";
 		classDefinition += "import java.sql.Connection; \n \n";
+		classDefinition += "import org.openmrs.module.epts.etl.utilities.db.conn.DBException; \n \n";
 		classDefinition += "import com.fasterxml.jackson.annotation.JsonIgnore; \n \n";
 
 		classDefinition += "public class " + className + " extends AbstractGeneratedDatabaseObject{ \n";
@@ -475,11 +476,16 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	 \n";
 		commonMethods += "	} \n \n";
 
-		commonMethods += "	@JsonIgnore\n";
 		commonMethods += "	@Override\n";
-		commonMethods += "	public void loadWithDefaultValues(Connection srcConn, Connection dstConn){ \n ";
-		commonMethods += "	 	utilities.throwForbiddenMethodException();\n";
-		commonMethods += "	} \n \n";
+		commonMethods += "	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {\n";
+		commonMethods += "		super.loadWithDefaultValues(srcConn, dstConn);\n";
+		for (Field field : pojoble.getFields()) {
+			if (!isIgnorableField(field.getName())) {
+				commonMethods += "		loadGeneratedFieldWithDefaultValue(this." + field.getNameAsClassAtt()
+						+ ", srcConn, dstConn);\n";
+			}
+		}
+		commonMethods += "	}\n\n";
 
 		return commonMethods;
 

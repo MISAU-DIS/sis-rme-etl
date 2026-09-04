@@ -17,6 +17,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -69,10 +71,12 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueCoded, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.obsDatetime, srcConn, dstConn);
 	}
 
 	public void setConceptId(Field conceptId) {

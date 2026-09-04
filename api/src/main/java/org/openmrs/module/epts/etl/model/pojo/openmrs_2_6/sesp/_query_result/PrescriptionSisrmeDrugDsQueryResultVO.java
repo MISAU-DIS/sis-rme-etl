@@ -15,6 +15,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -62,10 +64,11 @@ public class PrescriptionSisrmeDrugDsQueryResultVO extends AbstractGeneratedData
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.drugId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
 	}
 
 	public void setDrugId(Field drugId) {

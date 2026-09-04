@@ -3,10 +3,15 @@ package org.openmrs.module.epts.etl.model.pojo.generic;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.sql.Connection;
+
+import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -66,10 +71,14 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 	@Override
 	public Object getFieldValue(String fieldName) {
-		if (utilities.equalsFieldsName(fieldName, "date_created")) return this.dateCreated;
-		if (utilities.equalsFieldsName(fieldName, "date_changed")) return this.dateChanged;
-		if (utilities.equalsFieldsName(fieldName, "date_voided")) return this.dateVoided;
-		if (utilities.equalsFieldsName(fieldName, "uuid")) return this.uuid;
+		if (utilities.equalsFieldsName(fieldName, "date_created"))
+			return this.dateCreated;
+		if (utilities.equalsFieldsName(fieldName, "date_changed"))
+			return this.dateChanged;
+		if (utilities.equalsFieldsName(fieldName, "date_voided"))
+			return this.dateVoided;
+		if (utilities.equalsFieldsName(fieldName, "uuid"))
+			return this.uuid;
 		if (getRelatedConfiguration() instanceof TableConfiguration
 				&& ((TableConfiguration) getRelatedConfiguration()).useSharedPKKey()) {
 			if (this.getSharedPkObj() == null) {
@@ -112,6 +121,106 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		if (utilities.equalsFieldsName(name, "uuid"))
 			return uuidField;
 		return null;
+	}
+
+	@Override
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		EtlDatabaseObjectConfiguration configuration = requireRelatedConfiguration();
+
+		loadInheritedFieldWithDefaultValue(configuration, dateCreatedField, srcConn, dstConn);
+		loadInheritedFieldWithDefaultValue(configuration, dateChangedField, srcConn, dstConn);
+		loadInheritedFieldWithDefaultValue(configuration, dateVoidedField, srcConn, dstConn);
+		loadInheritedFieldWithDefaultValue(configuration, uuidField, srcConn, dstConn);
+	}
+
+	protected final void loadGeneratedFieldWithDefaultValue(Field field, Connection srcConn, Connection dstConn)
+			throws DBException {
+
+		EtlDatabaseObjectConfiguration configuration = requireRelatedConfiguration();
+
+		if (configuration instanceof TableConfiguration) {
+			TableConfiguration tableConfiguration = (TableConfiguration) configuration;
+			ParentTable parent = tableConfiguration.getFieldIsRelatedParent(field);
+
+			if (parent != null) {
+				loadDefaultParentValue(tableConfiguration, parent, srcConn, dstConn);
+				return;
+			}
+		}
+
+		if (applyKnownDefaultValue(field) || field.allowNull())
+			return;
+
+		field.loadWithDefaultValue();
+	}
+
+	private EtlDatabaseObjectConfiguration requireRelatedConfiguration() {
+		if (this.relatedConfiguration == null) {
+			throw new ForbiddenOperationException("The relatedConfiguration is not set");
+		}
+		return this.relatedConfiguration;
+	}
+
+	private void loadInheritedFieldWithDefaultValue(EtlDatabaseObjectConfiguration configuration, Field field,
+			Connection srcConn, Connection dstConn) throws DBException {
+		if (configuration.getField(field.getName()) != null) {
+			loadGeneratedFieldWithDefaultValue(field, srcConn, dstConn);
+		}
+	}
+
+	private boolean applyKnownDefaultValue(Field field) {
+		if (field == null || field.getName() == null || getRelatedConfiguration().getRelatedEtlConf() == null
+				|| !getRelatedConfiguration().getRelatedEtlConf().hasDefaultFieldsValues())
+			return false;
+
+		String fieldName = field.getName().toLowerCase();
+
+		if (!getRelatedConfiguration().getRelatedEtlConf().getDefaultFieldValues().containsKey(fieldName))
+			return false;
+
+		Object defaultValue = getRelatedConfiguration().getRelatedEtlConf().getDefaultFieldValues().get(fieldName);
+
+		field.setValue(utilities.parseValue(defaultValue, field.getTypeClass()));
+
+		return true;
+	}
+
+	private void loadDefaultParentValue(TableConfiguration configuration, ParentTable parent, Connection srcConn,
+			Connection dstConn) throws DBException {
+		EtlDatabaseObject defaultParent;
+		try {
+			if (!parent.hasAlias())
+				parent.tryToGenerateTableAlias(configuration.getRelatedEtlConf());
+			if (!parent.isFullLoaded())
+				parent.fullLoad(dstConn);
+			defaultParent = parent.getDefaultObject(dstConn);
+		} catch (Exception exception) {
+			throw new EtlExceptionImpl(exception);
+		}
+
+		if (defaultParent == null) {
+			defaultParent = generateDefaultParent(configuration, parent, srcConn, dstConn);
+		}
+		this.changeParentValue(parent, defaultParent);
+	}
+
+	private EtlDatabaseObject generateDefaultParent(TableConfiguration configuration, ParentTable parent,
+			Connection srcConn, Connection dstConn) throws DBException {
+		try {
+			EtlDatabaseObject defaultParent = configuration.getEtlRecordClass().getDeclaredConstructor().newInstance();
+			defaultParent.setRelatedConfiguration(parent);
+
+			if (defaultParent.checkIfAllRelationshipCanBeresolved(configuration, dstConn)) {
+				return parent.generateAndSaveDefaultObject(srcConn, dstConn);
+			}
+
+			throw new ForbiddenOperationException("There are recursive relationships between "
+					+ configuration.getTableName() + " and " + parent.getTableName()
+					+ " which cannot be automatically resolved. Please manually create default dstRecord "
+					+ "for one of these tables using id '-1'.");
+		} catch (ReflectiveOperationException exception) {
+			throw new EtlExceptionImpl(exception);
+		}
 	}
 
 	@Override

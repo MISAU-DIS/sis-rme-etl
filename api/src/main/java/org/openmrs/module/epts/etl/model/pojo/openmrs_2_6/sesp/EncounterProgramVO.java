@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -101,10 +103,16 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.programId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
 	}
 
 	public void setEncounterId(Field encounterId) {

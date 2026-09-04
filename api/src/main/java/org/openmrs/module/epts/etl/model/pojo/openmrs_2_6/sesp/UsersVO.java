@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class UsersVO extends AbstractGeneratedDatabaseObject {
@@ -137,10 +139,25 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.userId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.systemId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.username, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.password, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.salt, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.secretQuestion, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.secretAnswer, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.personId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retiredBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateRetired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retireReason, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.activationKey, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.email, srcConn, dstConn);
 	}
 
 	public void setUserId(Field userId) {

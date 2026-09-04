@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -124,10 +126,22 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.diagnosisId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.diagnosisCoded, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.diagnosisNonCoded, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conditionId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.certainty, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.rank, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
 	}
 
 	public void setDiagnosisId(Field diagnosisId) {

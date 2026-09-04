@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ObsVO extends AbstractGeneratedDatabaseObject {
@@ -192,10 +194,36 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.obsId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.personId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.orderId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.obsDatetime, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.locationId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.obsGroupId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.accessionNumber, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueGroupId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueCoded, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueCodedNameId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueDrug, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueDatetime, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueNumeric, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueModifier, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueText, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.comments, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueComplex, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.previousVersion, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.formNamespaceAndPath, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.status, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.interpretation, srcConn, dstConn);
 	}
 
 	public void setObsId(Field obsId) {

@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class DrugVO extends AbstractGeneratedDatabaseObject {
@@ -137,10 +139,25 @@ public class DrugVO extends AbstractGeneratedDatabaseObject {
 
 	}
 
-	@JsonIgnore
 	@Override
-	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) {
-		utilities.throwForbiddenMethodException();
+	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
+		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.drugId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.name, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.combination, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dosageForm, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.maximumDailyDose, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.minimumDailyDose, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.route, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retiredBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateRetired, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.retireReason, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.strength, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.doseLimitUnits, srcConn, dstConn);
 	}
 
 	public void setDrugId(Field drugId) {
