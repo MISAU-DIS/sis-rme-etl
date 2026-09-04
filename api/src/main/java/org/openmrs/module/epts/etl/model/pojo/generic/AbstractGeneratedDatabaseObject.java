@@ -244,13 +244,16 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 	private void loadDefaultParentValue(TableConfiguration configuration, ParentTable parent, Connection srcConn,
 			Connection dstConn) throws DBException {
+		
 		EtlDatabaseObject defaultParent;
 
 		try {
 			if (!parent.hasAlias())
 				parent.tryToGenerateTableAlias(configuration.getRelatedEtlConf());
+
 			if (!parent.isFullLoaded())
 				parent.fullLoad(dstConn);
+
 			defaultParent = parent.getDefaultObject(dstConn);
 		} catch (Exception exception) {
 			throw new EtlExceptionImpl(exception);
