@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -36,11 +35,9 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 	private Field viewPrivilege = Field.fastCreateWithType("view_privilege", "VARCHAR");
 	private Field editPrivilege = Field.fastCreateWithType("edit_privilege", "VARCHAR");
 	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
-	private Field handlerClass = Field.fastCreateWithType("handler_class", "VARCHAR");
 
 	public EncounterTypeVO() {
 		this.metadata = false;
-
 		this.fields.add(this.encounterTypeId);
 		this.fields.add(this.name);
 		this.fields.add(this.description);
@@ -52,7 +49,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 		this.fields.add(this.viewPrivilege);
 		this.fields.add(this.editPrivilege);
 		this.fields.add(this.changedBy);
-		this.fields.add(this.handlerClass);
 	}
 
 	@Override
@@ -97,9 +93,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
 			return this.changedBy.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "handler_class")) {
-			return this.handlerClass.getValue();
-		}
 		return super.getFieldValue(fieldName);
 	}
 
@@ -135,7 +128,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.viewPrivilege, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.editPrivilege, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.handlerClass, srcConn, dstConn);
 	}
 
 	public void setEncounterTypeId(Field encounterTypeId) {
@@ -270,18 +262,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 		return this.changedBy;
 	}
 
-	public void setHandlerClass(Field handlerClass) {
-		this.handlerClass = handlerClass;
-	}
-
-	public void setHandlerClassValue(String value) {
-		this.handlerClass.setValue(value);
-	}
-
-	public Field getHandlerClass() {
-		return this.handlerClass;
-	}
-
 	@Override
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
@@ -334,7 +314,8 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String viewPrivilegeAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"view_privilege", "_");
@@ -355,24 +336,19 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 				"date_changed", "_");
 
 		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "DATETIME", rs);
-
-		String handlerClassAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"handler_class", "_");
-
-		this.handlerClass.setValue(BaseVO.retrieveFieldValue(handlerClassAttName, "VARCHAR", rs));
 		this.loadedFromDb = true;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO encounter_type(`name`, `description`, `creator`, `date_created`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `view_privilege`, `edit_privilege`, `changed_by`, `date_changed`, `handler_class`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO encounter_type(`name`, `description`, `creator`, `date_created`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `view_privilege`, `edit_privilege`, `changed_by`, `date_changed`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO encounter_type(`encounter_type_id`, `name`, `description`, `creator`, `date_created`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `view_privilege`, `edit_privilege`, `changed_by`, `date_changed`, `handler_class`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO encounter_type(`encounter_type_id`, `name`, `description`, `creator`, `date_created`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `view_privilege`, `edit_privilege`, `changed_by`, `date_changed`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
@@ -381,7 +357,7 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 		Object[] params = { this.name.getValue(), this.description.getValue(), this.creator.getValue(),
 				this.dateCreated, this.retired.getValue(), this.retiredBy.getValue(), this.dateRetired.getValue(),
 				this.retireReason.getValue(), this.uuid, this.viewPrivilege.getValue(), this.editPrivilege.getValue(),
-				this.changedBy.getValue(), this.dateChanged, this.handlerClass.getValue() };
+				this.changedBy.getValue(), this.dateChanged };
 		return params;
 	}
 
@@ -391,21 +367,20 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 		Object[] params = { this.encounterTypeId.getValue(), this.name.getValue(), this.description.getValue(),
 				this.creator.getValue(), this.dateCreated, this.retired.getValue(), this.retiredBy.getValue(),
 				this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid, this.viewPrivilege.getValue(),
-				this.editPrivilege.getValue(), this.changedBy.getValue(), this.dateChanged,
-				this.handlerClass.getValue() };
+				this.editPrivilege.getValue(), this.changedBy.getValue(), this.dateChanged };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
@@ -415,14 +390,14 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 				this.creator.getValue(), this.dateCreated, this.retired.getValue(), this.retiredBy.getValue(),
 				this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid, this.viewPrivilege.getValue(),
 				this.editPrivilege.getValue(), this.changedBy.getValue(), this.dateChanged,
-				this.handlerClass.getValue(), this.encounterTypeId.getValue() };
+				this.encounterTypeId.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE encounter_type SET `encounter_type_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `view_privilege` = ?, `edit_privilege` = ?, `changed_by` = ?, `date_changed` = ?, `handler_class` = ? WHERE encounter_type_id = ? ";
+		return "UPDATE encounter_type SET `encounter_type_id` = ?, `name` = ?, `description` = ?, `creator` = ?, `date_created` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `view_privilege` = ?, `edit_privilege` = ?, `changed_by` = ?, `date_changed` = ? WHERE encounter_type_id = ? ";
 	}
 
 	@JsonIgnore
@@ -461,10 +436,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 				+ "," + (this.changedBy.getValue()) + ","
 				+ (this.dateChanged != null
 						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateChanged) + "\""
-						: null)
-				+ ","
-				+ (this.handlerClass.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.handlerClass.getValue().toString()) + "\""
 						: null);
 	}
 
@@ -504,10 +475,6 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 				+ "," + (this.changedBy.getValue()) + ","
 				+ (this.dateChanged != null
 						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateChanged) + "\""
-						: null)
-				+ ","
-				+ (this.handlerClass.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.handlerClass.getValue().toString()) + "\""
 						: null);
 	}
 

@@ -82,7 +82,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	@Override
 	public void transformAndLoad(List<DatabaseModelGenerationRecord> records, Connection srcConn, Connection dstConn)
 			throws DBException {
-		
+
 		this.databaseModelGenerated = true;
 
 		if (!this.databaseModelGenerated && getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement()) {
@@ -100,10 +100,16 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 		if (item == null || !visitedItemConfigurations.add(item))
 			return;
 
+		item.init(getRelatedEtlConf(), item.isTesting(), srcConn, dstConn);
+
 		item.fullLoad(operationConfig, srcConn, dstConn);
+
 		DBConnectionInfo sourceConnectionInfo = item.getSrcConnInfo();
+
 		if (!item.getSrcConf().doNotUseAsDatasource()) {
+
 			generate(sourceConnectionInfo, item.getSrcConf());
+
 			for (EtlAdditionalDataSource dataSource : item.getSrcConf().getAvaliableExtraDataSource()) {
 				generate(sourceConnectionInfo, dataSource);
 			}
@@ -111,6 +117,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 		if (item.hasDstConf() && getRelatedEtlConfiguration().hasDstConnInfo()) {
 			DBConnectionInfo destinationConnectionInfo = getRelatedEtlConfiguration().getDstConnInfo();
+
 			for (DstConf destination : item.getDstConf()) {
 				if (destination.isDisabled())
 					continue;
@@ -118,6 +125,8 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 				destination.setRelatedConnInfo(destinationConnectionInfo);
 
 				stepIntoBreakpoint(getRelatedEtlConf(), destination.getTableAlias().equals("lab_result_orders_dst_ds"));
+
+				destination.init(item, srcConn, dstConn);
 
 				generate(destinationConnectionInfo, destination);
 
@@ -204,7 +213,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 		if (!(tableConfiguration instanceof AbstractTableConfiguration))
 			return;
 
-		AbstractTableConfiguration  table = (AbstractTableConfiguration) tableConfiguration;
+		AbstractTableConfiguration table = (AbstractTableConfiguration) tableConfiguration;
 		if (table.getPhysicalTableConfiguration() == null)
 			return;
 

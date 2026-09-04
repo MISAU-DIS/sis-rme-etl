@@ -5,6 +5,7 @@ import java.util.List;
 
 import java.sql.Connection;
 
+import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -28,6 +29,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	 * BaseVO.
 	 */
 	protected final List<Field> fields = new ArrayList<>();
+	private final List<Field> dynamicallyAttachedPhysicalFields = new ArrayList<>();
 
 	private final Field dateCreatedField;
 	private final Field dateChangedField;
@@ -56,6 +58,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration configuration) {
 		this.relatedConfiguration = configuration;
 
+		attachMissingPhysicalFields(configuration);
 		enrichGeneratedFields(configuration);
 		enrichInheritedFields(configuration);
 
@@ -79,6 +82,10 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 			return this.dateVoided;
 		if (utilities.equalsFieldsName(fieldName, "uuid"))
 			return this.uuid;
+		for (Field field : dynamicallyAttachedPhysicalFields) {
+			if (utilities.equalsFieldsName(fieldName, field.getName()))
+				return field.getValue();
+		}
 		if (getRelatedConfiguration() instanceof TableConfiguration
 				&& ((TableConfiguration) getRelatedConfiguration()).useSharedPKKey()) {
 			if (this.getSharedPkObj() == null) {
@@ -88,6 +95,49 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		}
 
 		return super.getFieldValue(fieldName);
+	}
+
+	private void attachMissingPhysicalFields(EtlDatabaseObjectConfiguration configuration) {
+		if (!(configuration instanceof AbstractTableConfiguration))
+			return;
+
+		AbstractTableConfiguration table = (AbstractTableConfiguration) configuration;
+		if (table.getPhysicalTableConfiguration() == null || !table.getPhysicalTableConfiguration().hasFields())
+			return;
+
+		for (Field physicalField : table.getPhysicalTableConfiguration().copyFields()) {
+			if (findField(fields, physicalField.getName()) != null)
+				continue;
+			Field attached = new Field();
+			attached.copyFrom(physicalField);
+			fields.add(attached);
+			dynamicallyAttachedPhysicalFields.add(attached);
+		}
+	}
+
+	private Field findField(List<Field> source, String fieldName) {
+		for (Field field : source) {
+			if (utilities.equalsFieldsName(field.getName(), fieldName))
+				return field;
+		}
+		return null;
+	}
+
+	@Override
+	public void setFieldValue(String fieldName, Object value) {
+		try {
+			super.setFieldValue(fieldName, value);
+			return;
+		} catch (ForbiddenOperationException ignored) {
+			// Compatibility path for POJOs compiled before this physical field was known.
+		}
+
+		Field field = findField(dynamicallyAttachedPhysicalFields, fieldName);
+		if (field == null) {
+			throw new ForbiddenOperationException(
+					"The field " + fieldName + " was not found on entity " + this.getClass().getName());
+		}
+		field.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 	}
 
 	private void refreshFields() {
@@ -127,10 +177,16 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		EtlDatabaseObjectConfiguration configuration = requireRelatedConfiguration();
 
-		loadInheritedFieldWithDefaultValue(configuration, dateCreatedField, srcConn, dstConn);
-		loadInheritedFieldWithDefaultValue(configuration, dateChangedField, srcConn, dstConn);
-		loadInheritedFieldWithDefaultValue(configuration, dateVoidedField, srcConn, dstConn);
-		loadInheritedFieldWithDefaultValue(configuration, uuidField, srcConn, dstConn);
+		this.loadInheritedFieldWithDefaultValue(configuration, dateCreatedField, srcConn, dstConn);
+		this.loadInheritedFieldWithDefaultValue(configuration, dateChangedField, srcConn, dstConn);
+		this.loadInheritedFieldWithDefaultValue(configuration, dateVoidedField, srcConn, dstConn);
+		this.loadInheritedFieldWithDefaultValue(configuration, uuidField, srcConn, dstConn);
+
+		for (Field field : dynamicallyAttachedPhysicalFields) {
+			if (configuration.containsField(field.getName())) {
+				loadGeneratedFieldWithDefaultValue(field, srcConn, dstConn);
+			}
+		}
 	}
 
 	protected final void loadGeneratedFieldWithDefaultValue(Field field, Connection srcConn, Connection dstConn)
@@ -163,6 +219,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 	private void loadInheritedFieldWithDefaultValue(EtlDatabaseObjectConfiguration configuration, Field field,
 			Connection srcConn, Connection dstConn) throws DBException {
+
 		if (configuration.getField(field.getName()) != null) {
 			loadGeneratedFieldWithDefaultValue(field, srcConn, dstConn);
 		}
@@ -188,6 +245,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	private void loadDefaultParentValue(TableConfiguration configuration, ParentTable parent, Connection srcConn,
 			Connection dstConn) throws DBException {
 		EtlDatabaseObject defaultParent;
+
 		try {
 			if (!parent.hasAlias())
 				parent.tryToGenerateTableAlias(configuration.getRelatedEtlConf());
@@ -201,6 +259,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		if (defaultParent == null) {
 			defaultParent = generateDefaultParent(configuration, parent, srcConn, dstConn);
 		}
+
 		this.changeParentValue(parent, defaultParent);
 	}
 

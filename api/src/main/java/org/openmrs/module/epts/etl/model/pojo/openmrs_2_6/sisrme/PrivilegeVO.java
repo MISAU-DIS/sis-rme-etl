@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
@@ -19,7 +19,6 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
@@ -28,7 +27,6 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 
 	public PrivilegeVO() {
 		this.metadata = false;
-
 		this.fields.add(this.privilege);
 		this.fields.add(this.description);
 	}
@@ -117,7 +115,8 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 

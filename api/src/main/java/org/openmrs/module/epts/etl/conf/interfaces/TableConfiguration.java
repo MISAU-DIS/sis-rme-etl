@@ -1202,7 +1202,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	@JsonIgnore
 	default Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
 		try {
-			return this.generateSyncRecordClass(connInfo) != null;
+			return this.generateEtlRecordClass(connInfo) != null;
 		} catch (ForbiddenOperationException e) {
 
 			return false;
@@ -2655,7 +2655,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		try {
 
 			if (this.getEtlRecordClass() == null) {
-				this.setEtlRecordClass(generateSyncRecordClass(getRelatedConnInfo()));
+				this.setEtlRecordClass(generateEtlRecordClass(getRelatedConnInfo()));
 			}
 
 			@SuppressWarnings("deprecation")

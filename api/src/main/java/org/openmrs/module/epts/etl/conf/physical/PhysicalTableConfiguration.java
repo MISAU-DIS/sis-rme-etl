@@ -172,8 +172,12 @@ public final class PhysicalTableConfiguration {
 			List<UniqueKeyInfo> loadedUniqueKeys, List<PhysicalForeignKeyMetadata> loadedImportedForeignKeys,
 			List<PhysicalExportedForeignKeyMetadata> loadedExportedForeignKeys) {
 		List<PhysicalColumnMetadata> synchronizedFields = new ArrayList<>();
+		if (this.fields != null) synchronizedFields.addAll(this.fields);
 		if (loadedFields != null) {
-			for (Field field : loadedFields) synchronizedFields.add(PhysicalColumnMetadata.fromField(field));
+			for (Field field : loadedFields) {
+				synchronizedFields.removeIf(existing -> existing.getName().equalsIgnoreCase(field.getName()));
+				synchronizedFields.add(PhysicalColumnMetadata.fromField(field));
+			}
 		}
 		this.fields = Collections.unmodifiableList(synchronizedFields);
 		this.primaryKey = loadedPrimaryKey == null ? null : PhysicalKeyMetadata.fromKey(loadedPrimaryKey);

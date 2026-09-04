@@ -10,6 +10,9 @@ import java.util.List;
 import org.junit.Test;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
+import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.ConceptClassVO;
 
@@ -81,6 +84,27 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 
 		assertEquals(Integer.valueOf(0), object.getConceptClassId().getValue());
 		assertEquals(Field.DEFAULT_STRING_VALUE, object.getName().getValue());
+	}
+
+	@Test
+	public void shouldExposeAContextuallyIgnoredPhysicalFieldOnAnExistingPojo() throws Exception {
+		GenericTableConfiguration configuration = new GenericTableConfiguration();
+		configuration.setFields(Arrays.asList(Field.fastCreateWithType("concept_class_id", "INT")));
+		PhysicalTableConfiguration physical = new PhysicalTableConfiguration(
+				new PhysicalTableIdentity("jdbc:test", "user", "catalog", "schema", "concept_class"));
+		physical.initializeFields(Arrays.asList(Field.fastCreateWithType("concept_class_id", "INT"),
+				Field.fastCreateWithType("contextual_code", "VARCHAR")));
+		java.lang.reflect.Field physicalConfiguration = AbstractTableConfiguration.class
+				.getDeclaredField("physicalTableConfiguration");
+		physicalConfiguration.setAccessible(true);
+		physicalConfiguration.set(configuration, physical);
+
+		ConceptClassVO object = new ConceptClassVO();
+		object.setRelatedConfiguration(configuration);
+		object.setFieldValue("contextual_code", "available");
+
+		assertEquals("available", object.getFieldValue("contextual_code"));
+		assertSame(find(object.getFields(), "contextual_code"), find(object.getFields(), "contextual_code"));
 	}
 
 	private Field find(List<Field> fields, String name) {

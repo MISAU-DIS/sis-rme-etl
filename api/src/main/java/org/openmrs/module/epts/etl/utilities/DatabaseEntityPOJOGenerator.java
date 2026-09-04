@@ -17,6 +17,7 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
+import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.RefMapping;
@@ -91,6 +92,22 @@ public class DatabaseEntityPOJOGenerator {
 		String insertValuesWithObjectIdDefinition = "";
 
 		AttDefinedElements attElements;
+		List<Field> pojoFields = resolvePojoFields(pojoble);
+
+		for (Field pojoField : pojoFields) {
+			if (isIgnorableField(pojoField.getName()) || containsField(pojoble.getFields(), pojoField.getName())) continue;
+
+			AttDefinedElements additionalElements = AttDefinedElements.define(pojoField.getName(), pojoField.getDataType(),
+					false, pojoble, true);
+			attsDefinition = utilities.concatStringsWithSeparator(attsDefinition,
+					additionalElements.getAttDefinition(), "\n");
+			gettersAndSetterDefinition = utilities.concatStrings(gettersAndSetterDefinition,
+					additionalElements.getSetterDefinition()) + "\n \n";
+			gettersAndSetterDefinition = utilities.concatStrings(gettersAndSetterDefinition,
+					additionalElements.getGetterDefinition()) + "\n \n";
+			resultSetLoadDefinition += "\t\tif (getRelatedConfiguration().containsField(\"" + pojoField.getName()
+					+ "\")) {\n\t" + additionalElements.getResultSetLoadDefinition() + "\t\t}\n\n";
+		}
 
 		int qtyAttrs = pojoble.getFields().size();
 
@@ -380,7 +397,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		classDefinition += "public class " + className + " extends AbstractGeneratedDatabaseObject{ \n";
 		classDefinition += attsDefinition + "\n \n";
-		classDefinition += generateCommonMethods(pojoble, connInfo) + "\n";
+		classDefinition += generateCommonMethods(pojoble, connInfo, pojoFields) + "\n";
 		classDefinition += gettersAndSetterDefinition + "\n \n";
 		classDefinition += methodFromSuperClass + "\n";
 
@@ -403,14 +420,15 @@ public class DatabaseEntityPOJOGenerator {
 		return existingCLass;
 	}
 
-	private static String generateCommonMethods(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo) {
+	private static String generateCommonMethods(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo,
+			List<Field> pojoFields) {
 		String className = pojoble.generateClassName();
 
 		String commonMethods = "";
 
 		commonMethods += "	public " + className + "() { \n";
 		commonMethods += "		this.metadata = " + pojoble.isMetadata() + ";\n";
-		for (Field field : pojoble.getFields()) {
+		for (Field field : pojoFields) {
 			if (!isIgnorableField(field.getName())) {
 				commonMethods += "		this.fields.add(this." + field.getNameAsClassAtt() + ");\n";
 			}
@@ -438,7 +456,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonMethods += "	@Override\n";
 		commonMethods += "	public Object getFieldValue(String fieldName) {\n";
-		for (Field field : pojoble.getFields()) {
+		for (Field field : pojoFields) {
 			if (!isIgnorableField(field.getName())) {
 				commonMethods += "		if (utilities.equalsFieldsName(fieldName, \"" + field.getName() + "\")) {\n";
 				commonMethods += "			return this." + field.getNameAsClassAtt() + ".getValue();\n";
@@ -479,7 +497,7 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {\n";
 		commonMethods += "		super.loadWithDefaultValues(srcConn, dstConn);\n";
-		for (Field field : pojoble.getFields()) {
+		for (Field field : pojoFields) {
 			if (!isIgnorableField(field.getName())) {
 				commonMethods += "		loadGeneratedFieldWithDefaultValue(this." + field.getNameAsClassAtt()
 						+ ", srcConn, dstConn);\n";
@@ -489,6 +507,25 @@ public class DatabaseEntityPOJOGenerator {
 
 		return commonMethods;
 
+	}
+
+	private static List<Field> resolvePojoFields(EtlDatabaseObjectConfiguration configuration) {
+		if (configuration instanceof AbstractTableConfiguration) {
+			AbstractTableConfiguration table = (AbstractTableConfiguration) configuration;
+			if (table.getPhysicalTableConfiguration() != null
+					&& table.getPhysicalTableConfiguration().hasFields()) {
+				return table.getPhysicalTableConfiguration().copyFields();
+			}
+		}
+		return configuration.getFields();
+	}
+
+	private static boolean containsField(List<? extends Field> fields, String fieldName) {
+		if (fields == null) return false;
+		for (Field field : fields) {
+			if (utilities.equalsFieldsName(field.getName(), fieldName)) return true;
+		}
+		return false;
 	}
 
 	private static String generateInheritedKeyAssignment(Key key) {

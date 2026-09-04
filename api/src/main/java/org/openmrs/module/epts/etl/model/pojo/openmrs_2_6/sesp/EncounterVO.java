@@ -122,6 +122,7 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		
 		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.encounterType, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);

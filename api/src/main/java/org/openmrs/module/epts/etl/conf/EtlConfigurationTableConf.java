@@ -55,7 +55,7 @@ public class EtlConfigurationTableConf extends AbstractTableConfiguration {
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
 			throws ForbiddenOperationException {
 		return GenericDatabaseObject.class;
 	}

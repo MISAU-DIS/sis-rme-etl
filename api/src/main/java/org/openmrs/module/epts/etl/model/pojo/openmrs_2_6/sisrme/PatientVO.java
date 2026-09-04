@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -19,7 +19,6 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PatientVO extends AbstractGeneratedDatabaseObject {
@@ -30,12 +29,9 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	private Field voidedBy = Field.fastCreateWithType("voided_by", "INT");
 	private Field voidReason = Field.fastCreateWithType("void_reason", "VARCHAR");
 	private Field allergyStatus = Field.fastCreateWithType("allergy_status", "VARCHAR");
-	private Field ddeSyncPending = Field.fastCreateWithType("dde_sync_pending", "TINYINT");
 
 	public PatientVO() {
 		this.metadata = false;
-		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO());
-
 		this.fields.add(this.patientId);
 		this.fields.add(this.creator);
 		this.fields.add(this.changedBy);
@@ -43,7 +39,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		this.fields.add(this.voidedBy);
 		this.fields.add(this.voidReason);
 		this.fields.add(this.allergyStatus);
-		this.fields.add(this.ddeSyncPending);
+		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO());
 	}
 
 	@Override
@@ -51,12 +47,6 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(k.getName(), "patient_id")) {
 			this.patientId.setValue(k.getValue());
 		}
-	}
-
-	@JsonIgnore
-	@Override
-	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO getSharedPkObj() {
-		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO) super.getSharedPkObj();
 	}
 
 	@Override
@@ -82,10 +72,13 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "allergy_status")) {
 			return this.allergyStatus.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "dde_sync_pending")) {
-			return this.ddeSyncPending.getValue();
-		}
 		return super.getFieldValue(fieldName);
+	}
+
+	@JsonIgnore
+	@Override
+	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO getSharedPkObj() {
+		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO) super.getSharedPkObj();
 	}
 
 	@JsonIgnore
@@ -109,7 +102,6 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
-		
 		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
@@ -117,7 +109,6 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.allergyStatus, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.ddeSyncPending, srcConn, dstConn);
 	}
 
 	public void setPatientId(Field patientId) {
@@ -204,27 +195,15 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		return this.allergyStatus;
 	}
 
-	public void setDdeSyncPending(Field ddeSyncPending) {
-		this.ddeSyncPending = ddeSyncPending;
-	}
-
-	public void setDdeSyncPendingValue(Byte value) {
-		this.ddeSyncPending.setValue(value);
-	}
-
-	public Field getDdeSyncPending() {
-		return this.ddeSyncPending;
-	}
-
 	@Override
 	public void load(ResultSet rs) throws SQLException {
+		super.load(rs);
+
 		if (!hasRelatedConfiguration())
 			throw new org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException(
 					"The relatedConfiguration is not set");
 		if (!getSharedPkObj().isLoadedFromDb())
 			getSharedPkObj().load(rs);
-		super.load(rs);
-
 		String patientIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"patient_id", "_");
 
@@ -275,11 +254,6 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 
 		this.allergyStatus.setValue(BaseVO.retrieveFieldValue(allergyStatusAttName, "VARCHAR", rs));
 
-		String ddeSyncPendingAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"dde_sync_pending", "_");
-
-		this.ddeSyncPending.setValue(BaseVO.retrieveFieldValue(ddeSyncPendingAttName, "TINYINT", rs));
-
 		org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = (org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();
 		if (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null
 				&& utilities.stringHasValue(getSharedPkObj().getUuid())) {
@@ -292,13 +266,13 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO patient(`creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`, `dde_sync_pending`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO patient(`creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO patient(`patient_id`, `creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`, `dde_sync_pending`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO patient(`patient_id`, `creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
@@ -306,7 +280,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	public Object[] getInsertParamsWithoutObjectId() {
 		Object[] params = { this.creator.getValue(), this.dateCreated, this.changedBy.getValue(), this.dateChanged,
 				this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(),
-				this.allergyStatus.getValue(), this.ddeSyncPending.getValue() };
+				this.allergyStatus.getValue() };
 		return params;
 	}
 
@@ -315,21 +289,20 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	public Object[] getInsertParamsWithObjectId() {
 		Object[] params = { this.patientId.getValue(), this.creator.getValue(), this.dateCreated,
 				this.changedBy.getValue(), this.dateChanged, this.voided.getValue(), this.voidedBy.getValue(),
-				this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue(),
-				this.ddeSyncPending.getValue() };
+				this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
@@ -337,15 +310,14 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	public Object[] getUpdateParams() {
 		Object[] params = { this.patientId.getValue(), this.creator.getValue(), this.dateCreated,
 				this.changedBy.getValue(), this.dateChanged, this.voided.getValue(), this.voidedBy.getValue(),
-				this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue(),
-				this.ddeSyncPending.getValue(), this.patientId.getValue() };
+				this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue(), this.patientId.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE patient SET `patient_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `allergy_status` = ?, `dde_sync_pending` = ? WHERE patient_id = ? ";
+		return "UPDATE patient SET `patient_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `allergy_status` = ? WHERE patient_id = ? ";
 	}
 
 	@JsonIgnore
@@ -371,8 +343,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 				+ ","
 				+ (this.allergyStatus.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.allergyStatus.getValue().toString()) + "\""
-						: null)
-				+ "," + (this.ddeSyncPending.getValue());
+						: null);
 	}
 
 	@JsonIgnore
@@ -398,8 +369,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 				+ ","
 				+ (this.allergyStatus.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.allergyStatus.getValue().toString()) + "\""
-						: null)
-				+ "," + (this.ddeSyncPending.getValue());
+						: null);
 	}
 
 	@JsonIgnore

@@ -275,12 +275,20 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		return fullLoadLogSuppressed;
 	}
 
+	@Override
+	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
+			Connection dstConn) throws DBException {
+		TableConfiguration.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+
+		this.attachPhysicalTableConfiguration(dstConn);
+	}
+
 	private void attachPhysicalTableConfiguration(Connection conn) throws DBException {
 		if (this.physicalTableConfiguration != null)
 			return;
 
 		try {
-			PhysicalTableMetadata metadata = resolvePhysicalTableMetadata(conn);
+			PhysicalTableMetadata metadata = this.resolvePhysicalTableMetadata(conn);
 			PhysicalTableKey key = metadata != null ? metadata.getKey()
 					: PhysicalTableKeyFactory.create(this,
 							this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), conn);
@@ -472,9 +480,12 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	public void loadParents(Connection conn) throws DBException {
 		if (!usesResolvedStaticSchemaMetadata()) {
 			TableConfiguration.super.loadParents(conn);
+
 			this.physicalTableConfiguration.initializeImportedForeignKeys(toPhysicalImportedForeignKeys());
+
 			return;
 		}
+
 		if (this.isParentsLoaded())
 			return;
 		List<ParentTable> resolved = new ArrayList<>();
@@ -706,7 +717,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		try {
-			this.setEtlRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+			this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
 		} catch (PojoNotFoundException e) {
 		}
 	}

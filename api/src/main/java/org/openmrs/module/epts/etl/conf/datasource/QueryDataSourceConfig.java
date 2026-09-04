@@ -286,7 +286,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			this.debug("QueryDataSourceConfig [" + this.getDesc() + "] full loaded!");
 
 			try {
-				this.setEtlRecordClass(this.generateSyncRecordClass(getRelatedConnInfo()));
+				this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
 			} catch (PojoNotFoundException e) {
 			}
 
@@ -358,7 +358,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	public Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
 		try {
-			return generateSyncRecordClass(connInfo) != null;
+			return generateEtlRecordClass(connInfo) != null;
 		} catch (ForbiddenOperationException e) {
 
 			return false_();
@@ -388,17 +388,19 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
 			throws ForbiddenOperationException {
 
 		try {
-			return EtlAdditionalDataSource.super.generateSyncRecordClass(connInfo);
+			return EtlAdditionalDataSource.super.generateEtlRecordClass(connInfo);
 		} catch (PojoNotFoundException e) {
 			if (this.name != null) {
 				throw e;
 			}
 
-			return GenericDatabaseObject.class;
+			this.setEtlRecordClass(GenericDatabaseObject.class);
+
+			return this.getEtlRecordClass();
 		}
 	}
 

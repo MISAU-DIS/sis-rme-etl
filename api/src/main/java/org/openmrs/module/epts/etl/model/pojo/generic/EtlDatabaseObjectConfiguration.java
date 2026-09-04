@@ -164,7 +164,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo connInfo)
+	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
 			throws PojoNotFoundException {
 
 		Class<? extends EtlDatabaseObject> syncRecordClass = null;

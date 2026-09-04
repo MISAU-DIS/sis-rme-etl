@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -61,7 +60,6 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 
 	public LocationVO() {
 		this.metadata = false;
-
 		this.fields.add(this.locationId);
 		this.fields.add(this.name);
 		this.fields.add(this.description);
@@ -782,7 +780,8 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"changed_by", "_");
@@ -1183,6 +1182,9 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public boolean hasParents() {
+		if (this.locationTypeConceptId.getValue() != null)
+			return true;
+
 		if (this.parentLocation.getValue() != null)
 			return true;
 
@@ -1200,6 +1202,8 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getParentValue(String parentAttName) {
+		if (parentAttName.equals("locationTypeConceptId"))
+			return this.locationTypeConceptId.getValue();
 		if (parentAttName.equals("parentLocation"))
 			return this.parentLocation.getValue();
 		if (parentAttName.equals("changedBy"))

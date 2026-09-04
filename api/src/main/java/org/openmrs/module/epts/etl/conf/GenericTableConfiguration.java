@@ -68,12 +68,12 @@ public class GenericTableConfiguration extends AbstractTableConfiguration {
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateSyncRecordClass(DBConnectionInfo application)
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo application)
 			throws PojoNotFoundException {
 
 		if (this.getEtlRecordClass() == null) {
 			try {
-				super.generateSyncRecordClass(application);
+				super.generateEtlRecordClass(application);
 			} catch (PojoNotFoundException e) {
 			}
 

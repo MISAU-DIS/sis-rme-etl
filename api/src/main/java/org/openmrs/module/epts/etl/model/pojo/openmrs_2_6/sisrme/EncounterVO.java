@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,7 +21,6 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class EncounterVO extends AbstractGeneratedDatabaseObject {
@@ -29,6 +28,7 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	private Field encounterType = Field.fastCreateWithType("encounter_type", "INT");
 	private Field patientId = Field.fastCreateWithType("patient_id", "INT");
 	private Field locationId = Field.fastCreateWithType("location_id", "INT");
+	private Field formId = Field.fastCreateWithType("form_id", "INT");
 	private Field encounterDatetime = Field.fastCreateWithType("encounter_datetime", "DATETIME");
 	private Field creator = Field.fastCreateWithType("creator", "INT");
 	private Field voided = Field.fastCreateWithType("voided", "BIT");
@@ -39,11 +39,11 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 
 	public EncounterVO() {
 		this.metadata = false;
-
 		this.fields.add(this.encounterId);
 		this.fields.add(this.encounterType);
 		this.fields.add(this.patientId);
 		this.fields.add(this.locationId);
+		this.fields.add(this.formId);
 		this.fields.add(this.encounterDatetime);
 		this.fields.add(this.creator);
 		this.fields.add(this.voided);
@@ -73,6 +73,9 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 		}
 		if (utilities.equalsFieldsName(fieldName, "location_id")) {
 			return this.locationId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "form_id")) {
+			return this.formId.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "encounter_datetime")) {
 			return this.encounterDatetime.getValue();
@@ -123,6 +126,7 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.encounterType, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.locationId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.formId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.encounterDatetime, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
@@ -178,6 +182,18 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 
 	public Field getLocationId() {
 		return this.locationId;
+	}
+
+	public void setFormId(Field formId) {
+		this.formId = formId;
+	}
+
+	public void setFormIdValue(Integer value) {
+		this.formId.setValue(value);
+	}
+
+	public Field getFormId() {
+		return this.formId;
 	}
 
 	public void setEncounterDatetime(Field encounterDatetime) {
@@ -288,6 +304,11 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 
 		this.locationId.setValue(BaseVO.retrieveFieldValue(locationIdAttName, "INT", rs));
 
+		String formIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"form_id", "_");
+
+		this.formId.setValue(BaseVO.retrieveFieldValue(formIdAttName, "INT", rs));
+
 		String encounterDatetimeAttName = utilities
 				.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "encounter_datetime", "_");
 
@@ -326,7 +347,8 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"changed_by", "_");
@@ -348,22 +370,22 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO encounter(`encounter_type`, `patient_id`, `location_id`, `encounter_datetime`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `changed_by`, `date_changed`, `visit_id`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO encounter(`encounter_type`, `patient_id`, `location_id`, `form_id`, `encounter_datetime`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `changed_by`, `date_changed`, `visit_id`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO encounter(`encounter_id`, `encounter_type`, `patient_id`, `location_id`, `encounter_datetime`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `changed_by`, `date_changed`, `visit_id`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO encounter(`encounter_id`, `encounter_type`, `patient_id`, `location_id`, `form_id`, `encounter_datetime`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `changed_by`, `date_changed`, `visit_id`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
 		Object[] params = { this.encounterType.getValue(), this.patientId.getValue(), this.locationId.getValue(),
-				this.encounterDatetime.getValue(), this.creator.getValue(), this.dateCreated, this.voided.getValue(),
-				this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(), this.uuid,
-				this.changedBy.getValue(), this.dateChanged, this.visitId.getValue() };
+				this.formId.getValue(), this.encounterDatetime.getValue(), this.creator.getValue(), this.dateCreated,
+				this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(),
+				this.uuid, this.changedBy.getValue(), this.dateChanged, this.visitId.getValue() };
 		return params;
 	}
 
@@ -371,9 +393,9 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
 		Object[] params = { this.encounterId.getValue(), this.encounterType.getValue(), this.patientId.getValue(),
-				this.locationId.getValue(), this.encounterDatetime.getValue(), this.creator.getValue(),
-				this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided,
-				this.voidReason.getValue(), this.uuid, this.changedBy.getValue(), this.dateChanged,
+				this.locationId.getValue(), this.formId.getValue(), this.encounterDatetime.getValue(),
+				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
+				this.dateVoided, this.voidReason.getValue(), this.uuid, this.changedBy.getValue(), this.dateChanged,
 				this.visitId.getValue() };
 		return params;
 	}
@@ -381,22 +403,22 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
 		Object[] params = { this.encounterId.getValue(), this.encounterType.getValue(), this.patientId.getValue(),
-				this.locationId.getValue(), this.encounterDatetime.getValue(), this.creator.getValue(),
-				this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided,
-				this.voidReason.getValue(), this.uuid, this.changedBy.getValue(), this.dateChanged,
+				this.locationId.getValue(), this.formId.getValue(), this.encounterDatetime.getValue(),
+				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
+				this.dateVoided, this.voidReason.getValue(), this.uuid, this.changedBy.getValue(), this.dateChanged,
 				this.visitId.getValue(), this.encounterId.getValue() };
 		return params;
 	}
@@ -404,14 +426,14 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE encounter SET `encounter_id` = ?, `encounter_type` = ?, `patient_id` = ?, `location_id` = ?, `encounter_datetime` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `changed_by` = ?, `date_changed` = ?, `visit_id` = ? WHERE encounter_id = ? ";
+		return "UPDATE encounter SET `encounter_id` = ?, `encounter_type` = ?, `patient_id` = ?, `location_id` = ?, `form_id` = ?, `encounter_datetime` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `changed_by` = ?, `date_changed` = ?, `visit_id` = ? WHERE encounter_id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
 		return "" + (this.encounterType.getValue()) + "," + (this.patientId.getValue()) + ","
-				+ (this.locationId.getValue()) + ","
+				+ (this.locationId.getValue()) + "," + (this.formId.getValue()) + ","
 				+ (this.encounterDatetime.getValue() != null ? "\"" + DateAndTimeUtilities
 						.formatToYYYYMMDD_HHMISS((java.util.Date) this.encounterDatetime.getValue()) + "\"" : null)
 				+ "," + (this.creator.getValue()) + ","
@@ -439,7 +461,8 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public String generateInsertValuesWithObjectId() {
 		return "" + (this.encounterId.getValue()) + "," + (this.encounterType.getValue()) + ","
-				+ (this.patientId.getValue()) + "," + (this.locationId.getValue()) + ","
+				+ (this.patientId.getValue()) + "," + (this.locationId.getValue()) + "," + (this.formId.getValue())
+				+ ","
 				+ (this.encounterDatetime.getValue() != null ? "\"" + DateAndTimeUtilities
 						.formatToYYYYMMDD_HHMISS((java.util.Date) this.encounterDatetime.getValue()) + "\"" : null)
 				+ "," + (this.creator.getValue()) + ","
@@ -480,6 +503,9 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 		if (this.encounterType.getValue() != null)
 			return true;
 
+		if (this.formId.getValue() != null)
+			return true;
+
 		if (this.locationId.getValue() != null)
 			return true;
 
@@ -505,6 +531,8 @@ public class EncounterVO extends AbstractGeneratedDatabaseObject {
 	public Object getParentValue(String parentAttName) {
 		if (parentAttName.equals("encounterType"))
 			return this.encounterType.getValue();
+		if (parentAttName.equals("formId"))
+			return this.formId.getValue();
 		if (parentAttName.equals("locationId"))
 			return this.locationId.getValue();
 		if (parentAttName.equals("patientId"))

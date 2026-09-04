@@ -471,8 +471,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	public boolean operationIsAlreadyFinished() {
 
-		if (getEtlConfiguration().hasEtlItemsConf()) {
-
+		if (this.getEtlConfiguration().hasEtlItemsConf()) {
 			for (EtlItemConfiguration config : getEtlItemConfiguration()) {
 				if (!operationTableIsAlreadyFinished(config)) {
 					return false;
@@ -480,6 +479,16 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			}
 		}
 
+		
+		if (hasChild()) {
+			for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
+				if (!child.operationIsAlreadyFinished()) {
+					return false;
+				}
+			}
+		}
+
+		
 		return !getEtlConfiguration().hasTestingItem();
 	}
 
@@ -604,6 +613,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			e.printStackTrace();
 			this.requestStopDueError(null, e);
 		}
+		
+		warn("RUN IS FINISHED FOR OPERATION {}", this);
 	}
 
 	@Override

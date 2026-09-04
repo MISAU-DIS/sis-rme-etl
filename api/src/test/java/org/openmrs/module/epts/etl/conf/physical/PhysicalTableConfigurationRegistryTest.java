@@ -216,6 +216,21 @@ public class PhysicalTableConfigurationRegistryTest {
 		assertTrue(metadata.getExportedForeignKeys().isEmpty());
 	}
 
+	@Test
+	public void shouldPreservePhysicalFieldsIgnoredByOneTableConfiguration() {
+		PhysicalTableConfiguration configuration = new PhysicalTableConfiguration(identity("openmrs", "patient"));
+		Field active = Field.fastCreateWithType("patient_id", "int");
+		Field contextuallyIgnored = Field.fastCreateWithType("audit_code", "varchar");
+		configuration.initializeFields(Arrays.asList(active, contextuallyIgnored));
+
+		configuration.synchronizeFromLoadedTable(Arrays.asList(active), null, Arrays.asList(), Arrays.asList(),
+				Arrays.asList());
+
+		assertEquals(2, configuration.copyFields().size());
+		assertTrue(configuration.copyFields().stream()
+				.anyMatch(field -> "audit_code".equals(field.getName())));
+	}
+
 	private PhysicalTableMetadata metadata(String table, String fieldType, String primaryKeyName) {
 		PhysicalTableKey key = identity("openmrs", table).toPersistentKey("source-openmrs", "mysql");
 		PhysicalColumnMetadata column = new PhysicalColumnMetadata("person_id", fieldType, 11, 0, false, true,
