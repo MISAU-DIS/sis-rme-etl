@@ -76,7 +76,8 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 	public void shouldLoadDefaultsDirectlyIntoGeneratedFields() throws Exception {
 		GenericTableConfiguration configuration = new GenericTableConfiguration();
 		configuration.setFields(Arrays.asList(Field.fastCreateWithType("concept_class_id", "INT"),
-				Field.fastCreateWithType("name", "VARCHAR")));
+				Field.fastCreateWithType("name", "VARCHAR"),
+				Field.fastCreateWithType("date_created", "DATETIME")));
 
 		ConceptClassVO object = new ConceptClassVO();
 		object.setRelatedConfiguration(configuration);
@@ -84,6 +85,19 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 
 		assertEquals(Integer.valueOf(0), object.getConceptClassId().getValue());
 		assertEquals(Field.DEFAULT_STRING_VALUE, object.getName().getValue());
+		assertEquals(Field.DEFAULT_DATE_VALUE, object.getDateCreated());
+		assertEquals(Field.DEFAULT_DATE_VALUE, find(object.getFields(), "date_created").getValue());
+	}
+
+	@Test
+	public void shouldSynchronizeCommonFieldAndInheritedAttributeWhenAssigned() {
+		ConceptClassVO object = new ConceptClassVO();
+		Date changed = new Date();
+
+		object.setFieldValue("date_changed", changed);
+
+		assertSame(changed, object.getDateChanged());
+		assertSame(changed, find(object.getFields(), "date_changed").getValue());
 	}
 
 	@Test

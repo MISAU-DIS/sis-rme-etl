@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.model.pojo.generic;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import java.sql.Connection;
@@ -125,6 +126,12 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		Field inheritedField = findInheritedField(fieldName);
+		if (inheritedField != null) {
+			setInheritedFieldValue(inheritedField, value instanceof Field ? ((Field) value).getValue() : value);
+			return;
+		}
+
 		try {
 			super.setFieldValue(fieldName, value);
 			return;
@@ -171,6 +178,20 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		if (utilities.equalsFieldsName(name, "uuid"))
 			return uuidField;
 		return null;
+	}
+
+	private void setInheritedFieldValue(Field field, Object value) {
+		field.setValue(value);
+
+		if (field == dateCreatedField) {
+			this.dateCreated = (Date) value;
+		} else if (field == dateChangedField) {
+			this.dateChanged = (Date) value;
+		} else if (field == dateVoidedField) {
+			this.dateVoided = (Date) value;
+		} else if (field == uuidField) {
+			this.uuid = value == null ? null : value.toString();
+		}
 	}
 
 	@Override
@@ -222,6 +243,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 		if (configuration.getField(field.getName()) != null) {
 			loadGeneratedFieldWithDefaultValue(field, srcConn, dstConn);
+			setInheritedFieldValue(field, field.getValue());
 		}
 	}
 
