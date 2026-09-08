@@ -84,6 +84,51 @@ public class PersonComplexAttributeDetailVO extends AbstractGeneratedDatabaseObj
 		return super.getFieldValue(fieldName);
 	}
 
+	@Override
+	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "person_complex_attribute_detail_id")) {
+			this.personComplexAttributeDetailId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "person_complex_attribute_id")) {
+			this.personComplexAttributeId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "attribute_key")) {
+			this.attributeKey.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "attribute_value")) {
+			this.attributeValue.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			this.creator.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			this.voided.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			this.voidedBy.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			this.voidReason.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		super.setFieldValue(fieldName, value);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

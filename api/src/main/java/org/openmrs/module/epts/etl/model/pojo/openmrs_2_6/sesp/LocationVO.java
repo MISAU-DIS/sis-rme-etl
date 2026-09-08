@@ -203,6 +203,171 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 		return super.getFieldValue(fieldName);
 	}
 
+	@Override
+	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "location_id")) {
+			this.locationId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "name")) {
+			this.name.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "description")) {
+			this.description.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address1")) {
+			this.address1.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address2")) {
+			this.address2.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "city_village")) {
+			this.cityVillage.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "state_province")) {
+			this.stateProvince.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "postal_code")) {
+			this.postalCode.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "country")) {
+			this.country.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "latitude")) {
+			this.latitude.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "longitude")) {
+			this.longitude.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			this.creator.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "county_district")) {
+			this.countyDistrict.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address3")) {
+			this.address3.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address6")) {
+			this.address6.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address5")) {
+			this.address5.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address4")) {
+			this.address4.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired")) {
+			this.retired.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "retired_by")) {
+			this.retiredBy.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_retired")) {
+			this.dateRetired.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "retire_reason")) {
+			this.retireReason.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "parent_location")) {
+			this.parentLocation.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			this.changedBy.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address7")) {
+			this.address7.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address8")) {
+			this.address8.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address9")) {
+			this.address9.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address10")) {
+			this.address10.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address11")) {
+			this.address11.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address12")) {
+			this.address12.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address13")) {
+			this.address13.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address14")) {
+			this.address14.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "address15")) {
+			this.address15.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		super.setFieldValue(fieldName, value);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

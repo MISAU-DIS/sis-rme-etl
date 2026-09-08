@@ -98,6 +98,66 @@ public class PharmacyBatchVO extends AbstractGeneratedDatabaseObject {
 		return super.getFieldValue(fieldName);
 	}
 
+	@Override
+	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "batch_id")) {
+			this.batchId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "drug_id")) {
+			this.drugId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "batch_number")) {
+			this.batchNumber.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "expiry_date")) {
+			this.expiryDate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "quantity")) {
+			this.quantity.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "balance")) {
+			this.balance.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "location_id")) {
+			this.locationId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "creator")) {
+			this.creator.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided")) {
+			this.voided.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
+			this.voidReason.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
+			this.voidedBy.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		super.setFieldValue(fieldName, value);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

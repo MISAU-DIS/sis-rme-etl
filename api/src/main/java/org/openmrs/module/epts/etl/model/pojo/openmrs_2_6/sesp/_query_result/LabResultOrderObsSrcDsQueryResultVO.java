@@ -53,6 +53,26 @@ public class LabResultOrderObsSrcDsQueryResultVO extends AbstractGeneratedDataba
 		return super.getFieldValue(fieldName);
 	}
 
+	@Override
+	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			this.conceptId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_coded")) {
+			this.valueCoded.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "obs_datetime")) {
+			this.obsDatetime.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		super.setFieldValue(fieldName, value);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

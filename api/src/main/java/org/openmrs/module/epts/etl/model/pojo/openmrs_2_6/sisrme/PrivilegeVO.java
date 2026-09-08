@@ -49,6 +49,21 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 		return super.getFieldValue(fieldName);
 	}
 
+	@Override
+	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "privilege")) {
+			this.privilege.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "description")) {
+			this.description.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		super.setFieldValue(fieldName, value);
+	}
+
 	@JsonIgnore
 	@Override
 	public String generateFullFilledUpdateSql() {

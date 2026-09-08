@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.Test;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
+import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
@@ -98,6 +99,23 @@ public class AbstractGeneratedDatabaseObjectFieldsTest {
 
 		assertSame(changed, object.getDateChanged());
 		assertSame(changed, find(object.getFields(), "date_changed").getValue());
+	}
+
+	@Test
+	public void shouldRegenerateObjectIdWhenGeneratedPrimaryKeyFieldChanges() {
+		GenericTableConfiguration configuration = new GenericTableConfiguration();
+		configuration.setFields(Arrays.asList(Field.fastCreateWithType("concept_class_id", "INT")));
+		PrimaryKey primaryKey = new PrimaryKey(configuration);
+		primaryKey.addKey(Key.fastCreateTyped("concept_class_id", "INT"));
+		configuration.setPrimaryKeyInfoLoaded(true);
+		configuration.setPrimaryKey(primaryKey);
+
+		ConceptClassVO object = new ConceptClassVO();
+		object.setRelatedConfiguration(configuration);
+		object.setFieldValue("concept_class_id", 31);
+
+		assertEquals(31, object.getObjectId().asSimpleValue());
+		assertEquals(31, object.getConceptClassId().getValue());
 	}
 
 	@Test

@@ -31,6 +31,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	 */
 	protected final List<Field> fields = new ArrayList<>();
 	private final List<Field> dynamicallyAttachedPhysicalFields = new ArrayList<>();
+	private transient boolean regeneratingObjectId;
 
 	private final Field dateCreatedField;
 	private final Field dateChangedField;
@@ -129,11 +130,13 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		Field inheritedField = findInheritedField(fieldName);
 		if (inheritedField != null) {
 			setInheritedFieldValue(inheritedField, value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
 
 		try {
 			super.setFieldValue(fieldName, value);
+			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		} catch (ForbiddenOperationException ignored) {
 			// Compatibility path for POJOs compiled before this physical field was known.
@@ -145,6 +148,27 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 					"The field " + fieldName + " was not found on entity " + this.getClass().getName());
 		}
 		field.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+		regenerateObjectIdIfKeyField(fieldName);
+	}
+
+	protected final void regenerateObjectIdIfKeyField(String fieldName) {
+		if (regeneratingObjectId || !(getRelatedConfiguration() instanceof TableConfiguration)) return;
+
+		TableConfiguration tableConfiguration = (TableConfiguration) getRelatedConfiguration();
+		if (!Boolean.TRUE.equals(tableConfiguration.isPrimaryKeyInfoLoaded())) return;
+		if (tableConfiguration.getPrimaryKey() == null || tableConfiguration.getPrimaryKey().getFields() == null) return;
+
+		for (org.openmrs.module.epts.etl.conf.Key key : tableConfiguration.getPrimaryKey().getFields()) {
+			if (utilities.equalsFieldsName(fieldName, key.getName())) {
+				try {
+					regeneratingObjectId = true;
+					loadObjectIdData(tableConfiguration);
+				} finally {
+					regeneratingObjectId = false;
+				}
+				return;
+			}
+		}
 	}
 
 	private void refreshFields() {

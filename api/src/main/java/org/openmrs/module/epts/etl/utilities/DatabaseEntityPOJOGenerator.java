@@ -466,6 +466,21 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "		return super.getFieldValue(fieldName);\n";
 		commonMethods += "	}\n\n";
 
+		commonMethods += "	@Override\n";
+		commonMethods += "	public void setFieldValue(String fieldName, Object value) {\n";
+		for (Field field : pojoFields) {
+			if (!isIgnorableField(field.getName())) {
+				commonMethods += "		if (utilities.equalsFieldsName(fieldName, \"" + field.getName() + "\")) {\n";
+				commonMethods += "			this." + field.getNameAsClassAtt()
+						+ ".setValue(value instanceof Field ? ((Field) value).getValue() : value);\n";
+				commonMethods += "			regenerateObjectIdIfKeyField(fieldName);\n";
+				commonMethods += "			return;\n";
+				commonMethods += "		}\n";
+			}
+		}
+		commonMethods += "		super.setFieldValue(fieldName, value);\n";
+		commonMethods += "	}\n\n";
+
 		if (usesSharedPk(pojoble)) {
 			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
 			String sharedClass = shared.generateFullClassName(connInfo);
