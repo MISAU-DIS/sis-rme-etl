@@ -21,6 +21,10 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 
 	private String dstPojoPackageName;
 
+	private String srcDataModelId;
+
+	private String dstDataModelId;
+
 	private String srcSchema;
 
 	private String dstSchema;
@@ -70,6 +74,22 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 
 	public void setDstPojoPackageName(String dstPojoPackageName) {
 		this.dstPojoPackageName = dstPojoPackageName;
+	}
+
+	public String getSrcDataModelId() {
+		return srcDataModelId;
+	}
+
+	public void setSrcDataModelId(String srcDataModelId) {
+		this.srcDataModelId = srcDataModelId;
+	}
+
+	public String getDstDataModelId() {
+		return dstDataModelId;
+	}
+
+	public void setDstDataModelId(String dstDataModelId) {
+		this.dstDataModelId = dstDataModelId;
 	}
 
 	public String getSrcSchema() {
@@ -136,7 +156,8 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 	public String toString() {
 		return "DataModelConfiguration [databaseObjectInstantiationMode=" + databaseObjectInstantiationMode
 				+ ", schemaMetadataMode=" + schemaMetadataMode + ", srcPojoPackageName=" + srcPojoPackageName
-				+ ", dstPojoPackageName=" + dstPojoPackageName + ", srcSchema=" + srcSchema + ", dstSchema=" + dstSchema
+				+ ", dstPojoPackageName=" + dstPojoPackageName + ", srcDataModelId=" + srcDataModelId
+				+ ", dstDataModelId=" + dstDataModelId + ", srcSchema=" + srcSchema + ", dstSchema=" + dstSchema
 				+ ", overrideExistingDataModelElement=" + overrideExistingDataModelElement
 				+ ", javaFormatterConfigurationFile=" + javaFormatterConfigurationFile + ", srcPojoDirectory="
 				+ srcPojoDirectory + ", binPojoDirectory=" + binPojoDirectory + ", classPath=" + classPath + "]";

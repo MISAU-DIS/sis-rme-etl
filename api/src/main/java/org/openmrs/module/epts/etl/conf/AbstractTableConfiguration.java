@@ -15,8 +15,6 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalExportedForeignKeyMetad
 import org.openmrs.module.epts.etl.conf.physical.PhysicalForeignKeyMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -289,12 +287,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 		try {
 			PhysicalTableMetadata metadata = this.resolvePhysicalTableMetadata(conn);
-			PhysicalTableKey key = metadata != null ? metadata.getKey()
-					: PhysicalTableKeyFactory.create(this,
-							this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), conn);
 			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedConnInfo().getConnectionURI(),
-					this.getRelatedConnInfo().getDataBaseUserName(), key.getCatalog(), key.getSchema(),
-					key.getTableName());
+					this.getRelatedConnInfo().getDataBaseUserName(), "", this.getSchema(),
+					this.getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
 					.getOrCreate(identity);
@@ -319,9 +314,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (mode != null && mode.usesFilesFirst()) {
 			FilePhysicalTableMetadataRepository files = new FilePhysicalTableMetadataRepository(
 					this.getRelatedEtlConf().getSchemaMetadataDirectory());
-			java.util.Optional<PhysicalTableMetadata> stored = files.find(
-					this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), this.getSchema(),
-					this.getTableName());
+			String dataModelId = this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo());
+			java.util.Optional<PhysicalTableMetadata> stored = utilities.stringHasValue(dataModelId)
+					? files.find(dataModelId, this.getTableName())
+					: files.find(this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), this.getSchema(),
+							this.getTableName());
 			if (stored.isPresent()) {
 				try {
 					validateManifestAssociation(stored.get());
@@ -336,7 +333,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				}
 			}
 			if (!mode.allowsJdbcFallback()) {
-				throw new java.io.IOException("Precompiled schema metadata not found for " + this.getSchema() + "."
+				String modelDescription = utilities.stringHasValue(dataModelId) ? "data model " + dataModelId
+						: "schema " + this.getSchema();
+				throw new java.io.IOException("Precompiled schema metadata not found for " + modelDescription + "."
 						+ this.getTableName() + " under " + this.getRelatedEtlConf().getSchemaMetadataDirectory()
 						+ ". Run DATABASE_MODEL_GENERATION to create it.");
 			}
@@ -493,9 +492,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 			ParentTableImpl parent = ParentTableImpl.init(foreignKey.getReferencedTable(), foreignKey.getName(), this);
 
-			parent.setSchema(
-					utilities.stringHasValue(foreignKey.getReferencedSchema()) ? foreignKey.getReferencedSchema()
-							: foreignKey.getReferencedCatalog());
+			parent.setSchema(resolveReferencedSchema(foreignKey.getReferencedSchema(),
+					foreignKey.getReferencedCatalog()));
 			parent.setParentConf(this.getParentConf());
 			List<RefMapping> mappings = new ArrayList<>();
 			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
@@ -538,8 +536,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		List<ChildTable> children = new ArrayList<>();
 		for (PhysicalExportedForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getExportedForeignKeys()) {
 			ChildTable child = ChildTable.init(foreignKey.getChildTable(), foreignKey.getName(), this);
-			child.setSchema(utilities.stringHasValue(foreignKey.getChildSchema()) ? foreignKey.getChildSchema()
-					: foreignKey.getChildCatalog());
+			child.setSchema(resolveReferencedSchema(foreignKey.getChildSchema(), foreignKey.getChildCatalog()));
 			child.setParentConf(this.getParentConf());
 			List<RefMapping> mappings = new ArrayList<>();
 			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
@@ -572,7 +569,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
 						mapping.getParentFieldName()));
 			}
-			foreignKeys.add(new PhysicalForeignKeyMetadata(parent.getRefCode(), parent.getSchema(), parent.getSchema(),
+			String portableSchema = toPortableReferencedSchema(parent.getSchema());
+			foreignKeys.add(new PhysicalForeignKeyMetadata(parent.getRefCode(), portableSchema, portableSchema,
 					parent.getTableName(), mappings));
 		}
 		return foreignKeys;
@@ -591,10 +589,36 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
 						mapping.getParentFieldName()));
 			}
-			foreignKeys.add(new PhysicalExportedForeignKeyMetadata(child.getRefCode(), child.getSchema(),
-					child.getSchema(), child.getTableName(), mappings));
+			String portableSchema = toPortableReferencedSchema(child.getSchema());
+			foreignKeys.add(new PhysicalExportedForeignKeyMetadata(child.getRefCode(), portableSchema,
+					portableSchema, child.getTableName(), mappings));
 		}
 		return foreignKeys;
+	}
+
+	/**
+	 * Internal references in a named data model are stored without a physical
+	 * schema. They are rebound to the schema of the current connection when the
+	 * reusable metadata is loaded elsewhere. Cross-schema references retain their
+	 * explicit schema.
+	 */
+	private String toPortableReferencedSchema(String referencedSchema) {
+		String dataModelId = this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo());
+		if (utilities.stringHasValue(dataModelId) && sameSchema(referencedSchema, this.getSchema()))
+			return "";
+		return referencedSchema;
+	}
+
+	private String resolveReferencedSchema(String schema, String catalog) {
+		if (utilities.stringHasValue(schema))
+			return schema;
+		if (utilities.stringHasValue(catalog))
+			return catalog;
+		return this.getSchema();
+	}
+
+	private boolean sameSchema(String first, String second) {
+		return first == null ? second == null : second != null && first.equalsIgnoreCase(second);
 	}
 
 	/**

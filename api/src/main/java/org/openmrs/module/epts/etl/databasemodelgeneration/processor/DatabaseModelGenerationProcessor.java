@@ -219,7 +219,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 		try {
 			PhysicalTableKey key = PhysicalTableKeyFactory.create(table,
-					getRelatedEtlConfiguration().getPojoPackage(app), connection);
+					getRelatedEtlConfiguration().getDataModelId(app), connection);
 			table.synchronizePhysicalTableConfiguration();
 			FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
 					getRelatedEtlConfiguration().getSchemaMetadataDirectory());

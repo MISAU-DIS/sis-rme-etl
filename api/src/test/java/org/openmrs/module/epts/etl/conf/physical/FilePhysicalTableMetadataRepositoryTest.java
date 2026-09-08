@@ -66,6 +66,19 @@ public class FilePhysicalTableMetadataRepositoryTest {
 	}
 
 	@Test
+	public void shouldPersistAndFindMetadataByStableDataModelIdentity() throws Exception {
+		Path root = temporaryFolder.newFolder("stable-model").toPath();
+		FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(root.toFile());
+		PhysicalTableKey stableKey = new PhysicalTableKey("openmrs-2.6", "", "", "", "person");
+		PhysicalTableMetadata expected = metadata(stableKey);
+
+		repository.save(expected);
+
+		assertTrue(Files.isRegularFile(root.resolve("openmrs-2.6/person.json")));
+		assertEquals(expected, repository.find("openmrs-2.6", "person").get());
+	}
+
+	@Test
 	public void shouldDescribeTheCompletePhysicalMetadataGraph() {
 		String description = metadata(key("person")).toString();
 

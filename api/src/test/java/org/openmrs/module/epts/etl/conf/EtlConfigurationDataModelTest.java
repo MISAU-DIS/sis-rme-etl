@@ -12,7 +12,8 @@ public class EtlConfigurationDataModelTest {
 	public void shouldReadAndResolveSourceAndDestinationDataModelConfiguration() throws Exception {
 		String json = "{\"dataModel\":{" + "\"databaseObjectInstantiationMode\":\"PRECOMPILED_POJO\","
 				+ "\"schemaMetadataMode\":\"PRECOMPILED_WITH_FALLBACK\"," + "\"srcPojoPackageName\":\"source_openmrs\","
-				+ "\"dstPojoPackageName\":\"destination_openmrs\"," + "\"srcSchema\":\"openmrs_source\"," 
+				+ "\"dstPojoPackageName\":\"destination_openmrs\"," + "\"srcDataModelId\":\"openmrs-2.6-source\","
+				+ "\"dstDataModelId\":\"openmrs-2.6-destination\"," + "\"srcSchema\":\"openmrs_source\","
 				+ "\"dstSchema\":\"openmrs_destination\"," + "\"overrideExistingDataModelElement\":true,"
 				+ "\"javaFormatterConfigurationFile\":\"conf/eclipse-formatter.xml\","
 				+ "\"srcPojoDirectory\":\"project/src/main/java\","
@@ -26,6 +27,8 @@ public class EtlConfigurationDataModelTest {
 		assertEquals(SchemaMetadataMode.PRECOMPILED_WITH_FALLBACK, configuration.getSchemaMetadataMode());
 		assertEquals("source_openmrs", configuration.getPojoPackage(configuration.getSrcConnInfo()));
 		assertEquals("destination_openmrs", configuration.getPojoPackage(configuration.getDstConnInfo()));
+		assertEquals("openmrs-2.6-source", configuration.getDataModelId(configuration.getSrcConnInfo()));
+		assertEquals("openmrs-2.6-destination", configuration.getDataModelId(configuration.getDstConnInfo()));
 		assertEquals("openmrs_source", configuration.getSchema(configuration.getSrcConnInfo()));
 		assertEquals("openmrs_destination", configuration.getSchema(configuration.getDstConnInfo()));
 		assertTrue(configuration.shouldOverrideExistingDataModelElement());

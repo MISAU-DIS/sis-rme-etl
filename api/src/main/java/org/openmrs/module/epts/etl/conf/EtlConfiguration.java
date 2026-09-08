@@ -858,6 +858,19 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
+	public String getDataModelId(DBConnectionInfo connInfo) {
+		if (connInfo == null)
+			return null;
+		if (connInfo == getDstConnInfo() || connInfo.isDstConn())
+			return getDataModel().getDstDataModelId();
+		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
+				|| connInfo.isMainConn())
+			return getDataModel().getSrcDataModelId();
+
+		return null;
+	}
+
+	@JsonIgnore
 	public String getSchema(DBConnectionInfo connInfo) {
 		if (connInfo == null)
 			return null;

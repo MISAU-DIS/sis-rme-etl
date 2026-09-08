@@ -63,6 +63,26 @@ public final class FilePhysicalTableMetadataRepository implements WritablePhysic
 		return Optional.of(metadata);
 	}
 
+	/** Finds metadata by its stable model identity, independently of JDBC schema names. */
+	public Optional<PhysicalTableMetadata> find(String dataModelId, String tableName) throws IOException {
+		Path databaseRoot = rootDirectory.resolve(safe(dataModelId)).normalize();
+		if (!databaseRoot.startsWith(rootDirectory) || !Files.isDirectory(databaseRoot)) return Optional.empty();
+
+		List<Path> matches = new ArrayList<>();
+		String metadataFileName = safe(tableName) + ".json";
+		try (Stream<Path> paths = Files.walk(databaseRoot, 5)) {
+			paths.filter(Files::isRegularFile)
+					.filter(path -> path.getFileName().toString().equals(metadataFileName)).forEach(matches::add);
+		}
+		if (matches.isEmpty()) return Optional.empty();
+		if (matches.size() > 1) throw new IOException(
+				"Ambiguous schema metadata for data model " + dataModelId + ":" + tableName + " matches " + matches);
+
+		PhysicalTableMetadata metadata = objectMapper.readValue(matches.get(0).toFile(), PhysicalTableMetadata.class);
+		validate(metadata, metadata.getKey(), matches.get(0));
+		return Optional.of(metadata);
+	}
+
 	private void collectIfMatchingSchema(Path path, String schema, List<Path> matches) {
 		try {
 			PhysicalTableMetadata metadata = objectMapper.readValue(path.toFile(), PhysicalTableMetadata.class);
@@ -115,6 +135,12 @@ public final class FilePhysicalTableMetadataRepository implements WritablePhysic
 	}
 
 	Path pathFor(PhysicalTableKey key) throws IOException {
+		if (key.getDatabaseDialect().isEmpty() && key.getCatalog().isEmpty() && key.getSchema().isEmpty()) {
+			Path path = rootDirectory.resolve(safe(key.getLogicalDatabaseId()))
+					.resolve(safe(key.getTableName()) + ".json").normalize();
+			if (!path.startsWith(rootDirectory)) throw new IOException("Invalid schema metadata path for " + key);
+			return path;
+		}
 		Path path = rootDirectory.resolve(safe(key.getLogicalDatabaseId())).resolve(safe(key.getDatabaseDialect()))
 				.resolve(safe(key.getCatalog())).resolve(safe(key.getSchema()))
 				.resolve(safe(key.getTableName()) + ".json").normalize();

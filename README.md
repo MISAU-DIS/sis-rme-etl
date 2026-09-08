@@ -90,6 +90,8 @@ The optional *dataModel* element centralizes how database objects and physical s
     "schemaMetadataMode": "PRECOMPILED_WITH_FALLBACK",
     "srcPojoPackageName": "source_openmrs",
     "dstPojoPackageName": "destination_openmrs",
+    "srcDataModelId": "openmrs-2.6-source",
+    "dstDataModelId": "openmrs-2.6-destination",
     "srcSchema": "openmrs_source",
     "dstSchema": "openmrs_destination",
 	"overrideExistingDataModelElement": false,
@@ -112,6 +114,8 @@ The element supports the following properties:
   - *PRECOMPILED_WITH_FALLBACK* – Uses existing metadata files first and accesses JDBC only when compatible static metadata is not available.
 - **srcPojoPackageName** – Package segment used for POJOs generated for source database objects.
 - **dstPojoPackageName** – Package segment used for POJOs generated for destination database objects.
+- **srcDataModelId** – Stable identity of the source data model used to store and locate reusable schema metadata independently of the JDBC URL and physical schema name.
+- **dstDataModelId** – Stable identity of the destination data model used to store and locate reusable schema metadata independently of the JDBC URL and physical schema name.
 - **srcSchema** – Database schema associated with the source connection.
 - **dstSchema** – Database schema associated with the destination connection.
 - **overrideExistingDataModelElement** – Controls whether existing generated data-model artifacts may be replaced. The default is `false`.

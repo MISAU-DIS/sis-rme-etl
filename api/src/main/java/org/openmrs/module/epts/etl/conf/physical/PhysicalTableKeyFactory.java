@@ -15,9 +15,13 @@ public final class PhysicalTableKeyFactory {
 	public static PhysicalTableKey create(TableConfiguration table, String configuredLogicalDatabaseId,
 			Connection connection) throws SQLException {
 		String logicalDatabaseId = configuredLogicalDatabaseId;
+		boolean hasConfiguredModelId = CommonUtilities.getInstance().stringHasValue(logicalDatabaseId);
 		if (!CommonUtilities.getInstance().stringHasValue(logicalDatabaseId)) {
 			logicalDatabaseId = CommonUtilities.getInstance().stringHasValue(table.getCatalog(connection))
 					? table.getCatalog(connection) : table.getSchema();
+		}
+		if (hasConfiguredModelId) {
+			return new PhysicalTableKey(logicalDatabaseId, "", "", "", table.getTableName());
 		}
 		String dialect = connection.getMetaData().getDatabaseProductName().toLowerCase()
 				.replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
