@@ -19,6 +19,7 @@ import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.RefType;
+import org.openmrs.module.epts.etl.conf.SchemaMetadataLoadSource;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
@@ -792,6 +793,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	@JsonIgnore
 	default boolean isFullLoadLogSuppressed() {
 		return false;
+	}
+
+	/** Describes the origin of the schema metadata currently loaded in this table. */
+	@JsonIgnore
+	default SchemaMetadataLoadSource getSchemaMetadataLoadSource() {
+		return SchemaMetadataLoadSource.NOT_LOADED;
 	}
 
 	default int countParents(Connection conn) throws SQLException {

@@ -64,6 +64,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	protected Boolean fullLoaded;
 	private transient boolean fullLoadLogSuppressed;
 	private transient boolean physicalMetadataLoadedFromStaticData;
+	private transient SchemaMetadataLoadSource schemaMetadataLoadSource = SchemaMetadataLoadSource.NOT_LOADED;
 
 	private Boolean removeForbidden;
 
@@ -249,6 +250,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
 		boolean alreadyLoaded = this.isFullLoaded();
+		if (!alreadyLoaded)
+			this.schemaMetadataLoadSource = SchemaMetadataLoadSource.NOT_LOADED;
 		try {
 			this.tryToLoadDumpScriptContentToFieldAndValidate("extraConditionForExtract",
 					this.retrieveAllAvailableTemplateParameters(), conn);
@@ -259,6 +262,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 			this.fullLoadLogSuppressed = physicalMetadataLoadedFromStaticData;
 			TableConfiguration.super.fullLoad(conn);
+			if (this.isFullLoaded()) {
+				this.schemaMetadataLoadSource = physicalMetadataLoadedFromStaticData
+						? SchemaMetadataLoadSource.STATIC_DATA
+						: SchemaMetadataLoadSource.JDBC;
+			}
 		} finally {
 			this.fullLoadLogSuppressed = false;
 		}
@@ -271,6 +279,12 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	@JsonIgnore
 	public boolean isFullLoadLogSuppressed() {
 		return fullLoadLogSuppressed;
+	}
+
+	@Override
+	@JsonIgnore
+	public SchemaMetadataLoadSource getSchemaMetadataLoadSource() {
+		return schemaMetadataLoadSource;
 	}
 
 	@Override
@@ -1224,6 +1238,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		String toString = "Table [" + getFullTableDescription();
 
 		toString += hasPK() ? ", pk: " + this.primaryKey : "";
+
+		toString += ", schemaMetadataLoadSource: " + this.schemaMetadataLoadSource;
 
 		toString += "]";
 

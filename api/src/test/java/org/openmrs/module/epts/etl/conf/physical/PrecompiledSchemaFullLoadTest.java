@@ -20,6 +20,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
+import org.openmrs.module.epts.etl.conf.SchemaMetadataLoadSource;
 import org.openmrs.module.epts.etl.conf.SchemaMetadataMode;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
@@ -98,6 +99,7 @@ public class PrecompiledSchemaFullLoadTest {
 		table.fullLoad(connectionRejectingMetadataCalls());
 
 		assertTrue(table.isFullLoaded());
+		assertEquals(SchemaMetadataLoadSource.STATIC_DATA, table.getSchemaMetadataLoadSource());
 		assertEquals(5, table.getFields().size());
 		assertEquals("person_id", table.getPrimaryKey().retrieveSimpleKeyColumnName());
 		assertEquals(1, table.getUniqueKeys().size());
