@@ -532,10 +532,18 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	public void initOperationsControllers(Connection conn) throws DBException {
 		for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
-			if (!controller.getOperationConfig().isDisabled()) {
-				ExecutorService executor = ThreadPoolService.getInstance()
-						.createNewThreadPoolExecutor(controller.getControllerId());
-				executor.execute(controller);
+			this.tryToInitController(controller);
+		}
+	}
+
+	private void tryToInitController(OperationController<? extends EtlDatabaseObject> controller) {
+		if (!controller.getOperationConfig().isDisabled()) {
+			ExecutorService executor = ThreadPoolService.getInstance()
+					.createNewThreadPoolExecutor(controller.getControllerId());
+			executor.execute(controller);
+		} else if (controller.hasChild()) {
+			for (OperationController<? extends EtlDatabaseObject> child : controller.getChildren()) {
+				this.tryToInitController(child);
 			}
 		}
 	}
