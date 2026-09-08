@@ -43,7 +43,7 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	private Field email = Field.fastCreateWithType("email", "VARCHAR");
 
 	public UsersVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.userId);
 		this.fields.add(this.systemId);
 		this.fields.add(this.username);

@@ -35,7 +35,7 @@ public class ConceptClassVO extends AbstractGeneratedDatabaseObject {
 	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
 
 	public ConceptClassVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.conceptClassId);
 		this.fields.add(this.name);
 		this.fields.add(this.description);

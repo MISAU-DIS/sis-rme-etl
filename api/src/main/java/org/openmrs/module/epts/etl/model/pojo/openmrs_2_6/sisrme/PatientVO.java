@@ -75,12 +75,6 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		return super.getFieldValue(fieldName);
 	}
 
-	@JsonIgnore
-	@Override
-	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO getSharedPkObj() {
-		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO) super.getSharedPkObj();
-	}
-
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
 		if (utilities.equalsFieldsName(fieldName, "patient_id")) {
@@ -119,6 +113,12 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 			return;
 		}
 		super.setFieldValue(fieldName, value);
+	}
+
+	@JsonIgnore
+	@Override
+	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO getSharedPkObj() {
+		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.PersonVO) super.getSharedPkObj();
 	}
 
 	@JsonIgnore

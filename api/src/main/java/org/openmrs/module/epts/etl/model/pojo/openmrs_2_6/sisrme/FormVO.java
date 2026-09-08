@@ -41,7 +41,7 @@ public class FormVO extends AbstractGeneratedDatabaseObject {
 	private Field retiredReason = Field.fastCreateWithType("retired_reason", "VARCHAR");
 
 	public FormVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.formId);
 		this.fields.add(this.name);
 		this.fields.add(this.version);

@@ -42,7 +42,7 @@ public class DrugVO extends AbstractGeneratedDatabaseObject {
 	private Field doseLimitUnits = Field.fastCreateWithType("dose_limit_units", "INT");
 
 	public DrugVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.drugId);
 		this.fields.add(this.conceptId);
 		this.fields.add(this.name);

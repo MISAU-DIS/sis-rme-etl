@@ -40,7 +40,7 @@ public class ConceptVO extends AbstractGeneratedDatabaseObject {
 	private Field retireReason = Field.fastCreateWithType("retire_reason", "VARCHAR");
 
 	public ConceptVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.conceptId);
 		this.fields.add(this.retired);
 		this.fields.add(this.shortName);

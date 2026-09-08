@@ -35,7 +35,7 @@ public class ConceptDatatypeVO extends AbstractGeneratedDatabaseObject {
 	private Field retireReason = Field.fastCreateWithType("retire_reason", "VARCHAR");
 
 	public ConceptDatatypeVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.conceptDatatypeId);
 		this.fields.add(this.name);
 		this.fields.add(this.hl7Abbreviation);

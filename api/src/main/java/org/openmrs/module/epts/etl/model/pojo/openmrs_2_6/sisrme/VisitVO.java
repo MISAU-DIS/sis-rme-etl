@@ -38,7 +38,7 @@ public class VisitVO extends AbstractGeneratedDatabaseObject {
 	private Field voidReason = Field.fastCreateWithType("void_reason", "VARCHAR");
 
 	public VisitVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.visitId);
 		this.fields.add(this.patientId);
 		this.fields.add(this.visitTypeId);

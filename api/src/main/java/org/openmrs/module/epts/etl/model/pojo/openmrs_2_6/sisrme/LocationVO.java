@@ -59,7 +59,7 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 	private Field locationTypeConceptId = Field.fastCreateWithType("location_type_concept_id", "INT");
 
 	public LocationVO() {
-		this.metadata = false;
+		this.metadata = true;
 		this.fields.add(this.locationId);
 		this.fields.add(this.name);
 		this.fields.add(this.description);
