@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -37,7 +36,6 @@ public class EncounterProviderVO extends AbstractGeneratedDatabaseObject {
 
 	public EncounterProviderVO() {
 		this.metadata = false;
-
 		this.fields.add(this.encounterProviderId);
 		this.fields.add(this.encounterId);
 		this.fields.add(this.providerId);
@@ -345,7 +343,8 @@ public class EncounterProviderVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 

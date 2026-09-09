@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,10 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
+	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
 	private Field personAttributeId = Field.fastCreateWithType("person_attribute_id", "INT");
 	private Field personId = Field.fastCreateWithType("person_id", "INT");
 	private Field value = Field.fastCreateWithType("value", "VARCHAR");
@@ -36,7 +36,7 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 
 	public PersonAttributeVO() {
 		this.metadata = false;
-
+		this.fields.add(this.changedBy);
 		this.fields.add(this.personAttributeId);
 		this.fields.add(this.personId);
 		this.fields.add(this.value);
@@ -56,6 +56,9 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "person_attribute_id")) {
 			return this.personAttributeId.getValue();
 		}
@@ -85,6 +88,11 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			this.changedBy.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "person_attribute_id")) {
 			this.personAttributeId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -149,6 +157,7 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.personAttributeId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.personId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.value, srcConn, dstConn);
@@ -157,6 +166,18 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+	}
+
+	public void setChangedBy(Field changedBy) {
+		this.changedBy = changedBy;
+	}
+
+	public void setChangedByValue(Integer value) {
+		this.changedBy.setValue(value);
+	}
+
+	public Field getChangedBy() {
+		return this.changedBy;
 	}
 
 	public void setPersonAttributeId(Field personAttributeId) {
@@ -259,6 +280,13 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		if (getRelatedConfiguration().containsField("changed_by")) {
+			String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"changed_by", "_");
+
+			this.changedBy.setValue(BaseVO.retrieveFieldValue(changedByAttName, "INT", rs));
+		}
+
 		String personAttributeIdAttName = utilities
 				.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "person_attribute_id", "_");
 
@@ -312,7 +340,8 @@ public class PersonAttributeVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 

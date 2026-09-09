@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,12 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class TestResultVO extends AbstractGeneratedDatabaseObject {
+	private Field sampleCollectionDate = Field.fastCreateWithType("sample_collection_date", "DATETIME");
+	private Field previousVersion = Field.fastCreateWithType("previous_version", "INT");
+	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
 	private Field testResultId = Field.fastCreateWithType("test_result_id", "INT");
 	private Field orderId = Field.fastCreateWithType("order_id", "INT");
 	private Field conceptId = Field.fastCreateWithType("concept_id", "INT");
@@ -48,7 +50,9 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 
 	public TestResultVO() {
 		this.metadata = false;
-
+		this.fields.add(this.sampleCollectionDate);
+		this.fields.add(this.previousVersion);
+		this.fields.add(this.changedBy);
 		this.fields.add(this.testResultId);
 		this.fields.add(this.orderId);
 		this.fields.add(this.conceptId);
@@ -80,6 +84,15 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "sample_collection_date")) {
+			return this.sampleCollectionDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
+			return this.previousVersion.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "test_result_id")) {
 			return this.testResultId.getValue();
 		}
@@ -145,6 +158,21 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "sample_collection_date")) {
+			this.sampleCollectionDate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
+			this.previousVersion.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			this.changedBy.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "test_result_id")) {
 			this.testResultId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -269,6 +297,9 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.sampleCollectionDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.previousVersion, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.testResultId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.orderId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
@@ -289,6 +320,42 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+	}
+
+	public void setSampleCollectionDate(Field sampleCollectionDate) {
+		this.sampleCollectionDate = sampleCollectionDate;
+	}
+
+	public void setSampleCollectionDateValue(java.util.Date value) {
+		this.sampleCollectionDate.setValue(value);
+	}
+
+	public Field getSampleCollectionDate() {
+		return this.sampleCollectionDate;
+	}
+
+	public void setPreviousVersion(Field previousVersion) {
+		this.previousVersion = previousVersion;
+	}
+
+	public void setPreviousVersionValue(Integer value) {
+		this.previousVersion.setValue(value);
+	}
+
+	public Field getPreviousVersion() {
+		return this.previousVersion;
+	}
+
+	public void setChangedBy(Field changedBy) {
+		this.changedBy = changedBy;
+	}
+
+	public void setChangedByValue(Integer value) {
+		this.changedBy.setValue(value);
+	}
+
+	public Field getChangedBy() {
+		return this.changedBy;
 	}
 
 	public void setTestResultId(Field testResultId) {
@@ -535,6 +602,27 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		if (getRelatedConfiguration().containsField("sample_collection_date")) {
+			String sampleCollectionDateAttName = utilities.concatStringsWithSeparator(
+					this.getRelatedConfiguration().getAlias(), "sample_collection_date", "_");
+
+			this.sampleCollectionDate.setValue(BaseVO.retrieveFieldValue(sampleCollectionDateAttName, "DATETIME", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("previous_version")) {
+			String previousVersionAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "previous_version", "_");
+
+			this.previousVersion.setValue(BaseVO.retrieveFieldValue(previousVersionAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("changed_by")) {
+			String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"changed_by", "_");
+
+			this.changedBy.setValue(BaseVO.retrieveFieldValue(changedByAttName, "INT", rs));
+		}
+
 		String testResultIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"test_result_id", "_");
 
@@ -648,7 +736,8 @@ public class TestResultVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 

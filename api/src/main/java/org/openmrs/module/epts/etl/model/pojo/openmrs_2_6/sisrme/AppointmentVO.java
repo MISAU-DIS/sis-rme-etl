@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -19,10 +19,13 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class AppointmentVO extends AbstractGeneratedDatabaseObject {
+	private Field referralFormNumber = Field.fastCreateWithType("referral_form_number", "VARCHAR");
+	private Field typeOfAdmission = Field.fastCreateWithType("type_of_admission", "INT");
+	private Field createdAt = Field.fastCreateWithType("created_at", "TIMESTAMP");
+	private Field updatedAt = Field.fastCreateWithType("updated_at", "TIMESTAMP");
 	private Field appointmentId = Field.fastCreateWithType("appointment_id", "INT UNSIGNED");
 	private Field patientId = Field.fastCreateWithType("patient_id", "INT");
 	private Field providerId = Field.fastCreateWithType("provider_id", "INT");
@@ -35,15 +38,18 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 
 	public AppointmentVO() {
 		this.metadata = false;
-
 		this.fields.add(this.appointmentId);
 		this.fields.add(this.patientId);
 		this.fields.add(this.providerId);
 		this.fields.add(this.reasonForAdmission);
+		this.fields.add(this.referralFormNumber);
 		this.fields.add(this.serviceId);
 		this.fields.add(this.specialityId);
+		this.fields.add(this.typeOfAdmission);
 		this.fields.add(this.status);
 		this.fields.add(this.notes);
+		this.fields.add(this.createdAt);
+		this.fields.add(this.updatedAt);
 		this.fields.add(this.appointmentDate);
 	}
 
@@ -68,17 +74,29 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "reason_for_admission")) {
 			return this.reasonForAdmission.getValue();
 		}
+		if (utilities.equalsFieldsName(fieldName, "referral_form_number")) {
+			return this.referralFormNumber.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "service_id")) {
 			return this.serviceId.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "speciality_id")) {
 			return this.specialityId.getValue();
 		}
+		if (utilities.equalsFieldsName(fieldName, "type_of_admission")) {
+			return this.typeOfAdmission.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "status")) {
 			return this.status.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "notes")) {
 			return this.notes.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "created_at")) {
+			return this.createdAt.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "updated_at")) {
+			return this.updatedAt.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "appointment_date")) {
 			return this.appointmentDate.getValue();
@@ -108,6 +126,11 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
+		if (utilities.equalsFieldsName(fieldName, "referral_form_number")) {
+			this.referralFormNumber.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "service_id")) {
 			this.serviceId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -118,6 +141,11 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
+		if (utilities.equalsFieldsName(fieldName, "type_of_admission")) {
+			this.typeOfAdmission.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "status")) {
 			this.status.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -125,6 +153,16 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 		}
 		if (utilities.equalsFieldsName(fieldName, "notes")) {
 			this.notes.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "created_at")) {
+			this.createdAt.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "updated_at")) {
+			this.updatedAt.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
@@ -161,11 +199,63 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.providerId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.reasonForAdmission, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.referralFormNumber, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.serviceId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.specialityId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.typeOfAdmission, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.status, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.notes, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.createdAt, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.updatedAt, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.appointmentDate, srcConn, dstConn);
+	}
+
+	public void setReferralFormNumber(Field referralFormNumber) {
+		this.referralFormNumber = referralFormNumber;
+	}
+
+	public void setReferralFormNumberValue(String value) {
+		this.referralFormNumber.setValue(value);
+	}
+
+	public Field getReferralFormNumber() {
+		return this.referralFormNumber;
+	}
+
+	public void setTypeOfAdmission(Field typeOfAdmission) {
+		this.typeOfAdmission = typeOfAdmission;
+	}
+
+	public void setTypeOfAdmissionValue(Integer value) {
+		this.typeOfAdmission.setValue(value);
+	}
+
+	public Field getTypeOfAdmission() {
+		return this.typeOfAdmission;
+	}
+
+	public void setCreatedAt(Field createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void setCreatedAtValue(java.util.Date value) {
+		this.createdAt.setValue(value);
+	}
+
+	public Field getCreatedAt() {
+		return this.createdAt;
+	}
+
+	public void setUpdatedAt(Field updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	public void setUpdatedAtValue(java.util.Date value) {
+		this.updatedAt.setValue(value);
+	}
+
+	public Field getUpdatedAt() {
+		return this.updatedAt;
 	}
 
 	public void setAppointmentId(Field appointmentId) {
@@ -279,6 +369,34 @@ public class AppointmentVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
+
+		if (getRelatedConfiguration().containsField("referral_form_number")) {
+			String referralFormNumberAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "referral_form_number", "_");
+
+			this.referralFormNumber.setValue(BaseVO.retrieveFieldValue(referralFormNumberAttName, "VARCHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("type_of_admission")) {
+			String typeOfAdmissionAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "type_of_admission", "_");
+
+			this.typeOfAdmission.setValue(BaseVO.retrieveFieldValue(typeOfAdmissionAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("created_at")) {
+			String createdAtAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"created_at", "_");
+
+			this.createdAt.setValue(BaseVO.retrieveFieldValue(createdAtAttName, "TIMESTAMP", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("updated_at")) {
+			String updatedAtAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"updated_at", "_");
+
+			this.updatedAt.setValue(BaseVO.retrieveFieldValue(updatedAtAttName, "TIMESTAMP", rs));
+		}
 
 		String appointmentIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"appointment_id", "_");

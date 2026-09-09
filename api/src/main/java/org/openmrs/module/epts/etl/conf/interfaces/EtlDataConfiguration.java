@@ -353,7 +353,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	static String[] SAFE_FIELDS = { "joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper",
 			"onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult",
 			"relationshipResolutionStrategy", "nullValueBehavior", "manuallyConfigured", "possibleSrc",
-			"manuallyConfigured", "loadedDataSourceInfo" };
+			"manuallyConfigured", "loadedDataSourceInfo", "schemaMetadataLoadSource" };
 
 	public static boolean canBeOverriten(Object value, Field field) {
 
@@ -501,10 +501,10 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	}
 
 	/**
-	 * Loads the ETL properties exposed by OpenMRS. The prefix is removed so that, for
-	 * example, {@code epts.etl.location_name} can resolve {@code ${location_name}}.
-	 * The complete property name is also retained to support
-	 * {@code ${epts.etl.location_name}}.
+	 * Loads the ETL properties exposed by OpenMRS. The prefix is removed so that,
+	 * for example, {@code epts.etl.location_name} can resolve
+	 * {@code ${location_name}}. The complete property name is also retained to
+	 * support {@code ${epts.etl.location_name}}.
 	 */
 	public static Properties loadOpenMrsGlobalProperties() {
 		Properties properties = new Properties();
@@ -516,7 +516,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		}
 
 		for (GlobalProperty globalProperty : Context.getAdministrationService()
-		        .getGlobalPropertiesByPrefix(ETL_GLOBAL_PROPERTY_PREFIX)) {
+				.getGlobalPropertiesByPrefix(ETL_GLOBAL_PROPERTY_PREFIX)) {
 			String name = globalProperty.getProperty();
 			String value = globalProperty.getPropertyValue();
 

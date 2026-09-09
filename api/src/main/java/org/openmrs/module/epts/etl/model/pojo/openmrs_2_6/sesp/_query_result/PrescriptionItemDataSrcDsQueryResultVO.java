@@ -6,9 +6,11 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
+
+import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 
 import java.sql.SQLException;
 import java.sql.ResultSet;
@@ -17,20 +19,18 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDatabaseObject {
-	private Field valueDrug = Field.fastCreateWithType("value_drug", "null");
-	private Field formulacaoConceptId = Field.fastCreateWithType("formulacao_concept_id", "null");
-	private Field packageDatetime = Field.fastCreateWithType("package_datetime", "null");
-	private Field posologia = Field.fastCreateWithType("posologia", "null");
-	private Field specifiedQty = Field.fastCreateWithType("specified_qty", "null");
-	private Field calculatedQty = Field.fastCreateWithType("calculated_qty", "null");
+	private Field valueDrug = Field.fastCreateWithType("value_drug", "INT");
+	private Field formulacaoConceptId = Field.fastCreateWithType("formulacao_concept_id", "INT");
+	private Field packageDatetime = Field.fastCreateWithType("package_datetime", "DATETIME");
+	private Field posologia = Field.fastCreateWithType("posologia", "TEXT");
+	private Field specifiedQty = Field.fastCreateWithType("specified_qty", "DOUBLE");
+	private Field calculatedQty = Field.fastCreateWithType("calculated_qty", "DOUBLE");
 
 	public PrescriptionItemDataSrcDsQueryResultVO() {
 		this.metadata = false;
-
 		this.fields.add(this.valueDrug);
 		this.fields.add(this.formulacaoConceptId);
 		this.fields.add(this.packageDatetime);
@@ -134,7 +134,7 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 		this.valueDrug = valueDrug;
 	}
 
-	public void setValueDrugValue(String value) {
+	public void setValueDrugValue(Integer value) {
 		this.valueDrug.setValue(value);
 	}
 
@@ -146,7 +146,7 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 		this.formulacaoConceptId = formulacaoConceptId;
 	}
 
-	public void setFormulacaoConceptIdValue(String value) {
+	public void setFormulacaoConceptIdValue(Integer value) {
 		this.formulacaoConceptId.setValue(value);
 	}
 
@@ -158,7 +158,7 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 		this.packageDatetime = packageDatetime;
 	}
 
-	public void setPackageDatetimeValue(String value) {
+	public void setPackageDatetimeValue(java.util.Date value) {
 		this.packageDatetime.setValue(value);
 	}
 
@@ -182,7 +182,7 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 		this.specifiedQty = specifiedQty;
 	}
 
-	public void setSpecifiedQtyValue(String value) {
+	public void setSpecifiedQtyValue(Double value) {
 		this.specifiedQty.setValue(value);
 	}
 
@@ -194,7 +194,7 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 		this.calculatedQty = calculatedQty;
 	}
 
-	public void setCalculatedQtyValue(String value) {
+	public void setCalculatedQtyValue(Double value) {
 		this.calculatedQty.setValue(value);
 	}
 
@@ -208,27 +208,27 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 
 		String valueDrugAttName = "value_drug";
 
-		this.valueDrug.setValue(BaseVO.retrieveFieldValue(valueDrugAttName, "null", rs));
+		this.valueDrug.setValue(BaseVO.retrieveFieldValue(valueDrugAttName, "INT", rs));
 
 		String formulacaoConceptIdAttName = "formulacao_concept_id";
 
-		this.formulacaoConceptId.setValue(BaseVO.retrieveFieldValue(formulacaoConceptIdAttName, "null", rs));
+		this.formulacaoConceptId.setValue(BaseVO.retrieveFieldValue(formulacaoConceptIdAttName, "INT", rs));
 
 		String packageDatetimeAttName = "package_datetime";
 
-		this.packageDatetime.setValue(BaseVO.retrieveFieldValue(packageDatetimeAttName, "null", rs));
+		this.packageDatetime.setValue(BaseVO.retrieveFieldValue(packageDatetimeAttName, "DATETIME", rs));
 
 		String posologiaAttName = "posologia";
 
-		this.posologia.setValue(BaseVO.retrieveFieldValue(posologiaAttName, "null", rs));
+		this.posologia.setValue(BaseVO.retrieveFieldValue(posologiaAttName, "TEXT", rs));
 
 		String specifiedQtyAttName = "specified_qty";
 
-		this.specifiedQty.setValue(BaseVO.retrieveFieldValue(specifiedQtyAttName, "null", rs));
+		this.specifiedQty.setValue(BaseVO.retrieveFieldValue(specifiedQtyAttName, "DOUBLE", rs));
 
 		String calculatedQtyAttName = "calculated_qty";
 
-		this.calculatedQty.setValue(BaseVO.retrieveFieldValue(calculatedQtyAttName, "null", rs));
+		this.calculatedQty.setValue(BaseVO.retrieveFieldValue(calculatedQtyAttName, "DOUBLE", rs));
 		this.loadedFromDb = true;
 	}
 
@@ -289,59 +289,31 @@ public class PrescriptionItemDataSrcDsQueryResultVO extends AbstractGeneratedDat
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
-		return ""
-				+ (this.valueDrug.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.valueDrug.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.formulacaoConceptId.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.formulacaoConceptId.getValue().toString()) + "\""
-						: null)
-				+ ","
+		return "" + (this.valueDrug.getValue()) + "," + (this.formulacaoConceptId.getValue()) + ","
 				+ (this.packageDatetime.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.packageDatetime.getValue().toString()) + "\""
+						? "\"" + DateAndTimeUtilities
+								.formatToYYYYMMDD_HHMISS((java.util.Date) this.packageDatetime.getValue()) + "\""
 						: null)
 				+ ","
 				+ (this.posologia.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.posologia.getValue().toString()) + "\""
 						: null)
-				+ ","
-				+ (this.specifiedQty.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.specifiedQty.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.calculatedQty.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.calculatedQty.getValue().toString()) + "\""
-						: null);
+				+ "," + (this.specifiedQty.getValue()) + "," + (this.calculatedQty.getValue());
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return ""
-				+ (this.valueDrug.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.valueDrug.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.formulacaoConceptId.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.formulacaoConceptId.getValue().toString()) + "\""
-						: null)
-				+ ","
+		return "" + (this.valueDrug.getValue()) + "," + (this.formulacaoConceptId.getValue()) + ","
 				+ (this.packageDatetime.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.packageDatetime.getValue().toString()) + "\""
+						? "\"" + DateAndTimeUtilities
+								.formatToYYYYMMDD_HHMISS((java.util.Date) this.packageDatetime.getValue()) + "\""
 						: null)
 				+ ","
 				+ (this.posologia.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.posologia.getValue().toString()) + "\""
 						: null)
-				+ ","
-				+ (this.specifiedQty.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.specifiedQty.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.calculatedQty.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.calculatedQty.getValue().toString()) + "\""
-						: null);
+				+ "," + (this.specifiedQty.getValue()) + "," + (this.calculatedQty.getValue());
 	}
 
 	@JsonIgnore

@@ -290,7 +290,14 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	@Override
 	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
 			Connection dstConn) throws DBException {
+
 		TableConfiguration.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+
+		if (hasParents()) {
+			for (ParentTable p : this.getParents()) {
+				p.setParentConf(this.getParentConf());
+			}
+		}
 
 		this.attachPhysicalTableConfiguration(dstConn);
 	}
@@ -302,8 +309,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		try {
 			PhysicalTableMetadata metadata = this.resolvePhysicalTableMetadata(conn);
 			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedConnInfo().getConnectionURI(),
-					this.getRelatedConnInfo().getDataBaseUserName(), "", this.getSchema(),
-					this.getTableName());
+					this.getRelatedConnInfo().getDataBaseUserName(), "", this.getSchema(), this.getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
 					.getOrCreate(identity);
@@ -322,6 +328,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private PhysicalTableMetadata resolvePhysicalTableMetadata(Connection conn)
 			throws java.io.IOException, SQLException {
+
+		stepIntoBreakpoint(getRelatedEtlConf(), this.getRelatedEtlConf() == null);
 
 		SchemaMetadataMode mode = this.getRelatedEtlConf().getSchemaMetadataMode();
 
@@ -501,13 +509,15 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 		if (this.isParentsLoaded())
 			return;
+
 		List<ParentTable> resolved = new ArrayList<>();
+
 		for (PhysicalForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getImportedForeignKeys()) {
 
 			ParentTableImpl parent = ParentTableImpl.init(foreignKey.getReferencedTable(), foreignKey.getName(), this);
 
-			parent.setSchema(resolveReferencedSchema(foreignKey.getReferencedSchema(),
-					foreignKey.getReferencedCatalog()));
+			parent.setSchema(
+					resolveReferencedSchema(foreignKey.getReferencedSchema(), foreignKey.getReferencedCatalog()));
 			parent.setParentConf(this.getParentConf());
 			List<RefMapping> mappings = new ArrayList<>();
 			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
@@ -531,7 +541,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				markSharedPrimaryKey(parent);
 			}
 		}
-		addManualOnlyParents(resolved);
+
+		this.addManualOnlyParents(resolved);
 		this.setParentRefInfo(resolved);
 		this.setParentsLoaded(true);
 	}
@@ -604,8 +615,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 						mapping.getParentFieldName()));
 			}
 			String portableSchema = toPortableReferencedSchema(child.getSchema());
-			foreignKeys.add(new PhysicalExportedForeignKeyMetadata(child.getRefCode(), portableSchema,
-					portableSchema, child.getTableName(), mappings));
+			foreignKeys.add(new PhysicalExportedForeignKeyMetadata(child.getRefCode(), portableSchema, portableSchema,
+					child.getTableName(), mappings));
 		}
 		return foreignKeys;
 	}
@@ -692,7 +703,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 			for (ParentTable parent : resolved) {
 				if ((utilities.stringHasValue(configured.getRefCode())
-						&& configured.getRefCode().equals(parent.getRefCode())) || configured.equals(parent)) {
+						&& configured.getRefCode().equals(parent.getRefCode()))
+						|| (configured.hasMapping() && configured.equals(parent))) {
 					alreadyResolved = true;
 					break;
 				}

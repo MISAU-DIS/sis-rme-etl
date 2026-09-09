@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,11 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
+	private Field updatedAt = Field.fastCreateWithType("updated_at", "DATETIME");
+	private Field createdAt = Field.fastCreateWithType("created_at", "DATETIME");
 	private Field pharmacyPackagedDrugId = Field.fastCreateWithType("pharmacy_packaged_drug_id", "INT");
 	private Field pharmacyPackageId = Field.fastCreateWithType("pharmacy_package_id", "INT");
 	private Field orderId = Field.fastCreateWithType("order_id", "INT");
@@ -38,7 +39,6 @@ public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
 
 	public PharmacyPackagedDrugVO() {
 		this.metadata = false;
-
 		this.fields.add(this.pharmacyPackagedDrugId);
 		this.fields.add(this.pharmacyPackageId);
 		this.fields.add(this.orderId);
@@ -49,6 +49,8 @@ public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
 		this.fields.add(this.voided);
 		this.fields.add(this.voidReason);
 		this.fields.add(this.voidedBy);
+		this.fields.add(this.updatedAt);
+		this.fields.add(this.createdAt);
 	}
 
 	@Override
@@ -89,6 +91,12 @@ public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
 		}
 		if (utilities.equalsFieldsName(fieldName, "voided_by")) {
 			return this.voidedBy.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "updated_at")) {
+			return this.updatedAt.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "created_at")) {
+			return this.createdAt.getValue();
 		}
 		return super.getFieldValue(fieldName);
 	}
@@ -145,6 +153,16 @@ public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
+		if (utilities.equalsFieldsName(fieldName, "updated_at")) {
+			this.updatedAt.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "created_at")) {
+			this.createdAt.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		super.setFieldValue(fieldName, value);
 	}
 
@@ -179,6 +197,32 @@ public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.updatedAt, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.createdAt, srcConn, dstConn);
+	}
+
+	public void setUpdatedAt(Field updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	public void setUpdatedAtValue(java.util.Date value) {
+		this.updatedAt.setValue(value);
+	}
+
+	public Field getUpdatedAt() {
+		return this.updatedAt;
+	}
+
+	public void setCreatedAt(Field createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void setCreatedAtValue(java.util.Date value) {
+		this.createdAt.setValue(value);
+	}
+
+	public Field getCreatedAt() {
+		return this.createdAt;
 	}
 
 	public void setPharmacyPackagedDrugId(Field pharmacyPackagedDrugId) {
@@ -305,6 +349,20 @@ public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		if (getRelatedConfiguration().containsField("updated_at")) {
+			String updatedAtAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"updated_at", "_");
+
+			this.updatedAt.setValue(BaseVO.retrieveFieldValue(updatedAtAttName, "DATETIME", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("created_at")) {
+			String createdAtAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"created_at", "_");
+
+			this.createdAt.setValue(BaseVO.retrieveFieldValue(createdAtAttName, "DATETIME", rs));
+		}
+
 		String pharmacyPackagedDrugIdAttName = utilities.concatStringsWithSeparator(
 				this.getRelatedConfiguration().getAlias(), "pharmacy_packaged_drug_id", "_");
 
@@ -363,7 +421,8 @@ public class PharmacyPackagedDrugVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 

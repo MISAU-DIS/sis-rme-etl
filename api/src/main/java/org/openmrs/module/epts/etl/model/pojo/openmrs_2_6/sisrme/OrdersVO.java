@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,21 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class OrdersVO extends AbstractGeneratedDatabaseObject {
+	private Field instructions = Field.fastCreateWithType("instructions", "TEXT");
+	private Field autoExpireDate = Field.fastCreateWithType("auto_expire_date", "DATETIME");
+	private Field dateStopped = Field.fastCreateWithType("date_stopped", "DATETIME");
+	private Field orderReasonNonCoded = Field.fastCreateWithType("order_reason_non_coded", "VARCHAR");
+	private Field previousOrderId = Field.fastCreateWithType("previous_order_id", "INT");
+	private Field discontinuedDate = Field.fastCreateWithType("discontinued_date", "DATETIME");
+	private Field discontinuedReasonNonCoded = Field.fastCreateWithType("discontinued_reason_non_coded", "VARCHAR");
+	private Field drugOrderId = Field.fastCreateWithType("drug_order_id", "BIGINT");
+	private Field startDate = Field.fastCreateWithType("start_date", "DATETIME");
+	private Field testOrderId = Field.fastCreateWithType("test_order_id", "BIGINT");
+	private Field sortWeight = Field.fastCreateWithType("sort_weight", "DOUBLE");
+	private Field fulfillerStatus = Field.fastCreateWithType("fulfiller_status", "VARCHAR");
 	private Field orderId = Field.fastCreateWithType("order_id", "INT");
 	private Field orderTypeId = Field.fastCreateWithType("order_type_id", "INT");
 	private Field conceptId = Field.fastCreateWithType("concept_id", "INT");
@@ -50,7 +61,18 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 
 	public OrdersVO() {
 		this.metadata = false;
-
+		this.fields.add(this.instructions);
+		this.fields.add(this.autoExpireDate);
+		this.fields.add(this.dateStopped);
+		this.fields.add(this.orderReasonNonCoded);
+		this.fields.add(this.previousOrderId);
+		this.fields.add(this.discontinuedDate);
+		this.fields.add(this.discontinuedReasonNonCoded);
+		this.fields.add(this.drugOrderId);
+		this.fields.add(this.startDate);
+		this.fields.add(this.testOrderId);
+		this.fields.add(this.sortWeight);
+		this.fields.add(this.fulfillerStatus);
 		this.fields.add(this.orderId);
 		this.fields.add(this.orderTypeId);
 		this.fields.add(this.conceptId);
@@ -84,6 +106,42 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "instructions")) {
+			return this.instructions.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "auto_expire_date")) {
+			return this.autoExpireDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_stopped")) {
+			return this.dateStopped.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_reason_non_coded")) {
+			return this.orderReasonNonCoded.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_order_id")) {
+			return this.previousOrderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "discontinued_date")) {
+			return this.discontinuedDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "discontinued_reason_non_coded")) {
+			return this.discontinuedReasonNonCoded.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "drug_order_id")) {
+			return this.drugOrderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "start_date")) {
+			return this.startDate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "test_order_id")) {
+			return this.testOrderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "sort_weight")) {
+			return this.sortWeight.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "fulfiller_status")) {
+			return this.fulfillerStatus.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "order_id")) {
 			return this.orderId.getValue();
 		}
@@ -155,6 +213,66 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "instructions")) {
+			this.instructions.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "auto_expire_date")) {
+			this.autoExpireDate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "date_stopped")) {
+			this.dateStopped.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_reason_non_coded")) {
+			this.orderReasonNonCoded.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_order_id")) {
+			this.previousOrderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "discontinued_date")) {
+			this.discontinuedDate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "discontinued_reason_non_coded")) {
+			this.discontinuedReasonNonCoded.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "drug_order_id")) {
+			this.drugOrderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "start_date")) {
+			this.startDate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "test_order_id")) {
+			this.testOrderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "sort_weight")) {
+			this.sortWeight.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "fulfiller_status")) {
+			this.fulfillerStatus.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "order_id")) {
 			this.orderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -289,6 +407,18 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.instructions, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.autoExpireDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.dateStopped, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.orderReasonNonCoded, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.previousOrderId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.discontinuedDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.discontinuedReasonNonCoded, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.drugOrderId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.startDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.testOrderId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.sortWeight, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.fulfillerStatus, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.orderId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.orderTypeId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
@@ -311,6 +441,150 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.discontinued, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.orderGroupId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.fulfillerComment, srcConn, dstConn);
+	}
+
+	public void setInstructions(Field instructions) {
+		this.instructions = instructions;
+	}
+
+	public void setInstructionsValue(String value) {
+		this.instructions.setValue(value);
+	}
+
+	public Field getInstructions() {
+		return this.instructions;
+	}
+
+	public void setAutoExpireDate(Field autoExpireDate) {
+		this.autoExpireDate = autoExpireDate;
+	}
+
+	public void setAutoExpireDateValue(java.util.Date value) {
+		this.autoExpireDate.setValue(value);
+	}
+
+	public Field getAutoExpireDate() {
+		return this.autoExpireDate;
+	}
+
+	public void setDateStopped(Field dateStopped) {
+		this.dateStopped = dateStopped;
+	}
+
+	public void setDateStoppedValue(java.util.Date value) {
+		this.dateStopped.setValue(value);
+	}
+
+	public Field getDateStopped() {
+		return this.dateStopped;
+	}
+
+	public void setOrderReasonNonCoded(Field orderReasonNonCoded) {
+		this.orderReasonNonCoded = orderReasonNonCoded;
+	}
+
+	public void setOrderReasonNonCodedValue(String value) {
+		this.orderReasonNonCoded.setValue(value);
+	}
+
+	public Field getOrderReasonNonCoded() {
+		return this.orderReasonNonCoded;
+	}
+
+	public void setPreviousOrderId(Field previousOrderId) {
+		this.previousOrderId = previousOrderId;
+	}
+
+	public void setPreviousOrderIdValue(Integer value) {
+		this.previousOrderId.setValue(value);
+	}
+
+	public Field getPreviousOrderId() {
+		return this.previousOrderId;
+	}
+
+	public void setDiscontinuedDate(Field discontinuedDate) {
+		this.discontinuedDate = discontinuedDate;
+	}
+
+	public void setDiscontinuedDateValue(java.util.Date value) {
+		this.discontinuedDate.setValue(value);
+	}
+
+	public Field getDiscontinuedDate() {
+		return this.discontinuedDate;
+	}
+
+	public void setDiscontinuedReasonNonCoded(Field discontinuedReasonNonCoded) {
+		this.discontinuedReasonNonCoded = discontinuedReasonNonCoded;
+	}
+
+	public void setDiscontinuedReasonNonCodedValue(String value) {
+		this.discontinuedReasonNonCoded.setValue(value);
+	}
+
+	public Field getDiscontinuedReasonNonCoded() {
+		return this.discontinuedReasonNonCoded;
+	}
+
+	public void setDrugOrderId(Field drugOrderId) {
+		this.drugOrderId = drugOrderId;
+	}
+
+	public void setDrugOrderIdValue(Integer value) {
+		this.drugOrderId.setValue(value);
+	}
+
+	public Field getDrugOrderId() {
+		return this.drugOrderId;
+	}
+
+	public void setStartDate(Field startDate) {
+		this.startDate = startDate;
+	}
+
+	public void setStartDateValue(java.util.Date value) {
+		this.startDate.setValue(value);
+	}
+
+	public Field getStartDate() {
+		return this.startDate;
+	}
+
+	public void setTestOrderId(Field testOrderId) {
+		this.testOrderId = testOrderId;
+	}
+
+	public void setTestOrderIdValue(Integer value) {
+		this.testOrderId.setValue(value);
+	}
+
+	public Field getTestOrderId() {
+		return this.testOrderId;
+	}
+
+	public void setSortWeight(Field sortWeight) {
+		this.sortWeight = sortWeight;
+	}
+
+	public void setSortWeightValue(Double value) {
+		this.sortWeight.setValue(value);
+	}
+
+	public Field getSortWeight() {
+		return this.sortWeight;
+	}
+
+	public void setFulfillerStatus(Field fulfillerStatus) {
+		this.fulfillerStatus = fulfillerStatus;
+	}
+
+	public void setFulfillerStatusValue(String value) {
+		this.fulfillerStatus.setValue(value);
+	}
+
+	public Field getFulfillerStatus() {
+		return this.fulfillerStatus;
 	}
 
 	public void setOrderId(Field orderId) {
@@ -581,6 +855,67 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		String instructionsAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"instructions", "_");
+
+		this.instructions.setValue(BaseVO.retrieveFieldValue(instructionsAttName, "TEXT", rs));
+
+		String autoExpireDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"auto_expire_date", "_");
+
+		this.autoExpireDate.setValue(BaseVO.retrieveFieldValue(autoExpireDateAttName, "DATETIME", rs));
+
+		String dateStoppedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"date_stopped", "_");
+
+		this.dateStopped.setValue(BaseVO.retrieveFieldValue(dateStoppedAttName, "DATETIME", rs));
+
+		String orderReasonNonCodedAttName = utilities
+				.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "order_reason_non_coded", "_");
+
+		this.orderReasonNonCoded.setValue(BaseVO.retrieveFieldValue(orderReasonNonCodedAttName, "VARCHAR", rs));
+
+		String previousOrderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"previous_order_id", "_");
+
+		this.previousOrderId.setValue(BaseVO.retrieveFieldValue(previousOrderIdAttName, "INT", rs));
+
+		String discontinuedDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"discontinued_date", "_");
+
+		this.discontinuedDate.setValue(BaseVO.retrieveFieldValue(discontinuedDateAttName, "DATETIME", rs));
+
+		String discontinuedReasonNonCodedAttName = utilities.concatStringsWithSeparator(
+				this.getRelatedConfiguration().getAlias(), "discontinued_reason_non_coded", "_");
+
+		this.discontinuedReasonNonCoded
+				.setValue(BaseVO.retrieveFieldValue(discontinuedReasonNonCodedAttName, "VARCHAR", rs));
+
+		String drugOrderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"drug_order_id", "_");
+
+		this.drugOrderId.setValue(BaseVO.retrieveFieldValue(drugOrderIdAttName, "BIGINT", rs));
+
+		String startDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"start_date", "_");
+
+		this.startDate.setValue(BaseVO.retrieveFieldValue(startDateAttName, "DATETIME", rs));
+
+		String testOrderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"test_order_id", "_");
+
+		this.testOrderId.setValue(BaseVO.retrieveFieldValue(testOrderIdAttName, "BIGINT", rs));
+
+		String sortWeightAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"sort_weight", "_");
+
+		this.sortWeight.setValue(BaseVO.retrieveFieldValue(sortWeightAttName, "DOUBLE", rs));
+
+		String fulfillerStatusAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"fulfiller_status", "_");
+
+		this.fulfillerStatus.setValue(BaseVO.retrieveFieldValue(fulfillerStatusAttName, "VARCHAR", rs));
+
 		String orderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"order_id", "_");
 
@@ -659,7 +994,8 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String urgencyAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"urgency", "_");
@@ -711,19 +1047,23 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO orders(`order_type_id`, `concept_id`, `orderer`, `encounter_id`, `date_activated`, `order_reason`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `patient_id`, `accession_number`, `uuid`, `urgency`, `order_number`, `order_action`, `comment_to_fulfiller`, `care_setting`, `scheduled_date`, `discontinued`, `order_group_id`, `fulfiller_comment`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO orders(`instructions`, `auto_expire_date`, `date_stopped`, `order_reason_non_coded`, `previous_order_id`, `discontinued_date`, `discontinued_reason_non_coded`, `drug_order_id`, `start_date`, `test_order_id`, `sort_weight`, `fulfiller_status`, `order_type_id`, `concept_id`, `orderer`, `encounter_id`, `date_activated`, `order_reason`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `patient_id`, `accession_number`, `uuid`, `urgency`, `order_number`, `order_action`, `comment_to_fulfiller`, `care_setting`, `scheduled_date`, `discontinued`, `order_group_id`, `fulfiller_comment`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO orders(`order_id`, `order_type_id`, `concept_id`, `orderer`, `encounter_id`, `date_activated`, `order_reason`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `patient_id`, `accession_number`, `uuid`, `urgency`, `order_number`, `order_action`, `comment_to_fulfiller`, `care_setting`, `scheduled_date`, `discontinued`, `order_group_id`, `fulfiller_comment`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO orders(`instructions`, `auto_expire_date`, `date_stopped`, `order_reason_non_coded`, `previous_order_id`, `discontinued_date`, `discontinued_reason_non_coded`, `drug_order_id`, `start_date`, `test_order_id`, `sort_weight`, `fulfiller_status`, `order_id`, `order_type_id`, `concept_id`, `orderer`, `encounter_id`, `date_activated`, `order_reason`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `patient_id`, `accession_number`, `uuid`, `urgency`, `order_number`, `order_action`, `comment_to_fulfiller`, `care_setting`, `scheduled_date`, `discontinued`, `order_group_id`, `fulfiller_comment`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
-		Object[] params = { this.orderTypeId.getValue(), this.conceptId.getValue(), this.orderer.getValue(),
+		Object[] params = { this.instructions.getValue(), this.autoExpireDate.getValue(), this.dateStopped.getValue(),
+				this.orderReasonNonCoded.getValue(), this.previousOrderId.getValue(), this.discontinuedDate.getValue(),
+				this.discontinuedReasonNonCoded.getValue(), this.drugOrderId.getValue(), this.startDate.getValue(),
+				this.testOrderId.getValue(), this.sortWeight.getValue(), this.fulfillerStatus.getValue(),
+				this.orderTypeId.getValue(), this.conceptId.getValue(), this.orderer.getValue(),
 				this.encounterId.getValue(), this.dateActivated.getValue(), this.orderReason.getValue(),
 				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
 				this.dateVoided, this.voidReason.getValue(), this.patientId.getValue(), this.accessionNumber.getValue(),
@@ -736,7 +1076,11 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
-		Object[] params = { this.orderId.getValue(), this.orderTypeId.getValue(), this.conceptId.getValue(),
+		Object[] params = { this.instructions.getValue(), this.autoExpireDate.getValue(), this.dateStopped.getValue(),
+				this.orderReasonNonCoded.getValue(), this.previousOrderId.getValue(), this.discontinuedDate.getValue(),
+				this.discontinuedReasonNonCoded.getValue(), this.drugOrderId.getValue(), this.startDate.getValue(),
+				this.testOrderId.getValue(), this.sortWeight.getValue(), this.fulfillerStatus.getValue(),
+				this.orderId.getValue(), this.orderTypeId.getValue(), this.conceptId.getValue(),
 				this.orderer.getValue(), this.encounterId.getValue(), this.dateActivated.getValue(),
 				this.orderReason.getValue(), this.creator.getValue(), this.dateCreated, this.voided.getValue(),
 				this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(), this.patientId.getValue(),
@@ -750,19 +1094,23 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
-		Object[] params = { this.orderId.getValue(), this.orderTypeId.getValue(), this.conceptId.getValue(),
+		Object[] params = { this.instructions.getValue(), this.autoExpireDate.getValue(), this.dateStopped.getValue(),
+				this.orderReasonNonCoded.getValue(), this.previousOrderId.getValue(), this.discontinuedDate.getValue(),
+				this.discontinuedReasonNonCoded.getValue(), this.drugOrderId.getValue(), this.startDate.getValue(),
+				this.testOrderId.getValue(), this.sortWeight.getValue(), this.fulfillerStatus.getValue(),
+				this.orderId.getValue(), this.orderTypeId.getValue(), this.conceptId.getValue(),
 				this.orderer.getValue(), this.encounterId.getValue(), this.dateActivated.getValue(),
 				this.orderReason.getValue(), this.creator.getValue(), this.dateCreated, this.voided.getValue(),
 				this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(), this.patientId.getValue(),
@@ -776,14 +1124,47 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE orders SET `order_id` = ?, `order_type_id` = ?, `concept_id` = ?, `orderer` = ?, `encounter_id` = ?, `date_activated` = ?, `order_reason` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `patient_id` = ?, `accession_number` = ?, `uuid` = ?, `urgency` = ?, `order_number` = ?, `order_action` = ?, `comment_to_fulfiller` = ?, `care_setting` = ?, `scheduled_date` = ?, `discontinued` = ?, `order_group_id` = ?, `fulfiller_comment` = ? WHERE order_id = ? ";
+		return "UPDATE orders SET `instructions` = ?, `auto_expire_date` = ?, `date_stopped` = ?, `order_reason_non_coded` = ?, `previous_order_id` = ?, `discontinued_date` = ?, `discontinued_reason_non_coded` = ?, `drug_order_id` = ?, `start_date` = ?, `test_order_id` = ?, `sort_weight` = ?, `fulfiller_status` = ?, `order_id` = ?, `order_type_id` = ?, `concept_id` = ?, `orderer` = ?, `encounter_id` = ?, `date_activated` = ?, `order_reason` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `patient_id` = ?, `accession_number` = ?, `uuid` = ?, `urgency` = ?, `order_number` = ?, `order_action` = ?, `comment_to_fulfiller` = ?, `care_setting` = ?, `scheduled_date` = ?, `discontinued` = ?, `order_group_id` = ?, `fulfiller_comment` = ? WHERE order_id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
-		return "" + (this.orderTypeId.getValue()) + "," + (this.conceptId.getValue()) + "," + (this.orderer.getValue())
-				+ "," + (this.encounterId.getValue()) + ","
+		return ""
+				+ (this.instructions.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.instructions.getValue().toString()) + "\""
+						: null)
+				+ ","
+				+ (this.autoExpireDate.getValue() != null ? "\""
+						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.autoExpireDate.getValue())
+						+ "\"" : null)
+				+ ","
+				+ (this.dateStopped.getValue() != null ? "\""
+						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateStopped.getValue())
+						+ "\"" : null)
+				+ ","
+				+ (this.orderReasonNonCoded.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.orderReasonNonCoded.getValue().toString()) + "\""
+						: null)
+				+ "," + (this.previousOrderId.getValue()) + ","
+				+ (this.discontinuedDate.getValue() != null
+						? "\"" + DateAndTimeUtilities
+								.formatToYYYYMMDD_HHMISS((java.util.Date) this.discontinuedDate.getValue()) + "\""
+						: null)
+				+ ","
+				+ (this.discontinuedReasonNonCoded.getValue() != null ? "\""
+						+ utilities.scapeQuotationMarks(this.discontinuedReasonNonCoded.getValue().toString()) + "\""
+						: null)
+				+ "," + (this.drugOrderId.getValue()) + ","
+				+ (this.startDate.getValue() != null ? "\""
+						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.startDate.getValue())
+						+ "\"" : null)
+				+ "," + (this.testOrderId.getValue()) + "," + (this.sortWeight.getValue()) + ","
+				+ (this.fulfillerStatus.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.fulfillerStatus.getValue().toString()) + "\""
+						: null)
+				+ "," + (this.orderTypeId.getValue()) + "," + (this.conceptId.getValue()) + ","
+				+ (this.orderer.getValue()) + "," + (this.encounterId.getValue()) + ","
 				+ (this.dateActivated.getValue() != null ? "\""
 						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateActivated.getValue())
 						+ "\"" : null)
@@ -834,8 +1215,42 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return "" + (this.orderId.getValue()) + "," + (this.orderTypeId.getValue()) + "," + (this.conceptId.getValue())
-				+ "," + (this.orderer.getValue()) + "," + (this.encounterId.getValue()) + ","
+		return ""
+				+ (this.instructions.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.instructions.getValue().toString()) + "\""
+						: null)
+				+ ","
+				+ (this.autoExpireDate.getValue() != null ? "\""
+						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.autoExpireDate.getValue())
+						+ "\"" : null)
+				+ ","
+				+ (this.dateStopped.getValue() != null ? "\""
+						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateStopped.getValue())
+						+ "\"" : null)
+				+ ","
+				+ (this.orderReasonNonCoded.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.orderReasonNonCoded.getValue().toString()) + "\""
+						: null)
+				+ "," + (this.previousOrderId.getValue()) + ","
+				+ (this.discontinuedDate.getValue() != null
+						? "\"" + DateAndTimeUtilities
+								.formatToYYYYMMDD_HHMISS((java.util.Date) this.discontinuedDate.getValue()) + "\""
+						: null)
+				+ ","
+				+ (this.discontinuedReasonNonCoded.getValue() != null ? "\""
+						+ utilities.scapeQuotationMarks(this.discontinuedReasonNonCoded.getValue().toString()) + "\""
+						: null)
+				+ "," + (this.drugOrderId.getValue()) + ","
+				+ (this.startDate.getValue() != null ? "\""
+						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.startDate.getValue())
+						+ "\"" : null)
+				+ "," + (this.testOrderId.getValue()) + "," + (this.sortWeight.getValue()) + ","
+				+ (this.fulfillerStatus.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.fulfillerStatus.getValue().toString()) + "\""
+						: null)
+				+ "," + (this.orderId.getValue()) + "," + (this.orderTypeId.getValue()) + ","
+				+ (this.conceptId.getValue()) + "," + (this.orderer.getValue()) + "," + (this.encounterId.getValue())
+				+ ","
 				+ (this.dateActivated.getValue() != null ? "\""
 						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateActivated.getValue())
 						+ "\"" : null)
@@ -900,10 +1315,10 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 		if (this.careSetting.getValue() != null)
 			return true;
 
-		if (this.orderReason.getValue() != null)
+		if (this.conceptId.getValue() != null)
 			return true;
 
-		if (this.conceptId.getValue() != null)
+		if (this.orderReason.getValue() != null)
 			return true;
 
 		if (this.encounterId.getValue() != null)
@@ -931,10 +1346,10 @@ public class OrdersVO extends AbstractGeneratedDatabaseObject {
 	public Object getParentValue(String parentAttName) {
 		if (parentAttName.equals("careSetting"))
 			return this.careSetting.getValue();
-		if (parentAttName.equals("orderReason"))
-			return this.orderReason.getValue();
 		if (parentAttName.equals("conceptId"))
 			return this.conceptId.getValue();
+		if (parentAttName.equals("orderReason"))
+			return this.orderReason.getValue();
 		if (parentAttName.equals("encounterId"))
 			return this.encounterId.getValue();
 		if (parentAttName.equals("orderGroupId"))

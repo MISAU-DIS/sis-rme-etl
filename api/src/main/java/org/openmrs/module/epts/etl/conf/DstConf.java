@@ -737,9 +737,6 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
-
-		stepIntoBreakpoint(this.getRelatedEtlConf(), this.getTableName().equals("encounter"));
-
 		if (!this.isInMemoryTable()) {
 			this.tryToGenerateTableAlias(getRelatedEtlConf());
 

@@ -47,8 +47,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
 			throws DBException {
 		try {
-			transform(etlObjects, srcConn, dstConn);
-			load(etlObjects, srcConn, dstConn);
+			this.transform(etlObjects, srcConn, dstConn);
+			this.load(etlObjects, srcConn, dstConn);
 		} catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
 			logError(e.getLocalizedMessage(), e);

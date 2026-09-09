@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,10 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
+	private Field diagnosisCodedName = Field.fastCreateWithType("diagnosis_coded_name", "INT");
 	private Field diagnosisId = Field.fastCreateWithType("diagnosis_id", "INT");
 	private Field diagnosisCoded = Field.fastCreateWithType("diagnosis_coded", "INT");
 	private Field diagnosisNonCoded = Field.fastCreateWithType("diagnosis_non_coded", "VARCHAR");
@@ -41,7 +41,7 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 
 	public EncounterDiagnosisVO() {
 		this.metadata = false;
-
+		this.fields.add(this.diagnosisCodedName);
 		this.fields.add(this.diagnosisId);
 		this.fields.add(this.diagnosisCoded);
 		this.fields.add(this.diagnosisNonCoded);
@@ -66,6 +66,9 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "diagnosis_coded_name")) {
+			return this.diagnosisCodedName.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "diagnosis_id")) {
 			return this.diagnosisId.getValue();
 		}
@@ -110,6 +113,11 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "diagnosis_coded_name")) {
+			this.diagnosisCodedName.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "diagnosis_id")) {
 			this.diagnosisId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -199,6 +207,7 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.diagnosisCodedName, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.diagnosisId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.diagnosisCoded, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.diagnosisNonCoded, srcConn, dstConn);
@@ -212,6 +221,18 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+	}
+
+	public void setDiagnosisCodedName(Field diagnosisCodedName) {
+		this.diagnosisCodedName = diagnosisCodedName;
+	}
+
+	public void setDiagnosisCodedNameValue(Integer value) {
+		this.diagnosisCodedName.setValue(value);
+	}
+
+	public Field getDiagnosisCodedName() {
+		return this.diagnosisCodedName;
 	}
 
 	public void setDiagnosisId(Field diagnosisId) {
@@ -374,6 +395,13 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		if (getRelatedConfiguration().containsField("diagnosis_coded_name")) {
+			String diagnosisCodedNameAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "diagnosis_coded_name", "_");
+
+			this.diagnosisCodedName.setValue(BaseVO.retrieveFieldValue(diagnosisCodedNameAttName, "INT", rs));
+		}
+
 		String diagnosisIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"diagnosis_id", "_");
 
@@ -417,7 +445,8 @@ public class EncounterDiagnosisVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String creatorAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"creator", "_");

@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -42,8 +41,7 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 	private Field retireReason = Field.fastCreateWithType("retire_reason", "VARCHAR");
 
 	public ClinicalServiceVO() {
-		this.metadata = false;
-
+		this.metadata = true;
 		this.fields.add(this.clinicalServiceId);
 		this.fields.add(this.locationId);
 		this.fields.add(this.serviceConceptId);
@@ -473,7 +471,7 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 		String dateCreatedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_created", "_");
 
-		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "DATETIME", rs);
+		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "TIMESTAMP", rs);
 
 		String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"changed_by", "_");
@@ -483,7 +481,7 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 		String dateChangedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_changed", "_");
 
-		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "DATETIME", rs);
+		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "TIMESTAMP", rs);
 
 		String retiredAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"retired", "_");
@@ -508,7 +506,8 @@ public class ClinicalServiceVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 

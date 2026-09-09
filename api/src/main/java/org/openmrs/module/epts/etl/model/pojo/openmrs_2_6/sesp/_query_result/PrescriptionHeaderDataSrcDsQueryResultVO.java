@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -19,16 +19,14 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedDatabaseObject {
 	private Field nextPickupDate = Field.fastCreateWithType("next_pickup_date", "DATETIME");
-	private Field dispenseModeId = Field.fastCreateWithType("dispense_mode_id", "NULL");
+	private Field dispenseModeId = Field.fastCreateWithType("dispense_mode_id", "INT");
 
 	public PrescriptionHeaderDataSrcDsQueryResultVO() {
 		this.metadata = false;
-
 		this.fields.add(this.nextPickupDate);
 		this.fields.add(this.dispenseModeId);
 	}
@@ -104,7 +102,7 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 		this.dispenseModeId = dispenseModeId;
 	}
 
-	public void setDispenseModeIdValue(String value) {
+	public void setDispenseModeIdValue(Integer value) {
 		this.dispenseModeId.setValue(value);
 	}
 
@@ -122,7 +120,7 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 
 		String dispenseModeIdAttName = "dispense_mode_id";
 
-		this.dispenseModeId.setValue(BaseVO.retrieveFieldValue(dispenseModeIdAttName, "NULL", rs));
+		this.dispenseModeId.setValue(BaseVO.retrieveFieldValue(dispenseModeIdAttName, "INT", rs));
 		this.loadedFromDb = true;
 	}
 
@@ -179,27 +177,17 @@ public class PrescriptionHeaderDataSrcDsQueryResultVO extends AbstractGeneratedD
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
-		return ""
-				+ (this.nextPickupDate.getValue() != null ? "\""
-						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.nextPickupDate.getValue())
-						+ "\"" : null)
-				+ ","
-				+ (this.dispenseModeId.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.dispenseModeId.getValue().toString()) + "\""
-						: null);
+		return "" + (this.nextPickupDate.getValue() != null ? "\""
+				+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.nextPickupDate.getValue()) + "\""
+				: null) + "," + (this.dispenseModeId.getValue());
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return ""
-				+ (this.nextPickupDate.getValue() != null ? "\""
-						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.nextPickupDate.getValue())
-						+ "\"" : null)
-				+ ","
-				+ (this.dispenseModeId.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.dispenseModeId.getValue().toString()) + "\""
-						: null);
+		return "" + (this.nextPickupDate.getValue() != null ? "\""
+				+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.nextPickupDate.getValue()) + "\""
+				: null) + "," + (this.dispenseModeId.getValue());
 	}
 
 	@JsonIgnore

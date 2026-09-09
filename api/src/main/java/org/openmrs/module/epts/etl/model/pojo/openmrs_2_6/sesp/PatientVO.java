@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -18,7 +18,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -33,8 +32,6 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 
 	public PatientVO() {
 		this.metadata = false;
-		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.PersonVO());
-
 		this.fields.add(this.patientId);
 		this.fields.add(this.creator);
 		this.fields.add(this.changedBy);
@@ -42,6 +39,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		this.fields.add(this.voidedBy);
 		this.fields.add(this.voidReason);
 		this.fields.add(this.allergyStatus);
+		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.PersonVO());
 	}
 
 	@Override
@@ -49,12 +47,6 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(k.getName(), "patient_id")) {
 			this.patientId.setValue(k.getValue());
 		}
-	}
-
-	@JsonIgnore
-	@Override
-	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.PersonVO getSharedPkObj() {
-		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.PersonVO) super.getSharedPkObj();
 	}
 
 	@Override
@@ -121,6 +113,12 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 			return;
 		}
 		super.setFieldValue(fieldName, value);
+	}
+
+	@JsonIgnore
+	@Override
+	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.PersonVO getSharedPkObj() {
+		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.PersonVO) super.getSharedPkObj();
 	}
 
 	@JsonIgnore
@@ -239,13 +237,13 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void load(ResultSet rs) throws SQLException {
+		super.load(rs);
+
 		if (!hasRelatedConfiguration())
 			throw new org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException(
 					"The relatedConfiguration is not set");
 		if (!getSharedPkObj().isLoadedFromDb())
 			getSharedPkObj().load(rs);
-		super.load(rs);
-
 		String patientIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"patient_id", "_");
 

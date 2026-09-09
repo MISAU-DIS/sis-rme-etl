@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,16 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
+	private Field heartRate = Field.fastCreateWithType("heart_rate", "INT");
+	private Field respiratoryRate = Field.fastCreateWithType("respiratory_rate", "INT");
+	private Field oxygenSaturation = Field.fastCreateWithType("oxygen_saturation", "INT");
+	private Field pulseType = Field.fastCreateWithType("pulse_type", "CHAR");
+	private Field pulseBpm = Field.fastCreateWithType("pulse_bpm", "INT");
+	private Field pulseState = Field.fastCreateWithType("pulse_state", "CHAR");
+	private Field pulseAmplitude = Field.fastCreateWithType("pulse_amplitude", "INT");
 	private Field vitalSignsId = Field.fastCreateWithType("vital_signs_id", "BIGINT UNSIGNED");
 	private Field patientId = Field.fastCreateWithType("patient_id", "INT");
 	private Field encounterId = Field.fastCreateWithType("encounter_id", "INT");
@@ -40,14 +46,20 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 
 	public VitalSignsVO() {
 		this.metadata = false;
-
 		this.fields.add(this.vitalSignsId);
 		this.fields.add(this.patientId);
 		this.fields.add(this.encounterId);
 		this.fields.add(this.locationId);
 		this.fields.add(this.temperature);
+		this.fields.add(this.heartRate);
+		this.fields.add(this.respiratoryRate);
 		this.fields.add(this.bloodPressureSystolic);
 		this.fields.add(this.bloodPressureDiastolic);
+		this.fields.add(this.oxygenSaturation);
+		this.fields.add(this.pulseType);
+		this.fields.add(this.pulseBpm);
+		this.fields.add(this.pulseState);
+		this.fields.add(this.pulseAmplitude);
 		this.fields.add(this.creator);
 		this.fields.add(this.changedBy);
 		this.fields.add(this.voided);
@@ -79,11 +91,32 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "temperature")) {
 			return this.temperature.getValue();
 		}
+		if (utilities.equalsFieldsName(fieldName, "heart_rate")) {
+			return this.heartRate.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "respiratory_rate")) {
+			return this.respiratoryRate.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "blood_pressure_systolic")) {
 			return this.bloodPressureSystolic.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "blood_pressure_diastolic")) {
 			return this.bloodPressureDiastolic.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "oxygen_saturation")) {
+			return this.oxygenSaturation.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_type")) {
+			return this.pulseType.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_bpm")) {
+			return this.pulseBpm.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_state")) {
+			return this.pulseState.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_amplitude")) {
+			return this.pulseAmplitude.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "creator")) {
 			return this.creator.getValue();
@@ -130,6 +163,16 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
+		if (utilities.equalsFieldsName(fieldName, "heart_rate")) {
+			this.heartRate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "respiratory_rate")) {
+			this.respiratoryRate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "blood_pressure_systolic")) {
 			this.bloodPressureSystolic.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -137,6 +180,31 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 		}
 		if (utilities.equalsFieldsName(fieldName, "blood_pressure_diastolic")) {
 			this.bloodPressureDiastolic.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "oxygen_saturation")) {
+			this.oxygenSaturation.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_type")) {
+			this.pulseType.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_bpm")) {
+			this.pulseBpm.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_state")) {
+			this.pulseState.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "pulse_amplitude")) {
+			this.pulseAmplitude.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
@@ -194,13 +262,104 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.locationId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.temperature, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.heartRate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.respiratoryRate, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.bloodPressureSystolic, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.bloodPressureDiastolic, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.oxygenSaturation, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.pulseType, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.pulseBpm, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.pulseState, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.pulseAmplitude, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
+	}
+
+	public void setHeartRate(Field heartRate) {
+		this.heartRate = heartRate;
+	}
+
+	public void setHeartRateValue(Integer value) {
+		this.heartRate.setValue(value);
+	}
+
+	public Field getHeartRate() {
+		return this.heartRate;
+	}
+
+	public void setRespiratoryRate(Field respiratoryRate) {
+		this.respiratoryRate = respiratoryRate;
+	}
+
+	public void setRespiratoryRateValue(Integer value) {
+		this.respiratoryRate.setValue(value);
+	}
+
+	public Field getRespiratoryRate() {
+		return this.respiratoryRate;
+	}
+
+	public void setOxygenSaturation(Field oxygenSaturation) {
+		this.oxygenSaturation = oxygenSaturation;
+	}
+
+	public void setOxygenSaturationValue(Integer value) {
+		this.oxygenSaturation.setValue(value);
+	}
+
+	public Field getOxygenSaturation() {
+		return this.oxygenSaturation;
+	}
+
+	public void setPulseType(Field pulseType) {
+		this.pulseType = pulseType;
+	}
+
+	public void setPulseTypeValue(String value) {
+		this.pulseType.setValue(value);
+	}
+
+	public Field getPulseType() {
+		return this.pulseType;
+	}
+
+	public void setPulseBpm(Field pulseBpm) {
+		this.pulseBpm = pulseBpm;
+	}
+
+	public void setPulseBpmValue(Integer value) {
+		this.pulseBpm.setValue(value);
+	}
+
+	public Field getPulseBpm() {
+		return this.pulseBpm;
+	}
+
+	public void setPulseState(Field pulseState) {
+		this.pulseState = pulseState;
+	}
+
+	public void setPulseStateValue(String value) {
+		this.pulseState.setValue(value);
+	}
+
+	public Field getPulseState() {
+		return this.pulseState;
+	}
+
+	public void setPulseAmplitude(Field pulseAmplitude) {
+		this.pulseAmplitude = pulseAmplitude;
+	}
+
+	public void setPulseAmplitudeValue(Integer value) {
+		this.pulseAmplitude.setValue(value);
+	}
+
+	public Field getPulseAmplitude() {
+		return this.pulseAmplitude;
 	}
 
 	public void setVitalSignsId(Field vitalSignsId) {
@@ -351,6 +510,55 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		if (getRelatedConfiguration().containsField("heart_rate")) {
+			String heartRateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"heart_rate", "_");
+
+			this.heartRate.setValue(BaseVO.retrieveFieldValue(heartRateAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("respiratory_rate")) {
+			String respiratoryRateAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "respiratory_rate", "_");
+
+			this.respiratoryRate.setValue(BaseVO.retrieveFieldValue(respiratoryRateAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("oxygen_saturation")) {
+			String oxygenSaturationAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "oxygen_saturation", "_");
+
+			this.oxygenSaturation.setValue(BaseVO.retrieveFieldValue(oxygenSaturationAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("pulse_type")) {
+			String pulseTypeAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"pulse_type", "_");
+
+			this.pulseType.setValue(BaseVO.retrieveFieldValue(pulseTypeAttName, "CHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("pulse_bpm")) {
+			String pulseBpmAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"pulse_bpm", "_");
+
+			this.pulseBpm.setValue(BaseVO.retrieveFieldValue(pulseBpmAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("pulse_state")) {
+			String pulseStateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"pulse_state", "_");
+
+			this.pulseState.setValue(BaseVO.retrieveFieldValue(pulseStateAttName, "CHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("pulse_amplitude")) {
+			String pulseAmplitudeAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "pulse_amplitude", "_");
+
+			this.pulseAmplitude.setValue(BaseVO.retrieveFieldValue(pulseAmplitudeAttName, "INT", rs));
+		}
+
 		String vitalSignsIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"vital_signs_id", "_");
 
@@ -394,7 +602,7 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 		String dateCreatedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_created", "_");
 
-		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "DATETIME", rs);
+		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "TIMESTAMP", rs);
 
 		String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"changed_by", "_");
@@ -404,7 +612,7 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 		String dateChangedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_changed", "_");
 
-		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "DATETIME", rs);
+		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "TIMESTAMP", rs);
 
 		String voidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "voided",
 				"_");
@@ -424,12 +632,13 @@ public class VitalSignsVO extends AbstractGeneratedDatabaseObject {
 		String dateVoidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_voided", "_");
 
-		this.dateVoided = (java.util.Date) BaseVO.retrieveFieldValue(dateVoidedAttName, "DATETIME", rs);
+		this.dateVoided = (java.util.Date) BaseVO.retrieveFieldValue(dateVoidedAttName, "TIMESTAMP", rs);
 
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 		this.loadedFromDb = true;
 	}
 

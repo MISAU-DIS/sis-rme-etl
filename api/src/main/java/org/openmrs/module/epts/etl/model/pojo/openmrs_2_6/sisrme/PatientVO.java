@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PatientVO extends AbstractGeneratedDatabaseObject {
+	private Field ddeSyncPending = Field.fastCreateWithType("dde_sync_pending", "TINYINT");
 	private Field patientId = Field.fastCreateWithType("patient_id", "INT");
 	private Field creator = Field.fastCreateWithType("creator", "INT");
 	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
@@ -32,6 +33,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 
 	public PatientVO() {
 		this.metadata = false;
+		this.fields.add(this.ddeSyncPending);
 		this.fields.add(this.patientId);
 		this.fields.add(this.creator);
 		this.fields.add(this.changedBy);
@@ -51,6 +53,9 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "dde_sync_pending")) {
+			return this.ddeSyncPending.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "patient_id")) {
 			return this.patientId.getValue();
 		}
@@ -77,6 +82,11 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "dde_sync_pending")) {
+			this.ddeSyncPending.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "patient_id")) {
 			this.patientId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -142,6 +152,7 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.ddeSyncPending, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
@@ -149,6 +160,18 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.allergyStatus, srcConn, dstConn);
+	}
+
+	public void setDdeSyncPending(Field ddeSyncPending) {
+		this.ddeSyncPending = ddeSyncPending;
+	}
+
+	public void setDdeSyncPendingValue(Byte value) {
+		this.ddeSyncPending.setValue(value);
+	}
+
+	public Field getDdeSyncPending() {
+		return this.ddeSyncPending;
 	}
 
 	public void setPatientId(Field patientId) {
@@ -244,6 +267,11 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 					"The relatedConfiguration is not set");
 		if (!getSharedPkObj().isLoadedFromDb())
 			getSharedPkObj().load(rs);
+		String ddeSyncPendingAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"dde_sync_pending", "_");
+
+		this.ddeSyncPending.setValue(BaseVO.retrieveFieldValue(ddeSyncPendingAttName, "TINYINT", rs));
+
 		String patientIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"patient_id", "_");
 
@@ -306,28 +334,19 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO patient(`creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO patient(`dde_sync_pending`, `creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO patient(`patient_id`, `creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO patient(`dde_sync_pending`, `patient_id`, `creator`, `date_created`, `changed_by`, `date_changed`, `voided`, `voided_by`, `date_voided`, `void_reason`, `allergy_status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
-		Object[] params = { this.creator.getValue(), this.dateCreated, this.changedBy.getValue(), this.dateChanged,
-				this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(),
-				this.allergyStatus.getValue() };
-		return params;
-	}
-
-	@JsonIgnore
-	@Override
-	public Object[] getInsertParamsWithObjectId() {
-		Object[] params = { this.patientId.getValue(), this.creator.getValue(), this.dateCreated,
+		Object[] params = { this.ddeSyncPending.getValue(), this.creator.getValue(), this.dateCreated,
 				this.changedBy.getValue(), this.dateChanged, this.voided.getValue(), this.voidedBy.getValue(),
 				this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue() };
 		return params;
@@ -335,35 +354,45 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 
 	@JsonIgnore
 	@Override
-	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?";
+	public Object[] getInsertParamsWithObjectId() {
+		Object[] params = { this.ddeSyncPending.getValue(), this.patientId.getValue(), this.creator.getValue(),
+				this.dateCreated, this.changedBy.getValue(), this.dateChanged, this.voided.getValue(),
+				this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue() };
+		return params;
 	}
 
 	@JsonIgnore
 	@Override
-	public String getInsertSQLQuestionMarksWithObjectId() {
+	public String getInsertSQLQuestionMarksWithoutObjectId() {
 		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
+	public String getInsertSQLQuestionMarksWithObjectId() {
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+	}
+
+	@JsonIgnore
+	@Override
 	public Object[] getUpdateParams() {
-		Object[] params = { this.patientId.getValue(), this.creator.getValue(), this.dateCreated,
-				this.changedBy.getValue(), this.dateChanged, this.voided.getValue(), this.voidedBy.getValue(),
-				this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue(), this.patientId.getValue() };
+		Object[] params = { this.ddeSyncPending.getValue(), this.patientId.getValue(), this.creator.getValue(),
+				this.dateCreated, this.changedBy.getValue(), this.dateChanged, this.voided.getValue(),
+				this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(), this.allergyStatus.getValue(),
+				this.patientId.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE patient SET `patient_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `allergy_status` = ? WHERE patient_id = ? ";
+		return "UPDATE patient SET `dde_sync_pending` = ?, `patient_id` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `allergy_status` = ? WHERE patient_id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
-		return "" + (this.creator.getValue()) + ","
+		return "" + (this.ddeSyncPending.getValue()) + "," + (this.creator.getValue()) + ","
 				+ (this.dateCreated != null
 						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateCreated) + "\""
 						: null)
@@ -389,7 +418,8 @@ public class PatientVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return "" + (this.patientId.getValue()) + "," + (this.creator.getValue()) + ","
+		return "" + (this.ddeSyncPending.getValue()) + "," + (this.patientId.getValue()) + ","
+				+ (this.creator.getValue()) + ","
 				+ (this.dateCreated != null
 						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateCreated) + "\""
 						: null)

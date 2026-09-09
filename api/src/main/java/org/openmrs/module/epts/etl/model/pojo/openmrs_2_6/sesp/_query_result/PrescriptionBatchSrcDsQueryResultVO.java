@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
@@ -19,7 +19,6 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDatabaseObject {
@@ -27,7 +26,6 @@ public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDataba
 
 	public PrescriptionBatchSrcDsQueryResultVO() {
 		this.metadata = false;
-
 		this.fields.add(this.batchNumber);
 	}
 
@@ -99,7 +97,8 @@ public class PrescriptionBatchSrcDsQueryResultVO extends AbstractGeneratedDataba
 
 		String uuidAttName = "uuid";
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 		this.loadedFromDb = true;
 	}
 

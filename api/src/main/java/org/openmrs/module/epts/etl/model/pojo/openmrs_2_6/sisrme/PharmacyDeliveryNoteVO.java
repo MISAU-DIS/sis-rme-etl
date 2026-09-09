@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -38,8 +37,7 @@ public class PharmacyDeliveryNoteVO extends AbstractGeneratedDatabaseObject {
 	private Field voidedBy = Field.fastCreateWithType("voided_by", "INT");
 
 	public PharmacyDeliveryNoteVO() {
-		this.metadata = false;
-
+		this.metadata = true;
 		this.fields.add(this.deliveryNoteId);
 		this.fields.add(this.documentNumber);
 		this.fields.add(this.origin);
@@ -336,7 +334,8 @@ public class PharmacyDeliveryNoteVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String documentNumberAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"document_number", "_");

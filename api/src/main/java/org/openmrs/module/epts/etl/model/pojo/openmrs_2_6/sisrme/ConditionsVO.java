@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,14 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ConditionsVO extends AbstractGeneratedDatabaseObject {
+	private Field additionalDetail = Field.fastCreateWithType("additional_detail", "VARCHAR");
+	private Field previousVersion = Field.fastCreateWithType("previous_version", "INT");
+	private Field conditionCodedName = Field.fastCreateWithType("condition_coded_name", "INT");
+	private Field verificationStatus = Field.fastCreateWithType("verification_status", "VARCHAR");
+	private Field endDate = Field.fastCreateWithType("end_date", "DATETIME");
 	private Field conditionId = Field.fastCreateWithType("condition_id", "INT");
 	private Field conditionCoded = Field.fastCreateWithType("condition_coded", "INT");
 	private Field conditionNonCoded = Field.fastCreateWithType("condition_non_coded", "VARCHAR");
@@ -41,7 +45,11 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 
 	public ConditionsVO() {
 		this.metadata = false;
-
+		this.fields.add(this.additionalDetail);
+		this.fields.add(this.previousVersion);
+		this.fields.add(this.conditionCodedName);
+		this.fields.add(this.verificationStatus);
+		this.fields.add(this.endDate);
 		this.fields.add(this.conditionId);
 		this.fields.add(this.conditionCoded);
 		this.fields.add(this.conditionNonCoded);
@@ -66,6 +74,21 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "additional_detail")) {
+			return this.additionalDetail.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
+			return this.previousVersion.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "condition_coded_name")) {
+			return this.conditionCodedName.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "verification_status")) {
+			return this.verificationStatus.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "end_date")) {
+			return this.endDate.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "condition_id")) {
 			return this.conditionId.getValue();
 		}
@@ -110,6 +133,31 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "additional_detail")) {
+			this.additionalDetail.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
+			this.previousVersion.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "condition_coded_name")) {
+			this.conditionCodedName.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "verification_status")) {
+			this.verificationStatus.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "end_date")) {
+			this.endDate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "condition_id")) {
 			this.conditionId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -199,6 +247,11 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.additionalDetail, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.previousVersion, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conditionCodedName, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.verificationStatus, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.endDate, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.conditionId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.conditionCoded, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.conditionNonCoded, srcConn, dstConn);
@@ -212,6 +265,66 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.formNamespaceAndPath, srcConn, dstConn);
+	}
+
+	public void setAdditionalDetail(Field additionalDetail) {
+		this.additionalDetail = additionalDetail;
+	}
+
+	public void setAdditionalDetailValue(String value) {
+		this.additionalDetail.setValue(value);
+	}
+
+	public Field getAdditionalDetail() {
+		return this.additionalDetail;
+	}
+
+	public void setPreviousVersion(Field previousVersion) {
+		this.previousVersion = previousVersion;
+	}
+
+	public void setPreviousVersionValue(Integer value) {
+		this.previousVersion.setValue(value);
+	}
+
+	public Field getPreviousVersion() {
+		return this.previousVersion;
+	}
+
+	public void setConditionCodedName(Field conditionCodedName) {
+		this.conditionCodedName = conditionCodedName;
+	}
+
+	public void setConditionCodedNameValue(Integer value) {
+		this.conditionCodedName.setValue(value);
+	}
+
+	public Field getConditionCodedName() {
+		return this.conditionCodedName;
+	}
+
+	public void setVerificationStatus(Field verificationStatus) {
+		this.verificationStatus = verificationStatus;
+	}
+
+	public void setVerificationStatusValue(String value) {
+		this.verificationStatus.setValue(value);
+	}
+
+	public Field getVerificationStatus() {
+		return this.verificationStatus;
+	}
+
+	public void setEndDate(Field endDate) {
+		this.endDate = endDate;
+	}
+
+	public void setEndDateValue(java.util.Date value) {
+		this.endDate.setValue(value);
+	}
+
+	public Field getEndDate() {
+		return this.endDate;
 	}
 
 	public void setConditionId(Field conditionId) {
@@ -374,6 +487,41 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		if (getRelatedConfiguration().containsField("additional_detail")) {
+			String additionalDetailAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "additional_detail", "_");
+
+			this.additionalDetail.setValue(BaseVO.retrieveFieldValue(additionalDetailAttName, "VARCHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("previous_version")) {
+			String previousVersionAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "previous_version", "_");
+
+			this.previousVersion.setValue(BaseVO.retrieveFieldValue(previousVersionAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("condition_coded_name")) {
+			String conditionCodedNameAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "condition_coded_name", "_");
+
+			this.conditionCodedName.setValue(BaseVO.retrieveFieldValue(conditionCodedNameAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("verification_status")) {
+			String verificationStatusAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "verification_status", "_");
+
+			this.verificationStatus.setValue(BaseVO.retrieveFieldValue(verificationStatusAttName, "VARCHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("end_date")) {
+			String endDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"end_date", "_");
+
+			this.endDate.setValue(BaseVO.retrieveFieldValue(endDateAttName, "DATETIME", rs));
+		}
+
 		String conditionIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"condition_id", "_");
 
@@ -422,7 +570,8 @@ public class ConditionsVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 
 		String creatorAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"creator", "_");

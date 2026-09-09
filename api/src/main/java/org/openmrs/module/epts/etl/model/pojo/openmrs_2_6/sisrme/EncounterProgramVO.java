@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -35,8 +34,6 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 
 	public EncounterProgramVO() {
 		this.metadata = false;
-		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.EncounterVO());
-
 		this.fields.add(this.encounterId);
 		this.fields.add(this.programId);
 		this.fields.add(this.creator);
@@ -44,6 +41,7 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 		this.fields.add(this.voided);
 		this.fields.add(this.voidedBy);
 		this.fields.add(this.voidReason);
+		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.EncounterVO());
 	}
 
 	@Override
@@ -51,12 +49,6 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(k.getName(), "encounter_id")) {
 			this.encounterId.setValue(k.getValue());
 		}
-	}
-
-	@JsonIgnore
-	@Override
-	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.EncounterVO getSharedPkObj() {
-		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.EncounterVO) super.getSharedPkObj();
 	}
 
 	@Override
@@ -123,6 +115,12 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 			return;
 		}
 		super.setFieldValue(fieldName, value);
+	}
+
+	@JsonIgnore
+	@Override
+	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.EncounterVO getSharedPkObj() {
+		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.EncounterVO) super.getSharedPkObj();
 	}
 
 	@JsonIgnore
@@ -241,13 +239,13 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void load(ResultSet rs) throws SQLException {
+		super.load(rs);
+
 		if (!hasRelatedConfiguration())
 			throw new org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException(
 					"The relatedConfiguration is not set");
 		if (!getSharedPkObj().isLoadedFromDb())
 			getSharedPkObj().load(rs);
-		super.load(rs);
-
 		String encounterIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"encounter_id", "_");
 
@@ -266,7 +264,7 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 		String dateCreatedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_created", "_");
 
-		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "DATETIME", rs);
+		this.dateCreated = (java.util.Date) BaseVO.retrieveFieldValue(dateCreatedAttName, "TIMESTAMP", rs);
 
 		String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"changed_by", "_");
@@ -276,7 +274,7 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 		String dateChangedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_changed", "_");
 
-		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "DATETIME", rs);
+		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "TIMESTAMP", rs);
 
 		String voidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "voided",
 				"_");
@@ -291,7 +289,7 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 		String dateVoidedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"date_voided", "_");
 
-		this.dateVoided = (java.util.Date) BaseVO.retrieveFieldValue(dateVoidedAttName, "DATETIME", rs);
+		this.dateVoided = (java.util.Date) BaseVO.retrieveFieldValue(dateVoidedAttName, "TIMESTAMP", rs);
 
 		String voidReasonAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"void_reason", "_");
@@ -301,7 +299,8 @@ public class EncounterProgramVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
 
 		org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = (org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();
 		if (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null

@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import java.sql.SQLException;
@@ -16,7 +16,6 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -27,7 +26,6 @@ public class VitalSignsSrcDsQueryResultVO extends AbstractGeneratedDatabaseObjec
 
 	public VitalSignsSrcDsQueryResultVO() {
 		this.metadata = false;
-
 		this.fields.add(this.temperature);
 		this.fields.add(this.bloodPressureSystolic);
 		this.fields.add(this.bloodPressureDiastolic);

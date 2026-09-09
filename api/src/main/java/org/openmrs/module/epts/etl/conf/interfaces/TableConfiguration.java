@@ -795,7 +795,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		return false;
 	}
 
-	/** Describes the origin of the schema metadata currently loaded in this table. */
+	/**
+	 * Describes the origin of the schema metadata currently loaded in this table.
+	 */
 	@JsonIgnore
 	default SchemaMetadataLoadSource getSchemaMetadataLoadSource() {
 		return SchemaMetadataLoadSource.NOT_LOADED;
@@ -2724,6 +2726,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		for (ParentTable parentToCloneFrom : this.getParents()) {
 			if (DBUtilities.isTableExists(tableToCloneTo.getSchema(), parentToCloneFrom.getTableName(), conn)) {
 				ParentTable clonedParent = new ParentTableImpl();
+
+				clonedParent.setParentConf(tableToCloneTo.getParentConf());
 				clonedParent.setChildTableConf(tableToCloneTo);
 				clonedParent.setTableName(parentToCloneFrom.getTableName());
 				clonedParent.setSchema(tableToCloneTo.getSchema());

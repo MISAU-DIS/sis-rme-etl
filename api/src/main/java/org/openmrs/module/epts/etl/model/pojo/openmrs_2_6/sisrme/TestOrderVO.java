@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import java.sql.SQLException;
@@ -17,31 +17,29 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class TestOrderVO extends AbstractGeneratedDatabaseObject {
-	private Field orderId = Field.fastCreateWithType("order_id", "INT");
 	private Field specimenSource = Field.fastCreateWithType("specimen_source", "INT");
 	private Field laterality = Field.fastCreateWithType("laterality", "VARCHAR");
 	private Field clinicalHistory = Field.fastCreateWithType("clinical_history", "TEXT");
 	private Field frequency = Field.fastCreateWithType("frequency", "INT");
 	private Field numberOfRepeats = Field.fastCreateWithType("number_of_repeats", "INT");
-	private Field conceptId = Field.fastCreateWithType("concept_id", "BIGINT");
 	private Field ordersId = Field.fastCreateWithType("orders_id", "BIGINT");
+	private Field orderId = Field.fastCreateWithType("order_id", "INT");
+	private Field conceptId = Field.fastCreateWithType("concept_id", "BIGINT");
 
 	public TestOrderVO() {
 		this.metadata = false;
-		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO());
-
-		this.fields.add(this.orderId);
 		this.fields.add(this.specimenSource);
 		this.fields.add(this.laterality);
 		this.fields.add(this.clinicalHistory);
 		this.fields.add(this.frequency);
 		this.fields.add(this.numberOfRepeats);
-		this.fields.add(this.conceptId);
 		this.fields.add(this.ordersId);
+		this.fields.add(this.orderId);
+		this.fields.add(this.conceptId);
+		setSharedPkObj(new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO());
 	}
 
 	@Override
@@ -51,17 +49,8 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 		}
 	}
 
-	@JsonIgnore
-	@Override
-	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO getSharedPkObj() {
-		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO) super.getSharedPkObj();
-	}
-
 	@Override
 	public Object getFieldValue(String fieldName) {
-		if (utilities.equalsFieldsName(fieldName, "order_id")) {
-			return this.orderId.getValue();
-		}
 		if (utilities.equalsFieldsName(fieldName, "specimen_source")) {
 			return this.specimenSource.getValue();
 		}
@@ -77,22 +66,20 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "number_of_repeats")) {
 			return this.numberOfRepeats.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
-			return this.conceptId.getValue();
-		}
 		if (utilities.equalsFieldsName(fieldName, "orders_id")) {
 			return this.ordersId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "order_id")) {
+			return this.orderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			return this.conceptId.getValue();
 		}
 		return super.getFieldValue(fieldName);
 	}
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
-		if (utilities.equalsFieldsName(fieldName, "order_id")) {
-			this.orderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
 		if (utilities.equalsFieldsName(fieldName, "specimen_source")) {
 			this.specimenSource.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -118,17 +105,28 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
-		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
-			this.conceptId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
 		if (utilities.equalsFieldsName(fieldName, "orders_id")) {
 			this.ordersId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
+		if (utilities.equalsFieldsName(fieldName, "order_id")) {
+			this.orderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "concept_id")) {
+			this.conceptId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		super.setFieldValue(fieldName, value);
+	}
+
+	@JsonIgnore
+	@Override
+	public org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO getSharedPkObj() {
+		return (org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sisrme.OrdersVO) super.getSharedPkObj();
 	}
 
 	@JsonIgnore
@@ -152,26 +150,14 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.orderId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.specimenSource, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.laterality, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.clinicalHistory, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.frequency, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.numberOfRepeats, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.ordersId, srcConn, dstConn);
-	}
-
-	public void setOrderId(Field orderId) {
-		this.orderId = orderId;
-	}
-
-	public void setOrderIdValue(Integer value) {
-		this.orderId.setValue(value);
-	}
-
-	public Field getOrderId() {
-		return this.orderId;
+		loadGeneratedFieldWithDefaultValue(this.orderId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
 	}
 
 	public void setSpecimenSource(Field specimenSource) {
@@ -234,18 +220,6 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 		return this.numberOfRepeats;
 	}
 
-	public void setConceptId(Field conceptId) {
-		this.conceptId = conceptId;
-	}
-
-	public void setConceptIdValue(Integer value) {
-		this.conceptId.setValue(value);
-	}
-
-	public Field getConceptId() {
-		return this.conceptId;
-	}
-
 	public void setOrdersId(Field ordersId) {
 		this.ordersId = ordersId;
 	}
@@ -258,20 +232,39 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 		return this.ordersId;
 	}
 
+	public void setOrderId(Field orderId) {
+		this.orderId = orderId;
+	}
+
+	public void setOrderIdValue(Integer value) {
+		this.orderId.setValue(value);
+	}
+
+	public Field getOrderId() {
+		return this.orderId;
+	}
+
+	public void setConceptId(Field conceptId) {
+		this.conceptId = conceptId;
+	}
+
+	public void setConceptIdValue(Integer value) {
+		this.conceptId.setValue(value);
+	}
+
+	public Field getConceptId() {
+		return this.conceptId;
+	}
+
 	@Override
 	public void load(ResultSet rs) throws SQLException {
+		super.load(rs);
+
 		if (!hasRelatedConfiguration())
 			throw new org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException(
 					"The relatedConfiguration is not set");
 		if (!getSharedPkObj().isLoadedFromDb())
 			getSharedPkObj().load(rs);
-		super.load(rs);
-
-		String orderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"order_id", "_");
-
-		this.orderId.setValue(BaseVO.retrieveFieldValue(orderIdAttName, "INT", rs));
-
 		String specimenSourceAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"specimen_source", "_");
 
@@ -297,15 +290,20 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 
 		this.numberOfRepeats.setValue(BaseVO.retrieveFieldValue(numberOfRepeatsAttName, "INT", rs));
 
-		String conceptIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"concept_id", "_");
-
-		this.conceptId.setValue(BaseVO.retrieveFieldValue(conceptIdAttName, "BIGINT", rs));
-
 		String ordersIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"orders_id", "_");
 
 		this.ordersId.setValue(BaseVO.retrieveFieldValue(ordersIdAttName, "BIGINT", rs));
+
+		String orderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"order_id", "_");
+
+		this.orderId.setValue(BaseVO.retrieveFieldValue(orderIdAttName, "INT", rs));
+
+		String conceptIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"concept_id", "_");
+
+		this.conceptId.setValue(BaseVO.retrieveFieldValue(conceptIdAttName, "BIGINT", rs));
 
 		org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = (org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();
 		if (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null
@@ -319,30 +317,30 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO test_order(`specimen_source`, `laterality`, `clinical_history`, `frequency`, `number_of_repeats`, `concept_id`, `orders_id`) VALUES( ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO test_order(`specimen_source`, `laterality`, `clinical_history`, `frequency`, `number_of_repeats`, `orders_id`, `concept_id`) VALUES( ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO test_order(`order_id`, `specimen_source`, `laterality`, `clinical_history`, `frequency`, `number_of_repeats`, `concept_id`, `orders_id`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO test_order(`specimen_source`, `laterality`, `clinical_history`, `frequency`, `number_of_repeats`, `orders_id`, `order_id`, `concept_id`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
 		Object[] params = { this.specimenSource.getValue(), this.laterality.getValue(), this.clinicalHistory.getValue(),
-				this.frequency.getValue(), this.numberOfRepeats.getValue(), this.conceptId.getValue(),
-				this.ordersId.getValue() };
+				this.frequency.getValue(), this.numberOfRepeats.getValue(), this.ordersId.getValue(),
+				this.conceptId.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
-		Object[] params = { this.orderId.getValue(), this.specimenSource.getValue(), this.laterality.getValue(),
-				this.clinicalHistory.getValue(), this.frequency.getValue(), this.numberOfRepeats.getValue(),
-				this.conceptId.getValue(), this.ordersId.getValue() };
+		Object[] params = { this.specimenSource.getValue(), this.laterality.getValue(), this.clinicalHistory.getValue(),
+				this.frequency.getValue(), this.numberOfRepeats.getValue(), this.ordersId.getValue(),
+				this.orderId.getValue(), this.conceptId.getValue() };
 		return params;
 	}
 
@@ -361,16 +359,16 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
-		Object[] params = { this.orderId.getValue(), this.specimenSource.getValue(), this.laterality.getValue(),
-				this.clinicalHistory.getValue(), this.frequency.getValue(), this.numberOfRepeats.getValue(),
-				this.conceptId.getValue(), this.ordersId.getValue(), this.orderId.getValue() };
+		Object[] params = { this.specimenSource.getValue(), this.laterality.getValue(), this.clinicalHistory.getValue(),
+				this.frequency.getValue(), this.numberOfRepeats.getValue(), this.ordersId.getValue(),
+				this.orderId.getValue(), this.conceptId.getValue(), this.orderId.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE test_order SET `order_id` = ?, `specimen_source` = ?, `laterality` = ?, `clinical_history` = ?, `frequency` = ?, `number_of_repeats` = ?, `concept_id` = ?, `orders_id` = ? WHERE order_id = ? ";
+		return "UPDATE test_order SET `specimen_source` = ?, `laterality` = ?, `clinical_history` = ?, `frequency` = ?, `number_of_repeats` = ?, `orders_id` = ?, `order_id` = ?, `concept_id` = ? WHERE order_id = ? ";
 	}
 
 	@JsonIgnore
@@ -385,13 +383,13 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 						? "\"" + utilities.scapeQuotationMarks(this.clinicalHistory.getValue().toString()) + "\""
 						: null)
 				+ "," + (this.frequency.getValue()) + "," + (this.numberOfRepeats.getValue()) + ","
-				+ (this.conceptId.getValue()) + "," + (this.ordersId.getValue());
+				+ (this.ordersId.getValue()) + "," + (this.conceptId.getValue());
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return "" + (this.orderId.getValue()) + "," + (this.specimenSource.getValue()) + ","
+		return "" + (this.specimenSource.getValue()) + ","
 				+ (this.laterality.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.laterality.getValue().toString()) + "\""
 						: null)
@@ -400,7 +398,7 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 						? "\"" + utilities.scapeQuotationMarks(this.clinicalHistory.getValue().toString()) + "\""
 						: null)
 				+ "," + (this.frequency.getValue()) + "," + (this.numberOfRepeats.getValue()) + ","
-				+ (this.conceptId.getValue()) + "," + (this.ordersId.getValue());
+				+ (this.ordersId.getValue()) + "," + (this.orderId.getValue()) + "," + (this.conceptId.getValue());
 	}
 
 	@JsonIgnore
@@ -417,12 +415,6 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public boolean hasParents() {
-		if (this.specimenSource.getValue() != null)
-			return true;
-
-		if (this.frequency.getValue() != null)
-			return true;
-
 		if (this.orderId.getValue() != null)
 			return true;
 
@@ -431,10 +423,6 @@ public class TestOrderVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getParentValue(String parentAttName) {
-		if (parentAttName.equals("specimenSource"))
-			return this.specimenSource.getValue();
-		if (parentAttName.equals("frequency"))
-			return this.frequency.getValue();
 		if (parentAttName.equals("orderId"))
 			return this.orderId.getValue();
 

@@ -6,8 +6,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import org.openmrs.module.epts.etl.model.Field;
 
-
 import org.openmrs.module.epts.etl.conf.Key;
+
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -21,10 +21,11 @@ import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
+	private Field orderSetId = Field.fastCreateWithType("order_set_id", "INT");
+	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
 	private Field orderGroupId = Field.fastCreateWithType("order_group_id", "INT");
 	private Field patientId = Field.fastCreateWithType("patient_id", "INT");
 	private Field encounterId = Field.fastCreateWithType("encounter_id", "INT");
@@ -36,7 +37,8 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 
 	public OrderGroupVO() {
 		this.metadata = false;
-
+		this.fields.add(this.orderSetId);
+		this.fields.add(this.changedBy);
 		this.fields.add(this.orderGroupId);
 		this.fields.add(this.patientId);
 		this.fields.add(this.encounterId);
@@ -56,6 +58,12 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "order_set_id")) {
+			return this.orderSetId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			return this.changedBy.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "order_group_id")) {
 			return this.orderGroupId.getValue();
 		}
@@ -85,6 +93,16 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "order_set_id")) {
+			this.orderSetId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "changed_by")) {
+			this.changedBy.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "order_group_id")) {
 			this.orderGroupId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -149,6 +167,8 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.orderSetId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.changedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.orderGroupId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.patientId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
@@ -157,6 +177,30 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.notes, srcConn, dstConn);
+	}
+
+	public void setOrderSetId(Field orderSetId) {
+		this.orderSetId = orderSetId;
+	}
+
+	public void setOrderSetIdValue(Integer value) {
+		this.orderSetId.setValue(value);
+	}
+
+	public Field getOrderSetId() {
+		return this.orderSetId;
+	}
+
+	public void setChangedBy(Field changedBy) {
+		this.changedBy = changedBy;
+	}
+
+	public void setChangedByValue(Integer value) {
+		this.changedBy.setValue(value);
+	}
+
+	public Field getChangedBy() {
+		return this.changedBy;
 	}
 
 	public void setOrderGroupId(Field orderGroupId) {
@@ -259,6 +303,21 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
 
+		String orderSetIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"order_set_id", "_");
+
+		this.orderSetId.setValue(BaseVO.retrieveFieldValue(orderSetIdAttName, "INT", rs));
+
+		String changedByAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"changed_by", "_");
+
+		this.changedBy.setValue(BaseVO.retrieveFieldValue(changedByAttName, "INT", rs));
+
+		String dateChangedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"date_changed", "_");
+
+		this.dateChanged = (java.util.Date) BaseVO.retrieveFieldValue(dateChangedAttName, "DATETIME", rs);
+
 		String orderGroupIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"order_group_id", "_");
 
@@ -307,7 +366,8 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
-		this.uuid = AttDefinedElements.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "VARCHAR", rs));
+		this.uuid = AttDefinedElements
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
 		String notesAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "notes",
 				"_");
@@ -319,28 +379,30 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO order_group(`patient_id`, `encounter_id`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `notes`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO order_group(`order_set_id`, `changed_by`, `date_changed`, `patient_id`, `encounter_id`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `notes`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO order_group(`order_group_id`, `patient_id`, `encounter_id`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `notes`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO order_group(`order_set_id`, `changed_by`, `date_changed`, `order_group_id`, `patient_id`, `encounter_id`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `notes`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
-		Object[] params = { this.patientId.getValue(), this.encounterId.getValue(), this.creator.getValue(),
-				this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided,
-				this.voidReason.getValue(), this.uuid, this.notes.getValue() };
+		Object[] params = { this.orderSetId.getValue(), this.changedBy.getValue(), this.dateChanged,
+				this.patientId.getValue(), this.encounterId.getValue(), this.creator.getValue(), this.dateCreated,
+				this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(),
+				this.uuid, this.notes.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
-		Object[] params = { this.orderGroupId.getValue(), this.patientId.getValue(), this.encounterId.getValue(),
+		Object[] params = { this.orderSetId.getValue(), this.changedBy.getValue(), this.dateChanged,
+				this.orderGroupId.getValue(), this.patientId.getValue(), this.encounterId.getValue(),
 				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
 				this.dateVoided, this.voidReason.getValue(), this.uuid, this.notes.getValue() };
 		return params;
@@ -349,19 +411,20 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
-		Object[] params = { this.orderGroupId.getValue(), this.patientId.getValue(), this.encounterId.getValue(),
+		Object[] params = { this.orderSetId.getValue(), this.changedBy.getValue(), this.dateChanged,
+				this.orderGroupId.getValue(), this.patientId.getValue(), this.encounterId.getValue(),
 				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
 				this.dateVoided, this.voidReason.getValue(), this.uuid, this.notes.getValue(),
 				this.orderGroupId.getValue() };
@@ -371,14 +434,18 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE order_group SET `order_group_id` = ?, `patient_id` = ?, `encounter_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `notes` = ? WHERE order_group_id = ? ";
+		return "UPDATE order_group SET `order_set_id` = ?, `changed_by` = ?, `date_changed` = ?, `order_group_id` = ?, `patient_id` = ?, `encounter_id` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `notes` = ? WHERE order_group_id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
-		return "" + (this.patientId.getValue()) + "," + (this.encounterId.getValue()) + "," + (this.creator.getValue())
-				+ ","
+		return "" + (this.orderSetId.getValue()) + "," + (this.changedBy.getValue()) + ","
+				+ (this.dateChanged != null
+						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateChanged) + "\""
+						: null)
+				+ "," + (this.patientId.getValue()) + "," + (this.encounterId.getValue()) + ","
+				+ (this.creator.getValue()) + ","
 				+ (this.dateCreated != null
 						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateCreated) + "\""
 						: null)
@@ -401,7 +468,11 @@ public class OrderGroupVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return "" + (this.orderGroupId.getValue()) + "," + (this.patientId.getValue()) + ","
+		return "" + (this.orderSetId.getValue()) + "," + (this.changedBy.getValue()) + ","
+				+ (this.dateChanged != null
+						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateChanged) + "\""
+						: null)
+				+ "," + (this.orderGroupId.getValue()) + "," + (this.patientId.getValue()) + ","
 				+ (this.encounterId.getValue()) + "," + (this.creator.getValue()) + ","
 				+ (this.dateCreated != null
 						? "\"" + DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.dateCreated) + "\""

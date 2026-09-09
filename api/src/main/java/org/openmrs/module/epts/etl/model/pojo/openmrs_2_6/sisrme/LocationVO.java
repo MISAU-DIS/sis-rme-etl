@@ -59,7 +59,7 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 	private Field locationTypeConceptId = Field.fastCreateWithType("location_type_concept_id", "INT");
 
 	public LocationVO() {
-		this.metadata = true;
+		this.metadata = false;
 		this.fields.add(this.locationId);
 		this.fields.add(this.name);
 		this.fields.add(this.description);
@@ -1352,9 +1352,6 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public boolean hasParents() {
-		if (this.locationTypeConceptId.getValue() != null)
-			return true;
-
 		if (this.parentLocation.getValue() != null)
 			return true;
 
@@ -1372,8 +1369,6 @@ public class LocationVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getParentValue(String parentAttName) {
-		if (parentAttName.equals("locationTypeConceptId"))
-			return this.locationTypeConceptId.getValue();
 		if (parentAttName.equals("parentLocation"))
 			return this.parentLocation.getValue();
 		if (parentAttName.equals("changedBy"))

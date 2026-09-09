@@ -24,6 +24,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class UsersVO extends AbstractGeneratedDatabaseObject {
+	private Field creatorId = Field.fastCreateWithType("creator_id", "BIGINT");
+	private Field activationKey = Field.fastCreateWithType("activation_key", "VARCHAR");
 	private Field userId = Field.fastCreateWithType("user_id", "INT");
 	private Field systemId = Field.fastCreateWithType("system_id", "VARCHAR");
 	private Field username = Field.fastCreateWithType("username", "VARCHAR");
@@ -38,12 +40,12 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	private Field retiredBy = Field.fastCreateWithType("retired_by", "INT");
 	private Field dateRetired = Field.fastCreateWithType("date_retired", "DATETIME");
 	private Field retireReason = Field.fastCreateWithType("retire_reason", "VARCHAR");
-	private Field creatorId = Field.fastCreateWithType("creator_id", "BIGINT");
-	private Field activationKey = Field.fastCreateWithType("activation_key", "VARCHAR");
 	private Field email = Field.fastCreateWithType("email", "VARCHAR");
 
 	public UsersVO() {
-		this.metadata = true;
+		this.metadata = false;
+		this.fields.add(this.creatorId);
+		this.fields.add(this.activationKey);
 		this.fields.add(this.userId);
 		this.fields.add(this.systemId);
 		this.fields.add(this.username);
@@ -58,8 +60,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 		this.fields.add(this.retiredBy);
 		this.fields.add(this.dateRetired);
 		this.fields.add(this.retireReason);
-		this.fields.add(this.creatorId);
-		this.fields.add(this.activationKey);
 		this.fields.add(this.email);
 	}
 
@@ -72,6 +72,12 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "creator_id")) {
+			return this.creatorId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "activation_key")) {
+			return this.activationKey.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "user_id")) {
 			return this.userId.getValue();
 		}
@@ -114,12 +120,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "retire_reason")) {
 			return this.retireReason.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "creator_id")) {
-			return this.creatorId.getValue();
-		}
-		if (utilities.equalsFieldsName(fieldName, "activation_key")) {
-			return this.activationKey.getValue();
-		}
 		if (utilities.equalsFieldsName(fieldName, "email")) {
 			return this.email.getValue();
 		}
@@ -128,6 +128,16 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "creator_id")) {
+			this.creatorId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "activation_key")) {
+			this.activationKey.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "user_id")) {
 			this.userId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -198,16 +208,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
-		if (utilities.equalsFieldsName(fieldName, "creator_id")) {
-			this.creatorId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
-		if (utilities.equalsFieldsName(fieldName, "activation_key")) {
-			this.activationKey.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
 		if (utilities.equalsFieldsName(fieldName, "email")) {
 			this.email.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -237,6 +237,8 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.creatorId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.activationKey, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.userId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.systemId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.username, srcConn, dstConn);
@@ -251,9 +253,31 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.retiredBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.dateRetired, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.retireReason, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.creatorId, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.activationKey, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.email, srcConn, dstConn);
+	}
+
+	public void setCreatorId(Field creatorId) {
+		this.creatorId = creatorId;
+	}
+
+	public void setCreatorIdValue(Integer value) {
+		this.creatorId.setValue(value);
+	}
+
+	public Field getCreatorId() {
+		return this.creatorId;
+	}
+
+	public void setActivationKey(Field activationKey) {
+		this.activationKey = activationKey;
+	}
+
+	public void setActivationKeyValue(String value) {
+		this.activationKey.setValue(value);
+	}
+
+	public Field getActivationKey() {
+		return this.activationKey;
 	}
 
 	public void setUserId(Field userId) {
@@ -424,30 +448,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 		return this.retireReason;
 	}
 
-	public void setCreatorId(Field creatorId) {
-		this.creatorId = creatorId;
-	}
-
-	public void setCreatorIdValue(Integer value) {
-		this.creatorId.setValue(value);
-	}
-
-	public Field getCreatorId() {
-		return this.creatorId;
-	}
-
-	public void setActivationKey(Field activationKey) {
-		this.activationKey = activationKey;
-	}
-
-	public void setActivationKeyValue(String value) {
-		this.activationKey.setValue(value);
-	}
-
-	public Field getActivationKey() {
-		return this.activationKey;
-	}
-
 	public void setEmail(Field email) {
 		this.email = email;
 	}
@@ -463,6 +463,16 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
+
+		String creatorIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"creator_id", "_");
+
+		this.creatorId.setValue(BaseVO.retrieveFieldValue(creatorIdAttName, "BIGINT", rs));
+
+		String activationKeyAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"activation_key", "_");
+
+		this.activationKey.setValue(BaseVO.retrieveFieldValue(activationKeyAttName, "VARCHAR", rs));
 
 		String userIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"user_id", "_");
@@ -550,16 +560,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 		this.uuid = AttDefinedElements
 				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
-		String creatorIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"creator_id", "_");
-
-		this.creatorId.setValue(BaseVO.retrieveFieldValue(creatorIdAttName, "BIGINT", rs));
-
-		String activationKeyAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"activation_key", "_");
-
-		this.activationKey.setValue(BaseVO.retrieveFieldValue(activationKeyAttName, "VARCHAR", rs));
-
 		String emailAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "email",
 				"_");
 
@@ -570,36 +570,36 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO users(`system_id`, `username`, `password`, `salt`, `secret_question`, `secret_answer`, `creator`, `date_created`, `changed_by`, `date_changed`, `person_id`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `creator_id`, `activation_key`, `email`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO users(`creator_id`, `activation_key`, `system_id`, `username`, `password`, `salt`, `secret_question`, `secret_answer`, `creator`, `date_created`, `changed_by`, `date_changed`, `person_id`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `email`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO users(`user_id`, `system_id`, `username`, `password`, `salt`, `secret_question`, `secret_answer`, `creator`, `date_created`, `changed_by`, `date_changed`, `person_id`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `creator_id`, `activation_key`, `email`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO users(`creator_id`, `activation_key`, `user_id`, `system_id`, `username`, `password`, `salt`, `secret_question`, `secret_answer`, `creator`, `date_created`, `changed_by`, `date_changed`, `person_id`, `retired`, `retired_by`, `date_retired`, `retire_reason`, `uuid`, `email`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
-		Object[] params = { this.systemId.getValue(), this.username.getValue(), this.password.getValue(),
-				this.salt.getValue(), this.secretQuestion.getValue(), this.secretAnswer.getValue(),
-				this.creator.getValue(), this.dateCreated, this.changedBy.getValue(), this.dateChanged,
-				this.personId.getValue(), this.retired.getValue(), this.retiredBy.getValue(),
-				this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid, this.creatorId.getValue(),
-				this.activationKey.getValue(), this.email.getValue() };
+		Object[] params = { this.creatorId.getValue(), this.activationKey.getValue(), this.systemId.getValue(),
+				this.username.getValue(), this.password.getValue(), this.salt.getValue(),
+				this.secretQuestion.getValue(), this.secretAnswer.getValue(), this.creator.getValue(), this.dateCreated,
+				this.changedBy.getValue(), this.dateChanged, this.personId.getValue(), this.retired.getValue(),
+				this.retiredBy.getValue(), this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid,
+				this.email.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
-		Object[] params = { this.userId.getValue(), this.systemId.getValue(), this.username.getValue(),
-				this.password.getValue(), this.salt.getValue(), this.secretQuestion.getValue(),
-				this.secretAnswer.getValue(), this.creator.getValue(), this.dateCreated, this.changedBy.getValue(),
-				this.dateChanged, this.personId.getValue(), this.retired.getValue(), this.retiredBy.getValue(),
-				this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid, this.creatorId.getValue(),
-				this.activationKey.getValue(), this.email.getValue() };
+		Object[] params = { this.creatorId.getValue(), this.activationKey.getValue(), this.userId.getValue(),
+				this.systemId.getValue(), this.username.getValue(), this.password.getValue(), this.salt.getValue(),
+				this.secretQuestion.getValue(), this.secretAnswer.getValue(), this.creator.getValue(), this.dateCreated,
+				this.changedBy.getValue(), this.dateChanged, this.personId.getValue(), this.retired.getValue(),
+				this.retiredBy.getValue(), this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid,
+				this.email.getValue() };
 		return params;
 	}
 
@@ -618,25 +618,29 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
-		Object[] params = { this.userId.getValue(), this.systemId.getValue(), this.username.getValue(),
-				this.password.getValue(), this.salt.getValue(), this.secretQuestion.getValue(),
-				this.secretAnswer.getValue(), this.creator.getValue(), this.dateCreated, this.changedBy.getValue(),
-				this.dateChanged, this.personId.getValue(), this.retired.getValue(), this.retiredBy.getValue(),
-				this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid, this.creatorId.getValue(),
-				this.activationKey.getValue(), this.email.getValue(), this.userId.getValue() };
+		Object[] params = { this.creatorId.getValue(), this.activationKey.getValue(), this.userId.getValue(),
+				this.systemId.getValue(), this.username.getValue(), this.password.getValue(), this.salt.getValue(),
+				this.secretQuestion.getValue(), this.secretAnswer.getValue(), this.creator.getValue(), this.dateCreated,
+				this.changedBy.getValue(), this.dateChanged, this.personId.getValue(), this.retired.getValue(),
+				this.retiredBy.getValue(), this.dateRetired.getValue(), this.retireReason.getValue(), this.uuid,
+				this.email.getValue(), this.userId.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE users SET `user_id` = ?, `system_id` = ?, `username` = ?, `password` = ?, `salt` = ?, `secret_question` = ?, `secret_answer` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `person_id` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `creator_id` = ?, `activation_key` = ?, `email` = ? WHERE user_id = ? ";
+		return "UPDATE users SET `creator_id` = ?, `activation_key` = ?, `user_id` = ?, `system_id` = ?, `username` = ?, `password` = ?, `salt` = ?, `secret_question` = ?, `secret_answer` = ?, `creator` = ?, `date_created` = ?, `changed_by` = ?, `date_changed` = ?, `person_id` = ?, `retired` = ?, `retired_by` = ?, `date_retired` = ?, `retire_reason` = ?, `uuid` = ?, `email` = ? WHERE user_id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
-		return ""
+		return "" + (this.creatorId.getValue()) + ","
+				+ (this.activationKey.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.activationKey.getValue().toString()) + "\""
+						: null)
+				+ ","
 				+ (this.systemId.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.systemId.getValue().toString()) + "\""
 						: null)
@@ -679,10 +683,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 						? "\"" + utilities.scapeQuotationMarks(this.retireReason.getValue().toString()) + "\""
 						: null)
 				+ "," + (this.uuid != null ? "\"" + utilities.scapeQuotationMarks(this.uuid.toString()) + "\"" : null)
-				+ "," + (this.creatorId.getValue()) + ","
-				+ (this.activationKey.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.activationKey.getValue().toString()) + "\""
-						: null)
 				+ ","
 				+ (this.email.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.email.getValue().toString()) + "\""
@@ -692,7 +692,11 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return "" + (this.userId.getValue()) + ","
+		return "" + (this.creatorId.getValue()) + ","
+				+ (this.activationKey.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.activationKey.getValue().toString()) + "\""
+						: null)
+				+ "," + (this.userId.getValue()) + ","
 				+ (this.systemId.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.systemId.getValue().toString()) + "\""
 						: null)
@@ -735,10 +739,6 @@ public class UsersVO extends AbstractGeneratedDatabaseObject {
 						? "\"" + utilities.scapeQuotationMarks(this.retireReason.getValue().toString()) + "\""
 						: null)
 				+ "," + (this.uuid != null ? "\"" + utilities.scapeQuotationMarks(this.uuid.toString()) + "\"" : null)
-				+ "," + (this.creatorId.getValue()) + ","
-				+ (this.activationKey.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.activationKey.getValue().toString()) + "\""
-						: null)
 				+ ","
 				+ (this.email.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.email.getValue().toString()) + "\""

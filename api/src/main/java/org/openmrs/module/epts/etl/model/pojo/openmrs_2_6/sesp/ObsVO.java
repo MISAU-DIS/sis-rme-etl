@@ -844,17 +844,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 				"interpretation", "_");
 
 		this.interpretation.setValue(BaseVO.retrieveFieldValue(interpretationAttName, "VARCHAR", rs));
-
-		if (!hasRelatedConfiguration())
-			throw new org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException(
-					"The relatedConfiguration is not set");
-		setAuxLoadObject(new java.util.ArrayList<>());
-		org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.EncounterVO auxLoadObject0 = new org.openmrs.module.epts.etl.model.pojo.openmrs_2_6.sesp.EncounterVO();
-		auxLoadObject0.setRelatedConfiguration(
-				((org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity) getRelatedConfiguration())
-						.getJoiningTable().get(0));
-		auxLoadObject0.load(rs);
-		getAuxLoadObject().add(auxLoadObject0);
 		this.loadedFromDb = true;
 	}
 
