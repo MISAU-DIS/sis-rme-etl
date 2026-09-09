@@ -233,12 +233,13 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 				PhysicalTableMetadata metadata = table.getPhysicalTableConfiguration().toMetadata(key);
 				boolean saved = repository.save(metadata,
 						getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement());
-				if (saved) {
-					new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
-							.record(new DatabaseModelManifest.Entry(key.toString(),
-									tableConfiguration.generateFullClassName(app),
-									PhysicalTableMetadataFingerprint.sha256(metadata)));
-				}
+				PhysicalTableMetadata persistedMetadata = saved ? metadata
+						: repository.find(key).orElseThrow(() -> new IOException(
+								"Existing physical metadata could not be loaded after it was preserved: " + key));
+				new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
+						.record(new DatabaseModelManifest.Entry(key.toString(),
+								tableConfiguration.generateFullClassName(app),
+								PhysicalTableMetadataFingerprint.sha256(persistedMetadata)));
 				physicalMetadataVisitTracker.complete(key);
 			} catch (IOException | RuntimeException exception) {
 				physicalMetadataVisitTracker.fail(key);
