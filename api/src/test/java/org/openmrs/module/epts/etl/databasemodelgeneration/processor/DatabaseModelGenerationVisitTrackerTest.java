@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.databasemodelgeneration.processor;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -55,5 +56,16 @@ public class DatabaseModelGenerationVisitTrackerTest {
 		tracker.complete(first);
 
 		assertFalse(tracker.begin(sameTable));
+	}
+
+	@Test
+	public void shouldDescribeElementsInProgressAndAlreadyGenerated() {
+		DatabaseModelGenerationVisitTracker<String> tracker = new DatabaseModelGenerationVisitTracker<>();
+		tracker.begin("UsersVO");
+		tracker.begin("PersonVO");
+		tracker.complete("PersonVO");
+
+		assertEquals("DatabaseModelGenerationVisitTracker [inProgressCount=1, inProgress=[UsersVO], "
+				+ "generatedCount=1, generated=[PersonVO]]", tracker.toString());
 	}
 }

@@ -1,5 +1,7 @@
 package org.openmrs.module.epts.etl.databasemodelgeneration.processor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,5 +31,24 @@ class DatabaseModelGenerationVisitTracker<T> {
 
 	void fail(T elementId) {
 		inProgress.remove(elementId);
+	}
+
+	@Override
+	public String toString() {
+		List<String> inProgressSnapshot = snapshot(inProgress);
+		List<String> generatedSnapshot = snapshot(generated);
+
+		return "DatabaseModelGenerationVisitTracker [inProgressCount=" + inProgressSnapshot.size() + ", inProgress="
+				+ inProgressSnapshot + ", generatedCount=" + generatedSnapshot.size() + ", generated="
+				+ generatedSnapshot + "]";
+	}
+
+	private List<String> snapshot(Set<T> elements) {
+		List<String> snapshot = new ArrayList<>();
+		for (T element : elements) {
+			snapshot.add(String.valueOf(element));
+		}
+		snapshot.sort(String::compareTo);
+		return snapshot;
 	}
 }
