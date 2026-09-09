@@ -17,8 +17,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.openmrs.GlobalProperty;
-import org.openmrs.api.context.Context;
 import org.openmrs.module.epts.etl.conf.DefaultEtlValidator;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlFragmentInclude;
@@ -508,23 +506,46 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	 */
 	public static Properties loadOpenMrsGlobalProperties() {
 		Properties properties = new Properties();
+		Class<?> contextClass;
 
-		// A session is available when this code is running inside OpenMRS. Keeping this
-		// check preserves standalone/javaw execution without requiring OpenMRS startup.
-		if (!Context.isSessionOpen()) {
+		try {
+			contextClass = Class.forName("org.openmrs.api.context.Context", false,
+					EtlDataConfiguration.class.getClassLoader());
+		} catch (ClassNotFoundException | LinkageError exception) {
+			// OpenMRS is an optional runtime integration. Its API is intentionally not
+			// packaged in the standalone ETL JAR.
 			return properties;
 		}
 
-		for (GlobalProperty globalProperty : Context.getAdministrationService()
-				.getGlobalPropertiesByPrefix(ETL_GLOBAL_PROPERTY_PREFIX)) {
-			String name = globalProperty.getProperty();
-			String value = globalProperty.getPropertyValue();
+		try {
+			boolean sessionOpen = Boolean.TRUE.equals(contextClass.getMethod("isSessionOpen").invoke(null));
+			if (!sessionOpen)
+				return properties;
 
-			if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
-				String normalizedValue = stripWrappingQuotes(value);
-				properties.setProperty(name, normalizedValue);
-				properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
+			Object administrationService = contextClass.getMethod("getAdministrationService").invoke(null);
+			ClassLoader openMrsClassLoader = contextClass.getClassLoader();
+			Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false,
+					openMrsClassLoader);
+			Class<?> globalPropertyClass = Class.forName("org.openmrs.GlobalProperty", false, openMrsClassLoader);
+			Object result = administrationServiceClass
+					.getMethod("getGlobalPropertiesByPrefix", String.class)
+					.invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
+
+			if (!(result instanceof Iterable<?>))
+				throw new IllegalStateException("OpenMRS getGlobalPropertiesByPrefix returned a non-iterable value");
+
+			for (Object globalProperty : (Iterable<?>) result) {
+				String name = (String) globalPropertyClass.getMethod("getProperty").invoke(globalProperty);
+				String value = (String) globalPropertyClass.getMethod("getPropertyValue").invoke(globalProperty);
+
+				if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
+					String normalizedValue = stripWrappingQuotes(value);
+					properties.setProperty(name, normalizedValue);
+					properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
+				}
 			}
+		} catch (ReflectiveOperationException exception) {
+			throw new IllegalStateException("Could not load ETL global properties from the OpenMRS runtime", exception);
 		}
 
 		return properties;
