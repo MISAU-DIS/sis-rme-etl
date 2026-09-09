@@ -243,7 +243,6 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += generateSharedPkLoad(pojoble);
 		methodFromSuperClass += resultSetLoadDefinition;
 		methodFromSuperClass += generateSharedPkPostLoad(pojoble);
-		methodFromSuperClass += generateAuxLoadObjects(pojoble, connInfo);
 		methodFromSuperClass += "\t\tthis.loadedFromDb = true;\n";
 		methodFromSuperClass += "	} \n \n";
 
@@ -613,34 +612,6 @@ public class DatabaseEntityPOJOGenerator {
 		}
 		throw new EtlExceptionImpl("The shared PK table " + configuration.getSharePkWith() + " of "
 				+ configuration.getTableName() + " is not present in the loaded parent relationships");
-	}
-
-	private static String generateAuxLoadObjects(EtlDatabaseObjectConfiguration configuration,
-			DBConnectionInfo connInfo) {
-		if (!(configuration instanceof MainJoiningEntity))
-			return "";
-		MainJoiningEntity joining = (MainJoiningEntity) configuration;
-		if (!joining.hasAuxExtractTable())
-			return "";
-		String code = "\n\t\tif (!hasRelatedConfiguration()) throw new "
-				+ "org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException("
-				+ "\"The relatedConfiguration is not set\");\n";
-		code += "\t\tsetAuxLoadObject(new java.util.ArrayList<>());\n";
-		int index = 0;
-		for (JoinableEntity auxiliary : joining.getJoiningTable()) {
-			if (!auxiliary.doNotUseAsDatasource()) {
-				String auxiliaryClass = auxiliary.generateFullClassName(connInfo);
-				String variable = "auxLoadObject" + index;
-				code += "\t\t" + auxiliaryClass + " " + variable + " = new " + auxiliaryClass + "();\n";
-				code += "\t\t" + variable
-						+ ".setRelatedConfiguration(((org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity) "
-						+ "getRelatedConfiguration()).getJoiningTable().get(" + index + "));\n";
-				code += "\t\t" + variable + ".load(rs);\n";
-				code += "\t\tgetAuxLoadObject().add(" + variable + ");\n";
-			}
-			index++;
-		}
-		return code;
 	}
 
 	private static boolean isIgnorableField(String columnName) {

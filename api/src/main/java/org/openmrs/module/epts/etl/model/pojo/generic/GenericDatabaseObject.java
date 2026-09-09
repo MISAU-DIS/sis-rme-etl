@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.model.pojo.generic;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -13,8 +12,6 @@ import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
-import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
-import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -273,26 +270,6 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 		if (this.getRelatedConfiguration() instanceof TableConfiguration) {
 			this.loadObjectIdData((TableConfiguration) this.getRelatedConfiguration());
-		}
-
-		if (this.getRelatedConfiguration() instanceof MainJoiningEntity) {
-			MainJoiningEntity ds = (MainJoiningEntity) this.getRelatedConfiguration();
-
-			if (ds.hasAuxExtractTable()) {
-				this.setAuxLoadObject(new ArrayList<>());
-
-				for (JoinableEntity j : ds.getJoiningTable()) {
-					if (!j.doNotUseAsDatasource()) {
-
-						GenericDatabaseObject obj = new GenericDatabaseObject();
-						obj.setRelatedConfiguration(j);
-
-						obj.load(rs);
-
-						this.getAuxLoadObject().add(obj);
-					}
-				}
-			}
 		}
 
 		loadedFromDb = true;

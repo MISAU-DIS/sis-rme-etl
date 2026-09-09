@@ -111,7 +111,7 @@ public abstract class BaseDAO {
 			obj = voClass.newInstance();
 
 			if (loaderHelper != null) {
-				loaderHelper.beforeLoad(obj);
+				loaderHelper.beforeLoad(null, obj);
 			}
 		} catch (InstantiationException e) {
 			throw new RuntimeException(e);
@@ -188,13 +188,13 @@ public abstract class BaseDAO {
 				result.add(instance);
 
 				if (voDataLoader != null) {
-					voDataLoader.beforeLoad(instance);
+					voDataLoader.beforeLoad(rs, instance);
 				}
 
 				instance.load(rs);
 
 				if (voDataLoader != null) {
-					voDataLoader.afterLoad(instance);
+					voDataLoader.afterLoad(rs, instance);
 				}
 
 			}

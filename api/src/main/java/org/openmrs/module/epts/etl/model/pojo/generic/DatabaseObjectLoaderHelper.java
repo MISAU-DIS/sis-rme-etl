@@ -1,7 +1,13 @@
 package org.openmrs.module.epts.etl.model.pojo.generic;
 
-import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
+import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.VO;
@@ -16,7 +22,7 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 	}
 
 	@Override
-	public void beforeLoad(VO vo) {
+	public void beforeLoad(ResultSet rs, VO vo) {
 		if (!(vo instanceof EtlDatabaseObject)) {
 			throw new ForbiddenOperationException("This method is only applied to EtlDatabaseObject instances");
 		}
@@ -52,7 +58,11 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 	}
 
 	@Override
-	public void afterLoad(VO vo) {
+	public void afterLoad(ResultSet rs, VO vo) throws SQLException {
+		if (!(vo instanceof EtlDatabaseObject)) {
+			throw new ForbiddenOperationException("This method is only applied to EtlDatabaseObject instances");
+		}
+
 		if (!(vo instanceof EtlDatabaseObject)) {
 			throw new ForbiddenOperationException("This method is only applied to EtlDatabaseObject instances");
 		}
@@ -61,7 +71,7 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 
 		if (voAsEtlDatabaseObject.getRelatedConfiguration() instanceof TableConfiguration) {
 			if (voAsEtlDatabaseObject.getSharedPkObj() != null) {
-				this.afterLoad(voAsEtlDatabaseObject.getSharedPkObj());
+				this.afterLoad(rs, voAsEtlDatabaseObject.getSharedPkObj());
 			}
 
 			voAsEtlDatabaseObject
@@ -73,6 +83,35 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 					&& voAsEtlDatabaseObject.getSharedPkObj().getUuid() != null) {
 				voAsEtlDatabaseObject.setUuid(voAsEtlDatabaseObject.getSharedPkObj().getUuid());
 			}
+		}
+
+		loadAuxiliaryObjects(voAsEtlDatabaseObject, rs);
+	}
+
+	private void loadAuxiliaryObjects(EtlDatabaseObject databaseObject, ResultSet rs) throws SQLException {
+		if (!(databaseObject.getRelatedConfiguration() instanceof MainJoiningEntity))
+			return;
+
+		MainJoiningEntity mainJoiningEntity = (MainJoiningEntity) databaseObject.getRelatedConfiguration();
+		if (!mainJoiningEntity.hasAuxExtractTable())
+			return;
+
+		databaseObject.setAuxLoadObject(new ArrayList<>());
+		for (JoinableEntity auxiliaryConfiguration : mainJoiningEntity.getJoiningTable()) {
+			if (auxiliaryConfiguration.doNotUseAsDatasource())
+				continue;
+
+			EtlDatabaseObject auxiliaryObject = auxiliaryConfiguration.createRecordInstance();
+
+			DatabaseObjectLoaderHelper auxiliaryLoader = new DatabaseObjectLoaderHelper(auxiliaryConfiguration);
+
+			auxiliaryLoader.beforeLoad(rs, auxiliaryObject);
+
+			auxiliaryObject.load(rs);
+
+			auxiliaryLoader.afterLoad(rs, auxiliaryObject);
+
+			databaseObject.getAuxLoadObject().add(auxiliaryObject);
 		}
 	}
 
