@@ -52,7 +52,9 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  */
 public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseModelGenerationRecord> {
 
-	private final DatabaseModelGenerationVisitTracker generationVisitTracker;
+	private final DatabaseModelGenerationVisitTracker<String> generationVisitTracker;
+
+	private final DatabaseModelGenerationVisitTracker<PhysicalTableKey> physicalMetadataVisitTracker;
 
 	private boolean databaseModelGenerated;
 
@@ -62,7 +64,8 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 			boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 
-		this.generationVisitTracker = new DatabaseModelGenerationVisitTracker();
+		this.generationVisitTracker = new DatabaseModelGenerationVisitTracker<>();
+		this.physicalMetadataVisitTracker = new DatabaseModelGenerationVisitTracker<>();
 		this.visitedItemConfigurations = Collections.newSetFromMap(new IdentityHashMap<>());
 	}
 
@@ -220,17 +223,26 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 		try {
 			PhysicalTableKey key = PhysicalTableKeyFactory.create(table,
 					getRelatedEtlConfiguration().getDataModelId(app), connection);
-			table.synchronizePhysicalTableConfiguration();
-			FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
-					getRelatedEtlConfiguration().getSchemaMetadataDirectory());
-			PhysicalTableMetadata metadata = table.getPhysicalTableConfiguration().toMetadata(key);
-			boolean saved = repository.save(metadata,
-					getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement());
-			if (saved) {
-				new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
-						.record(new DatabaseModelManifest.Entry(key.toString(),
-								tableConfiguration.generateFullClassName(app),
-								PhysicalTableMetadataFingerprint.sha256(metadata)));
+			if (!physicalMetadataVisitTracker.begin(key))
+				return;
+
+			try {
+				table.synchronizePhysicalTableConfiguration();
+				FilePhysicalTableMetadataRepository repository = new FilePhysicalTableMetadataRepository(
+						getRelatedEtlConfiguration().getSchemaMetadataDirectory());
+				PhysicalTableMetadata metadata = table.getPhysicalTableConfiguration().toMetadata(key);
+				boolean saved = repository.save(metadata,
+						getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement());
+				if (saved) {
+					new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
+							.record(new DatabaseModelManifest.Entry(key.toString(),
+									tableConfiguration.generateFullClassName(app),
+									PhysicalTableMetadataFingerprint.sha256(metadata)));
+				}
+				physicalMetadataVisitTracker.complete(key);
+			} catch (IOException | RuntimeException exception) {
+				physicalMetadataVisitTracker.fail(key);
+				throw exception;
 			}
 		} catch (IOException | java.sql.SQLException exception) {
 			throw new RuntimeException("Could not persist physical metadata for " + table.getTableName(), exception);

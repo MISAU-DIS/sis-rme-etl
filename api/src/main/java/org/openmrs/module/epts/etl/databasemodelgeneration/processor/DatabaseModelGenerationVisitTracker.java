@@ -1,20 +1,20 @@
 package org.openmrs.module.epts.etl.databasemodelgeneration.processor;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tracks database model elements while their dependency graph is traversed.
  * Both completed and currently active elements must be rejected because table
  * relationships may contain self-references or multi-table cycles.
  */
-class DatabaseModelGenerationVisitTracker {
+class DatabaseModelGenerationVisitTracker<T> {
 
-	private final Set<String> inProgress = new HashSet<>();
+	private final Set<T> inProgress = ConcurrentHashMap.newKeySet();
 
-	private final Set<String> generated = new HashSet<>();
+	private final Set<T> generated = ConcurrentHashMap.newKeySet();
 
-	boolean begin(String elementId) {
+	boolean begin(T elementId) {
 		if (generated.contains(elementId) || inProgress.contains(elementId))
 			return false;
 
@@ -22,12 +22,12 @@ class DatabaseModelGenerationVisitTracker {
 		return true;
 	}
 
-	void complete(String elementId) {
+	void complete(T elementId) {
 		inProgress.remove(elementId);
 		generated.add(elementId);
 	}
 
-	void fail(String elementId) {
+	void fail(T elementId) {
 		inProgress.remove(elementId);
 	}
 }
