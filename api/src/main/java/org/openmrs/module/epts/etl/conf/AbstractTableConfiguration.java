@@ -368,17 +368,41 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	private void validateManifestAssociation(PhysicalTableMetadata metadata) throws java.io.IOException {
-		DatabaseModelManifest manifest = new FileDatabaseModelManifestRepository(
-				this.getRelatedEtlConf().getSchemaMetadataDirectory()).read();
+		java.io.File metadataDirectory = this.getRelatedEtlConf().getSchemaMetadataDirectory();
+		java.io.File manifestFile = new java.io.File(metadataDirectory, "manifest.json").getAbsoluteFile();
+		DatabaseModelManifest manifest = new FileDatabaseModelManifestRepository(metadataDirectory).read();
 		String expectedKey = metadata.getKey().toString();
 		String expectedClass = this.generateFullClassName(this.getRelatedConnInfo());
 		String expectedFingerprint = PhysicalTableMetadataFingerprint.sha256(metadata);
+		DatabaseModelManifest.Entry matchingClass = null;
+		List<String> classesForKey = new ArrayList<>();
+
 		for (DatabaseModelManifest.Entry entry : manifest.getEntries()) {
-			if (expectedKey.equals(entry.getMetadataKey()) && expectedClass.equals(entry.getGeneratedClassName())
-					&& expectedFingerprint.equals(entry.getMetadataFingerprint()))
-				return;
+			if (!expectedKey.equals(entry.getMetadataKey()))
+				continue;
+
+			classesForKey.add(entry.getGeneratedClassName());
+			if (expectedClass.equals(entry.getGeneratedClassName())) {
+				matchingClass = entry;
+				if (expectedFingerprint.equals(entry.getMetadataFingerprint()))
+					return;
+			}
 		}
-		throw new java.io.IOException("No manifest association between " + expectedKey + " and " + expectedClass);
+
+		if (classesForKey.isEmpty()) {
+			throw new java.io.IOException("Manifest metadata key not found: expectedKey=" + expectedKey
+					+ ", manifest=" + manifestFile);
+		}
+
+		if (matchingClass == null) {
+			throw new java.io.IOException("Manifest generated class mismatch: metadataKey=" + expectedKey
+					+ ", expectedClass=" + expectedClass + ", foundClasses=" + classesForKey + ", manifest="
+					+ manifestFile);
+		}
+
+		throw new java.io.IOException("Manifest metadata fingerprint mismatch: metadataKey=" + expectedKey
+				+ ", generatedClass=" + expectedClass + ", expectedFingerprint=" + expectedFingerprint
+				+ ", foundFingerprint=" + matchingClass.getMetadataFingerprint() + ", manifest=" + manifestFile);
 	}
 
 	private boolean usesPrecompiledSchemaMetadata() {
