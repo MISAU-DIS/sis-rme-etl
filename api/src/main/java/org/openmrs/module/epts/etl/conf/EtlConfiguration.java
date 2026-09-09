@@ -1798,12 +1798,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 							+ operationsWithShareConn;
 				}
 			}
-
-			if (this.getDefaultExceptionBehavior().abort()) {
-				return connInfo.getConnType()
-						+ ": autoCommit=true is forbiden when defaultExceptionBehavior is set to ABORT_PROCESS";
-			}
-
 		}
 
 		return null;
