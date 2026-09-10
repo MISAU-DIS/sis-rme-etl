@@ -101,7 +101,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	}
 
 	@Override
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
 

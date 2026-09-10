@@ -11,13 +11,7 @@ public final class PhysicalTableConfigurationRegistry {
 	public PhysicalTableConfiguration getOrCreate(PhysicalTableIdentity identity) {
 		PhysicalTableConfiguration existing = tables.get(identity);
 
-		if (existing != null) {
-			identity.getEtlConfiguration().debug("Found existing PhysicalTableConfiguration " + existing);
-
-			return existing;
-		} else {
-			identity.getEtlConfiguration().debug("No existing PhysicalTableConfiguration found " + existing);
-		}
+		if (existing != null) return existing;
 
 		PhysicalTableConfiguration created = new PhysicalTableConfiguration(identity);
 		PhysicalTableConfiguration raced = tables.putIfAbsent(identity, created);

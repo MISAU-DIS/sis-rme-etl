@@ -129,24 +129,25 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 
 	public void loadValuesToFields(EtlDatabaseObject object) {
 		for (Field field : this.fields) {
-			Object value;
+			Object value = null;
 
 			try {
 				try {
 					value = object.getFieldValue(field.getName());
 				} catch (ForbiddenOperationException e) {
-					if (object.hasSharedPkObj()) {
-						try {
-							value = object.getSharedPkObj().getFieldValue(field.getName());
-						} catch (ForbiddenOperationException e1) {
-							value = object.getSharedPkObj().getFieldValue(
-									AttDefinedElements.convertTableAttNameToClassAttName(field.getName()));
-						}
-					} else
-						throw e;
+
 				}
 			} catch (ForbiddenOperationException e) {
 				value = object.getFieldValue(AttDefinedElements.convertTableAttNameToClassAttName(field.getName()));
+			}
+
+			if (value == null && object.hasSharedPkObj()) {
+				try {
+					value = object.getSharedPkObj().getFieldValue(field.getName());
+				} catch (ForbiddenOperationException e1) {
+					value = object.getSharedPkObj()
+							.getFieldValue(AttDefinedElements.convertTableAttNameToClassAttName(field.getName()));
+				}
 			}
 
 			field.setValue(value);

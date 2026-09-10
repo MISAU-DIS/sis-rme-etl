@@ -64,10 +64,6 @@ public class DatabasePreparationRecord implements EtlDatabaseObject {
 	}
 
 	@Override
-	public void setFields(List<Field> fields) {
-	}
-
-	@Override
 	public void setFieldValue(String fieldName, Object value) {
 	}
 
@@ -356,7 +352,7 @@ public class DatabasePreparationRecord implements EtlDatabaseObject {
 	}
 
 	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 
 	}
 

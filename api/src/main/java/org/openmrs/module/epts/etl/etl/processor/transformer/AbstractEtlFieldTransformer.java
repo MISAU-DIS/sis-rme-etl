@@ -253,6 +253,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 			auxObject.setFieldValue(refInfo.getChildColumnOnSimpleMapping(), transformedValue);
 
+			srcConf.fullLoad(srcConn);
+
 			EtlDatabaseObject parentInSrc = auxObject.retrieveParentInSrcUsingDstParentInfo(refInfo, srcConf, srcConn);
 			EtlDatabaseObject parentInDst = null;
 

@@ -318,7 +318,7 @@ public class DBException extends SQLException implements EtlException {
 		}
 	}
 
-	private boolean messageContains(String... msg) {
+	public boolean messageContains(String... msg) {
 		if (this.getLocalizedMessage() == null)
 			return false;
 

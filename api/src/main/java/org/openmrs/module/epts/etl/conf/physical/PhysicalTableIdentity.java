@@ -2,11 +2,10 @@ package org.openmrs.module.epts.etl.conf.physical;
 
 import java.util.Objects;
 
-import org.openmrs.module.epts.etl.conf.EtlConfiguration;
-
 /**
- * Identifies a physical database table independently from the ETL context in
- * which that table is used.
+ * Runtime cache identity for a physical table. Connection details intentionally
+ * remain here and must not be used as the identity of persisted metadata; use
+ * {@link PhysicalTableKey} for generated artifacts.
  */
 public final class PhysicalTableIdentity {
 
@@ -15,22 +14,13 @@ public final class PhysicalTableIdentity {
 	private final String catalog;
 	private final String schema;
 	private final String tableName;
-	private EtlConfiguration etlConfiguration;
-
-	public PhysicalTableIdentity(EtlConfiguration etlConfiguration, String connectionUrl, String databaseUser,
-			String catalog, String schema, String tableName) {
+	public PhysicalTableIdentity(String connectionUrl, String databaseUser, String catalog, String schema,
+			String tableName) {
 		this.connectionUrl = normalize(connectionUrl);
 		this.databaseUser = normalize(databaseUser);
 		this.catalog = normalize(catalog);
 		this.schema = normalize(schema);
 		this.tableName = normalize(tableName);
-
-		this.etlConfiguration = etlConfiguration;
-
-	}
-
-	public EtlConfiguration getEtlConfiguration() {
-		return etlConfiguration;
 	}
 
 	private static String normalize(String value) {
@@ -55,6 +45,10 @@ public final class PhysicalTableIdentity {
 
 	public String getTableName() {
 		return tableName;
+	}
+
+	public PhysicalTableKey toPersistentKey(String logicalDatabaseId, String databaseDialect) {
+		return new PhysicalTableKey(logicalDatabaseId, databaseDialect, catalog, schema, tableName);
 	}
 
 	@Override

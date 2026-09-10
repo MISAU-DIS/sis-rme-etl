@@ -227,12 +227,12 @@ public class Field extends AbstractEtlDataConfiguration implements Serializable 
 			return false;
 
 		if (obj instanceof Field) {
-			if (this.name.equals(((Field) obj).name))
+			if (utilities.equalsFieldsName(this.name, ((Field) obj).name))
 				return true;
 		}
 
 		if (obj instanceof String) {
-			return this.name.equals(obj);
+			return utilities.equalsFieldsName(this.name, obj.toString());
 		}
 
 		return super.equals(obj);

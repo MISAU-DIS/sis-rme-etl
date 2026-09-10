@@ -43,11 +43,6 @@ public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditio
 	}
 
 	@Override
-	public Boolean allowMultipleSrcObjectsForLoading() {
-		return false_();
-	}
-
-	@Override
 	public Boolean isRequired() {
 		return true_();
 	}

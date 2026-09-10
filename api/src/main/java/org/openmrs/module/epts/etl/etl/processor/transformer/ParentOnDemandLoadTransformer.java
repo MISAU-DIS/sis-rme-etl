@@ -372,7 +372,6 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		srcParent.setAuxLoadObject(!srcParent.hasAuxLoadObject() ? new ArrayList<>() : srcParent.getAuxLoadObject());
 		srcParent.getAuxLoadObject().addAll(additionalSrcObjects);
 
-
 		EtlLoadHelper loadHelper = EtlLoadHelper.fastLoadRecord(processor, srcParent, (DstConf) etlTransformTarget,
 				transformationType, srcConn, dstConn);
 
@@ -717,11 +716,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		conf.setRelatedParentDstConfName(this.getRelatedEtlTransformTarget().getTableAlias());
 
 		conf.setDoNotFullLoadDstConf(true);
-		try {
-			conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
-		} catch (DatabaseResourceDoesNotExists e) {
-			throw e;
-		}
+
+		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
+
+		conf.init(getRelatedEtlConf(), false, srcConn, dstConn);
 
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 

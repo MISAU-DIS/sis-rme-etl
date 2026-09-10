@@ -406,7 +406,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		OpenConnection srcConn = this.getRelatedEtlConf().openSrcConn(this);
 
 		try {
-			fullLoad(operationConfig, srcConn, dstConn);
+			this.fullLoad(operationConfig, srcConn, dstConn);
 		} finally {
 			finalizeConnection(srcConn, this);
 
@@ -431,6 +431,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		if (!this.getSrcConf().doNotUseAsDatasource()) {
+			this.getSrcConf().init(this, srcConn, dstConn);
+
 			this.getSrcConf().fullLoad(srcConn);
 		}
 
@@ -478,6 +480,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 						}
 
 						if (!isDoNotFullLoadDstConf()) {
+							map.init(this, srcConn, dstConn);
+
 							map.fullLoad(dstConn);
 
 							map.generateAllFieldsMapping(dstConn);
@@ -491,6 +495,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					// Force the dstConf to be inMemory
 
 					for (DstConf dstConf : this.getDstConf()) {
+						dstConf.init(this, srcConn, dstConn);
+
 						dstConf.setInMemoryTable(true);
 						dstConf.setDstType(this.getSrcConf().getDstType());
 
@@ -618,7 +624,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			String sql = searchClauses.generateSQL(srcConn);
 
 			EtlDatabaseObject simpleValue = DatabaseObjectDAO.find(getSrcConf().getLoadHealper(),
-					getSrcConf().getSyncRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(), srcConn);
+					getSrcConf().generateEtlRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(),
+					srcConn);
 
 			return simpleValue;
 		}

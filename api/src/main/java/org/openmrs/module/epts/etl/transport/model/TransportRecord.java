@@ -501,7 +501,7 @@ public class TransportRecord extends BaseVO implements EtlDatabaseObject {
 	}
 
 	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 		// TODO Auto-generated method stub
 
 	}

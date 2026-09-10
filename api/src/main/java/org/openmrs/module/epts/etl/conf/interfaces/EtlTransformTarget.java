@@ -224,11 +224,16 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			fm.tryToLoadTransformer(this, conn);
 
 			if (!fm.useDefaultTransformer()) {
-				return;
+				if (fm.useSimpleValueTransformer() && (fm.hasValue() || fm.getTransformerInstance().hasInput())) {
+					// Force the mapping to be resolved as there is no input and srcValue for
+					// SimpleValueTransformer
+				} else
+					return;
 			}
 		}
 
-		if (this.getPrimaryKey() != null && this.getPrimaryKey().asSimpleKey().getName().equals(fm.getDstField())
+		if (this.getPrimaryKey() != null
+				&& utilities.equalsFieldsName(this.getPrimaryKey().asSimpleKey().getName(), fm.getDstField())
 				&& this.isAutoIncrementId()) {
 			return;
 		}

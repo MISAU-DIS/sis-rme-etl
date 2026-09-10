@@ -17,38 +17,39 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
-	
+
 	private EtlDatabaseObject dstRelatedObject;
-	
+
 	private EtlDatabaseObject srcRelatedObject;
-	
+
 	private EtlDatabaseObject parentRecordInOrigin;
-	
+
 	private ParentTable parentRefInfo;
-	
+
 	public RecordWithDefaultParentInfo() {
 	}
-	
+
 	public static RecordWithDefaultParentInfo init(EtlDatabaseObject srcObject, EtlDatabaseObject dstObject,
-	        EtlDatabaseObject parentInOrigin, ParentTable parentRefInfo, Connection conn) throws DBException {
-		
-		EtlDatabaseObjectConfiguration recursiveRecordTableInfo = parentRefInfo.getRelatedEtlConf()
-		        .getRecordWithDefaultParentsInfoTabConf();
-		
+			EtlDatabaseObject parentInOrigin, ParentTable parentRefInfo, Connection conn) throws DBException {
+
+		EtlConfigurationTableConf recursiveRecordTableInfo = parentRefInfo.getRelatedEtlConf()
+				.getRecordWithDefaultParentsInfoTabConf();
+
 		if (!recursiveRecordTableInfo.isFullLoaded()) {
+			recursiveRecordTableInfo.setParentConf(parentRefInfo);
 			recursiveRecordTableInfo.fullLoad(conn);
 		}
-		
+
 		RecordWithDefaultParentInfo rec = new RecordWithDefaultParentInfo();
-		
+
 		rec.setRelatedConfiguration(recursiveRecordTableInfo);
-		
+
 		srcObject.loadObjectIdData();
-		
+
 		if (parentInOrigin == null) {
 			throw new ForbiddenOperationException("parentInOrigin cannot be null");
 		}
-		
+
 		rec.setFieldValue("record_origin_location_code", parentRefInfo.getRelatedEtlConf().getOriginAppLocationCode());
 		rec.setFieldValue("src_table_name", srcObject.generateTableName());
 		rec.setFieldValue("dst_table_name", dstObject.generateTableName());
@@ -59,137 +60,142 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		rec.setFieldValue("src_parent_id", parentInOrigin.getObjectId().asSimpleNumericValue());
 		rec.setFieldValue("inconsistent_parent", -1);
 		rec.setFieldValue("status", "PENDING");
-		
+
 		return rec;
-		
+
 	}
-	
+
 	public void setSrcRelatedObject(EtlDatabaseObject srcRelatedObject) {
 		this.srcRelatedObject = srcRelatedObject;
 	}
-	
+
 	public EtlDatabaseObject getSrcRelatedObject() {
 		return srcRelatedObject;
 	}
-	
+
 	public String getRecordOriginLocationCode() {
 		return this.getFieldValue("record_origin_location_code").toString();
 	}
-	
+
 	public String getSrcTableName() {
 		return this.getFieldValue("src_table_name").toString();
 	}
-	
+
 	public String getDstTableName() {
 		return this.getFieldValue("dst_table_name").toString();
 	}
-	
+
 	public String getParentTable() {
 		return this.getFieldValue("parent_table").toString();
 	}
-	
+
 	public String getParentField() {
 		return this.getFieldValue("parent_field").toString();
 	}
-	
+
 	public Long getSrcRecId() {
 		return Long.parseLong(this.getFieldValue("src_rec_id").toString());
 	}
-	
+
 	public Long getDstRecId() {
-		return this.getFieldValue("dst_rec_id") != null ? Long.parseLong(this.getFieldValue("dst_rec_id").toString()) : null;
+		return this.getFieldValue("dst_rec_id") != null ? Long.parseLong(this.getFieldValue("dst_rec_id").toString())
+				: null;
 	}
-	
+
 	public Long getSrcParentId() {
 		return Long.parseLong(this.getFieldValue("src_parent_id").toString());
 	}
-	
+
 	public void fullLoad(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn)
-	        throws DBException, ForbiddenOperationException {
-		
+			throws DBException, ForbiddenOperationException {
+
 		SrcConf relatedSrcConf = relatedItemConf.getSrcConf();
-		
+
 		if (!relatedItemConf.isFullLoaded()) {
 			throw new ForbiddenOperationException("The relatedItemConf must be full loaded!!!");
 		}
-		
+
 		DstConf dstConf = relatedItemConf.findDstTable_(null, this.getDstTableName());
-		
+
 		this.parentRefInfo = relatedSrcConf.getFieldIsRelatedParent(Field.fastCreateField(this.getParentField()));
-		
-		//The srcObject and dstRelatedObject should be the same for multiple default parents for same record
+
+		// The srcObject and dstRelatedObject should be the same for multiple default
+		// parents for same record
 		if (this.getSrcRelatedObject() == null) {
 			this.setSrcRelatedObject(DatabaseObjectDAO.getByOid(relatedSrcConf,
-			    Oid.fastCreate(relatedSrcConf.getPrimaryKey().asSimpleKey().getName(), this.getSrcRecId()), srcConn));
+					Oid.fastCreate(relatedSrcConf.getPrimaryKey().asSimpleKey().getName(), this.getSrcRecId()),
+					srcConn));
 		}
-		
+
 		if (this.getDstRelatedObject() == null) {
 			this.setDstRelatedObject(DatabaseObjectDAO.getByOid(dstConf,
-			    Oid.fastCreate(dstConf.getPrimaryKey().asSimpleKey().getName(), this.getDstRecId()), dstConn));
+					Oid.fastCreate(dstConf.getPrimaryKey().asSimpleKey().getName(), this.getDstRecId()), dstConn));
 		}
-		
+
 		if (this.srcRelatedObject == null) {
 			throw new RecordNotFoundException(relatedSrcConf, this.getSrcRecId());
 		}
-		
+
 		if (this.dstRelatedObject == null) {
 			throw new RecordNotFoundException(dstConf, this.getDstRecId());
 		}
-		
+
 		this.parentRecordInOrigin = DatabaseObjectDAO.getByOid(this.parentRefInfo,
-		    Oid.fastCreate(this.parentRefInfo.getPrimaryKey().asSimpleKey().getName(), this.getSrcParentId()), srcConn);
+				Oid.fastCreate(this.parentRefInfo.getPrimaryKey().asSimpleKey().getName(), this.getSrcParentId()),
+				srcConn);
 	}
-	
+
 	public EtlDatabaseObject getParentRecordInOrigin() {
 		return parentRecordInOrigin;
 	}
-	
+
 	public ParentTable getParentRefInfo() {
 		return parentRefInfo;
 	}
-	
+
 	public EtlDatabaseObject getDstRelatedObject() {
 		return dstRelatedObject;
 	}
-	
+
 	public void setDstRelatedObject(EtlDatabaseObject relatedDstObject) {
 		this.dstRelatedObject = relatedDstObject;
 	}
-	
-	public static List<RecordWithDefaultParentInfo> getAllOfSrcRecord(SrcConf srcTable, Long srcRecId, Connection srcConn)
-	        throws DBException {
+
+	public static List<RecordWithDefaultParentInfo> getAllOfSrcRecord(SrcConf srcTable, Long srcRecId,
+			Connection srcConn) throws DBException {
 		TableConfiguration tabConf = srcTable.getRelatedEtlConf().getRecordWithDefaultParentsInfoTabConf();
-		
+
 		if (!tabConf.isFieldsLoaded()) {
 			tabConf.fullLoad(srcConn);
 		}
-		
+
 		String sql = "";
 		sql += " select " + tabConf.generateFullAliasedSelectColumns();
 		sql += " from   " + tabConf.generateSelectFromClauseContent();
 		sql += " where  src_rec_id = ? ";
 		sql += "		and src_table_name = ?";
 		sql += "		and status = ?";
-		
+
 		Object[] params = { srcRecId, srcTable.getTableName(), "PENDING" };
-		
-		return DatabaseObjectDAO.search(tabConf.getLoadHealper(), RecordWithDefaultParentInfo.class, sql, params, srcConn);
+
+		return DatabaseObjectDAO.search(tabConf.getLoadHealper(), RecordWithDefaultParentInfo.class, sql, params,
+				srcConn);
 	}
-	
+
 	public void setAsInconsistent(Connection conn) throws DBException {
 		this.setFieldValue("inconsistent_parent", 1);
 		this.setFieldValue("status", "ERR");
 		this.setFieldValue("last_err", "INCONSISTENT");
-		
+
 		this.update((TableConfiguration) this.getRelatedConfiguration(), conn);
 	}
-	
+
 	public static void deleteAllSuccessifulyProcessed(SrcConf srcConf, OpenConnection srcConn) throws DBException {
 		EtlConfigurationTableConf skippedRecordTabConf = srcConf.getRelatedEtlConf()
-		        .getRecordWithDefaultParentsInfoTabConf();
-		
+				.getRecordWithDefaultParentsInfoTabConf();
+
 		DatabaseObjectDAO.removeAll(skippedRecordTabConf,
-		    "src_table_name = '" + srcConf.getTableName() + "' and inconsistent_parent = -1", srcConn);
+				"src_table_name = '" + srcConf.getTableName() + "' and inconsistent_parent = -1", srcConn);
 	}
-	
+
 }

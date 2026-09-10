@@ -44,7 +44,7 @@ public class DuplicatedUsersProcessor extends EtlProcessor {
 			this.usersTableConf.setMustLoadChildrenInfo(true);
 			this.usersTableConf.fullLoad(srcConn);
 			
-			this.getSrcConf().setSyncRecordClass(TmpUserVO.class);
+			this.getSrcConf().setEtlRecordClass(TmpUserVO.class);
 		}
 		
 		for (EtlDatabaseObject record : etlObjects) {

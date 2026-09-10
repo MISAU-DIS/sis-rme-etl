@@ -136,7 +136,7 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 	}
 
 	@Override
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
 	}
 
 	@Override

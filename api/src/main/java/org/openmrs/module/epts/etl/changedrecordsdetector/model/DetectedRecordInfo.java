@@ -402,7 +402,7 @@ public class DetectedRecordInfo extends BaseVO implements ChangedRecord {
 	}
 
 	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
+	public void tryToReplaceFieldValueWithKeyValue(Key k) {
 	}
 
 	@Override

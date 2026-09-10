@@ -402,11 +402,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		logTrace("ThreadRecordIntervalsManager saved!");
 
-		this.logDebug("CREATING DEFAULT PARENT OBJECTS");
+		if (this.getRelatedEtlOperationConfig().usesDefaultRecords()) {
 
-		this.getEtlItemConfiguration().tryToCreateDefaultRecordsForAllTables();
+			this.logDebug("CREATING DEFAULT PARENT OBJECTS");
 
-		this.logTrace("DEFAULT PARENT OBJECTS CREATED");
+			this.getEtlItemConfiguration().tryToCreateDefaultRecordsForAllTables();
+
+			this.logTrace("DEFAULT PARENT OBJECTS CREATED");
+		}
 
 		process(determineProcessingStrategy());
 

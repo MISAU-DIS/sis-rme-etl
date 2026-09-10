@@ -7,7 +7,7 @@ public class ConfigData {
 					"installationType: \"source\",\n"+
 					
 					"syncRootDirectory: \"/home/jpboane/working/prg/jee/workspace/data/sync\",\n"+
-					"classPath: \"/home/jpboane/working/prg/jee/workspace/w02/openmrs-module-epts-etl/api/target/epts-etl-api-1.0.jar\",\n"+
+					"classPath: [\"/home/jpboane/working/prg/jee/workspace/w02/openmrs-module-epts-etl/api/target/epts-etl-api-1.0.jar\"],\n"+
 					
 					"firstExport: true,\n"+
 					"automaticStart: true, \n"+
@@ -76,7 +76,7 @@ public class ConfigData {
 					"installationType: \"destination\",\n"+
 					
 					"syncRootDirectory: \"/home/jpboane/working/prg/jee/workspace/data/sync\",\n"+
-					"classPath: \"/home/jpboane/working/prg/jee/workspace/w02/openmrs-module-epts-etl/api/target/epts-etl-api-1.0.jar\",\n"+
+					"classPath: [\"/home/jpboane/working/prg/jee/workspace/w02/openmrs-module-epts-etl/api/target/epts-etl-api-1.0.jar\"],\n"+
 					
 					"firstExport: true,\n"+
 					"automaticStart: false, \n"+

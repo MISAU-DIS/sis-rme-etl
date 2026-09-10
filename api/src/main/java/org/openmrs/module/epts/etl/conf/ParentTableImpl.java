@@ -121,7 +121,7 @@ public class ParentTableImpl extends AbstractRelatedTable implements ParentTable
 
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
-		return this.getChildTableConf() != null ? this.getChildTableConf().getRelatedEtlConf() : null;
+		return this.getParentConf() != null ? this.getParentConf().getRelatedEtlConf() : null;
 	}
 
 	@Override

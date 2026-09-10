@@ -10,18 +10,25 @@ import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalExportedForeignKeyMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalForeignKeyMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableConfiguration;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableIdentity;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -44,7 +51,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private List<ChildTable> childRefInfo;
 
-	private Class<? extends EtlDatabaseObject> syncRecordClass;
+	private Class<? extends EtlDatabaseObject> etlRecordClass;
 
 	private EtlDataConfiguration parentConf;
 
@@ -55,6 +62,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private Boolean metadata;
 
 	protected Boolean fullLoaded;
+	private transient boolean fullLoadLogSuppressed;
+	private transient boolean physicalMetadataLoadedFromStaticData;
+	private transient SchemaMetadataLoadSource schemaMetadataLoadSource = SchemaMetadataLoadSource.NOT_LOADED;
 
 	private Boolean removeForbidden;
 
@@ -218,6 +228,13 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isTableNameInfoLoaded())
 			return;
 
+		if (usesPrecompiledSchemaMetadata()) {
+			if (this.getSchema() == null)
+				this.setSchema(this.getRelatedConnInfo().determineSchema());
+			this.setTableNameInfoLoaded(true);
+			return;
+		}
+
 		if (this.getSchema() == null) {
 			this.setSchema(DBUtilities.determineSchemaName(conn));
 		}
@@ -232,13 +249,62 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
-		this.tryToLoadDumpScriptContentToFieldAndValidate("extraConditionForExtract",
-				this.retrieveAllAvailableTemplateParameters(), conn);
+		boolean alreadyLoaded = this.isFullLoaded();
 
-		this.tryToLoadSchemaInfo(null, conn);
-		this.attachPhysicalTableConfiguration(conn);
+		if (!alreadyLoaded) {
+			this.schemaMetadataLoadSource = SchemaMetadataLoadSource.NOT_LOADED;
+		}
 
-		TableConfiguration.super.fullLoad(conn);
+		try {
+			this.tryToLoadDumpScriptContentToFieldAndValidate("extraConditionForExtract",
+					this.retrieveAllAvailableTemplateParameters(), conn);
+
+			this.tryToLoadSchemaInfo(null, conn);
+
+			this.attachPhysicalTableConfiguration(conn);
+
+			this.fullLoadLogSuppressed = physicalMetadataLoadedFromStaticData;
+
+			TableConfiguration.super.fullLoad(conn);
+
+			if (this.isFullLoaded()) {
+				this.schemaMetadataLoadSource = physicalMetadataLoadedFromStaticData
+						? SchemaMetadataLoadSource.STATIC_DATA
+						: SchemaMetadataLoadSource.JDBC;
+			}
+		} finally {
+			this.fullLoadLogSuppressed = false;
+		}
+		if (physicalMetadataLoadedFromStaticData && !alreadyLoaded && this.isFullLoaded()) {
+			this.getRelatedEtlConf().debug("Full load done using existing static data for table {}", this);
+		}
+	}
+
+	@Override
+	@JsonIgnore
+	public boolean isFullLoadLogSuppressed() {
+		return fullLoadLogSuppressed;
+	}
+
+	@Override
+	@JsonIgnore
+	public SchemaMetadataLoadSource getSchemaMetadataLoadSource() {
+		return schemaMetadataLoadSource;
+	}
+
+	@Override
+	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
+			Connection dstConn) throws DBException {
+
+		TableConfiguration.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
+
+		if (hasParents()) {
+			for (ParentTable p : this.getParents()) {
+				p.setParentConf(this.getParentConf());
+			}
+		}
+
+		this.attachPhysicalTableConfiguration(dstConn);
 	}
 
 	private void attachPhysicalTableConfiguration(Connection conn) throws DBException {
@@ -246,15 +312,110 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			return;
 
 		try {
-			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedEtlConf(),
-					conn.getMetaData().getURL(), conn.getMetaData().getUserName(), this.getCatalog(conn),
-					this.getSchema(), this.getTableName());
+			PhysicalTableMetadata metadata = this.resolvePhysicalTableMetadata(conn);
+			PhysicalTableIdentity identity = new PhysicalTableIdentity(this.getRelatedConnInfo().getConnectionURI(),
+					this.getRelatedConnInfo().getDataBaseUserName(), "", this.getSchema(), this.getTableName());
 
 			this.physicalTableConfiguration = this.getRelatedEtlConf().getPhysicalTableConfigurationRegistry()
 					.getOrCreate(identity);
+
+			if (metadata != null) {
+				// A static snapshot is already complete. A JDBC-backed configuration is
+				// deliberately populated by the normal TableConfiguration.fullLoad steps.
+				this.physicalTableConfiguration.initialize(metadata);
+			}
+		} catch (java.io.IOException e) {
+			throw new DBException(new SQLException(e));
 		} catch (SQLException e) {
 			throw new DBException(e);
 		}
+	}
+
+	private PhysicalTableMetadata resolvePhysicalTableMetadata(Connection conn)
+			throws java.io.IOException, SQLException {
+
+		stepIntoBreakpoint(getRelatedEtlConf(), this.getRelatedEtlConf() == null);
+
+		SchemaMetadataMode mode = this.getRelatedEtlConf().getSchemaMetadataMode();
+
+		if (mode != null && mode.usesFilesFirst()) {
+			FilePhysicalTableMetadataRepository files = new FilePhysicalTableMetadataRepository(
+					this.getRelatedEtlConf().getSchemaMetadataDirectory());
+			String dataModelId = this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo());
+			java.util.Optional<PhysicalTableMetadata> stored = utilities.stringHasValue(dataModelId)
+					? files.find(dataModelId, this.getTableName())
+					: files.find(this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), this.getSchema(),
+							this.getTableName());
+			if (stored.isPresent()) {
+				try {
+					validateManifestAssociation(stored.get());
+					this.physicalMetadataLoadedFromStaticData = true;
+					return stored.get();
+				} catch (java.io.IOException exception) {
+					this.physicalMetadataLoadedFromStaticData = false;
+					if (!mode.allowsJdbcFallback())
+						throw exception;
+					this.logWarn("Ignoring incompatible precompiled metadata for {}.{}: {}", this.getSchema(),
+							this.getTableName(), exception.getMessage());
+				}
+			}
+			if (!mode.allowsJdbcFallback()) {
+				String modelDescription = utilities.stringHasValue(dataModelId) ? "data model " + dataModelId
+						: "schema " + this.getSchema();
+				throw new java.io.IOException("Precompiled schema metadata not found for " + modelDescription + "."
+						+ this.getTableName() + " under " + this.getRelatedEtlConf().getSchemaMetadataDirectory()
+						+ ". Run DATABASE_MODEL_GENERATION to create it.");
+			}
+		}
+
+		this.physicalMetadataLoadedFromStaticData = false;
+		return null;
+	}
+
+	private void validateManifestAssociation(PhysicalTableMetadata metadata) throws java.io.IOException {
+		java.io.File metadataDirectory = this.getRelatedEtlConf().getSchemaMetadataDirectory();
+		java.io.File manifestFile = new java.io.File(metadataDirectory, "manifest.json").getAbsoluteFile();
+		DatabaseModelManifest manifest = new FileDatabaseModelManifestRepository(metadataDirectory).read();
+		String expectedKey = metadata.getKey().toString();
+		String expectedClass = this.generateFullClassName(this.getRelatedConnInfo());
+		String expectedFingerprint = PhysicalTableMetadataFingerprint.sha256(metadata);
+		DatabaseModelManifest.Entry matchingClass = null;
+		List<String> classesForKey = new ArrayList<>();
+
+		for (DatabaseModelManifest.Entry entry : manifest.getEntries()) {
+			if (!expectedKey.equals(entry.getMetadataKey()))
+				continue;
+
+			classesForKey.add(entry.getGeneratedClassName());
+			if (expectedClass.equals(entry.getGeneratedClassName())) {
+				matchingClass = entry;
+				if (expectedFingerprint.equals(entry.getMetadataFingerprint()))
+					return;
+			}
+		}
+
+		if (classesForKey.isEmpty()) {
+			throw new java.io.IOException(
+					"Manifest metadata key not found: expectedKey=" + expectedKey + ", manifest=" + manifestFile);
+		}
+
+		if (matchingClass == null) {
+			throw new java.io.IOException(
+					"Manifest generated class mismatch: metadataKey=" + expectedKey + ", expectedClass=" + expectedClass
+							+ ", foundClasses=" + classesForKey + ", manifest=" + manifestFile);
+		}
+
+		throw new java.io.IOException("Manifest metadata fingerprint mismatch: metadataKey=" + expectedKey
+				+ ", generatedClass=" + expectedClass + ", expectedFingerprint=" + expectedFingerprint
+				+ ", foundFingerprint=" + matchingClass.getMetadataFingerprint() + ", manifest=" + manifestFile);
+	}
+
+	private boolean usesPrecompiledSchemaMetadata() {
+		return this.getRelatedEtlConf() != null && this.getRelatedEtlConf().usesPrecompiledSchemaMetadata();
+	}
+
+	private boolean usesResolvedStaticSchemaMetadata() {
+		return physicalMetadataLoadedFromStaticData;
 	}
 
 	@JsonIgnore
@@ -328,9 +489,18 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isUniqueKeyInfoLoaded())
 			return;
 
+		if (usesResolvedStaticSchemaMetadata()) {
+			this.uniqueKeys = this.physicalTableConfiguration.copyUniqueKeys(this);
+			if (this.uniqueKeys != null && utilities.listHasElement(this.ignorableFields)) {
+				this.uniqueKeys.removeIf(key -> key.getFields().stream().anyMatch(this::isIgnorableField));
+			}
+			this.setUniqueKeyInfoLoaded(true);
+			return;
+		}
+
 		// Unique-key discovery currently observes contextual field exclusions and
 		// shared-PK relationships. Keep those cases local until physical FK DTOs exist.
-		if (this.uniqueKeys != null || utilities.listHasElement(this.ignorableFields) || this.useSharedPKKey()) {
+		if (this.uniqueKeys != null || this.useSharedPKKey()) {
 			TableConfiguration.super.loadUniqueKeys(conn);
 			return;
 		}
@@ -357,6 +527,248 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	@Override
+	public void loadParents(Connection conn) throws DBException {
+		if (!usesResolvedStaticSchemaMetadata()) {
+			TableConfiguration.super.loadParents(conn);
+
+			this.physicalTableConfiguration.initializeImportedForeignKeys(toPhysicalImportedForeignKeys());
+
+			return;
+		}
+
+		if (this.isParentsLoaded())
+			return;
+
+		List<ParentTable> resolved = new ArrayList<>();
+
+		for (PhysicalForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getImportedForeignKeys()) {
+
+			ParentTableImpl parent = ParentTableImpl.init(foreignKey.getReferencedTable(), foreignKey.getName(), this);
+
+			parent.setSchema(
+					resolveReferencedSchema(foreignKey.getReferencedSchema(), foreignKey.getReferencedCatalog()));
+			parent.setParentConf(this.getParentConf());
+			List<RefMapping> mappings = new ArrayList<>();
+			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
+				if (utilities.containsAll(this.getIgnorableFields(), physicalMapping.getChildColumn()))
+					continue;
+				RefMapping mapping = RefMapping.fastCreate(physicalMapping.getChildColumn(),
+						physicalMapping.getParentColumn());
+				Field childField = this.getField(physicalMapping.getChildColumn());
+				if (childField != null) {
+					mapping.getChildField().setDataType(childField.getDataType());
+					mapping.getParentField().setDataType(childField.getDataType());
+					mapping.setIgnorable(childField.isAllowNull());
+				}
+				mapping.setParentTabConf(parent);
+				mappings.add(mapping);
+			}
+			parent.setRefMapping(mappings);
+			if (!mappings.isEmpty()) {
+				applyConfiguredParentContext(parent);
+				resolved.add(parent);
+				markSharedPrimaryKey(parent);
+			}
+		}
+
+		this.addManualOnlyParents(resolved);
+		this.setParentRefInfo(resolved);
+		this.setParentsLoaded(true);
+	}
+
+	@Override
+	public void loadChildren(Connection conn) throws SQLException {
+		if (!usesResolvedStaticSchemaMetadata()) {
+			TableConfiguration.super.loadChildren(conn);
+			if (this.isMustLoadChildrenInfo()) {
+				this.physicalTableConfiguration.initializeExportedForeignKeys(toPhysicalExportedForeignKeys());
+			}
+			return;
+		}
+		if (!this.isMustLoadChildrenInfo())
+			return;
+		List<ChildTable> children = new ArrayList<>();
+		for (PhysicalExportedForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getExportedForeignKeys()) {
+			ChildTable child = ChildTable.init(foreignKey.getChildTable(), foreignKey.getName(), this);
+			child.setSchema(resolveReferencedSchema(foreignKey.getChildSchema(), foreignKey.getChildCatalog()));
+			child.setParentConf(this.getParentConf());
+			List<RefMapping> mappings = new ArrayList<>();
+			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
+				RefMapping mapping = RefMapping.fastCreate(physicalMapping.getChildColumn(),
+						physicalMapping.getParentColumn());
+				Field parentField = this.getField(physicalMapping.getParentColumn());
+				if (parentField != null) {
+					mapping.getChildField().setDataType(parentField.getDataType());
+					mapping.getParentField().setDataType(parentField.getDataType());
+				}
+				mapping.setChildTabConf(child);
+				mappings.add(mapping);
+			}
+			child.setRefMapping(mappings);
+			children.add(child);
+		}
+		this.setChildRefInfo(children);
+	}
+
+	private List<PhysicalForeignKeyMetadata> toPhysicalImportedForeignKeys() {
+		List<PhysicalForeignKeyMetadata> foreignKeys = new ArrayList<>();
+		if (!this.hasParentRefInfo())
+			return foreignKeys;
+
+		for (ParentTable parent : this.getParentRefInfo()) {
+			if (Boolean.TRUE.equals(parent.isManualyConfigured()) || !parent.hasMapping())
+				continue;
+			List<PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping> mappings = new ArrayList<>();
+			for (RefMapping mapping : parent.getRefMapping()) {
+				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
+						mapping.getParentFieldName()));
+			}
+			String portableSchema = toPortableReferencedSchema(parent.getSchema());
+			foreignKeys.add(new PhysicalForeignKeyMetadata(parent.getRefCode(), portableSchema, portableSchema,
+					parent.getTableName(), mappings));
+		}
+		return foreignKeys;
+	}
+
+	private List<PhysicalExportedForeignKeyMetadata> toPhysicalExportedForeignKeys() {
+		List<PhysicalExportedForeignKeyMetadata> foreignKeys = new ArrayList<>();
+		if (!this.hasChildRefInfo())
+			return foreignKeys;
+
+		for (ChildTable child : this.getChildRefInfo()) {
+			if (Boolean.TRUE.equals(child.isManualyConfigured()) || !child.hasMapping())
+				continue;
+			List<PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping> mappings = new ArrayList<>();
+			for (RefMapping mapping : child.getRefMapping()) {
+				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
+						mapping.getParentFieldName()));
+			}
+			String portableSchema = toPortableReferencedSchema(child.getSchema());
+			foreignKeys.add(new PhysicalExportedForeignKeyMetadata(child.getRefCode(), portableSchema, portableSchema,
+					child.getTableName(), mappings));
+		}
+		return foreignKeys;
+	}
+
+	/**
+	 * Internal references in a named data model are stored without a physical
+	 * schema. They are rebound to the schema of the current connection when the
+	 * reusable metadata is loaded elsewhere. Cross-schema references retain their
+	 * explicit schema.
+	 */
+	private String toPortableReferencedSchema(String referencedSchema) {
+		String dataModelId = this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo());
+		if (utilities.stringHasValue(dataModelId) && sameSchema(referencedSchema, this.getSchema()))
+			return "";
+		return referencedSchema;
+	}
+
+	private String resolveReferencedSchema(String schema, String catalog) {
+		if (utilities.stringHasValue(schema))
+			return schema;
+		if (utilities.stringHasValue(catalog))
+			return catalog;
+		return this.getSchema();
+	}
+
+	private boolean sameSchema(String first, String second) {
+		return first == null ? second == null : second != null && first.equalsIgnoreCase(second);
+	}
+
+	/**
+	 * Copies the definitive state produced by TableConfiguration.fullLoad into the
+	 * reusable physical representation. This also covers configurations that were
+	 * already full-loaded before the physical registry entry was attached.
+	 */
+	public void synchronizePhysicalTableConfiguration() {
+		if (this.physicalTableConfiguration == null) {
+			throw new IllegalStateException(
+					"No physical table configuration attached to " + this.getFullTableDescription());
+		}
+		if (!this.isFullLoaded()) {
+			throw new IllegalStateException(
+					"Cannot synchronize a table that is not full-loaded: " + this.getFullTableDescription());
+		}
+		this.physicalTableConfiguration.synchronizeFromLoadedTable(this.getFields(), this.getPrimaryKey(),
+				this.getUniqueKeys(), toPhysicalImportedForeignKeys(), toPhysicalExportedForeignKeys());
+	}
+
+	private void applyConfiguredParentContext(ParentTableImpl discovered) {
+		if (!utilities.listHasElement(this.getParents()))
+			return;
+		for (ParentTable configured : this.getParents()) {
+			boolean sameReference = utilities.stringHasValue(configured.getRefCode())
+					&& configured.getRefCode().equals(discovered.getRefCode());
+			if (!sameReference && !configured.getTableName().equals(discovered.getTableName()))
+				continue;
+			discovered.setConditionalFields(configured.getConditionalFields());
+			discovered.setDefaultValueDueInconsistency(configured.getDefaultValueDueInconsistency());
+			discovered.setSetNullDueInconsistency(configured.isSetNullDueInconsistency());
+			discovered.setIgnorableFields(configured.getIgnorableFields());
+			if (configured.hasMapping()) {
+				for (RefMapping mapping : discovered.getRefMapping()) {
+					RefMapping configuredMapping = configured.findRefMapping(mapping.getChildFieldName(),
+							mapping.getParentFieldName());
+					if (configuredMapping == null) {
+						throw new ForbiddenOperationException("Configured parent mapping " + mapping
+								+ " does not match physical foreign key " + discovered.getRefCode());
+					}
+					mapping.setIgnorable(configuredMapping.isIgnorable() || mapping.isIgnorable());
+					mapping.setDefaultValueDueInconsistency(configuredMapping.getDefaultValueDueInconsistency());
+					mapping.setSetNullDueInconsistency(configuredMapping.isSetNullDueInconsistency());
+				}
+			}
+			return;
+		}
+	}
+
+	private void addManualOnlyParents(List<ParentTable> resolved) {
+		if (!utilities.listHasElement(this.getParents()))
+			return;
+		for (ParentTable configured : this.getParents()) {
+			boolean alreadyResolved = false;
+
+			configured.setRelatedTabConf(this);
+
+			for (ParentTable parent : resolved) {
+				if ((utilities.stringHasValue(configured.getRefCode())
+						&& configured.getRefCode().equals(parent.getRefCode()))
+						|| (configured.hasMapping() && configured.equals(parent))) {
+					alreadyResolved = true;
+					break;
+				}
+			}
+			if (!alreadyResolved && configured.hasMapping()) {
+				configured.setChildTableConf(this);
+				configured.setManualyConfigured(true);
+				resolved.add(configured);
+			}
+		}
+	}
+
+	private void markSharedPrimaryKey(ParentTableImpl parent) {
+		if (this.getPrimaryKey() == null || parent.getRefMapping() == null)
+			return;
+		List<String> primaryKeyFields = this.getPrimaryKey().generateListFromFieldsNames();
+		List<String> childFields = new ArrayList<>();
+		for (RefMapping mapping : parent.getRefMapping())
+			childFields.add(mapping.getChildFieldName());
+		if (primaryKeyFields.size() == childFields.size() && childFields.containsAll(primaryKeyFields)) {
+			this.setSharePkWith(parent.getTableName());
+		}
+	}
+
+	@Override
+	public Boolean useAutoIncrementId(Connection conn) throws DBException {
+		if (!usesResolvedStaticSchemaMetadata())
+			return TableConfiguration.super.useAutoIncrementId(conn);
+		if (this.getPrimaryKey() == null || this.getPrimaryKey().isCompositeKey())
+			return false;
+		Field primaryKeyField = this.getField(this.getPrimaryKey().retrieveSimpleKeyColumnName());
+		return primaryKeyField != null && Boolean.TRUE.equals(primaryKeyField.isAutoIncrement());
+	}
+
+	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 
 		if (hasExtraConditionForExtract()) {
@@ -373,6 +785,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.loadHealper == null) {
 			this.loadHealper = new DatabaseObjectLoaderHelper(this);
 		}
+
 		if (this.onConflict == null) {
 			this.onConflict = ConflictResolutionType.MAKE_YOUR_DECISION;
 		} else {
@@ -380,6 +793,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				throw new EtlConfException("The value for onConflict " + this.onConflict
 						+ " is not allowed for table configuration [" + this.getTableAlias() + "]");
 			}
+		}
+
+		try {
+			this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
+		} catch (PojoNotFoundException e) {
 		}
 	}
 
@@ -642,13 +1060,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this.allRelatedTablesFullLoaded = allRelatedTablesFullLoaded;
 	}
 
-	public Class<? extends EtlDatabaseObject> getSyncRecordClass() {
-
-		if (syncRecordClass == null) {
-			this.syncRecordClass = GenericDatabaseObject.class;
-		}
-
-		return getSyncRecordClass(getRelatedConnInfo());
+	public Class<? extends EtlDatabaseObject> getEtlRecordClass() {
+		return this.etlRecordClass;
 	}
 
 	public void setFullLoaded(Boolean fullLoaded) {
@@ -829,8 +1242,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this.tableName = tableName;
 	}
 
-	public void setSyncRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
-		this.syncRecordClass = syncRecordClass;
+	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
+		this.etlRecordClass = syncRecordClass;
 	}
 
 	@Override
@@ -866,6 +1279,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		String toString = "Table [" + getFullTableDescription();
 
 		toString += hasPK() ? ", pk: " + this.primaryKey : "";
+
+		toString += ", schemaMetadataLoadSource: " + this.schemaMetadataLoadSource;
 
 		toString += "]";
 

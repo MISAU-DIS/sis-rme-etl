@@ -119,7 +119,7 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 	@SuppressWarnings("deprecation")
 	default EtlDatabaseObject newInstance() {
 		try {
-			EtlDatabaseObject obj = getSyncRecordClass().newInstance();
+			EtlDatabaseObject obj = getEtlRecordClass().newInstance();
 			obj.setRelatedConfiguration(this);
 
 			return obj;

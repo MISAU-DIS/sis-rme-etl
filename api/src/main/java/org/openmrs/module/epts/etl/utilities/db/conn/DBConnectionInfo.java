@@ -54,8 +54,6 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 
 	private EtlDBConnectionType connType;
 
-	private String pojoPackageName;
-
 	public DBConnectionInfo() {
 		isolationLevel = DBConnectionIsolationLevel.TRANSACTION_REPEATABLE_READ;
 	}
@@ -276,14 +274,6 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 
 	public boolean isMySQLConnection() {
 		return this.connectionURI.toUpperCase().contains("MYSQL");
-	}
-
-	public String getPojoPackageName() {
-		return this.pojoPackageName;
-	}
-
-	public void setPojoPackageName(String pojoPackageName) {
-		this.pojoPackageName = pojoPackageName;
 	}
 
 	public void copyFromOther(DBConnectionInfo toCopyFrom) {

@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.model.pojo.generic;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -13,9 +12,6 @@ import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
-import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
-import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -31,26 +27,18 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 	private EtlDatabaseObjectConfiguration relatedConfiguration;
 
-	private GenericDatabaseObject sharedPkObj;
-
-	/**
-	 * If the {@link #relatedConfiguration} is instance of {@link EtlDataSource} the
-	 * the objects related to tables presents on
-	 * {@link EtlDataSource#getAuxExtractTable()} will be placed on this field.
-	 */
-	private List<EtlDatabaseObject> auxLoadObject;
+	private List<Field> fields;
 
 	public GenericDatabaseObject() {
 	}
 
 	@Override
-	public List<EtlDatabaseObject> getAuxLoadObject() {
-		return auxLoadObject;
+	public List<Field> getFields() {
+		return this.fields;
 	}
 
-	@Override
-	public void setAuxLoadObject(List<EtlDatabaseObject> auxLoadObjects) {
-		this.auxLoadObject = auxLoadObjects;
+	public void setFields(List<Field> fields) {
+		this.fields = fields;
 	}
 
 	@Override
@@ -65,17 +53,6 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		return super.getUuid();
 	}
 
-	@Override
-	@JsonIgnore
-	public GenericDatabaseObject getSharedPkObj() {
-		return sharedPkObj;
-	}
-
-	@Override
-	public void setSharedPkObj(EtlDatabaseObject sharedPkObj) {
-		this.sharedPkObj = (GenericDatabaseObject) sharedPkObj;
-	}
-
 	public GenericDatabaseObject(EtlDatabaseObjectConfiguration relatedConfiguration) {
 		setRelatedConfiguration(relatedConfiguration);
 	}
@@ -83,7 +60,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	public Object getFieldValue(String fieldName) {
 		String fieldNameInSnakeCase = utilities.parsetoSnakeCase(fieldName);
-		String fieldNameInCameCase = utilities.parsetoCamelCase(fieldName);
+		String fieldNameInCameCase = utilities.parseToCamelCase(fieldName);
 
 		try {
 			return utilities.getFieldValueOnFieldList(utilities.parseList(this.fields, Field.class),
@@ -194,7 +171,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 			Connection dstConn) throws DBException {
 
 		try {
-			EtlDatabaseObject defaultParent = conf.getSyncRecordClass().getDeclaredConstructor().newInstance();
+			EtlDatabaseObject defaultParent = conf.getEtlRecordClass().getDeclaredConstructor().newInstance();
 
 			defaultParent.setRelatedConfiguration(parent);
 
@@ -241,9 +218,8 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 			TableConfiguration tabConf = (TableConfiguration) getRelatedConfiguration();
 
 			if (tabConf.getSharePkWith() != null) {
-				this.sharedPkObj = new GenericDatabaseObject(tabConf.getSharedKeyRefInfo(null));
+				this.setSharedPkObj(new GenericDatabaseObject(tabConf.getSharedKeyRefInfo(null)));
 			}
-
 		}
 	}
 
@@ -288,32 +264,12 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 		}
 
-		if (this.getSharedPkObj() != null && !this.getSharedPkObj().loadedFromDb) {
+		if (this.getSharedPkObj() != null && !this.getSharedPkObj().isLoadedFromDb()) {
 			this.getSharedPkObj().load(rs);
 		}
 
 		if (this.getRelatedConfiguration() instanceof TableConfiguration) {
 			this.loadObjectIdData((TableConfiguration) this.getRelatedConfiguration());
-		}
-
-		if (this.getRelatedConfiguration() instanceof MainJoiningEntity) {
-			MainJoiningEntity ds = (MainJoiningEntity) this.getRelatedConfiguration();
-
-			if (ds.hasAuxExtractTable()) {
-				this.setAuxLoadObject(new ArrayList<>());
-
-				for (JoinableEntity j : ds.getJoiningTable()) {
-					if (!j.doNotUseAsDatasource()) {
-
-						GenericDatabaseObject obj = new GenericDatabaseObject();
-						obj.setRelatedConfiguration(j);
-
-						obj.load(rs);
-
-						this.getAuxLoadObject().add(obj);
-					}
-				}
-			}
 		}
 
 		loadedFromDb = true;
@@ -563,7 +519,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public void generateFields() {
+	public List<Field> generateFields() {
 		if (this.relatedConfiguration == null) {
 			throw new ForbiddenOperationException("The relatedConfiguration  is not set");
 		}
@@ -571,6 +527,8 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		if (fields == null)
 			throw new ForbiddenOperationException(
 					"Unkown object state, the field should not be empty as the relatedConfiguration is not empty");
+
+		return this.fields;
 	}
 
 	@Override
@@ -601,13 +559,6 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		return super.getDateVoided();
 	}
 
-	@Override
-	public void tryToReplaceFieldWithKey(Key k) {
-		if (this.hasFields()) {
-			utilities.updateOnArray(this.getFields(), k, k);
-		}
-	}
-
 	public static List<EtlDatabaseObject> createDefaultObjectListUsingConfParams(EtlConfiguration etlConf) {
 		GenericDatabaseObject g = new GenericDatabaseObject();
 
@@ -618,8 +569,8 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	public EtlDatabaseObject createACopy() {
 		GenericDatabaseObject copy = new GenericDatabaseObject(this.relatedConfiguration);
 
-		copy.sharedPkObj = this.sharedPkObj;
-		copy.auxLoadObject = this.auxLoadObject;
+		copy.setSharedPkObj(this.getSharedPkObj());
+		copy.setAuxLoadObject(this.getAuxLoadObject());
 		copy.loadedFromDb = this.loadedFromDb;
 
 		copy.copyFrom(this);

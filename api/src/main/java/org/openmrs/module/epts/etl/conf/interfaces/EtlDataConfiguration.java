@@ -35,6 +35,7 @@ import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 public interface EtlDataConfiguration extends BaseConfiguration {
 
 	Pattern PLACEHOLDER = Pattern.compile("\\$\\{([A-Za-z0-9_.-]+)}");
+	String ETL_GLOBAL_PROPERTY_PREFIX = "epts.etl.";
 
 	EtlConfiguration getRelatedEtlConf();
 
@@ -350,7 +351,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	static String[] SAFE_FIELDS = { "joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper",
 			"onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult",
 			"relationshipResolutionStrategy", "nullValueBehavior", "manuallyConfigured", "possibleSrc",
-			"manuallyConfigured", "loadedDataSourceInfo" };
+			"manuallyConfigured", "loadedDataSourceInfo", "schemaMetadataLoadSource" };
 
 	public static boolean canBeOverriten(Object value, Field field) {
 
@@ -358,6 +359,11 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 		if (value == null) {
 			return true;
+		}
+
+		try {
+			return utilities.getPosOnArray(SAFE_FIELDS, field.getName()) >= 0;
+		} catch (RuntimeException e) {
 		}
 
 		if (type.isPrimitive()) {
@@ -377,12 +383,6 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				return ((Float) value) == 0f;
 			if (type == double.class)
 				return ((Double) value) == 0d;
-		} else {
-			try {
-				return utilities.getPosOnArray(SAFE_FIELDS, field.getName()) >= 0;
-			} catch (RuntimeException e) {
-				return false;
-			}
 		}
 
 		return false;
@@ -435,6 +435,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			boolean escapeJsonValues) {
 
 		Properties prefProps = utilities.toProperties(env);
+		Properties openMrsProps = loadOpenMrsGlobalProperties();
 		Properties appProps = loadProperties(System.getProperty("etl.env.file"));
 		Properties javaProps = System.getProperties();
 		Properties sysProps = utilities.toProperties(System.getenv());
@@ -452,7 +453,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			String key = m.group(1);
 
 			// whitelist
-			if (allowedPlaceholders != null && !allowedPlaceholders.contains(key)) {
+			if (allowedPlaceholders != null && !allowedPlaceholders.isEmpty() && !allowedPlaceholders.contains(key)) {
 				m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0)));
 
 				continue;
@@ -461,6 +462,10 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			Object value = null;
 
 			value = prefProps.get(key);
+
+			if (value == null) {
+				value = openMrsProps.getProperty(key);
+			}
 
 			if (value == null) {
 				value = appProps.getProperty(key);
@@ -491,6 +496,59 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		m.appendTail(sb);
 
 		return sb.toString();
+	}
+
+	/**
+	 * Loads the ETL properties exposed by OpenMRS. The prefix is removed so that,
+	 * for example, {@code epts.etl.location_name} can resolve
+	 * {@code ${location_name}}. The complete property name is also retained to
+	 * support {@code ${epts.etl.location_name}}.
+	 */
+	public static Properties loadOpenMrsGlobalProperties() {
+		Properties properties = new Properties();
+		Class<?> contextClass;
+
+		try {
+			contextClass = Class.forName("org.openmrs.api.context.Context", false,
+					EtlDataConfiguration.class.getClassLoader());
+		} catch (ClassNotFoundException | LinkageError exception) {
+			// OpenMRS is an optional runtime integration. Its API is intentionally not
+			// packaged in the standalone ETL JAR.
+			return properties;
+		}
+
+		try {
+			boolean sessionOpen = Boolean.TRUE.equals(contextClass.getMethod("isSessionOpen").invoke(null));
+			if (!sessionOpen)
+				return properties;
+
+			Object administrationService = contextClass.getMethod("getAdministrationService").invoke(null);
+			ClassLoader openMrsClassLoader = contextClass.getClassLoader();
+			Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false,
+					openMrsClassLoader);
+			Class<?> globalPropertyClass = Class.forName("org.openmrs.GlobalProperty", false, openMrsClassLoader);
+			Object result = administrationServiceClass
+					.getMethod("getGlobalPropertiesByPrefix", String.class)
+					.invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
+
+			if (!(result instanceof Iterable<?>))
+				throw new IllegalStateException("OpenMRS getGlobalPropertiesByPrefix returned a non-iterable value");
+
+			for (Object globalProperty : (Iterable<?>) result) {
+				String name = (String) globalPropertyClass.getMethod("getProperty").invoke(globalProperty);
+				String value = (String) globalPropertyClass.getMethod("getPropertyValue").invoke(globalProperty);
+
+				if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
+					String normalizedValue = stripWrappingQuotes(value);
+					properties.setProperty(name, normalizedValue);
+					properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
+				}
+			}
+		} catch (ReflectiveOperationException exception) {
+			throw new IllegalStateException("Could not load ETL global properties from the OpenMRS runtime", exception);
+		}
+
+		return properties;
 	}
 
 	public static String escapeJsonString(String value) {

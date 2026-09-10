@@ -737,8 +737,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
-
-		if (!isInMemoryTable()) {
+		if (!this.isInMemoryTable()) {
 			this.tryToGenerateTableAlias(getRelatedEtlConf());
 
 			if (!hasManualMapPrimaryKeyOnField()) {
@@ -995,7 +994,7 @@ public class DstConf extends AbstractTableConfiguration
 
 		if (utilities.listHasElement(this.getPreferredDataSource())) {
 			for (String dsName : this.getPreferredDataSource()) {
-				addToPrefferedDataSource(findDataSource(dsName));
+				addToPrefferedDataSource(this.findDataSource(dsName));
 			}
 		}
 

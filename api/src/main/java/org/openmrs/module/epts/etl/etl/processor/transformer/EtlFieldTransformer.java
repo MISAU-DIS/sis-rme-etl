@@ -33,6 +33,10 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 
 	void setOnNullTransformedvalue(ActionOnEtlIssue onNullTransformedvalue);
 
+	String getInputExpression();
+
+	FieldsMapping getInput();
+
 	default void performFieldTransformation(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, FieldsMapping field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
@@ -213,6 +217,10 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 
 	default boolean isDefaultFieldTransformer() {
 		return this instanceof DefaultFieldTransformer;
+	}
+
+	default boolean hasInput() {
+		return this.getInput() != null || utilities.stringHasValue(this.getInputExpression());
 	}
 
 }

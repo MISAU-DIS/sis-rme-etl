@@ -425,7 +425,7 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	private void loadEtlFields() {
-		if (hasExtraDataSource() || hasAuxExtractTable()) {
+		if (this.hasExtraDataSource() || this.hasAuxExtractTable()) {
 			this.setEtlFields(new ArrayList<>());
 
 			this.loadOwnFieldsToEtlFields(this.getEtlFields(), false);
@@ -585,7 +585,11 @@ public class SrcConf extends AbstractTableConfiguration
 
 	@JsonIgnore
 	public List<EtlAdditionalDataSource> getAvaliableExtraDataSource() {
-		if (!isInitialized())
+
+		if (this.doNotUseAsDatasource())
+			return null;
+
+		if (!this.isInitialized())
 			throw new EtlExceptionImpl("The SrcConf is not yet initialized!! ");
 
 		List<EtlAdditionalDataSource> ds = new ArrayList<>();
@@ -617,6 +621,14 @@ public class SrcConf extends AbstractTableConfiguration
 
 		if (hasExtraObjectDataSourceConfig()) {
 			ds.addAll(this.getExtraObjectDataSource());
+		}
+
+		if (hasParentItemConf()) {
+			List<EtlAdditionalDataSource> allP = this.getParentSrcConf().getAvaliableExtraDataSource();
+
+			if (allP != null) {
+				ds.addAll(allP);
+			}
 		}
 
 		return ds;
@@ -804,7 +816,7 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public Boolean hasExtraDataSource() {
-		return utilities.listHasElement(getAvaliableExtraDataSource());
+		return utilities.listHasElement(this.getAvaliableExtraDataSource());
 	}
 
 	public Boolean isComplex() {

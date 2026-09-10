@@ -17,6 +17,9 @@ public enum EtlProcessType {
 	DB_INCONSISTENCY_CHECK,
 	GENERIC_PROCESS,
 	DETECT_GAPES_ON_DB_TABLES,
+	DATABASE_MODEL_GENERATION,
+	/** @deprecated use DATABASE_MODEL_GENERATION. */
+	@Deprecated
 	POJO_GENERATION,
 	ETL,
 	RE_ETL,
@@ -38,7 +41,11 @@ public enum EtlProcessType {
 	}
 
 	public boolean isPojoGeneration() {
-		return this.equals(POJO_GENERATION);
+		return isDatabaseModelGeneration();
+	}
+
+	public boolean isDatabaseModelGeneration() {
+		return this == DATABASE_MODEL_GENERATION || this == POJO_GENERATION;
 	}
 
 	public boolean isDetectGapesOnDbTables() {

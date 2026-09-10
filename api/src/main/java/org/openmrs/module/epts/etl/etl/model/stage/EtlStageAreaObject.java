@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadStatus;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
@@ -171,7 +172,10 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			}
 
 			for (Field f : obj.getFields()) {
-				this.setFieldValue(f.getName(), f.getValue());
+				try {
+					this.setFieldValue(f.getName(), f.getValue());
+				} catch (MissingFieldException e) {
+				}
 			}
 
 			EtlStageAreaObject existing = EtlStageAreaObjectDAO.getByUniqueKeys(this, srcConn);

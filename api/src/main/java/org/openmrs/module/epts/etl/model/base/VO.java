@@ -15,21 +15,19 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public interface VO {
-	
+
 	public static final CommonUtilities utils = CommonUtilities.getInstance();
-	
+
 	void load(ResultSet rs) throws SQLException;
-	
+
 	String generateTableName();
-	
+
 	boolean isExcluded();
-	
+
 	void setExcluded(boolean excluded);
-	
+
 	List<Field> getFields();
-	
-	void setFields(List<Field> fields);
-	
+
 	/**
 	 * Return a value of given field
 	 * 
@@ -39,21 +37,21 @@ public interface VO {
 	default Object getFieldValue(String fieldName) throws MissingFieldException {
 		return CommonUtilities.getInstance().getFieldValue(this, fieldName);
 	}
-	
+
 	void setFieldValue(String fieldName, Object value);
-	
-	default void generateFields() {
-		setFields(utils.generateObjectFields(this));
+
+	default List<Field> generateFields() {
+		return utils.generateObjectFields(this);
 	}
-	
+
 	@JsonIgnore
-	default List<String> getFieldValuesAsString(List<String> excludedFields) {
-		
+	default List<String> getFieldValuesAsString(List<String> fieldsNames) {
+
 		List<String> fieldValues = new ArrayList<>();
-		
+
 		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-		
-		for (Object o : getFieldValues(excludedFields)) {
+
+		for (Object o : getFieldValues(fieldsNames)) {
 			if (o == null) {
 				fieldValues.add("");
 			} else if (o instanceof Date) {
@@ -62,41 +60,40 @@ public interface VO {
 				fieldValues.add(o.toString());
 			}
 		}
-		
+
 		return fieldValues;
 	}
-	
+
 	@JsonIgnore
 	default List<String> getFieldValuesAsString() {
 		return getFieldValuesAsString(null);
 	}
-	
+
 	@JsonIgnore
 	default List<Object> getFieldValues(List<String> excludedFields) {
 		List<Object> fieldsValues = new ArrayList<>(getFields().size());
-		
+
 		for (Field field : this.getFields()) {
 			if (excludedFields != null && utils.containsAll(excludedFields, field.getName())) {
 				continue;
 			}
-			
+
 			String fieldNameInSnakeCase = utils.parsetoSnakeCase(field.getName());
-			String fieldNameInCameCase = utils.parsetoCamelCase(field.getName());
-			
+			String fieldNameInCameCase = utils.parseToCamelCase(field.getName());
+
 			try {
 				fieldsValues.add(getFieldValue(fieldNameInSnakeCase));
-			}
-			catch (ForbiddenOperationException e) {
+			} catch (ForbiddenOperationException e) {
 				fieldsValues.add(getFieldValue(fieldNameInCameCase));
 			}
 		}
-		
+
 		return fieldsValues;
 	}
-	
+
 	@JsonIgnore
 	default List<Object> getFieldValues() {
 		return getFieldValues(null);
 	}
-	
+
 }

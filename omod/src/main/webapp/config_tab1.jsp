@@ -25,7 +25,7 @@
 						<spring:message code="epts.etl.config.classPath.label" />
 					</td>
 					<td>
-						<spring:bind path="vm.syncConfiguration.classPath">
+						<spring:bind path="vm.syncConfiguration.classPath[0]">
 							<input type="text" name="<c:out value="${status.expression}"/>" value="<c:out value="${status.value}"/>"  size="100" />
 						</spring:bind>
 					</td> 

@@ -67,7 +67,8 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 		this.dynamicElements = dynamicElements;
 	}
 
-	public static boolean isTransformerExpression(EtlConfiguration etlConfiguration, String value) throws FieldAvaliableInMultipleDataSources, DBException {
+	public static boolean isTransformerExpression(EtlConfiguration etlConfiguration, String value)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 		if (value == null)
 			return false;
 
