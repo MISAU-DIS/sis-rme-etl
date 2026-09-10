@@ -37,7 +37,7 @@ public class EncounterTypeVO extends AbstractGeneratedDatabaseObject {
 	private Field changedBy = Field.fastCreateWithType("changed_by", "INT");
 
 	public EncounterTypeVO() {
-		this.metadata = true;
+		this.metadata = false;
 		this.fields.add(this.encounterTypeId);
 		this.fields.add(this.name);
 		this.fields.add(this.description);

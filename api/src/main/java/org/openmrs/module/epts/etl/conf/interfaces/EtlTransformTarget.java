@@ -225,7 +225,8 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 			if (!fm.useDefaultTransformer()) {
 				if (fm.useSimpleValueTransformer() && (fm.hasValue() || fm.getTransformerInstance().hasInput())) {
-					//Force the mapping to be resolved as there is no input and srcValue for SimpleValueTransformer
+					// Force the mapping to be resolved as there is no input and srcValue for
+					// SimpleValueTransformer
 				} else
 					return;
 			}

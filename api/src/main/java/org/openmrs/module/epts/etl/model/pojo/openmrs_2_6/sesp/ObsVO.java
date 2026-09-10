@@ -24,63 +24,63 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ObsVO extends AbstractGeneratedDatabaseObject {
+	private Field orderId = Field.fastCreateWithType("order_id", "INT");
+	private Field accessionNumber = Field.fastCreateWithType("accession_number", "VARCHAR");
+	private Field valueGroupId = Field.fastCreateWithType("value_group_id", "INT");
+	private Field valueCodedNameId = Field.fastCreateWithType("value_coded_name_id", "INT");
+	private Field valueModifier = Field.fastCreateWithType("value_modifier", "VARCHAR");
+	private Field valueComplex = Field.fastCreateWithType("value_complex", "VARCHAR");
+	private Field previousVersion = Field.fastCreateWithType("previous_version", "INT");
+	private Field formNamespaceAndPath = Field.fastCreateWithType("form_namespace_and_path", "VARCHAR");
+	private Field interpretation = Field.fastCreateWithType("interpretation", "VARCHAR");
 	private Field obsId = Field.fastCreateWithType("obs_id", "INT");
 	private Field personId = Field.fastCreateWithType("person_id", "INT");
 	private Field conceptId = Field.fastCreateWithType("concept_id", "INT");
 	private Field encounterId = Field.fastCreateWithType("encounter_id", "INT");
-	private Field orderId = Field.fastCreateWithType("order_id", "INT");
 	private Field obsDatetime = Field.fastCreateWithType("obs_datetime", "DATETIME");
 	private Field locationId = Field.fastCreateWithType("location_id", "INT");
 	private Field obsGroupId = Field.fastCreateWithType("obs_group_id", "INT");
-	private Field accessionNumber = Field.fastCreateWithType("accession_number", "VARCHAR");
-	private Field valueGroupId = Field.fastCreateWithType("value_group_id", "INT");
 	private Field valueCoded = Field.fastCreateWithType("value_coded", "INT");
-	private Field valueCodedNameId = Field.fastCreateWithType("value_coded_name_id", "INT");
 	private Field valueDrug = Field.fastCreateWithType("value_drug", "INT");
 	private Field valueDatetime = Field.fastCreateWithType("value_datetime", "DATETIME");
 	private Field valueNumeric = Field.fastCreateWithType("value_numeric", "DOUBLE");
-	private Field valueModifier = Field.fastCreateWithType("value_modifier", "VARCHAR");
 	private Field valueText = Field.fastCreateWithType("value_text", "TEXT");
 	private Field comments = Field.fastCreateWithType("comments", "VARCHAR");
 	private Field creator = Field.fastCreateWithType("creator", "INT");
 	private Field voided = Field.fastCreateWithType("voided", "BIT");
 	private Field voidedBy = Field.fastCreateWithType("voided_by", "INT");
 	private Field voidReason = Field.fastCreateWithType("void_reason", "VARCHAR");
-	private Field valueComplex = Field.fastCreateWithType("value_complex", "VARCHAR");
-	private Field previousVersion = Field.fastCreateWithType("previous_version", "INT");
-	private Field formNamespaceAndPath = Field.fastCreateWithType("form_namespace_and_path", "VARCHAR");
 	private Field status = Field.fastCreateWithType("status", "VARCHAR");
-	private Field interpretation = Field.fastCreateWithType("interpretation", "VARCHAR");
 
 	public ObsVO() {
 		this.metadata = false;
+		this.fields.add(this.orderId);
+		this.fields.add(this.accessionNumber);
+		this.fields.add(this.valueGroupId);
+		this.fields.add(this.valueCodedNameId);
+		this.fields.add(this.valueModifier);
+		this.fields.add(this.valueComplex);
+		this.fields.add(this.previousVersion);
+		this.fields.add(this.formNamespaceAndPath);
+		this.fields.add(this.interpretation);
 		this.fields.add(this.obsId);
 		this.fields.add(this.personId);
 		this.fields.add(this.conceptId);
 		this.fields.add(this.encounterId);
-		this.fields.add(this.orderId);
 		this.fields.add(this.obsDatetime);
 		this.fields.add(this.locationId);
 		this.fields.add(this.obsGroupId);
-		this.fields.add(this.accessionNumber);
-		this.fields.add(this.valueGroupId);
 		this.fields.add(this.valueCoded);
-		this.fields.add(this.valueCodedNameId);
 		this.fields.add(this.valueDrug);
 		this.fields.add(this.valueDatetime);
 		this.fields.add(this.valueNumeric);
-		this.fields.add(this.valueModifier);
 		this.fields.add(this.valueText);
 		this.fields.add(this.comments);
 		this.fields.add(this.creator);
 		this.fields.add(this.voided);
 		this.fields.add(this.voidedBy);
 		this.fields.add(this.voidReason);
-		this.fields.add(this.valueComplex);
-		this.fields.add(this.previousVersion);
-		this.fields.add(this.formNamespaceAndPath);
 		this.fields.add(this.status);
-		this.fields.add(this.interpretation);
 	}
 
 	@Override
@@ -92,6 +92,33 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public Object getFieldValue(String fieldName) {
+		if (utilities.equalsFieldsName(fieldName, "order_id")) {
+			return this.orderId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "accession_number")) {
+			return this.accessionNumber.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_group_id")) {
+			return this.valueGroupId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_coded_name_id")) {
+			return this.valueCodedNameId.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_modifier")) {
+			return this.valueModifier.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_complex")) {
+			return this.valueComplex.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
+			return this.previousVersion.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "form_namespace_and_path")) {
+			return this.formNamespaceAndPath.getValue();
+		}
+		if (utilities.equalsFieldsName(fieldName, "interpretation")) {
+			return this.interpretation.getValue();
+		}
 		if (utilities.equalsFieldsName(fieldName, "obs_id")) {
 			return this.obsId.getValue();
 		}
@@ -104,9 +131,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "encounter_id")) {
 			return this.encounterId.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "order_id")) {
-			return this.orderId.getValue();
-		}
 		if (utilities.equalsFieldsName(fieldName, "obs_datetime")) {
 			return this.obsDatetime.getValue();
 		}
@@ -116,17 +140,8 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "obs_group_id")) {
 			return this.obsGroupId.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "accession_number")) {
-			return this.accessionNumber.getValue();
-		}
-		if (utilities.equalsFieldsName(fieldName, "value_group_id")) {
-			return this.valueGroupId.getValue();
-		}
 		if (utilities.equalsFieldsName(fieldName, "value_coded")) {
 			return this.valueCoded.getValue();
-		}
-		if (utilities.equalsFieldsName(fieldName, "value_coded_name_id")) {
-			return this.valueCodedNameId.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "value_drug")) {
 			return this.valueDrug.getValue();
@@ -136,9 +151,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		}
 		if (utilities.equalsFieldsName(fieldName, "value_numeric")) {
 			return this.valueNumeric.getValue();
-		}
-		if (utilities.equalsFieldsName(fieldName, "value_modifier")) {
-			return this.valueModifier.getValue();
 		}
 		if (utilities.equalsFieldsName(fieldName, "value_text")) {
 			return this.valueText.getValue();
@@ -158,26 +170,59 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		if (utilities.equalsFieldsName(fieldName, "void_reason")) {
 			return this.voidReason.getValue();
 		}
-		if (utilities.equalsFieldsName(fieldName, "value_complex")) {
-			return this.valueComplex.getValue();
-		}
-		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
-			return this.previousVersion.getValue();
-		}
-		if (utilities.equalsFieldsName(fieldName, "form_namespace_and_path")) {
-			return this.formNamespaceAndPath.getValue();
-		}
 		if (utilities.equalsFieldsName(fieldName, "status")) {
 			return this.status.getValue();
-		}
-		if (utilities.equalsFieldsName(fieldName, "interpretation")) {
-			return this.interpretation.getValue();
 		}
 		return super.getFieldValue(fieldName);
 	}
 
 	@Override
 	public void setFieldValue(String fieldName, Object value) {
+		if (utilities.equalsFieldsName(fieldName, "order_id")) {
+			this.orderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "accession_number")) {
+			this.accessionNumber.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_group_id")) {
+			this.valueGroupId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_coded_name_id")) {
+			this.valueCodedNameId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_modifier")) {
+			this.valueModifier.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "value_complex")) {
+			this.valueComplex.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
+			this.previousVersion.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "form_namespace_and_path")) {
+			this.formNamespaceAndPath.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+		if (utilities.equalsFieldsName(fieldName, "interpretation")) {
+			this.interpretation.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
 		if (utilities.equalsFieldsName(fieldName, "obs_id")) {
 			this.obsId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -198,11 +243,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
-		if (utilities.equalsFieldsName(fieldName, "order_id")) {
-			this.orderId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
 		if (utilities.equalsFieldsName(fieldName, "obs_datetime")) {
 			this.obsDatetime.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
@@ -218,23 +258,8 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
-		if (utilities.equalsFieldsName(fieldName, "accession_number")) {
-			this.accessionNumber.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
-		if (utilities.equalsFieldsName(fieldName, "value_group_id")) {
-			this.valueGroupId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
 		if (utilities.equalsFieldsName(fieldName, "value_coded")) {
 			this.valueCoded.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
-		if (utilities.equalsFieldsName(fieldName, "value_coded_name_id")) {
-			this.valueCodedNameId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
@@ -250,11 +275,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		}
 		if (utilities.equalsFieldsName(fieldName, "value_numeric")) {
 			this.valueNumeric.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
-		if (utilities.equalsFieldsName(fieldName, "value_modifier")) {
-			this.valueModifier.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
@@ -288,28 +308,8 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
-		if (utilities.equalsFieldsName(fieldName, "value_complex")) {
-			this.valueComplex.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
-		if (utilities.equalsFieldsName(fieldName, "previous_version")) {
-			this.previousVersion.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
-		if (utilities.equalsFieldsName(fieldName, "form_namespace_and_path")) {
-			this.formNamespaceAndPath.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
 		if (utilities.equalsFieldsName(fieldName, "status")) {
 			this.status.setValue(value instanceof Field ? ((Field) value).getValue() : value);
-			regenerateObjectIdIfKeyField(fieldName);
-			return;
-		}
-		if (utilities.equalsFieldsName(fieldName, "interpretation")) {
-			this.interpretation.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
@@ -337,33 +337,141 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
 		super.loadWithDefaultValues(srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.orderId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.accessionNumber, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueGroupId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueCodedNameId, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueModifier, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.valueComplex, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.previousVersion, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.formNamespaceAndPath, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.interpretation, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.obsId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.personId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.conceptId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.encounterId, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.orderId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.obsDatetime, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.locationId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.obsGroupId, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.accessionNumber, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.valueGroupId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.valueCoded, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.valueCodedNameId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.valueDrug, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.valueDatetime, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.valueNumeric, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.valueModifier, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.valueText, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.comments, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.creator, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voided, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidedBy, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.voidReason, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.valueComplex, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.previousVersion, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.formNamespaceAndPath, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.status, srcConn, dstConn);
-		loadGeneratedFieldWithDefaultValue(this.interpretation, srcConn, dstConn);
+	}
+
+	public void setOrderId(Field orderId) {
+		this.orderId = orderId;
+	}
+
+	public void setOrderIdValue(Integer value) {
+		this.orderId.setValue(value);
+	}
+
+	public Field getOrderId() {
+		return this.orderId;
+	}
+
+	public void setAccessionNumber(Field accessionNumber) {
+		this.accessionNumber = accessionNumber;
+	}
+
+	public void setAccessionNumberValue(String value) {
+		this.accessionNumber.setValue(value);
+	}
+
+	public Field getAccessionNumber() {
+		return this.accessionNumber;
+	}
+
+	public void setValueGroupId(Field valueGroupId) {
+		this.valueGroupId = valueGroupId;
+	}
+
+	public void setValueGroupIdValue(Integer value) {
+		this.valueGroupId.setValue(value);
+	}
+
+	public Field getValueGroupId() {
+		return this.valueGroupId;
+	}
+
+	public void setValueCodedNameId(Field valueCodedNameId) {
+		this.valueCodedNameId = valueCodedNameId;
+	}
+
+	public void setValueCodedNameIdValue(Integer value) {
+		this.valueCodedNameId.setValue(value);
+	}
+
+	public Field getValueCodedNameId() {
+		return this.valueCodedNameId;
+	}
+
+	public void setValueModifier(Field valueModifier) {
+		this.valueModifier = valueModifier;
+	}
+
+	public void setValueModifierValue(String value) {
+		this.valueModifier.setValue(value);
+	}
+
+	public Field getValueModifier() {
+		return this.valueModifier;
+	}
+
+	public void setValueComplex(Field valueComplex) {
+		this.valueComplex = valueComplex;
+	}
+
+	public void setValueComplexValue(String value) {
+		this.valueComplex.setValue(value);
+	}
+
+	public Field getValueComplex() {
+		return this.valueComplex;
+	}
+
+	public void setPreviousVersion(Field previousVersion) {
+		this.previousVersion = previousVersion;
+	}
+
+	public void setPreviousVersionValue(Integer value) {
+		this.previousVersion.setValue(value);
+	}
+
+	public Field getPreviousVersion() {
+		return this.previousVersion;
+	}
+
+	public void setFormNamespaceAndPath(Field formNamespaceAndPath) {
+		this.formNamespaceAndPath = formNamespaceAndPath;
+	}
+
+	public void setFormNamespaceAndPathValue(String value) {
+		this.formNamespaceAndPath.setValue(value);
+	}
+
+	public Field getFormNamespaceAndPath() {
+		return this.formNamespaceAndPath;
+	}
+
+	public void setInterpretation(Field interpretation) {
+		this.interpretation = interpretation;
+	}
+
+	public void setInterpretationValue(String value) {
+		this.interpretation.setValue(value);
+	}
+
+	public Field getInterpretation() {
+		return this.interpretation;
 	}
 
 	public void setObsId(Field obsId) {
@@ -414,18 +522,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		return this.encounterId;
 	}
 
-	public void setOrderId(Field orderId) {
-		this.orderId = orderId;
-	}
-
-	public void setOrderIdValue(Integer value) {
-		this.orderId.setValue(value);
-	}
-
-	public Field getOrderId() {
-		return this.orderId;
-	}
-
 	public void setObsDatetime(Field obsDatetime) {
 		this.obsDatetime = obsDatetime;
 	}
@@ -462,30 +558,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		return this.obsGroupId;
 	}
 
-	public void setAccessionNumber(Field accessionNumber) {
-		this.accessionNumber = accessionNumber;
-	}
-
-	public void setAccessionNumberValue(String value) {
-		this.accessionNumber.setValue(value);
-	}
-
-	public Field getAccessionNumber() {
-		return this.accessionNumber;
-	}
-
-	public void setValueGroupId(Field valueGroupId) {
-		this.valueGroupId = valueGroupId;
-	}
-
-	public void setValueGroupIdValue(Integer value) {
-		this.valueGroupId.setValue(value);
-	}
-
-	public Field getValueGroupId() {
-		return this.valueGroupId;
-	}
-
 	public void setValueCoded(Field valueCoded) {
 		this.valueCoded = valueCoded;
 	}
@@ -496,18 +568,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 	public Field getValueCoded() {
 		return this.valueCoded;
-	}
-
-	public void setValueCodedNameId(Field valueCodedNameId) {
-		this.valueCodedNameId = valueCodedNameId;
-	}
-
-	public void setValueCodedNameIdValue(Integer value) {
-		this.valueCodedNameId.setValue(value);
-	}
-
-	public Field getValueCodedNameId() {
-		return this.valueCodedNameId;
 	}
 
 	public void setValueDrug(Field valueDrug) {
@@ -544,18 +604,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 	public Field getValueNumeric() {
 		return this.valueNumeric;
-	}
-
-	public void setValueModifier(Field valueModifier) {
-		this.valueModifier = valueModifier;
-	}
-
-	public void setValueModifierValue(String value) {
-		this.valueModifier.setValue(value);
-	}
-
-	public Field getValueModifier() {
-		return this.valueModifier;
 	}
 
 	public void setValueText(Field valueText) {
@@ -630,42 +678,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		return this.voidReason;
 	}
 
-	public void setValueComplex(Field valueComplex) {
-		this.valueComplex = valueComplex;
-	}
-
-	public void setValueComplexValue(String value) {
-		this.valueComplex.setValue(value);
-	}
-
-	public Field getValueComplex() {
-		return this.valueComplex;
-	}
-
-	public void setPreviousVersion(Field previousVersion) {
-		this.previousVersion = previousVersion;
-	}
-
-	public void setPreviousVersionValue(Integer value) {
-		this.previousVersion.setValue(value);
-	}
-
-	public Field getPreviousVersion() {
-		return this.previousVersion;
-	}
-
-	public void setFormNamespaceAndPath(Field formNamespaceAndPath) {
-		this.formNamespaceAndPath = formNamespaceAndPath;
-	}
-
-	public void setFormNamespaceAndPathValue(String value) {
-		this.formNamespaceAndPath.setValue(value);
-	}
-
-	public Field getFormNamespaceAndPath() {
-		return this.formNamespaceAndPath;
-	}
-
 	public void setStatus(Field status) {
 		this.status = status;
 	}
@@ -678,21 +690,72 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		return this.status;
 	}
 
-	public void setInterpretation(Field interpretation) {
-		this.interpretation = interpretation;
-	}
-
-	public void setInterpretationValue(String value) {
-		this.interpretation.setValue(value);
-	}
-
-	public Field getInterpretation() {
-		return this.interpretation;
-	}
-
 	@Override
 	public void load(ResultSet rs) throws SQLException {
 		super.load(rs);
+
+		if (getRelatedConfiguration().containsField("order_id")) {
+			String orderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"order_id", "_");
+
+			this.orderId.setValue(BaseVO.retrieveFieldValue(orderIdAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("accession_number")) {
+			String accessionNumberAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "accession_number", "_");
+
+			this.accessionNumber.setValue(BaseVO.retrieveFieldValue(accessionNumberAttName, "VARCHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("value_group_id")) {
+			String valueGroupIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"value_group_id", "_");
+
+			this.valueGroupId.setValue(BaseVO.retrieveFieldValue(valueGroupIdAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("value_coded_name_id")) {
+			String valueCodedNameIdAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "value_coded_name_id", "_");
+
+			this.valueCodedNameId.setValue(BaseVO.retrieveFieldValue(valueCodedNameIdAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("value_modifier")) {
+			String valueModifierAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "value_modifier", "_");
+
+			this.valueModifier.setValue(BaseVO.retrieveFieldValue(valueModifierAttName, "VARCHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("value_complex")) {
+			String valueComplexAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+					"value_complex", "_");
+
+			this.valueComplex.setValue(BaseVO.retrieveFieldValue(valueComplexAttName, "VARCHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("previous_version")) {
+			String previousVersionAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "previous_version", "_");
+
+			this.previousVersion.setValue(BaseVO.retrieveFieldValue(previousVersionAttName, "INT", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("form_namespace_and_path")) {
+			String formNamespaceAndPathAttName = utilities.concatStringsWithSeparator(
+					this.getRelatedConfiguration().getAlias(), "form_namespace_and_path", "_");
+
+			this.formNamespaceAndPath.setValue(BaseVO.retrieveFieldValue(formNamespaceAndPathAttName, "VARCHAR", rs));
+		}
+
+		if (getRelatedConfiguration().containsField("interpretation")) {
+			String interpretationAttName = utilities
+					.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "interpretation", "_");
+
+			this.interpretation.setValue(BaseVO.retrieveFieldValue(interpretationAttName, "VARCHAR", rs));
+		}
 
 		String obsIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "obs_id",
 				"_");
@@ -714,11 +777,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 		this.encounterId.setValue(BaseVO.retrieveFieldValue(encounterIdAttName, "INT", rs));
 
-		String orderIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"order_id", "_");
-
-		this.orderId.setValue(BaseVO.retrieveFieldValue(orderIdAttName, "INT", rs));
-
 		String obsDatetimeAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"obs_datetime", "_");
 
@@ -734,25 +792,10 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 		this.obsGroupId.setValue(BaseVO.retrieveFieldValue(obsGroupIdAttName, "INT", rs));
 
-		String accessionNumberAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"accession_number", "_");
-
-		this.accessionNumber.setValue(BaseVO.retrieveFieldValue(accessionNumberAttName, "VARCHAR", rs));
-
-		String valueGroupIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"value_group_id", "_");
-
-		this.valueGroupId.setValue(BaseVO.retrieveFieldValue(valueGroupIdAttName, "INT", rs));
-
 		String valueCodedAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"value_coded", "_");
 
 		this.valueCoded.setValue(BaseVO.retrieveFieldValue(valueCodedAttName, "INT", rs));
-
-		String valueCodedNameIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"value_coded_name_id", "_");
-
-		this.valueCodedNameId.setValue(BaseVO.retrieveFieldValue(valueCodedNameIdAttName, "INT", rs));
 
 		String valueDrugAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"value_drug", "_");
@@ -768,11 +811,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 				"value_numeric", "_");
 
 		this.valueNumeric.setValue(BaseVO.retrieveFieldValue(valueNumericAttName, "DOUBLE", rs));
-
-		String valueModifierAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"value_modifier", "_");
-
-		this.valueModifier.setValue(BaseVO.retrieveFieldValue(valueModifierAttName, "VARCHAR", rs));
 
 		String valueTextAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"value_text", "_");
@@ -814,64 +852,40 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 
 		this.voidReason.setValue(BaseVO.retrieveFieldValue(voidReasonAttName, "VARCHAR", rs));
 
-		String valueComplexAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"value_complex", "_");
-
-		this.valueComplex.setValue(BaseVO.retrieveFieldValue(valueComplexAttName, "VARCHAR", rs));
-
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
 		this.uuid = AttDefinedElements
 				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 
-		String previousVersionAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"previous_version", "_");
-
-		this.previousVersion.setValue(BaseVO.retrieveFieldValue(previousVersionAttName, "INT", rs));
-
-		String formNamespaceAndPathAttName = utilities
-				.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "form_namespace_and_path", "_");
-
-		this.formNamespaceAndPath.setValue(BaseVO.retrieveFieldValue(formNamespaceAndPathAttName, "VARCHAR", rs));
-
 		String statusAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "status",
 				"_");
 
 		this.status.setValue(BaseVO.retrieveFieldValue(statusAttName, "VARCHAR", rs));
-
-		String interpretationAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
-				"interpretation", "_");
-
-		this.interpretation.setValue(BaseVO.retrieveFieldValue(interpretationAttName, "VARCHAR", rs));
-
 		this.loadedFromDb = true;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO obs(`person_id`, `concept_id`, `encounter_id`, `order_id`, `obs_datetime`, `location_id`, `obs_group_id`, `accession_number`, `value_group_id`, `value_coded`, `value_coded_name_id`, `value_drug`, `value_datetime`, `value_numeric`, `value_modifier`, `value_text`, `comments`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `value_complex`, `uuid`, `previous_version`, `form_namespace_and_path`, `status`, `interpretation`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO obs(`person_id`, `concept_id`, `encounter_id`, `obs_datetime`, `location_id`, `obs_group_id`, `value_coded`, `value_drug`, `value_datetime`, `value_numeric`, `value_text`, `comments`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO obs(`obs_id`, `person_id`, `concept_id`, `encounter_id`, `order_id`, `obs_datetime`, `location_id`, `obs_group_id`, `accession_number`, `value_group_id`, `value_coded`, `value_coded_name_id`, `value_drug`, `value_datetime`, `value_numeric`, `value_modifier`, `value_text`, `comments`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `value_complex`, `uuid`, `previous_version`, `form_namespace_and_path`, `status`, `interpretation`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO obs(`obs_id`, `person_id`, `concept_id`, `encounter_id`, `obs_datetime`, `location_id`, `obs_group_id`, `value_coded`, `value_drug`, `value_datetime`, `value_numeric`, `value_text`, `comments`, `creator`, `date_created`, `voided`, `voided_by`, `date_voided`, `void_reason`, `uuid`, `status`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
 		Object[] params = { this.personId.getValue(), this.conceptId.getValue(), this.encounterId.getValue(),
-				this.orderId.getValue(), this.obsDatetime.getValue(), this.locationId.getValue(),
-				this.obsGroupId.getValue(), this.accessionNumber.getValue(), this.valueGroupId.getValue(),
-				this.valueCoded.getValue(), this.valueCodedNameId.getValue(), this.valueDrug.getValue(),
-				this.valueDatetime.getValue(), this.valueNumeric.getValue(), this.valueModifier.getValue(),
-				this.valueText.getValue(), this.comments.getValue(), this.creator.getValue(), this.dateCreated,
-				this.voided.getValue(), this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(),
-				this.valueComplex.getValue(), this.uuid, this.previousVersion.getValue(),
-				this.formNamespaceAndPath.getValue(), this.status.getValue(), this.interpretation.getValue() };
+				this.obsDatetime.getValue(), this.locationId.getValue(), this.obsGroupId.getValue(),
+				this.valueCoded.getValue(), this.valueDrug.getValue(), this.valueDatetime.getValue(),
+				this.valueNumeric.getValue(), this.valueText.getValue(), this.comments.getValue(),
+				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
+				this.dateVoided, this.voidReason.getValue(), this.uuid, this.status.getValue() };
 		return params;
 	}
 
@@ -879,74 +893,60 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
 		Object[] params = { this.obsId.getValue(), this.personId.getValue(), this.conceptId.getValue(),
-				this.encounterId.getValue(), this.orderId.getValue(), this.obsDatetime.getValue(),
-				this.locationId.getValue(), this.obsGroupId.getValue(), this.accessionNumber.getValue(),
-				this.valueGroupId.getValue(), this.valueCoded.getValue(), this.valueCodedNameId.getValue(),
-				this.valueDrug.getValue(), this.valueDatetime.getValue(), this.valueNumeric.getValue(),
-				this.valueModifier.getValue(), this.valueText.getValue(), this.comments.getValue(),
-				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
-				this.dateVoided, this.voidReason.getValue(), this.valueComplex.getValue(), this.uuid,
-				this.previousVersion.getValue(), this.formNamespaceAndPath.getValue(), this.status.getValue(),
-				this.interpretation.getValue() };
+				this.encounterId.getValue(), this.obsDatetime.getValue(), this.locationId.getValue(),
+				this.obsGroupId.getValue(), this.valueCoded.getValue(), this.valueDrug.getValue(),
+				this.valueDatetime.getValue(), this.valueNumeric.getValue(), this.valueText.getValue(),
+				this.comments.getValue(), this.creator.getValue(), this.dateCreated, this.voided.getValue(),
+				this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(), this.uuid,
+				this.status.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
 		Object[] params = { this.obsId.getValue(), this.personId.getValue(), this.conceptId.getValue(),
-				this.encounterId.getValue(), this.orderId.getValue(), this.obsDatetime.getValue(),
-				this.locationId.getValue(), this.obsGroupId.getValue(), this.accessionNumber.getValue(),
-				this.valueGroupId.getValue(), this.valueCoded.getValue(), this.valueCodedNameId.getValue(),
-				this.valueDrug.getValue(), this.valueDatetime.getValue(), this.valueNumeric.getValue(),
-				this.valueModifier.getValue(), this.valueText.getValue(), this.comments.getValue(),
-				this.creator.getValue(), this.dateCreated, this.voided.getValue(), this.voidedBy.getValue(),
-				this.dateVoided, this.voidReason.getValue(), this.valueComplex.getValue(), this.uuid,
-				this.previousVersion.getValue(), this.formNamespaceAndPath.getValue(), this.status.getValue(),
-				this.interpretation.getValue(), this.obsId.getValue() };
+				this.encounterId.getValue(), this.obsDatetime.getValue(), this.locationId.getValue(),
+				this.obsGroupId.getValue(), this.valueCoded.getValue(), this.valueDrug.getValue(),
+				this.valueDatetime.getValue(), this.valueNumeric.getValue(), this.valueText.getValue(),
+				this.comments.getValue(), this.creator.getValue(), this.dateCreated, this.voided.getValue(),
+				this.voidedBy.getValue(), this.dateVoided, this.voidReason.getValue(), this.uuid,
+				this.status.getValue(), this.obsId.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE obs SET `obs_id` = ?, `person_id` = ?, `concept_id` = ?, `encounter_id` = ?, `order_id` = ?, `obs_datetime` = ?, `location_id` = ?, `obs_group_id` = ?, `accession_number` = ?, `value_group_id` = ?, `value_coded` = ?, `value_coded_name_id` = ?, `value_drug` = ?, `value_datetime` = ?, `value_numeric` = ?, `value_modifier` = ?, `value_text` = ?, `comments` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `value_complex` = ?, `uuid` = ?, `previous_version` = ?, `form_namespace_and_path` = ?, `status` = ?, `interpretation` = ? WHERE obs_id = ? ";
+		return "UPDATE obs SET `obs_id` = ?, `person_id` = ?, `concept_id` = ?, `encounter_id` = ?, `obs_datetime` = ?, `location_id` = ?, `obs_group_id` = ?, `value_coded` = ?, `value_drug` = ?, `value_datetime` = ?, `value_numeric` = ?, `value_text` = ?, `comments` = ?, `creator` = ?, `date_created` = ?, `voided` = ?, `voided_by` = ?, `date_voided` = ?, `void_reason` = ?, `uuid` = ?, `status` = ? WHERE obs_id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
 		return "" + (this.personId.getValue()) + "," + (this.conceptId.getValue()) + "," + (this.encounterId.getValue())
-				+ "," + (this.orderId.getValue()) + ","
+				+ ","
 				+ (this.obsDatetime.getValue() != null ? "\""
 						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.obsDatetime.getValue())
 						+ "\"" : null)
 				+ "," + (this.locationId.getValue()) + "," + (this.obsGroupId.getValue()) + ","
-				+ (this.accessionNumber.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.accessionNumber.getValue().toString()) + "\""
-						: null)
-				+ "," + (this.valueGroupId.getValue()) + "," + (this.valueCoded.getValue()) + ","
-				+ (this.valueCodedNameId.getValue()) + "," + (this.valueDrug.getValue()) + ","
+				+ (this.valueCoded.getValue()) + "," + (this.valueDrug.getValue()) + ","
 				+ (this.valueDatetime.getValue() != null ? "\""
 						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.valueDatetime.getValue())
 						+ "\"" : null)
 				+ "," + (this.valueNumeric.getValue()) + ","
-				+ (this.valueModifier.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.valueModifier.getValue().toString()) + "\""
-						: null)
-				+ ","
 				+ (this.valueText.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.valueText.getValue().toString()) + "\""
 						: null)
@@ -967,22 +967,10 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 				+ (this.voidReason.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.voidReason.getValue().toString()) + "\""
 						: null)
-				+ ","
-				+ (this.valueComplex.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.valueComplex.getValue().toString()) + "\""
-						: null)
 				+ "," + (this.uuid != null ? "\"" + utilities.scapeQuotationMarks(this.uuid.toString()) + "\"" : null)
-				+ "," + (this.previousVersion.getValue()) + ","
-				+ (this.formNamespaceAndPath.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.formNamespaceAndPath.getValue().toString()) + "\""
-						: null)
 				+ ","
 				+ (this.status.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.status.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.interpretation.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.interpretation.getValue().toString()) + "\""
 						: null);
 	}
 
@@ -990,24 +978,16 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public String generateInsertValuesWithObjectId() {
 		return "" + (this.obsId.getValue()) + "," + (this.personId.getValue()) + "," + (this.conceptId.getValue()) + ","
-				+ (this.encounterId.getValue()) + "," + (this.orderId.getValue()) + ","
+				+ (this.encounterId.getValue()) + ","
 				+ (this.obsDatetime.getValue() != null ? "\""
 						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.obsDatetime.getValue())
 						+ "\"" : null)
 				+ "," + (this.locationId.getValue()) + "," + (this.obsGroupId.getValue()) + ","
-				+ (this.accessionNumber.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.accessionNumber.getValue().toString()) + "\""
-						: null)
-				+ "," + (this.valueGroupId.getValue()) + "," + (this.valueCoded.getValue()) + ","
-				+ (this.valueCodedNameId.getValue()) + "," + (this.valueDrug.getValue()) + ","
+				+ (this.valueCoded.getValue()) + "," + (this.valueDrug.getValue()) + ","
 				+ (this.valueDatetime.getValue() != null ? "\""
 						+ DateAndTimeUtilities.formatToYYYYMMDD_HHMISS((java.util.Date) this.valueDatetime.getValue())
 						+ "\"" : null)
 				+ "," + (this.valueNumeric.getValue()) + ","
-				+ (this.valueModifier.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.valueModifier.getValue().toString()) + "\""
-						: null)
-				+ ","
 				+ (this.valueText.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.valueText.getValue().toString()) + "\""
 						: null)
@@ -1028,22 +1008,10 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 				+ (this.voidReason.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.voidReason.getValue().toString()) + "\""
 						: null)
-				+ ","
-				+ (this.valueComplex.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.valueComplex.getValue().toString()) + "\""
-						: null)
 				+ "," + (this.uuid != null ? "\"" + utilities.scapeQuotationMarks(this.uuid.toString()) + "\"" : null)
-				+ "," + (this.previousVersion.getValue()) + ","
-				+ (this.formNamespaceAndPath.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.formNamespaceAndPath.getValue().toString()) + "\""
-						: null)
 				+ ","
 				+ (this.status.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.status.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.interpretation.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.interpretation.getValue().toString()) + "\""
 						: null);
 	}
 
@@ -1067,9 +1035,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 		if (this.conceptId.getValue() != null)
 			return true;
 
-		if (this.valueCodedNameId.getValue() != null)
-			return true;
-
 		if (this.valueDrug.getValue() != null)
 			return true;
 
@@ -1080,12 +1045,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 			return true;
 
 		if (this.obsGroupId.getValue() != null)
-			return true;
-
-		if (this.previousVersion.getValue() != null)
-			return true;
-
-		if (this.orderId.getValue() != null)
 			return true;
 
 		if (this.personId.getValue() != null)
@@ -1106,8 +1065,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 			return this.valueCoded.getValue();
 		if (parentAttName.equals("conceptId"))
 			return this.conceptId.getValue();
-		if (parentAttName.equals("valueCodedNameId"))
-			return this.valueCodedNameId.getValue();
 		if (parentAttName.equals("valueDrug"))
 			return this.valueDrug.getValue();
 		if (parentAttName.equals("encounterId"))
@@ -1116,10 +1073,6 @@ public class ObsVO extends AbstractGeneratedDatabaseObject {
 			return this.locationId.getValue();
 		if (parentAttName.equals("obsGroupId"))
 			return this.obsGroupId.getValue();
-		if (parentAttName.equals("previousVersion"))
-			return this.previousVersion.getValue();
-		if (parentAttName.equals("orderId"))
-			return this.orderId.getValue();
 		if (parentAttName.equals("personId"))
 			return this.personId.getValue();
 		if (parentAttName.equals("creator"))

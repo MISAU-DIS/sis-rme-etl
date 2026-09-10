@@ -26,7 +26,7 @@ public class PrivilegeVO extends AbstractGeneratedDatabaseObject {
 	private Field description = Field.fastCreateWithType("description", "TEXT");
 
 	public PrivilegeVO() {
-		this.metadata = true;
+		this.metadata = false;
 		this.fields.add(this.privilege);
 		this.fields.add(this.description);
 	}

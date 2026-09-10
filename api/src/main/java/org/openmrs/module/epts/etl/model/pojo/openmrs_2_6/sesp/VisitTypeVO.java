@@ -35,7 +35,7 @@ public class VisitTypeVO extends AbstractGeneratedDatabaseObject {
 	private Field retireReason = Field.fastCreateWithType("retire_reason", "VARCHAR");
 
 	public VisitTypeVO() {
-		this.metadata = true;
+		this.metadata = false;
 		this.fields.add(this.visitTypeId);
 		this.fields.add(this.name);
 		this.fields.add(this.description);
