@@ -46,7 +46,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	private static CommonUtilities utilities = CommonUtilities.getInstance();
 
 	private static final ThreadLocal<Set<EtlInfo>> ETL_INFO_BEING_DESCRIBED = ThreadLocal
-	        .withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<EtlInfo, Boolean>()));
+			.withInitial(() -> Collections.newSetFromMap(new IdentityHashMap<EtlInfo, Boolean>()));
 
 	/*
 	 * Indicate if there where parents which have been ingored
@@ -301,7 +301,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 			if (this.relationshipResolutionStrategy().validateOnly()
 					|| tinfo.getSrcField().relationshipResolutionStrategy().validateOnly()
-					|| tinfo.isLoadedWithDstValue()) {
+					|| tinfo.isLoadedWithDstValue(getDstConf().getRelatedConnInfo())) {
 
 				Oid prentOid = refInfo.generateParentOidFromChild(this.getTransformedObject());
 
@@ -320,7 +320,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 				boolean skipDstParentLoad = false;
 
-				skipDstParentLoad = tinfo.skipRelationshipResolution() || parentIsDstParentConf;
+				skipDstParentLoad = tinfo.skipRelationshipResolution(getDstConf().getRelatedConnInfo())
+						|| parentIsDstParentConf;
 
 				if (!skipDstParentLoad) {
 					this.performeParentInfoInitialization(srcConn, refInfo);
@@ -651,8 +652,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		}
 
 		try {
-			return (this.getStatus() != null ? this.getStatus() + " " : "") + "Etl from ["
-			        + getRelatedSrcObject() + "] to " + getTransformedObject();
+			return (this.getStatus() != null ? this.getStatus() + " " : "") + "Etl from [" + getRelatedSrcObject()
+					+ "] to " + getTransformedObject();
 		} finally {
 			descriptionsInProgress.remove(this);
 

@@ -2,8 +2,11 @@ package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
+import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
 public class FieldTransformingInfo {
 
@@ -79,13 +82,33 @@ public class FieldTransformingInfo {
 		this.loadedWithDefaultValue = loadedWithDefaultValue;
 	}
 
-	public boolean isLoadedWithDstValue() {
-		return this.loadedWithDefaultValue || (this.getTransformationDatasource() != null
-				&& this.getTransformationDatasource() instanceof DstConf);
+	public boolean isLoadedWithDstValue(DBConnectionInfo dstConnInfo) {
+
+		boolean isDstDs = false;
+
+		if (this.getTransformationDatasource() != null) {
+			if (this.getTransformationDatasource() instanceof DstConf) {
+				isDstDs = true;
+			} else {
+				if (this.getTransformationDatasource() instanceof TableConfiguration) {
+					TableConfiguration conf = (TableConfiguration) this.getTransformationDatasource();
+
+					if (conf.hasSchema() && utilities.isStringIn(conf.getSchema(), dstConnInfo.getSchema())
+							&& DBUtilities.isSameDatabaseServer(dstConnInfo, conf.getRelatedConnInfo())) {
+
+						isDstDs = true;
+					}
+				}
+			}
+		}
+
+		return this.loadedWithDefaultValue || isDstDs;
+
 	}
 
-	public boolean skipRelationshipResolution() {
-		return isLoadedWithDefaultValue() || isLoadedWithDstValue() || srcField.relationshipResolutionStrategy().skip();
+	public boolean skipRelationshipResolution(DBConnectionInfo dstConnInfo) {
+		return isLoadedWithDefaultValue() || isLoadedWithDstValue(dstConnInfo)
+				|| srcField.relationshipResolutionStrategy().skip();
 	}
 
 	@Override

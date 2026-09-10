@@ -1055,17 +1055,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 						this.getRecordWithDefaultParentInfoTableName(), this);
 
 				if (this.hasMainConnInfo()) {
-					this.getMainConnInfo().setRelatedEtlConf(this);
-					this.getMainConnInfo().tryToLoadPlaceHolders(this);
+					this.getMainConnInfo().init(this);
 				}
 				if (this.hasSrcConnInfo()) {
-					this.getSrcConnInfo().setRelatedEtlConf(this);
-					this.getSrcConnInfo().tryToLoadPlaceHolders(this);
+					this.getSrcConnInfo().init(this);
 				}
 
 				if (this.hasDstConnInfo()) {
-					this.getDstConnInfo().setRelatedEtlConf(this);
-					this.getDstConnInfo().tryToLoadPlaceHolders(this);
+					this.getDstConnInfo().init(this);
 				}
 
 				if (this.getAutoIncrementHandlingType() == null) {

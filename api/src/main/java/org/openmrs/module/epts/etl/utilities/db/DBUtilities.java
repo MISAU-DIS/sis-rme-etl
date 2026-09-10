@@ -18,6 +18,7 @@ import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.exceptions.DatabaseNotSupportedException;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
@@ -148,6 +149,28 @@ public class DBUtilities {
 		} catch (SQLException e) {
 			throw new DBException(e);
 		}
+	}
+
+	public static boolean isSameDatabaseServer(DBConnectionInfo srcConnInfo, DBConnectionInfo dstConnInfo)
+			throws ForbiddenOperationException, EtlConfException {
+
+		if (srcConnInfo.isMySQLConnection() && dstConnInfo.isMySQLConnection()) {
+			if (srcConnInfo.isInitialized() && dstConnInfo.isInitialized()) {
+				if (!srcConnInfo.getDbHostPort().equals(dstConnInfo.getDbHostPort())) {
+					return false;
+				}
+
+				if (!srcConnInfo.getDbHost().equals(dstConnInfo.getDbHost())) {
+					return false;
+				}
+
+				return true;
+			} else {
+				throw new EtlConfException("This operation is not allowed when one of dbConnInfo is not initialized.");
+			}
+		}
+
+		throw new ForbiddenOperationException("Unsupported determineDbmsType!");
 	}
 
 	public static boolean isSameDatabaseServer(Connection srcConn, Connection dstConn) throws DBException {

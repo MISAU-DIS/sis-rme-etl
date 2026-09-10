@@ -246,7 +246,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				continue;
 			}
 
-			if (paramValueInfo.skipRelationshipResolution() || this.skipRelationshipResolution(actuallyName)) {
+			if (paramValueInfo.skipRelationshipResolution(dstConf.getRelatedConnInfo())
+					|| this.skipRelationshipResolution(actuallyName)) {
 				resolvedParams[i] = transformedValue;
 				continue;
 			}

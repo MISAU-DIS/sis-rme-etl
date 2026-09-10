@@ -73,6 +73,25 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 		this.schema = schema;
 	}
 
+	public void init(EtlConfiguration relatedEtlConf) {
+		if (isInitialized())
+			return;
+
+		this.relatedEtlConf = relatedEtlConf;
+
+		this.tryToLoadPlaceHolders(this.relatedEtlConf);
+
+		if (!utilities.stringHasValue(this.schema)) {
+			this.schema = determineSchema();
+		}
+
+		if (this.dbHostPort == null || !utilities.stringHasValue(this.dbHost)) {
+			this.tryToExtractHostInfoFromMysqlUri();
+		}
+
+		this.markAsInitialized();
+	}
+
 	public EtlDBConnectionType getConnType() {
 		return connType;
 	}
@@ -315,7 +334,7 @@ public class DBConnectionInfo extends AbstractEtlDataConfiguration {
 	}
 
 	public void tryToExtractHostInfoFromMysqlUri() {
-		String jdbcUrl = getConnectionURI();
+		String jdbcUrl = this.getConnectionURI();
 
 		if (jdbcUrl == null || !jdbcUrl.startsWith("jdbc:mysql://")) {
 			throw new IllegalArgumentException("Invalid MySQL JDBC URL: " + jdbcUrl);
