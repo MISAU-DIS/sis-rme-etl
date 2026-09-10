@@ -180,4 +180,23 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 	}
+
+	public void init(EtlConfiguration etlConfiguration) {
+		if (isInitialized())
+			return;
+
+		this.setRelatedConf(etlConfiguration);
+		this.applyIncludes();
+		this.tryToLoadFromTemplate();
+
+		if (this.databaseObjectInstantiationMode == null) {
+			this.databaseObjectInstantiationMode = DatabaseObjectInstantiationMode.DYNAMIC_GENERIC;
+		}
+
+		if (this.schemaMetadataMode == null) {
+			this.schemaMetadataMode = SchemaMetadataMode.LIVE_DATABASE;
+		}
+
+		markAsInitialized();
+	}
 }

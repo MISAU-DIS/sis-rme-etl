@@ -498,11 +498,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		ThreadRecordIntervalsManager<T> t = null;
 
-		if (getRelatedOperationController().isResumable()) {
+		if (this.getRelatedOperationController().isResumable()) {
 			t = ThreadRecordIntervalsManager.tryToLoadFromFile(getEngineId(), this);
 		}
 
-		if (getRelatedEtlConf().hasTestingItem()) {
+		if (this.getRelatedEtlConf().hasTestingItem()) {
 			this.getRelatedEtlOperationConfig()
 					.setProcessingBatch((int) tableOperationProgressInfo.getProgressMeter().getMaxRecordId());
 		}

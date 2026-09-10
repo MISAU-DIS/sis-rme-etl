@@ -30,6 +30,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.ProcessController;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -223,8 +224,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private Boolean verifyRecordAfterCreate;
 
-	private DatabaseObjectInstantiationMode databaseObjectInstantiationMode;
-
 	private SchemaMetadataMode schemaMetadataMode;
 
 	private DataModelConfiguration dataModel;
@@ -259,13 +258,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public DatabaseObjectInstantiationMode getDatabaseObjectInstantiationMode() {
-		return dataModel != null && dataModel.getDatabaseObjectInstantiationMode() != null
-				? dataModel.getDatabaseObjectInstantiationMode()
-				: databaseObjectInstantiationMode;
-	}
-
-	public void setDatabaseObjectInstantiationMode(DatabaseObjectInstantiationMode mode) {
-		getDataModel().setDatabaseObjectInstantiationMode(mode);
+		if (isDynamic()) {
+			return DatabaseObjectInstantiationMode.DYNAMIC_GENERIC;
+		} else if (this.dataModel.isInitialized()) {
+			return this.dataModel.getDatabaseObjectInstantiationMode();
+		} else {
+			throw new EtlConfException("The dataModel is not initialized!");
+		}
 	}
 
 	public SchemaMetadataMode getSchemaMetadataMode() {
@@ -1033,15 +1032,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				this.applyIncludes();
 
-				if (this.getDataModel() != null) {
-					this.getDataModel().setRelatedConf(this);
-					this.getDataModel().applyIncludes();
-					this.getDataModel().tryToLoadFromTemplate();
-				}
-
-				this.determineDatabaseObjectInstantiationMode();
-				this.determineSchemaMetadataMode();
-
+				this.getDataModel().init(this);
+			
 				this.defaultGeneratedObjectKeyTabConf = new EtlConfigurationTableConf(
 						EtlConfiguration.DEFAULT_GENERATED_OBJECT_KEY_TABLE_NAME, this);
 
@@ -1182,21 +1174,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			}
 
 		}
-	}
-
-	private void determineDatabaseObjectInstantiationMode() {
-		if (getDatabaseObjectInstantiationMode() != null)
-			return;
-		setDatabaseObjectInstantiationMode(
-				utilities.stringHasValue(getSrcPojoPackageName()) ? DatabaseObjectInstantiationMode.PRECOMPILED_POJO
-						: DatabaseObjectInstantiationMode.DYNAMIC_GENERIC);
-	}
-
-	private void determineSchemaMetadataMode() {
-		if (getSchemaMetadataMode() != null)
-			return;
-		setSchemaMetadataMode(usesPrecompiledPojoObjects() ? SchemaMetadataMode.PRECOMPILED_WITH_FALLBACK
-				: SchemaMetadataMode.LIVE_DATABASE);
 	}
 
 	public boolean usesPrecompiledPojoObjects() {
@@ -2411,6 +2388,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		clonedEtlConf.setPrimaryKeyInitialIncrementValue(this.getPrimaryKeyInitialIncrementValue());
 		clonedEtlConf.setAutoIncrementHandlingType(this.getAutoIncrementHandlingType());
 		clonedEtlConf.setConfigFilePath(this.getConfigFilePath());
+		clonedEtlConf.setDataModel(this.getDataModel());
 
 		OpenConnection conn = null;
 
