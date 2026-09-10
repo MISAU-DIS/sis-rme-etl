@@ -898,10 +898,6 @@ public class DstConf extends AbstractTableConfiguration
 			this.addToAvaliableDataSource(this);
 		}
 
-		if (this.getSrcConf().hasExpansionDs()) {
-			this.addToAvaliableDataSource(this.getSrcConf().getExpansionDataSource());
-		}
-
 		this.determinePrefferredDataSources();
 
 		this.setLoadedDataSourceInfo(true);

@@ -422,7 +422,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			return;
 		}
 		this.getRelatedEtlConf().info("Starting full load of etlItemConfiguration {}", this);
-		
+
 		if (!hasManualMapPrimaryKeyOnField()) {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
@@ -516,9 +516,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			}
 
 			this.setFullLoaded(true);
-			
+
 			this.getRelatedEtlConf().info("Full load done for etlItemConfiguration {}", this);
-			
+
 		} catch (SQLException e) {
 			throw new DBException(e);
 		}
@@ -628,8 +628,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			String sql = searchClauses.generateSQL(srcConn);
 
 			EtlDatabaseObject simpleValue = DatabaseObjectDAO.find(getSrcConf().getLoadHealper(),
-					getSrcConf().generateEtlRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(),
-					srcConn);
+					getSrcConf().generateEtlRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(), srcConn);
 
 			return simpleValue;
 		}
@@ -831,6 +830,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			ds.add(this.getSrcConf());
 
 			ds.addAll(this.getSrcConf().getAvaliableExtraDataSource());
+		}
+
+		if (this.getSrcConf().hasExpansionDs()) {
+			ds.add(this.getSrcConf().getExpansionDataSource());
+		}
+
+		if (this.getSrcConf().hasAuxExtractTable()) {
+			ds.addAll(this.getSrcConf().getAuxExtractTable());
 		}
 
 		return ds;
