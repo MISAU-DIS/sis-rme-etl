@@ -34,7 +34,6 @@ import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -99,6 +98,8 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	private List<String> excludedFieldsFromObjectDesc;
 
 	private ActionOnEtlIssue incompleteMappingBehavior;
+
+	private Class<? extends EtlDatabaseObject> etlRecordClass;
 
 	public TransformableDataSource() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.USE_LAST;
@@ -347,7 +348,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass) {
-		throw new ForbiddenOperationException("Forbiden Method");
+		this.etlRecordClass = syncRecordClass;
 	}
 
 	@Override
@@ -438,7 +439,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
-		return GenericDatabaseObject.class;
+		return this.etlRecordClass;
 	}
 
 	@Override

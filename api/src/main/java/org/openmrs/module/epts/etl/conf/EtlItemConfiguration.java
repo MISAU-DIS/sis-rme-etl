@@ -421,7 +421,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		if (this.isFullLoaded()) {
 			return;
 		}
-
+		this.getRelatedEtlConf().info("Starting full load of etlItemConfiguration {}", this);
+		
 		if (!hasManualMapPrimaryKeyOnField()) {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
@@ -515,6 +516,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			}
 
 			this.setFullLoaded(true);
+			
+			this.getRelatedEtlConf().info("Full load done for etlItemConfiguration {}", this);
+			
 		} catch (SQLException e) {
 			throw new DBException(e);
 		}

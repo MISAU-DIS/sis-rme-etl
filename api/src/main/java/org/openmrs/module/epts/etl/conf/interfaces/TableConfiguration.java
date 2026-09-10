@@ -754,9 +754,19 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			this.getRelatedEtlConf().info(msg);
 	}
 
+	default void logInfo(String msg, Object... arguments) {
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().info(msg, arguments);
+	}
+
 	default void logDebug(String msg) {
 		if (!isFullLoadLogSuppressed())
 			this.getRelatedEtlConf().debug(msg);
+	}
+
+	default void logDebug(String msg, Object... arguments) {
+		if (!isFullLoadLogSuppressed())
+			this.getRelatedEtlConf().debug(msg, arguments);
 	}
 
 	default void logTrace(String msg) {
@@ -1420,6 +1430,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@Override
 	default void fullLoad(Connection conn) throws DBException {
+		logDebug("Starting full load of table {}", this);
+
 		if (this.getParentConf() == null) {
 			throw new EtlConfException("The parentConf is not set for " + this);
 		}
@@ -1429,7 +1441,6 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		synchronized (this) {
 
 			try {
-
 				if (this.isFullLoaded()) {
 					return;
 				}
@@ -1499,7 +1510,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 				getRelatedEtlConf().addToFullLoadedTables(this);
 
-				logDebug("Table full loaded: " + this);
+				logDebug("Table full loaded: {}", this);
 
 				this.setFullLoaded(true);
 			} catch (SQLException e) {

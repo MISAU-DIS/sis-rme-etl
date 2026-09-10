@@ -275,6 +275,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		} finally {
 			this.fullLoadLogSuppressed = false;
 		}
+
 		if (physicalMetadataLoadedFromStaticData && !alreadyLoaded && this.isFullLoaded()) {
 			this.getRelatedEtlConf().debug("Full load done using existing static data for table {}", this);
 		}
