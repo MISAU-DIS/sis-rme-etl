@@ -250,8 +250,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
 		boolean alreadyLoaded = this.isFullLoaded();
-		if (!alreadyLoaded)
+
+		if (!alreadyLoaded) {
 			this.schemaMetadataLoadSource = SchemaMetadataLoadSource.NOT_LOADED;
+		}
+
 		try {
 			this.tryToLoadDumpScriptContentToFieldAndValidate("extraConditionForExtract",
 					this.retrieveAllAvailableTemplateParameters(), conn);
@@ -261,7 +264,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			this.attachPhysicalTableConfiguration(conn);
 
 			this.fullLoadLogSuppressed = physicalMetadataLoadedFromStaticData;
+
 			TableConfiguration.super.fullLoad(conn);
+
 			if (this.isFullLoaded()) {
 				this.schemaMetadataLoadSource = physicalMetadataLoadedFromStaticData
 						? SchemaMetadataLoadSource.STATIC_DATA
@@ -271,7 +276,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			this.fullLoadLogSuppressed = false;
 		}
 		if (physicalMetadataLoadedFromStaticData && !alreadyLoaded && this.isFullLoaded()) {
-			this.getRelatedEtlConf().info("Full load done using existing static data");
+			this.getRelatedEtlConf().debug("Full load done using existing static data for table {}", this);
 		}
 	}
 
@@ -390,14 +395,14 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		if (classesForKey.isEmpty()) {
-			throw new java.io.IOException("Manifest metadata key not found: expectedKey=" + expectedKey
-					+ ", manifest=" + manifestFile);
+			throw new java.io.IOException(
+					"Manifest metadata key not found: expectedKey=" + expectedKey + ", manifest=" + manifestFile);
 		}
 
 		if (matchingClass == null) {
-			throw new java.io.IOException("Manifest generated class mismatch: metadataKey=" + expectedKey
-					+ ", expectedClass=" + expectedClass + ", foundClasses=" + classesForKey + ", manifest="
-					+ manifestFile);
+			throw new java.io.IOException(
+					"Manifest generated class mismatch: metadataKey=" + expectedKey + ", expectedClass=" + expectedClass
+							+ ", foundClasses=" + classesForKey + ", manifest=" + manifestFile);
 		}
 
 		throw new java.io.IOException("Manifest metadata fingerprint mismatch: metadataKey=" + expectedKey

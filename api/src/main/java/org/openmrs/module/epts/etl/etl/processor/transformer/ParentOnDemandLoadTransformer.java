@@ -667,7 +667,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				if (getOnDemandCreateParentItemConf() == null) {
 
 					EtlItemConfiguration conf = this.generateEtlItemConf(srcConn, dstConn);
-					
+
 					this.onDemandInfo.setOnDemandCreateParentItemConf(conf);
 				}
 			}
@@ -716,22 +716,12 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		conf.setRelatedParentDstConfName(this.getRelatedEtlTransformTarget().getTableAlias());
 
 		conf.setDoNotFullLoadDstConf(true);
-		try {
-			conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
-		} catch (DatabaseResourceDoesNotExists e) {
-			throw e;
-		}
+
+		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
 
 		conf.init(getRelatedEtlConf(), false, srcConn, dstConn);
 
-		try {
-			conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
-		} catch (Exception e) {
-			
-			conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
-			
-			throw e;
-		}
+		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 
 		for (DstConf dstC : conf.getDstConf()) {
 			dstC.setUnmappedFieldBehavior(this.onDemandInfo.unmappedFieldBehavior());
