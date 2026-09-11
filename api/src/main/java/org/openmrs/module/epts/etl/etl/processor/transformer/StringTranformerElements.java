@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
+import org.openmrs.module.epts.etl.exceptions.FieldNotAvaliableInAnyDataSource;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -64,14 +65,16 @@ public class StringTranformerElements {
 				try {
 					this.auxMapping = FieldsMapping.fastCreate(this.relatedTransformer.getRelatedEtlTransformTarget(),
 							this.valueToTransform.toString(), "anknown_field", conn);
+				} catch (FieldNotAvaliableInAnyDataSource e) {
+					this.auxMapping = FieldsMapping.createSimpleFieldsMapping(
+							this.relatedTransformer.getRelatedEtlTransformTarget(), "anknown_field",
+							this.valueToTransform, conn);
+				}
 
-					if (!this.auxMapping.hasDataSourceName()) {
-						this.auxMapping = FieldsMapping.createSimpleFieldsMapping(
-								this.relatedTransformer.getRelatedEtlTransformTarget(), "anknown_field",
-								this.valueToTransform, conn);
-					}
-				} catch (Exception e) {
-					throw e;
+				if (!this.auxMapping.hasDataSourceName()) {
+					this.auxMapping = FieldsMapping.createSimpleFieldsMapping(
+							this.relatedTransformer.getRelatedEtlTransformTarget(), "anknown_field",
+							this.valueToTransform, conn);
 				}
 
 				fullLoaded = true;
