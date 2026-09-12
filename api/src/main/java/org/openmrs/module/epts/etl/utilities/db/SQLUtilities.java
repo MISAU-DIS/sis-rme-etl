@@ -849,6 +849,7 @@ public class SQLUtilities {
 
 		boolean readingTableReference = false;
 		boolean expectingTableAlias = false;
+		boolean expectingExpressionAlias = false;
 
 		while (matcher.find()) {
 
@@ -903,6 +904,18 @@ public class SQLUtilities {
 
 					replacement = tableName + "." + token;
 				}
+
+			} else if ("as".equals(lowerToken)) {
+
+				/*
+				 * Fora de FROM/JOIN, AS introduz um alias de expressão/coluna. O token
+				 * seguinte é uma declaração de alias, não uma referência a campo.
+				 */
+				expectingExpressionAlias = true;
+
+			} else if (expectingExpressionAlias) {
+
+				expectingExpressionAlias = false;
 
 			} else if (!hasDotBefore && !hasDotAfter && !isKeyword && !isFunction && !isParameter && !isKnownAlias) {
 

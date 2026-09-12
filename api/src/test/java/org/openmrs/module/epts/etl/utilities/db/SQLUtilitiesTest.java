@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.utilities.db;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -10,6 +11,18 @@ public class SQLUtilitiesTest {
 	private static final String QUERY = "encounter_id = (select encounter_id from encounter e "
 			+ "where e.patient_id = prep_encounter_src.patient_id and e.voided = 0 "
 			+ "and location_dst_ds.location_id is not null)";
+
+	@Test
+	public void shouldNotQualifySelectExpressionAlias() {
+		String query = "1 = (select 1 as value from obs o "
+				+ "where o.encounter_id = encounter_id and o.value_coded in (165214,165215))";
+
+		String qualified = SQLUtilities.qualifyUnqualifiedSqlFields(query, "encounter");
+
+		assertEquals("1 = (select 1 as value from obs o "
+				+ "where o.encounter_id = encounter.encounter_id and o.value_coded in (165214,165215))",
+				qualified);
+	}
 
 	@Test
 	public void shouldRecognizeCandidateOnRightHandSideOfEquality() {
