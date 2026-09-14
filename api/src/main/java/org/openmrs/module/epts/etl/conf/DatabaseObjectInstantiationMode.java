@@ -12,7 +12,9 @@ public enum DatabaseObjectInstantiationMode {
 	 * Database objects are created using pre-generated and pre-compiled
 	 * table-specific POJO classes.
 	 */
-	PRECOMPILED_POJO;
+	PRECOMPILED_POJO,
+
+	PRECOMPILED_POJO_WITH_FALLBACK;
 
 	public boolean isDynamic() {
 		return this == DYNAMIC_GENERIC;
@@ -20,5 +22,9 @@ public enum DatabaseObjectInstantiationMode {
 
 	public boolean isPreCompiled() {
 		return this == PRECOMPILED_POJO;
+	}
+
+	public boolean isPreCompiledWithFallBack() {
+		return this == PRECOMPILED_POJO_WITH_FALLBACK;
 	}
 }

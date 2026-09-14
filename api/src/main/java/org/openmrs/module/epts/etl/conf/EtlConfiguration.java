@@ -1180,6 +1180,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return getDatabaseObjectInstantiationMode().isPreCompiled();
 	}
 
+	public boolean usesPrecompiledPojoObjectsWithFallBack() {
+		return getDatabaseObjectInstantiationMode().isPreCompiledWithFallBack();
+	}
+
 	public boolean usesDynamicGenericObjects() {
 		return getDatabaseObjectInstantiationMode().isDynamic();
 	}

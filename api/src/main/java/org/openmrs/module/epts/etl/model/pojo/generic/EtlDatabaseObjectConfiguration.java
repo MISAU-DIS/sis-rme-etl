@@ -174,6 +174,10 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 					this.getRelatedEtlConf());
 
 			if (syncRecordClass == null) {
+				if (getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
+					syncRecordClass = GenericDatabaseObject.class;
+				}
+
 				throw new PojoNotFoundException(this);
 			}
 
