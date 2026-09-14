@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -117,14 +118,18 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 	String getQuery();
 
 	@SuppressWarnings("deprecation")
-	default EtlDatabaseObject newInstance() {
+	default EtlDatabaseObject newInstance() throws PojoNotFoundException {
 		try {
+			if (getEtlRecordClass() == null) {
+				throw new PojoNotFoundException(this);
+			}
+
 			EtlDatabaseObject obj = getEtlRecordClass().newInstance();
 			obj.setRelatedConfiguration(this);
 
 			return obj;
 		} catch (InstantiationException | IllegalAccessException | ForbiddenOperationException e) {
-			throw new RuntimeException(e);
+			throw new PojoNotFoundException(e);
 		}
 	}
 
@@ -150,6 +155,8 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 			throw new EtlExceptionImpl("An EtlDatasource must be either a EtlSrcConf or EtlDstConf!!!!");
 
 		this.tryToLoadSchemaInfo(etlSchemaObject, conn);
+
+		this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
 	}
 
 	void setParentConf(EtlDataConfiguration relatedParent);

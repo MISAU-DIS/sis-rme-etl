@@ -332,6 +332,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				try {
 					setFields(SQLUtilities.determineFieldsFromQuery(pq.getPreparedQuery(), params, conn));
 				} catch (DBException e) {
+					err("Error computing QueryDataSourceConfig\n\t{}", this.getDesc());
+
 					throw new DBException("Error computing QueryDataSourceConfig " + this.getDesc(), e);
 				}
 			}

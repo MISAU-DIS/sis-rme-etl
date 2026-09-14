@@ -34,6 +34,7 @@ import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
+import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -407,6 +408,19 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		this.relatedSrcConf = relatedSrcConf;
+	}
+
+	@Override
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
+			throws PojoNotFoundException {
+
+		try {
+			return EtlAdditionalDataSource.super.generateEtlRecordClass(connInfo);
+		} catch (PojoNotFoundException e) {
+			this.setEtlRecordClass(GenericDatabaseObject.class);
+		}
+
+		return getEtlRecordClass();
 	}
 
 	@Override

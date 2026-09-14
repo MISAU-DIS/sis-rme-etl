@@ -908,8 +908,8 @@ public class SQLUtilities {
 			} else if ("as".equals(lowerToken)) {
 
 				/*
-				 * Fora de FROM/JOIN, AS introduz um alias de expressão/coluna. O token
-				 * seguinte é uma declaração de alias, não uma referência a campo.
+				 * Fora de FROM/JOIN, AS introduz um alias de expressão/coluna. O token seguinte
+				 * é uma declaração de alias, não uma referência a campo.
 				 */
 				expectingExpressionAlias = true;
 
@@ -2373,10 +2373,11 @@ public class SQLUtilities {
 		return type != null;
 	}
 
-	private static String replaceFirstLiteralTokenWithQuestionMark(String query, String token, int questionMarksCount) {
+	private static ReplacingInfo replaceFirstLiteralTokenWithQuestionMark(String query, String token,
+			int questionMarksCount) {
 
 		if (query == null || token == null || questionMarksCount <= 0) {
-			return query;
+			return ReplacingInfo.fastCreate(query, false);
 		}
 
 		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token) + "(?![a-zA-Z0-9_\\.])");
@@ -2384,12 +2385,12 @@ public class SQLUtilities {
 		Matcher matcher = pattern.matcher(query);
 
 		if (!matcher.find()) {
-			return query;
+			return ReplacingInfo.fastCreate(query, false);
 		}
 
 		String replacement = String.join(", ", Collections.nCopies(questionMarksCount, "?"));
 
-		return matcher.replaceFirst(Matcher.quoteReplacement(replacement));
+		return ReplacingInfo.fastCreate(matcher.replaceFirst(Matcher.quoteReplacement(replacement)), true);
 	}
 
 	public static String replaceFirstParameterOccurrence(String query, String paramName, int qtyQuestionMarks) {
@@ -2477,10 +2478,17 @@ public class SQLUtilities {
 				knownTableAliases, avaliableSrcObjects, relatedEtlConf, conn);
 
 		for (ResolvedQueryElement element : resolvedElements) {
-			preparedQuery = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken(),
+			ReplacingInfo replacingInfo = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken(),
 					determineQtyElementsWithinTheParamValue(element.getValueInfo().getTransformedValue()));
 
-			resolvedValues.add(element.getValueInfo());
+			while (replacingInfo.isReplaced()) {
+				preparedQuery = replacingInfo.getFinalQuery();
+
+				resolvedValues.add(element.getValueInfo());
+
+				replacingInfo = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken(),
+						determineQtyElementsWithinTheParamValue(element.getValueInfo().getTransformedValue()));
+			}
 		}
 
 		return new PreparedQueryInfo(preparedQuery, originalQuery, relatedEtlConf, resolvedValues);
@@ -3159,6 +3167,34 @@ public class SQLUtilities {
 		}
 
 		return result;
+	}
+
+	private static class ReplacingInfo {
+		String finalQuery;
+		boolean replaced;
+
+		public static ReplacingInfo fastCreate(String finalQuery, boolean replaced) {
+			ReplacingInfo r = new ReplacingInfo();
+
+			r.finalQuery = finalQuery;
+			r.replaced = replaced;
+
+			return r;
+		}
+
+		public String getFinalQuery() {
+			return finalQuery;
+		}
+
+		public boolean isReplaced() {
+			return replaced;
+		}
+
+		@Override
+		public String toString() {
+			return "Replaced: " + this.replaced + "\nFinalQuery: " + this.finalQuery;
+		}
+
 	}
 
 	private static class ResolvedElementKey {

@@ -363,6 +363,9 @@ public class SrcConf extends AbstractTableConfiguration
 		super.loadOwnElements(schemaInfo, conn);
 
 		if (hasJoinExtraCondition()) {
+			this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition",
+					this.retrieveAllAvailableTemplateParameters(), conn);
+
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getJoinExtraCondition(), null)) {
 				throw new EtlConfException("Invalid joinExtraCondition \n" + this.getJoinExtraCondition());
 			}

@@ -113,6 +113,11 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		return operationsControllers;
 	}
 
+	public void setOperationsControllers(
+			List<OperationController<? extends EtlDatabaseObject>> operationsControllers_) {
+		this.operationsControllers = operationsControllers_;
+	}
+
 	public ProcessProgressInfo getProgressInfo() {
 		return progressInfo;
 	}
@@ -143,7 +148,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 
-		this.operationsControllers = new ArrayList<>();
+		this.setOperationsControllers(new ArrayList<>());
 
 		OpenConnection conn = openConnection(this);
 
@@ -153,7 +158,16 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 				List<OperationController<? extends EtlDatabaseObject>> controller = operation.generateRelatedController(
 						this, operation.getRelatedEtlConf().getOriginAppLocationCode(), conn);
 
-				this.operationsControllers.addAll(controller);
+				this.getOperationsControllers().addAll(controller);
+
+				/*
+				 * while (operation.hasChild()) { operation = operation.getChild();
+				 * 
+				 * controller = operation.generateRelatedController(this,
+				 * operation.getRelatedEtlConf().getOriginAppLocationCode(), conn);
+				 * 
+				 * this.getOperationsControllers().addAll(controller); }
+				 */
 			}
 
 			this.progressInfoLoaded = true;
@@ -269,8 +283,8 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		if (isNotInitialized())
 			return false;
 
-		if (utilities.listHasElement(this.operationsControllers)) {
-			for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+		if (utilities.listHasElement(this.getOperationsControllers())) {
+			for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
 				if (controller.getOperationConfig().isDisabled()) {
 					continue;
 				} else if (!controller.isStopped() && !controller.isFinished()) {
@@ -318,9 +332,9 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			return true;
 		}
 
-		if (utilities.listHasElement(this.operationsControllers)) {
-			for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
-				if (controller.getOperationConfig().isDisabled()) {
+		if (utilities.listHasElement(this.getOperationsControllers())) {
+			for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
+				if (controller.getOperationConfig().isDisabled() && !controller.getOperationConfig().hasChild()) {
 					continue;
 				} else if (!controller.isFinished()) {
 					return false;
@@ -389,11 +403,11 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 				logWarn("Process not initialized, the stopping now!");
 
 				changeStatusToStopped();
-			} else if (utilities.listHasElement(this.operationsControllers)) {
+			} else if (utilities.listHasElement(this.getOperationsControllers())) {
 
 				logWarn("Requesting stop of Operation Controllers...");
 
-				for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+				for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
 					if (!controller.stopRequested()) {
 						controller.requestStop();
 					}
@@ -477,7 +491,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		try {
 			this.progressInfo = new ProcessProgressInfo(this);
 
-			for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+			for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
 				controller.resetProgressInfo(conn);
 			}
 
@@ -531,13 +545,13 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	}
 
 	public void initOperationsControllers(Connection conn) throws DBException {
-		for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+		for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
 			this.tryToInitController(controller);
 		}
 	}
 
 	private void tryToInitController(OperationController<? extends EtlDatabaseObject> controller) {
-		if (!controller.getOperationConfig().isDisabled()) {
+		if (!controller.getOperationConfig().isDisabled() && !controller.operationIsAlreadyFinished()) {
 			ExecutorService executor = ThreadPoolService.getInstance()
 					.createNewThreadPoolExecutor(controller.getControllerId());
 			executor.execute(controller);
@@ -594,8 +608,9 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		if (selfTreadKilled)
 			return;
 
-		if (this.operationsControllers != null) {
-			for (OperationController<? extends EtlDatabaseObject> operationController : this.operationsControllers) {
+		if (this.getOperationsControllers() != null) {
+			for (OperationController<? extends EtlDatabaseObject> operationController : this
+					.getOperationsControllers()) {
 				operationController.killSelfCreatedThreads();
 
 				ThreadPoolService.getInstance().terminateTread(LOG, operationController.getControllerId(),
@@ -632,7 +647,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	@JsonIgnore
 	public boolean processIsAlreadyFinished() {
-		for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+		for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
 			if (!controller.operationIsAlreadyFinished() || !controller.childOperationsAreAlreadyFinished()) {
 				return false;
 			}

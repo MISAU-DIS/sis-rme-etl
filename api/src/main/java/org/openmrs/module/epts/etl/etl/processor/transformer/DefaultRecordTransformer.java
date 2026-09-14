@@ -132,7 +132,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				availableSrcList, srcConn, dstConn);
 
 		if (migratedDstParent != null) {
-			resolveParentForeignKey(transformedRec, dstConf, migratedDstParent);
+			resolveParentForeignKey(transformedRec, dstConf, migratedDstParent, dstConn);
 		}
 	}
 
@@ -247,7 +247,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private void resolveParentForeignKey(EtlDatabaseObject transformedRec, DstConf dstConf,
-			EtlDatabaseObject migratedDstParent) throws EtlTransformationException {
+			EtlDatabaseObject migratedDstParent, Connection conn) throws EtlTransformationException {
 
 		for (ParentTable refInfo : dstConf.getParentRefInfo()) {
 
@@ -262,12 +262,25 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 						+ "' not found on transformed record.", null, ActionOnEtlIssue.ABORT_PROCESS);
 			}
 
-			FieldsMapping fkMapping = dstConf.getMappingUsingDstField(fkField.getName());
+			FieldsMapping fkMapping = null;
 
-			if (fkMapping == null) {
-				throw new EtlTransformationException(
-						"No mapping found for foreign key field '" + fkField.getName() + "'.", null,
-						ActionOnEtlIssue.ABORT_PROCESS);
+			try {
+				fkMapping = dstConf.getMappingUsingDstField(fkField.getName());
+
+				if (fkMapping == null) {
+					throw new EtlTransformationException(
+							"No mapping found for foreign key field '" + fkField.getName() + "'.", null,
+							ActionOnEtlIssue.ABORT_PROCESS);
+				}
+
+			} catch (FieldsMappingException e) {
+				try {
+					fkMapping = FieldsMapping.fastCreate(dstConf, fkField.getName(),
+							migratedDstParent.getRelatedConfiguration().getAlias(),
+							refInfo.getParentColumnOnSimpleMapping(), conn);
+				} catch (DBException e1) {
+					throw new EtlExceptionImpl(e);
+				}
 			}
 
 			Object currentValue = transformedRec.getFieldValue(fkField.getName());

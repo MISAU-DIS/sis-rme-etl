@@ -1008,7 +1008,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	 * @throws DBException
 	 */
 	public void init(OpenConnection conn) throws ForbiddenOperationException, DBException {
-		if (isInitialized() || isDisabled()) {
+		if (this.isInitialized() || this.isDisabled()) {
 			return;
 		}
 
@@ -1018,7 +1018,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		synchronized (LOCK_READ) {
 
-			if (isInitialized()) {
+			if (this.isInitialized()) {
 				return;
 			}
 
@@ -1033,7 +1033,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				this.applyIncludes();
 
 				this.getDataModel().init(this);
-			
+
 				this.defaultGeneratedObjectKeyTabConf = new EtlConfigurationTableConf(
 						EtlConfiguration.DEFAULT_GENERATED_OBJECT_KEY_TABLE_NAME, this);
 
@@ -1514,27 +1514,24 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public void setOperations(List<EtlOperationConfig> operations) {
-		for (EtlOperationConfig operation : operations) {
-			operation.setRelatedEtlConf(this);
-
-			if (operation.getChild() != null) {
-				EtlOperationConfig child = operation.getChild();
-
-				while (child != null) {
-					child.setRelatedEtlConf(this);
-
-					child = child.getChild();
-				}
-			}
-		}
-
+		/*
+		 * for (EtlOperationConfig operation : operations) {
+		 * operation.setRelatedEtlConf(this);
+		 * 
+		 * if (operation.getChild() != null) { EtlOperationConfig child =
+		 * operation.getChild();
+		 * 
+		 * while (child != null) { child.setRelatedEtlConf(this);
+		 * 
+		 * child = child.getChild(); } } }
+		 */
 		this.operations = operations;
 	}
 
 	public EtlOperationConfig findOperation(EtlOperationType operationType) {
 		EtlOperationConfig toFind = EtlOperationConfig.fastCreate(operationType, this);
 
-		for (EtlOperationConfig op : this.operations) {
+		for (EtlOperationConfig op : this.getOperations()) {
 			if (op.equals(toFind))
 				return op;
 
@@ -1556,7 +1553,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public List<EtlOperationConfig> getOperationsAsList() {
 		List<EtlOperationConfig> operationsAsList = new ArrayList<>();
 
-		for (EtlOperationConfig op : this.operations) {
+		for (EtlOperationConfig op : this.getOperations()) {
 			operationsAsList.add(op);
 
 			EtlOperationConfig child = op.getChild();
