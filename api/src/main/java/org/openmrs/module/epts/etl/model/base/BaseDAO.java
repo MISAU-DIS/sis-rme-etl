@@ -199,8 +199,9 @@ public abstract class BaseDAO {
 
 			}
 		} catch (SQLException e) {
-			LOG.err("Error while perfoming query: {}", generateCallStatementString(sql, params));
-			
+			LOG.err("Error while perfoming query: {}: {}", generateCallStatementString(sql, params),
+					e.getLocalizedMessage());
+
 			throw new DBException(e);
 		} catch (Exception e) {
 			e.printStackTrace();

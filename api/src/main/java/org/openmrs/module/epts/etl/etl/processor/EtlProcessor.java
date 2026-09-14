@@ -91,6 +91,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException {
 
+		warn("Starting transformation of {} {}", etlObjects.size(), etlItemConf.getSrcConf().getAlias());
+
 		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, new ReentrantLock(), this)) {
 
 			for (EtlDatabaseObject srcRecord : etlObjects) {
@@ -163,13 +165,15 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				}
 			}
 		}
+
+		warn("Finished transformation of {} {}", etlObjects.size(), etlItemConf.getSrcConf().getAlias());
 	}
 
 	private EtlLoadHelper performLoading(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
 			LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException, ParentNotYetMigratedException {
-		this.logDebug(
-				"Initializing the loading of " + etlObjects.size() + " " + etlItemConf.getSrcConf().getFullTableName());
+
+		this.warn("Initializing the loading of {} {}", etlObjects.size(), etlItemConf.getSrcConf().getFullTableName());
 
 		EtlLoadHelper loadHelper = null;
 

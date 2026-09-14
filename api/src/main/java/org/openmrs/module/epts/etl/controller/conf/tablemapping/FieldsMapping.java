@@ -94,7 +94,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	private ActionOnEtlIssue incompleteMappingBehavior;
 
 	public FieldsMapping() {
-		this.nullValueBehavior = ActionOnEtlIssue.ABORT_PROCESS;
+		this.nullValueBehavior = ActionOnEtlIssue.IGNORE;
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 
 		this.possibleSrc = new ArrayList<>(5);

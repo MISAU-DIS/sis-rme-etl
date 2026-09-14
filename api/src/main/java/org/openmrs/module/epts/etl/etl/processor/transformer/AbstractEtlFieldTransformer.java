@@ -335,7 +335,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 			EtlDatabaseObject transformedRecord, TransformableField field) throws EtlTransformationException {
 
 		String objectName = transformedRecord != null && transformedRecord.getRelatedConfiguration() != null
-				? transformedRecord.getRelatedConfiguration().getObjectName()
+				? transformedRecord.getRelatedConfiguration().getAlias()
 				: null;
 
 		String fieldName = objectName != null ? objectName + "(" + field.getDstField() + ")"

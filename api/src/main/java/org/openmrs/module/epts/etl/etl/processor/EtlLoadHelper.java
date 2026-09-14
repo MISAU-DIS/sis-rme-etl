@@ -295,7 +295,7 @@ public class EtlLoadHelper {
 	public void onLoadToDb(DstConf dstConf, Connection dstConn) throws DBException, ForbiddenOperationException {
 
 		List<EtlDatabaseObject> objects = getAllReadyTransformedObjects(dstConf);
-		
+
 		if (getActionType().isCreate()) {
 			logDebug("Starting the insertion of " + objects.size() + " " + dstConf.getTableName() + " on db...");
 
@@ -474,6 +474,7 @@ public class EtlLoadHelper {
 		this.logDebug("Preparing the load of " + toLoad.size());
 
 		for (EtlDatabaseObject obj : toLoad) {
+			obj.loadObjectIdData();
 			obj.getEtlInfo().markAsReady();
 		}
 
