@@ -290,13 +290,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		tryToInitIdGenerator(records, dstConn);
 		beforeSync(records, null, dstConn);
 
-		List<EtlDatabaseObject> processedRecords = new ArrayList<>();
-		if (getTaskResultInfo().getProcessedRecords() != null) {
-			processedRecords.addAll(getTaskResultInfo().getProcessedRecords());
-		}
-		processedRecords.addAll((List<EtlDatabaseObject>) (List<?>) records);
-
-		getTaskResultInfo().setProcessedRecords(processedRecords);
+		getTaskResultInfo().addProcessedRecords(records);
 
 		logWarn("PROCESSING OF " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
 				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "' DONE!");

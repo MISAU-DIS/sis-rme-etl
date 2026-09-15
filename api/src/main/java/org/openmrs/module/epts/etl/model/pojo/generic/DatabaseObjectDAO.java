@@ -590,8 +590,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 				assignGeneratedIdsAfterBatchInsert(recordsToInsert, tabConf, ids);
 
 				if (generateOperationResult) {
-					result.addAllToRecordsWithNoError(EtlOperationItemResult.parseFromEtlDatabaseObject(
-							EtlDatabaseObject.collectAllSrcRelatedOBjects(recordsToInsert)));
+					result.addSuccessfulRecords(
+							EtlDatabaseObject.collectAllSrcRelatedOBjects(recordsToInsert));
 				}
 
 				LOG.trace("Inserted " + recordsToInsert.size() + " " + tabConf.getTableName());

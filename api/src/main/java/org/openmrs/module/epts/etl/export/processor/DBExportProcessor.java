@@ -14,7 +14,6 @@ import org.openmrs.module.epts.etl.export.controller.DBExportController;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.SyncJSONInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationItemResult;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
@@ -85,7 +84,7 @@ public class DBExportProcessor extends TaskProcessor<EtlDatabaseObject> {
 			
 			markAllAsSynchronized(utilities.parseList(records, EtlDatabaseObject.class), srcConn);
 			
-			getTaskResultInfo().addAllToRecordsWithNoError(EtlOperationItemResult.parseFromEtlDatabaseObject(records));
+			getTaskResultInfo().addSuccessfulRecords(records);
 		}
 		catch (IOException e) {
 			e.printStackTrace();

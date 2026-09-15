@@ -512,7 +512,7 @@ public class EtlLoadHelper {
 		}
 
 		getProcessor().getTaskResultInfo()
-				.addAllToRecordsWithNoError(EtlOperationItemResult.parseFromEtlDatabaseObject(objs));
+				.addSuccessfulRecords(objs);
 	}
 
 	void logTrace(String msg) {
