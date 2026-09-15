@@ -413,6 +413,10 @@ public class EtlLoadHelper {
 
 		this.logDebug("Preparing the load of " + toLoad.size());
 
+		if (dstConf.getRelatedEtlConf().getRelationshipResolutionStrategy().skip()) {
+			return;
+		}
+
 		for (EtlDatabaseObject obj : toLoad) {
 
 			if (obj.getEtlInfo().hasExceptionOnEtl())
@@ -485,6 +489,8 @@ public class EtlLoadHelper {
 		String data = null;
 
 		if (getEngine().isJsonDst()) {
+			logWarn("Writing data to json");
+
 			data = utilities.parseToJSON(objs);
 
 			dataFile += ".json";
@@ -493,6 +499,8 @@ public class EtlLoadHelper {
 
 			data = utilities.parseToCSVWithoutHeader(objs, dstConf.getExcludedFields(), dstConf.getCsvDelimiter());
 		} else if (getEngine().isDumpDst()) {
+			logWarn("Writing data to sql dump");
+
 			dataFile += ".sql";
 
 			data = TableConfiguration.generateInsertDump(objs);

@@ -658,7 +658,7 @@ public class DstConf extends AbstractTableConfiguration
 		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
 
-	public FieldsMapping getMappingUsingDstField(String dstFieldName) {
+	public FieldsMapping getMappingUsingDstField(String dstFieldName) throws FieldsMappingException {
 		List<FieldsMapping> matchedFields = new ArrayList<FieldsMapping>();
 
 		for (FieldsMapping field : this.allMapping) {
@@ -670,7 +670,7 @@ public class DstConf extends AbstractTableConfiguration
 				matchedFields.add(field);
 
 				if (matchedFields.size() > 1) {
-					throw new ForbiddenOperationException("Cannot determine the mapping field for '" + dstFieldName
+					throw new FieldsMappingException("Cannot determine the mapping field for '" + dstFieldName
 							+ "' since it has multiple matching fields");
 				}
 			}

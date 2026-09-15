@@ -200,16 +200,17 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 			throws DBException {
 
 		if (this.getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
-				|| this.getRelatedEtlOperationConfig().getParallelProcessingStrategy().isRangePartitioning() || this.getRelatedEtlOperationConfig().getProcessingBatch() == 1) {
+				|| this.getRelatedEtlOperationConfig().getParallelProcessingStrategy().isRangePartitioning()
+				|| this.getRelatedEtlOperationConfig().getProcessingBatch() == 1) {
 			useMultiThreadSearch = false;
 		}
 
 		String threads = useMultiThreadSearch ? " USING MULTI-THREAD" : " USING SINGLE THREAD";
 
 		if (getLimits() != null) {
-			logDebug("SERCHING NEXT RECORDS FOR LIMITS " + getLimits() + threads);
+			logWarn("SERCHING NEXT RECORDS FOR LIMITS " + getLimits() + threads);
 		} else {
-			logDebug("SERCHING NEXT RECORDS " + threads);
+			logInfo("SERCHING NEXT RECORDS " + threads);
 		}
 
 		List<T> records = null;
@@ -225,10 +226,9 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				+ "' RECORDS.");
 
 		if (utilities.listHasElement(records)) {
-
 			this.tryToInitIdGenerator(records, dstConn);
 
-			logDebug("INITIALIZING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
+			logWarn("INITIALIZING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
 					+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getTableName() + "'");
 
 			beforeSync(records, srcConn, dstConn);
@@ -241,7 +241,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				transformAndLoad(records, srcConn, dstConn);
 			}
 
-			logDebug("TASK ON " + records.size() + " DONE!");
+			logWarn("TASK ON " + records.size() + " DONE!");
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
@@ -254,6 +254,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	 */
 	public void transformAndLoadExtractedRecords(List<T> records, Connection srcConn, Connection dstConn)
 			throws DBException {
+
 		prepareExtractedRecords(records, dstConn);
 
 		if (getActionType().isDelete()) {
@@ -283,6 +284,9 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 			return;
 		}
 
+		logWarn("INITIALIZING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
+				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "'");
+
 		tryToInitIdGenerator(records, dstConn);
 		beforeSync(records, null, dstConn);
 
@@ -291,7 +295,12 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 			processedRecords.addAll(getTaskResultInfo().getProcessedRecords());
 		}
 		processedRecords.addAll((List<EtlDatabaseObject>) (List<?>) records);
+
 		getTaskResultInfo().setProcessedRecords(processedRecords);
+
+		logWarn("PROCESSING OF " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
+				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "' DONE!");
+
 	}
 
 	@SuppressWarnings("unchecked")

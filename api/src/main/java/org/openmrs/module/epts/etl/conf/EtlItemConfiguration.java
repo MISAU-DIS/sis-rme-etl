@@ -14,9 +14,11 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
+import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDynamicItemSearchParams;
+import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -878,5 +880,23 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		return super.equals(obj);
+	}
+
+	public boolean canQuickTransform(EtlProcessor processor) {
+		if (this.getDstConf().size() != 1) {
+			return false;
+		}
+
+		EtlDstType dstType = processor.determineDstType(this.getDstConf().get(0));
+
+		if (dstType.isFile()) {
+			return true;
+		}
+
+		if (this.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
+			return true;
+		}
+
+		return false;
 	}
 }

@@ -19,6 +19,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.dbquickmerge.model.ParentInfo;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
@@ -29,6 +30,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingIn
 import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingParentException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
@@ -781,6 +783,26 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
 		return this.getDstConf().getRelatedEtlConf();
+	}
+
+	public static EtlInfo fastCreateForRecordAlradyLoadedWithDstData(EtlProcessor etlProcessor,
+			EtlDatabaseObject srcObj, EtlDatabaseObject dstObj) {
+
+		EtlInfo inf = new EtlInfo(srcObj, dstObj, etlProcessor);
+
+		DstConf dstConf = (DstConf) dstObj.getRelatedConfiguration();
+
+		for (Field f : dstObj.getFields()) {
+
+			try {
+				FieldsMapping map = dstConf.getMappingUsingDstField(f.getName());
+
+				f.setTransformingInfo(new FieldTransformingInfo(map, f.getValue(), dstConf));
+			} catch (FieldsMappingException e) {
+			}
+		}
+
+		return inf;
 	}
 
 }

@@ -260,6 +260,8 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 
 		} catch (Exception e) {
 
+			transform(processor, srcObject, transformedRecord, additionalSrcObjects, field, srcConn, dstConn);
+
 			throw new EtlTransformationException("Failed to evaluate string expression: " + field.getValueToTransform(),
 					e, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		} finally {
