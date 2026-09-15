@@ -96,12 +96,16 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, new ReentrantLock(), this)) {
 
 			if (etlItemConf.canQuickTransform(this)) {
-				logWarn("Perorming quick tranformation of {} {}", etlObjects.size(),
+				logWarn("Performing quick tranformation of {} {}", etlObjects.size(),
 						etlItemConf.getSrcConf().getTableAlias());
 
 				for (EtlDatabaseObject srcRecord : etlObjects) {
 					this.quickTransformRecord(srcRecord, srcConn, dstConn);
 				}
+				
+				logWarn("Quick tranformation done on {} {}", etlObjects.size(),
+						etlItemConf.getSrcConf().getTableAlias());
+
 			} else {
 
 				for (EtlDatabaseObject srcRecord : etlObjects) {

@@ -475,8 +475,6 @@ public class EtlLoadHelper {
 	public void loadToFile(DstConf dstConf) throws ParentNotYetMigratedException, DBException {
 		List<EtlDatabaseObject> toLoad = this.getAllTransformedObjects(dstConf);
 
-		this.logDebug("Preparing the load of " + toLoad.size());
-
 		for (EtlDatabaseObject obj : toLoad) {
 			obj.loadObjectIdData();
 			obj.getEtlInfo().markAsReady();
@@ -489,8 +487,6 @@ public class EtlLoadHelper {
 		String data = null;
 
 		if (getEngine().isJsonDst()) {
-			logWarn("Writing data to json");
-
 			data = utilities.parseToJSON(objs);
 
 			dataFile += ".json";
@@ -499,8 +495,6 @@ public class EtlLoadHelper {
 
 			data = utilities.parseToCSVWithoutHeader(objs, dstConf.getExcludedFields(), dstConf.getCsvDelimiter());
 		} else if (getEngine().isDumpDst()) {
-			logWarn("Writing data to sql dump");
-
 			dataFile += ".sql";
 
 			data = TableConfiguration.generateInsertDump(objs);
