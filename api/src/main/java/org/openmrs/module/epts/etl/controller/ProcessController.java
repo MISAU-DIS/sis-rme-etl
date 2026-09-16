@@ -196,36 +196,24 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	public void handleControllerFinalization(Controller c) {
 		c.killSelfCreatedThreads();
 
-		List<OperationController<? extends EtlDatabaseObject>> nextOperation = ((OperationController<? extends EtlDatabaseObject>) c)
-				.getChildren();
+		OperationController<? extends EtlDatabaseObject> nextOperation = ((OperationController<? extends EtlDatabaseObject>) c)
+				.getChild();
 
 		logDebug("TRY TO INIT NEXT OPERATION");
 
-		// Remember, if one of multiple child is disabled, then all other children are
-		// disabled
-		while (nextOperation != null && !nextOperation.isEmpty()
-				&& nextOperation.get(0).getOperationConfig().isDisabled()) {
-			nextOperation = nextOperation.get(0).getChildren();
+		while (nextOperation != null && nextOperation.getOperationConfig().isDisabled()) {
+			nextOperation = nextOperation.getChild();
 		}
 
 		if (nextOperation != null) {
 			if (!stopRequested()) {
-				for (OperationController<? extends EtlDatabaseObject> controller : nextOperation) {
-					logDebug("STARTING NEXT OPERATION " + controller.getControllerId());
+				logDebug("STARTING NEXT OPERATION " + nextOperation.getControllerId());
 
-					ExecutorService executor = ThreadPoolService.getInstance()
-							.createNewThreadPoolExecutor(controller.getControllerId());
-					executor.execute(controller);
-				}
+				ExecutorService executor = ThreadPoolService.getInstance()
+						.createNewThreadPoolExecutor(nextOperation.getControllerId());
+				executor.execute(nextOperation);
 			} else {
-				String nextOperations = "[";
-				for (OperationController<? extends EtlDatabaseObject> controller : nextOperation) {
-					nextOperations += controller.getControllerId() + ";";
-				}
-
-				nextOperations += "]";
-
-				logWarn("THE OPERATION " + nextOperations.toUpperCase()
+				logWarn("THE OPERATION [" + nextOperation.getControllerId().toUpperCase() + "]"
 						+ "NESTED COULD NOT BE INITIALIZED BECAUSE THERE WAS A STOP REQUEST!!!");
 			}
 		} else {
@@ -287,10 +275,8 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			for (OperationController<? extends EtlDatabaseObject> controller_ : this.getOperationsControllers()) {
 				OperationController<? extends EtlDatabaseObject> controllerToCheck = controller_;
 
-				while (controllerToCheck != null && controller_.getOperationConfig().isDisabled()) {
-					if (controllerToCheck.hasChild()) {
-						controllerToCheck = controllerToCheck.getChildren().get(0);
-					}
+				while (controllerToCheck != null && controllerToCheck.getOperationConfig().isDisabled()) {
+					controllerToCheck = controllerToCheck.getChild();
 				}
 
 				if (controllerToCheck == null) {
@@ -300,28 +286,14 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 				if (!controllerToCheck.isStopped() && !controllerToCheck.isFinished()) {
 					return false;
 				} else {
-					List<OperationController<? extends EtlDatabaseObject>> children = controllerToCheck.getChildren();
+					OperationController<? extends EtlDatabaseObject> child = controllerToCheck.getChild();
 
-					while (children != null) {
-						List<OperationController<? extends EtlDatabaseObject>> grandChildren = null;
-
-						for (OperationController<? extends EtlDatabaseObject> child : children) {
-							if (!child.isStopped() && !child.isFinished()) {
-								return false;
-							}
-
-							if (child.getChildren() != null) {
-								if (grandChildren == null)
-									grandChildren = new ArrayList<>();
-
-								for (OperationController<? extends EtlDatabaseObject> childOfChild : child
-										.getChildren()) {
-									grandChildren.add(childOfChild);
-								}
-							}
+					while (child != null) {
+						if (!child.isStopped() && !child.isFinished()) {
+							return false;
 						}
 
-						children = grandChildren;
+						child = child.getChild();
 					}
 				}
 			}
@@ -349,29 +321,15 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 				} else if (!controller.isFinished()) {
 					return false;
 				} else {
-					List<OperationController<? extends EtlDatabaseObject>> children = controller.getChildren();
+					OperationController<? extends EtlDatabaseObject> child = controller.getChild();
 
-					while (children != null) {
-						List<OperationController<? extends EtlDatabaseObject>> grandChildren = null;
+					while (child != null) {
 
-						for (OperationController<? extends EtlDatabaseObject> child : children) {
-
-							if (!child.isFinished() && !child.getOperationConfig().isDisabled()) {
-								return false;
-							}
-
-							if (child.getChildren() != null) {
-								if (grandChildren == null)
-									grandChildren = new ArrayList<>();
-
-								for (OperationController<? extends EtlDatabaseObject> childOfChild : child
-										.getChildren()) {
-									grandChildren.add(childOfChild);
-								}
-							}
+						if (!child.isFinished() && !child.getOperationConfig().isDisabled()) {
+							return false;
 						}
 
-						children = grandChildren;
+						child = child.getChild();
 					}
 				}
 			}
@@ -447,6 +405,8 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 			OpenConnection conn = null;
 
+			boolean running;
+
 			try {
 				if (wasPreviouslyFinished) {
 					performePreReRunActions();
@@ -454,7 +414,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 				conn = openDefaultConn(this);
 
-				initOperationsControllers(conn);
+				running = initOperationsControllers(conn);
 				conn.markAsSuccessifullyTerminated();
 			} catch (DBException e) {
 				throw new RuntimeException(e);
@@ -464,29 +424,33 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 				}
 			}
 
-			changeStatusToRunning();
+			if (running) {
+				this.changeStatusToRunning();
 
-			boolean running = true;
+				while (running) {
+					TimeCountDown.sleep(getWaitTimeToCheckStatus());
 
-			while (running) {
-				TimeCountDown.sleep(getWaitTimeToCheckStatus());
+					LOG.warn(("The process " + getControllerId() + " is still running...").toUpperCase(), 60 * 5, true);
 
-				LOG.warn(("The process " + getControllerId() + " is still running...").toUpperCase(), 60 * 5, true);
+					if (this.isFinished()) {
+						this.markAsFinished();
+						this.onFinish();
 
-				if (this.isFinished()) {
-					this.markAsFinished();
-					this.onFinish();
+						running = false;
+					} else if (this.isStopped()) {
+						running = false;
 
-					running = false;
-				} else if (this.isStopped()) {
-					running = false;
-
-					this.onStop();
-				} else if (stopRequested() && !isStopping()) {
-					requestStop();
+						this.onStop();
+					} else if (stopRequested() && !isStopping()) {
+						requestStop();
+					}
 				}
-			}
+			} else {
+				warn("The process or its operations are disabled or already finalized!".toUpperCase());
 
+				this.markAsFinished();
+				this.onFinish();
+			}
 		}
 
 	}
@@ -554,22 +518,32 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			file.delete();
 	}
 
-	public void initOperationsControllers(Connection conn) throws DBException {
+	public boolean initOperationsControllers(Connection conn) throws DBException {
+		boolean running = false;
+
 		for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
-			this.tryToInitController(controller);
+			boolean innerRunning = this.tryToInitController(controller);
+
+			if (innerRunning) {
+				running = innerRunning;
+			}
 		}
+
+		return running;
 	}
 
-	private void tryToInitController(OperationController<? extends EtlDatabaseObject> controller) {
+	private boolean tryToInitController(OperationController<? extends EtlDatabaseObject> controller) {
 		if (!controller.getOperationConfig().isDisabled() && !controller.operationIsAlreadyFinished()) {
 			ExecutorService executor = ThreadPoolService.getInstance()
 					.createNewThreadPoolExecutor(controller.getControllerId());
 			executor.execute(controller);
+
+			return true;
 		} else if (controller.hasChild()) {
-			for (OperationController<? extends EtlDatabaseObject> child : controller.getChildren()) {
-				this.tryToInitController(child);
-			}
+			return this.tryToInitController(controller.getChild());
 		}
+
+		return false;
 	}
 
 	@Override

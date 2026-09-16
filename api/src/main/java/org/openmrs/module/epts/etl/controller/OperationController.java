@@ -56,7 +56,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	protected List<Engine<T>> allGeneratedEngineMonitor;
 
-	protected List<OperationController<? extends EtlDatabaseObject>> children;
+	protected OperationController<? extends EtlDatabaseObject> child;
 
 	protected String controllerId;
 
@@ -159,7 +159,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public boolean hasChild() {
-		return this.children != null;
+		return this.child != null;
 	}
 
 	public boolean hasNestedController() {
@@ -174,12 +174,16 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		return operationConfig;
 	}
 
-	public List<OperationController<? extends EtlDatabaseObject>> getChildren() {
-		return children;
+	public OperationController<? extends EtlDatabaseObject> getChild() {
+		return child;
 	}
 
-	public void setChildren(List<OperationController<? extends EtlDatabaseObject>> children) {
-		this.children = children;
+	public void setChild(OperationController<? extends EtlDatabaseObject> child) {
+		this.child = child;
+
+		if (this.child != null) {
+			this.child.setParent(this);
+		}
 	}
 
 	public ProcessController getProcessController() {
@@ -481,10 +485,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 		
 		if (hasChild()) {
-			for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
-				if (!child.operationIsAlreadyFinished()) {
-					return false;
-				}
+			if (!this.getChild().operationIsAlreadyFinished()) {
+				return false;
 			}
 		}
 
@@ -494,10 +496,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	public boolean childOperationsAreAlreadyFinished() {
 		if (hasChild()) {
-			for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
-				if (!child.operationIsAlreadyFinished()) {
-					return false;
-				}
+			if (!this.getChild().operationIsAlreadyFinished()) {
+				return false;
 			}
 		}
 
@@ -549,9 +549,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				this.changeStatusToStopped();
 
 				if (this.hasChild()) {
-					for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
-						child.requestStop();
-					}
+					this.getChild().requestStop();
 				}
 			} else if (this.operationIsAlreadyFinished()) {
 				logWarn("THE OPERATION " + getControllerId() + " WAS ALREADY FINISHED!");
@@ -864,12 +862,10 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				}
 			}
 
-			if (getChildren() != null) {
-				logWarn("Requesting children to stop...");
+			if (getChild() != null) {
+				logWarn("Requesting child to stop...");
 
-				for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
-					child.requestStop();
-				}
+				getChild().requestStop();
 			}
 
 			boolean atLeastOneEngineIsRunning = false;

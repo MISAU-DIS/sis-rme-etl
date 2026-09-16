@@ -625,16 +625,58 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 		if (this.getChild() != null) {
 			for (OperationController<? extends EtlDatabaseObject> controller : this.relatedControllers) {
-				controller.setChildren(this.getChild().generateRelatedController(controller.getProcessController(),
-						appOriginCode_, conn));
+				List<OperationController<? extends EtlDatabaseObject>> childControllers = this.getChild()
+						.generateRelatedController(controller.getProcessController(),
+								resolveChildAppOriginCode(controller, appOriginCode_), conn);
 
-				for (OperationController<? extends EtlDatabaseObject> child : controller.getChildren()) {
-					child.setParent(controller);
-				}
+				controller.setChild(selectRelatedChildController(controller, childControllers));
 			}
 		}
 
 		return this.relatedControllers;
+	}
+
+	private String resolveChildAppOriginCode(OperationController<? extends EtlDatabaseObject> parentController,
+			String defaultAppOriginCode) {
+
+		if (parentController instanceof SiteOperationController) {
+			return ((SiteOperationController<? extends EtlDatabaseObject>) parentController).getAppOriginLocationCode();
+		}
+
+		return defaultAppOriginCode;
+	}
+
+	private OperationController<? extends EtlDatabaseObject> selectRelatedChildController(
+			OperationController<? extends EtlDatabaseObject> parentController,
+			List<OperationController<? extends EtlDatabaseObject>> childControllers) {
+
+		if (!utilities.listHasElement(childControllers)) {
+			return null;
+		}
+
+		if (childControllers.size() == 1) {
+			return childControllers.get(0);
+		}
+
+		if (parentController instanceof SiteOperationController) {
+			String appOriginCode = ((SiteOperationController<? extends EtlDatabaseObject>) parentController)
+					.getAppOriginLocationCode();
+
+			if (appOriginCode != null) {
+				for (OperationController<? extends EtlDatabaseObject> childController : childControllers) {
+					if (childController instanceof SiteOperationController) {
+						String childAppOriginCode = ((SiteOperationController<? extends EtlDatabaseObject>) childController)
+								.getAppOriginLocationCode();
+
+						if (childAppOriginCode != null && childAppOriginCode.equalsIgnoreCase(appOriginCode)) {
+							return childController;
+						}
+					}
+				}
+			}
+		}
+
+		return childControllers.get(0);
 	}
 
 	private OperationController<? extends EtlDatabaseObject> generateSingle(ProcessController parent,
