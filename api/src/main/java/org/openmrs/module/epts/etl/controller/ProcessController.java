@@ -284,13 +284,23 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			return false;
 
 		if (utilities.listHasElement(this.getOperationsControllers())) {
-			for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
-				if (controller.getOperationConfig().isDisabled()) {
+			for (OperationController<? extends EtlDatabaseObject> controller_ : this.getOperationsControllers()) {
+				OperationController<? extends EtlDatabaseObject> controllerToCheck = controller_;
+
+				while (controllerToCheck != null && controller_.getOperationConfig().isDisabled()) {
+					if (controllerToCheck.hasChild()) {
+						controllerToCheck = controllerToCheck.getChildren().get(0);
+					}
+				}
+
+				if (controllerToCheck == null) {
 					continue;
-				} else if (!controller.isStopped() && !controller.isFinished()) {
+				}
+
+				if (!controllerToCheck.isStopped() && !controllerToCheck.isFinished()) {
 					return false;
 				} else {
-					List<OperationController<? extends EtlDatabaseObject>> children = controller.getChildren();
+					List<OperationController<? extends EtlDatabaseObject>> children = controllerToCheck.getChildren();
 
 					while (children != null) {
 						List<OperationController<? extends EtlDatabaseObject>> grandChildren = null;

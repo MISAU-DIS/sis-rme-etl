@@ -20,8 +20,6 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
-	private EtlConfiguration etlConfig;
-
 	public DynamicProcessStarter(EtlConfiguration etlConfig) {
 		super(etlConfig);
 
@@ -29,8 +27,6 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 			throw new ForbiddenOperationException(
 					"The etl cong " + etlConfig.getConfigFilePath() + " is not dynamic!!!");
 		}
-
-		this.etlConfig = etlConfig;
 	}
 
 	private List<EtlDatabaseObject> loadAvaliableSrcObjects(EtlConfiguration etlConfig) {

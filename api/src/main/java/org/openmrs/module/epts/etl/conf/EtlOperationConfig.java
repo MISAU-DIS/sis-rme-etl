@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.controller.SiteOperationController;
 import org.openmrs.module.epts.etl.data.validation.missingrecords.controller.DetectMissingRecordsController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
 import org.openmrs.module.epts.etl.databasepreparation.controller.DatabasePreparationController;
 import org.openmrs.module.epts.etl.dbquickexport.controller.DBQuickExportController;
 import org.openmrs.module.epts.etl.dbquickload.controller.DBQuickLoadController;
@@ -28,7 +29,6 @@ import org.openmrs.module.epts.etl.inconsistenceresolver.controller.Inconsistenc
 import org.openmrs.module.epts.etl.load.controller.DataLoadController;
 import org.openmrs.module.epts.etl.merge.controller.DataBaseMergeFromSourceDBController;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
 import org.openmrs.module.epts.etl.problems_solver.controller.GenericOperationController;
 import org.openmrs.module.epts.etl.problems_solver.processor.GenericProcessor;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
@@ -110,8 +110,22 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private EtlConfiguration relatedEtlConf;
 
+	private Boolean finishAfterOneExecution;
+
 	public EtlOperationConfig() {
 
+	}
+
+	public Boolean finishAfterOneExecution() {
+		return isTrue(this.getFinishAfterOneExecution());
+	}
+
+	public Boolean getFinishAfterOneExecution() {
+		return finishAfterOneExecution;
+	}
+
+	public void setFinishAfterOneExecution(Boolean finishAfterOneExecution) {
+		this.finishAfterOneExecution = finishAfterOneExecution;
 	}
 
 	@Override
@@ -121,6 +135,14 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	public void setRelatedEtlConf(EtlConfiguration relatedEtlConf) {
 		this.relatedEtlConf = relatedEtlConf;
+	}
+
+	public void changeRelatedEtlConf(EtlConfiguration relatedEtlConf) {
+		this.setRelatedEtlConf(relatedEtlConf);
+
+		if (this.hasChild()) {
+			this.getChild().changeRelatedEtlConf(relatedEtlConf);
+		}
 	}
 
 	public Boolean getMustRestartInTheEnd() {

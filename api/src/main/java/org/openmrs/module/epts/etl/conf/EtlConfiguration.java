@@ -2396,6 +2396,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		try {
 			conn = clonedEtlConf.openSrcConn(this);
 
+			for (EtlOperationConfig o : this.getOperations()) {
+				o.setInitialized(false);
+			}
+
 			for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
 
 				EtlItemConfiguration cloned = new EtlItemConfiguration();

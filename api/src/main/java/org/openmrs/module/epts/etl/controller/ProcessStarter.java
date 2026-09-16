@@ -21,7 +21,7 @@ public class ProcessStarter implements ControllerStarter {
 	private volatile boolean initialized;
 	private volatile boolean finalized;
 
-	private EtlConfiguration etlConfig;
+	protected EtlConfiguration etlConfig;
 
 	protected ProcessController currentController;
 

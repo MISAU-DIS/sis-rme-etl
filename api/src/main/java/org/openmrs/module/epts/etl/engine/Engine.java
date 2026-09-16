@@ -710,6 +710,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		ThreadRecordIntervalsManager<T> intervalManager = getThreadRecordIntervalsManager();
 
 		while (intervalManager.canGoNext() || !intervalManager.getCurrentLimits().isFullProcessed()) {
+			if (this.getCurrentIteration() > 1 && this.getRelatedEtlOperationConfig().finishAfterOneExecution()) {
+				return;
+			}
+
 			if (stopRequested() || isStopped()) {
 				logWarn("Stopping the Task as Stop Requested!");
 				changeStatusToStopped();

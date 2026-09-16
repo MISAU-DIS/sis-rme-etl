@@ -172,6 +172,9 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	private void tryToInitIdGenerator(List<T> etlObjects, Connection conn)
 			throws DBException, ForbiddenOperationException {
+
+		logDebug("Initializing ID Generator");
+
 		if (getEtlItemConfiguration().hasDstConf()) {
 			for (DstConf dst : getEtlItemConfiguration().getDstConf()) {
 				if (dst.isDisabled())
@@ -182,6 +185,8 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				}
 			}
 		}
+
+		logDebug("ID Generator Initialized!");
 	}
 
 	public IdGeneratorManager findIdGenerator(DstConf dstConf) {
@@ -195,7 +200,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				+ " For table " + dstConf.getFullTableName());
 	}
 
-	@SuppressWarnings("unchecked")
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn)
 			throws DBException {
 
@@ -205,7 +209,8 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 			useMultiThreadSearch = false;
 		}
 
-		String threads = useMultiThreadSearch ? " USING MULTI-THREAD" : " USING SINGLE THREAD";
+		String threads = useMultiThreadSearch ? " USING " + utilities.getAvailableProcessors() + " THREADS"
+				: " USING SINGLE THREAD";
 
 		if (getLimits() != null) {
 			logWarn("SERCHING NEXT RECORDS FOR LIMITS " + getLimits() + threads);
@@ -226,22 +231,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				+ "' RECORDS.");
 
 		if (utilities.listHasElement(records)) {
-			this.tryToInitIdGenerator(records, dstConn);
-
-			logWarn("INITIALIZING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
-					+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getTableName() + "'");
-
-			beforeSync(records, srcConn, dstConn);
-
-			getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) records);
-
-			if (getActionType().isDelete()) {
-				performeDelete(records, srcConn, dstConn);
-			} else {
-				transformAndLoad(records, srcConn, dstConn);
-			}
-
-			logWarn("TASK ON " + records.size() + " DONE!");
+			transformAndLoadExtractedRecords(records, srcConn, dstConn);
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
@@ -257,11 +247,19 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 		prepareExtractedRecords(records, dstConn);
 
+		logWarn("PERFORMING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
+				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "'");
+
 		if (getActionType().isDelete()) {
 			performeDelete(records, srcConn, dstConn);
 		} else {
 			transformAndLoad(records, srcConn, dstConn);
 		}
+
+		logWarn("TASK {} ON {} RECORDS OF TABLE {} DONE ",
+				getRelatedOperationController().getOperationType().name().toLowerCase(), " OF '" + records.size(),
+				this.getSrcConf().getTableAlias());
+
 	}
 
 	/** Prepares and transforms records already extracted by the engine. */
@@ -278,23 +276,16 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		load((List<EtlDatabaseObject>) (List<?>) records, srcConn, dstConn);
 	}
 
-	@SuppressWarnings("unchecked")
 	private void prepareExtractedRecords(List<T> records, Connection dstConn) throws DBException {
 		if (!utilities.listHasElement(records)) {
 			return;
 		}
 
-		logWarn("INITIALIZING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
-				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "'");
-
 		tryToInitIdGenerator(records, dstConn);
+
 		beforeSync(records, null, dstConn);
 
 		getTaskResultInfo().addProcessedRecords(records);
-
-		logWarn("PROCESSING OF " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
-				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "' DONE!");
-
 	}
 
 	@SuppressWarnings("unchecked")

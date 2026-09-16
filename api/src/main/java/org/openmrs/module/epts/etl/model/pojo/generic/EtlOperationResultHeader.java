@@ -2,13 +2,13 @@ package org.openmrs.module.epts.etl.model.pojo.generic;
 
 import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -22,9 +22,10 @@ import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * Task-confined accumulator: one category per stable record key, latest update wins.
- * Getters return detached classification snapshots (empty, never null). Domain
- * records and diagnostic objects remain shared. Do not share across writer threads.
+ * Task-confined accumulator: one category per stable record key, latest update
+ * wins. Getters return detached classification snapshots (empty, never null).
+ * Domain records and diagnostic objects remain shared. Do not share across
+ * writer threads.
  */
 public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 
@@ -32,8 +33,9 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 
 	private final Map<ResultRecordKey, EtlOperationResultItemType> categoryByRecord = new HashMap<>();
 	private final Map<EtlDatabaseObject, ResultRecordKey> identityByInstance = new IdentityHashMap<>();
-	private final EnumMap<EtlOperationResultItemType, LinkedHashMap<ResultRecordKey, EtlOperationItemResult<T>>> recordsByType =
-			new EnumMap<>(EtlOperationResultItemType.class);
+	private final EnumMap<EtlOperationResultItemType, LinkedHashMap<ResultRecordKey, EtlOperationItemResult<T>>> recordsByType = new EnumMap<>(
+			EtlOperationResultItemType.class);
+
 	private final List<EtlDatabaseObject> processedRecords = new ArrayList<>();
 
 	private Exception fatalException;
@@ -82,7 +84,8 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		return snapshot(EtlOperationResultItemType.UNRESOLVED_INCONSISTENCES);
 	}
 
-	public void setRecordsWithUnresolvedInconsistence(List<EtlOperationItemResult<T>> recordsWithUnresolvedInconsistence) {
+	public void setRecordsWithUnresolvedInconsistence(
+			List<EtlOperationItemResult<T>> recordsWithUnresolvedInconsistence) {
 		replaceCategory(EtlOperationResultItemType.UNRESOLVED_INCONSISTENCES, recordsWithUnresolvedInconsistence);
 	}
 
@@ -90,7 +93,8 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		return snapshot(EtlOperationResultItemType.RECURSIVE_RELATIONSHIPS);
 	}
 
-	public void setRecordsWithRecursiveRelashionship(List<EtlOperationItemResult<T>> recordsWithRecursiveRelashionship) {
+	public void setRecordsWithRecursiveRelashionship(
+			List<EtlOperationItemResult<T>> recordsWithRecursiveRelashionship) {
 		replaceCategory(EtlOperationResultItemType.RECURSIVE_RELATIONSHIPS, recordsWithRecursiveRelashionship);
 	}
 
@@ -152,47 +156,40 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		}
 	}
 
-	/** Incoming classifications win; the receiver retains its interval and processed-input
-	 * scope. Its first fatal exception is preserved, or the incoming one adopted. */
+	/**
+	 * Incoming classifications win; the receiver retains its interval and
+	 * processed-input scope. Its first fatal exception is preserved, or the
+	 * incoming one adopted.
+	 */
 	public void addAllFromOtherResult(EtlOperationResultHeader<T> otherResult) {
-		if (otherResult == null || otherResult == this) return;
+		if (otherResult == null || otherResult == this)
+			return;
 		for (EtlOperationResultItemType type : EtlOperationResultItemType.values()) {
 			for (Map.Entry<ResultRecordKey, EtlOperationItemResult<T>> entry : otherResult.bucket(type).entrySet()) {
 				EtlOperationItemResult<T> item = entry.getValue();
 				ResultRecordKey key = identityByInstance.get(item.getRecord());
-				if (key == null) key = entry.getKey();
+				if (key == null)
+					key = entry.getKey();
 				put(key, item, type);
 			}
 		}
-		if (fatalException == null) fatalException = otherResult.fatalException;
+		if (fatalException == null)
+			fatalException = otherResult.fatalException;
 	}
 
 	public void addSuccessfulRecords(Collection<? extends T> records) {
-		if (records != null) for (T record : records) addToRecordsWithNoError(record);
+		if (records != null)
+			for (T record : records)
+				addToRecordsWithNoError(record);
 	}
 
 	public void addProcessedRecords(Collection<? extends EtlDatabaseObject> records) {
-		if (records != null) processedRecords.addAll(records);
+		if (records != null)
+			processedRecords.addAll(records);
 	}
 
 	public void addAllToRecordsWithNoError(List<EtlOperationItemResult<T>> records) {
 		addAll(records, EtlOperationResultItemType.NO_ERROR);
-	}
-
-	private void addAllToRecordsWithUnexpectedErrors(List<EtlOperationItemResult<T>> records) {
-		addAll(records, EtlOperationResultItemType.UNEXPECTED_ERRORS);
-	}
-
-	private void addToRecordsWithResolvedInconsistences(List<EtlOperationItemResult<T>> records) {
-		addAll(records, EtlOperationResultItemType.RESOLVED_INCONSISTENCES);
-	}
-
-	private void addToRecordsWithUnresolvedInconsistences(List<EtlOperationItemResult<T>> records) {
-		addAll(records, EtlOperationResultItemType.UNRESOLVED_INCONSISTENCES);
-	}
-
-	private void addAllToRecordsWithRecursiveRelashionship(List<EtlOperationItemResult<T>> records) {
-		addAll(records, EtlOperationResultItemType.RECURSIVE_RELATIONSHIPS);
 	}
 
 	private void addToRecordsWithNoError(EtlOperationItemResult<T> record) {
@@ -246,14 +243,16 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 
 	private void add(EtlOperationItemResult<T> record, EtlOperationResultItemType type) {
 		ResultRecordKey key = identityByInstance.get(record.getRecord());
-		if (key == null) key = ResultRecordKey.of(record.getRecord());
+		if (key == null)
+			key = ResultRecordKey.of(record.getRecord());
 		put(key, record, type);
 	}
 
 	private void put(ResultRecordKey key, EtlOperationItemResult<T> record, EtlOperationResultItemType type) {
 		EtlOperationItemResult<T> stored = record.copyWithType(type);
 		EtlOperationResultItemType previous = categoryByRecord.put(key, type);
-		if (previous != null) bucket(previous).remove(key);
+		if (previous != null)
+			bucket(previous).remove(key);
 		bucket(type).put(key, stored);
 		identityByInstance.put(record.getRecord(), key);
 	}
@@ -264,12 +263,14 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 
 	private List<EtlOperationItemResult<T>> snapshot(EtlOperationResultItemType type) {
 		List<EtlOperationItemResult<T>> result = new ArrayList<>(bucket(type).size());
-		for (EtlOperationItemResult<T> item : bucket(type).values()) result.add(item.copyWithType(type));
+		for (EtlOperationItemResult<T> item : bucket(type).values())
+			result.add(item.copyWithType(type));
 		return Collections.unmodifiableList(result);
 	}
 
 	private void replaceCategory(EtlOperationResultItemType type, List<EtlOperationItemResult<T>> records) {
-		for (ResultRecordKey key : bucket(type).keySet()) categoryByRecord.remove(key);
+		for (ResultRecordKey key : bucket(type).keySet())
+			categoryByRecord.remove(key);
 		bucket(type).clear();
 		addAll(records, type);
 	}
@@ -284,8 +285,6 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 
 		add(resultItem, resultItem.getType());
 	}
-
-
 
 	public void documentErrors(Connection srcConn, Connection dstConn) throws DBException {
 		EtlResultErrorDocumenter.document(getAllRecordsWithErros(), srcConn);
@@ -324,8 +323,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 			if (o.getException() != null) {
 				try {
 					throw o.getException().getException();
-				}
-				catch (Throwable e) {
+				} catch (Throwable e) {
 					throw new RuntimeException(o.getException().getException());
 				}
 			}
@@ -334,7 +332,10 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		throw new ForbiddenOperationException("No exception found");
 	}
 
-	/** Legacy input progress: processed inputs minus unresolved and unexpected results. */
+	/**
+	 * Legacy input progress: processed inputs minus unresolved and unexpected
+	 * results.
+	 */
 	public int countAllSuccessfulyProcessedRecords() {
 		int allRecords = processedRecords.size();
 
@@ -344,7 +345,9 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		return allRecords - recordsWithUnresolvedInconsistences - recordsWithUnexpectedErrors;
 	}
 
-	/** Classified output successes, unlike the legacy input progress count above. */
+	/**
+	 * Classified output successes, unlike the legacy input progress count above.
+	 */
 	public List<T> getAllSuccessfulyProcessedRecords() {
 		List<T> success = new ArrayList<>(bucket(EtlOperationResultItemType.NO_ERROR).size()
 				+ bucket(EtlOperationResultItemType.RESOLVED_INCONSISTENCES).size());
@@ -355,8 +358,8 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		return success;
 	}
 
-	public static <T extends EtlDatabaseObject> boolean hasAtLeastOneFatalError(List<EtlOperationResultHeader<T>> results)
-	        throws DBException {
+	public static <T extends EtlDatabaseObject> boolean hasAtLeastOneFatalError(
+			List<EtlOperationResultHeader<T>> results) throws DBException {
 
 		for (EtlOperationResultHeader<T> result : results) {
 			if (result.hasFatalError()) {
@@ -369,7 +372,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 	}
 
 	public static <T extends EtlDatabaseObject> EtlOperationResultHeader<T> getDefaultResultWithFatalError(
-	        List<EtlOperationResultHeader<T>> results) throws DBException {
+			List<EtlOperationResultHeader<T>> results) throws DBException {
 		for (EtlOperationResultHeader<T> result : results) {
 			if (result.hasFatalError()) {
 				return result;
@@ -380,7 +383,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 	}
 
 	public static <T extends EtlDatabaseObject> boolean hasAtLeastOneRecordsWithRecursiveRelashionships(
-	        List<EtlOperationResultHeader<T>> results) {
+			List<EtlOperationResultHeader<T>> results) {
 
 		for (EtlOperationResultHeader<T> result : results) {
 			if (result.hasRecordsWithRecursiveRelashionships()) {
@@ -393,7 +396,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 
 	public boolean hasRecordsWithErrors() {
 		return hasRecordsWithResolvedInconsistences() || hasRecordsWithUnresolvedInconsistences()
-		        || hasRecordsWithUnexpectedErrors();
+				|| hasRecordsWithUnexpectedErrors();
 	}
 
 	public List<EtlOperationItemResult<T>> getAllRecordsWithErros() {

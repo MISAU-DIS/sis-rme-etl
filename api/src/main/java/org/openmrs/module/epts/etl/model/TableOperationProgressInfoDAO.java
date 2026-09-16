@@ -9,11 +9,11 @@ import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class TableOperationProgressInfoDAO extends BaseDAO {
-	
+
 	public static void insert(TableOperationProgressInfo record, EtlItemConfiguration config, Connection conn)
-	        throws DBException {
+			throws DBException {
 		String syncStageSchema = config.getRelatedEtlConf().getSyncStageSchema();
-		
+
 		//@// @formatter:off
 		Object[] params = { record.getOperationId(), 
 							record.getOperationName(), 
@@ -32,7 +32,7 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 		 
 		// @formatter:on
 		String sql = "";
-		
+
 		sql += "INSERT INTO " + syncStageSchema + ".table_operation_progress_info(operation_id,\n";
 		sql += "																  operation_name,\n";
 		sql += "																  table_name,\n";
@@ -59,14 +59,14 @@ public class TableOperationProgressInfoDAO extends BaseDAO {
 		sql += "		   ?,\n";
 		sql += "		   ?,\n";
 		sql += "		   ?);";
-		
+
 		executeQueryWithRetryOnError(sql, params, conn);
 	}
-	
+
 	public static void update(TableOperationProgressInfo record, EtlItemConfiguration config, Connection conn)
-	        throws DBException {
+			throws DBException {
 		String syncStageSchema = config.getRelatedEtlConf().getSyncStageSchema();
-		
+
 		//@// @formatter:off
 		Object[] params = { DateAndTimeUtilities.getCurrentSystemDate(conn), 
 							record.getProgressMeter().getTotal(),
