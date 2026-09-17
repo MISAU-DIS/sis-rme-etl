@@ -85,6 +85,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.controllerId = operationConfig.generateOperationId();
 
 		OpenConnection conn = null;
+
 		try {
 			conn = openSrcConnection(this);
 
@@ -483,14 +484,12 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			}
 		}
 
-		
 		if (hasChild()) {
 			if (!this.getChild().operationIsAlreadyFinished()) {
 				return false;
 			}
 		}
 
-		
 		return !getEtlConfiguration().hasTestingItem();
 	}
 
@@ -611,7 +610,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			e.printStackTrace();
 			this.requestStopDueError(null, e);
 		}
-		
+
 		warn("RUN IS FINISHED FOR OPERATION {}", this);
 	}
 

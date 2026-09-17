@@ -153,7 +153,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 	}
 
 	public String generateOperationId() {
-		return getOperationType().name().toLowerCase() + "_on_" + this.getRelatedEtlConf().generateProcessId();
+		return getOperationType().name().toLowerCase() + "_using_" + this.getRelatedEtlConf().generateProcessId();
 	}
 
 	public Integer getTotalAvaliableRecordsToProcess() {

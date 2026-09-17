@@ -5,13 +5,13 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfParamsAsDataSource;
@@ -35,8 +35,8 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.DataModelClassLoader;
+import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
@@ -830,7 +830,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public String generateProcessStatusFolder() {
 		return this.getEtlRootDirectory() + FileUtilities.getPathSeparator() + "process_status"
-				+ FileUtilities.getPathSeparator() + "destination" + FileUtilities.getPathSeparator() + "etl";
+				+ FileUtilities.getPathSeparator() + "destination";
 	}
 
 	public void setEtlItemConfiguration(List<EtlItemConfiguration> etlItemConfiguration) {
@@ -1711,8 +1711,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			return false;
 		}
 
-		return new File(this.getConfigFilePath()).getAbsoluteFile().equals(
-				new File(otherObj.getConfigFilePath()).getAbsoluteFile());
+		return new File(this.getConfigFilePath()).getAbsoluteFile()
+				.equals(new File(otherObj.getConfigFilePath()).getAbsoluteFile());
 	}
 
 	@Override
@@ -1807,13 +1807,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public String generateProcessId() {
-		String controllerId = "etl";
+		String controllerId = this.getConfigFileName();
 
 		if (utilities.stringHasValue(getOriginAppLocationCode())) {
 			controllerId += "_on_" + getOriginAppLocationCode();
 		}
 
-		return controllerId + "_using_" + this.getConfigFileName();
+		return controllerId;
 	}
 
 	@JsonIgnore

@@ -116,7 +116,7 @@ public class TableOperationProgressInfo extends BaseVO {
 
 	public static String generateOperationId(OperationController<? extends EtlDatabaseObject> operationController,
 			EtlItemConfiguration config) {
-		return operationController.getControllerId() + "_" + config.getConfigCode();
+		return (operationController.getOperationType().name().toLowerCase() +  "_for_" + config.getConfigCode() + "_using_" + operationController.getProcessController().getControllerId()).toLowerCase();
 	}
 
 	public synchronized void save(Connection conn) throws DBException {

@@ -94,11 +94,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		this.controller = controller;
 		this.etlItemConfiguration = etlItemConfiguration;
 
-		this.engineId = (this.getRelatedEtlOperationConfig().getOperationType() + "_" + getEtlConfigCode())
-				.toLowerCase();
-
 		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 		this.tableOperationProgressInfo = tableOperationProgressInfo;
+
+		this.engineId = getTableOperationProgressInfo().getOperationId();
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
 		this.persistenceCoordinator = new EnginePersistenceCoordinator();

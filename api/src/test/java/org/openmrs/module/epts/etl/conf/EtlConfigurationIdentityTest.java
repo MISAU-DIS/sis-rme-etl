@@ -13,10 +13,10 @@ public class EtlConfigurationIdentityTest {
 	@Test
 	public void shouldGenerateStableEtlExecutionId() {
 		EtlConfiguration configuration = new EtlConfiguration();
-		configuration.setConfigFilePath(new File("conf", "main-etl.json").getPath());
+		configuration.setConfigFilePath(new File("conf", "main-workflow.json").getPath());
 		configuration.setOriginAppLocationCode("central");
 
-		assertEquals("etl_on_central_using_main-etl", configuration.generateProcessId());
+		assertEquals("main-workflow_on_central", configuration.generateProcessId());
 	}
 
 	@Test
@@ -34,12 +34,13 @@ public class EtlConfigurationIdentityTest {
 	}
 
 	@Test
-	public void shouldKeepEtlStatusDirectoryStable() {
+	public void shouldNotAddAProcessTypeToStatusDirectory() {
 		EtlConfiguration configuration = new EtlConfiguration();
-		configuration.setEtlRootDirectory("etl-root");
+		configuration.setEtlRootDirectory("work-root");
+		configuration.setConfigFilePath(new File("conf", "main.json").getPath());
 
-		assertEquals("etl-root" + FileUtilities.getPathSeparator() + "process_status"
-				+ FileUtilities.getPathSeparator() + "destination" + FileUtilities.getPathSeparator() + "etl",
+		assertEquals("work-root" + FileUtilities.getPathSeparator() + "process_status"
+				+ FileUtilities.getPathSeparator() + "destination",
 				configuration.generateProcessStatusFolder());
 	}
 }

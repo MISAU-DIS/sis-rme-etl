@@ -124,8 +124,7 @@ public class ProcessInfo {
 	}
 	
 	public String generateProcessStatusFolder() {
-		return getConfiguration().getEtlRootDirectory() + FileUtilities.getPathSeparator() + "process_status"
-		        + FileUtilities.getPathSeparator() + "destination" + FileUtilities.getPathSeparator() + "etl";
+		return getConfiguration().generateProcessStatusFolder();
 	}
 	
 	public void save() {
