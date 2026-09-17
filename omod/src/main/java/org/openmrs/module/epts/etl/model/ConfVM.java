@@ -8,7 +8,6 @@ import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
-import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.utilities.ClassPathUtilities;
@@ -42,13 +41,11 @@ public class ConfVM {
 
 	private String statusMessage;
 
+	private final String installationType;
+
 	private ConfVM(String installationType) throws IOException, DBException {
+		this.installationType = installationType;
 		this.etlConfiguration = new EtlConfiguration();
-
-		EtlProcessType processType = installationType.equals("source") ? EtlProcessType.SOURCE_SYNC
-				: EtlProcessType.DATABASE_MERGE_FROM_JSON;
-
-		this.etlConfiguration.setProcessType(processType);
 
 		reset();
 	}
@@ -135,7 +132,7 @@ public class ConfVM {
 	private void determineOtherSyncConfiguration() throws DBException {
 		String rootDirectory = OpenmrsUtil.getApplicationDataDirectory();
 
-		String otherConfFile = this.etlConfiguration.getProcessType().isSourceSync() ? "dest_sync_config.json"
+		String otherConfFile = isSourceInstallation() ? "dest_sync_config.json"
 				: "source_sync_config.json";
 
 		File otherConfigFile = new File(rootDirectory + FileUtilities.getPathSeparator() + "resources"
@@ -143,8 +140,7 @@ public class ConfVM {
 
 		if (otherConfigFile.exists()) {
 			try {
-				this.otherSyncConfiguration = ConfVM.getInstance(
-						this.etlConfiguration.getProcessType().isDataBaseMergeFromJSON() ? "destination" : "source")
+				this.otherSyncConfiguration = ConfVM.getInstance(isSourceInstallation() ? "destination" : "source")
 						.getSyncConfiguration();
 			} catch (IOException e) {
 				throw new ForbiddenOperationException(e);
@@ -159,7 +155,7 @@ public class ConfVM {
 
 		String rootDirectory = OpenmrsUtil.getApplicationDataDirectory();
 
-		String configFileName = this.etlConfiguration.getProcessType().isSourceSync() ? "source_sync_config.json"
+		String configFileName = isSourceInstallation() ? "source_sync_config.json"
 				: "dest_sync_config.json";
 
 		this.configFile = new File(rootDirectory + FileUtilities.getPathSeparator() + "sync"
@@ -168,7 +164,7 @@ public class ConfVM {
 		if (this.configFile.exists()) {
 			reloadedSyncConfiguration = EtlConfiguration.loadFromFile(this.configFile);
 		} else {
-			String json = this.etlConfiguration.getProcessType().isSourceSync()
+			String json = isSourceInstallation()
 					? ConfigData.generateDefaultSourcetConfig()
 					: ConfigData.generateDefaultDestinationConfig();
 
@@ -201,12 +197,16 @@ public class ConfVM {
 
 		this.etlConfiguration = reloadedSyncConfiguration;
 
-		if (this.etlConfiguration.isSourceSyncProcess()) {
+		if (isSourceInstallation()) {
 			if (this.etlConfiguration.getOriginAppLocationCode() == null) {
 				// this.syncConfiguration.tryToDetermineOriginAppLocationCode();
 			}
 		}
 
+	}
+
+	private boolean isSourceInstallation() {
+		return "source".equalsIgnoreCase(this.installationType);
 	}
 
 	public void selectOperation(EtlOperationType operationType) {

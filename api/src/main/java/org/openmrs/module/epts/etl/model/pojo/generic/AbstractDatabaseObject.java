@@ -747,43 +747,12 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 					+ ") has composite pk. You cannot performe the request action!");
 		}
 
-		if (!syncTableInfo.getRelatedEtlConf().isSourceSyncProcess())
-			throw new EtlExceptionImpl(
+		throw new EtlExceptionImpl(
 					"You cannot move dstRecord to stage area in a installation different to source") {
 
 				private static final long serialVersionUID = 1L;
 
 			};
-
-		if ((syncTableInfo.isMetadata() || syncTableInfo.isRemoveForbidden()) && !syncTableInfo.isRemovableMetadata())
-			throw new EtlExceptionImpl("This metadata metadata [" + syncTableInfo.getTableName() + " = "
-					+ this.getObjectId() + ". is missing its some parents [" + generateMissingInfo(missingParents)
-					+ "] You must resolve this inconsistence manual") {
-
-				private static final long serialVersionUID = 1L;
-			};
-
-		for (ChildTable refInfo : syncTableInfo.getChildRefInfo()) {
-			if (!refInfo.isConfigured())
-				continue;
-
-			Integer qtyChildren = DatabaseObjectDAO.countAllOfParentId(
-					refInfo.generateEtlRecordClass(syncTableInfo.getSrcConnInfo()),
-					refInfo.getSimpleRefMapping().getChildField().getName(), this.getObjectId().getSimpleValueAsInt(),
-					conn);
-
-			if (qtyChildren == 0) {
-				continue;
-			}
-
-			List<EtlDatabaseObject> children = DatabaseObjectDAO.getByParentId(refInfo,
-					refInfo.getSimpleRefMapping().getChildField().getName(), this.getObjectId().getSimpleValueAsInt(),
-					conn);
-
-			for (EtlDatabaseObject child : children) {
-				child.resolveInconsistence(refInfo, conn);
-			}
-		}
 	}
 
 	@Override

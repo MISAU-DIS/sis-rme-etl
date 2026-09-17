@@ -11,9 +11,7 @@ import java.util.Date;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.controller.OperationController;
-import org.openmrs.module.epts.etl.controller.SiteOperationController;
 import org.openmrs.module.epts.etl.engine.EtlProgressMeter;
-import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.base.BaseVO;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -76,28 +74,7 @@ public class TableOperationProgressInfo extends BaseVO {
 
 	private String determineAppLocationCode(OperationController<? extends EtlDatabaseObject> controller) {
 
-		if (controller.getOperationConfig().isSupposedToHaveOriginAppCode()) {
-			return controller.getEtlConfiguration().getOriginAppLocationCode();
-		}
-
-		if (controller instanceof SiteOperationController) {
-			return ((SiteOperationController<? extends EtlDatabaseObject>) controller).getAppOriginLocationCode();
-		}
-
-		if (controller.getOperationConfig().isDatabaseModelGeneration()
-				|| controller.getOperationConfig().isResolveConflictsInStageArea()
-				|| controller.getOperationConfig().isMissingRecordsDetector()
-				|| controller.getOperationConfig().isOutdateRecordsDetector()
-				|| controller.getOperationConfig().isPhantomRecordsDetector()
-				|| controller.getOperationConfig().isDBMergeFromSourceDB()
-				|| controller.getOperationConfig().isDataBaseMergeFromJSONOperation()
-				|| controller.getEtlConfiguration().isResolveProblems()
-				|| controller.getEtlConfiguration().isDetectGapesOnDbTables()
-				|| controller.getEtlConfiguration().isEtlProcess())
-			return "central_site";
-
-		throw new ForbiddenOperationException("The originAppCode cannot be determined for "
-				+ controller.getOperationType().name().toLowerCase() + " operation!");
+		return controller.getEtlConfiguration().getOriginAppLocationCode();
 	}
 
 	public void setController(OperationController<? extends EtlDatabaseObject> controller) {

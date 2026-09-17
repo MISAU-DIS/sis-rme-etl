@@ -137,7 +137,7 @@ public class ReportGenerator extends AbstractBaseConfiguration {
 						syncConfigs.add(conf);
 					} else
 						throw new ForbiddenOperationException(
-						        "The configuration [" + conf.getDesignation() + "] exists in more than one files");
+							        "The configuration [" + conf.getConfigFileName() + "] exists in more than one files");
 				} else {}
 			}
 		}

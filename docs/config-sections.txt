@@ -1,6 +1,5 @@
 	
 	{
-	   "processType":"",
 	   "etlRootDirectory":"",
 	   
 	   "srcConnConf":{

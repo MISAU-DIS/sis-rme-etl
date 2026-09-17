@@ -112,12 +112,11 @@ public class Main implements Runnable {
 					conf.validate();
 
 					if (!conf.existsOnArray(syncConfigs)) {
-						LOG.warn("USING CONFIGURATION FILE " + conf.getRelatedConfFile().getAbsolutePath()
-								+ " WITH PROCESS " + conf.getDesignation());
+						LOG.warn("USING ETL CONFIGURATION FILE " + conf.getRelatedConfFile().getAbsolutePath());
 						syncConfigs.add(conf);
 					} else
 						throw new ForbiddenOperationException(
-								"The configuration [" + conf.getDesignation() + "] exists in more than one files");
+								"The configuration [" + conf.getConfigFileName() + "] exists in more than one files");
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}

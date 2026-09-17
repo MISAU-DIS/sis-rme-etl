@@ -124,17 +124,8 @@ public class ProcessInfo {
 	}
 	
 	public String generateProcessStatusFolder() {
-		String subFolder = "";
-		
-		if (getConfiguration().isSupposedToRunInOrigin()) {
-			subFolder = "source";
-		} else if (getConfiguration().isSupposedToRunInDestination()) {
-			subFolder = "destination";
-		}
-		
 		return getConfiguration().getEtlRootDirectory() + FileUtilities.getPathSeparator() + "process_status"
-		        + FileUtilities.getPathSeparator() + subFolder + FileUtilities.getPathSeparator()
-		        + getConfiguration().getDesignation();
+		        + FileUtilities.getPathSeparator() + "destination" + FileUtilities.getPathSeparator() + "etl";
 	}
 	
 	public void save() {

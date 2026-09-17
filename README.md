@@ -8,13 +8,13 @@ Please note that this module is currently under active development. As a result,
 # Architecture overview
 The sisrme-etl module is implemented in Java and follows the OpenMRS module architecture. Its core functionality resides at the API level, enabling it to run both as part of an OpenMRS instance or as a stand-alone application.
 
-At the highest level of the sisrme-etl architecture are **Processes**, which represent a collection of operations executed together to achieve a specific objective. Each process encapsulates the full workflow required to perform a data migration or transformation task.
+At the highest level of the sisrme-etl architecture is the **ETL execution**, which represents a collection of operations executed together to achieve a specific objective.
 
 ![eptssync_arquitecture](docs/Eptssync_Arquitecture.png)
 
 From a code perspective, a process is managed by the [ProcessController](api/src/main/java/org/openmrs/module/epts/etl/controller/ProcessController.java), while individual tasks (operations) are handled by the [OperationController](api/src/main/java/org/openmrs/module/epts/etl/controller/OperationController.java).
 
-Processes and their corresponding operations are defined through a JSON configuration file. This file contains all the necessary information required to execute a process and determines the type of ETL workflow to be performed.
+The ETL execution and its operations are defined through a JSON configuration file. This file contains all the information required to execute the workflow.
 
 The process configuration is mapped to the [EtlConfiguration](api/src/main/java/org/openmrs/module/epts/etl/conf/EtlConfiguration.java) class, while each operation is mapped to the [EtlOperationConfig](api/src/main/java/org/openmrs/module/epts/etl/conf/EtlOperationConfig.java) class.
 
@@ -26,8 +26,8 @@ The interaction between these core components is illustrated in the diagram belo
 
 ![how-the-process-is-performed](docs/how-the-process-is-performed.png)
 
-## The Process Configuration File
-The process configuration file is the core element of the application. Each process type requires a specific configuration structure that defines how the ETL workflow should be executed. The configuration is provided as a JSON file, which in most cases is organized into four main sections, as illustrated below.
+## The ETL Configuration File
+The ETL configuration file is the core element of the application. It defines how the workflow should be executed and is organized into four main sections, as illustrated below.
 
 ![config-sections](docs/config-sections.png)
 
@@ -37,7 +37,6 @@ The process configuration file is the core element of the application. Each proc
 - **Section 4** lists the ETL item configurations, defining the rules for how data extraction, transformation, and loading should be performed.
 
 ## The common configuration
-- *processType*: A string representing the process type. The supported types are listed in the section "Supported Process Types".
 - *etlRootDirectory*: The absolute path to the directory where all process-related files will be stored.
 - *dataModel*: Defines how database objects and physical schema metadata are represented and loaded, including the independent POJO packages and schemas for the source and destination databases. See [The Data Model configuration](#the-data-model-configuration).
 - *childConfigFilePath*: The absolute path to another JSON configuration file defining a process to be executed after the current one completes. This enables chaining multiple processes in sequence, which is useful for scenarios such as merging multiple databases.

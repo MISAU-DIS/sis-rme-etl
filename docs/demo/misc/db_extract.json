@@ -1,5 +1,4 @@
 {
-   "processType":"ETL",
    "originAppLocationCode":"${location_name}",
    "etlRootDirectory":"${etl_root_dir}",
    "syncStageSchema":"${src_db}_stage_area",

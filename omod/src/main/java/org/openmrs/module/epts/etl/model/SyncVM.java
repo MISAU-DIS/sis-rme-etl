@@ -50,11 +50,7 @@ public class SyncVM {
 			break;
 		}
 		
-		String configFileName = this.activeConfiguration.getProcessType().isSourceSync() ? "source_sync_config.json"
-		        : "dest_sync_config.json";
-		
-		this.configFile = new File(rootDirectory + FileUtilities.getPathSeparator() + "sync"
-		        + FileUtilities.getPathSeparator() + "conf" + FileUtilities.getPathSeparator() + configFileName);
+		this.configFile = this.activeConfiguration.getRelatedConfFile();
 		
 		this.activeTab = this.activeConfiguration.getOperationsAsList().get(0).getOperationType().toString();
 		
@@ -127,7 +123,7 @@ public class SyncVM {
 	
 	public void startSync(String selectedConfiguration) {
 		for (EtlConfiguration conf : this.avaliableConfigurations) {
-			if (conf.getDesignation().equals(selectedConfiguration)) {
+			if (conf.getConfigFileName().equals(selectedConfiguration)) {
 				this.activeConfiguration = conf;
 				break;
 			}

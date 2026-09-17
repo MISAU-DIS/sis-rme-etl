@@ -1,5 +1,4 @@
 {
-   "processType":"ETL",
    "originAppLocationCode":"testing_etl_with_query_data_source",
    "etlRootDirectory":"/path/to/any/directory",
    "syncStageSchema":"etl_demo_stage_area",

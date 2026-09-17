@@ -499,18 +499,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		return getRelatedEtlConf().reRunable();
 	}
 
-	public boolean isDBReSyncProcess() {
-		return getRelatedEtlConf().isDBReSyncProcess();
-	}
-
-	public boolean isDBQuickExportProcess() {
-		return getRelatedEtlConf().isDBQuickExportProcess();
-	}
-
-	public boolean isDBQuickLoadProcess() {
-		return getRelatedEtlConf().isDBQuickLoadProcess();
-	}
-
 	private void tryToRemoveOldStopRequested() {
 		File file = generateStopRequestFile();
 

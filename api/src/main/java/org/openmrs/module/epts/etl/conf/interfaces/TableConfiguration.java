@@ -341,7 +341,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default String getId() {
-		return this.getRelatedEtlConf().getDesignation() + "_" + this.getTableName();
+		return this.getRelatedEtlConf().getConfigFileName() + "_" + this.getTableName();
 	}
 
 	default Boolean hasExtraConditionForExtract() {
@@ -1831,22 +1831,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default Boolean isDestinationInstallationType() {
-		return getRelatedEtlConf().isDataBaseMergeFromJSONProcess();
-	}
-
-	@JsonIgnore
-	default Boolean isDataReconciliationProcess() {
-		return this.getRelatedEtlConf().isDataReconciliationProcess();
-	}
-
-	@JsonIgnore
-	default Boolean isDBQuickLoad() {
-		return this.getRelatedEtlConf().isDBQuickLoadProcess();
-	}
-
-	@JsonIgnore
-	default Boolean isDataBasesMergeFromSourceDBProcess() {
-		return this.getRelatedEtlConf().isDataBaseMergeFromSourceDBProcess();
+		return true;
 	}
 
 	@JsonIgnore
