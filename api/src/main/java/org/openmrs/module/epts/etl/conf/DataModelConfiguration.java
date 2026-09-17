@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.conf;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +8,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Central configuration for the database model used by an ETL execution.
@@ -38,6 +40,10 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 
 	/** Optional directory where compiled POJO classes are written. */
 	private String binPojoDirectory;
+
+	private File pojoSourceFilesDirectory;
+
+	private File pojoCompiledFilesDirectory;
 
 	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 	private List<String> classPath = new ArrayList<>();
@@ -144,6 +150,16 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 		this.binPojoDirectory = binPojoDirectory;
 	}
 
+	@JsonIgnore
+	public File getPOJOSourceFilesDirectory() {
+		return pojoSourceFilesDirectory;
+	}
+
+	@JsonIgnore
+	public File getPOJOCompiledFilesDirectory() {
+		return pojoCompiledFilesDirectory;
+	}
+
 	public List<String> getClassPath() {
 		return classPath;
 	}
@@ -197,6 +213,21 @@ public class DataModelConfiguration extends AbstractEtlDataConfiguration {
 			this.schemaMetadataMode = SchemaMetadataMode.LIVE_DATABASE;
 		}
 
+		this.pojoSourceFilesDirectory = resolvePojoDirectory(this.srcPojoDirectory,
+				new File(etlConfiguration.getDatabaseModelJavaDirectory(), "src"), etlConfiguration);
+		this.pojoCompiledFilesDirectory = resolvePojoDirectory(this.binPojoDirectory,
+				new File(etlConfiguration.getDatabaseModelJavaDirectory(), "bin"), etlConfiguration);
+
 		markAsInitialized();
+	}
+
+	private File resolvePojoDirectory(String configuredDirectory, File defaultDirectory,
+			EtlConfiguration etlConfiguration) {
+		if (configuredDirectory == null || configuredDirectory.isBlank()) {
+			return defaultDirectory;
+		}
+
+		File directory = new File(configuredDirectory);
+		return directory.isAbsolute() ? directory : new File(etlConfiguration.getEtlRootDirectory(), configuredDirectory);
 	}
 }

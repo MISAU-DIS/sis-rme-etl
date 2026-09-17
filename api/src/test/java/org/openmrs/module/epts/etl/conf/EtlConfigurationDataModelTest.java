@@ -21,6 +21,7 @@ public class EtlConfigurationDataModelTest {
 				+ "\"srcConnInfo\":{},\"dstConnInfo\":{}}";
 		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class).readValue(json,
 				EtlConfiguration.class);
+		configuration.getDataModel().init(configuration);
 
 		assertEquals(DatabaseObjectInstantiationMode.PRECOMPILED_POJO,
 				configuration.getDatabaseObjectInstantiationMode());
