@@ -79,7 +79,7 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 
 	@Override
 	public TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName,
-			List<Integer> alreadyCheckedObjects) {
+																	  List<Integer> alreadyCheckedObjects) {
 
 		return null;
 	}
@@ -145,7 +145,7 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 	}
 
 	@Override

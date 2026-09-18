@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -59,7 +60,7 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 	 * @throws DBException if a database error occurs during execution
 	 */
 	EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+										   EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
 			throws DBException;
 
 	/**
@@ -76,16 +77,26 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> allParameters = new HashMap<>();
 
-		Map<String, Object> parentParameters = this.getRelatedSrcConf().retrieveAllAvailableTemplateParameters();
+		Map<String, Object> parentParameters =
+				this.getRelatedSrcConf().retrieveAllAvailableTemplateParameters();
 
 		if (parentParameters != null && !parentParameters.isEmpty()) {
 			allParameters.putAll(parentParameters);
 		}
 
-		Map<String, Object> ownParameters = EtlDataSource.super.retrieveAllAvailableTemplateParameters();
+		Map<String, Object> ownParameters =
+				EtlDataSource.super.retrieveAllAvailableTemplateParameters();
 
 		if (ownParameters != null && !ownParameters.isEmpty()) {
 			allParameters.putAll(ownParameters);
+		}
+
+		EtlConfiguration etlConfiguration =
+				this.getRelatedSrcConf().getRelatedEtlConf();
+
+		if (etlConfiguration != null && etlConfiguration.getParams() != null
+				&& !etlConfiguration.getParams().isEmpty()) {
+			allParameters.putAll(etlConfiguration.getParams());
 		}
 
 		return allParameters;

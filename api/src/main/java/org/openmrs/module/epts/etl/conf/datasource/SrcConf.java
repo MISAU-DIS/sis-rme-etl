@@ -363,9 +363,6 @@ public class SrcConf extends AbstractTableConfiguration
 		super.loadOwnElements(schemaInfo, conn);
 
 		if (hasJoinExtraCondition()) {
-			this.tryToLoadDumpScriptContentToFieldAndValidate("joinExtraCondition",
-					this.retrieveAllAvailableTemplateParameters(), conn);
-
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getJoinExtraCondition(), null)) {
 				throw new EtlConfException("Invalid joinExtraCondition \n" + this.getJoinExtraCondition());
 			}
@@ -563,7 +560,7 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public static SrcConf fastCreate(AbstractTableConfiguration tableConfig, EtlItemConfiguration itemConf,
-			Connection conn) throws DBException {
+									 Connection conn) throws DBException {
 		SrcConf src = new SrcConf();
 
 		src.copyFromOther(tableConfig, null, itemConf, conn);
@@ -689,7 +686,7 @@ public class SrcConf extends AbstractTableConfiguration
 	 * field from {@link #getFields()} and the fields from all
 	 * {@link #extraTableDataSource} Note that the duplicated fields will only be
 	 * included once
-	 * 
+	 *
 	 * @return
 	 */
 	public List<Field> generateAllAvaliableFields() {
@@ -827,7 +824,7 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public void copyFromOther(TableConfiguration toClone, EtlDatabaseObject schemaInfoSrc,
-			EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
+							  EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
 
 		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
 
@@ -1070,7 +1067,7 @@ public class SrcConf extends AbstractTableConfiguration
 
 	@Override
 	public List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
-			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
+												 EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
 			throws DBException {
 
 		EtlDatabaseObjectSearchParams searchParams = new EtlDatabaseObjectSearchParams(this, null);

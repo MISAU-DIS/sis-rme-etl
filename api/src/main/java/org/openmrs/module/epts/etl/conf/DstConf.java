@@ -658,7 +658,7 @@ public class DstConf extends AbstractTableConfiguration
 		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
 
-	public FieldsMapping getMappingUsingDstField(String dstFieldName) throws FieldsMappingException {
+	public FieldsMapping getMappingUsingDstField(String dstFieldName) {
 		List<FieldsMapping> matchedFields = new ArrayList<FieldsMapping>();
 
 		for (FieldsMapping field : this.allMapping) {
@@ -670,7 +670,7 @@ public class DstConf extends AbstractTableConfiguration
 				matchedFields.add(field);
 
 				if (matchedFields.size() > 1) {
-					throw new FieldsMappingException("Cannot determine the mapping field for '" + dstFieldName
+					throw new ForbiddenOperationException("Cannot determine the mapping field for '" + dstFieldName
 							+ "' since it has multiple matching fields");
 				}
 			}
@@ -814,7 +814,7 @@ public class DstConf extends AbstractTableConfiguration
 
 	/**
 	 * Find a parent which with same name in src
-	 * 
+	 *
 	 * @param dstParent the parent to find the correspondent one in the src
 	 * @return the related parent in src
 	 * @throws ForbiddenOperationException if the @param dstParent is not a parent
@@ -896,6 +896,10 @@ public class DstConf extends AbstractTableConfiguration
 
 		if (this.useAsDataSource()) {
 			this.addToAvaliableDataSource(this);
+		}
+
+		if (this.getSrcConf().hasExpansionDs()) {
+			this.addToAvaliableDataSource(this.getSrcConf().getExpansionDataSource());
 		}
 
 		this.determinePrefferredDataSources();
@@ -1038,7 +1042,7 @@ public class DstConf extends AbstractTableConfiguration
 	 * @throws FieldAvaliableInMultipleDataSources
 	 */
 	public void tryToAutoGenerateJoinFields(AbstractTableConfiguration ukTable, AbstractTableConfiguration targetTable,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+											Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		for (UniqueKeyInfo uk : ukTable.getUniqueKeys()) {
 
@@ -1083,7 +1087,7 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public IdGeneratorManager initIdGenerator(TaskProcessor<? extends EtlDatabaseObject> processor,
-			List<? extends EtlObject> etlObjects, Connection conn) throws DBException, ForbiddenOperationException {
+											  List<? extends EtlObject> etlObjects, Connection conn) throws DBException, ForbiddenOperationException {
 
 		return IdGeneratorManager.init(processor, this, etlObjects, conn);
 
@@ -1129,7 +1133,7 @@ public class DstConf extends AbstractTableConfiguration
 	/**
 	 * Generates SQL join condition between this destination table and its src table
 	 * using the {@link #joinField}
-	 * 
+	 *
 	 * @param sourceTableAlias      alias name for source table
 	 * @param destinationTableAlias alias name for destination table
 	 * @return the generated join condition based on {@link #joinField}
@@ -1230,7 +1234,7 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public static List<DstConf> cloneAll(List<DstConf> allToCloneFrom, EtlItemConfiguration relatedItemConf,
-			EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+										 EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
 
 		List<DstConf> allCloned = null;
 
@@ -1250,7 +1254,7 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public void clone(DstConf toCloneFrom, EtlItemConfiguration relatedItemConf, EtlDatabaseObject schemaInfoSrc,
-			Connection conn) throws DBException {
+					  Connection conn) throws DBException {
 
 		super.clone(toCloneFrom, relatedItemConf, schemaInfoSrc, conn);
 		this.setJoinFields(toCloneFrom.getJoinFields());

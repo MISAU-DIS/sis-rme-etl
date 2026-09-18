@@ -92,7 +92,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	}
 
 	public EtlProgressMeter(String statusMsg, long minRecordId, long maxRecordId, int total, int processed,
-			long lastAnalyzedRecordId) {
+							long lastAnalyzedRecordId) {
 
 		this();
 
@@ -159,7 +159,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	/**
 	 * Refresca a informacao do estado actual da migracao, recalcunlando a
 	 * percentagem de progresso
-	 * 
+	 *
 	 * @param statusMsg            Mensagem do corrente estado da migracao
 	 * @param total                de registos em migracao
 	 * @param processed            Registos processados
@@ -434,7 +434,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	/**
 	 * Modifica o valor do atributo {@link #id} para o valor fornecido pelo
 	 * parâmetro <code>id</code>
-	 * 
+	 *
 	 * @param id novo valor para o atributo {@link #id}
 	 */
 	public void setId(String id) {
@@ -492,7 +492,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	/**
 	 * Modifica o valor do atributo {@link #designation} para o valor fornecido pelo
 	 * parâmetro <code>designation</code>
-	 * 
+	 *
 	 * @param designation novo valor para o atributo {@link #designation}
 	 */
 	public void setDesignation(String designation) {
@@ -516,7 +516,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	 * actualizado Qualquer tentativa de "actualizacao" de um meter que esteja
 	 * "actualizado" podera ser ignorado evitando dessa forma consumo de recursos
 	 * desnecessario
-	 * 
+	 *
 	 * @return true se este meter se encontrar actualizado ou false no caso
 	 *         contrario
 	 */
@@ -530,7 +530,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	}
 
 	public static EtlProgressMeter fullInit(EtlOperationStatus status, Date startTime, Date lastStopTime,
-			double processingTime, double pauseTime, long minRecordId, long maxRecordId, int total, int processed) {
+											double processingTime, double pauseTime, long minRecordId, long maxRecordId, int total, int processed) {
 
 		EtlProgressMeter progressMeter = new EtlProgressMeter();
 
@@ -600,28 +600,28 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	public void changeStatus(EtlOperationStatus status) {
 
 		switch (status) {
-		case RUNNING:
-			changeStatusToRunning();
-			break;
-		case STOPPED:
-			changeStatusToStopped();
-			break;
-		case FINISHED:
-			changeStatusToFinished();
-			break;
-		case SLEEPING:
-			changeStatusToSleeping();
-			break;
-		case STOPPED_DUE_ERROR:
-			changeStatusToStopped();
-			break;
+			case RUNNING:
+				changeStatusToRunning();
+				break;
+			case STOPPED:
+				changeStatusToStopped();
+				break;
+			case FINISHED:
+				changeStatusToFinished();
+				break;
+			case SLEEPING:
+				changeStatusToSleeping();
+				break;
+			case STOPPED_DUE_ERROR:
+				changeStatusToStopped();
+				break;
 
-		case STOPPING:
-			changeStatusToStopped();
-			break;
+			case STOPPING:
+				changeStatusToStopped();
+				break;
 
-		default:
-			throw new EtlExceptionImpl("Unsupported status " + status);
+			default:
+				throw new EtlExceptionImpl("Unsupported status " + status);
 		}
 
 	}

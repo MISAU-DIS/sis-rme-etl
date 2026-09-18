@@ -40,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 /**
  * This class represent a controller of an synchronization operation. Eg. Export
  * data from tables to JSON files.
- * 
+ *
  * @author jpboane
  */
 public abstract class OperationController<T extends EtlDatabaseObject> extends AbstractBaseConfiguration
@@ -56,7 +56,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	protected List<Engine<T>> allGeneratedEngineMonitor;
 
-	protected OperationController<? extends EtlDatabaseObject> child;
+	protected List<OperationController<? extends EtlDatabaseObject>> children;
 
 	protected String controllerId;
 
@@ -85,7 +85,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.controllerId = operationConfig.generateOperationId();
 
 		OpenConnection conn = null;
-
 		try {
 			conn = openSrcConnection(this);
 
@@ -160,7 +159,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public boolean hasChild() {
-		return this.child != null;
+		return this.children != null;
 	}
 
 	public boolean hasNestedController() {
@@ -175,16 +174,12 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		return operationConfig;
 	}
 
-	public OperationController<? extends EtlDatabaseObject> getChild() {
-		return child;
+	public List<OperationController<? extends EtlDatabaseObject>> getChildren() {
+		return children;
 	}
 
-	public void setChild(OperationController<? extends EtlDatabaseObject> child) {
-		this.child = child;
-
-		if (this.child != null) {
-			this.child.setParent(this);
-		}
+	public void setChildren(List<OperationController<? extends EtlDatabaseObject>> children) {
+		this.children = children;
 	}
 
 	public ProcessController getProcessController() {
@@ -484,19 +479,25 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			}
 		}
 
+
 		if (hasChild()) {
-			if (!this.getChild().operationIsAlreadyFinished()) {
-				return false;
+			for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
+				if (!child.operationIsAlreadyFinished()) {
+					return false;
+				}
 			}
 		}
+
 
 		return !getEtlConfiguration().hasTestingItem();
 	}
 
 	public boolean childOperationsAreAlreadyFinished() {
 		if (hasChild()) {
-			if (!this.getChild().operationIsAlreadyFinished()) {
-				return false;
+			for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
+				if (!child.operationIsAlreadyFinished()) {
+					return false;
+				}
 			}
 		}
 
@@ -510,7 +511,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	@Override
 	public String getOperationId() {
-		return this.getOperationId();
+		return this.getControllerId();
 	}
 
 	public List<Engine<T>> getEnginesActivititieMonitor() {
@@ -548,7 +549,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				this.changeStatusToStopped();
 
 				if (this.hasChild()) {
-					this.getChild().requestStop();
+					for (OperationController<? extends EtlDatabaseObject> child : this.getChildren()) {
+						child.requestStop();
+					}
 				}
 			} else if (this.operationIsAlreadyFinished()) {
 				logWarn("THE OPERATION " + getControllerId() + " WAS ALREADY FINISHED!");
@@ -718,8 +721,15 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 		String subFolder = "";
 
-		subFolder = getOperationType().name().toLowerCase() + FileUtilities.getPathSeparator()
-				+ getEtlConfiguration().getOriginAppLocationCode();
+		if (operationConfig.getRelatedEtlConf().isSupposedToRunInOrigin()) {
+			subFolder = getOperationType().name().toLowerCase() + FileUtilities.getPathSeparator()
+					+ getEtlConfiguration().getOriginAppLocationCode();
+		} else if (operationConfig.getRelatedEtlConf().isSupposedToHaveOriginAppCode()) {
+			subFolder = getOperationType().name().toLowerCase() + FileUtilities.getPathSeparator()
+					+ getEtlConfiguration().getOriginAppLocationCode();
+		} else {
+			subFolder = getOperationType().name().toLowerCase();
+		}
 
 		subFolder += FileUtilities.getPathSeparator() + this.getEtlConfiguration().getConfigFileName();
 
@@ -809,7 +819,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public abstract TaskProcessor<T> initRelatedTaskProcessor(Engine<T> monitor, IntervalExtremeRecord limits,
-			boolean runningInConcurrency);
+															  boolean runningInConcurrency);
 
 	public abstract long getMinRecordId(Engine<? extends EtlDatabaseObject> engine);
 
@@ -828,21 +838,6 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	@Override
-	public boolean isNotInitialized() {
-		if (Controller.super.isInitialized()) {
-			return false;
-		}
-
-		child = this.getChild();
-
-		if (child != null) {
-			return child.isNotInitialized();
-		}
-
-		return true;
-	}
-
-	@Override
 	public void requestStop() {
 		if (stopRequested()) {
 			return;
@@ -855,7 +850,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 			logTrace("Requesting stop of the operation...");
 
-			if (this.isNotInitialized()) {
+			if (isNotInitialized()) {
 				logDebug("The operation was not initialized! Stopping now!");
 				changeStatusToStopped();
 				return;
@@ -869,10 +864,12 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				}
 			}
 
-			if (getChild() != null) {
-				logWarn("Requesting child to stop...");
+			if (getChildren() != null) {
+				logWarn("Requesting children to stop...");
 
-				getChild().requestStop();
+				for (OperationController<? extends EtlDatabaseObject> child : getChildren()) {
+					child.requestStop();
+				}
 			}
 
 			boolean atLeastOneEngineIsRunning = false;
@@ -981,7 +978,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	public abstract void afterEtl(List<T> objs, Connection srcConn, Connection dstConn) throws DBException;
 
 	public abstract AbstractEtlSearchParams<T> initMainSearchParams(ThreadRecordIntervalsManager<T> intervalsMgt,
-			Engine<T> engine);
+																	Engine<T> engine);
 
 	public synchronized void finalize(Engine<T> engine) {
 		this.addItemToFinalized(engine.getEtlItemConfiguration());

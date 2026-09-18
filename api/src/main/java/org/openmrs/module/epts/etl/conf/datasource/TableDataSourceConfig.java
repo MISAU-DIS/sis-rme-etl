@@ -54,7 +54,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
-			Connection dstConn) throws DBException {
+					 Connection dstConn) throws DBException {
 		super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 
 		if (this.auxExtractTable != null) {
@@ -173,7 +173,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
+												  EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
 			throws DBException {
 
 		if (!this.isPrepared()) {
@@ -259,7 +259,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	public static List<TableDataSourceConfig> cloneAll(List<TableDataSourceConfig> allToCloneFrom,
-			SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+													   SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
 
 		List<TableDataSourceConfig> allCloned = null;
 
@@ -278,7 +278,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	public void clone(TableDataSourceConfig toCloneFrom, SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc,
-			Connection conn) throws DBException {
+					  Connection conn) throws DBException {
 		super.clone(toCloneFrom, relatedSrcConf, schemaInfoSrc, conn);
 
 		this.setJoinFields(toCloneFrom.getJoinFields());
@@ -307,7 +307,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	public static void tryToReplacePlaceholders(List<TableDataSourceConfig> extraTableDataSource,
-			EtlDatabaseObject schemaInfoSrc) {
+												EtlDatabaseObject schemaInfoSrc) {
 		if (utilities.listHasElement(extraTableDataSource)) {
 			for (TableDataSourceConfig a : extraTableDataSource) {
 				a.tryToReplacePlaceholders(schemaInfoSrc);

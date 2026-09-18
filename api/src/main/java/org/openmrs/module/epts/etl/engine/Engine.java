@@ -50,7 +50,7 @@ import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 /**
  * This class monitor all {@link TaskProcessor}s of an
  * {@link OperationController}
- * 
+ *
  * @author jpboane
  */
 public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfiguration implements MonitoredOperation {
@@ -90,14 +90,15 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	private final EnginePersistenceCoordinator persistenceCoordinator;
 
 	public Engine(OperationController<T> controller, EtlItemConfiguration etlItemConfiguration,
-			TableOperationProgressInfo tableOperationProgressInfo) {
+				  TableOperationProgressInfo tableOperationProgressInfo) {
 		this.controller = controller;
 		this.etlItemConfiguration = etlItemConfiguration;
 
+		this.engineId = (this.getRelatedEtlOperationConfig().getOperationType() + "_" + getEtlConfigCode())
+				.toLowerCase();
+
 		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 		this.tableOperationProgressInfo = tableOperationProgressInfo;
-
-		this.engineId = getTableOperationProgressInfo().getOperationId();
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
 		this.persistenceCoordinator = new EnginePersistenceCoordinator();
@@ -112,7 +113,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public void registerStageAreaPersistence(TaskProcessor<?> owner, List<EtlDatabaseObject> sourceObjects,
-			Connection srcConn, Connection dstConn) throws DBException {
+											 Connection srcConn, Connection dstConn) throws DBException {
 		getPersistenceCoordinator().register(owner, new StageAreaPersistenceRequest(owner, sourceObjects));
 
 		if (canFlushStageAreaImmediately(owner)) {
@@ -497,11 +498,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		ThreadRecordIntervalsManager<T> t = null;
 
-		if (this.getRelatedOperationController().isResumable()) {
+		if (getRelatedOperationController().isResumable()) {
 			t = ThreadRecordIntervalsManager.tryToLoadFromFile(getEngineId(), this);
 		}
 
-		if (this.getRelatedEtlConf().hasTestingItem()) {
+		if (getRelatedEtlConf().hasTestingItem()) {
 			this.getRelatedEtlOperationConfig()
 					.setProcessingBatch((int) tableOperationProgressInfo.getProgressMeter().getMaxRecordId());
 		}
@@ -565,7 +566,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void processRangePartition(TaskProcessor<T> processor, boolean useSharedConnection, OpenConnection sharedSrcConn,
-			OpenConnection sharedDstConn) {
+							   OpenConnection sharedDstConn) {
 
 		if (useSharedConnection) {
 			performExtractTransformationAndLoading(processor, false, false, sharedSrcConn, sharedDstConn);
@@ -612,7 +613,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			if (retryTransaction) {
 				discardPendingPersistence(processor);
 				logWarn("Retrying complete transaction for processor {} on interval {} after temporary database error. "
-						+ "Attempt {} of {}", processor.getProcessorId(), processor.getLimits(), attempt + 1,
+								+ "Attempt {} of {}", processor.getProcessorId(), processor.getLimits(), attempt + 1,
 						MAX_TRANSACTION_ATTEMPTS);
 				processor.resetForTransactionRetry();
 				if (!waitBeforeTransactionRetry(attempt, processor)) {
@@ -709,10 +710,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		ThreadRecordIntervalsManager<T> intervalManager = getThreadRecordIntervalsManager();
 
 		while (intervalManager.canGoNext() || !intervalManager.getCurrentLimits().isFullProcessed()) {
-			if (this.getCurrentIteration() > 1 && this.getRelatedEtlOperationConfig().finishAfterOneExecution()) {
-				return;
-			}
-
 			if (stopRequested() || isStopped()) {
 				logWarn("Stopping the Task as Stop Requested!");
 				changeStatusToStopped();
@@ -851,7 +848,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	TaskProcessor<T> initTaskProcessor(IntervalExtremeRecord interval, boolean runningInConcurrency,
-			String processorId) {
+									   String processorId) {
 		TaskProcessor<T> processor = getController().initRelatedTaskProcessor(this, interval, runningInConcurrency);
 		processor.setProcessorId(processorId);
 		return processor;
@@ -859,7 +856,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
-			boolean sharedConnections, OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
+									  boolean sharedConnections, OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
 
 		if (!sharedConnections) {
 			consumeTransformAndLoadQueueWithWorkerTransactionRetry(processor, transformationQueue);
@@ -889,7 +886,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	private void consumeTransformAndLoadQueueWithWorkerTransactionRetry(TaskProcessor<T> processor,
-			Queue<T> transformationQueue) {
+																		Queue<T> transformationQueue) {
 		List<T> claimedRecords = new ArrayList<>();
 
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
@@ -950,7 +947,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			discardPendingPersistence(processor);
 			logWarn("Retrying complete RESULT_PARTITIONING worker transaction for processor {} after temporary "
-					+ "database error. Attempt {} of {}", processor.getProcessorId(), attempt + 1,
+							+ "database error. Attempt {} of {}", processor.getProcessorId(), attempt + 1,
 					MAX_TRANSACTION_ATTEMPTS);
 			processor.resetForTransactionRetry();
 			if (!waitBeforeTransactionRetry(attempt, processor)) {
@@ -961,7 +958,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue, boolean sharedConnections,
-			OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
+									OpenConnection sharedSrcConn, OpenConnection sharedDstConn) {
 
 		OpenConnection srcConn = sharedSrcConn;
 		OpenConnection dstConn = sharedDstConn;
@@ -996,7 +993,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void completeExtractedTask(TaskProcessor<T> processor, OpenConnection srcConn, OpenConnection dstConn,
-			boolean refreshProgress) throws DBException {
+							   boolean refreshProgress) throws DBException {
 		if (processor.getTaskResultInfo().hasFatalError()) {
 			discardPendingPersistence(processor);
 			processor.changeStatusToStopped();
@@ -1176,7 +1173,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	 * @return
 	 */
 	void performExtractTransformationAndLoading(TaskProcessor<T> taskProcessor, boolean useMultiTreadSearch,
-			boolean persistTheWork, OpenConnection srcConn, OpenConnection dstConn) {
+												boolean persistTheWork, OpenConnection srcConn, OpenConnection dstConn) {
 
 		try {
 			taskProcessor.changeStatusToRunning();
@@ -1239,7 +1236,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private boolean canDeferFailureToWorkerTransactionRetry(TaskProcessor<T> processor, Exception failure,
-			Connection dstConn) {
+															Connection dstConn) {
 		ParallelProcessingStrategyType strategy = getParallelProcessingStrategy();
 		boolean hasWorkerTransactionRetry = strategy.isRangePartitioning() || strategy.isResultPartitioning();
 
@@ -1457,7 +1454,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public static <T extends EtlDatabaseObject> Engine<T> init(OperationController<T> controller,
-			EtlItemConfiguration etlItemConfiguration, TableOperationProgressInfo tableOperationProgressInfo) {
+															   EtlItemConfiguration etlItemConfiguration, TableOperationProgressInfo tableOperationProgressInfo) {
 
 		Engine<T> monitor = new Engine<>(controller, etlItemConfiguration, tableOperationProgressInfo);
 

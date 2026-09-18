@@ -5,13 +5,13 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfParamsAsDataSource;
@@ -26,17 +26,17 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
+import org.openmrs.module.epts.etl.conf.types.EtlProcessType;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.ProcessController;
-import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
-import org.openmrs.module.epts.etl.utilities.DataModelClassLoader;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
+import org.openmrs.module.epts.etl.utilities.DataModelClassLoader;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
@@ -85,6 +85,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private DBConnectionInfo srcConnInfo;
 
 	private DBConnectionInfo dstConnInfo;
+
+	private EtlProcessType processType;
 
 	private File relatedConfFile;
 
@@ -221,6 +223,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private Boolean verifyRecordAfterCreate;
 
+	private DatabaseObjectInstantiationMode databaseObjectInstantiationMode;
+
 	private SchemaMetadataMode schemaMetadataMode;
 
 	private DataModelConfiguration dataModel;
@@ -255,13 +259,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public DatabaseObjectInstantiationMode getDatabaseObjectInstantiationMode() {
-		if (isDynamic()) {
-			return DatabaseObjectInstantiationMode.DYNAMIC_GENERIC;
-		} else if (this.dataModel.isInitialized()) {
-			return this.dataModel.getDatabaseObjectInstantiationMode();
-		} else {
-			throw new EtlConfException("The dataModel is not initialized!");
-		}
+		return dataModel != null && dataModel.getDatabaseObjectInstantiationMode() != null
+				? dataModel.getDatabaseObjectInstantiationMode()
+				: databaseObjectInstantiationMode;
+	}
+
+	public void setDatabaseObjectInstantiationMode(DatabaseObjectInstantiationMode mode) {
+		getDataModel().setDatabaseObjectInstantiationMode(mode);
 	}
 
 	public SchemaMetadataMode getSchemaMetadataMode() {
@@ -742,6 +746,104 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.childConfigFilePath = childConfigFilePath;
 	}
 
+	public EtlProcessType getProcessType() {
+		return processType;
+	}
+
+	public void setProcessType(EtlProcessType processType) {
+
+		if (processType != null && !processType.isSupportedProcessType()) {
+			throw new ForbiddenOperationException(
+					"The 'processType' of syncConf file must be in " + EtlProcessType.values());
+		}
+
+		this.processType = processType;
+	}
+
+	@JsonIgnore
+	public boolean isDataBaseMergeFromJSONProcess() {
+		return processType.isDataBaseMergeFromJSON();
+	}
+
+	@JsonIgnore
+	public boolean isSourceSyncProcess() {
+		return processType.isSourceSync();
+	}
+
+	@JsonIgnore
+	public boolean isPojoGeneration() {
+		return isDatabaseModelGeneration();
+	}
+
+	public boolean isDatabaseModelGeneration() {
+		return processType.isDatabaseModelGeneration();
+	}
+
+	@JsonIgnore
+	public boolean isEtlProcess() {
+		return processType.isEtl();
+	}
+
+	@JsonIgnore
+	public boolean isReEtlProcess() {
+		return processType.isReEtl();
+	}
+
+	@JsonIgnore
+	public boolean isDBReSyncProcess() {
+		return processType.isDBResync();
+	}
+
+	@JsonIgnore
+	public boolean isDetectMissingRecords() {
+		return this.processType.isDetectMissingRecords();
+	}
+
+	@JsonIgnore
+	public boolean isDetectGapesOnDbTables() {
+		return this.processType.isDetectGapesOnDbTables();
+	}
+
+	@JsonIgnore
+	public boolean isDBQuickExportProcess() {
+		return processType.isDBQuickExport();
+	}
+
+	@JsonIgnore
+	public boolean isDBQuickMergeWithEntityGenerationDBProcess() {
+		return processType.isQuickMergeWithEntityGeneration();
+	}
+
+	@JsonIgnore
+	public boolean isDBQuickMergeWithDatabaseGenerationDBProcess() {
+		return processType.isQuickMergeWithDatabaseGeneration();
+	}
+
+	@JsonIgnore
+	public boolean isDataBaseMergeFromSourceDBProcess() {
+		return processType.isDataBaseMergeFromSourceDB();
+	}
+
+	@JsonIgnore
+	public boolean isDBQuickLoadProcess() {
+		return processType.isDBQuickLoad();
+	}
+
+	@JsonIgnore
+	public boolean isDataReconciliationProcess() {
+		return processType.isDataReconciliation();
+	}
+
+	@JsonIgnore
+	public boolean isDBInconsistencyCheckProcess() {
+		return processType.isdDBInconsistencyCheck();
+	}
+
+	@JsonIgnore
+	public boolean isResolveProblems() {
+		return processType.isGenericProcess();
+	}
+
 	@JsonIgnore
 	public String getPojoPackage(DBConnectionInfo connInfo) {
 		if (connInfo == null)
@@ -829,8 +931,17 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public String generateProcessStatusFolder() {
+		String subFolder = "";
+
+		if (this.isSupposedToRunInOrigin()) {
+			subFolder = "source";
+		} else if (this.isSupposedToRunInDestination()) {
+			subFolder = "destination";
+		}
+
 		return this.getEtlRootDirectory() + FileUtilities.getPathSeparator() + "process_status"
-				+ FileUtilities.getPathSeparator() + "destination";
+				+ FileUtilities.getPathSeparator() + subFolder + FileUtilities.getPathSeparator()
+				+ this.getDesignation();
 	}
 
 	public void setEtlItemConfiguration(List<EtlItemConfiguration> etlItemConfiguration) {
@@ -848,6 +959,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		if (utilities.stringHasValue(this.syncStageSchema)) {
 			schema = this.syncStageSchema;
+		} else if (isSupposedToRunInOrigin()) {
+			schema = this.originAppLocationCode + "_sync_stage_area";
+		} else if (isDBQuickLoadProcess() || isDataReconciliationProcess() || isDataBaseMergeFromSourceDBProcess()) {
+			schema = "minimal_db_info";
 		} else {
 			schema = "sync_stage_area";
 		}
@@ -889,12 +1004,12 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	/**
 	 * Loads the code for each
-	 * 
+	 *
 	 * @throws ForbiddenOperationException
 	 * @throws DBException
 	 */
 	public void init(OpenConnection conn) throws ForbiddenOperationException, DBException {
-		if (this.isInitialized() || this.isDisabled()) {
+		if (isInitialized() || isDisabled()) {
 			return;
 		}
 
@@ -904,7 +1019,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		synchronized (LOCK_READ) {
 
-			if (this.isInitialized()) {
+			if (isInitialized()) {
 				return;
 			}
 
@@ -918,7 +1033,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				this.applyIncludes();
 
-				this.getDataModel().init(this);
+				if (this.getDataModel() != null) {
+					this.getDataModel().setRelatedConf(this);
+					this.getDataModel().applyIncludes();
+					this.getDataModel().tryToLoadFromTemplate();
+				}
+
+				this.determineDatabaseObjectInstantiationMode();
+				this.determineSchemaMetadataMode();
 
 				this.defaultGeneratedObjectKeyTabConf = new EtlConfigurationTableConf(
 						EtlConfiguration.DEFAULT_GENERATED_OBJECT_KEY_TABLE_NAME, this);
@@ -933,14 +1055,17 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 						this.getRecordWithDefaultParentInfoTableName(), this);
 
 				if (this.hasMainConnInfo()) {
-					this.getMainConnInfo().init(this);
+					this.getMainConnInfo().setRelatedEtlConf(this);
+					this.getMainConnInfo().tryToLoadPlaceHolders(this);
 				}
 				if (this.hasSrcConnInfo()) {
-					this.getSrcConnInfo().init(this);
+					this.getSrcConnInfo().setRelatedEtlConf(this);
+					this.getSrcConnInfo().tryToLoadPlaceHolders(this);
 				}
 
 				if (this.hasDstConnInfo()) {
-					this.getDstConnInfo().init(this);
+					this.getDstConnInfo().setRelatedEtlConf(this);
+					this.getDstConnInfo().tryToLoadPlaceHolders(this);
 				}
 
 				if (this.getAutoIncrementHandlingType() == null) {
@@ -1062,12 +1187,23 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 	}
 
-	public boolean usesPrecompiledPojoObjects() {
-		return getDatabaseObjectInstantiationMode().isPreCompiled();
+	private void determineDatabaseObjectInstantiationMode() {
+		if (getDatabaseObjectInstantiationMode() != null)
+			return;
+		setDatabaseObjectInstantiationMode(
+				utilities.stringHasValue(getSrcPojoPackageName()) ? DatabaseObjectInstantiationMode.PRECOMPILED_POJO
+						: DatabaseObjectInstantiationMode.DYNAMIC_GENERIC);
 	}
 
-	public boolean usesPrecompiledPojoObjectsWithFallBack() {
-		return getDatabaseObjectInstantiationMode().isPreCompiledWithFallBack();
+	private void determineSchemaMetadataMode() {
+		if (getSchemaMetadataMode() != null)
+			return;
+		setSchemaMetadataMode(usesPrecompiledPojoObjects() ? SchemaMetadataMode.PRECOMPILED_WITH_FALLBACK
+				: SchemaMetadataMode.LIVE_DATABASE);
+	}
+
+	public boolean usesPrecompiledPojoObjects() {
+		return getDatabaseObjectInstantiationMode().isPreCompiled();
 	}
 
 	public boolean usesDynamicGenericObjects() {
@@ -1394,29 +1530,37 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return utilities.findOnList(this.configuredTables, config);
 	}
 
+	@JsonIgnore
+	public String getDesignation() {
+		return this.processType.name().toLowerCase();
+	}
+
 	public List<EtlOperationConfig> getOperations() {
 		return operations;
 	}
 
 	public void setOperations(List<EtlOperationConfig> operations) {
-		/*
-		 * for (EtlOperationConfig operation : operations) {
-		 * operation.setRelatedEtlConf(this);
-		 * 
-		 * if (operation.getChild() != null) { EtlOperationConfig child =
-		 * operation.getChild();
-		 * 
-		 * while (child != null) { child.setRelatedEtlConf(this);
-		 * 
-		 * child = child.getChild(); } } }
-		 */
+		for (EtlOperationConfig operation : operations) {
+			operation.setRelatedEtlConf(this);
+
+			if (operation.getChild() != null) {
+				EtlOperationConfig child = operation.getChild();
+
+				while (child != null) {
+					child.setRelatedEtlConf(this);
+
+					child = child.getChild();
+				}
+			}
+		}
+
 		this.operations = operations;
 	}
 
 	public EtlOperationConfig findOperation(EtlOperationType operationType) {
 		EtlOperationConfig toFind = EtlOperationConfig.fastCreate(operationType, this);
 
-		for (EtlOperationConfig op : this.getOperations()) {
+		for (EtlOperationConfig op : this.operations) {
 			if (op.equals(toFind))
 				return op;
 
@@ -1438,7 +1582,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public List<EtlOperationConfig> getOperationsAsList() {
 		List<EtlOperationConfig> operationsAsList = new ArrayList<>();
 
-		for (EtlOperationConfig op : this.getOperations()) {
+		for (EtlOperationConfig op : this.operations) {
 			operationsAsList.add(op);
 
 			EtlOperationConfig child = op.getChild();
@@ -1457,11 +1601,22 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		String errorMsg = "";
 		int errNum = 0;
 
-		if (!utilities.stringHasValue(getOriginAppLocationCode()))
-			errorMsg += ++errNum + ". You must specify value for 'originAppLocationCode' parameter \n";
+		if (this.isSupposedToHaveOriginAppCode()) {
+			if (!utilities.stringHasValue(getOriginAppLocationCode()))
+				errorMsg += ++errNum + ". You must specify value for 'originAppLocationCode' parameter \n";
+		}
 
 		if (!utilities.stringHasValue(getEtlRootDirectory()))
 			errorMsg += ++errNum + ". You must specify value for 'etlRootDirectory' parameter\n";
+
+		if (!this.isSupposedToHaveOriginAppCode()) {
+			if (utilities.stringHasValue(getOriginAppLocationCode()))
+				errorMsg += ++errNum + ". You cannot configure 'originAppLocationCode' parameter in ["
+						+ getProcessType() + " configuration\n";
+		}
+
+		if (getProcessType() == null || !utilities.stringHasValue(getProcessType().name()))
+			errorMsg += ++errNum + ". You must specify value for 'processType' parameter\n";
 
 		if (!hasOperation()) {
 			this.setOperations(utilities.parseToList(EtlOperationConfig.createDefaultOperation(this)));
@@ -1499,7 +1654,35 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		}
 
-		List<EtlOperationType> supportedOperations = EtlOperationConfig.getSupportedOperations();
+		List<EtlOperationType> supportedOperations = null;
+
+		if (isDetectMissingRecords()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDetectMissingRecordsProcess();
+		} else if (isEtlProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInEtlProcess();
+		} else if (isDatabaseModelGeneration()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDatabaseModelGenerationProcess();
+		} else if (isSourceSyncProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInSourceSyncProcess();
+		} else if (isDataBaseMergeFromJSONProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDestinationSyncProcess();
+		} else if (isDBReSyncProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDBReSyncProcess();
+		} else if (isDBQuickExportProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDBQuickExportProcess();
+		} else if (isDBQuickLoadProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDBQuickLoadProcess();
+		} else if (isDataReconciliationProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDataReconciliationProcess();
+		} else if (isDataBaseMergeFromSourceDBProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDataBasesMergeFromSourceDBProcess();
+		} else if (isDBInconsistencyCheckProcess()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDBInconsistencyCheckProcess();
+		} else if (isResolveProblems()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInResolveProblemsProcess();
+		} else if (isDetectGapesOnDbTables()) {
+			supportedOperations = EtlOperationConfig.getSupportedOperationsInDetectGapesOnDbTables();
+		}
 
 		if (supportedOperations != null) {
 			for (EtlOperationType operationType : supportedOperations) {
@@ -1621,7 +1804,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private String validateTransationConf(EtlOperationConfig operation, DBConnectionInfo connInfo,
-			String operationsWithShareConn) {
+										  String operationsWithShareConn) {
 
 		if (operation.isUseSharedConnectionPerThread()) {
 			operationsWithShareConn = utilities.addAtributeToValidationString(operationsWithShareConn,
@@ -1689,15 +1872,20 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private boolean operationCanBeOmitted(EtlOperationType operationType) {
-		return operationType.isDatabasePreparation() || operationType.isDbExtract()
-				|| operationType.isDatabaseModelGeneration();
+		boolean ok = false;
+
+		if (this.processType.isEtl()) {
+			if (operationType.isDatabasePreparation() || operationType.isDbExtract()
+					|| operationType.isDatabaseModelGeneration()) {
+				return true;
+			}
+		}
+
+		return ok;
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-
 		if (obj == null)
 			return false;
 
@@ -1706,22 +1894,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		EtlConfiguration otherObj = (EtlConfiguration) obj;
 
-		if (!utilities.stringHasValue(this.getConfigFilePath())
-				|| !utilities.stringHasValue(otherObj.getConfigFilePath())) {
-			return false;
-		}
-
-		return new File(this.getConfigFilePath()).getAbsoluteFile()
-				.equals(new File(otherObj.getConfigFilePath()).getAbsoluteFile());
-	}
-
-	@Override
-	public int hashCode() {
-		if (!utilities.stringHasValue(this.getConfigFilePath())) {
-			return System.identityHashCode(this);
-		}
-
-		return new File(this.getConfigFilePath()).getAbsoluteFile().hashCode();
+		return this.getDesignation().equalsIgnoreCase(otherObj.getDesignation());
 	}
 
 	public boolean existsOnArray(List<EtlConfiguration> syncConfigs) {
@@ -1740,12 +1913,25 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@JsonIgnore
 	public File getPOJOCompiledFilesDirectory() {
-		return getDataModel().getPOJOCompiledFilesDirectory();
+		String configuredDirectory = getDataModel().getBinPojoDirectory();
+		if (utilities.stringHasValue(configuredDirectory)) {
+			return resolveDirectoryFromEtlRoot(configuredDirectory);
+		}
+		return new File(getDatabaseModelJavaDirectory(), "bin");
 	}
 
 	@JsonIgnore
 	public File getPOJOSourceFilesDirectory() {
-		return getDataModel().getPOJOSourceFilesDirectory();
+		String configuredDirectory = getDataModel().getSrcPojoDirectory();
+		if (utilities.stringHasValue(configuredDirectory)) {
+			return resolveDirectoryFromEtlRoot(configuredDirectory);
+		}
+		return new File(getDatabaseModelJavaDirectory(), "src");
+	}
+
+	private File resolveDirectoryFromEtlRoot(String configuredDirectory) {
+		File directory = new File(configuredDirectory);
+		return directory.isAbsolute() ? directory : new File(getEtlRootDirectory(), configuredDirectory);
 	}
 
 	/** Directory containing persistible physical-schema snapshots. */
@@ -1807,13 +1993,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public String generateProcessId() {
-		String controllerId = this.getConfigFileName();
+		String controllerId = this.processType.name().toLowerCase();
 
-		if (utilities.stringHasValue(getOriginAppLocationCode())) {
+		if (isSupposedToRunInOrigin() || isSupposedToHaveOriginAppCode()) {
 			controllerId += "_on_" + getOriginAppLocationCode();
 		}
 
-		return controllerId;
+		return controllerId + "_using_" + this.getConfigFileName();
 	}
 
 	@JsonIgnore
@@ -1853,6 +2039,28 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		pojoPackageDir += this.getPojoPackage(app) + relativePathSeparator;
 
 		return pojoPackageDir;
+	}
+
+	public boolean isSupposedToHaveOriginAppCode() {
+		return this.isSupposedToRunInOrigin() || this.isDBQuickMergeWithEntityGenerationDBProcess()
+				|| this.isDBInconsistencyCheckProcess() || this.isDBQuickMergeWithDatabaseGenerationDBProcess()
+				|| this.isEtlProcess() || this.isDetectMissingRecords() || this.isReEtlProcess();
+	}
+
+	public boolean isSupposedToRunInDestination() {
+		return this.isDataBaseMergeFromJSONProcess() || this.isDBQuickLoadProcess()
+				|| this.isDataReconciliationProcess() || this.isDataBaseMergeFromSourceDBProcess()
+				|| this.isResolveProblems() || this.isDBQuickMergeWithEntityGenerationDBProcess()
+				|| this.isDBQuickMergeWithDatabaseGenerationDBProcess() || this.isEtlProcess() || this.isReEtlProcess();
+	}
+
+	public boolean isSupposedToRunInOrigin() {
+		return this.isSourceSyncProcess() || this.isDBReSyncProcess() || this.isDBQuickExportProcess()
+				|| this.isDBInconsistencyCheckProcess();
+	}
+
+	public boolean isPerformedInTheSameDatabase() {
+		return this.isResolveProblems() || this.isDBInconsistencyCheckProcess();
 	}
 
 	public boolean hasSrcConnInfo() {
@@ -2187,6 +2395,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		clonedEtlConf.getDstConnInfo().copyFromOther(this.getDstConnInfo());
 		clonedEtlConf.getDstConnInfo().tryToLoadPlaceHolders(schemaInfoSrc);
 
+		clonedEtlConf.setProcessType(this.getProcessType());
 		clonedEtlConf.setRelatedConfFile(this.getRelatedConfFile());
 		clonedEtlConf.setOperations(this.getOperations());
 		clonedEtlConf.setManualStart(this.isManualStart());
@@ -2205,16 +2414,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		clonedEtlConf.setPrimaryKeyInitialIncrementValue(this.getPrimaryKeyInitialIncrementValue());
 		clonedEtlConf.setAutoIncrementHandlingType(this.getAutoIncrementHandlingType());
 		clonedEtlConf.setConfigFilePath(this.getConfigFilePath());
-		clonedEtlConf.setDataModel(this.getDataModel());
 
 		OpenConnection conn = null;
 
 		try {
 			conn = clonedEtlConf.openSrcConn(this);
-
-			for (EtlOperationConfig o : this.getOperations()) {
-				o.setInitialized(false);
-			}
 
 			for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
 

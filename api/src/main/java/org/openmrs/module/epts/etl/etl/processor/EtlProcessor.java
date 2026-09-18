@@ -79,8 +79,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	public EtlLoadHelper performTransformationAndLoading(EtlItemConfiguration etlItemConf,
-			List<EtlDatabaseObject> etlObjects, EtlDatabaseObject parentMigratedRec, LoadingType loadingType,
-			Connection srcConn, Connection dstConn) throws DBException {
+														 List<EtlDatabaseObject> etlObjects, EtlDatabaseObject parentMigratedRec, LoadingType loadingType,
+														 Connection srcConn, Connection dstConn) throws DBException {
 
 		this.performTransformation(etlItemConf, etlObjects, parentMigratedRec, loadingType, srcConn, dstConn);
 
@@ -88,106 +88,88 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void performTransformation(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+									   EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException {
-
-		this.debug("Starting transformation of {} {}", etlObjects.size(), etlItemConf.getSrcConf().getAlias());
 
 		try (ConnectionKeepAlive keepAlive = keepAliveManager.register(dstConn, new ReentrantLock(), this)) {
 
-			if (etlItemConf.canQuickTransform(this)) {
-				logWarn("Performing quick tranformation of {} {}", etlObjects.size(),
-						etlItemConf.getSrcConf().getTableAlias());
+			for (EtlDatabaseObject srcRecord : etlObjects) {
+				/*
+				 * if (srcRecord.isTrackable() &&
+				 * getRelatedEtlOperationConfig().hasActionAfterEtl() &&
+				 * getRelatedEtlOperationConfig().getAfterEtlActionType().includeTracking()) {
+				 * srcRecord.changeStatusToProcessing(srcConn); }
+				 */
 
-				for (EtlDatabaseObject srcRecord : etlObjects) {
-					this.quickTransformRecord(srcRecord, srcConn, dstConn);
+				if (!etlItemConf.getSrcConf().doNotUseAsDatasource()) {
+					srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
 				}
-				
-				logWarn("Quick tranformation done on {} {}", etlObjects.size(),
-						etlItemConf.getSrcConf().getTableAlias());
 
-			} else {
+				List<EtlDatabaseObject> avaliableSrcDs = parentMigratedRec != null
+						? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
+						: new ArrayList<>();
 
-				for (EtlDatabaseObject srcRecord : etlObjects) {
-					/*
-					 * if (srcRecord.isTrackable() &&
-					 * getRelatedEtlOperationConfig().hasActionAfterEtl() &&
-					 * getRelatedEtlOperationConfig().getAfterEtlActionType().includeTracking()) {
-					 * srcRecord.changeStatusToProcessing(srcConn); }
-					 */
+				for (DstConf dstConf : etlItemConf.getDstConf()) {
+					if (dstConf.isDisabled()) {
+						logTrace("Skiping transformation of dstConf {} as it is disabled", dstConf);
 
-					if (!etlItemConf.getSrcConf().doNotUseAsDatasource()) {
-						srcRecord.loadObjectIdData(etlItemConf.getSrcConf());
+						continue;
 					}
 
-					List<EtlDatabaseObject> avaliableSrcDs = parentMigratedRec != null
-							? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
-							: new ArrayList<>();
+					List<EtlDatabaseObject> expansion = null;
 
-					for (DstConf dstConf : etlItemConf.getDstConf()) {
-						if (dstConf.isDisabled()) {
-							logTrace("Skiping transformation of dstConf {} as it is disabled", dstConf);
+					SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
 
-							continue;
-						}
+					if (srcConf.hasExpansionDs()) {
+						logTrace("Starting expation of record {} within the dstConf {}", srcRecord, dstConf);
 
-						List<EtlDatabaseObject> expansion = null;
+						expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, avaliableSrcDs, null,
+								srcConn);
+					} else {
+						expansion = utilities.parseToList(srcRecord);
+					}
 
-						SrcConf srcConf = (SrcConf) srcRecord.getRelatedConfiguration();
-
-						if (srcConf.hasExpansionDs()) {
-							logTrace("Starting expation of record {} within the dstConf {}", srcRecord, dstConf);
-
-							expansion = srcConf.getExpansionDataSource().expand(this, srcRecord, avaliableSrcDs, null,
-									srcConn);
-						} else {
-							expansion = utilities.parseToList(srcRecord);
-						}
-
-						if (utilities.listHasElement(expansion)) {
-							for (EtlDatabaseObject expanded : expansion) {
-								if (srcConf.hasExpansionDs()) {
-									logTrace(
-											"Starting the transformation of record {} with expanstion {} within the dstConf {}",
-											srcRecord, expanded, dstConf);
-								} else {
-									logTrace("Starting the transformation of record {} within the dstConf {}",
-											srcRecord, dstConf);
-								}
-
-								this.transformRecord(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
-
-								if (srcConf.hasExpansionDs()) {
-									logTrace(
-											"Finished transformation of record {} with expanstion {} within the dstConf {}. Current transformed objects within the srcObject {}",
-											srcRecord, expanded, dstConf, srcRecord);
-								} else {
-									logTrace(
-											"Finished transformation of record {} within the dstConf {}. Current transformed objects within the srcObject {}",
-											srcRecord, dstConf, srcRecord);
-								}
-							}
-						} else {
-
-							if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
-								logWarn("Expansion of record result on empty list:" + srcRecord);
+					if (utilities.listHasElement(expansion)) {
+						for (EtlDatabaseObject expanded : expansion) {
+							if (srcConf.hasExpansionDs()) {
+								logTrace(
+										"Starting the transformation of record {} with expanstion {} within the dstConf {}",
+										srcRecord, expanded, dstConf);
 							} else {
-								logDebug("Expansion of record result on empty list:" + srcRecord);
+								logTrace("Starting the transformation of record {} within the dstConf {}", srcRecord,
+										dstConf);
 							}
+
+							this.transformRecord(srcRecord, expanded, parentMigratedRec, dstConf, srcConn, dstConn);
+
+							if (srcConf.hasExpansionDs()) {
+								logTrace(
+										"Finished transformation of record {} with expanstion {} within the dstConf {}. Current transformed objects within the srcObject {}",
+										srcRecord, expanded, dstConf, srcRecord);
+							} else {
+								logTrace(
+										"Finished transformation of record {} within the dstConf {}. Current transformed objects within the srcObject {}",
+										srcRecord, dstConf, srcRecord);
+							}
+						}
+					} else {
+
+						if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
+							logWarn("Expansion of record result on empty list:" + srcRecord);
+						} else {
+							logDebug("Expansion of record result on empty list:" + srcRecord);
 						}
 					}
 				}
 			}
 		}
-
-		this.debug("Finished transformation of {} {}", etlObjects.size(), etlItemConf.getSrcConf().getAlias());
 	}
 
 	private EtlLoadHelper performLoading(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-			LoadingType loadingType, Connection srcConn, Connection dstConn)
+										 LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException, ParentNotYetMigratedException {
-
-		this.debug("Initializing the loading of {} {}", etlObjects.size(), etlItemConf.getSrcConf().getFullTableName());
+		this.logDebug(
+				"Initializing the loading of " + etlObjects.size() + " " + etlItemConf.getSrcConf().getFullTableName());
 
 		EtlLoadHelper loadHelper = null;
 
@@ -220,22 +202,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		return loadHelper;
 	}
 
-	private void quickTransformRecord(EtlDatabaseObject srcRecord, Connection srcConn, Connection dstConn)
-			throws DBException {
-
-		EtlDatabaseObject dstObject = this.getEtlItemConfiguration().getDstConf().get(0).createRecordInstance();
-
-		dstObject.markAsNotCollactable();
-
-		dstObject.copyFrom(srcRecord);
-
-		dstObject.setEtlInfo(EtlInfo.fastCreateForRecordAlradyLoadedWithDstData(this, srcRecord, dstObject));
-
-		srcRecord.addDestinationRecord(dstObject);
-	}
-
 	private void transformRecord(EtlDatabaseObject srcRecord, EtlDatabaseObject srcRecordExpansion,
-			EtlDatabaseObject parentMigratedRec, DstConf dstConf, Connection srcConn, Connection dstConn)
+								 EtlDatabaseObject parentMigratedRec, DstConf dstConf, Connection srcConn, Connection dstConn)
 			throws DBException {
 
 		try {
@@ -286,7 +254,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void tryToLogOrThrowNoDstForGivenSrcException(List<EtlDatabaseObject> records, NoDstForGivenSrcException e,
-			Connection srcConn, Connection dstConn) throws DBException {
+														  Connection srcConn, Connection dstConn) throws DBException {
 
 		ActionOnEtlIssue defaultBehavior = this.getRelatedEtlConf().getDefaultExceptionBehavior();
 		ActionOnEtlIssue exceptionBehavior = e.getAction();
@@ -349,7 +317,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	 * @param e
 	 */
 	private void createDefaultFailedDstObject(EtlDatabaseObject record, DstConf mappingInfo,
-			EtlTransformationException e) {
+											  EtlTransformationException e) {
 
 		if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
 			logWarn("Issues found when transforming record " + record + ". The issue will be logged: "
@@ -366,7 +334,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf, EtlLoadHelper loadHelper, Connection srcConn,
-			Connection dstConn) throws DBException {
+										Connection dstConn) throws DBException {
 
 		tryToPerfomeEtlOnChild(itemConf,
 				childItemConf -> loadHelper.getAllSuccedTransformedObjects(childItemConf.getRelatedParentDstConf()),
@@ -374,8 +342,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf,
-			Function<EtlChildItemConfiguration, List<EtlDatabaseObject>> objectsProvider, Connection srcConn,
-			Connection dstConn) throws DBException {
+										Function<EtlChildItemConfiguration, List<EtlDatabaseObject>> objectsProvider, Connection srcConn,
+										Connection dstConn) throws DBException {
 
 		if (!itemConf.hasChildItemConf()) {
 			return;
@@ -399,13 +367,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-			Connection srcConn, Connection dstConn) throws DBException {
+										Connection srcConn, Connection dstConn) throws DBException {
 
 		tryToPerfomeEtlOnChild(etlItemConf, childItemConf -> etlObjects, srcConn, dstConn);
 	}
 
 	private void performeEtlOnChildItem(EtlChildItemConfiguration itemConf, EtlDatabaseObject transformedParent,
-			Connection srcConn, Connection dstConn) throws DBException {
+										Connection srcConn, Connection dstConn) throws DBException {
 
 		try {
 			EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
@@ -473,7 +441,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void applyAfterEtlAction(EtlDatabaseObject obj, EtlActionType action, Connection srcConn,
-			Connection dstConn) throws DBException {
+									 Connection dstConn) throws DBException {
 
 		if (action.isDelete()) {
 			DatabaseObjectDAO.remove(obj, srcConn);
@@ -509,7 +477,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void trackFailedProcessingIfConfigured(EtlDatabaseObject sourceRecord, EtlStageAreaObject stageRecord,
-			Connection srcConn) throws DBException {
+												   Connection srcConn) throws DBException {
 
 		SrcConf srcConf = (SrcConf) sourceRecord.getRelatedConfiguration();
 

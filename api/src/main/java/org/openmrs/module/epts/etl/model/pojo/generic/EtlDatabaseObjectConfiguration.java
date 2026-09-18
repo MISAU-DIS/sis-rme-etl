@@ -35,7 +35,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	void fullLoad(Connection conn) throws DBException;
 
 	TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName,
-			List<Integer> alreadyCheckedObjects);
+															   List<Integer> alreadyCheckedObjects);
 
 	@JsonIgnore
 	default File getPOJOCopiledFilesDirectory() {
@@ -126,7 +126,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	Boolean isDestinationInstallationType();
 
-	void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass);
+	void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass);
 
 	List<ParentTable> getParentRefInfo();
 
@@ -138,7 +138,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	/**
 	 * Generates a full dump select from query.
-	 * 
+	 *
 	 * @return the generated select dump query
 	 */
 	String generateSelectFromQuery();
@@ -169,24 +169,12 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 		Class<? extends EtlDatabaseObject> syncRecordClass = null;
 
-		if (getRelatedEtlConf().usesPrecompiledPojoObjects()
-				|| getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
+		if (getRelatedEtlConf().usesPrecompiledPojoObjects()) {
 			syncRecordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(this.generateFullClassName(connInfo),
 					this.getRelatedEtlConf());
 
 			if (syncRecordClass == null) {
-				this.getRelatedEtlConf().warn("POJO NOT FOUND FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
-						getRelatedEtlConf().getDatabaseObjectInstantiationMode());
-
-				if (getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
-					this.getRelatedEtlConf().warn(
-							"USING GENERIC POJO FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
-							getRelatedEtlConf().getDatabaseObjectInstantiationMode());
-
-					syncRecordClass = GenericDatabaseObject.class;
-				} else {
-					throw new PojoNotFoundException(this);
-				}
+				throw new PojoNotFoundException(this);
 			}
 
 		} else {
