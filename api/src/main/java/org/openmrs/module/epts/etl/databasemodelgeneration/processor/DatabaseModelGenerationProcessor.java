@@ -180,7 +180,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 			objectConfiguration.fullLoad(appConn);
 
-			objectConfiguration.generateRecordClass(app, true);
+			objectConfiguration.generateRelatedPojoClass(app, true);
 			persistPhysicalMetadata(app, objectConfiguration, appConn);
 			generationVisitTracker.complete(fullClassName);
 

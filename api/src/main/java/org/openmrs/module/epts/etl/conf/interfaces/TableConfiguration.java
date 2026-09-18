@@ -1228,7 +1228,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 	}
 
-	default void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	default void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {
 				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));

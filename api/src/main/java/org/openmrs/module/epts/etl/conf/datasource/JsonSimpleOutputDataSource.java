@@ -204,7 +204,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
 	}
 
 	@Override

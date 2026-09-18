@@ -145,7 +145,7 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 	}
 
 	@Override
-	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
 	}
 
 	@Override

@@ -78,7 +78,7 @@ public class EtlConfigurationTableConf extends AbstractTableConfiguration {
 	}
 
 	@Override
-	public void generateRecordClass(DBConnectionInfo app, Boolean fullClass) {
+	public void generateRelatedPojoClass(DBConnectionInfo app, Boolean fullClass) {
 		// TODO Auto-generated method stub
 
 	}

@@ -417,7 +417,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		return fullPackageName;
 	}
 
-	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {
 				this.etlRecordClass = DatabaseEntityPOJOGenerator.generate(this, connInfo);

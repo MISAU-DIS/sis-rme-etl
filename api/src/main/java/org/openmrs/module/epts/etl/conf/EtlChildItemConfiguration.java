@@ -239,7 +239,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	@Override
-	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
 

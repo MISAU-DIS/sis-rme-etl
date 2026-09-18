@@ -126,7 +126,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	Boolean isDestinationInstallationType();
 
-	void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass);
+	void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass);
 
 	List<ParentTable> getParentRefInfo();
 
@@ -169,7 +169,8 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 		Class<? extends EtlDatabaseObject> syncRecordClass = null;
 
-		if (getRelatedEtlConf().usesPrecompiledPojoObjects()) {
+		if (getRelatedEtlConf().usesPrecompiledPojoObjects()
+				|| getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
 			syncRecordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(this.generateFullClassName(connInfo),
 					this.getRelatedEtlConf());
 

@@ -120,7 +120,7 @@ public class PrecompiledSchemaFullLoadTest {
 			// structural shared-PK generation is validated with complete model graphs.
 			table.setSharePkWith(null);
 			etl.setClassPath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
-			table.generateRecordClass(connectionInfo, true);
+			table.generateRelatedPojoClass(connectionInfo, true);
 			Class<? extends EtlDatabaseObject> generatedClass = table.getEtlRecordClass();
 			assertSame(generatedClass, DatabaseEntityPOJOGenerator.tryToGetExistingCLass(
 					table.generateFullClassName(connectionInfo), etl));
