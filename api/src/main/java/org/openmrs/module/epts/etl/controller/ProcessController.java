@@ -347,7 +347,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			logWarn("Stop Already requested!!!");
 			return;
 		}
-
+ 
 		logWarn("Requesting Stop");
 
 		synchronized (LOCK) {

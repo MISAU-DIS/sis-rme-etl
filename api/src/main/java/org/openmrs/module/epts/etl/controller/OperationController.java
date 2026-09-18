@@ -828,6 +828,21 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	@Override
+	public boolean isNotInitialized() {
+		if (Controller.super.isInitialized()) {
+			return false;
+		}
+
+		child = this.getChild();
+
+		if (child != null) {
+			return child.isNotInitialized();
+		}
+
+		return true;
+	}
+
+	@Override
 	public void requestStop() {
 		if (stopRequested()) {
 			return;
@@ -840,7 +855,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 			logTrace("Requesting stop of the operation...");
 
-			if (isNotInitialized()) {
+			if (this.isNotInitialized()) {
 				logDebug("The operation was not initialized! Stopping now!");
 				changeStatusToStopped();
 				return;

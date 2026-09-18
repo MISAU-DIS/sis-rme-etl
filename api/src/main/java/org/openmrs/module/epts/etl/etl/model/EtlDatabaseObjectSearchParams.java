@@ -38,7 +38,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
 			Connection dstConn) throws DBException {
 
-		SrcConf srcConfig = getSrcConf();
+  		SrcConf srcConfig = getSrcConf();
 
 		AuxQueryInfo auxQueryInfo = new AuxQueryInfo(new SearchClauses<EtlDatabaseObject>(this));
 
