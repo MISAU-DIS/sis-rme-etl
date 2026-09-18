@@ -668,31 +668,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void finalizeRangeWorkerConnections(OpenConnection srcConn, OpenConnection dstConn) {
-		RuntimeException failure = null;
-
-		try {
-			if (srcConn != null) {
-				srcConn.finalizeConnection(this);
-			}
-		} catch (RuntimeException e) {
-			failure = e;
-		}
-
-		try {
-			if (dstConn != null) {
-				dstConn.finalizeConnection(this);
-			}
-		} catch (RuntimeException e) {
-			if (failure == null) {
-				failure = e;
-			} else {
-				failure.addSuppressed(e);
-			}
-		}
-
-		if (failure != null) {
-			throw failure;
-		}
+		// Commit destination data before source-side tracking/deletion.
+		OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 	}
 
 	private void failRangeProcessor(TaskProcessor<T> processor, Exception failure, boolean discardPersistence) {
@@ -941,7 +918,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					processor.getTaskResultInfo().setFatalException(e);
 				}
 			} finally {
-				OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+				OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 			}
 
 			if (!retryTransaction) {
@@ -990,7 +967,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			processor.getTaskResultInfo().setFatalException(e);
 		} finally {
 			if (!sharedConnections) {
-				OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+				OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 			}
 		}
 	}
@@ -1070,7 +1047,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			flushPendingPersistence(srcConn, dstConn);
 			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
 		} finally {
-			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+			OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 		}
 	}
 
@@ -1087,7 +1064,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			flushDefaultParents(srcConn, dstConn);
 			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
 		} finally {
-			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+			OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 		}
 	}
 
@@ -1107,7 +1084,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
 			logDebug("Pending StageArea records persisted for processor {}", owner.getProcessorId());
 		} finally {
-			OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+			OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 		}
 	}
 
@@ -1184,37 +1161,28 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			logTrace("INITIALIZING TASK FOR INTERVAL " + taskProcessor.getLimits());
 
 			taskProcessor.extractTransformAndLoad(useMultiTreadSearch, srcConn, dstConn);
+			completeExtractedTask(taskProcessor, srcConn, dstConn, true);
 
 			if (!taskProcessor.getTaskResultInfo().hasFatalError()) {
-				getController().afterEtl(taskProcessor.getTaskResultInfo().getAllSuccessfulyProcessedRecords(), srcConn,
-						dstConn);
-
-				if (taskProcessor.getTaskResultInfo().hasRecordsWithErrors()) {
-					logWarn("Some errors where found loading '"
-							+ taskProcessor.getTaskResultInfo().getRecordsWithErrorsAsEtlDatabaseObject().size()
-							+ "! The errors will be documented");
-
-					taskProcessor.getTaskResultInfo().documentErrors(srcConn, dstConn);
-				}
-
-				refreshProgressMeter(taskProcessor, srcConn);
-
 				if (persistTheWork) {
 					flushPendingPersistence(srcConn, dstConn);
 				} else if (getRelatedEtlConf().hasTestingItem()) {
 					discardPendingPersistence();
 				}
 
-				taskProcessor.getLimits().markAsProcessed();
-
 				if (persistTheWork) {
 					logTrace("PERSISTING WORK OF TASK ON INTERVAL " + taskProcessor.getLimits());
 
+					OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+					OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
+
+					// Never expose an uncommitted interval to any checkpoint writer.
+					taskProcessor.getLimits().markAsProcessed();
 					getThreadRecordIntervalsManager().save();
 
-					OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-
 					logTrace("WORK OF TASK PERSISTED ON INTERVAL " + taskProcessor.getLimits());
+				} else if (getRelatedEtlConf().hasTestingItem()) {
+					taskProcessor.getLimits().markAsProcessed();
 				}
 
 				taskProcessor.changeStatusToFinished();
@@ -1233,7 +1201,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			taskProcessor.getTaskResultInfo().setFatalException(e);
 		} finally {
 			if (persistTheWork) {
-				OpenConnection.finalizeAllConnections(this, srcConn, dstConn);
+				OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 			}
 		}
 	}

@@ -110,14 +110,26 @@ public class OpenConnection implements Connection, Closeable {
 		if (!CommonUtilities.getInstance().listHasElement(conns))
 			return;
 
+		RuntimeException failure = null;
 		for (OpenConnection conn : conns) {
 			if (conn != null) {
 				try {
+					// A failed commit must not authorize commits on the remaining resources.
+					if (failure != null) {
+						conn.setOperationTerminatedSuccessifully(false);
+					}
 					conn.finalizeConnection(finalizer);
 				} catch (Exception e) {
-					DBConnectionInfo.logError("Error finalizing connection {} from a connection collection", e, conn);
+					if (failure == null) {
+						failure = e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
+					} else {
+						failure.addSuppressed(e);
+					}
 				}
 			}
+		}
+		if (failure != null) {
+			throw failure;
 		}
 	}
 
@@ -175,8 +187,11 @@ public class OpenConnection implements Connection, Closeable {
 		if (connection == null)
 			return;
 
+		RuntimeException failure = null;
 		try {
-
+			if (connection.isClosed()) {
+				throw new SQLException("Connection closed before transaction finalization");
+			}
 			if (!connection.getAutoCommit()) {
 				if (this.operationTerminatedSuccessifully) {
 					commit();
@@ -185,19 +200,26 @@ public class OpenConnection implements Connection, Closeable {
 				}
 			}
 
-			this.close();
-
-			connService.removeOpenConnection(this);
-
 		} catch (SQLException e) {
-			DBConnectionInfo.logError("Error while finalizing connection {}", e, this);
-
-			throw new RuntimeException(e);
+			failure = new RuntimeException(e);
 		} finally {
+			try {
+				this.close();
+			} catch (RuntimeException e) {
+				if (failure == null) {
+					failure = e;
+				} else {
+					failure.addSuppressed(e);
+				}
+			} finally {
+				connService.removeOpenConnection(this);
+				connection = null;
+			}
 			qtyClosedConnections++;
 		}
-
-		connection = null;
+		if (failure != null) {
+			throw failure;
+		}
 	}
 
 	private void tryToReopen() throws SQLException {
@@ -275,8 +297,10 @@ public class OpenConnection implements Connection, Closeable {
 	public void commit() throws SQLException {
 		DBConnectionInfo.logDebug("Committing connection {}", this);
 
-		if (!isClosed())
-			connection.commit();
+		if (connection == null || connection.isClosed()) {
+			throw new SQLException("Cannot commit a closed connection");
+		}
+		connection.commit();
 
 		DBConnectionInfo.logTrace("Connection committed {}", this);
 	}

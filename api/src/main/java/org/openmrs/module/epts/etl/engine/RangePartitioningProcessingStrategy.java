@@ -57,14 +57,28 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 
 			persistPendingData(engine, sharedConnections, sharedSrcConn, sharedDstConn);
 
-			persistIntervalState(engine, sharedConnections, sharedSrcConn, sharedDstConn);
+			if (!engine.getRelatedEtlConf().hasTestingItem() && sharedConnections) {
+				OpenConnection.markAllAsSuccessifullyTerminected(sharedSrcConn, sharedDstConn);
+			}
+			OpenConnection.finalizeAllConnections(engine, sharedDstConn, sharedSrcConn);
+
+			// Workers and auxiliary persistence have all committed before publishing completion.
+			for (IntervalExtremeRecord interval : intervals) {
+				interval.markAsProcessed();
+			}
 
 			if (!EtlOperationResultHeader.hasAtLeastOneRecordsWithRecursiveRelashionships(results)) {
 				engine.getThreadRecordIntervalsManager().getCurrentLimits().markSkippedRecordsAsProcessed();
 			}
+			if (!engine.getRelatedEtlConf().hasTestingItem()) {
+				engine.getThreadRecordIntervalsManager().save();
+			}
 		} finally {
-			OpenConnection.finalizeAllConnections(engine, sharedSrcConn, sharedDstConn);
-			engine.shutdownExecutor(executor);
+			try {
+				OpenConnection.finalizeAllConnections(engine, sharedDstConn, sharedSrcConn);
+			} finally {
+				engine.shutdownExecutor(executor);
+			}
 		}
 	}
 
@@ -88,16 +102,4 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 		}
 	}
 
-	private void persistIntervalState(Engine<?> engine, boolean sharedConnections, OpenConnection srcConn,
-			OpenConnection dstConn) throws Exception {
-		if (engine.getRelatedEtlConf().hasTestingItem()) {
-			return;
-		}
-
-		if (sharedConnections) {
-			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-			engine.getThreadRecordIntervalsManager().getCurrentLimits().markAsProcessed();
-		}
-		engine.getThreadRecordIntervalsManager().save();
-	}
 }
