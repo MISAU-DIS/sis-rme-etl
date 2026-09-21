@@ -341,7 +341,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default String getId() {
-		return this.getRelatedEtlConf().getConfigFileName() + "_" + this.getTableName();
+		return this.getRelatedEtlConf().getDesignation() + "_" + this.getTableName();
 	}
 
 	default Boolean hasExtraConditionForExtract() {
@@ -369,7 +369,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	/**
 	 * Clones gives list of UniqueKeys to this tableConfiguration
-	 * 
+	 *
 	 * @param uniqueKeys to clone to this table
 	 */
 	default void cloneUnikeKeys(List<UniqueKeyInfo> uniqueKeys) {
@@ -389,7 +389,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void clone(TableConfiguration toCloneFrom, EtlDataConfiguration parent, EtlDatabaseObject schemaInfoSrc,
-			Connection conn) throws DBException {
+					   Connection conn) throws DBException {
 		this.setTableName(toCloneFrom.getTableName());
 
 		if (!this.hasAlias() && toCloneFrom.hasDynamicAlias()) {
@@ -1122,7 +1122,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void addChildMappingInfo(String refCode, ChildTable childTabConf, String childFieldName,
-			String parentFieldName, Connection conn) throws DBException {
+									 String parentFieldName, Connection conn) throws DBException {
 
 		TableConfiguration parentTabConf = this;
 
@@ -1130,7 +1130,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void addParentMappingInfo(String refCode, String childFieldName, ParentTableImpl parentTabConf,
-			String parentFieldName, Connection conn) throws DBException {
+									  String parentFieldName, Connection conn) throws DBException {
 
 		TableConfiguration childTabConf = this;
 
@@ -1138,7 +1138,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void initRefInfo(RefType refType, String refCode, TableConfiguration childTabConf, String childFieldname,
-			TableConfiguration parentTabConf, String parentFieldName, Connection conn) throws DBException {
+							 TableConfiguration parentTabConf, String parentFieldName, Connection conn) throws DBException {
 
 		String fieldName = null;
 
@@ -1209,7 +1209,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	/**
 	 * By default an metadata cannot be removed, but there are situations where is
 	 * needed to remove a metadata
-	 * 
+	 *
 	 * @return
 	 */
 	@JsonIgnore
@@ -1228,7 +1228,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 	}
 
-	default void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	default void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {
 				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));
@@ -1831,7 +1831,22 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default Boolean isDestinationInstallationType() {
-		return true;
+		return getRelatedEtlConf().isDataBaseMergeFromJSONProcess();
+	}
+
+	@JsonIgnore
+	default Boolean isDataReconciliationProcess() {
+		return this.getRelatedEtlConf().isDataReconciliationProcess();
+	}
+
+	@JsonIgnore
+	default Boolean isDBQuickLoad() {
+		return this.getRelatedEtlConf().isDBQuickLoadProcess();
+	}
+
+	@JsonIgnore
+	default Boolean isDataBasesMergeFromSourceDBProcess() {
+		return this.getRelatedEtlConf().isDataBaseMergeFromSourceDBProcess();
 	}
 
 	@JsonIgnore
@@ -1847,7 +1862,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	/**
 	 * Generates SQL condition using the {@link #uniqueKeys} fulfilled with related
 	 * values from especific object
-	 * 
+	 *
 	 * @param dbObject the object from where the condition values will be retrieved
 	 *                 from
 	 * @return a SQL condition
@@ -1874,7 +1889,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	/**
 	 * Generates SQL parametrized condition for {@link #uniqueKeys}
-	 * 
+	 *
 	 * @return a parametrized SQL condition
 	 */
 	@JsonIgnore
@@ -2180,7 +2195,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	/**
 	 * Generate a select columns content using the alias {@link #tableAlias}
-	 * 
+	 *
 	 * @return
 	 * @throws ForbiddenOperationException if the table does not have alias
 	 */
@@ -2211,7 +2226,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	/**
 	 * Generates the content for SELECT FROM clause content.
-	 * 
+	 *
 	 * @return
 	 */
 	default String generateSelectFromClauseContent() {
@@ -2230,7 +2245,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default List<FieldsMapping> tryToLoadJoinFields(TableConfiguration relatedTabConf, DataSourceSide dsSide,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+													Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		String dsName = this.determineDataSourceNameByDsSide(relatedTabConf, dsSide);
 
@@ -2294,21 +2309,21 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		String dsName = null;
 
 		switch (dsSide) {
-		case THIS_IS_DATA_SOURCE:
-			dsName = this.getTableAlias();
-			break;
-		case OTHER_IS_DATA_SOURCE:
-			dsName = relatedTabConf.getTableAlias();
-			break;
+			case THIS_IS_DATA_SOURCE:
+				dsName = this.getTableAlias();
+				break;
+			case OTHER_IS_DATA_SOURCE:
+				dsName = relatedTabConf.getTableAlias();
+				break;
 
-		default:
-			break;
+			default:
+				break;
 		}
 		return dsName;
 	}
 
 	static FieldsMapping generateJoinMapping(String srcField, String dstField, EtlTransformTarget target, String dsName,
-			Connection conn)
+											 Connection conn)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
 		if (utilities.stringHasValue(dsName)) {
@@ -2344,7 +2359,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	public static TableConfiguration retrieveConfiguredParentWithinTheSameSrcConf(TableConfiguration table,
-			SrcConf srcConf) {
+																				  SrcConf srcConf) {
 
 		if (srcConf != null) {
 			if (srcConf.getTableName().equals(table.getTableName())) {
@@ -2364,7 +2379,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default String generateConditionsFields(EtlDatabaseObject parentObject, List<FieldsMapping> joinFields,
-			String joinExtraCondition) {
+											String joinExtraCondition) {
 		String conditionFields = "";
 
 		if (utilities.listHasElement(joinFields)) {
@@ -2431,7 +2446,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default String generateJoinCondition(TableConfiguration joiningTable, List<FieldsMapping> joinFields,
-			String joinExtraCondition) {
+										 String joinExtraCondition) {
 		String conditionFields = "";
 
 		for (int i = 0; i < joinFields.size(); i++) {
@@ -2452,7 +2467,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName,
-			List<Integer> alreadyCheckedObjects) {
+																	   List<Integer> alreadyCheckedObjects) {
 
 		if (alreadyCheckedObjects == null) {
 			throw new ForbiddenOperationException("The 'alreadyCheckedObjects' list should be not null!!!");
@@ -2474,8 +2489,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		logTrace("Finding Configured table '" + fullTableName + "' on Table '" + this.getFullTableName() + "("
 				+ System.identityHashCode(this) + ")"
 				+ (utilities.listHasElement(this.getParentRefInfoAsString())
-						? " with Parents: [" + this.getParentRefInfoAsString() + "]"
-						: ""));
+				? " with Parents: [" + this.getParentRefInfoAsString() + "]"
+				: ""));
 
 		alreadyCheckedObjects.add(identity);
 
@@ -2520,7 +2535,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void fullLoadAllRelatedTables(TableAliasesGenerator aliasGenerator, TableConfiguration related,
-			Connection conn) throws DBException {
+										  Connection conn) throws DBException {
 		if (this.isAllRelatedTablesFullLoaded()) {
 			return;
 		}
@@ -2592,7 +2607,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	/**
 	 * Generates a full dump select from query.
-	 * 
+	 *
 	 * @return the generated select dump query
 	 */
 	default String generateSelectFromQuery() {
@@ -2751,7 +2766,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	/**
 	 * Checks if this table configuration has its own unique keys rather that the
 	 * keys from the shared key parent
-	 * 
+	 *
 	 * @return true if this table configuration has its own unique keys rather that
 	 *         the keys from the shared key parent or false in contrary
 	 */

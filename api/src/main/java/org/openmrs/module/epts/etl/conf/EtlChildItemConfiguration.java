@@ -177,7 +177,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 	@Override
 	public TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName,
-			List<Integer> alreadyCheckedObjects) {
+																	  List<Integer> alreadyCheckedObjects) {
 
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
@@ -239,7 +239,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
 
@@ -303,7 +303,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	public static EtlChildItemConfiguration fastCreate(AbstractTableConfiguration tableConfig,
-			boolean useMainEtlTableAsSrcConfIfNotExists, Connection conn) throws DBException {
+													   boolean useMainEtlTableAsSrcConfIfNotExists, Connection conn) throws DBException {
 
 		EtlChildItemConfiguration etl = new EtlChildItemConfiguration();
 

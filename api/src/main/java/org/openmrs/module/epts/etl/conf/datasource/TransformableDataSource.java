@@ -34,7 +34,6 @@ import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -358,7 +357,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 	}
 
 	@Override
@@ -411,21 +410,8 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
-			throws PojoNotFoundException {
-
-		try {
-			return EtlAdditionalDataSource.super.generateEtlRecordClass(connInfo);
-		} catch (PojoNotFoundException e) {
-			this.setEtlRecordClass(GenericDatabaseObject.class);
-		}
-
-		return getEtlRecordClass();
-	}
-
-	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+												  EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
 			throws DBException {
 
 		if (avaliableSrcObjects != null) {
@@ -498,7 +484,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	public static List<TransformableDataSource> cloneAll(List<TransformableDataSource> allToCloneFrom,
-			SrcConf relatedSrcConf, Connection conn) throws DBException {
+														 SrcConf relatedSrcConf, Connection conn) throws DBException {
 
 		List<TransformableDataSource> allCloned = null;
 
@@ -531,7 +517,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	public static void tryToReplacePlaceholders(List<TransformableDataSource> extraObjectDataSource,
-			EtlDatabaseObject schemaInfoSrc) {
+												EtlDatabaseObject schemaInfoSrc) {
 		if (utilities.listHasElement(extraObjectDataSource)) {
 			for (TransformableDataSource a : extraObjectDataSource) {
 				a.tryToReplacePlaceholders(schemaInfoSrc);

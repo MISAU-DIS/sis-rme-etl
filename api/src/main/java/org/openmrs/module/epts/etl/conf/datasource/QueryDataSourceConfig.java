@@ -292,7 +292,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 			this.fullLoaded = true;
 		} catch (ForbiddenOperationException | InvalidDataSourceOnFieldDefifitionException
-				| MissingParameterOnEtlTransformationException | DBException e) {
+				 | MissingParameterOnEtlTransformationException | DBException e) {
 			// Mean that there are missing parameters. Lets try to load the minimal
 			// information of fields
 			// Note that we are not marking the record as fullLoaded as there will be
@@ -332,8 +332,6 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 				try {
 					setFields(SQLUtilities.determineFieldsFromQuery(pq.getPreparedQuery(), params, conn));
 				} catch (DBException e) {
-					err("Error computing QueryDataSourceConfig\n\t{}", this.getDesc());
-
 					throw new DBException("Error computing QueryDataSourceConfig " + this.getDesc(), e);
 				}
 			}
@@ -417,7 +415,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		return fullPackageName;
 	}
 
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		try {
 			if (fullClass) {
 				this.etlRecordClass = DatabaseEntityPOJOGenerator.generate(this, connInfo);
@@ -527,7 +525,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
+												  EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
 			throws DBException {
 
 		this.trace("Loading related Src Objects for Query DataSource: " + this.getDesc());
@@ -666,7 +664,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public static List<QueryDataSourceConfig> cloneAll(List<QueryDataSourceConfig> allToCloneFrom,
-			SrcConf relatedSrcConf, Connection conn) throws DBException {
+													   SrcConf relatedSrcConf, Connection conn) throws DBException {
 
 		List<QueryDataSourceConfig> allCloned = null;
 
@@ -697,7 +695,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public static void tryToReplacePlaceholders(List<QueryDataSourceConfig> extraQueryDataSource,
-			EtlDatabaseObject schemaInfoSrc) {
+												EtlDatabaseObject schemaInfoSrc) {
 
 		if (utilities.listHasElement(extraQueryDataSource)) {
 			for (QueryDataSourceConfig a : extraQueryDataSource) {

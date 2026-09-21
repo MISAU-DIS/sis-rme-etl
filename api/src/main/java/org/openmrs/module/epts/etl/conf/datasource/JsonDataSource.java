@@ -186,7 +186,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
-			Connection dstConn) throws DBException {
+					 Connection dstConn) throws DBException {
 
 		EtlAdditionalDataSource.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 
@@ -197,7 +197,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName,
-			List<Integer> alreadyCheckedObjects) {
+																	  List<Integer> alreadyCheckedObjects) {
 
 		return null;
 	}
@@ -262,7 +262,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 	}
 
 	@Override
@@ -410,7 +410,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+												  EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
 			throws DBException {
 
 		FieldTransformingInfo fi = payloadFieldsMap.getTransformerInstance().transform(processor, srcObject, dstObject,

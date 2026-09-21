@@ -1,38 +1,39 @@
 package org.openmrs.module.epts.etl.databasemodelgeneration.processor;
 
-import java.io.IOException;
 import java.sql.Connection;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Set;
+import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
-import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
-import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ParentOnDemandLoadTransformer;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationItemResult;
+import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
+import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
+import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -46,7 +47,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  * moving files from export directory to import directory
  * <p>
  * In the future a propery transportation method should be implemented.
- * 
+ *
  * @author jpboane
  */
 public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseModelGenerationRecord> {
@@ -60,7 +61,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	private Set<EtlItemConfiguration> visitedItemConfigurations;
 
 	public DatabaseModelGenerationProcessor(Engine<DatabaseModelGenerationRecord> monitor, IntervalExtremeRecord limits,
-			boolean runningInConcurrency) {
+											boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 
 		this.generationVisitTracker = new DatabaseModelGenerationVisitTracker<>();
@@ -85,15 +86,20 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	public void transformAndLoad(List<DatabaseModelGenerationRecord> records, Connection srcConn, Connection dstConn)
 			throws DBException {
 
+		this.databaseModelGenerated = true;
+
+		if (!this.databaseModelGenerated && getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement()) {
+			getRelatedEtlConfiguration().resetDataModelClassLoader();
+		}
+
 		generateConfigurationTree(getEtlItemConfiguration(), getRelatedEtlOperationConfig(), srcConn, dstConn);
 
-		getTaskResultInfo().addSuccessfulRecords(records);
+		getTaskResultInfo().addAllToRecordsWithNoError(EtlOperationItemResult.parseFromEtlDatabaseObject(records));
 
-		this.databaseModelGenerated = true;
 	}
 
 	private void generateConfigurationTree(EtlItemConfiguration item, EtlOperationConfig operationConfig,
-			Connection srcConn, Connection dstConn) throws DBException {
+										   Connection srcConn, Connection dstConn) throws DBException {
 		if (item == null || !visitedItemConfigurations.add(item))
 			return;
 
@@ -139,7 +145,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	}
 
 	private void generateOnDemandConfigurationTrees(DstConf destination, EtlOperationConfig operationConfig,
-			Connection srcConn, Connection dstConn) throws DBException {
+													Connection srcConn, Connection dstConn) throws DBException {
 
 		if (!destination.hasMapping())
 			return;
@@ -180,7 +186,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 			objectConfiguration.fullLoad(appConn);
 
-			objectConfiguration.generateRelatedPojoClass(app, true);
+			objectConfiguration.generateRecordClass(app, true);
 			persistPhysicalMetadata(app, objectConfiguration, appConn);
 			generationVisitTracker.complete(fullClassName);
 
@@ -206,7 +212,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	}
 
 	private void persistPhysicalMetadata(DBConnectionInfo app, EtlDatabaseObjectConfiguration tableConfiguration,
-			Connection connection) {
+										 Connection connection) {
 		if (!(tableConfiguration instanceof AbstractTableConfiguration))
 			return;
 
@@ -229,7 +235,7 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 						getRelatedEtlConfiguration().shouldOverrideExistingDataModelElement());
 				PhysicalTableMetadata persistedMetadata = saved ? metadata
 						: repository.find(key).orElseThrow(() -> new IOException(
-								"Existing physical metadata could not be loaded after it was preserved: " + key));
+						"Existing physical metadata could not be loaded after it was preserved: " + key));
 				new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
 						.record(new DatabaseModelManifest.Entry(key.toString(),
 								tableConfiguration.generateFullClassName(app),
@@ -256,12 +262,12 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 	@Override
 	public TaskProcessor<DatabaseModelGenerationRecord> initReloadRecordsWithDefaultParentsTaskProcessor(
 			IntervalExtremeRecord limits) {
-		return null;
+		throw new ForbiddenOperationException("Forbiden Method");
 	}
 
 	@Override
 	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
+						  EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
 			throws DBException {
 
 		throw new ForbiddenOperationException("Unsupported method!");

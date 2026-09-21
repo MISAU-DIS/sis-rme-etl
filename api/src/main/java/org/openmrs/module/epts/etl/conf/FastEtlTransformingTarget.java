@@ -49,7 +49,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 
 	@Override
 	public TableConfiguration findFullConfiguredConfInAllRelatedTable(String fullTableName,
-			List<Integer> alreadyCheckedObjects) {
+																	  List<Integer> alreadyCheckedObjects) {
 
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
@@ -111,7 +111,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRecordClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
 
@@ -150,7 +150,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	}
 
 	public static FastEtlTransformingTarget fastCreate(EtlConfiguration relatedEtlCOnf,
-			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
+													   List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
 
 		if (relatedEtlCOnf == null) {
 			throw new ForbiddenOperationException("relatedEtlConf cannot be null");
@@ -179,7 +179,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	}
 
 	public static FastEtlTransformingTarget fastCreate(EtlConfiguration relatedEtlCOnf,
-			List<EtlDataSource> avaliableDataSources) throws DBException {
+													   List<EtlDataSource> avaliableDataSources) throws DBException {
 
 		return new FastEtlTransformingTarget(relatedEtlCOnf, avaliableDataSources);
 	}
