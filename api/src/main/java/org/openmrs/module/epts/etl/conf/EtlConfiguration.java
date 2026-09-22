@@ -1309,8 +1309,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 			types[0] = ParentTableImpl.class;
 
-			EtlConfiguration etlConfiguration = new ObjectMapperProvider(types).getContext(EtlConfiguration.class)
-					.readValue(json, EtlConfiguration.class);
+			EtlConfiguration etlConfiguration = new ObjectMapperProvider(types).getContext(EtlConfiguration.class).readValue(json,
+						EtlConfiguration.class);
 
 			etlConfiguration.setConfigFilePath(srcFile.getAbsolutePath());
 

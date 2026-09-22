@@ -218,6 +218,8 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			}
 		} else {
 			logWarn("THERE IS NO MORE OPERATION TO EXECUTE... FINALIZING PROCESS... " + this.getControllerId());
+
+			this.changeStatusToFinished();
 		}
 
 		getRelatedEtlConf().finalizeAllApps();
@@ -268,76 +270,12 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	@Override
 	public boolean isStopped() {
-		if (isNotInitialized())
-			return false;
-
-		if (utilities.listHasElement(this.getOperationsControllers())) {
-			for (OperationController<? extends EtlDatabaseObject> controller_ : this.getOperationsControllers()) {
-				OperationController<? extends EtlDatabaseObject> controllerToCheck = controller_;
-
-				while (controllerToCheck != null && controllerToCheck.getOperationConfig().isDisabled()) {
-					controllerToCheck = controllerToCheck.getChild();
-				}
-
-				if (controllerToCheck == null) {
-					continue;
-				}
-
-				if (!controllerToCheck.isStopped() && !controllerToCheck.isFinished()) {
-					return false;
-				} else {
-					OperationController<? extends EtlDatabaseObject> child = controllerToCheck.getChild();
-
-					while (child != null) {
-						if (!child.isStopped() && !child.isFinished()) {
-							return false;
-						}
-
-						child = child.getChild();
-					}
-				}
-			}
-
-			return true;
-		}
-
-		return this.operationStatus == EtlOperationStatus.STOPPED;
+		return this.operationStatus.stopped();
 	}
 
 	@Override
 	public boolean isFinished() {
-		if (Controller.super.isStopped()) {
-			return true;
-		}
-
-		if (Controller.super.isFinished()) {
-			return true;
-		}
-
-		if (utilities.listHasElement(this.getOperationsControllers())) {
-			for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
-				if (controller.getOperationConfig().isDisabled() && !controller.getOperationConfig().hasChild()) {
-					continue;
-				} else if (!controller.isFinished()) {
-					return false;
-				} else {
-					OperationController<? extends EtlDatabaseObject> child = controller.getChild();
-
-					while (child != null) {
-
-						if (!child.isFinished() && !child.getOperationConfig().isDisabled()) {
-							return false;
-						}
-
-						child = child.getChild();
-					}
-				}
-			}
-
-			return true;
-		}
-
-		return this.operationStatus == EtlOperationStatus.FINISHED;
+		return this.operationStatus.finished();
 	}
 
 	@Override
@@ -347,7 +285,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			logWarn("Stop Already requested!!!");
 			return;
 		}
- 
+
 		logWarn("Requesting Stop");
 
 		synchronized (LOCK) {
@@ -358,14 +296,6 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			changeStatusToStopping();
 
 			setStopRequested(true);
-
-			/*
-			 * String fileName = generateStopRequestFile().getAbsolutePath();
-			 * 
-			 * FileUtilities.write(fileName, "{\"stopRequestedAt\":" +
-			 * DateAndTimeUtilities.formatToMilissegundos(DateAndTimeUtilities.
-			 * getCurrentDate()) + "\"}");
-			 */
 
 			if (isNotInitialized()) {
 				logWarn("Process not initialized, the stopping now!");
@@ -380,8 +310,34 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 						controller.requestStop();
 					}
 				}
+
+				this.waitUntilNoOperationIsRunning();
+
+				this.changeStatusToStopped();
 			}
 		}
+	}
+
+	private void waitUntilNoOperationIsRunning() {
+		boolean atLeastOneIsRunning = true;
+
+		while (atLeastOneIsRunning) {
+			atLeastOneIsRunning = false;
+
+			for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
+
+				if (controller.isRunning()) {
+					atLeastOneIsRunning = true;
+					break;
+				}
+			}
+
+			warn("WAINTING UNTIL ALL OPERATIONS STOP...", 60 * 15, true);
+
+			TimeCountDown.sleep(15);
+		}
+
+		warn("The process is stoping as requested....");
 	}
 
 	@Override

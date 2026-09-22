@@ -190,8 +190,9 @@ public class OpenConnection implements Connection, Closeable {
 		RuntimeException failure = null;
 		try {
 			if (connection.isClosed()) {
-				throw new SQLException("Connection closed before transaction finalization");
+				return;
 			}
+
 			if (!connection.getAutoCommit()) {
 				if (this.operationTerminatedSuccessifully) {
 					commit();
