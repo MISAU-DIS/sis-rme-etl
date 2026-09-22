@@ -80,6 +80,7 @@ public class ProcessStarter implements ControllerStarter {
 			logger.debug("ProcessController Initialized");
 
 			this.initialized = true;
+			this.finalized = false;
 
 			logger.debug("Starter Initialization Fineshed");
 		}
@@ -104,10 +105,8 @@ public class ProcessStarter implements ControllerStarter {
 
 			startController(controller);
 
-			waitUntilFinalized(controller);
-
-			logFinalStatus(controller);
-
+			waitUntilFinalized();
+			logFinalStatus();
 		} catch (Exception e) {
 			logger.err("ProcessStarter failed", e);
 
@@ -170,8 +169,8 @@ public class ProcessStarter implements ControllerStarter {
 				this.finalized = true;
 			}
 		} else if (controllerToFinalize.isStopped()) {
-			logger.warn("THE APPLICATION IS STOPPING DUE STOP REQUESTED!");
 			controller.handleFinalization();
+			this.finalized = true;
 		}
 
 	}
@@ -189,18 +188,18 @@ public class ProcessStarter implements ControllerStarter {
 		executor.execute(controller);
 	}
 
-	private void waitUntilFinalized(ProcessController controller) {
-		while (!finalized) {
-			TimeCountDown.sleep(60);
+	private void waitUntilFinalized() {
+		while (!this.finalized) {
+			TimeCountDown.sleep(15);
 
 			logger.warn("THE APPLICATION IS STILL RUNNING...", 60 * 15, true);
 		}
 	}
 
-	private void logFinalStatus(ProcessController controller) {
-		if (controller.isFinished()) {
+	private void logFinalStatus() {
+		if (this.currentController.isFinished()) {
 			logger.warn("ALL JOBS ARE FINISHED");
-		} else if (controller.isStopped()) {
+		} else if (this.currentController.isStopped()) {
 			logger.warn("ALL JOBS ARE STOPPED");
 		}
 	}

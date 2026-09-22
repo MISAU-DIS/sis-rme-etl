@@ -121,7 +121,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 					dataSourceObjects);
 
 			PreparedQueryInfo pq = null;
-			
+
 			try {
 				pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
 						utilities.parseToList(this.getSrcConf().getAlias()), ds, getRelatedEtlConf(), null);
@@ -345,27 +345,18 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 			}));
 		}
 
-		// External variable to store the final sum
-		List<T> allSearchedRecords = new ArrayList<>();
-
-		// Combine all tasks
 		CompletableFuture<Void> allOf = CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0]));
 
-		// Handle results when all tasks are complete and update the external variable
-		allOf.thenRun(() -> {
-			allOf.thenApply(
-					v -> tasks.stream().map(CompletableFuture::join).flatMap(List::stream).collect(Collectors.toList()))
-					.thenAccept(allSearchedRecords::addAll).join();
-		});
-
-		// Block and wait for all tasks to complete
+		CompletableFuture<List<T>> allSearchedRecords = allOf.thenApply(
+				v -> tasks.stream().map(CompletableFuture::join).flatMap(List::stream).collect(Collectors.toList()));
 		try {
-			allOf.get();
-		} catch (InterruptedException | ExecutionException e) {
+			return allSearchedRecords.get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new EtlExceptionImpl("Interrupted while searching for records", e);
+		} catch (ExecutionException e) {
 			throw new EtlExceptionImpl("Error Happened when searching for records", e);
 		}
-
-		return allSearchedRecords;
 	}
 
 	/**

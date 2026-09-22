@@ -102,7 +102,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				for (EtlDatabaseObject srcRecord : etlObjects) {
 					this.quickTransformRecord(srcRecord, srcConn, dstConn);
 				}
-				
+
 				logWarn("Quick tranformation done on {} {}", etlObjects.size(),
 						etlItemConf.getSrcConf().getTableAlias());
 
@@ -490,7 +490,6 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 
 		if (action.moveToStageAreaOnSuccess()) {
-
 			if (successful) {
 				moveToStageArea(obj, stageRecord, srcConn);
 				DatabaseObjectDAO.remove(obj, srcConn);
@@ -526,8 +525,6 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		p.setRelatedEtlProcessor(this);
 
-		return null;
-
-		// return p;
+		return p;
 	}
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Executes extraction, transformation and loading sequentially. */
 public class SingleThreadProcessingStrategy implements EngineProcessingStrategy {
@@ -20,13 +21,20 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 			}
 
 			TaskProcessor<T> processor = engine.initTaskProcessor(interval, false, engine.getEngineId());
+
 			boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-			engine.performExtractTransformationAndLoading(processor, true, persistWork, engine.openSrcConn(engine),
-					engine.tryToOpenDstConn(engine));
+			OpenConnection srcConn = engine.openSrcConn(engine);
+			OpenConnection dstConn = engine.tryToOpenDstConn(engine);
 
-			if (processor.getTaskResultInfo().hasFatalError()) {
-				engine.stopOperationDueError(processor.getTaskResultInfo().getFatalException());
+			try {
+				engine.performExtractTransformationAndLoading(processor, true, persistWork, srcConn, dstConn);
+
+				if (processor.getTaskResultInfo().hasFatalError()) {
+					engine.stopOperationDueError(processor.getTaskResultInfo().getFatalException());
+				}
+			} finally {
+				OpenConnection.finalizeAllConnections(engine, srcConn, dstConn);
 			}
 		}
 	}

@@ -2249,7 +2249,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				ParentTable ref = pInfo.get(0);
 
 				for (RefMapping map : ref.getRefMapping()) {
-					joinFields.add(generateJoinMapping(map.getChildField().getName(), map.getParentField().getName(),
+					joinFields.add(generateJoinMapping(map.getParentField().getName(), map.getChildField().getName(),
 							target, dsName, conn));
 				}
 			} else {
@@ -2261,7 +2261,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			}
 		} else {
 
-			// Assuning that the this data src is child
+			// Assuning that this data src is child
 			pInfo = this.findAllRefToParent(relatedTabConf.getTableName());
 
 			if (utilities.listHasElement(pInfo)) {
@@ -2270,8 +2270,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					ParentTable ref = pInfo.get(0);
 
 					for (RefMapping map : ref.getRefMapping()) {
-						joinFields.add(generateJoinMapping(map.getParentField().getName(),
-								map.getChildField().getName(), target, dsName, conn));
+						joinFields.add(generateJoinMapping(map.getChildField().getName(),
+								map.getParentField().getName(), target, dsName, conn));
 					}
 				} else {
 					throw new ForbiddenOperationException(

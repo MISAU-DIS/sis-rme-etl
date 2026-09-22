@@ -501,7 +501,7 @@ public class EtlLoadHelper {
 		}
 
 		synchronized (getEngine()) {
-			boolean includeHeader = FileUtilities.isEmpty(new File(dataFile));
+			boolean includeHeader = FileUtilities.isEmpty(new File(dataFile)) && getEngine().isCsvDst();
 
 			if (includeHeader) {
 				FileUtilities.write(dataFile, utilities.generateCsvHeader(objs.get(0), dstConf.getExcludedFields(),
@@ -511,8 +511,7 @@ public class EtlLoadHelper {
 			FileUtilities.write(dataFile, data);
 		}
 
-		getProcessor().getTaskResultInfo()
-				.addSuccessfulRecords(objs);
+		getProcessor().getTaskResultInfo().addSuccessfulRecords(objs);
 	}
 
 	void logTrace(String msg) {

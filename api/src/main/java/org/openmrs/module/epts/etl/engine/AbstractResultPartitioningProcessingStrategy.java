@@ -47,39 +47,38 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 			List<T> records = engine.extract(interval, srcConn, dstConn);
 
 			if (!UTILITIES.listHasElement(records)) {
-				interval.markAsProcessed();
-				persistCompletedInterval(engine, srcConn, dstConn, persistWork);
+				persistCompletedInterval(engine, interval, srcConn, dstConn, persistWork);
 				return;
 			}
 
-			int processorCount = engine.getController().getOperationConfig().getMaxSupportedProcessors();
+			int processorCount = engine.getRelatedEtlOperationConfig().getMaxSupportedProcessors();
 
 			Queue<T> queue = new ConcurrentLinkedQueue<>(records);
 
 			processQueue(engine, interval, records, queue, processorCount, threadFactory, srcConn, dstConn);
 
-			interval.markAsProcessed();
-
-			persistCompletedInterval(engine, srcConn, dstConn, persistWork);
+			persistCompletedInterval(engine, interval, srcConn, dstConn, persistWork);
 		} catch (Exception e) {
 			engine.stopOperationDueError(e);
 
 			throw e;
 		} finally {
-			OpenConnection.finalizeAllConnections(engine, srcConn, dstConn);
+			OpenConnection.finalizeAllConnections(engine, dstConn, srcConn);
 		}
 	}
 
-	private void persistCompletedInterval(Engine<?> engine, OpenConnection srcConn, OpenConnection dstConn,
-			boolean persistWork) throws Exception {
+	private void persistCompletedInterval(Engine<?> engine, IntervalExtremeRecord interval, OpenConnection srcConn,
+			OpenConnection dstConn, boolean persistWork) throws Exception {
 
 		if (persistWork) {
 			engine.flushPendingPersistence(srcConn, dstConn);
-			engine.getThreadRecordIntervalsManager().save();
-
 			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+			OpenConnection.finalizeAllConnections(engine, dstConn, srcConn);
+			interval.markAsProcessed();
+			engine.getThreadRecordIntervalsManager().save();
 		} else {
 			engine.discardPendingPersistence();
+			interval.markAsProcessed();
 		}
 	}
 }
