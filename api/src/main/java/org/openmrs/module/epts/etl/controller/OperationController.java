@@ -60,6 +60,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	protected String controllerId;
 
+	protected List<OperationController<? extends EtlDatabaseObject>> children;
+
 	protected EtlOperationStatus operationStatus;
 
 	protected volatile boolean stopRequested;
@@ -161,6 +163,14 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	public boolean hasChild() {
 		return this.child != null;
+	}
+
+	public List<OperationController<? extends EtlDatabaseObject>> getChildren() {
+		return children;
+	}
+
+	public void setChildren(List<OperationController<? extends EtlDatabaseObject>> children) {
+		this.children = children;
 	}
 
 	public boolean hasNestedController() {
