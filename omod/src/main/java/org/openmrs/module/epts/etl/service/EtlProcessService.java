@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.service;
 
 import org.openmrs.module.epts.etl.Main;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.config.EtlGlobalPropertyService;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.controller.ProcessStarter;
@@ -26,9 +27,11 @@ public class EtlProcessService {
      * by the OpenMRS ETL lifecycle.
      */
     public synchronized void initialize() {
+        if (this.processStarter != null) {
+            return;
+        }
 
-        ProcessStarter starter =
-                Main.getOpenMrsProcessStarter();
+        ProcessStarter starter = Main.getOpenMrsProcessStarter();
 
         if (starter != null) {
             this.processStarter = starter;
@@ -73,63 +76,51 @@ public class EtlProcessService {
      * This method does NOT create another ProcessStarter.
      */
     public synchronized ProcessController start() {
-
-        ProcessStarter starter =
-                getProcessStarter();
+        ProcessStarter starter = getProcessStarter();
 
         if (starter == null) {
-
             throw new IllegalStateException(
-                    "EPTS ETL ProcessStarter is not available. "
-                            + "The ETL has not been started by OpenMRS."
+                    "EPTS ETL ProcessStarter is not available. The ETL has not been started by OpenMRS."
             );
         }
 
-        ProcessController controller =
-                starter.getCurrentController();
+        ProcessController controller = starter.getCurrentController();
 
-        /*
-         * Already running.
-         */
-        if (controller != null
-                && controller.isRunning()) {
-
+        if (controller != null && controller.isRunning()) {
             return controller;
         }
 
         /*
-         * The starter has not initialized its controller yet.
-         *
-         * ProcessStarter.run() is responsible for initialization
-         * and starting the controller.
+         * Primeiro arranque do ProcessStarter.
          */
         if (!starter.isInitialized()) {
+            Thread etlThread = new Thread(starter, "epts-etl-manual-start");
+            etlThread.setDaemon(true);
+            etlThread.start();
+            return null;
+        }
+
+        /*
+         * O lifecycle anterior terminou.
+         * Criamos um novo ProcessStarter usando a mesma configuração ETL.
+         */
+        if (controller != null && (controller.isStopped() || controller.isFinished())) {
+
+            EtlConfiguration etlConfig = starter.getEtlConfig();
+
+            ProcessStarter newStarter = new ProcessStarter(etlConfig);
+
+            this.processStarter = newStarter;
 
             Thread etlThread = new Thread(
-                    starter,
-                    "epts-etl-manual-start"
+                    newStarter,
+                    "epts-etl-manual-restart"
             );
 
             etlThread.setDaemon(true);
             etlThread.start();
 
             return null;
-        }
-
-        /*
-         * A ProcessStarter whose controller has already finished
-         * or stopped cannot simply be run again because its
-         * lifecycle is already finalized.
-         */
-        if (controller != null
-                && (controller.isStopped()
-                || controller.isFinished())) {
-
-            throw new IllegalStateException(
-                    "The current ETL process has already stopped "
-                            + "or finished. Restart requires a new "
-                            + "ProcessStarter lifecycle."
-            );
         }
 
         return controller;
