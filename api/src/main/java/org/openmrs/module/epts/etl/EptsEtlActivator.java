@@ -1,69 +1,60 @@
-/**
- * The contents of this file are subject to the OpenMRS Public License
- * Version 1.0 (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License at
- * http://license.openmrs.org
- *
- * Software distributed under the License is distributed on an "AS IS"
- * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
- * License for the specific language governing rights and limitations
- * under the License.
- *
- * Copyright (C) OpenMRS, LLC.  All Rights Reserved.
- */
 package org.openmrs.module.epts.etl;
 
-
-import org.openmrs.module.ModuleActivator;
+import org.openmrs.module.BaseModuleActivator;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
 
-/**
- * This class contains the logic that is run every time this module is either started or stopped.
- */
-public class EptsEtlActivator implements ModuleActivator{
-	
-	private static final EtlLogger LOG = EtlLogger.getLogger(EptsEtlActivator.class);
-		
-	/**
-	 * @see ModuleActivator#willRefreshContext()
-	 */
-	public void willRefreshContext() {
-		LOG.info("Refreshing Epts Synchronize Module");
-	}
-	
-	/**
-	 * @see ModuleActivator#contextRefreshed()
-	 */
-	public void contextRefreshed() {
-		LOG.info("Epts Synchronize Module refreshed");
-	}
-	
-	/**
-	 * @see ModuleActivator#willStart()
-	 */
+public class EptsEtlActivator extends BaseModuleActivator {
+
+	private static final EtlLogger LOG =
+			EtlLogger.getLogger(EptsEtlActivator.class);
+
+	@Override
 	public void willStart() {
 		LOG.info("Starting Epts Synchronize Module");
 	}
-	
-	/**
-	 * @see ModuleActivator#started()
-	 */
+
+	@Override
 	public void started() {
 		LOG.info("Epts Synchronize Module started");
+
+		try {
+			/*
+			 * OpenMRS is now starting the ETL through the
+			 * single official startup entry point.
+			 *
+			 * Main is responsible for reading:
+			 *
+			 *   epts.etl.enabled
+			 *   epts.etl.startup.file
+			 */
+			Main.startFromOpenMRS();
+
+		} catch (Exception e) {
+			/*
+			 * Do not prevent OpenMRS from continuing its startup
+			 * just because the ETL could not be started.
+			 */
+			LOG.err("Failed to start ETL from OpenMRS", e);
+		}
 	}
-	
-	/**
-	 * @see ModuleActivator#willStop()
-	 */
+
+	@Override
+	public void willRefreshContext() {
+		LOG.info("Refreshing Epts Synchronize Module");
+	}
+
+	@Override
+	public void contextRefreshed() {
+		LOG.info("Epts Synchronize Module refreshed");
+	}
+
+	@Override
 	public void willStop() {
 		LOG.info("Stopping Epts Synchronize Module");
 	}
-	
-	/**
-	 * @see ModuleActivator#stopped()
-	 */
+
+	@Override
 	public void stopped() {
 		LOG.info("Epts Synchronize Module stopped");
 	}
-		
 }

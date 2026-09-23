@@ -9,10 +9,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -103,8 +100,14 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
-		Object value = mapper.readValue(EtlDataConfiguration.resolvePlaceholders(file, null, null),
-				targetField.getType());
+		Object value = mapper.readValue(
+				EtlDataConfiguration.resolvePlaceholders(
+						file,
+						null,
+						retrieveAllAvailableTemplateParameters()
+				),
+				targetField.getType()
+		);
 
 		targetField.set(dc, value);
 	}
@@ -132,8 +135,14 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		}
 
 		for (File file : files) {
-			Object item = mapper.readValue(EtlDataConfiguration.resolvePlaceholders(file, null, null), itemType);
-			targetList.add(item);
+			Object item = mapper.readValue(
+					EtlDataConfiguration.resolvePlaceholders(
+							file,
+							null,
+							retrieveAllAvailableTemplateParameters()
+					),
+					itemType
+			);
 		}
 	}
 
@@ -265,6 +274,36 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		}
 
 		return null;
+	}
+
+	@Override
+	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+		Map<String, Object> allParameters = new HashMap<>();
+
+		if (parent == null) {
+			return allParameters;
+		}
+
+		// 1. Parameters inherited from the parent configuration
+		Map<String, Object> parentParameters =
+				parent.retrieveAllAvailableTemplateParameters();
+
+		if (parentParameters != null && !parentParameters.isEmpty()) {
+			allParameters.putAll(parentParameters);
+		}
+
+		// 2. Global ETL parameters
+		EtlConfiguration etlConfiguration =
+				parent.getRelatedEtlConf();
+
+		if (etlConfiguration != null
+				&& etlConfiguration.getParams() != null
+				&& !etlConfiguration.getParams().isEmpty()) {
+
+			allParameters.putAll(etlConfiguration.getParams());
+		}
+
+		return allParameters;
 	}
 
 	@Override

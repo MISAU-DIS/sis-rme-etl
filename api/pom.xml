@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -7,12 +7,12 @@
 		<artifactId>sisrme-etl</artifactId>
 		<version>1.0</version>
 	</parent>
-	
+
 	<artifactId>sisrme-etl-api</artifactId>
 	<packaging>jar</packaging>
 	<name>Epts ETL Module API</name>
 	<description>API project for SISRME-Etl</description>
-		
+
 	<dependencies>
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
@@ -100,147 +100,161 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>5.10.2</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>5.10.2</version>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- Begin OpenMRS core -->
-		
+
 		<dependency>
 			<groupId>org.openmrs.api</groupId>
 			<artifactId>openmrs-api</artifactId>
 			<type>jar</type>
-		    <exclusions>
-		        <exclusion>
-		            <groupId>org.slf4j</groupId>
-		            <artifactId>slf4j-log4j12</artifactId>
-		        </exclusion>
-		        <exclusion>
-		            <groupId>org.slf4j</groupId>
-		            <artifactId>jcl-over-slf4j</artifactId>
-		        </exclusion>
-		        <exclusion>
-		            <groupId>xml-apis</groupId>
-		            <artifactId>xml-apis</artifactId>
-		        </exclusion>
-		    </exclusions>	
-		</dependency>
-				
-		<dependency>
-			<groupId>org.openmrs.api</groupId>
-			<artifactId>openmrs-api</artifactId>
-		    <exclusions>
-		        <exclusion>
-		            <groupId>org.slf4j</groupId>
-		            <artifactId>slf4j-log4j12</artifactId>
-		        </exclusion>
-		        <exclusion>
-		            <groupId>org.slf4j</groupId>
-		            <artifactId>jcl-over-slf4j</artifactId>
-		        </exclusion>
-		        <exclusion>
-		            <groupId>xml-apis</groupId>
-		            <artifactId>xml-apis</artifactId>
-		        </exclusion>
-		    </exclusions>				
-			<type>test-jar</type>
-		</dependency>
-		
-		<!-- End OpenMRS core -->
-		
-		<dependency>
-		    <groupId>com.microsoft.sqlserver</groupId>
-		    <artifactId>mssql-jdbc</artifactId>
-		    <version>12.4.2.jre11</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
-		    <groupId>org.postgresql</groupId>
-		    <artifactId>postgresql</artifactId>
-		    <version>42.6.0</version>
-		   	<scope>provided</scope>
+			<groupId>org.openmrs.api</groupId>
+			<artifactId>openmrs-api</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+			<type>test-jar</type>
 		</dependency>
-		
+
+		<!-- End OpenMRS core -->
+
 		<dependency>
-		  <groupId>com.fasterxml.jackson.core</groupId>
-		  <artifactId>jackson-core</artifactId>
-		  <version>2.9.6</version>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+			<version>12.4.2.jre11</version>
 		</dependency>
-		
+
 		<dependency>
-		  <groupId>com.fasterxml.jackson.core</groupId>
-		  <artifactId>jackson-annotations</artifactId>
-		  <version>2.9.6</version>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.6.0</version>
+			<scope>provided</scope>
 		</dependency>
-		
+
 		<dependency>
-		  <groupId>com.fasterxml.jackson.core</groupId>
-		  <artifactId>jackson-databind</artifactId>
-		  <version>2.9.6</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>2.9.6</version>
 		</dependency>
-		
+
 		<dependency>
-		    <groupId>javax.ws.rs</groupId>
-		    <artifactId>javax.ws.rs-api</artifactId>
-		    <version>2.0.1</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>2.9.6</version>
 		</dependency>
-		
+
 		<dependency>
-		    <groupId>commons-logging</groupId>
-		    <artifactId>commons-logging</artifactId>
-		    <version>1.2</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.9.6</version>
 		</dependency>
-				 
+
 		<dependency>
-		    <groupId>org.apache.commons</groupId>
-		    <artifactId>commons-lang3</artifactId>
-		    <version>3.0</version>
+			<groupId>javax.ws.rs</groupId>
+			<artifactId>javax.ws.rs-api</artifactId>
+			<version>2.0.1</version>
 		</dependency>
+
 		<dependency>
-		    <groupId>com.mysql</groupId>
-		    <artifactId>mysql-connector-j</artifactId>
-		    <version>8.0.33</version>
-		</dependency>	
-		<dependency>
-		    <groupId>com.oracle.database.jdbc</groupId>
-		    <artifactId>ojdbc8</artifactId>
-		    <version>19.3.0.0</version>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.2</version>
 		</dependency>
+
 		<dependency>
-			 <groupId>commons-fileupload</groupId>
-			 <artifactId>commons-fileupload</artifactId>
-			 <version>1.3.1</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.0</version>
 		</dependency>
 		<dependency>
-		    <groupId>commons-io</groupId>
-		    <artifactId>commons-io</artifactId>
-		    <version>2.5</version>
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+			<version>8.0.33</version>
 		</dependency>
-		
 		<dependency>
-		    <groupId>org.apache.tomcat</groupId>
-		    <artifactId>tomcat-jdbc</artifactId>
-		    <version>7.0.35</version>
-		</dependency>	
-		
-		 <dependency>
-	        <groupId>ch.qos.logback</groupId>
-	        <artifactId>logback-classic</artifactId>
-	    </dependency>
-	
-	    <dependency>
-	        <groupId>org.slf4j</groupId>
-	        <artifactId>slf4j-api</artifactId>
-	    </dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc8</artifactId>
+			<version>19.3.0.0</version>
+		</dependency>
 		<dependency>
-	        <groupId>joda-time</groupId>
-	        <artifactId>joda-time</artifactId>
-	        <version>2.10.10</version>
-	    </dependency>	
-	    
-	   <dependency>
-		    <groupId>net.objecthunter</groupId>
-		    <artifactId>exp4j</artifactId>
-		    <version>0.4.8</version>
-		</dependency> 	   
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+			<version>1.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>tomcat-jdbc</artifactId>
+			<version>7.0.35</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>2.10.10</version>
+		</dependency>
+
+		<dependency>
+			<groupId>net.objecthunter</groupId>
+			<artifactId>exp4j</artifactId>
+			<version>0.4.8</version>
+		</dependency>
 	</dependencies>
-	
+
 	<build>
 		<resources>
 			<resource>
@@ -255,44 +269,48 @@
 				<filtering>true</filtering>
 			</testResource>
 		</testResources>
-		
+
 		<plugins>
 			<plugin>
-			  <groupId>org.apache.maven.plugins</groupId>
-			  <artifactId>maven-shade-plugin</artifactId>
-			  <version>3.5.3</version>
-			  <executions>
-			     <!-- Run shade goal on package phase -->
-			    <execution>
-					<phase>package</phase>
-					<goals>
-						<goal>shade</goal>
-					</goals>
-					
-					<configuration>
-						 <createDependencyReducedPom>false</createDependencyReducedPom>
-						  <transformers>
-									<!-- add Main-Class to manifest file -->
-			                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-								<mainClass>org.openmrs.module.epts.etl.Main</mainClass>
-							</transformer>
-							<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-						  </transformers>
-						<filters>
-				          <filter>
-				            <artifact>*:*</artifact>
-				            <excludes>
-				              <exclude>META-INF/*.SF</exclude>
-				              <exclude>META-INF/*.DSA</exclude>
-				              <exclude>META-INF/*.RSA</exclude>
-				            </excludes>
-				          </filter>
-				        </filters>		  
-					</configuration>
-			      </execution>
-			  </executions>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.5.3</version>
+				<executions>
+					<!-- Run shade goal on package phase -->
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<transformers>
+								<!-- add Main-Class to manifest file -->
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>org.openmrs.module.epts.etl.Main</mainClass>
+								</transformer>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+							</transformers>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
-	        
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version>
+			</plugin>
 		</plugins>
 	</build>
 

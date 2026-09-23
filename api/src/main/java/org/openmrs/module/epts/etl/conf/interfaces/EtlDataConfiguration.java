@@ -563,7 +563,23 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 	public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
 		try {
-			return resolvePlaceholders(FileUtilities.realAllFileAsString(file), null, null, true);
+			@SuppressWarnings("unchecked")
+			Set<String> allowed = allowedPlaceholders instanceof Set
+					? (Set<String>) allowedPlaceholders
+					: null;
+
+			@SuppressWarnings("unchecked")
+			Map<String, ?> environment = env instanceof Map
+					? (Map<String, ?>) env
+					: null;
+
+			return resolvePlaceholders(
+					FileUtilities.realAllFileAsString(file),
+					allowed,
+					environment,
+					true
+			);
+
 		} catch (IOException e) {
 			throw new EtlConfException(e);
 		}
