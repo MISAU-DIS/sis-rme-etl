@@ -39,6 +39,10 @@ public class ProcessStarter implements ControllerStarter {
 		return currentController;
 	}
 
+	public EtlConfiguration getEtlConfig() {
+		return this.etlConfig;
+	}
+
 	public ProcessStarter(EtlConfiguration etlConfig, Logger logger) {
 		this.etlConfig = etlConfig;
 

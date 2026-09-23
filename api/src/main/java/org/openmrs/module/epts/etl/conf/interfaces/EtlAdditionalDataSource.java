@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -76,16 +77,31 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> allParameters = new HashMap<>();
 
-		Map<String, Object> parentParameters = this.getRelatedSrcConf().retrieveAllAvailableTemplateParameters();
+		// 1. Parameters inherited from the parent source configuration
+		Map<String, Object> parentParameters =
+				this.getRelatedSrcConf().retrieveAllAvailableTemplateParameters();
 
 		if (parentParameters != null && !parentParameters.isEmpty()) {
 			allParameters.putAll(parentParameters);
 		}
 
-		Map<String, Object> ownParameters = EtlDataSource.super.retrieveAllAvailableTemplateParameters();
+		// 2. Parameters defined by this additional data source
+		Map<String, Object> ownParameters =
+				EtlDataSource.super.retrieveAllAvailableTemplateParameters();
 
 		if (ownParameters != null && !ownParameters.isEmpty()) {
 			allParameters.putAll(ownParameters);
+		}
+
+		// 3. Global ETL parameters defined in EtlConfiguration
+		EtlConfiguration etlConfiguration =
+				this.getRelatedSrcConf().getRelatedEtlConf();
+
+		if (etlConfiguration != null
+				&& etlConfiguration.getParams() != null
+				&& !etlConfiguration.getParams().isEmpty()) {
+
+			allParameters.putAll(etlConfiguration.getParams());
 		}
 
 		return allParameters;
