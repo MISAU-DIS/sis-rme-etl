@@ -2516,7 +2516,7 @@ public class SQLUtilities {
 		query = normalizeQuery(query);
 
 		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
-				.toString().toLowerCase();
+				.toString();
 
 		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, knownTableAliases,
 				avaliableSrcObjects, relatedEtlConf, conn);

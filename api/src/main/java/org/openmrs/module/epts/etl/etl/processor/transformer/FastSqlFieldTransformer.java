@@ -129,11 +129,11 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 						+ " has no value on transformer:  " + getTransformerDsc());
 			}
 
-			if (paramName.equals("query")) {
+			if (paramName.equalsIgnoreCase("query")) {
 				this.sqlQuery = paramValue;
-			} else if (paramName.equals("name")) {
+			} else if (paramName.equalsIgnoreCase("name")) {
 				this.name = paramValue;
-			} else if (paramName.equals("onMultipleSrcObjectsFound")) {
+			} else if (paramName.equalsIgnoreCase("onMultipleSrcObjectsFound")) {
 				try {
 					this.onMultipleSrcObjectsFound = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
@@ -141,7 +141,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 							+ " on transformer:  " + getTransformerDsc());
 				}
 
-			} else if (paramName.equals("onNullTransformedValue")) {
+			} else if (paramName.equalsIgnoreCase("onNullTransformedValue")) {
 				try {
 					this.onNullTransformedValue = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
