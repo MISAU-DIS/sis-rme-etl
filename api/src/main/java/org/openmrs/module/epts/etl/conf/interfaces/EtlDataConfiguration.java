@@ -26,11 +26,10 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
-import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public interface EtlDataConfiguration extends BaseConfiguration {
 
@@ -527,8 +526,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false,
 					openMrsClassLoader);
 			Class<?> globalPropertyClass = Class.forName("org.openmrs.GlobalProperty", false, openMrsClassLoader);
-			Object result = administrationServiceClass
-					.getMethod("getGlobalPropertiesByPrefix", String.class)
+			Object result = administrationServiceClass.getMethod("getGlobalPropertiesByPrefix", String.class)
 					.invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
 
 			if (!(result instanceof Iterable<?>))
@@ -564,21 +562,13 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
 		try {
 			@SuppressWarnings("unchecked")
-			Set<String> allowed = allowedPlaceholders instanceof Set
-					? (Set<String>) allowedPlaceholders
-					: null;
+			Set<String> allowed = allowedPlaceholders instanceof Set ? (Set<String>) allowedPlaceholders : null;
 
 			@SuppressWarnings("unchecked")
-			Map<String, ?> environment = env instanceof Map
-					? (Map<String, ?>) env
-					: null;
+			Map<String, ?> environment = env instanceof Map ? (Map<String, ?>) env : null;
 
-			return resolvePlaceholders(
-					FileUtilities.realAllFileAsString(file),
-					allowed,
-					environment,
-					true
-			);
+			return resolvePlaceholders(org.openmrs.module.epts.etl.utilities.io.FileUtilities.realAllFileAsString(file),
+					allowed, environment, true);
 
 		} catch (IOException e) {
 			throw new EtlConfException(e);
