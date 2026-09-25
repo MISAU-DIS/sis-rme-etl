@@ -129,11 +129,11 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 						+ " has no value on transformer:  " + getTransformerDsc());
 			}
 
-			if (paramName.equals("query")) {
+			if (paramName.equalsIgnoreCase("query")) {
 				this.sqlQuery = paramValue;
-			} else if (paramName.equals("name")) {
+			} else if (paramName.equalsIgnoreCase("name")) {
 				this.name = paramValue;
-			} else if (paramName.equals("onMultipleSrcObjectsFound")) {
+			} else if (paramName.equalsIgnoreCase("onMultipleSrcObjectsFound")) {
 				try {
 					this.onMultipleSrcObjectsFound = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
@@ -141,9 +141,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 							+ " on transformer:  " + getTransformerDsc());
 				}
 
-			} else if (paramName.equals("onNullTransformedvalue")) {
+			} else if (paramName.equalsIgnoreCase("onNullTransformedValue")) {
 				try {
-					this.onNullTransformedvalue = ActionOnEtlIssue.valueOf(paramValue);
+					this.onNullTransformedValue = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
 					throw new EtlExceptionImpl("Unsupported value paramValue for parameter " + paramName
 							+ " on transformer:  " + getTransformerDsc());
@@ -204,7 +204,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			}
 
 			if (field.getDefaultValue() == null) {
-				if (this.getOnNullTransformedvalue() != null && this.getOnNullTransformedvalue().setToNull()) {
+				if (this.getOnNullTransformedValue() != null && this.getOnNullTransformedValue().setToNull()) {
 					return new FieldTransformingInfo(field, null, null);
 				}
 

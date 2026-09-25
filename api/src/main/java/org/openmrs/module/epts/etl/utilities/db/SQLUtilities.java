@@ -2516,7 +2516,7 @@ public class SQLUtilities {
 		query = normalizeQuery(query);
 
 		query = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(relatedEtlConf, avaliableSrcObjects, query)
-				.toString().toLowerCase();
+				.toString();
 
 		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, knownTableAliases,
 				avaliableSrcObjects, relatedEtlConf, conn);
@@ -2933,7 +2933,7 @@ public class SQLUtilities {
 		map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
 
 		if (map.getTransformerInstance() instanceof FastSqlFieldTransformer) {
-			map.getTransformerInstance().setOnNullTransformedvalue(ActionOnEtlIssue.SET_TO_NULL);
+			map.getTransformerInstance().setOnNullTransformedValue(ActionOnEtlIssue.SET_TO_NULL);
 		}
 
 		return map;
