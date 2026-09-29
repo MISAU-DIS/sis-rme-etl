@@ -76,6 +76,7 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 
 			voAsEtlDatabaseObject
 					.loadUniqueKeyValues((TableConfiguration) voAsEtlDatabaseObject.getRelatedConfiguration());
+
 			voAsEtlDatabaseObject
 					.loadObjectIdData((TableConfiguration) voAsEtlDatabaseObject.getRelatedConfiguration());
 

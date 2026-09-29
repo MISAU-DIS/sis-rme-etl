@@ -83,10 +83,11 @@ public class EtlStageObjectInfo {
 	}
 
 	private void loadDstStageObjectIdToDstKeyInfoObject() {
-
-		for (EtlStageAreaObject obj : getDstStageInfoObject()) {
-			if (obj.getRelatedEtlObject().getEtlInfo().isInSuccessStatus()) {
-				obj.loadIdToChilds();
+		if (hasDstStageInfoObject()) {
+			for (EtlStageAreaObject obj : getDstStageInfoObject()) {
+				if (obj.getRelatedEtlObject().getEtlInfo().isInSuccessStatus()) {
+					obj.loadIdToChilds();
+				}
 			}
 		}
 	}
@@ -159,7 +160,7 @@ public class EtlStageObjectInfo {
 
 	private static List<EtlStageAreaObject> collectSrcObjects(List<EtlStageObjectInfo> stageInfo, Boolean existing) {
 		if (utilities.listHasNoElement(stageInfo))
-			return null;
+			return new ArrayList<>();
 
 		List<EtlStageAreaObject> collected = new ArrayList<>();
 
