@@ -34,555 +34,555 @@ import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
 public interface EtlDataConfiguration extends BaseConfiguration {
 
-	Pattern PLACEHOLDER = Pattern.compile("\\$\\{([A-Za-z0-9_.-]+)}");
-	String ETL_GLOBAL_PROPERTY_PREFIX = "epts.etl.";
+    Pattern PLACEHOLDER = Pattern.compile("\\$\\{([A-Za-z0-9_.-]+)}");
+    String ETL_GLOBAL_PROPERTY_PREFIX = "epts.etl.";
 
-	EtlConfiguration getRelatedEtlConf();
+    EtlConfiguration getRelatedEtlConf();
 
-	EtlDataConfiguration getParentConf();
+    EtlDataConfiguration getParentConf();
 
-	public List<DefaultEtlValidator> getValidators();
+    public List<DefaultEtlValidator> getValidators();
 
-	void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc);
+    void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc);
 
-	ActionOnEtlIssue getGeneralBehaviourOnEtlException();
+    ActionOnEtlIssue getGeneralBehaviourOnEtlException();
 
-	EtlTemplateInfo getTemplate();
+    EtlTemplateInfo getTemplate();
 
-	void setTemplate(EtlTemplateInfo template);
+    void setTemplate(EtlTemplateInfo template);
 
-	List<String> getDynamicElements();
+    List<String> getDynamicElements();
 
-	List<EtlFragmentInclude> getInclude();
+    List<EtlFragmentInclude> getInclude();
 
-	default boolean hasInclude() {
-		return utilities.listHasElement(this.getInclude());
-	}
+    default boolean hasInclude() {
+        return utilities.listHasElement(this.getInclude());
+    }
 
-	default boolean hasDynamicElements() {
-		return utilities.listHasElement(this.getDynamicElements());
-	}
+    default boolean hasDynamicElements() {
+        return utilities.listHasElement(this.getDynamicElements());
+    }
 
-	default boolean hasValidator() {
-		return utilities.listHasElement(this.getValidators());
-	}
+    default boolean hasValidator() {
+        return utilities.listHasElement(this.getValidators());
+    }
 
-	default DBConnectionInfo getSrcConnInfo() {
-		return this.getRelatedEtlConf().getSrcConnInfo();
-	}
+    default DBConnectionInfo getSrcConnInfo() {
+        return this.getRelatedEtlConf().getSrcConnInfo();
+    }
 
-	default String getTemplateName() {
-		return hasTemplate() ? getTemplate().getName() : null;
-	}
+    default String getTemplateName() {
+        return hasTemplate() ? getTemplate().getName() : null;
+    }
 
-	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
-		if (hasTemplate()) {
-			return this.getTemplate().getAllAvailableParameters();
-		} else {
-			return null;
-		}
-	}
+    default Map<String, Object> retrieveAllAvailableTemplateParameters() {
+        if (hasTemplate()) {
+            return this.getTemplate().getAllAvailableParameters();
+        } else {
+            return null;
+        }
+    }
 
-	default void tryToLoadDumpScriptContentToFieldAndValidate(String fieldName, Map<String, Object> templateParameters,
-															  Connection conn) throws DBException {
+    default void tryToLoadDumpScriptContentToFieldAndValidate(String fieldName, Map<String, Object> templateParameters,
+                                                              Connection conn) throws DBException {
 
-		Object fieldValue = utilities.getFieldValue(this, fieldName);
+        Object fieldValue = utilities.getFieldValue(this, fieldName);
 
-		if (fieldValue instanceof String) {
+        if (fieldValue instanceof String) {
 
-			String sqlType = "query";
+            String sqlType = "query";
 
-			String fromFile = "";
-			String originalScript = fieldValue.toString();
-			String queryWithReplacedParameters = originalScript;
+            String fromFile = "";
+            String originalScript = fieldValue.toString();
+            String queryWithReplacedParameters = originalScript;
 
-			if (this.getRelatedEtlConf().checkIfIsValidDumpScript(fieldValue.toString())) {
-				fromFile = " from file " + fieldValue;
-				originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
-			}
+            if (this.getRelatedEtlConf().checkIfIsValidDumpScript(fieldValue.toString())) {
+                fromFile = " from file " + fieldValue;
+                originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
+            }
 
-			queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
-					templateParameters, false);
+            queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
+                    templateParameters, false);
 
-			utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
+            utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 
-			String toValidate = queryWithReplacedParameters;
+            String toValidate = queryWithReplacedParameters;
 
-			if (!SQLUtilities.startsWithSelectSqlOperation(queryWithReplacedParameters)) {
-				sqlType = "condition";
+            if (!SQLUtilities.startsWithSelectSqlOperation(queryWithReplacedParameters)) {
+                sqlType = "condition";
 
-				toValidate = "select * from tab where " + queryWithReplacedParameters;
-			}
+                toValidate = "select * from tab where " + queryWithReplacedParameters;
+            }
 
-			if (!SQLUtilities.isValidSelectSqlQuery(toValidate, DBUtilities.determineDbmsType(conn))) {
-				String msg = "Ivalid sql " + sqlType + fromFile + " within the field '" + fieldName + "'.\n\t" + sqlType
-						+ "> " + originalScript;
+            if (!SQLUtilities.isValidSelectSqlQuery(toValidate, DBUtilities.determineDbmsType(conn))) {
+                String msg = "Ivalid sql " + sqlType + fromFile + " within the field '" + fieldName + "'.\n\t" + sqlType
+                        + "> " + originalScript;
 
-				throw new EtlConfException(msg);
-			}
-		}
-	}
+                throw new EtlConfException(msg);
+            }
+        }
+    }
 
-	default void tryToLoadFromTemplate() {
-		if (this.hasTemplate()) {
-			EtlTemplateConfiguration template = EtlTemplateConfiguration.findTemplate(this.getRelatedEtlConf(),
-					this.getTemplate().getName());
+    default void tryToLoadFromTemplate() {
+        if (this.hasTemplate()) {
+            EtlTemplateConfiguration template = EtlTemplateConfiguration.findTemplate(this.getRelatedEtlConf(),
+                    this.getTemplate().getName());
 
-			template.setRelatedEtlConf(getRelatedEtlConf());
+            template.setRelatedEtlConf(getRelatedEtlConf());
 
-			EtlDataConfiguration fromTemplate = template.parseToEtlDataConfiguration(this.getClass(),
-					this.getTemplate());
+            EtlDataConfiguration fromTemplate = template.parseToEtlDataConfiguration(this.getClass(),
+                    this.getTemplate());
 
-			this.copyFromTemplate(fromTemplate, this.getTemplate() != null ? this.getTemplate().getName() : null,
-					this.getTemplate());
-		}
+            this.copyFromTemplate(fromTemplate, this.getTemplate() != null ? this.getTemplate().getName() : null,
+                    this.getTemplate());
+        }
 
-	}
+    }
 
-	default boolean hasTemplate() {
-		return this.getTemplate() != null;
-	}
+    default boolean hasTemplate() {
+        return this.getTemplate() != null;
+    }
 
-	default void copyFromTemplate(EtlDataConfiguration toCopyFrom, String mainTemplateName,
-								  EtlTemplateInfo templateInfo) {
+    default void copyFromTemplate(EtlDataConfiguration toCopyFrom, String mainTemplateName,
+                                  EtlTemplateInfo templateInfo) {
 
-		if (toCopyFrom == null) {
-			return;
-		}
+        if (toCopyFrom == null) {
+            return;
+        }
 
-		String errorSufix = "Error happened Within template: " + mainTemplateName;
+        String errorSufix = "Error happened Within template: " + mainTemplateName;
 
-		if (!this.getClass().isAssignableFrom(toCopyFrom.getClass())
-				&& !toCopyFrom.getClass().isAssignableFrom(this.getClass())) {
-			throw new EtlExceptionImpl(errorSufix + "> Incompatible template type: " + toCopyFrom.getClass().getName());
-		}
+        if (!this.getClass().isAssignableFrom(toCopyFrom.getClass())
+                && !toCopyFrom.getClass().isAssignableFrom(this.getClass())) {
+            throw new EtlExceptionImpl(errorSufix + "> Incompatible template type: " + toCopyFrom.getClass().getName());
+        }
 
-		copyFieldsFromTemplate(toCopyFrom, errorSufix);
+        copyFieldsFromTemplate(toCopyFrom, errorSufix);
 
-		applyDynamicElementsIfMissing(this, templateInfo, errorSufix);
-	}
+        applyDynamicElementsIfMissing(this, templateInfo, errorSufix);
+    }
 
-	default void applyIncludes() {
-		if (hasInclude()) {
-			for (EtlFragmentInclude i : this.getInclude()) {
-				i.setParent(this);
-				i.include(this);
-			}
-		}
-	}
+    default void applyIncludes() {
+        if (hasInclude()) {
+            for (EtlFragmentInclude i : this.getInclude()) {
+                i.setParent(this);
+                i.include(this);
+            }
+        }
+    }
 
-	@SuppressWarnings("unchecked")
-	default void copyFieldsFromTemplate(Object toCopyFrom, String errorSufix) {
+    @SuppressWarnings("unchecked")
+    default void copyFieldsFromTemplate(Object toCopyFrom, String errorSufix) {
 
-		Class<?> currentClass = this.getClass();
+        Class<?> currentClass = this.getClass();
 
-		while (currentClass != null && currentClass != Object.class) {
+        while (currentClass != null && currentClass != Object.class) {
 
-			Field[] fields = currentClass.getDeclaredFields();
+            Field[] fields = currentClass.getDeclaredFields();
 
-			for (Field field : fields) {
+            for (Field field : fields) {
 
-				int modifiers = field.getModifiers();
+                int modifiers = field.getModifiers();
 
-				if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers)) {
-					continue;
-				}
+                if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers)) {
+                    continue;
+                }
 
-				if ("template".equals(field.getName())) {
-					continue;
-				}
+                if ("template".equals(field.getName())) {
+                    continue;
+                }
 
-				try {
-					field.setAccessible(true);
+                try {
+                    field.setAccessible(true);
 
-					Object templateValue = field.get(toCopyFrom);
+                    Object templateValue = field.get(toCopyFrom);
 
-					if (templateValue == null) {
-						continue;
-					}
+                    if (templateValue == null) {
+                        continue;
+                    }
 
-					Object currentValue = field.get(this);
+                    Object currentValue = field.get(this);
 
-					if (templateValue instanceof List<?>) {
+                    if (templateValue instanceof List<?>) {
 
-						List<?> templateList = (List<?>) templateValue;
+                        List<?> templateList = (List<?>) templateValue;
 
-						if (currentValue == null) {
-							field.set(this, new ArrayList<>(templateList));
-						} else if (currentValue instanceof List<?>) {
-							List<Object> currentList = (List<Object>) currentValue;
-							currentList.addAll(templateList);
-						} else {
-							throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName()
-									+ "' is not a List but template provides a List.");
-						}
+                        if (currentValue == null) {
+                            field.set(this, new ArrayList<>(templateList));
+                        } else if (currentValue instanceof List<?>) {
+                            List<Object> currentList = (List<Object>) currentValue;
+                            currentList.addAll(templateList);
+                        } else {
+                            throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName()
+                                    + "' is not a List but template provides a List.");
+                        }
 
-					} else {
+                    } else {
 
-						if (!canBeOverriten(currentValue, field)) {
-							throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName()
-									+ "' already has a value and cannot be overridden by template.");
-						}
+                        if (!canBeOverriten(currentValue, field)) {
+                            throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName()
+                                    + "' already has a value and cannot be overridden by template.");
+                        }
 
-						field.set(this, templateValue);
-					}
+                        field.set(this, templateValue);
+                    }
 
-				} catch (IllegalAccessException e) {
-					throw new EtlExceptionImpl(
-							errorSufix + "> Error copying field '" + field.getName() + "' from template.", e);
-				}
-			}
+                } catch (IllegalAccessException e) {
+                    throw new EtlExceptionImpl(
+                            errorSufix + "> Error copying field '" + field.getName() + "' from template.", e);
+                }
+            }
 
-			currentClass = currentClass.getSuperclass();
-		}
-	}
+            currentClass = currentClass.getSuperclass();
+        }
+    }
 
-	public static void applyDynamicElementsIfMissing(Object target, EtlTemplateInfo templateInfo, String errorSufix) {
+    public static void applyDynamicElementsIfMissing(Object target, EtlTemplateInfo templateInfo, String errorSufix) {
 
-		if (target == null || templateInfo == null || templateInfo.getDynamicElements() == null) {
-			return;
-		}
+        if (target == null || templateInfo == null || templateInfo.getDynamicElements() == null) {
+            return;
+        }
 
-		applyDynamicElementsOnCurrentObject(target, templateInfo.getDynamicElements(), errorSufix);
+        applyDynamicElementsOnCurrentObject(target, templateInfo.getDynamicElements(), errorSufix);
 
-		for (Field field : getAllFields(target.getClass())) {
+        for (Field field : getAllFields(target.getClass())) {
 
-			int modifiers = field.getModifiers();
+            int modifiers = field.getModifiers();
 
-			if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers)) {
-				continue;
-			}
+            if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers)) {
+                continue;
+            }
 
-			if (field.getType().isPrimitive() || field.getType().isEnum()
-					|| field.getType().getName().startsWith("java.")) {
-				continue;
-			}
+            if (field.getType().isPrimitive() || field.getType().isEnum()
+                    || field.getType().getName().startsWith("java.")) {
+                continue;
+            }
 
-			try {
-				field.setAccessible(true);
+            try {
+                field.setAccessible(true);
 
-				Object value = field.get(target);
+                Object value = field.get(target);
 
-				if (value == null) {
-					continue;
-				}
+                if (value == null) {
+                    continue;
+                }
 
-				if (value instanceof Collection<?>) {
-					for (Object item : (Collection<?>) value) {
-						applyDynamicElementsIfMissing(item, templateInfo, errorSufix);
-					}
-				} else {
-					applyDynamicElementsIfMissing(value, templateInfo, errorSufix);
-				}
+                if (value instanceof Collection<?>) {
+                    for (Object item : (Collection<?>) value) {
+                        applyDynamicElementsIfMissing(item, templateInfo, errorSufix);
+                    }
+                } else {
+                    applyDynamicElementsIfMissing(value, templateInfo, errorSufix);
+                }
 
-			} catch (IllegalAccessException e) {
-				throw new EtlExceptionImpl(
-						errorSufix + "> Error applying dynamicElements on field '" + field.getName() + "'.", e);
-			}
-		}
-	}
+            } catch (IllegalAccessException e) {
+                throw new EtlExceptionImpl(
+                        errorSufix + "> Error applying dynamicElements on field '" + field.getName() + "'.", e);
+            }
+        }
+    }
 
-	@SuppressWarnings("unchecked")
-	public static void applyDynamicElementsOnCurrentObject(Object target, List<?> dynamicElements, String errorSufix) {
+    @SuppressWarnings("unchecked")
+    public static void applyDynamicElementsOnCurrentObject(Object target, List<?> dynamicElements, String errorSufix) {
 
-		Field dynamicField = findField(target.getClass(), "dynamicElements");
+        Field dynamicField = findField(target.getClass(), "dynamicElements");
 
-		if (dynamicField == null) {
-			return;
-		}
+        if (dynamicField == null) {
+            return;
+        }
 
-		try {
-			dynamicField.setAccessible(true);
+        try {
+            dynamicField.setAccessible(true);
 
-			Object currentValue = dynamicField.get(target);
+            Object currentValue = dynamicField.get(target);
 
-			if (currentValue == null) {
-				dynamicField.set(target, new ArrayList<>(dynamicElements));
-				return;
-			}
+            if (currentValue == null) {
+                dynamicField.set(target, new ArrayList<>(dynamicElements));
+                return;
+            }
 
-			if (currentValue instanceof List<?>) {
-				List<Object> currentList = (List<Object>) currentValue;
+            if (currentValue instanceof List<?>) {
+                List<Object> currentList = (List<Object>) currentValue;
 
-				if (currentList.isEmpty()) {
-					currentList.addAll(dynamicElements);
-				}
+                if (currentList.isEmpty()) {
+                    currentList.addAll(dynamicElements);
+                }
 
-				return;
-			}
+                return;
+            }
 
-			throw new EtlExceptionImpl(errorSufix + "> Field 'dynamicElements' exists but is not a List in class "
-					+ target.getClass().getName());
+            throw new EtlExceptionImpl(errorSufix + "> Field 'dynamicElements' exists but is not a List in class "
+                    + target.getClass().getName());
 
-		} catch (IllegalAccessException e) {
-			throw new EtlExceptionImpl(
-					errorSufix + "> Error setting dynamicElements in class " + target.getClass().getName(), e);
-		}
-	}
+        } catch (IllegalAccessException e) {
+            throw new EtlExceptionImpl(
+                    errorSufix + "> Error setting dynamicElements in class " + target.getClass().getName(), e);
+        }
+    }
 
-	public static Field findField(Class<?> clazz, String fieldName) {
+    public static Field findField(Class<?> clazz, String fieldName) {
 
-		Class<?> current = clazz;
+        Class<?> current = clazz;
 
-		while (current != null && current != Object.class) {
-			try {
-				return current.getDeclaredField(fieldName);
-			} catch (NoSuchFieldException ignored) {
-				current = current.getSuperclass();
-			}
-		}
+        while (current != null && current != Object.class) {
+            try {
+                return current.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	public static List<Field> getAllFields(Class<?> clazz) {
+    public static List<Field> getAllFields(Class<?> clazz) {
 
-		List<Field> fields = new ArrayList<>();
+        List<Field> fields = new ArrayList<>();
 
-		Class<?> current = clazz;
+        Class<?> current = clazz;
 
-		while (current != null && current != Object.class) {
-			fields.addAll(Arrays.asList(current.getDeclaredFields()));
-			current = current.getSuperclass();
-		}
+        while (current != null && current != Object.class) {
+            fields.addAll(Arrays.asList(current.getDeclaredFields()));
+            current = current.getSuperclass();
+        }
 
-		return fields;
-	}
+        return fields;
+    }
 
-	static String[] SAFE_FIELDS = { "joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper",
-			"onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult",
-			"relationshipResolutionStrategy", "nullValueBehavior", "manuallyConfigured", "possibleSrc",
-			"manuallyConfigured", "loadedDataSourceInfo", "schemaMetadataLoadSource" };
+    static String[] SAFE_FIELDS = {"joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper",
+            "onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult",
+            "relationshipResolutionStrategy", "nullValueBehavior", "manuallyConfigured", "possibleSrc",
+            "manuallyConfigured", "loadedDataSourceInfo", "schemaMetadataLoadSource"};
 
-	public static boolean canBeOverriten(Object value, Field field) {
+    public static boolean canBeOverriten(Object value, Field field) {
 
-		Class<?> type = field.getType();
+        Class<?> type = field.getType();
 
-		if (value == null) {
-			return true;
-		}
+        if (value == null) {
+            return true;
+        }
 
-		try {
-			return utilities.getPosOnArray(SAFE_FIELDS, field.getName()) >= 0;
-		} catch (RuntimeException e) {
-		}
+        try {
+            return utilities.getPosOnArray(SAFE_FIELDS, field.getName()) >= 0;
+        } catch (RuntimeException e) {
+        }
 
-		if (type.isPrimitive()) {
-			if (type == boolean.class)
-				return !(Boolean) value;
-			if (type == char.class)
-				return ((Character) value) == '\u0000';
-			if (type == byte.class)
-				return ((Byte) value) == 0;
-			if (type == short.class)
-				return ((Short) value) == 0;
-			if (type == int.class)
-				return ((Integer) value) == 0;
-			if (type == long.class)
-				return ((Long) value) == 0L;
-			if (type == float.class)
-				return ((Float) value) == 0f;
-			if (type == double.class)
-				return ((Double) value) == 0d;
-		}
+        if (type.isPrimitive()) {
+            if (type == boolean.class)
+                return !(Boolean) value;
+            if (type == char.class)
+                return ((Character) value) == '\u0000';
+            if (type == byte.class)
+                return ((Byte) value) == 0;
+            if (type == short.class)
+                return ((Short) value) == 0;
+            if (type == int.class)
+                return ((Integer) value) == 0;
+            if (type == long.class)
+                return ((Long) value) == 0L;
+            if (type == float.class)
+                return ((Float) value) == 0f;
+            if (type == double.class)
+                return ((Double) value) == 0d;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public static Properties loadProperties(String path) {
+    public static Properties loadProperties(String path) {
 
-		Properties props = new Properties();
+        Properties props = new Properties();
 
-		if (path == null || path.isBlank()) {
-			return props;
-		}
+        if (path == null || path.isBlank()) {
+            return props;
+        }
 
-		try (InputStream is = new FileInputStream(path)) {
-			props.load(is);
+        try (InputStream is = new FileInputStream(path)) {
+            props.load(is);
 
-			for (String key : props.stringPropertyNames()) {
-				props.setProperty(key, stripWrappingQuotes(props.getProperty(key)));
-			}
+            for (String key : props.stringPropertyNames()) {
+                props.setProperty(key, stripWrappingQuotes(props.getProperty(key)));
+            }
 
-		} catch (IOException e) {
-			throw new RuntimeException("Error loading properties file: " + path, e);
-		}
+        } catch (IOException e) {
+            throw new RuntimeException("Error loading properties file: " + path, e);
+        }
 
-		return props;
-	}
+        return props;
+    }
 
-	public static String stripWrappingQuotes(String value) {
+    public static String stripWrappingQuotes(String value) {
 
-		if (value == null) {
-			return null;
-		}
+        if (value == null) {
+            return null;
+        }
 
-		value = value.trim();
+        value = value.trim();
 
-		if (value.length() >= 2) {
+        if (value.length() >= 2) {
 
-			char first = value.charAt(0);
-			char last = value.charAt(value.length() - 1);
+            char first = value.charAt(0);
+            char last = value.charAt(value.length() - 1);
 
-			if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
-				return value.substring(1, value.length() - 1);
-			}
-		}
+            if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
+                return value.substring(1, value.length() - 1);
+            }
+        }
 
-		return value;
-	}
+        return value;
+    }
 
-	public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env,
-											 boolean escapeJsonValues) {
+    public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env,
+                                             boolean escapeJsonValues) {
 
-		Properties prefProps = utilities.toProperties(env);
-		Properties openMrsProps = loadOpenMrsGlobalProperties();
-		Properties appProps = loadProperties(System.getProperty("etl.env.file"));
-		Properties javaProps = System.getProperties();
-		Properties sysProps = utilities.toProperties(System.getenv());
+        Properties prefProps = utilities.toProperties(env);
+        Properties openMrsProps = loadOpenMrsGlobalProperties();
+        Properties appProps = loadProperties(System.getProperty("etl.env.file"));
+        Properties javaProps = System.getProperties();
+        Properties sysProps = utilities.toProperties(System.getenv());
 
-		if (text == null || text.isBlank()) {
-			return text;
-		}
+        if (text == null || text.isBlank()) {
+            return text;
+        }
 
-		Matcher m = PLACEHOLDER.matcher(text);
+        Matcher m = PLACEHOLDER.matcher(text);
 
-		StringBuffer sb = new StringBuffer();
+        StringBuffer sb = new StringBuffer();
 
-		while (m.find()) {
+        while (m.find()) {
 
-			String key = m.group(1);
+            String key = m.group(1);
 
-			// whitelist
-			if (allowedPlaceholders != null && !allowedPlaceholders.isEmpty() && !allowedPlaceholders.contains(key)) {
-				m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0)));
+            // whitelist
+            if (allowedPlaceholders != null && !allowedPlaceholders.isEmpty() && !allowedPlaceholders.contains(key)) {
+                m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0)));
 
-				continue;
-			}
+                continue;
+            }
 
-			Object value = null;
+            Object value = null;
 
-			value = prefProps.get(key);
+            value = prefProps.get(key);
 
-			if (value == null) {
-				value = openMrsProps.getProperty(key);
-			}
+            if (value == null) {
+                value = openMrsProps.getProperty(key);
+            }
 
-			if (value == null) {
-				value = appProps.getProperty(key);
-			}
+            if (value == null) {
+                value = appProps.getProperty(key);
+            }
 
-			if (value == null) {
-				value = javaProps.getProperty(key);
-			}
+            if (value == null) {
+                value = javaProps.getProperty(key);
+            }
 
-			if (value == null) {
-				value = sysProps.getProperty(key);
-			}
+            if (value == null) {
+                value = sysProps.getProperty(key);
+            }
 
-			if (value == null) {
-				throw new IllegalArgumentException(
-						"Missing placeholder value for: " + key + " while preparing data:\t" + text);
-			}
+            if (value == null) {
+                throw new IllegalArgumentException(
+                        "Missing placeholder value for: " + key + " while preparing data:\t" + text);
+            }
 
-			String replacement = value.toString();
+            String replacement = value.toString();
 
-			if (escapeJsonValues) {
-				replacement = escapeJsonString(replacement);
-			}
+            if (escapeJsonValues) {
+                replacement = escapeJsonString(replacement);
+            }
 
-			m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
-		}
+            m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
 
-		m.appendTail(sb);
+        m.appendTail(sb);
 
-		return sb.toString();
-	}
+        return sb.toString();
+    }
 
-	/**
-	 * Loads the ETL properties exposed by OpenMRS. The prefix is removed so that,
-	 * for example, {@code epts.etl.location_name} can resolve
-	 * {@code ${location_name}}. The complete property name is also retained to
-	 * support {@code ${epts.etl.location_name}}.
-	 */
-	public static Properties loadOpenMrsGlobalProperties() {
-		Properties properties = new Properties();
-		Class<?> contextClass;
+    /**
+     * Loads the ETL properties exposed by OpenMRS. The prefix is removed so that,
+     * for example, {@code epts.etl.location_name} can resolve
+     * {@code ${location_name}}. The complete property name is also retained to
+     * support {@code ${epts.etl.location_name}}.
+     */
+    public static Properties loadOpenMrsGlobalProperties() {
+        Properties properties = new Properties();
+        Class<?> contextClass;
 
-		try {
-			contextClass = Class.forName("org.openmrs.api.context.Context", false,
-					EtlDataConfiguration.class.getClassLoader());
-		} catch (ClassNotFoundException | LinkageError exception) {
-			// OpenMRS is an optional runtime integration. Its API is intentionally not
-			// packaged in the standalone ETL JAR.
-			return properties;
-		}
+        try {
+            contextClass = Class.forName("org.openmrs.api.context.Context", false,
+                    EtlDataConfiguration.class.getClassLoader());
+        } catch (ClassNotFoundException | LinkageError exception) {
+            // OpenMRS is an optional runtime integration. Its API is intentionally not
+            // packaged in the standalone ETL JAR.
+            return properties;
+        }
 
-		try {
-			boolean sessionOpen = Boolean.TRUE.equals(contextClass.getMethod("isSessionOpen").invoke(null));
-			if (!sessionOpen)
-				return properties;
+        try {
+            boolean sessionOpen = Boolean.TRUE.equals(contextClass.getMethod("isSessionOpen").invoke(null));
+            if (!sessionOpen)
+                return properties;
 
-			Object administrationService = contextClass.getMethod("getAdministrationService").invoke(null);
-			ClassLoader openMrsClassLoader = contextClass.getClassLoader();
-			Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false,
-					openMrsClassLoader);
-			Class<?> globalPropertyClass = Class.forName("org.openmrs.GlobalProperty", false, openMrsClassLoader);
-			Object result = administrationServiceClass
-					.getMethod("getGlobalPropertiesByPrefix", String.class)
-					.invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
+            Object administrationService = contextClass.getMethod("getAdministrationService").invoke(null);
+            ClassLoader openMrsClassLoader = contextClass.getClassLoader();
+            Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false,
+                    openMrsClassLoader);
+            Class<?> globalPropertyClass = Class.forName("org.openmrs.GlobalProperty", false, openMrsClassLoader);
+            Object result = administrationServiceClass
+                    .getMethod("getGlobalPropertiesByPrefix", String.class)
+                    .invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
 
-			if (!(result instanceof Iterable<?>))
-				throw new IllegalStateException("OpenMRS getGlobalPropertiesByPrefix returned a non-iterable value");
+            if (!(result instanceof Iterable<?>))
+                throw new IllegalStateException("OpenMRS getGlobalPropertiesByPrefix returned a non-iterable value");
 
-			for (Object globalProperty : (Iterable<?>) result) {
-				String name = (String) globalPropertyClass.getMethod("getProperty").invoke(globalProperty);
-				String value = (String) globalPropertyClass.getMethod("getPropertyValue").invoke(globalProperty);
+            for (Object globalProperty : (Iterable<?>) result) {
+                String name = (String) globalPropertyClass.getMethod("getProperty").invoke(globalProperty);
+                String value = (String) globalPropertyClass.getMethod("getPropertyValue").invoke(globalProperty);
 
-				if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
-					String normalizedValue = stripWrappingQuotes(value);
-					properties.setProperty(name, normalizedValue);
-					properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
-				}
-			}
-		} catch (ReflectiveOperationException exception) {
-			throw new IllegalStateException("Could not load ETL global properties from the OpenMRS runtime", exception);
-		}
+                if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
+                    String normalizedValue = stripWrappingQuotes(value);
+                    properties.setProperty(name, normalizedValue);
+                    properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
+                }
+            }
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Could not load ETL global properties from the OpenMRS runtime", exception);
+        }
 
-		return properties;
-	}
+        return properties;
+    }
 
-	public static String escapeJsonString(String value) {
+    public static String escapeJsonString(String value) {
 
-		if (value == null) {
-			return null;
-		}
+        if (value == null) {
+            return null;
+        }
 
-		return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t",
-				"\\t");
-	}
+        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t",
+                "\\t");
+    }
 
-	public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
-		try {
-			@SuppressWarnings("unchecked")
-			Set<String> allowed = allowedPlaceholders instanceof Set
-					? (Set<String>) allowedPlaceholders
-					: null;
+    public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
+        try {
+            @SuppressWarnings("unchecked")
+            Set<String> allowed = allowedPlaceholders instanceof Set
+                    ? (Set<String>) allowedPlaceholders
+                    : null;
 
-			@SuppressWarnings("unchecked")
-			Map<String, ?> environment = env instanceof Map
-					? (Map<String, ?>) env
-					: null;
+            @SuppressWarnings("unchecked")
+            Map<String, ?> environment = env instanceof Map
+                    ? (Map<String, ?>) env
+                    : null;
 
-			return resolvePlaceholders(
-					FileUtilities.realAllFileAsString(file),
-					allowed,
-					environment,
-					true
-			);
+            return resolvePlaceholders(
+                    FileUtilities.realAllFileAsString(file),
+                    allowed,
+                    environment,
+                    true
+            );
 
-		} catch (IOException e) {
-			throw new EtlConfException(e);
-		}
-	}
+        } catch (IOException e) {
+            throw new EtlConfException(e);
+        }
+    }
 }

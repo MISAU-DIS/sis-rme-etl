@@ -21,245 +21,245 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
 
-	private static CommonUtilities utilities = CommonUtilities.getInstance();
+    private static CommonUtilities utilities = CommonUtilities.getInstance();
 
-	private String name;
+    private String name;
 
-	private Map<String, Object> parameters;
+    private Map<String, Object> parameters;
 
-	private List<TemplateOverride> override;
+    private List<TemplateOverride> override;
 
-	private EtlTemplateInfo parentTemplate;
+    private EtlTemplateInfo parentTemplate;
 
-	private EtlTemplateInfo childTemplate;
+    private EtlTemplateInfo childTemplate;
 
-	private EtlConfiguration relatedEtlConf;
+    private EtlConfiguration relatedEtlConf;
 
-	public EtlTemplateInfo() {
-	}
+    public EtlTemplateInfo() {
+    }
 
-	public EtlTemplateInfo(String name) {
-		this();
+    public EtlTemplateInfo(String name) {
+        this();
 
-		this.name = name;
-	}
+        this.name = name;
+    }
 
-	public EtlTemplateInfo(String name, Map<String, Object> parameters) {
-		this(name);
+    public EtlTemplateInfo(String name, Map<String, Object> parameters) {
+        this(name);
 
-		this.parameters = parameters;
-	}
+        this.parameters = parameters;
+    }
 
-	@Override
-	public EtlConfiguration getRelatedEtlConf() {
-		return this.relatedEtlConf;
-	}
+    @Override
+    public EtlConfiguration getRelatedEtlConf() {
+        return this.relatedEtlConf;
+    }
 
-	public void setRelatedEtlConf(EtlConfiguration relatedEtlConf) {
-		this.relatedEtlConf = relatedEtlConf;
-	}
+    public void setRelatedEtlConf(EtlConfiguration relatedEtlConf) {
+        this.relatedEtlConf = relatedEtlConf;
+    }
 
-	public EtlTemplateInfo cloneAndEnsureParametersAndOverridePlaceholdersReplacement(
-			Map<String, Object> inputParams) {
+    public EtlTemplateInfo cloneAndEnsureParametersAndOverridePlaceholdersReplacement(
+            Map<String, Object> inputParams) {
 
-		EtlTemplateInfo cloned = new EtlTemplateInfo(this.getName());
+        EtlTemplateInfo cloned = new EtlTemplateInfo(this.getName());
 
-		cloned.setParameters(this.cloneParameters(inputParams));
-		cloned.setOverride(this.cloneOverride(inputParams));
-		cloned.setRelatedEtlConf(this.getRelatedEtlConf());
+        cloned.setParameters(this.cloneParameters(inputParams));
+        cloned.setOverride(this.cloneOverride(inputParams));
+        cloned.setRelatedEtlConf(this.getRelatedEtlConf());
 
-		return cloned;
-	}
+        return cloned;
+    }
 
-	private Map<String, Object> cloneParameters(Map<String, Object> inputParams) {
-		Map<String, Object> clonedParametes = new HashMap<>();
+    private Map<String, Object> cloneParameters(Map<String, Object> inputParams) {
+        Map<String, Object> clonedParametes = new HashMap<>();
 
-		for (Entry<String, Object> e : this.getParameters().entrySet()) {
-			Object value = e.getValue();
+        for (Entry<String, Object> e : this.getParameters().entrySet()) {
+            Object value = e.getValue();
 
-			if (e.getValue() instanceof String) {
-				value = EtlDataConfiguration.resolvePlaceholders(e.getValue().toString(), null, inputParams, true);
-			}
+            if (e.getValue() instanceof String) {
+                value = EtlDataConfiguration.resolvePlaceholders(e.getValue().toString(), null, inputParams, true);
+            }
 
-			clonedParametes.put(e.getKey(), value);
+            clonedParametes.put(e.getKey(), value);
 
-		}
+        }
 
-		return clonedParametes;
-	}
+        return clonedParametes;
+    }
 
-	private List<TemplateOverride> cloneOverride(Map<String, Object> inputParams) {
-		if (this.hasOverride()) {
-			List<TemplateOverride> clonedOverrides = new ArrayList<>();
+    private List<TemplateOverride> cloneOverride(Map<String, Object> inputParams) {
+        if (this.hasOverride()) {
+            List<TemplateOverride> clonedOverrides = new ArrayList<>();
 
-			for (TemplateOverride override : this.getOverride()) {
+            for (TemplateOverride override : this.getOverride()) {
 
-				TemplateOverride clonedOverride = override.clone();
+                TemplateOverride clonedOverride = override.clone();
 
-				if (clonedOverride.getValue() != null) {
+                if (clonedOverride.getValue() != null) {
 
-					JsonNode resolved = resolveJsonNodePlaceholders(clonedOverride.getValue(), inputParams);
+                    JsonNode resolved = resolveJsonNodePlaceholders(clonedOverride.getValue(), inputParams);
 
-					clonedOverride.setValue(resolved);
-				}
+                    clonedOverride.setValue(resolved);
+                }
 
-				if (clonedOverride.getMatch() != null) {
+                if (clonedOverride.getMatch() != null) {
 
-					JsonNode resolved = resolveJsonNodePlaceholders(clonedOverride.getMatch(), inputParams);
+                    JsonNode resolved = resolveJsonNodePlaceholders(clonedOverride.getMatch(), inputParams);
 
-					clonedOverride.setMatch(resolved);
-				}
+                    clonedOverride.setMatch(resolved);
+                }
 
-				clonedOverrides.add(clonedOverride);
-			}
+                clonedOverrides.add(clonedOverride);
+            }
 
-			return clonedOverrides;
-		}
+            return clonedOverrides;
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	public EtlTemplateInfo getChildTemplate() {
-		return childTemplate;
-	}
+    public EtlTemplateInfo getChildTemplate() {
+        return childTemplate;
+    }
 
-	public void setChildTemplate(EtlTemplateInfo childTemplate) {
-		this.childTemplate = childTemplate;
-	}
+    public void setChildTemplate(EtlTemplateInfo childTemplate) {
+        this.childTemplate = childTemplate;
+    }
 
-	private JsonNode resolveJsonNodePlaceholders(JsonNode node, Map<String, Object> params) {
+    private JsonNode resolveJsonNodePlaceholders(JsonNode node, Map<String, Object> params) {
 
-		if (node == null) {
-			return null;
-		}
+        if (node == null) {
+            return null;
+        }
 
-		// STRING
-		if (node.isTextual()) {
-			String resolved = EtlDataConfiguration.resolvePlaceholders(node.asText(), null, params, true);
+        // STRING
+        if (node.isTextual()) {
+            String resolved = EtlDataConfiguration.resolvePlaceholders(node.asText(), null, params, true);
 
-			return new TextNode(resolved);
-		}
+            return new TextNode(resolved);
+        }
 
-		// OBJECT
-		if (node.isObject()) {
-			ObjectNode newObj = JsonNodeFactory.instance.objectNode();
+        // OBJECT
+        if (node.isObject()) {
+            ObjectNode newObj = JsonNodeFactory.instance.objectNode();
 
-			node.fields().forEachRemaining(entry -> {
-				newObj.set(entry.getKey(), resolveJsonNodePlaceholders(entry.getValue(), params));
-			});
+            node.fields().forEachRemaining(entry -> {
+                newObj.set(entry.getKey(), resolveJsonNodePlaceholders(entry.getValue(), params));
+            });
 
-			return newObj;
-		}
+            return newObj;
+        }
 
-		// ARRAY
-		if (node.isArray()) {
-			ArrayNode newArray = JsonNodeFactory.instance.arrayNode();
+        // ARRAY
+        if (node.isArray()) {
+            ArrayNode newArray = JsonNodeFactory.instance.arrayNode();
 
-			for (JsonNode element : node) {
-				newArray.add(resolveJsonNodePlaceholders(element, params));
-			}
+            for (JsonNode element : node) {
+                newArray.add(resolveJsonNodePlaceholders(element, params));
+            }
 
-			return newArray;
-		}
+            return newArray;
+        }
 
-		// outros tipos (number, boolean, etc)
-		return node;
-	}
+        // outros tipos (number, boolean, etc)
+        return node;
+    }
 
-	public static String jsonNodeToRawText(JsonNode node) {
+    public static String jsonNodeToRawText(JsonNode node) {
 
-		if (node == null || node.isNull()) {
-			return null;
-		}
+        if (node == null || node.isNull()) {
+            return null;
+        }
 
-		if (node.isTextual()) {
-			return node.asText();
-		}
+        if (node.isTextual()) {
+            return node.asText();
+        }
 
-		return node.toString();
-	}
+        return node.toString();
+    }
 
-	public boolean hasParentTemplate() {
-		return this.getParentTemplate() != null;
-	}
+    public boolean hasParentTemplate() {
+        return this.getParentTemplate() != null;
+    }
 
-	public EtlTemplateInfo getParentTemplate() {
-		return parentTemplate;
-	}
+    public EtlTemplateInfo getParentTemplate() {
+        return parentTemplate;
+    }
 
-	public void setParentTemplate(EtlTemplateInfo parentTemplate) {
-		this.parentTemplate = parentTemplate;
-	}
+    public void setParentTemplate(EtlTemplateInfo parentTemplate) {
+        this.parentTemplate = parentTemplate;
+    }
 
-	public List<TemplateOverride> getOverride() {
-		return override;
-	}
+    public List<TemplateOverride> getOverride() {
+        return override;
+    }
 
-	public void setOverride(List<TemplateOverride> override) {
-		this.override = override;
-	}
+    public void setOverride(List<TemplateOverride> override) {
+        this.override = override;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public Map<String, Object> getParameters() {
-		return parameters;
-	}
+    public Map<String, Object> getParameters() {
+        return parameters;
+    }
 
-	public void setParameters(Map<String, Object> parameters) {
-		this.parameters = parameters;
-	}
+    public void setParameters(Map<String, Object> parameters) {
+        this.parameters = parameters;
+    }
 
-	public Map<String, Object> getAllAvailableParameters() {
-		return getAllAvaliableParameters(new HashSet<>());
-	}
+    public Map<String, Object> getAllAvailableParameters() {
+        return getAllAvaliableParameters(new HashSet<>());
+    }
 
-	private Map<String, Object> getAllAvaliableParameters(Set<EtlTemplateInfo> visited) {
+    private Map<String, Object> getAllAvaliableParameters(Set<EtlTemplateInfo> visited) {
 
-		if (visited.contains(this)) {
-			throw new EtlExceptionImpl("Circular reference detected in template hierarchy");
-		}
+        if (visited.contains(this)) {
+            throw new EtlExceptionImpl("Circular reference detected in template hierarchy");
+        }
 
-		visited.add(this);
+        visited.add(this);
 
-		Map<String, Object> avaliableParameters = new HashMap<>();
+        Map<String, Object> avaliableParameters = new HashMap<>();
 
-		if (this.parentTemplate != null) {
-			avaliableParameters.putAll(this.parentTemplate.getAllAvaliableParameters(visited));
-		}
+        if (this.parentTemplate != null) {
+            avaliableParameters.putAll(this.parentTemplate.getAllAvaliableParameters(visited));
+        }
 
-		if (this.parameters != null) {
-			avaliableParameters.putAll(this.parameters);
-		}
+        if (this.parameters != null) {
+            avaliableParameters.putAll(this.parameters);
+        }
 
-		return avaliableParameters;
-	}
+        return avaliableParameters;
+    }
 
-	@Override
-	public String toString() {
-		return this.getName();
-	}
+    @Override
+    public String toString() {
+        return this.getName();
+    }
 
-	public boolean hasOverride() {
-		return utilities.listHasElement(this.getOverride());
-	}
+    public boolean hasOverride() {
+        return utilities.listHasElement(this.getOverride());
+    }
 
-	@Override
-	public EtlDataConfiguration getParentConf() {
-		return null;
-	}
+    @Override
+    public EtlDataConfiguration getParentConf() {
+        return null;
+    }
 
-	@Override
-	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
-	}
+    @Override
+    public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+    }
 
-	public boolean hasParameters() {
-		return this.parameters != null && !this.parameters.isEmpty();
-	}
+    public boolean hasParameters() {
+        return this.parameters != null && !this.parameters.isEmpty();
+    }
 
 }

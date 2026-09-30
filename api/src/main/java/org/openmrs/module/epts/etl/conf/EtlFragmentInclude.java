@@ -21,305 +21,305 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
-	private String target;
+    private String target;
 
-	private String srcPath;
+    private String srcPath;
 
-	private EtlDataConfiguration parent;
+    private EtlDataConfiguration parent;
 
-	public EtlDataConfiguration getParent() {
-		return parent;
-	}
+    public EtlDataConfiguration getParent() {
+        return parent;
+    }
 
-	public void setParent(EtlDataConfiguration parent) {
-		this.parent = parent;
-	}
+    public void setParent(EtlDataConfiguration parent) {
+        this.parent = parent;
+    }
 
-	public String getTarget() {
-		return target;
-	}
+    public String getTarget() {
+        return target;
+    }
 
-	public void setTarget(String target) {
-		this.target = target;
-	}
+    public void setTarget(String target) {
+        this.target = target;
+    }
 
-	public String getSrcPath() {
-		return srcPath;
-	}
+    public String getSrcPath() {
+        return srcPath;
+    }
 
-	public void setSrcPath(String srcPath) {
-		this.srcPath = srcPath;
-	}
+    public void setSrcPath(String srcPath) {
+        this.srcPath = srcPath;
+    }
 
-	@Override
-	public EtlDataConfiguration getParentConf() {
-		return this.parent;
-	}
+    @Override
+    public EtlDataConfiguration getParentConf() {
+        return this.parent;
+    }
 
-	@Override
-	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+    @Override
+    public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
 
-	}
+    }
 
-	public void include(EtlDataConfiguration dc) {
+    public void include(EtlDataConfiguration dc) {
 
-		if (dc == null) {
-			throw new EtlConfException("Target EtlDataConfiguration cannot be null.");
-		}
+        if (dc == null) {
+            throw new EtlConfException("Target EtlDataConfiguration cannot be null.");
+        }
 
-		if (this.parent == null) {
-			this.parent = dc;
-		}
+        if (this.parent == null) {
+            this.parent = dc;
+        }
 
-		if (target == null || target.isBlank()) {
-			throw new EtlConfException("Include target cannot be null or empty.");
-		}
+        if (target == null || target.isBlank()) {
+            throw new EtlConfException("Include target cannot be null or empty.");
+        }
 
-		if (srcPath == null || srcPath.isBlank()) {
-			throw new EtlConfException("Include srcPath cannot be null or empty.");
-		}
+        if (srcPath == null || srcPath.isBlank()) {
+            throw new EtlConfException("Include srcPath cannot be null or empty.");
+        }
 
-		Field targetField = findField(dc.getClass(), target);
+        Field targetField = findField(dc.getClass(), target);
 
-		if (targetField == null) {
-			throw new EtlConfException("Field '" + target + "' not found in class " + dc.getClass().getName());
-		}
+        if (targetField == null) {
+            throw new EtlConfException("Field '" + target + "' not found in class " + dc.getClass().getName());
+        }
 
-		targetField.setAccessible(true);
+        targetField.setAccessible(true);
 
-		try {
-			if (List.class.isAssignableFrom(targetField.getType())) {
-				includeList(dc, targetField);
-			} else {
-				includeSingle(dc, targetField);
-			}
-		} catch (Exception e) {
-			throw new EtlConfException("Error applying include for target '" + target + "' from '" + srcPath + "'", e);
-		}
-	}
+        try {
+            if (List.class.isAssignableFrom(targetField.getType())) {
+                includeList(dc, targetField);
+            } else {
+                includeSingle(dc, targetField);
+            }
+        } catch (Exception e) {
+            throw new EtlConfException("Error applying include for target '" + target + "' from '" + srcPath + "'", e);
+        }
+    }
 
-	private void includeSingle(EtlDataConfiguration dc, Field targetField) throws Exception {
+    private void includeSingle(EtlDataConfiguration dc, Field targetField) throws Exception {
 
-		File file = resolveSingleFile(srcPath);
+        File file = resolveSingleFile(srcPath);
 
-		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
+        ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
-		Object value = mapper.readValue(
-				EtlDataConfiguration.resolvePlaceholders(
-						file,
-						null,
-						retrieveAllAvailableTemplateParameters()
-				),
-				targetField.getType()
-		);
+        Object value = mapper.readValue(
+                EtlDataConfiguration.resolvePlaceholders(
+                        file,
+                        null,
+                        retrieveAllAvailableTemplateParameters()
+                ),
+                targetField.getType()
+        );
 
-		targetField.set(dc, value);
-	}
+        targetField.set(dc, value);
+    }
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void includeList(EtlDataConfiguration dc, Field targetField) throws Exception {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void includeList(EtlDataConfiguration dc, Field targetField) throws Exception {
 
-		Class<?> itemType = resolveListItemType(targetField);
+        Class<?> itemType = resolveListItemType(targetField);
 
-		List<File> files = resolveFiles(dc.getRelatedEtlConf().getEtlConfDir(), srcPath);
+        List<File> files = resolveFiles(dc.getRelatedEtlConf().getEtlConfDir(), srcPath);
 
-		ObjectMapper mapper = new ObjectMapperProvider().getContext(itemType);
+        ObjectMapper mapper = new ObjectMapperProvider().getContext(itemType);
 
-		Object currentValue = targetField.get(dc);
+        Object currentValue = targetField.get(dc);
 
-		List targetList;
+        List targetList;
 
-		if (currentValue == null) {
-			targetList = new ArrayList<>();
-			targetField.set(dc, targetList);
-		} else if (currentValue instanceof List<?>) {
-			targetList = (List) currentValue;
-		} else {
-			throw new EtlExceptionImpl("Field '" + targetField.getName() + "' is not a List.");
-		}
+        if (currentValue == null) {
+            targetList = new ArrayList<>();
+            targetField.set(dc, targetList);
+        } else if (currentValue instanceof List<?>) {
+            targetList = (List) currentValue;
+        } else {
+            throw new EtlExceptionImpl("Field '" + targetField.getName() + "' is not a List.");
+        }
 
-		for (File file : files) {
-			Object item = mapper.readValue(
-					EtlDataConfiguration.resolvePlaceholders(
-							file,
-							null,
-							retrieveAllAvailableTemplateParameters()
-					),
-					itemType
-			);
+        for (File file : files) {
+            Object item = mapper.readValue(
+                    EtlDataConfiguration.resolvePlaceholders(
+                            file,
+                            null,
+                            retrieveAllAvailableTemplateParameters()
+                    ),
+                    itemType
+            );
 
-			targetList.add(item);
-		}
-	}
+            targetList.add(item);
+        }
+    }
 
-	private Class<?> resolveListItemType(Field field) {
+    private Class<?> resolveListItemType(Field field) {
 
-		Type genericType = field.getGenericType();
+        Type genericType = field.getGenericType();
 
-		if (!(genericType instanceof ParameterizedType)) {
-			throw new EtlExceptionImpl("Cannot determine List item type for field '" + field.getName() + "'.");
-		}
+        if (!(genericType instanceof ParameterizedType)) {
+            throw new EtlExceptionImpl("Cannot determine List item type for field '" + field.getName() + "'.");
+        }
 
-		Type itemType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
+        Type itemType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
 
-		if (itemType instanceof Class<?>) {
-			return (Class<?>) itemType;
-		}
+        if (itemType instanceof Class<?>) {
+            return (Class<?>) itemType;
+        }
 
-		if (itemType instanceof ParameterizedType) {
-			return (Class<?>) ((ParameterizedType) itemType).getRawType();
-		}
+        if (itemType instanceof ParameterizedType) {
+            return (Class<?>) ((ParameterizedType) itemType).getRawType();
+        }
 
-		throw new EtlExceptionImpl("Unsupported List item type for field '" + field.getName() + "': " + itemType);
-	}
+        throw new EtlExceptionImpl("Unsupported List item type for field '" + field.getName() + "': " + itemType);
+    }
 
-	private File resolveSingleFile(String path) {
+    private File resolveSingleFile(String path) {
 
-		File file = new File(path);
+        File file = new File(path);
 
-		if (!file.exists() || !file.isFile()) {
-			throw new EtlExceptionImpl("Include file not found: " + path);
-		}
+        if (!file.exists() || !file.isFile()) {
+            throw new EtlExceptionImpl("Include file not found: " + path);
+        }
 
-		return file;
-	}
+        return file;
+    }
 
-	private List<File> resolveFiles(String confRootDir, String path) throws IOException {
+    private List<File> resolveFiles(String confRootDir, String path) throws IOException {
 
-		if (confRootDir == null || confRootDir.isBlank()) {
-			throw new EtlConfException("The confRootDir was not specified!");
-		}
+        if (confRootDir == null || confRootDir.isBlank()) {
+            throw new EtlConfException("The confRootDir was not specified!");
+        }
 
-		if (path == null || path.isBlank()) {
-			throw new EtlConfException("The include path was not specified!");
-		}
+        if (path == null || path.isBlank()) {
+            throw new EtlConfException("The include path was not specified!");
+        }
 
-		Path rootPath = Paths.get(confRootDir).normalize();
+        Path rootPath = Paths.get(confRootDir).normalize();
 
-		if (path.contains("*")) {
+        if (path.contains("*")) {
 
-			int lastSeparator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+            int lastSeparator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
 
-			String parentPart;
-			String pattern;
+            String parentPart;
+            String pattern;
 
-			if (lastSeparator >= 0) {
-				parentPart = path.substring(0, lastSeparator);
-				pattern = path.substring(lastSeparator + 1);
-			} else {
-				parentPart = "";
-				pattern = path;
-			}
+            if (lastSeparator >= 0) {
+                parentPart = path.substring(0, lastSeparator);
+                pattern = path.substring(lastSeparator + 1);
+            } else {
+                parentPart = "";
+                pattern = path;
+            }
 
-			Path parentDir = parentPart.isEmpty() ? rootPath : rootPath.resolve(parentPart).normalize();
+            Path parentDir = parentPart.isEmpty() ? rootPath : rootPath.resolve(parentPart).normalize();
 
-			if (!parentDir.startsWith(rootPath)) {
-				throw new EtlConfException("Invalid include path outside configuration root: " + path);
-			}
+            if (!parentDir.startsWith(rootPath)) {
+                throw new EtlConfException("Invalid include path outside configuration root: " + path);
+            }
 
-			if (!Files.exists(parentDir) || !Files.isDirectory(parentDir)) {
-				throw new EtlExceptionImpl("Include directory not found: " + parentDir);
-			}
+            if (!Files.exists(parentDir) || !Files.isDirectory(parentDir)) {
+                throw new EtlExceptionImpl("Include directory not found: " + parentDir);
+            }
 
-			try (DirectoryStream<Path> stream = Files.newDirectoryStream(parentDir, pattern)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(parentDir, pattern)) {
 
-				List<File> files = new ArrayList<>();
+                List<File> files = new ArrayList<>();
 
-				for (Path item : stream) {
-					if (Files.isRegularFile(item)) {
-						files.add(item.toFile());
-					}
-				}
+                for (Path item : stream) {
+                    if (Files.isRegularFile(item)) {
+                        files.add(item.toFile());
+                    }
+                }
 
-				files.sort(Comparator.comparing(File::getName));
+                files.sort(Comparator.comparing(File::getName));
 
-				return files;
-			}
-		}
+                return files;
+            }
+        }
 
-		Path resolvedPath = rootPath.resolve(path).normalize();
+        Path resolvedPath = rootPath.resolve(path).normalize();
 
-		if (!resolvedPath.startsWith(rootPath)) {
-			throw new EtlConfException("Invalid include path outside configuration root: " + path);
-		}
+        if (!resolvedPath.startsWith(rootPath)) {
+            throw new EtlConfException("Invalid include path outside configuration root: " + path);
+        }
 
-		File file = resolvedPath.toFile();
+        File file = resolvedPath.toFile();
 
-		if (file.exists() && file.isDirectory()) {
-			File[] files = file.listFiles((dir, name) -> name.toLowerCase().endsWith(".json"));
+        if (file.exists() && file.isDirectory()) {
+            File[] files = file.listFiles((dir, name) -> name.toLowerCase().endsWith(".json"));
 
-			if (files == null) {
-				return new ArrayList<>();
-			}
+            if (files == null) {
+                return new ArrayList<>();
+            }
 
-			List<File> result = new ArrayList<>(Arrays.asList(files));
-			result.sort(Comparator.comparing(File::getName));
+            List<File> result = new ArrayList<>(Arrays.asList(files));
+            result.sort(Comparator.comparing(File::getName));
 
-			return result;
-		}
+            return result;
+        }
 
-		if (file.exists() && file.isFile()) {
-			List<File> result = new ArrayList<>();
-			result.add(file);
-			return result;
-		}
+        if (file.exists() && file.isFile()) {
+            List<File> result = new ArrayList<>();
+            result.add(file);
+            return result;
+        }
 
-		throw new EtlExceptionImpl("Include path not found: " + resolvedPath);
-	}
+        throw new EtlExceptionImpl("Include path not found: " + resolvedPath);
+    }
 
-	private Field findField(Class<?> clazz, String fieldName) {
+    private Field findField(Class<?> clazz, String fieldName) {
 
-		Class<?> current = clazz;
+        Class<?> current = clazz;
 
-		while (current != null && current != Object.class) {
-			try {
-				return current.getDeclaredField(fieldName);
-			} catch (NoSuchFieldException ignored) {
-				current = current.getSuperclass();
-			}
-		}
+        while (current != null && current != Object.class) {
+            try {
+                return current.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	@Override
-	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
-		Map<String, Object> allParameters = new HashMap<>();
+    @Override
+    public Map<String, Object> retrieveAllAvailableTemplateParameters() {
+        Map<String, Object> allParameters = new HashMap<>();
 
-		if (parent != null) {
-			Map<String, Object> parentParameters =
-					parent.retrieveAllAvailableTemplateParameters();
+        if (parent != null) {
+            Map<String, Object> parentParameters =
+                    parent.retrieveAllAvailableTemplateParameters();
 
-			if (parentParameters != null && !parentParameters.isEmpty()) {
-				allParameters.putAll(parentParameters);
-			}
+            if (parentParameters != null && !parentParameters.isEmpty()) {
+                allParameters.putAll(parentParameters);
+            }
 
-			EtlConfiguration etlConfiguration =
-					parent.getRelatedEtlConf();
+            EtlConfiguration etlConfiguration =
+                    parent.getRelatedEtlConf();
 
-			if (etlConfiguration != null
-					&& etlConfiguration.getParams() != null
-					&& !etlConfiguration.getParams().isEmpty()) {
+            if (etlConfiguration != null
+                    && etlConfiguration.getParams() != null
+                    && !etlConfiguration.getParams().isEmpty()) {
 
-				allParameters.putAll(etlConfiguration.getParams());
-			}
-		}
+                allParameters.putAll(etlConfiguration.getParams());
+            }
+        }
 
-		EtlConfiguration etlConfiguration = getRelatedEtlConf();
+        EtlConfiguration etlConfiguration = getRelatedEtlConf();
 
-		if (etlConfiguration != null
-				&& etlConfiguration.getParams() != null
-				&& !etlConfiguration.getParams().isEmpty()) {
+        if (etlConfiguration != null
+                && etlConfiguration.getParams() != null
+                && !etlConfiguration.getParams().isEmpty()) {
 
-			allParameters.putAll(etlConfiguration.getParams());
-		}
+            allParameters.putAll(etlConfiguration.getParams());
+        }
 
-		return allParameters;
-	}
+        return allParameters;
+    }
 
-	@Override
-	public EtlConfiguration getRelatedEtlConf() {
-		return this.parent.getRelatedEtlConf();
-	}
+    @Override
+    public EtlConfiguration getRelatedEtlConf() {
+        return this.parent.getRelatedEtlConf();
+    }
 
 }
