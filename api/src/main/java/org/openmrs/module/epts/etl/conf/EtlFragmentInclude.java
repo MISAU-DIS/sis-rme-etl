@@ -104,14 +104,7 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
         ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
-        Object value = mapper.readValue(
-                EtlDataConfiguration.resolvePlaceholders(
-                        file,
-                        null,
-                        retrieveAllAvailableTemplateParameters()
-                ),
-                targetField.getType()
-        );
+        Object value = mapper.readValue(EtlDataConfiguration.resolvePlaceholders(file, null, retrieveAllAvailableTemplateParameters()), targetField.getType());
 
         targetField.set(dc, value);
     }
@@ -139,14 +132,7 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
         }
 
         for (File file : files) {
-            Object item = mapper.readValue(
-                    EtlDataConfiguration.resolvePlaceholders(
-                            file,
-                            null,
-                            retrieveAllAvailableTemplateParameters()
-                    ),
-                    itemType
-            );
+            Object item = mapper.readValue(EtlDataConfiguration.resolvePlaceholders(file, null, retrieveAllAvailableTemplateParameters()), itemType);
 
             targetList.add(item);
         }
@@ -287,19 +273,15 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
         Map<String, Object> allParameters = new HashMap<>();
 
         if (parent != null) {
-            Map<String, Object> parentParameters =
-                    parent.retrieveAllAvailableTemplateParameters();
+            Map<String, Object> parentParameters = parent.retrieveAllAvailableTemplateParameters();
 
             if (parentParameters != null && !parentParameters.isEmpty()) {
                 allParameters.putAll(parentParameters);
             }
 
-            EtlConfiguration etlConfiguration =
-                    parent.getRelatedEtlConf();
+            EtlConfiguration etlConfiguration = parent.getRelatedEtlConf();
 
-            if (etlConfiguration != null
-                    && etlConfiguration.getParams() != null
-                    && !etlConfiguration.getParams().isEmpty()) {
+            if (etlConfiguration != null && etlConfiguration.getParams() != null && !etlConfiguration.getParams().isEmpty()) {
 
                 allParameters.putAll(etlConfiguration.getParams());
             }
@@ -307,9 +289,7 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
         EtlConfiguration etlConfiguration = getRelatedEtlConf();
 
-        if (etlConfiguration != null
-                && etlConfiguration.getParams() != null
-                && !etlConfiguration.getParams().isEmpty()) {
+        if (etlConfiguration != null && etlConfiguration.getParams() != null && !etlConfiguration.getParams().isEmpty()) {
 
             allParameters.putAll(etlConfiguration.getParams());
         }

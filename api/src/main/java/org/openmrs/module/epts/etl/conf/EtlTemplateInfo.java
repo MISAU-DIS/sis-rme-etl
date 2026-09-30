@@ -59,8 +59,7 @@ public class EtlTemplateInfo extends AbstractEtlDataConfiguration {
         this.relatedEtlConf = relatedEtlConf;
     }
 
-    public EtlTemplateInfo cloneAndEnsureParametersAndOverridePlaceholdersReplacement(
-            Map<String, Object> inputParams) {
+    public EtlTemplateInfo cloneAndEnsureParametersAndOverridePlaceholdersReplacement(Map<String, Object> inputParams) {
 
         EtlTemplateInfo cloned = new EtlTemplateInfo(this.getName());
 

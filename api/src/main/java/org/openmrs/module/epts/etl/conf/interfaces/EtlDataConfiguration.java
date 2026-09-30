@@ -83,8 +83,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
         }
     }
 
-    default void tryToLoadDumpScriptContentToFieldAndValidate(String fieldName, Map<String, Object> templateParameters,
-                                                              Connection conn) throws DBException {
+    default void tryToLoadDumpScriptContentToFieldAndValidate(String fieldName, Map<String, Object> templateParameters, Connection conn) throws DBException {
 
         Object fieldValue = utilities.getFieldValue(this, fieldName);
 
@@ -101,8 +100,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
                 originalScript = this.getRelatedEtlConf().readDumpScriptContent(fieldValue.toString());
             }
 
-            queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null,
-                    templateParameters, false);
+            queryWithReplacedParameters = EtlDataConfiguration.resolvePlaceholders(originalScript, null, templateParameters, false);
 
             utilities.setFieldValue(this, fieldName, queryWithReplacedParameters);
 
@@ -115,8 +113,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
             }
 
             if (!SQLUtilities.isValidSelectSqlQuery(toValidate, DBUtilities.determineDbmsType(conn))) {
-                String msg = "Ivalid sql " + sqlType + fromFile + " within the field '" + fieldName + "'.\n\t" + sqlType
-                        + "> " + originalScript;
+                String msg = "Ivalid sql " + sqlType + fromFile + " within the field '" + fieldName + "'.\n\t" + sqlType + "> " + originalScript;
 
                 throw new EtlConfException(msg);
             }
@@ -125,16 +122,13 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
     default void tryToLoadFromTemplate() {
         if (this.hasTemplate()) {
-            EtlTemplateConfiguration template = EtlTemplateConfiguration.findTemplate(this.getRelatedEtlConf(),
-                    this.getTemplate().getName());
+            EtlTemplateConfiguration template = EtlTemplateConfiguration.findTemplate(this.getRelatedEtlConf(), this.getTemplate().getName());
 
             template.setRelatedEtlConf(getRelatedEtlConf());
 
-            EtlDataConfiguration fromTemplate = template.parseToEtlDataConfiguration(this.getClass(),
-                    this.getTemplate());
+            EtlDataConfiguration fromTemplate = template.parseToEtlDataConfiguration(this.getClass(), this.getTemplate());
 
-            this.copyFromTemplate(fromTemplate, this.getTemplate() != null ? this.getTemplate().getName() : null,
-                    this.getTemplate());
+            this.copyFromTemplate(fromTemplate, this.getTemplate() != null ? this.getTemplate().getName() : null, this.getTemplate());
         }
 
     }
@@ -143,8 +137,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
         return this.getTemplate() != null;
     }
 
-    default void copyFromTemplate(EtlDataConfiguration toCopyFrom, String mainTemplateName,
-                                  EtlTemplateInfo templateInfo) {
+    default void copyFromTemplate(EtlDataConfiguration toCopyFrom, String mainTemplateName, EtlTemplateInfo templateInfo) {
 
         if (toCopyFrom == null) {
             return;
@@ -152,8 +145,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
         String errorSufix = "Error happened Within template: " + mainTemplateName;
 
-        if (!this.getClass().isAssignableFrom(toCopyFrom.getClass())
-                && !toCopyFrom.getClass().isAssignableFrom(this.getClass())) {
+        if (!this.getClass().isAssignableFrom(toCopyFrom.getClass()) && !toCopyFrom.getClass().isAssignableFrom(this.getClass())) {
             throw new EtlExceptionImpl(errorSufix + "> Incompatible template type: " + toCopyFrom.getClass().getName());
         }
 
@@ -213,23 +205,20 @@ public interface EtlDataConfiguration extends BaseConfiguration {
                             List<Object> currentList = (List<Object>) currentValue;
                             currentList.addAll(templateList);
                         } else {
-                            throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName()
-                                    + "' is not a List but template provides a List.");
+                            throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName() + "' is not a List but template provides a List.");
                         }
 
                     } else {
 
                         if (!canBeOverriten(currentValue, field)) {
-                            throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName()
-                                    + "' already has a value and cannot be overridden by template.");
+                            throw new EtlExceptionImpl(errorSufix + "> Field '" + field.getName() + "' already has a value and cannot be overridden by template.");
                         }
 
                         field.set(this, templateValue);
                     }
 
                 } catch (IllegalAccessException e) {
-                    throw new EtlExceptionImpl(
-                            errorSufix + "> Error copying field '" + field.getName() + "' from template.", e);
+                    throw new EtlExceptionImpl(errorSufix + "> Error copying field '" + field.getName() + "' from template.", e);
                 }
             }
 
@@ -253,8 +242,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
                 continue;
             }
 
-            if (field.getType().isPrimitive() || field.getType().isEnum()
-                    || field.getType().getName().startsWith("java.")) {
+            if (field.getType().isPrimitive() || field.getType().isEnum() || field.getType().getName().startsWith("java.")) {
                 continue;
             }
 
@@ -276,8 +264,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
                 }
 
             } catch (IllegalAccessException e) {
-                throw new EtlExceptionImpl(
-                        errorSufix + "> Error applying dynamicElements on field '" + field.getName() + "'.", e);
+                throw new EtlExceptionImpl(errorSufix + "> Error applying dynamicElements on field '" + field.getName() + "'.", e);
             }
         }
     }
@@ -311,12 +298,10 @@ public interface EtlDataConfiguration extends BaseConfiguration {
                 return;
             }
 
-            throw new EtlExceptionImpl(errorSufix + "> Field 'dynamicElements' exists but is not a List in class "
-                    + target.getClass().getName());
+            throw new EtlExceptionImpl(errorSufix + "> Field 'dynamicElements' exists but is not a List in class " + target.getClass().getName());
 
         } catch (IllegalAccessException e) {
-            throw new EtlExceptionImpl(
-                    errorSufix + "> Error setting dynamicElements in class " + target.getClass().getName(), e);
+            throw new EtlExceptionImpl(errorSufix + "> Error setting dynamicElements in class " + target.getClass().getName(), e);
         }
     }
 
@@ -349,10 +334,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
         return fields;
     }
 
-    static String[] SAFE_FIELDS = {"joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper",
-            "onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult",
-            "relationshipResolutionStrategy", "nullValueBehavior", "manuallyConfigured", "possibleSrc",
-            "manuallyConfigured", "loadedDataSourceInfo", "schemaMetadataLoadSource"};
+    static String[] SAFE_FIELDS = {"joinExtraConditionScope", "useAsDataSource", "relatedEtlConf", "loadHealper", "onMultipleDataSourceForSameMapping", "onMultipleDataSourceWithSameName", "limitToOneResult", "relationshipResolutionStrategy", "nullValueBehavior", "manuallyConfigured", "possibleSrc", "manuallyConfigured", "loadedDataSourceInfo", "schemaMetadataLoadSource"};
 
     public static boolean canBeOverriten(Object value, Field field) {
 
@@ -368,22 +350,14 @@ public interface EtlDataConfiguration extends BaseConfiguration {
         }
 
         if (type.isPrimitive()) {
-            if (type == boolean.class)
-                return !(Boolean) value;
-            if (type == char.class)
-                return ((Character) value) == '\u0000';
-            if (type == byte.class)
-                return ((Byte) value) == 0;
-            if (type == short.class)
-                return ((Short) value) == 0;
-            if (type == int.class)
-                return ((Integer) value) == 0;
-            if (type == long.class)
-                return ((Long) value) == 0L;
-            if (type == float.class)
-                return ((Float) value) == 0f;
-            if (type == double.class)
-                return ((Double) value) == 0d;
+            if (type == boolean.class) return !(Boolean) value;
+            if (type == char.class) return ((Character) value) == '\u0000';
+            if (type == byte.class) return ((Byte) value) == 0;
+            if (type == short.class) return ((Short) value) == 0;
+            if (type == int.class) return ((Integer) value) == 0;
+            if (type == long.class) return ((Long) value) == 0L;
+            if (type == float.class) return ((Float) value) == 0f;
+            if (type == double.class) return ((Double) value) == 0d;
         }
 
         return false;
@@ -432,8 +406,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
         return value;
     }
 
-    public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env,
-                                             boolean escapeJsonValues) {
+    public static String resolvePlaceholders(String text, Set<String> allowedPlaceholders, Map<String, ?> env, boolean escapeJsonValues) {
 
         Properties prefProps = utilities.toProperties(env);
         Properties openMrsProps = loadOpenMrsGlobalProperties();
@@ -481,8 +454,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
             }
 
             if (value == null) {
-                throw new IllegalArgumentException(
-                        "Missing placeholder value for: " + key + " while preparing data:\t" + text);
+                throw new IllegalArgumentException("Missing placeholder value for: " + key + " while preparing data:\t" + text);
             }
 
             String replacement = value.toString();
@@ -510,8 +482,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
         Class<?> contextClass;
 
         try {
-            contextClass = Class.forName("org.openmrs.api.context.Context", false,
-                    EtlDataConfiguration.class.getClassLoader());
+            contextClass = Class.forName("org.openmrs.api.context.Context", false, EtlDataConfiguration.class.getClassLoader());
         } catch (ClassNotFoundException | LinkageError exception) {
             // OpenMRS is an optional runtime integration. Its API is intentionally not
             // packaged in the standalone ETL JAR.
@@ -520,17 +491,13 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
         try {
             boolean sessionOpen = Boolean.TRUE.equals(contextClass.getMethod("isSessionOpen").invoke(null));
-            if (!sessionOpen)
-                return properties;
+            if (!sessionOpen) return properties;
 
             Object administrationService = contextClass.getMethod("getAdministrationService").invoke(null);
             ClassLoader openMrsClassLoader = contextClass.getClassLoader();
-            Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false,
-                    openMrsClassLoader);
+            Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false, openMrsClassLoader);
             Class<?> globalPropertyClass = Class.forName("org.openmrs.GlobalProperty", false, openMrsClassLoader);
-            Object result = administrationServiceClass
-                    .getMethod("getGlobalPropertiesByPrefix", String.class)
-                    .invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
+            Object result = administrationServiceClass.getMethod("getGlobalPropertiesByPrefix", String.class).invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
 
             if (!(result instanceof Iterable<?>))
                 throw new IllegalStateException("OpenMRS getGlobalPropertiesByPrefix returned a non-iterable value");
@@ -558,28 +525,16 @@ public interface EtlDataConfiguration extends BaseConfiguration {
             return null;
         }
 
-        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t",
-                "\\t");
+        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 
     public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
         try {
-            @SuppressWarnings("unchecked")
-            Set<String> allowed = allowedPlaceholders instanceof Set
-                    ? (Set<String>) allowedPlaceholders
-                    : null;
+            @SuppressWarnings("unchecked") Set<String> allowed = allowedPlaceholders instanceof Set ? (Set<String>) allowedPlaceholders : null;
 
-            @SuppressWarnings("unchecked")
-            Map<String, ?> environment = env instanceof Map
-                    ? (Map<String, ?>) env
-                    : null;
+            @SuppressWarnings("unchecked") Map<String, ?> environment = env instanceof Map ? (Map<String, ?>) env : null;
 
-            return resolvePlaceholders(
-                    FileUtilities.realAllFileAsString(file),
-                    allowed,
-                    environment,
-                    true
-            );
+            return resolvePlaceholders(FileUtilities.realAllFileAsString(file), allowed, environment, true);
 
         } catch (IOException e) {
             throw new EtlConfException(e);
