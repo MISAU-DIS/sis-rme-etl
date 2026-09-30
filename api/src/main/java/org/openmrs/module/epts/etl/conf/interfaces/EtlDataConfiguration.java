@@ -164,6 +164,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	default void applyIncludes() {
 		if (hasInclude()) {
 			for (EtlFragmentInclude i : this.getInclude()) {
+				i.setParent(this);
 				i.include(this);
 			}
 		}

@@ -67,6 +67,10 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 			throw new EtlConfException("Target EtlDataConfiguration cannot be null.");
 		}
 
+		if (this.parent == null) {
+			this.parent = dc;
+		}
+
 		if (target == null || target.isBlank()) {
 			throw new EtlConfException("Include target cannot be null or empty.");
 		}
@@ -272,22 +276,24 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> allParameters = new HashMap<>();
 
-		if (parent == null) {
-			return allParameters;
+		if (parent != null) {
+			Map<String, Object> parentParameters = parent.retrieveAllAvailableTemplateParameters();
+
+			if (parentParameters != null && !parentParameters.isEmpty()) {
+				allParameters.putAll(parentParameters);
+			}
+
+			EtlConfiguration etlConfiguration = parent.getRelatedEtlConf();
+
+			if (etlConfiguration != null && etlConfiguration.getParams() != null && !etlConfiguration.getParams().isEmpty()) {
+
+				allParameters.putAll(etlConfiguration.getParams());
+			}
 		}
 
-		// 1. Parameters inherited from the parent configuration
-		Map<String, Object> parentParameters = parent.retrieveAllAvailableTemplateParameters();
+		EtlConfiguration etlConfiguration = getRelatedEtlConf();
 
-		if (parentParameters != null && !parentParameters.isEmpty()) {
-			allParameters.putAll(parentParameters);
-		}
-
-		// 2. Global ETL parameters
-		EtlConfiguration etlConfiguration = parent.getRelatedEtlConf();
-
-		if (etlConfiguration != null && etlConfiguration.getParams() != null
-				&& !etlConfiguration.getParams().isEmpty()) {
+		if (etlConfiguration != null && etlConfiguration.getParams() != null && !etlConfiguration.getParams().isEmpty()) {
 
 			allParameters.putAll(etlConfiguration.getParams());
 		}
