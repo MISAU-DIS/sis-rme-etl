@@ -272,6 +272,13 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		return null;
 	}
 
+	private void addParameters(Map<String, Object> allParameters, EtlConfiguration etlConfiguration) {
+		if (etlConfiguration != null && etlConfiguration.getParams() != null
+				&& !etlConfiguration.getParams().isEmpty()) {
+			allParameters.putAll(etlConfiguration.getParams());
+		}
+	}
+
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> allParameters = new HashMap<>();
@@ -279,24 +286,14 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		if (parent != null) {
 			Map<String, Object> parentParameters = parent.retrieveAllAvailableTemplateParameters();
 
-			if (parentParameters != null && !parentParameters.isEmpty()) {
+			if (parentParameters != null) {
 				allParameters.putAll(parentParameters);
 			}
 
-			EtlConfiguration etlConfiguration = parent.getRelatedEtlConf();
-
-			if (etlConfiguration != null && etlConfiguration.getParams() != null && !etlConfiguration.getParams().isEmpty()) {
-
-				allParameters.putAll(etlConfiguration.getParams());
-			}
+			addParameters(allParameters, parent.getRelatedEtlConf());
 		}
 
-		EtlConfiguration etlConfiguration = getRelatedEtlConf();
-
-		if (etlConfiguration != null && etlConfiguration.getParams() != null && !etlConfiguration.getParams().isEmpty()) {
-
-			allParameters.putAll(etlConfiguration.getParams());
-		}
+		addParameters(allParameters, getRelatedEtlConf());
 
 		return allParameters;
 	}
