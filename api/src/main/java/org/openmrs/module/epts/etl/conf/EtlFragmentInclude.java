@@ -290,10 +290,15 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 				allParameters.putAll(parentParameters);
 			}
 
-			addParameters(allParameters, parent.getRelatedEtlConf());
-		}
+			if (parent.getRelatedEtlConf() != null) {
+				addParameters(allParameters, parent.getRelatedEtlConf());
+			} else {
+				addParameters(allParameters, this.getRelatedEtlConf());
 
-		addParameters(allParameters, getRelatedEtlConf());
+			}
+		} else {
+			addParameters(allParameters, this.getRelatedEtlConf());
+		}
 
 		return allParameters;
 	}
