@@ -728,8 +728,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		int errNum = 0;
 
 		if (!this.isSupportedOperation())
-			errorMsg += ++errNum + ". This operation [" + this.getOperationType()
-					+ "] Cannot be configured in ETL\n";
+			errorMsg += ++errNum + ". This operation [" + this.getOperationType() + "] Cannot be configured in ETL\n";
 
 		if (this.getTotalCountStrategy().isUseProvided() && this.getTotalAvaliableRecordsToProcess() == null) {
 			errorMsg += ++errNum
@@ -890,6 +889,10 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 		this.applyIncludes();
 		this.tryToLoadFromTemplate();
+
+		if (this.getMaxSupportedProcessors() <= 0) {
+			this.setMaxSupportedProcessors(utilities.getAvailableProcessors());
+		}
 
 		if (this.dstType == null) {
 			this.dstType = EtlDstType.db;
