@@ -228,9 +228,15 @@ public class EtlTemplateConfiguration {
 			}
 		});
 
-		return templates.stream().filter(t -> templateName.equals(t.getName())).findFirst()
-				.orElseThrow(() -> new EtlExceptionImpl(
-						"Template not found: " + templateName + " in path: " + templatesFileLocation));
+		try {
+			return templates.stream().filter(t -> templateName.equals(t.getName())).findFirst()
+					.orElseThrow(() -> new EtlExceptionImpl(
+							"Template not found: " + templateName + " in path: " + templatesFileLocation));
+		} catch (EtlExceptionImpl e) {
+			relatedEtlConf.err("Error while loading {}: {}", templateName, e.getLocalizedMessage());
+
+			throw e;
+		}
 	}
 
 	private static void validateUniqueTemplateNames(List<EtlTemplateConfiguration> templates, String path) {
@@ -244,8 +250,7 @@ public class EtlTemplateConfiguration {
 		}
 
 		if (!duplicatedNames.isEmpty()) {
-			throw new EtlExceptionImpl(
-					"Duplicated template names " + duplicatedNames + " in templates path: " + path);
+			throw new EtlExceptionImpl("Duplicated template names " + duplicatedNames + " in templates path: " + path);
 		}
 	}
 

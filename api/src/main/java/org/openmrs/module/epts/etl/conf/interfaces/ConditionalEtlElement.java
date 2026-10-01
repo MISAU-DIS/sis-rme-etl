@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
+import org.openmrs.module.epts.etl.exceptions.MissingEtlConfException;
 import org.openmrs.module.epts.etl.exceptions.MissingParameterOnEtlTransformationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -130,7 +131,13 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 		expression.setOperation(EtlConfCheckType.valueOf(operation.trim().toUpperCase()));
 		expression.setField(field);
 
-		expression.init(this);
+		try {
+			expression.init(this);
+		} catch (MissingEtlConfException e) {
+			if (!expression.allowMissingEtlConf()) {
+				throw e;
+			}
+		}
 
 		return expression;
 	}

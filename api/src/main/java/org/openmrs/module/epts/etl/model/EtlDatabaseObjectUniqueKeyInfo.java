@@ -27,11 +27,18 @@ public class EtlDatabaseObjectUniqueKeyInfo extends UniqueKeyInfo {
 		 * etlDatabaseObject.getSharedPkObj()); }
 		 */
 
+		tabConf.stepIntoBreakpoint(null, tabConf.getTableName().contains("test_order"));
+		
 		if (tabConf.hasUniqueKeys()) {
 			List<EtlDatabaseObjectUniqueKeyInfo> list = new ArrayList<>(tabConf.getUniqueKeys().size());
 
-			for (UniqueKeyInfo uk : tabConf.getUniqueKeys()) {
-				list.add(new EtlDatabaseObjectUniqueKeyInfo(uk, etlDatabaseObject));
+			try {
+				for (UniqueKeyInfo uk : tabConf.getUniqueKeys()) {
+					list.add(new EtlDatabaseObjectUniqueKeyInfo(uk, etlDatabaseObject));
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 
 			return list;

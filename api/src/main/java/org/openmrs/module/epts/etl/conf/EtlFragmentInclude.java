@@ -101,13 +101,8 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
 		Object value = mapper.readValue(
-				EtlDataConfiguration.resolvePlaceholders(
-						file,
-						null,
-						retrieveAllAvailableTemplateParameters()
-				),
-				targetField.getType()
-		);
+				EtlDataConfiguration.resolvePlaceholders(file, null, retrieveAllAvailableTemplateParameters()),
+				targetField.getType());
 
 		targetField.set(dc, value);
 	}
@@ -136,13 +131,10 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
 		for (File file : files) {
 			Object item = mapper.readValue(
-					EtlDataConfiguration.resolvePlaceholders(
-							file,
-							null,
-							retrieveAllAvailableTemplateParameters()
-					),
-					itemType
-			);
+					EtlDataConfiguration.resolvePlaceholders(file, null, retrieveAllAvailableTemplateParameters()),
+					itemType);
+
+			targetList.add(item);
 		}
 	}
 
@@ -285,19 +277,16 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		}
 
 		// 1. Parameters inherited from the parent configuration
-		Map<String, Object> parentParameters =
-				parent.retrieveAllAvailableTemplateParameters();
+		Map<String, Object> parentParameters = parent.retrieveAllAvailableTemplateParameters();
 
 		if (parentParameters != null && !parentParameters.isEmpty()) {
 			allParameters.putAll(parentParameters);
 		}
 
 		// 2. Global ETL parameters
-		EtlConfiguration etlConfiguration =
-				parent.getRelatedEtlConf();
+		EtlConfiguration etlConfiguration = parent.getRelatedEtlConf();
 
-		if (etlConfiguration != null
-				&& etlConfiguration.getParams() != null
+		if (etlConfiguration != null && etlConfiguration.getParams() != null
 				&& !etlConfiguration.getParams().isEmpty()) {
 
 			allParameters.putAll(etlConfiguration.getParams());
