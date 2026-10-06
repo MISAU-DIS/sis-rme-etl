@@ -2477,21 +2477,75 @@ public class SQLUtilities {
 		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(preparedQuery,
 				knownTableAliases, avaliableSrcObjects, relatedEtlConf, conn);
 
+		while (true) {
+			ResolvedQueryElement nextElement = findFirstResolvedElement(preparedQuery, resolvedElements);
+
+			if (nextElement == null) {
+				break;
+			}
+
+			ReplacingInfo replacingInfo = replaceFirstLiteralTokenWithQuestionMark(preparedQuery,
+					nextElement.getToken(),
+					determineQtyElementsWithinTheParamValue(nextElement.getValueInfo().getTransformedValue()));
+
+			if (!replacingInfo.isReplaced()) {
+				break;
+			}
+
+			preparedQuery = replacingInfo.getFinalQuery();
+			resolvedValues.add(nextElement.getValueInfo());
+		}
+		return new PreparedQueryInfo(preparedQuery, originalQuery, relatedEtlConf, resolvedValues);
+	}
+
+	private static ResolvedQueryElement findFirstResolvedElement(String query,
+			List<ResolvedQueryElement> resolvedElements) {
+
+		List<String> tokens = new ArrayList<>();
+
 		for (ResolvedQueryElement element : resolvedElements) {
-			ReplacingInfo replacingInfo = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken(),
-					determineQtyElementsWithinTheParamValue(element.getValueInfo().getTransformedValue()));
+			tokens.add(element.getToken());
+		}
 
-			while (replacingInfo.isReplaced()) {
-				preparedQuery = replacingInfo.getFinalQuery();
+		String firstToken = findFirstLiteralToken(query, tokens);
 
-				resolvedValues.add(element.getValueInfo());
-
-				replacingInfo = replaceFirstLiteralTokenWithQuestionMark(preparedQuery, element.getToken(),
-						determineQtyElementsWithinTheParamValue(element.getValueInfo().getTransformedValue()));
+		for (ResolvedQueryElement element : resolvedElements) {
+			if (Objects.equals(firstToken, element.getToken())) {
+				return element;
 			}
 		}
 
-		return new PreparedQueryInfo(preparedQuery, originalQuery, relatedEtlConf, resolvedValues);
+		return null;
+	}
+
+	static String findFirstLiteralToken(String query, List<String> tokens) {
+
+		String firstToken = null;
+		int firstTokenIndex = Integer.MAX_VALUE;
+
+		for (String token : tokens) {
+			int tokenIndex = findFirstLiteralTokenIndex(query, token);
+
+			if (tokenIndex >= 0 && tokenIndex < firstTokenIndex) {
+				firstToken = token;
+				firstTokenIndex = tokenIndex;
+			}
+		}
+
+		return firstToken;
+	}
+
+	static int findFirstLiteralTokenIndex(String query, String token) {
+
+		if (query == null || token == null) {
+			return -1;
+		}
+
+		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token)
+				+ "(?![a-zA-Z0-9_\\.])");
+		Matcher matcher = pattern.matcher(query);
+
+		return matcher.find() ? matcher.start() : -1;
 	}
 
 	public static int determineQtyElementsWithinTheParamValue(Object paramValue) {
