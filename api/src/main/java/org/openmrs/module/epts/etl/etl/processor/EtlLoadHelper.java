@@ -162,13 +162,13 @@ public class EtlLoadHelper {
 
 			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
 
-				if (dstObject.getEtlInfo().getExceptionOnEtl() instanceof InconsistentStateException
+				if ((dstObject.getEtlInfo().getExceptionOnEtl() instanceof InconsistentStateException)
 						&& dst.getRelatedEtlConf().getDefaultInconsistencyBehavior().markRecordAsFailed()) {
 
 					continue;
 				}
 
-				if (isIgnorableException(dstObject.getEtlInfo().getExceptionOnEtl())) {
+				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
 					continue;
 				}
 
@@ -186,13 +186,7 @@ public class EtlLoadHelper {
 
 			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
 
-				if (dstObject.getEtlInfo().getExceptionOnEtl() instanceof InconsistentStateException
-						&& dst.getRelatedEtlConf().getDefaultInconsistencyBehavior().markRecordAsFailed()) {
-
-					continue;
-				}
-
-				if (isIgnorableException(dstObject.getEtlInfo().getExceptionOnEtl())) {
+				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
 					continue;
 				}
 
@@ -203,8 +197,19 @@ public class EtlLoadHelper {
 		throw new EtlExceptionImpl("No unresolved exception was found withn " + dst);
 	}
 
-	private boolean isIgnorableException(EtlException e) {
-		return e instanceof EtlTransformationException;
+	private boolean isIgnorableException(DstConf dstConf, EtlException e) {
+		boolean isInconsistency = e instanceof InconsistentStateException;
+
+		isInconsistency = isInconsistency
+				|| (e instanceof DBException && ((DBException) e).isInconsistentDataException());
+
+		boolean isMarkRecordAsFailedBehaviour = dstConf.getInconsistencyBehavior().logging();
+
+		if (isInconsistency && isMarkRecordAsFailedBehaviour) {
+			return true;
+		} else {
+			return e instanceof EtlTransformationException;
+		}
 	}
 
 	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)
