@@ -753,7 +753,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
-		if (getRelatedEtlOperationConfig().doNotProcessSkippedRecords()) {
+		if (!getRelatedEtlOperationConfig().doNotProcessSkippedRecords()) {
 			// The reload query reads this auxiliary table, so it must only start after
 			// every successful worker registration is durable.
 			flushDefaultParentsUsingDedicatedConnection();

@@ -317,6 +317,7 @@ Each operation can be configured using the following fields:
   - *PARALLEL* – All ETL items are processed concurrently
 - *processorFullClassName*: The fully qualified class name of a custom processor implementation to override the default processing behavior.
 - *skipFinalDataVerification*: Controls whether the final verification step is executed. This step checks if all source records were successfully processed into the destination. Setting this to true skips the verification, which can improve performance for large datasets.
+- *doNotProcessSkippedRecords*: Controls whether the ETL engine skips the additional processing pass for records that could not be fully transformed because one or more required parents were replaced with default parent records. The default value is *false*, meaning these records are processed again after the regular interval processing finishes. Set it to *true* to prevent this reprocessing attempt.
 - *doNotWriteOperationHistory*: By default, the ETL process records execution details in staging tables. Setting this to true disables history tracking, which can improve performance but reduces traceability.
 - *useSharedConnectionPerThread*: When using multi-threading, setting this to true forces all threads to share the same database connection. This can reduce deadlocks but may impact performance. It is useful when consistency across batch operations is required. You cannot use this setting when connection defaultAutoCommit is set to true;
 - *actionType*: Defines the action to be performed on the destination:
