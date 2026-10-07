@@ -506,34 +506,46 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 					}
 				} else if (rootException.isEtlStageAreaIssue(this)
 						&& tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
-					tableConfiguration.logErr("Issue found while persisting stage record {}", e, this);
+
+					logError(tableConfiguration, rootException);
 				} else if (rootException.isInconsistentDataException()) {
 					if (tableConfiguration.inconsistencyBehavior().logging()) {
 						this.getEtlInfo().setExceptionOnEtl(e);
 
-						tableConfiguration.logWarn("Issue found while persisting record {} \n\t-> {}", this,
-								e.getLocalizedMessage());
+						warnError(tableConfiguration, rootException);
 					} else {
-						tableConfiguration.logErr("Error found while persisting record {} \n\t-> {}", e, this,
-								e.getLocalizedMessage());
+						logError(tableConfiguration, rootException);
 
 						throw e;
 					}
 
 				} else {
-					tableConfiguration.logErr("Error found while persisting record {} \n\t-> {}", e, this,
-							e.getLocalizedMessage());
+					logError(tableConfiguration, rootException);
 
 					throw e;
 				}
 			} else {
-				tableConfiguration.logErr("Error found while persisting record {} \n\t-> {}", e, this,
-						e.getLocalizedMessage());
+				logError(tableConfiguration, rootException);
 
 				throw e;
 			}
 		}
 
+	}
+
+	void warnError(TableConfiguration tableConfiguration, Exception e) {
+
+		tableConfiguration.logWarn("Issue found: {} \n\t-> While persisting record {}",
+				e instanceof EtlExceptionImpl ? ((EtlExceptionImpl) e).getSuperLocalizedMessage()
+						: e.getLocalizedMessage(),
+				this);
+	}
+
+	void logError(TableConfiguration tableConfiguration, Exception e) {
+		tableConfiguration.logErr("Error found: {} \n\t-> While persisting record {}", e,
+				e instanceof EtlExceptionImpl ? ((EtlExceptionImpl) e).getSuperLocalizedMessage()
+						: e.getLocalizedMessage(),
+				this);
 	}
 
 	@Override

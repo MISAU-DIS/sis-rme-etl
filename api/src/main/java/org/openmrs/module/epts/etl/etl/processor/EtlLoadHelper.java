@@ -167,6 +167,10 @@ public class EtlLoadHelper {
 
 			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
 				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
+					logWarn("\n\t-> {} \n\t\t-> While processing record {} \n\t\t\t-> The issue will be logged!",
+							((EtlExceptionImpl) dstObject.getEtlInfo().getExceptionOnEtl()).getSuperLocalizedMessage(),
+							dstObject);
+
 					continue;
 				}
 
@@ -180,8 +184,21 @@ public class EtlLoadHelper {
 	private boolean isIgnorableException(DstConf dstConf, EtlException e) {
 		boolean isInconsistency = e instanceof InconsistentStateException;
 
-		isInconsistency = isInconsistency
-				|| (e instanceof DBException && ((DBException) e).isInconsistentDataException());
+		Throwable cause = e.getException();
+
+		DBException dbException = null;
+
+		while (cause != null) {
+			if (cause instanceof DBException) {
+				dbException = (DBException) cause;
+
+				break;
+			} else {
+				cause = cause.getCause();
+			}
+		}
+
+		isInconsistency = isInconsistency || dbException != null && dbException.isInconsistentDataException();
 
 		boolean isMarkRecordAsFailedBehaviour = dstConf.getInconsistencyBehavior().logging();
 
