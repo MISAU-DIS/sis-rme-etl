@@ -476,6 +476,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	@Override
 	public void save(TableConfiguration tableConfiguration, ConflictResolutionType onConflict, Connection conn)
 			throws DBException {
+
 		try {
 			DatabaseObjectDAO.insert(this, tableConfiguration, conn);
 		} catch (DBException | EtlExceptionImpl e) {
@@ -509,15 +510,28 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 				} else if (rootException.isInconsistentDataException()) {
 					if (tableConfiguration.inconsistencyBehavior().logging()) {
 						this.getEtlInfo().setExceptionOnEtl(e);
+
+						tableConfiguration.logWarn("Issue found while persisting record {} \n\t-> {}", this,
+								e.getLocalizedMessage());
 					} else {
+						tableConfiguration.logErr("Error found while persisting record {} \n\t-> {}", e, this,
+								e.getLocalizedMessage());
+
 						throw e;
 					}
 
-				} else
-					throw e;
+				} else {
+					tableConfiguration.logErr("Error found while persisting record {} \n\t-> {}", e, this,
+							e.getLocalizedMessage());
 
-			} else
+					throw e;
+				}
+			} else {
+				tableConfiguration.logErr("Error found while persisting record {} \n\t-> {}", e, this,
+						e.getLocalizedMessage());
+
 				throw e;
+			}
 		}
 
 	}
@@ -747,12 +761,11 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 					+ ") has composite pk. You cannot performe the request action!");
 		}
 
-		throw new EtlExceptionImpl(
-					"You cannot move dstRecord to stage area in a installation different to source") {
+		throw new EtlExceptionImpl("You cannot move dstRecord to stage area in a installation different to source") {
 
-				private static final long serialVersionUID = 1L;
+			private static final long serialVersionUID = 1L;
 
-			};
+		};
 	}
 
 	@Override
