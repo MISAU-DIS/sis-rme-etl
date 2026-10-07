@@ -753,61 +753,63 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
-		// The reload query reads this auxiliary table, so it must only start after
-		// every successful worker registration is durable.
-		flushDefaultParentsUsingDedicatedConnection();
+		if (getRelatedEtlOperationConfig().doNotProcessSkippedRecords()) {
+			// The reload query reads this auxiliary table, so it must only start after
+			// every successful worker registration is durable.
+			flushDefaultParentsUsingDedicatedConnection();
 
-		ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
+			ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
 
-		logDebug("TRY TO PROCESS SKIPPED RECORDS ON INTERVAL " + iManager.getCurrentLimits());
+			logDebug("TRY TO PROCESS SKIPPED RECORDS ON INTERVAL " + iManager.getCurrentLimits());
 
-		TaskProcessor<T> taskProcessor = getController()
-				.initRelatedTaskProcessor(this, getThreadRecordIntervalsManager().getCurrentLimits(), false)
-				.initReloadRecordsWithDefaultParentsTaskProcessor(iManager);
+			TaskProcessor<T> taskProcessor = getController()
+					.initRelatedTaskProcessor(this, getThreadRecordIntervalsManager().getCurrentLimits(), false)
+					.initReloadRecordsWithDefaultParentsTaskProcessor(iManager);
 
-		if (taskProcessor != null) {
-			String originalExtraCondition = getSearchParams().getExtraCondition();
-			String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
+			if (taskProcessor != null) {
+				String originalExtraCondition = getSearchParams().getExtraCondition();
+				String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
 
-			try {
-				getSrcConf().setExtraConditionForExtract(null);
+				try {
+					getSrcConf().setExtraConditionForExtract(null);
 
-				getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
+					getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
 
-				taskProcessor.setProcessorId(this.getEngineId());
+					taskProcessor.setProcessorId(this.getEngineId());
 
-				boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
-				boolean useMultiThreadSearch = true;
+					boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
+					boolean useMultiThreadSearch = true;
 
-				performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork,
-						openSrcConn(this), tryToOpenDstConn(this));
+					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork,
+							openSrcConn(this), tryToOpenDstConn(this));
 
-				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
-				getSearchParams().setExtraCondition(originalExtraCondition);
+					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+					getSearchParams().setExtraCondition(originalExtraCondition);
 
-				if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-					stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
-				} else {
-					OpenConnection srcConn = openSrcConn(this);
+					if (taskProcessor.getTaskResultInfo().hasFatalError()) {
+						stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
+					} else {
+						OpenConnection srcConn = openSrcConn(this);
 
-					try {
-						RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
+						try {
+							RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
 
-						srcConn.markAsSuccessifullyTerminated();
-					} finally {
-						srcConn.finalizeConnection(this);
+							srcConn.markAsSuccessifullyTerminated();
+						} finally {
+							srcConn.finalizeConnection(this);
+						}
+
+						iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+						iManager.save();
 					}
-
-					iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
-					iManager.save();
+				} finally {
+					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+					getSearchParams().setExtraCondition(originalExtraCondition);
 				}
-			} finally {
-				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
-				getSearchParams().setExtraCondition(originalExtraCondition);
+			} else {
+				iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+				iManager.save();
 			}
-		} else {
-			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
-			iManager.save();
 		}
 	}
 
