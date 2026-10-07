@@ -43,6 +43,8 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private static final int DEFAULT_BATCH_PROCESSING = 1000;
 
+	private Boolean doNotProcessSkippedRecords;
+
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
 	private EtlOperationType operationType;
@@ -142,6 +144,14 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		if (this.hasChild()) {
 			this.getChild().changeRelatedEtlConf(relatedEtlConf);
 		}
+	}
+
+	public Boolean getDoNotProcessSkippedRecords() {
+		return doNotProcessSkippedRecords;
+	}
+
+	public void setDoNotProcessSkippedRecords(Boolean doNotProcessSkippedRecords) {
+		this.doNotProcessSkippedRecords = doNotProcessSkippedRecords;
 	}
 
 	public Boolean getMustRestartInTheEnd() {
@@ -890,6 +900,10 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		this.applyIncludes();
 		this.tryToLoadFromTemplate();
 
+		if (this.getDoNotProcessSkippedRecords() == null) {
+			this.setDoNotProcessSkippedRecords(false);
+		}
+
 		if (this.getMaxSupportedProcessors() <= 0) {
 			this.setMaxSupportedProcessors(utilities.getAvailableProcessors());
 		}
@@ -978,5 +992,9 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+	}
+
+	public boolean doNotProcessSkippedRecords() {
+		return isTrue(this.doNotProcessSkippedRecords);
 	}
 }
