@@ -114,8 +114,13 @@ public class EtlLoadHelper {
 				}
 
 				if (!dst.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
-					if (hasUnresolvedError(dst)) {
-						logError("Found issues loading to " + dst, getUnresolvedError(dst));
+					EtlDatabaseObject err = retrieveFirstDstRecordWithUnresolvedError(dst);
+
+					if (err != null) {
+						logError("Found issues loading object {} {}",
+								(EtlExceptionImpl) err.getEtlDefaultEtlException(), err,
+								((EtlExceptionImpl) err.getEtlDefaultEtlException()).getLocalizedMessage());
+
 						logWarn("Aborting operation");
 
 						return;
@@ -155,46 +160,21 @@ public class EtlLoadHelper {
 		return itemConf;
 	}
 
-	private boolean hasUnresolvedError(DstConf dst) {
+	private EtlDatabaseObject retrieveFirstDstRecordWithUnresolvedError(DstConf dst) {
 
 		for (EtlDatabaseObject r : this.getSrcObjects()) {
 			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
 
 			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
-
-				if ((dstObject.getEtlInfo().getExceptionOnEtl() instanceof InconsistentStateException)
-						&& dst.getRelatedEtlConf().getDefaultInconsistencyBehavior().markRecordAsFailed()) {
-
-					continue;
-				}
-
 				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
 					continue;
 				}
 
-				return true;
+				return dstObject;
 			}
 		}
 
-		return false;
-	}
-
-	private Exception getUnresolvedError(DstConf dst) {
-
-		for (EtlDatabaseObject r : this.getSrcObjects()) {
-			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
-
-			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
-
-				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
-					continue;
-				}
-
-				return (Exception) dstObject.getEtlInfo().getExceptionOnEtl();
-			}
-		}
-
-		throw new EtlExceptionImpl("No unresolved exception was found withn " + dst);
+		return null;
 	}
 
 	private boolean isIgnorableException(DstConf dstConf, EtlException e) {
@@ -549,6 +529,10 @@ public class EtlLoadHelper {
 
 	void logError(String msg, Exception e) {
 		getProcessor().logError(msg, e);
+	}
+
+	void logError(String msg, Exception e, Object... arguments) {
+		getProcessor().logError(msg, e, arguments);
 	}
 
 	public static void performeParentLoading(EtlDatabaseObject srcObject, Connection srcConn, Connection dstConn)
