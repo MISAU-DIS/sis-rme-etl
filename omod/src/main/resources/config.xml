@@ -86,12 +86,6 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.dst.ccr.service.id</property>
-		<description>Destination CCR service ID.</description>
-		<defaultValue>CCR_SERVICE_ID</defaultValue>
-	</globalProperty>
-
-	<globalProperty>
 		<property>epts.etl.dstConnectionURI</property>
 		<description>Destination database connection URI.</description>
 		<defaultValue>jdbc:mysql://172.16.60.45:3320/openmrs?autoReconnect=true&amp;useSSL=false&amp;allowPublicKeyRetrieval=true</defaultValue>
@@ -107,12 +101,6 @@
 		<property>epts.etl.dstUserPassword</property>
 		<description>Destination database password.</description>
 		<defaultValue>root</defaultValue>
-	</globalProperty>
-
-	<globalProperty>
-		<property>epts.etl.dst.tarv.service.id</property>
-		<description>Destination TARV service ID.</description>
-		<defaultValue>TARV_SERVICE_ID</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
@@ -335,6 +323,48 @@
 		<property>epts.etl.src.pojo.directory</property>
 		<description>Optional directory where generated POJO source files are written.</description>
 		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.maxActiveConnections</property>
+		<description>Maximum number of active database connections.</description>
+		<defaultValue>12</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.maxIdleConnections</property>
+		<description>Maximum number of idle database connections.</description>
+		<defaultValue>12</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.minIdleConnections</property>
+		<description>Minimum number of idle database connections.</description>
+		<defaultValue>4</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.defaultUserId</property>
+		<description>Default OpenMRS user ID used by the ETL.</description>
+		<defaultValue>1</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dst_tarv_service_id</property>
+		<description>Destination TARV service ID.</description>
+		<defaultValue>TARV_SERVICE_ID</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dst_ccr_service_id</property>
+		<description>Destination CCR service ID.</description>
+		<defaultValue>CCR_SERVICE_ID</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dst_prep_service_id</property>
+		<description>Destination PrEP service ID.</description>
+		<defaultValue>PREP_SERVICE_ID</defaultValue>
 	</globalProperty>
 
 	<!-- / Global Properties -->
