@@ -327,11 +327,12 @@ Each operation can be configured using the following fields:
 - *afterEtlActionType*: Defines the action to be applied to the source record after it has been processed by the ETL.
   - *DELETE*: Permanently removes the record from the source table.
   - *MOVE_TO_STAGE_AREA*: Transfers the record to the ETL processing stage area. Records stored in the stage area are marked with a processing status and may be reprocessed later if necessary.
-  - *MOVE_TO_STAGE_AREA_ON_SUCCESS*: Moves the source record to the stage area only when it has been successfully processed.
+  - *MOVE_TO_STAGE_AREA_ON_SUCCESS*: Moves the source record only when all of its destination records were successfully loaded. A record for which there was nothing to load remains in the source table.
+  - *MOVE_TO_STAGE_AREA_ON_NO_ERROR*: Moves the source record when processing produced no error. In addition to successfully loaded records, this includes records for which there was nothing to load.
 
-  If the record is processed successfully, it is moved from the source table to the stage area. If processing fails, the record remains in the source table.
+  For either conditional action, records that do not satisfy the corresponding condition remain in the source table.
 
-  When used together with *trackProcessingState*, failed records are updated with their latest processing status, processing date, processing error, and retry count, allowing them to be retried in future ETL executions.
+  When used together with *trackProcessingState*, records left in the source table are updated with their latest processing status, processing date, processing error, and retry count, allowing them to be evaluated or retried in future ETL executions.
 
 - *dstType*: Specifies the output destination type:
   - *db* – Stores transformed records in the database

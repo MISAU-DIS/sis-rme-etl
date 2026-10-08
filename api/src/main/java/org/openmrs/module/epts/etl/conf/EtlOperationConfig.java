@@ -879,7 +879,8 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	public boolean moveProcessedRecordsToStageArea() {
 		if (this.getAfterEtlActionType() != null && (this.getAfterEtlActionType().moveToStageArea()
-				|| this.getAfterEtlActionType().moveToStageAreaOnSuccess())) {
+				|| this.getAfterEtlActionType().moveToStageAreaOnSuccess()
+				|| this.getAfterEtlActionType().moveToStageAreaOnNoError())) {
 			return true;
 		}
 

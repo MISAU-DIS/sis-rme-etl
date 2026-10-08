@@ -36,13 +36,13 @@ public enum EtlActionType {
 
 	
 	/**
-	 * Moves the source record to the stage area only when it has been successfully
-	 * processed.
+	 * Moves the source record to the stage area only when all of its destination
+	 * records have been successfully loaded.
 	 *
 	 * <p>
-	 * If processing succeeds, the record is moved from the source table to the stage
-	 * area. If processing fails, the record remains in the source table so it can be
-	 * retried later.
+	 * A source record with no destination records is not considered successfully
+	 * loaded and therefore remains in the source table. Use
+	 * {@link #MOVE_TO_STAGE_AREA_ON_NO_ERROR} when such a record should also be moved.
 	 * </p>
 	 *
 	 * <p>
@@ -53,6 +53,23 @@ public enum EtlActionType {
 	 */
 	MOVE_TO_STAGE_AREA_ON_SUCCESS,
 	
+	/**
+	 * Moves the source record to the stage area when its processing produced no
+	 * error.
+	 *
+	 * <p>
+	 * This includes records whose destination records were successfully loaded and
+	 * records for which there was nothing to load. Records that failed or were only
+	 * partially loaded remain in the source table so they can be retried later.
+	 * </p>
+	 *
+	 * <p>
+	 * When source processing-state tracking is enabled, records that remain in the
+	 * source table have their processing status, date, error and retry count updated.
+	 * </p>
+	 */
+	MOVE_TO_STAGE_AREA_ON_NO_ERROR,
+
 	/**
 	 * Undefined action.
 	 */
@@ -83,8 +100,12 @@ public enum EtlActionType {
 		return this.equals(MOVE_TO_STAGE_AREA_ON_SUCCESS);
 	}
 
+	public boolean moveToStageAreaOnNoError() {
+		return this.equals(MOVE_TO_STAGE_AREA_ON_NO_ERROR);
+	}
+
 	public boolean includeTracking() {
-		return moveToStageAreaOnSuccess() || moveToStageArea();
+		return moveToStageAreaOnSuccess() || moveToStageAreaOnNoError() || moveToStageArea();
 	}
 	
 }
