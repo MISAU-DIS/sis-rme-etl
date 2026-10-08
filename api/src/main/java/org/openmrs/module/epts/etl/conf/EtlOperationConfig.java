@@ -869,6 +869,10 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		return this.getChild() != null;
 	}
 
+	public boolean hasParent() {
+		return this.getParentConf() != null;
+	}
+
 	public boolean mustRestartInTheEnd() {
 		return isTrue(this.mustRestartInTheEnd);
 	}
@@ -901,7 +905,8 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		this.tryToLoadFromTemplate();
 
 		if (this.getDoNotProcessSkippedRecords() == null) {
-			this.setDoNotProcessSkippedRecords(false);
+			this.setDoNotProcessSkippedRecords(
+					this.hasParent() ? this.getParentConf().getDoNotProcessSkippedRecords() : false);
 		}
 
 		if (this.getMaxSupportedProcessors() <= 0) {
@@ -969,6 +974,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasChild()) {
+			this.getChild().setParent(this);
 			this.getChild().init(this.getRelatedEtlConf());
 		}
 

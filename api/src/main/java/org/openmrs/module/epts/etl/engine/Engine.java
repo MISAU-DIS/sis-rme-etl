@@ -753,12 +753,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
+		ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
+
 		if (!getRelatedEtlOperationConfig().doNotProcessSkippedRecords()) {
 			// The reload query reads this auxiliary table, so it must only start after
 			// every successful worker registration is durable.
 			flushDefaultParentsUsingDedicatedConnection();
-
-			ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
 
 			logDebug("TRY TO PROCESS SKIPPED RECORDS ON INTERVAL " + iManager.getCurrentLimits());
 
@@ -810,6 +810,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
 				iManager.save();
 			}
+		} else {
+			warn("Skipping record with default parents reload as 'doNotProcessSkippedRecords' is set to true");
+
+			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+			iManager.save();
 		}
 	}
 
@@ -1559,7 +1564,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		log.append("\n");
 
 		if (taskProcessor != null) {
-			log.append(formatReportLine("REPORTING LIMITS", taskProcessor.getLimits()));
+			log.append(formatReportLine("REPORTING THREAD",
+					taskProcessor.getOperationId() + "(" + taskProcessor.getLimits() + ")"));
 		}
 
 		log.append(formatReportLine("PROCESSING TIME", globalProgressMeter.getHumanReadbleProcessingTime()));
