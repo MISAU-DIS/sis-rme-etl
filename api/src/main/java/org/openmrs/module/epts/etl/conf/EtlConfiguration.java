@@ -8,8 +8,10 @@ import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -843,6 +845,31 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.etlItemConfiguration = etlItemConfiguration;
 	}
 
+	/**
+	 * Resolves the root ETL items assigned to an operation. Child item
+	 * configurations are intentionally not considered independently; they follow
+	 * their selected root item.
+	 */
+	public List<EtlItemConfiguration> resolveEtlItems(EtlOperationConfig operation) {
+		List<EtlItemConfiguration> resolved = new ArrayList<>();
+		if (!hasEtlItemsConf()) {
+			return resolved;
+		}
+
+		Set<String> whiteList = new LinkedHashSet<>(operation.resolveEtlItemConfigCodeWhiteList());
+		Set<String> blackList = new LinkedHashSet<>(operation.resolveEtlItemConfigCodeBlackList());
+
+		for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
+			String configCode = item.getConfigCode();
+			boolean included = whiteList.isEmpty() || whiteList.contains(configCode);
+			if (included && !blackList.contains(configCode)) {
+				resolved.add(item);
+			}
+		}
+
+		return resolved;
+	}
+
 	public String getSyncStageSchema() {
 		String schema;
 
@@ -1484,6 +1511,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			}
 		}
 
+		for (String selectionIssue : validateEtlItemOperationSelections()) {
+			errorMsg += ++errNum + ". " + selectionIssue + "\n";
+		}
+
 		if (this.hasFinalizer()) {
 			this.getFinalizer().loadFinalizer();
 
@@ -1554,6 +1585,64 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			this.childConfig.validate();
 		}
 
+	}
+
+	List<String> validateEtlItemOperationSelections() {
+		List<String> issues = new ArrayList<>();
+		Map<String, Integer> codeOccurrences = new LinkedHashMap<>();
+
+		if (hasEtlItemsConf()) {
+			for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
+				String configCode = item.getConfigCode();
+				if (!utilities.stringHasValue(configCode)) {
+					issues.add("Every root etlItemConfiguration must resolve to a non-empty configCode");
+					continue;
+				}
+				codeOccurrences.put(configCode, codeOccurrences.getOrDefault(configCode, 0) + 1);
+			}
+		}
+
+		Set<String> availableCodes = new LinkedHashSet<>();
+		for (Map.Entry<String, Integer> occurrence : codeOccurrences.entrySet()) {
+			availableCodes.add(occurrence.getKey());
+			if (occurrence.getValue() > 1) {
+				issues.add("Root etlItemConfiguration configCode '" + occurrence.getKey()
+						+ "' is duplicated. Config codes must be unique");
+			}
+		}
+
+		for (EtlOperationConfig operation : this.getOperationsAsList()) {
+			List<String> whiteList = operation.resolveEtlItemConfigCodeWhiteList();
+			List<String> blackList = operation.resolveEtlItemConfigCodeBlackList();
+			String operationName = String.valueOf(operation.getOperationType());
+
+			validateOperationConfigCodeList(operationName, "etlItemConfigCodeWhiteList", whiteList, availableCodes,
+					issues);
+			validateOperationConfigCodeList(operationName, "etlItemConfigCodeBlackList", blackList, availableCodes,
+					issues);
+
+			if ((!whiteList.isEmpty() || !blackList.isEmpty()) && resolveEtlItems(operation).isEmpty()) {
+				issues.add("Operation '" + operationName + "' does not select any root etlItemConfiguration");
+			}
+		}
+
+		return issues;
+	}
+
+	private void validateOperationConfigCodeList(String operationName, String propertyName, List<String> configCodes,
+			Set<String> availableCodes, List<String> issues) {
+		Set<String> visited = new LinkedHashSet<>();
+		for (String configCode : configCodes) {
+			if (!utilities.stringHasValue(configCode)) {
+				issues.add("Operation '" + operationName + "' has an empty configCode in " + propertyName);
+			} else if (!visited.add(configCode)) {
+				issues.add("Operation '" + operationName + "' repeats configCode '" + configCode + "' in "
+						+ propertyName);
+			} else if (!availableCodes.contains(configCode)) {
+				issues.add("Operation '" + operationName + "' references unknown root etlItemConfiguration configCode '"
+						+ configCode + "' in " + propertyName);
+			}
+		}
 	}
 
 	private boolean containsOperation(EtlOperationType operation) {

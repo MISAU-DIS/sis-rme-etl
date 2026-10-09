@@ -74,7 +74,7 @@ public interface ParentTable extends RelatedTable {
 	default List<DstConf> findRelatedDstConf(EtlOperationConfig operationConf) throws DBException {
 		List<DstConf> allDstForTable = new ArrayList<>();
 
-		for (EtlItemConfiguration conf : getRelatedEtlConf().getEtlItemConfiguration()) {
+		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
 			if (conf.containsDstTable(getTableName())) {
 				if (!conf.isFullLoaded()) {
@@ -93,7 +93,7 @@ public interface ParentTable extends RelatedTable {
 	}
 
 	default SrcConf findRelatedSrcConf(EtlOperationConfig operationConf) throws DBException {
-		for (EtlItemConfiguration conf : getRelatedEtlConf().getEtlItemConfiguration()) {
+		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
 			if (!conf.isFullLoaded()) {
 				conf.fullLoad(operationConf);
@@ -118,7 +118,7 @@ public interface ParentTable extends RelatedTable {
 			throws DBException {
 		List<SrcConf> srcs = new ArrayList<>();
 
-		for (EtlItemConfiguration conf : getRelatedEtlConf().getEtlItemConfiguration()) {
+		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
 			if (conf.getSrcConf().getTableName().equals(this.getTableName())) {
 

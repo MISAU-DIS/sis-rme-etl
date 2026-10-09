@@ -63,6 +63,15 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private List<String> sourceFolders;
 
+	/**
+	 * Codes of root ETL items included in this operation. An empty list means that
+	 * every root item is initially included.
+	 */
+	private List<String> etlItemConfigCodeWhiteList;
+
+	/** Codes of root ETL items explicitly excluded from this operation. */
+	private List<String> etlItemConfigCodeBlackList;
+
 	private List<OperationController<? extends EtlDatabaseObject>> relatedControllers;
 
 	private String processorFullClassName;
@@ -115,6 +124,50 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	public EtlOperationConfig() {
 
+	}
+
+	public List<String> getEtlItemConfigCodeWhiteList() {
+		return etlItemConfigCodeWhiteList;
+	}
+
+	public void setEtlItemConfigCodeWhiteList(List<String> etlItemConfigCodeWhiteList) {
+		this.etlItemConfigCodeWhiteList = normalizeConfigCodes(etlItemConfigCodeWhiteList);
+	}
+
+	public List<String> getEtlItemConfigCodeBlackList() {
+		return etlItemConfigCodeBlackList;
+	}
+
+	public void setEtlItemConfigCodeBlackList(List<String> etlItemConfigCodeBlackList) {
+		this.etlItemConfigCodeBlackList = normalizeConfigCodes(etlItemConfigCodeBlackList);
+	}
+
+	private List<String> normalizeConfigCodes(List<String> configCodes) {
+		if (configCodes == null) return null;
+
+		List<String> normalized = new ArrayList<>(configCodes.size());
+		for (String configCode : configCodes) {
+			normalized.add(configCode == null ? null : configCode.trim());
+		}
+		return normalized;
+	}
+
+	@JsonIgnore
+	public List<String> resolveEtlItemConfigCodeWhiteList() {
+		if (utilities.listHasElement(this.etlItemConfigCodeWhiteList)) {
+			return this.etlItemConfigCodeWhiteList;
+		}
+
+		return this.hasParent() ? this.getParentConf().resolveEtlItemConfigCodeWhiteList() : new ArrayList<>();
+	}
+
+	@JsonIgnore
+	public List<String> resolveEtlItemConfigCodeBlackList() {
+		if (utilities.listHasElement(this.etlItemConfigCodeBlackList)) {
+			return this.etlItemConfigCodeBlackList;
+		}
+
+		return this.hasParent() ? this.getParentConf().resolveEtlItemConfigCodeBlackList() : new ArrayList<>();
 	}
 
 	public Boolean finishAfterOneExecution() {
@@ -830,7 +883,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 		if (this.getParallelProcessingStrategy().isMultiThreaded()) {
 
-			List<EtlItemConfiguration> allSync = getRelatedEtlConf().getEtlItemConfiguration();
+			List<EtlItemConfiguration> allSync = getRelatedEtlConf().resolveEtlItems(this);
 
 			double items = avaliableItems.size();
 

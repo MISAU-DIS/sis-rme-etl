@@ -18,7 +18,7 @@ The ETL execution and its operations are defined through a JSON configuration fi
 
 The process configuration is mapped to the [EtlConfiguration](api/src/main/java/org/openmrs/module/epts/etl/conf/EtlConfiguration.java) class, while each operation is mapped to the [EtlOperationConfig](api/src/main/java/org/openmrs/module/epts/etl/conf/EtlOperationConfig.java) class.
 
-Each operation defined in the configuration file is applied uniformly across all configured items. These items are defined using the [EtlItemConfiguration](api/src/main/java/org/openmrs/module/epts/etl/conf/EtlItemConfiguration.java), which specifies the rules for extraction, transformation, and loading.
+By default, each operation is applied to all configured root items. An operation can restrict that scope through an ETL-item whitelist and/or blacklist. The items are defined using the [EtlItemConfiguration](api/src/main/java/org/openmrs/module/epts/etl/conf/EtlItemConfiguration.java), which specifies the rules for extraction, transformation, and loading.
 
 An [OperationController](api/src/main/java/org/openmrs/module/epts/etl/controller/OperationController.java) executes its tasks using a [TaskProcessor](api/src/main/java/org/openmrs/module/epts/etl/engine/TaskProcessor.java). These processors are orchestrated and monitored by the [Engine](api/src/main/java/org/openmrs/module/epts/etl/engine/Engine.java), which manages the execution lifecycle of the ETL process.
 
@@ -307,6 +307,18 @@ This section defines how ETL operations are executed. Each operation controls ho
 Each operation can be configured using the following fields:
 
 - *operationType*: Defines the type of operation to be executed for each ETL item in the configuration.
+- *etlItemConfigCodeWhiteList*: Optional list of root ETL-item `configCode` values included in the operation. When omitted or empty, all root items are initially included.
+- *etlItemConfigCodeBlackList*: Optional list of root ETL-item `configCode` values excluded from the operation. The blacklist is applied after the whitelist.
+
+  Both lists accept only root items declared directly under `etlItemConfiguration`; child items follow their selected root item. Every referenced code is validated before the process starts. Unknown codes, duplicates, or a selection that produces no items make the configuration invalid. When a code occurs in both lists, the blacklist takes precedence. A child operation inherits each list omitted from its parent operation.
+
+  ```json
+  {
+    "operationType": "ETL",
+    "etlItemConfigCodeWhiteList": ["patient", "encounter", "observation"],
+    "etlItemConfigCodeBlackList": ["observation"]
+  }
+  ```
 - *processingBatch*: Specifies the number of records to be processed per batch. If not provided, a default value of 1000 is used.
 - *threadingMode*: Determines whether processing is performed using a single thread or multiple threads. Supported values:
   - *MULTI* – Multi-threaded processing (default)
@@ -352,6 +364,8 @@ Each operation can be configured using the following fields:
 
 ## The etl item configuration
 The ETL item configuration defines the rules for data extraction, transformation, and loading. Each operation within a process applies its logic to the configured ETL items. These items represent the core units of work in the ETL pipeline.
+
+- *configCode*: Optional explicit identity of a root ETL item. When omitted, the source table name is used. Explicit codes are preserved when templates are applied and all effective root-item codes must be unique within the ETL configuration. Operations use these codes in `etlItemConfigCodeWhiteList` and `etlItemConfigCodeBlackList`.
 
 Each ETL item typically contains two main components:
 - *srcConf* – defines how data is extracted from the source

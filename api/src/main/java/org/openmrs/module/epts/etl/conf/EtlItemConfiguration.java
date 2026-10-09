@@ -302,7 +302,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		this.setShortCode(codeElements);
 
-		this.setConfigCode(getRelatedEtlConf().finalizeItemCodeGeneration(codeElements));
+		if (!hasManualConfigCode()) {
+			this.setConfigCode(getRelatedEtlConf().finalizeItemCodeGeneration(codeElements));
+		}
 
 		this.tryToLoadChildItemConf(testing, srcConn, dstConn);
 
@@ -578,11 +580,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public String getConfigCode() {
-		return utilities.stringHasValue(configCode) ? configCode : this.srcConf.getTableName();
+		return hasManualConfigCode() ? configCode : this.srcConf == null ? null : this.srcConf.getTableName();
 	}
 
 	public void setConfigCode(String configCode) {
-		this.configCode = configCode;
+		this.configCode = configCode == null ? null : configCode.trim();
+	}
+
+	public boolean hasManualConfigCode() {
+		return utilities.stringHasValue(this.configCode);
 	}
 
 	public String getOriginAppLocationCode() {
@@ -605,7 +611,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	@Override
 	public String toString() {
-		return this.configCode;
+		return this.getConfigCode();
 	}
 
 	public EtlDatabaseObject retrieveRecordInSrc(EtlDatabaseObject parentRecordInOrigin, Connection srcConn)
@@ -708,6 +714,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		EtlItemConfiguration item = new EtlItemConfiguration();
 		item.setRelatedEtlConfig(relatedEtlConf);
+		if (hasManualConfigCode()) {
+			item.setConfigCode(this.configCode);
+		}
 
 		item.setSrcConf(new SrcConf());
 		item.getSrcConf().copyFromOther(this.getSrcConf(), schemaInfoSrc, item, conn);
@@ -751,6 +760,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+		if (hasManualConfigCode()) {
+			setConfigCode(utilities.tryToReplacePlaceholders(this.configCode, schemaInfoSrc));
+		}
+
 		this.getSrcConf().tryToReplacePlaceholders(schemaInfoSrc);
 
 		if (hasDstConf()) {
@@ -776,10 +789,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	@Override
 	public void tryToLoadFromTemplate() {
 		Boolean disabled = this.isDisabled();
+		String manuallyConfiguredCode = this.configCode;
 
 		super.tryToLoadFromTemplate();
 
 		setDisabled(disabled);
+		if (utilities.stringHasValue(manuallyConfiguredCode)) {
+			setConfigCode(manuallyConfiguredCode);
+		}
 	}
 
 	@Override
