@@ -164,6 +164,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 		try {
 			Object valueToTransform = null;
 			FieldTransformingInfo transformingInfo = null;
+
 			if (this.hasInput()) {
 				transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject,
 						transformedRecord, additionalSrcObjects, this.input, srcConn, dstConn);
@@ -177,9 +178,11 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 			} else {
 				valueToTransform = field.getValueToTransform();
 			}
-			if (valueToTransform == null) {
+
+			if (valueToTransform == null && !this.operation.allowEmptyInput()) {
 				return null;
 			}
+
 			Object readyValueToTranform = EtlFieldTransformer.tryToReplaceParametersOnSrcValue(
 					field.getTransformationTargetObject().getRelatedEtlConf(), additionalSrcObjects, valueToTransform);
 			Object transformedValue = evaluate(srcObject, readyValueToTranform);
