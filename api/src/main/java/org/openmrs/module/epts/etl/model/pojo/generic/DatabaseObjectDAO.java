@@ -590,8 +590,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 				assignGeneratedIdsAfterBatchInsert(recordsToInsert, tabConf, ids);
 
 				if (generateOperationResult) {
-					result.addSuccessfulRecords(
-							EtlDatabaseObject.collectAllSrcRelatedOBjects(recordsToInsert));
+					result.addSuccessfulRecords(EtlDatabaseObject.collectAllSrcRelatedOBjects(recordsToInsert));
 				}
 
 				LOG.trace("Inserted " + recordsToInsert.size() + " " + tabConf.getTableName());
@@ -616,7 +615,12 @@ public class DatabaseObjectDAO extends BaseDAO {
 							record.save(tabConf, conn);
 
 							if (generateOperationResult) {
-								result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
+								if (record.isInEtlProcess() && record.getEtlDefaultEtlException() != null) {
+									result.addToRecordsWithUnresolvedErrors(record.getEtlInfo().getRelatedSrcObject(),
+											record.getEtlDefaultEtlException());
+								} else {
+									result.addToRecordsWithNoError(record.getEtlInfo().getRelatedSrcObject());
+								}
 							}
 						} catch (DBException e1) {
 							if (e1.getMessage().contains("stage_record_id")) {

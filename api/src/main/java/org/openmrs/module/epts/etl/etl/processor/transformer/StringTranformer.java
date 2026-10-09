@@ -212,7 +212,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		this.transformerElements = StringTranformerElements.buildChain(initialValue, remaining, this, conn);
 
 		if (this.getNullOperandBehavior() == null) {
-			setOnNullTransformedvalue(this.getGeneralBehaviourOnEtlException());
+			setOnNullTransformedValue(this.getGeneralBehaviourOnEtlException());
 		}
 
 		logTrace("StringTranformer elements loaded: {}", this.transformerElements);

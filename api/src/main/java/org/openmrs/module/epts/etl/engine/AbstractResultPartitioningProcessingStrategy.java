@@ -27,7 +27,6 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 			if (engine.stopRequested()) {
 				engine.logWarn("Stopping the Task as Stop Requested!");
-				engine.changeStatusToStopped();
 				return;
 			}
 

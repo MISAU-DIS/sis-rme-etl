@@ -43,6 +43,8 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private static final int DEFAULT_BATCH_PROCESSING = 1000;
 
+	private Boolean doNotProcessSkippedRecords;
+
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
 	private EtlOperationType operationType;
@@ -142,6 +144,14 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		if (this.hasChild()) {
 			this.getChild().changeRelatedEtlConf(relatedEtlConf);
 		}
+	}
+
+	public Boolean getDoNotProcessSkippedRecords() {
+		return doNotProcessSkippedRecords;
+	}
+
+	public void setDoNotProcessSkippedRecords(Boolean doNotProcessSkippedRecords) {
+		this.doNotProcessSkippedRecords = doNotProcessSkippedRecords;
 	}
 
 	public Boolean getMustRestartInTheEnd() {
@@ -728,8 +738,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		int errNum = 0;
 
 		if (!this.isSupportedOperation())
-			errorMsg += ++errNum + ". This operation [" + this.getOperationType()
-					+ "] Cannot be configured in ETL\n";
+			errorMsg += ++errNum + ". This operation [" + this.getOperationType() + "] Cannot be configured in ETL\n";
 
 		if (this.getTotalCountStrategy().isUseProvided() && this.getTotalAvaliableRecordsToProcess() == null) {
 			errorMsg += ++errNum
@@ -860,13 +869,18 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		return this.getChild() != null;
 	}
 
+	public boolean hasParent() {
+		return this.getParentConf() != null;
+	}
+
 	public boolean mustRestartInTheEnd() {
 		return isTrue(this.mustRestartInTheEnd);
 	}
 
 	public boolean moveProcessedRecordsToStageArea() {
 		if (this.getAfterEtlActionType() != null && (this.getAfterEtlActionType().moveToStageArea()
-				|| this.getAfterEtlActionType().moveToStageAreaOnSuccess())) {
+				|| this.getAfterEtlActionType().moveToStageAreaOnSuccess()
+				|| this.getAfterEtlActionType().moveToStageAreaOnNoError())) {
 			return true;
 		}
 
@@ -890,6 +904,15 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 		this.applyIncludes();
 		this.tryToLoadFromTemplate();
+
+		if (this.getDoNotProcessSkippedRecords() == null) {
+			this.setDoNotProcessSkippedRecords(
+					this.hasParent() ? this.getParentConf().getDoNotProcessSkippedRecords() : false);
+		}
+
+		if (this.getMaxSupportedProcessors() <= 0) {
+			this.setMaxSupportedProcessors(utilities.getAvailableProcessors());
+		}
 
 		if (this.dstType == null) {
 			this.dstType = EtlDstType.db;
@@ -952,6 +975,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasChild()) {
+			this.getChild().setParent(this);
 			this.getChild().init(this.getRelatedEtlConf());
 		}
 
@@ -975,5 +999,9 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+	}
+
+	public boolean doNotProcessSkippedRecords() {
+		return isTrue(this.doNotProcessSkippedRecords);
 	}
 }

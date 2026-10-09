@@ -39,7 +39,7 @@ api/.scalastyle
 
 omod/maven-eclipse.xml
 omod/.externalToolBuilders/Maven_Ant_Builder.launch
-
+omod/.factorypath
 api/pom.xml.releaseBackup
 omod/pom.xml.releaseBackup
 pom.xml.releaseBackup

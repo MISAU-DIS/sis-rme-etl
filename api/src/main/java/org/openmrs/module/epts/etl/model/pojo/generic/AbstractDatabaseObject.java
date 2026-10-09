@@ -476,6 +476,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	@Override
 	public void save(TableConfiguration tableConfiguration, ConflictResolutionType onConflict, Connection conn)
 			throws DBException {
+
 		try {
 			DatabaseObjectDAO.insert(this, tableConfiguration, conn);
 		} catch (DBException | EtlExceptionImpl e) {
@@ -505,21 +506,46 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 					}
 				} else if (rootException.isEtlStageAreaIssue(this)
 						&& tableConfiguration.getRelatedEtlConf().getStageRecordIssueBehavior().ignore()) {
-					tableConfiguration.logErr("Issue found while persisting stage record {}", e, this);
+
+					logError(tableConfiguration, rootException);
 				} else if (rootException.isInconsistentDataException()) {
 					if (tableConfiguration.inconsistencyBehavior().logging()) {
 						this.getEtlInfo().setExceptionOnEtl(e);
+
+						warnError(tableConfiguration, rootException);
 					} else {
+						logError(tableConfiguration, rootException);
+
 						throw e;
 					}
 
-				} else
-					throw e;
+				} else {
+					logError(tableConfiguration, rootException);
 
-			} else
+					throw e;
+				}
+			} else {
+				logError(tableConfiguration, rootException);
+
 				throw e;
+			}
 		}
 
+	}
+
+	void warnError(TableConfiguration tableConfiguration, Exception e) {
+
+		tableConfiguration.logWarn("Issue found: {} \n\t-> While persisting record {}",
+				e instanceof EtlExceptionImpl ? ((EtlExceptionImpl) e).getSuperLocalizedMessage()
+						: e.getLocalizedMessage(),
+				this);
+	}
+
+	void logError(TableConfiguration tableConfiguration, Exception e) {
+		tableConfiguration.logErr("Error found: {} \n\t-> While persisting record {}", e,
+				e instanceof EtlExceptionImpl ? ((EtlExceptionImpl) e).getSuperLocalizedMessage()
+						: e.getLocalizedMessage(),
+				this);
 	}
 
 	@Override
@@ -747,12 +773,11 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 					+ ") has composite pk. You cannot performe the request action!");
 		}
 
-		throw new EtlExceptionImpl(
-					"You cannot move dstRecord to stage area in a installation different to source") {
+		throw new EtlExceptionImpl("You cannot move dstRecord to stage area in a installation different to source") {
 
-				private static final long serialVersionUID = 1L;
+			private static final long serialVersionUID = 1L;
 
-			};
+		};
 	}
 
 	@Override

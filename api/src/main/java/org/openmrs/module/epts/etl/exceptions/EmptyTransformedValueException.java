@@ -15,8 +15,8 @@ public class EmptyTransformedValueException extends EtlTransformationException {
 	public EmptyTransformedValueException(EtlObject etlObject, String srcField, FastSqlFieldTransformer transformer,
 			ActionOnEtlIssue actionOnException) {
 
-		super("Empty value returned for (" + srcField + "): by fast query " + transformer.getSqlQuery(), etlObject,
-				actionOnException);
+		super("Empty value returned for (" + srcField + "): by fast query " + transformer.getSqlQuery()
+				+ " within transformer: " + transformer, etlObject, actionOnException);
 	}
 
 }

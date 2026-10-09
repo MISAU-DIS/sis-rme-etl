@@ -114,8 +114,13 @@ public class EtlLoadHelper {
 				}
 
 				if (!dst.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
-					if (hasUnresolvedError(dst)) {
-						logError("Found issues loading to " + dst, getUnresolvedError(dst));
+					EtlDatabaseObject err = retrieveFirstDstRecordWithUnresolvedError(dst);
+
+					if (err != null) {
+						logError("Found issues loading object {} {}",
+								(EtlExceptionImpl) err.getEtlDefaultEtlException(), err,
+								((EtlExceptionImpl) err.getEtlDefaultEtlException()).getLocalizedMessage());
+
 						logWarn("Aborting operation");
 
 						return;
@@ -155,56 +160,53 @@ public class EtlLoadHelper {
 		return itemConf;
 	}
 
-	private boolean hasUnresolvedError(DstConf dst) {
+	private EtlDatabaseObject retrieveFirstDstRecordWithUnresolvedError(DstConf dst) {
 
 		for (EtlDatabaseObject r : this.getSrcObjects()) {
 			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
 
 			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
-
-				if (dstObject.getEtlInfo().getExceptionOnEtl() instanceof InconsistentStateException
-						&& dst.getRelatedEtlConf().getDefaultInconsistencyBehavior().markRecordAsFailed()) {
+				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
+					logWarn("\n\t-> {} \n\t\t-> While processing record {} \n\t\t\t-> The issue will be logged!",
+							((EtlExceptionImpl) dstObject.getEtlInfo().getExceptionOnEtl()).getSuperLocalizedMessage(),
+							dstObject);
 
 					continue;
 				}
 
-				if (isIgnorableException(dstObject.getEtlInfo().getExceptionOnEtl())) {
-					continue;
-				}
-
-				return true;
+				return dstObject;
 			}
 		}
 
-		return false;
+		return null;
 	}
 
-	private Exception getUnresolvedError(DstConf dst) {
+	private boolean isIgnorableException(DstConf dstConf, EtlException e) {
+		boolean isInconsistency = e instanceof InconsistentStateException;
 
-		for (EtlDatabaseObject r : this.getSrcObjects()) {
-			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
+		Throwable cause = e.getException();
 
-			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
+		DBException dbException = null;
 
-				if (dstObject.getEtlInfo().getExceptionOnEtl() instanceof InconsistentStateException
-						&& dst.getRelatedEtlConf().getDefaultInconsistencyBehavior().markRecordAsFailed()) {
+		while (cause != null) {
+			if (cause instanceof DBException) {
+				dbException = (DBException) cause;
 
-					continue;
-				}
-
-				if (isIgnorableException(dstObject.getEtlInfo().getExceptionOnEtl())) {
-					continue;
-				}
-
-				return (Exception) dstObject.getEtlInfo().getExceptionOnEtl();
+				break;
+			} else {
+				cause = cause.getCause();
 			}
 		}
 
-		throw new EtlExceptionImpl("No unresolved exception was found withn " + dst);
-	}
+		isInconsistency = isInconsistency || dbException != null && dbException.isInconsistentDataException();
 
-	private boolean isIgnorableException(EtlException e) {
-		return e instanceof EtlTransformationException;
+		boolean isMarkRecordAsFailedBehaviour = dstConf.getInconsistencyBehavior().logging();
+
+		if (isInconsistency && isMarkRecordAsFailedBehaviour) {
+			return true;
+		} else {
+			return e instanceof EtlTransformationException;
+		}
 	}
 
 	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)
@@ -544,6 +546,10 @@ public class EtlLoadHelper {
 
 	void logError(String msg, Exception e) {
 		getProcessor().logError(msg, e);
+	}
+
+	void logError(String msg, Exception e, Object... arguments) {
+		getProcessor().logError(msg, e, arguments);
 	}
 
 	public static void performeParentLoading(EtlDatabaseObject srcObject, Connection srcConn, Connection dstConn)
