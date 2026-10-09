@@ -29,6 +29,374 @@
 		org.openmrs.module.epts.etl.EptsEtlActivator
 	</activator>
 
+	<!-- Global Properties -->
+
+	<globalProperty>
+		<property>epts.etl.autoCommit</property>
+		<description>Enable automatic database commit.</description>
+		<defaultValue>false</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.ccr.program.id</property>
+		<description>CCR program ID.</description>
+		<defaultValue>6</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.conf.dir</property>
+		<description>Directory containing ETL configuration files.</description>
+		<defaultValue>/opt/openmrs/etl/conf</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.connectionIsolationLevel</property>
+		<description>Database transaction isolation level.</description>
+		<defaultValue>TRANSACTION_REPEATABLE_READ</defaultValue>
+		<editPrivilege>Manage Protected Settings</editPrivilege>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.driveClassName</property>
+		<description>JDBC driver class.</description>
+		<defaultValue>com.mysql.cj.jdbc.Driver</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dataModelType</property>
+		<description>EPTS ETL data model type.</description>
+		<defaultValue>dynamic</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.defaultExceptionBehavior</property>
+		<description>Default behavior when an exception occurs.</description>
+		<defaultValue>ABORT_PROCESS</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.defaultInconsistencyBehavior</property>
+		<description>Default behavior when an inconsistency is detected.</description>
+		<defaultValue>ABORT_PROCESS</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.disable.demographics</property>
+		<description>Disable demographic processing.</description>
+		<defaultValue>true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dstConnectionURI</property>
+		<description>Destination database connection URI.</description>
+		<defaultValue>jdbc:mysql://172.16.60.45:3320/openmrs?autoReconnect=true&amp;useSSL=false&amp;allowPublicKeyRetrieval=true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dst_db</property>
+		<description>Destination database name.</description>
+		<defaultValue>openmrs</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dstUserPassword</property>
+		<description>Destination database password.</description>
+		<defaultValue>root</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dstUserName</property>
+		<description>Destination database username.</description>
+		<defaultValue>root</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.enabled</property>
+		<description>Enables or disables automatic ETL execution.</description>
+		<defaultValue>true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.extra_condition</property>
+		<description>Enable additional extraction conditions for synchronization.</description>
+		<defaultValue>true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.hiv.destination.location.id</property>
+		<description>Destination location ID for HIV data.</description>
+		<defaultValue>DESTINATION_LOCATION_ID</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.ignoreAllStartupScripts</property>
+		<description>EPTS ETL ignore startup scripts.</description>
+		<defaultValue>false</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.included.patient.extra.condition</property>
+		<description>Enable additional patient extraction conditions.</description>
+		<defaultValue>true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.included.person.b.extra.condition</property>
+		<description>Enable additional person B extraction conditions.</description>
+		<defaultValue>true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.included.person.extra.condition</property>
+		<description>Enable additional person extraction conditions.</description>
+		<defaultValue>true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.location_name</property>
+		<description>Source location name used by the ETL.</description>
+		<defaultValue>CS JNUNO_Mabjaia</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.log.level</property>
+		<description>Default ETL log level.</description>
+		<defaultValue>WARN</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.log.level.configuration</property>
+		<description>Log level for ETL configuration.</description>
+		<defaultValue>WARN</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.log.level.connection</property>
+		<description>Log level for ETL database connections.</description>
+		<defaultValue>WARN</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.log.level.controller</property>
+		<description>Log level for ETL controllers.</description>
+		<defaultValue>WARN</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.log.level.dao</property>
+		<description>Log level for ETL DAO operations.</description>
+		<defaultValue>WARN</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.log.level.engine</property>
+		<description>Log level for ETL engines.</description>
+		<defaultValue>WARN</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.log.level.processor</property>
+		<description>Log level for ETL processors.</description>
+		<defaultValue>WARN</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.maxSupportedProcessors</property>
+		<description>Maximum number of processors supported by the ETL.</description>
+		<defaultValue>1</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.mode</property>
+		<description>ETL running mode. Possible values are db_synchronization or db_migration.</description>
+		<defaultValue>db_synchronization</defaultValue>
+		<editPrivilege>Manage Protected Settings</editPrivilege>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.parallelProcessingStrategy</property>
+		<description>Parallel processing strategy used by the ETL.</description>
+		<defaultValue>SINGLE_THREAD</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.prep.program.id</property>
+		<description>PrEP program ID.</description>
+		<defaultValue>25</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.processingBatch</property>
+		<description>Number of records processed in each batch.</description>
+		<defaultValue>100</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.etl_root_dir</property>
+		<description>Root directory used by the ETL.</description>
+		<defaultValue>/opt/openmrs/etl</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.run.in.debug.mode</property>
+		<description>Enable ETL debug execution mode.</description>
+		<defaultValue>false</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.smi.destination.location.id</property>
+		<description>Destination location ID for SMI data.</description>
+		<defaultValue>DESTINATION_LOCATION_ID</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.srcConnectionURI</property>
+		<description>Source database connection URI.</description>
+		<defaultValue>jdbc:mysql://172.16.60.45:3320/openmrs_event_receiver_mgt?autoReconnect=true&amp;useSSL=false&amp;allowPublicKeyRetrieval=true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.src_db</property>
+		<description>Source database name.</description>
+		<defaultValue>openmrs_event_receiver_mgt</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.src.location.list</property>
+		<description>List of source locations.</description>
+		<defaultValue>SOURCE_LOCATION_LIST</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.srcUserPassword</property>
+		<description>Source database password.</description>
+		<defaultValue>root</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.srcUserName</property>
+		<description>Source database username.</description>
+		<defaultValue>root</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.stage.record.issue.behavior</property>
+		<description>Behavior when an issue is detected in a staging record.</description>
+		<defaultValue>ABORT_PROCESS</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.startup.file</property>
+		<description>EPTS ETL startup configuration file.</description>
+		<defaultValue>/opt/openmrs/etl/conf/sync/sis_rme_sesp_sync.json</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.sync_destination_location_id</property>
+		<description>Destination location ID for synchronization.</description>
+		<defaultValue>212</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.sync_fragments</property>
+		<description>Path to synchronization fragment configuration files.</description>
+		<defaultValue>sync/sesp-sync-fragments/*.json</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.tarv.program.id</property>
+		<description>TARV program ID.</description>
+		<defaultValue>2</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.override.existing.data.model.element</property>
+		<description>Whether existing ETL data model elements should be overridden.</description>
+		<defaultValue>false</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.bin.pojo.directory</property>
+		<description>Optional directory where compiled POJO classes are written.</description>
+		<defaultValue>database-model/pojo/target/classes</defaultValue>
+		<editPrivilege>Manage Protected Settings</editPrivilege>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.src.pojo.directory</property>
+		<description>Optional directory where generated POJO source files are written.</description>
+		<defaultValue>database-model/pojo/src/main/java</defaultValue>
+		<editPrivilege>Manage Protected Settings</editPrivilege>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.maxActiveConnections</property>
+		<description>Maximum number of active database connections.</description>
+		<defaultValue>12</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.maxIdleConnections</property>
+		<description>Maximum number of idle database connections.</description>
+		<defaultValue>12</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.minIdleConnections</property>
+		<description>Minimum number of idle database connections.</description>
+		<defaultValue>4</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.defaultUserId</property>
+		<description>Default OpenMRS user ID used by the ETL.</description>
+		<defaultValue>1</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dst_tarv_service_id</property>
+		<description>Destination TARV service ID.</description>
+		<defaultValue>TARV_SERVICE_ID</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dst_ccr_service_id</property>
+		<description>Destination CCR service ID.</description>
+		<defaultValue>CCR_SERVICE_ID</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.dst_prep_service_id</property>
+		<description>Destination PrEP service ID.</description>
+		<defaultValue>PREP_SERVICE_ID</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.overrideExistingDataModelElement</property>
+		<description>Whether existing ETL data model elements should be overridden.</description>
+		<defaultValue>false</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.autoGenerateDataModelForParents</property>
+		<description>Whether data model should be automatically generated for parent elements.</description>
+		<defaultValue>false</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.disableDataModelGeneration</property>
+		<description>Disable automatic data model generation.</description>
+		<defaultValue>true</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.disableMultithreadingSearch</property>
+		<description>Disable multithreading during data search.</description>
+		<defaultValue>false</defaultValue>
+	</globalProperty>
+
+	<!-- / Global Properties -->
+
 	<!-- Adds link to admin page -->
 	<extension>
 		<point>org.openmrs.admin.list</point>
