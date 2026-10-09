@@ -88,19 +88,33 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		targetField.setAccessible(true);
 
 		try {
-			if (List.class.isAssignableFrom(targetField.getType())) {
-				includeList(dc, targetField);
-			} else {
-				includeSingle(dc, targetField);
+			for (String sourcePath : parseSourcePaths()) {
+				if (List.class.isAssignableFrom(targetField.getType())) {
+					includeList(dc, targetField, sourcePath);
+				} else {
+					includeSingle(dc, targetField, sourcePath);
+				}
 			}
 		} catch (Exception e) {
 			throw new EtlConfException("Error applying include for target '" + target + "' from '" + srcPath + "'", e);
 		}
 	}
 
-	private void includeSingle(EtlDataConfiguration dc, Field targetField) throws Exception {
+	private List<String> parseSourcePaths() {
+		List<String> sourcePaths = new ArrayList<>();
+		for (String path : srcPath.split(",", -1)) {
+			String normalizedPath = path.trim();
+			if (normalizedPath.isEmpty()) {
+				throw new EtlConfException("Include srcPath contains an empty path: " + srcPath);
+			}
+			sourcePaths.add(normalizedPath);
+		}
+		return sourcePaths;
+	}
 
-		File file = resolveSingleFile(srcPath);
+	private void includeSingle(EtlDataConfiguration dc, Field targetField, String sourcePath) throws Exception {
+
+		File file = resolveSingleFile(sourcePath);
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
@@ -112,11 +126,11 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void includeList(EtlDataConfiguration dc, Field targetField) throws Exception {
+	private void includeList(EtlDataConfiguration dc, Field targetField, String sourcePath) throws Exception {
 
 		Class<?> itemType = resolveListItemType(targetField);
 
-		List<File> files = resolveFiles(dc.getRelatedEtlConf().getEtlConfDir(), srcPath);
+		List<File> files = resolveFiles(dc.getRelatedEtlConf().getEtlConfDir(), sourcePath);
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(itemType);
 

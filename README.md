@@ -2109,7 +2109,7 @@ This feature is useful for splitting large ETL configuration files into smaller,
 
 Each fragment may define either a single configuration object or a list of configuration objects. During configuration loading, the ETL engine reads the referenced fragments and injects their content into the current configuration element.
 
-Fragment files are referenced using *srcPath*. The path is resolved relative to the global *etlConfDir* configuration, which defines the directory where ETL configuration files are stored. The *etlConfDir* must point to a real filesystem directory. If it is not specified, the ETL engine will use the directory where the main configuration file is located.
+Fragment files are referenced using *srcPath*. One or more paths can be supplied in the same value, separated by commas. Each path supports the same file, directory, and wildcard behavior as an individual *srcPath*. Paths are processed from left to right and whitespace around each path is ignored. The paths are resolved relative to the global *etlConfDir* configuration, which defines the directory where ETL configuration files are stored. The *etlConfDir* must point to a real filesystem directory. If it is not specified, the ETL engine will use the directory where the main configuration file is located.
 
 ### Example:
 
@@ -2129,7 +2129,7 @@ Fragment files are referenced using *srcPath*. The path is resolved relative to 
          "include":[
             {
                "target":"childItemConf",
-               "srcPath":"sync-child/*.json"
+               "srcPath":"sync-child/core/*.json, sync-child/extensions/*.json, sync-child/custom.json"
             }
          ]
       }
@@ -2137,7 +2137,7 @@ Fragment files are referenced using *srcPath*. The path is resolved relative to 
 }
 ```
 
-In this example, all JSON files matching **/opt/etl/config/sync-child/*.json** will be loaded and inserted as *childItemConf* entries.
+In this example, the JSON files under **sync-child/core**, followed by those under **sync-child/extensions**, and finally **sync-child/custom.json**, will be loaded and inserted as *childItemConf* entries. Files matched within each path retain the existing alphabetical ordering.
 
 If *etlConfDir* is omitted, the same relative *srcPath* will be resolved from the directory where the main ETL configuration file is located.
 
