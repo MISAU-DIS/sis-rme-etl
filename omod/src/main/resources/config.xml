@@ -113,7 +113,7 @@
 	<globalProperty>
 		<property>epts.etl.enabled</property>
 		<description>Enables or disables automatic ETL execution.</description>
-		<defaultValue>true</defaultValue>
+		<defaultValue>false</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
