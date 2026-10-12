@@ -2,12 +2,16 @@ package org.openmrs.module.epts.etl.openmrs.conf;
 
 import java.util.Properties;
 
+import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 /** Runtime configuration for the OpenMRS index-update integration. */
-public final class OpenMrsIndexConfiguration {
+public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguration {
 
 	private static final String PREFIX = "openmrs.";
+	protected static final String PATH = "/ws/rest/v1/";
 
 	private final String baseUrl;
 	private final String endpoint;
@@ -21,7 +25,10 @@ public final class OpenMrsIndexConfiguration {
 	private final int requestTimeoutSeconds;
 
 	private OpenMrsIndexConfiguration(Properties properties) {
-		this.baseUrl = required(properties, "base_url");
+		String bU = required(properties, "base_url");
+
+		this.baseUrl = bU + PATH;
+
 		this.endpoint = required(properties, "endpoint");
 		this.username = optional(properties, "username", null);
 		this.password = optional(properties, "password", null);
@@ -29,8 +36,8 @@ public final class OpenMrsIndexConfiguration {
 		this.resourceTypeField = optional(properties, "resource_type_field", "resource_type");
 		this.uuidField = optional(properties, "uuid_field", "record_uuid");
 		this.operationField = optional(properties, "operation_field", "operation_type");
-		this.connectTimeoutSeconds = positiveInteger(properties, "connect_timeout_seconds", 10);
-		this.requestTimeoutSeconds = positiveInteger(properties, "request_timeout_seconds", 30);
+		this.connectTimeoutSeconds = positiveInteger(properties, "connect_timeout_seconds", 60);
+		this.requestTimeoutSeconds = positiveInteger(properties, "request_timeout_seconds", 60);
 
 		if (isDefined(username) != isDefined(password)) {
 			throw new IllegalStateException(
@@ -78,10 +85,16 @@ public final class OpenMrsIndexConfiguration {
 
 	private static String resolve(String name, Properties openMrsProperties, Properties fileProperties) {
 		String shortName = PREFIX + name;
-		
-		String fullName = EtlDataConfiguration.ETL_GLOBAL_PROPERTY_PREFIX + shortName;
-		String value = openMrsProperties.getProperty(shortName);
 
+		String fullName = EtlDataConfiguration.ETL_GLOBAL_PROPERTY_PREFIX + shortName;
+
+		String value = fileProperties.getProperty(utilities.parsetoSnakeCase(shortName));
+
+		if (value == null)
+			value = openMrsProperties.getProperty(shortName);
+
+		if (value == null)
+			value = fileProperties.getProperty(utilities.parsetoSnakeCase(fullName));
 		if (value == null)
 			value = fileProperties.getProperty(fullName, fileProperties.getProperty(shortName));
 		if (value == null)
@@ -167,5 +180,23 @@ public final class OpenMrsIndexConfiguration {
 
 	public int getRequestTimeoutSeconds() {
 		return requestTimeoutSeconds;
+	}
+
+	@Override
+	public EtlConfiguration getRelatedEtlConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public EtlDataConfiguration getParentConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+		// TODO Auto-generated method stub
+
 	}
 }

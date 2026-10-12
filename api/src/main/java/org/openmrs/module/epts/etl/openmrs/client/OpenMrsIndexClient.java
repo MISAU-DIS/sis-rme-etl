@@ -26,12 +26,14 @@ public class OpenMrsIndexClient {
 
 	public OpenMrsIndexClient(OpenMrsIndexConfiguration configuration) {
 		this.configuration = configuration;
+
 		this.httpClient = HttpClient.newBuilder()
-		        .connectTimeout(Duration.ofSeconds(configuration.getConnectTimeoutSeconds())).build();
+				.connectTimeout(Duration.ofSeconds(configuration.getConnectTimeoutSeconds())).build();
 		this.objectMapper = new ObjectMapperProvider().getContext(OpenMrsIndexClient.class);
 	}
 
-	public void updateIndex(String resourceType, String uuid, String operation) throws IOException, InterruptedException {
+	public void updateIndex(String resourceType, String uuid, String operation)
+			throws IOException, InterruptedException {
 		Map<String, String> payload = new LinkedHashMap<>();
 		payload.put("resourceType", resourceType);
 		payload.put("uuid", uuid);
@@ -39,17 +41,17 @@ public class OpenMrsIndexClient {
 			payload.put("operationType", operation);
 
 		HttpRequest.Builder request = HttpRequest.newBuilder(buildUri())
-		        .timeout(Duration.ofSeconds(configuration.getRequestTimeoutSeconds()))
-		        .header("Content-Type", "application/json")
-		        .header("Accept", "application/json")
-		        .POST(HttpRequest.BodyPublishers.ofString(toJson(payload), StandardCharsets.UTF_8));
+				.timeout(Duration.ofSeconds(configuration.getRequestTimeoutSeconds()))
+				.header("Content-Type", "application/json").header("Accept", "application/json")
+				.POST(HttpRequest.BodyPublishers.ofString(toJson(payload), StandardCharsets.UTF_8));
 
 		applyAuthentication(request);
 
 		HttpResponse<String> response = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
+
 		if (response.statusCode() < 200 || response.statusCode() >= 300) {
 			throw new IOException("OpenMRS index endpoint returned HTTP " + response.statusCode() + ": "
-			        + abbreviate(response.body(), 1000));
+					+ abbreviate(response.body(), 1000));
 		}
 	}
 
@@ -68,8 +70,8 @@ public class OpenMrsIndexClient {
 			request.header("Authorization", "Bearer " + configuration.getBearerToken());
 		} else if (configuration.getUsername() != null) {
 			String credentials = configuration.getUsername() + ":" + configuration.getPassword();
-			request.header("Authorization", "Basic " + Base64.getEncoder()
-			        .encodeToString(credentials.getBytes(StandardCharsets.UTF_8)));
+			request.header("Authorization",
+					"Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8)));
 		}
 	}
 
