@@ -24,14 +24,14 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 	private final int requestTimeoutSeconds;
 
 	private OpenMrsIndexConfiguration(Properties properties) {
-		String bU = required(properties, "base_url");
+		String bU = required(properties, "openmrs_base_url");
 
 		this.baseUrl = bU + PATH;
 
-		this.endpoint = required(properties, "endpoint");
-		this.username = optional(properties, "username", null);
-		this.password = optional(properties, "password", null);
-		this.bearerToken = optional(properties, "bearer_token", null);
+		this.endpoint = required(properties, "openmrs_endpoint");
+		this.username = optional(properties, "openmrs_username", null);
+		this.password = optional(properties, "openmrs_password", null);
+		this.bearerToken = optional(properties, "openmrs_bearer_token", null);
 		this.resourceTypeField = optional(properties, "resource_type_field", "resource_type");
 		this.uuidField = optional(properties, "uuid_field", "record_uuid");
 		this.operationField = optional(properties, "operation_field", "operation_type");
@@ -59,11 +59,11 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 			if (value == null) {
 
 				switch (name) {
-				case "base_url":
+				case "openmrs_base_url":
 					value = "http://127.0.0.1:8080/openmrs";
 
 					break;
-				case "endpoint":
+				case "openmrs_endpoint":
 					value = "searchindexupdate";
 
 					break;
