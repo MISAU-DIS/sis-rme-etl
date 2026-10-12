@@ -10,7 +10,6 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 /** Runtime configuration for the OpenMRS index-update integration. */
 public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguration {
 
-	private static final String PREFIX = "openmrs.";
 	protected static final String PATH = "/ws/rest/v1/";
 
 	private final String baseUrl;
@@ -51,9 +50,9 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 		Properties fileProperties = EtlDataConfiguration.loadProperties(System.getProperty("etl.env.file"));
 		Properties openMrsProperties = EtlDataConfiguration.loadOpenMrsGlobalProperties();
 
-		for (String name : new String[] { "base_url", "endpoint", "username", "password", "bearer_token",
-				"resource_type_field", "uuid_field", "operation_field", "connect_timeout_seconds",
-				"request_timeout_seconds" }) {
+		for (String name : new String[] { "openmrs_base_url", "openmrs_endpoint", "openmrs_username",
+				"openmrs_password", "openmrs_bearer_token", "resource_type_field", "uuid_field", "operation_field",
+				"connect_timeout_seconds", "request_timeout_seconds" }) {
 
 			String value = resolve(name, openMrsProperties, fileProperties);
 
@@ -84,7 +83,7 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 	}
 
 	private static String resolve(String name, Properties openMrsProperties, Properties fileProperties) {
-		String shortName = PREFIX + name;
+		String shortName = name;
 
 		String fullName = EtlDataConfiguration.ETL_GLOBAL_PROPERTY_PREFIX + shortName;
 
@@ -111,7 +110,7 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 		String value = optional(properties, name, null);
 
 		if (!isDefined(value))
-			throw new IllegalStateException("Missing required ETL property: epts.etl." + PREFIX + name);
+			throw new IllegalStateException("Missing required ETL property: epts.etl." + name);
 
 		return value.trim();
 	}
@@ -133,8 +132,7 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 			return parsed;
 		} catch (NumberFormatException exception) {
 			throw new IllegalStateException(
-					"ETL property epts.etl." + PREFIX + name + " must be a positive integer, but was: " + value,
-					exception);
+					"ETL property epts.etl." + name + " must be a positive integer, but was: " + value, exception);
 		}
 	}
 
