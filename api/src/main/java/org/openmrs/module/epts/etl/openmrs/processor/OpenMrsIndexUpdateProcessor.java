@@ -3,10 +3,13 @@ package org.openmrs.module.epts.etl.openmrs.processor;
 import java.sql.Connection;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.etl.model.EtlLoadStatus;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -15,6 +18,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.openmrs.client.OpenMrsIndexClient;
 import org.openmrs.module.epts.etl.openmrs.conf.OpenMrsIndexConfiguration;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
+import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /** Sends staging records to an OpenMRS index-update endpoint. */
@@ -55,7 +59,20 @@ public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
 
 					logDebug("OpenMRS index updated for resource {} with UUID {}", resourceType, uuid);
 				} catch (EtlExceptionImpl exception) {
-					recordFailure(record, exception);
+					recordFailure(record, exception, srcConn);
+				} catch (java.net.ConnectException e) {
+
+					Throwable cause = e;
+
+					Throwable rootCause = e.getCause();
+
+					while (rootCause != null) {
+						cause = rootCause;
+
+						rootCause = cause.getCause();
+					}
+
+					recordFailure(record, (Exception) cause, srcConn);
 				}
 			}
 		} catch (Exception exception) {
@@ -90,14 +107,20 @@ public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
 		}
 	}
 
-	private void recordFailure(EtlDatabaseObject record, Exception exception) {
-		EtlExceptionImpl etlException = new EtlExceptionImpl(
-				"Could not update the OpenMRS index: " + exception.getMessage(), exception, record,
-				ActionOnEtlIssue.MARK_RECORD_AS_FAILED);
+	private void recordFailure(EtlDatabaseObject record, Exception exception, Connection srcConn) throws DBException {
 
-		getTaskResultInfo().addToRecordsWithUnresolvedErrors(record, etlException);
+		record.setFieldValue("processing_state", EtlLoadStatus.NOT_LOADED_DUE_ERRORS);
 
-		logError("Could not update the OpenMRS index for staging record " + record.getObjectId(), exception);
+		record.setFieldValue("processing_date", DateAndTimeUtilities.getCurrentSystemDate(srcConn));
+		record.setFieldValue("processing_error",
+				exception.getLocalizedMessage() != null ? exception.getLocalizedMessage()
+						: exception.getClass().getCanonicalName());
+
+		logWarn("Could not update the OpenMRS index for staging record {}. \n\tError:  ", record.getObjectId(),
+				record.getFieldValue("processing_error"));
+
+		record.update((TableConfiguration) record.getRelatedConfiguration(), srcConn);
+
 	}
 
 	@Override
