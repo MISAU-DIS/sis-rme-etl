@@ -20,6 +20,8 @@
 			<groupId>${project.parent.groupId}</groupId>
 			<artifactId>sisrme-etl-api</artifactId>
 			<version>${project.parent.version}</version>
+			<!-- Use the lightweight API artifact; the main artifact is the standalone fat JAR. -->
+			<classifier>omod</classifier>
 		</dependency>
 
 		<dependency>
