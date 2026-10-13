@@ -39,28 +39,27 @@ public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
 					+ afterAction);
 		}
 
-		for (EtlDatabaseObject record : records) {
-			try {
-				String resourceType = requiredRecordValue(record, configuration.getResourceTypeField());
-				String uuid = readUuid(record, configuration);
-				String operation = optionalRecordValue(record, configuration.getOperationField());
+		try {
+			for (EtlDatabaseObject record : records) {
+				try {
+					String resourceType = requiredRecordValue(record, configuration.getResourceTypeField());
+					String uuid = readUuid(record, configuration);
+					String operation = optionalRecordValue(record, configuration.getOperationField());
 
-				client.updateIndex(resourceType, uuid, operation);
-				getTaskResultInfo().addToRecordsWithNoError(record);
+					client.updateIndex(resourceType, uuid, operation);
+					getTaskResultInfo().addToRecordsWithNoError(record);
 
-				// Removal happens only after a successful HTTP response. Failed records are
-				// deliberately kept in staging so that a later ETL run can retry them.
-				DatabaseObjectDAO.remove(record, srcConn);
+					// Removal happens only after a successful HTTP response. Failed records are
+					// deliberately kept in staging so that a later ETL run can retry them.
+					DatabaseObjectDAO.remove(record, srcConn);
 
-				logDebug("OpenMRS index updated for resource {} with UUID {}", resourceType, uuid);
-			} catch (InterruptedException exception) {
-				Thread.currentThread().interrupt();
-				recordFailure(record, exception);
-
-				return;
-			} catch (Exception exception) {
-				recordFailure(record, exception);
+					logDebug("OpenMRS index updated for resource {} with UUID {}", resourceType, uuid);
+				} catch (EtlExceptionImpl exception) {
+					recordFailure(record, exception);
+				}
 			}
+		} catch (Exception exception) {
+			getTaskResultInfo().setFatalException(exception);
 		}
 	}
 
@@ -95,7 +94,9 @@ public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
 		EtlExceptionImpl etlException = new EtlExceptionImpl(
 				"Could not update the OpenMRS index: " + exception.getMessage(), exception, record,
 				ActionOnEtlIssue.MARK_RECORD_AS_FAILED);
+
 		getTaskResultInfo().addToRecordsWithUnresolvedErrors(record, etlException);
+
 		logError("Could not update the OpenMRS index for staging record " + record.getObjectId(), exception);
 	}
 

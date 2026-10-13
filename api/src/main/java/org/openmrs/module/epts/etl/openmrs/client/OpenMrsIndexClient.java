@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.openmrs.conf.OpenMrsIndexConfiguration;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
@@ -50,9 +51,10 @@ public class OpenMrsIndexClient {
 		HttpResponse<String> response = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
 
 		if (response.statusCode() < 200 || response.statusCode() >= 300) {
-			throw new IOException("OpenMRS index endpoint returned HTTP " + response.statusCode() + ": "
+			throw new EtlExceptionImpl("OpenMRS index endpoint returned HTTP " + response.statusCode() + ": "
 					+ abbreviate(response.body(), 1000));
 		}
+
 	}
 
 	private URI buildUri() {
