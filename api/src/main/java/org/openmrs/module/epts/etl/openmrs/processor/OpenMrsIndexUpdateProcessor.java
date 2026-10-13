@@ -56,6 +56,8 @@ public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
 			} catch (InterruptedException exception) {
 				Thread.currentThread().interrupt();
 				recordFailure(record, exception);
+
+				return;
 			} catch (Exception exception) {
 				recordFailure(record, exception);
 			}
