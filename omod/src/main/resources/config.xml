@@ -396,19 +396,19 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>openmrs_base_url</property>
+		<property>epts.etl.openmrs_base_url</property>
 		<description>Base URL of the OpenMRS REST API.</description>
 		<defaultValue>http://refapp-tomcat:8080/openmrs</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>openmrs_username</property>
+		<property>epts.etl.openmrs_username</property>
 		<description>Username used to authenticate with the OpenMRS REST API.</description>
 		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>openmrs_password</property>
+		<property>epts.etl.openmrs_password</property>
 		<description>Password used to authenticate with the OpenMRS REST API.</description>
 		<defaultValue></defaultValue>
 	</globalProperty>
