@@ -210,7 +210,12 @@
 							<includeGroupIds>${project.parent.groupId}</includeGroupIds>
 							<includeArtifactIds>sisrme-etl-api</includeArtifactIds>
 							<excludeTransitive>true</excludeTransitive>
-							<includes>**/*</includes>
+							<!--
+								The API classes are already packaged in lib/sisrme-etl-api-*.jar.
+								Only expand the OpenMRS resources that must live at the OMOD root;
+								unpacking **/* duplicated the complete API and all shaded classes.
+							-->
+							<includes>**/moduleApplicationContext.xml,**/messages*.properties</includes>
 							<outputDirectory>${project.build.directory}/classes</outputDirectory>
 						</configuration>
 					</execution>

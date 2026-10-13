@@ -284,6 +284,13 @@
 						</goals>
 
 						<configuration>
+							<!--
+								Keep the regular API artifact small for inclusion in the OMOD.
+								The self-contained command-line distribution is attached as a
+								separate artifact instead of replacing the main API JAR.
+							-->
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>standalone</shadedClassifierName>
 							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<transformers>
 								<!-- add Main-Class to manifest file -->
