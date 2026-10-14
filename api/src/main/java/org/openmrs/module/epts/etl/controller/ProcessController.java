@@ -118,6 +118,38 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		this.operationsControllers = operationsControllers_;
 	}
 
+	public OperationController<? extends EtlDatabaseObject> findOperationControllerByIdentifier(String identifier) {
+		if (!utilities.stringHasValue(identifier) || !utilities.listHasElement(this.operationsControllers)) {
+			return null;
+		}
+
+		for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+			OperationController<? extends EtlDatabaseObject> matchedController = findOperationControllerByIdentifier(
+					controller, identifier.trim());
+
+			if (matchedController != null) {
+				return matchedController;
+			}
+		}
+
+		return null;
+	}
+
+	private OperationController<? extends EtlDatabaseObject> findOperationControllerByIdentifier(
+			OperationController<? extends EtlDatabaseObject> controller, String identifier) {
+		if (controller == null) {
+			return null;
+		}
+
+		String controllerIdentifier = controller.getOperationIdentifier();
+
+		if (controllerIdentifier != null && controllerIdentifier.equalsIgnoreCase(identifier)) {
+			return controller;
+		}
+
+		return findOperationControllerByIdentifier(controller.getChild(), identifier);
+	}
+
 	public ProcessProgressInfo getProgressInfo() {
 		return progressInfo;
 	}

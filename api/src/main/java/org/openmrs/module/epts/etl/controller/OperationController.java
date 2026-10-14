@@ -175,6 +175,10 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		return operationConfig;
 	}
 
+	public String getOperationIdentifier() {
+		return this.operationConfig.getIdentifier();
+	}
+
 	public OperationController<? extends EtlDatabaseObject> getChild() {
 		return child;
 	}

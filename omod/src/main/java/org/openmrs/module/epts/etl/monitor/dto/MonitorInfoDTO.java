@@ -4,7 +4,7 @@ import java.util.List;
 
 public class MonitorInfoDTO {
 
-    private String operationId;
+    private String operationIdentifier;
     private String status;
     private String message;
     private Double progress;
@@ -15,12 +15,12 @@ public class MonitorInfoDTO {
     public MonitorInfoDTO() {
     }
 
-    public String getOperationId() {
-        return operationId;
+    public String getOperationIdentifier() {
+        return operationIdentifier;
     }
 
-    public void setOperationId(String operationId) {
-        this.operationId = operationId;
+    public void setOperationIdentifier(String operationIdentifier) {
+        this.operationIdentifier = operationIdentifier;
     }
 
     public String getStatus() {

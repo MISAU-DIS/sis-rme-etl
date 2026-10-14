@@ -49,6 +49,8 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private EtlOperationType operationType;
 
+	private String identifier;
+
 	private int processingBatch;
 
 	private int maxSupportedProcessors;
@@ -124,6 +126,14 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	public EtlOperationConfig() {
 
+	}
+
+	public String getIdentifier() {
+		return identifier;
+	}
+
+	public void setIdentifier(String identifier) {
+		this.identifier = utilities.stringHasValue(identifier) ? identifier.trim() : null;
 	}
 
 	public List<String> getEtlItemConfigCodeWhiteList() {

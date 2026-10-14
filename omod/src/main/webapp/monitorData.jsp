@@ -956,7 +956,7 @@
            ----------------------------------------------------- */
 
         document.getElementById("operationId").innerText =
-            data.operationId || "-";
+            data.operationIdentifier || "-";
 
 
         var operationStatus =
@@ -1318,8 +1318,20 @@
 
     function loadMonitor() {
 
+        var operationIdentifier =
+            new URLSearchParams(window.location.search)
+                .get("operationIdentifier");
+
+        var monitorUrl =
+            "${pageContext.request.contextPath}/module/epts/etl/monitorData.json";
+
+        if (operationIdentifier) {
+            monitorUrl += "?operationIdentifier=" +
+                encodeURIComponent(operationIdentifier);
+        }
+
         fetch(
-            "${pageContext.request.contextPath}/module/epts/etl/monitorData.json",
+            monitorUrl,
             {
                 method: "GET",
                 headers: {
