@@ -3,9 +3,7 @@ package org.openmrs.module.epts.etl.openmrs.processor;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -43,40 +41,36 @@ public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
 					+ afterAction);
 		}
 
-		try {
-			for (EtlDatabaseObject record : records) {
-				try {
-					String resourceType = requiredRecordValue(record, configuration.getResourceTypeField());
-					String uuid = readUuid(record, configuration);
-					String operation = optionalRecordValue(record, configuration.getOperationField());
+		for (EtlDatabaseObject record : records) {
+			try {
+				String resourceType = requiredRecordValue(record, configuration.getResourceTypeField());
+				String uuid = readUuid(record, configuration);
+				String operation = optionalRecordValue(record, configuration.getOperationField());
 
-					client.updateIndex(resourceType, uuid, operation);
-					getTaskResultInfo().addToRecordsWithNoError(record);
+				client.updateIndex(resourceType, uuid, operation);
+				getTaskResultInfo().addToRecordsWithNoError(record);
 
-					// Removal happens only after a successful HTTP response. Failed records are
-					// deliberately kept in staging so that a later ETL run can retry them.
-					DatabaseObjectDAO.remove(record, srcConn);
+				// Removal happens only after a successful HTTP response. Failed records are
+				// deliberately kept in staging so that a later ETL run can retry them.
+				DatabaseObjectDAO.remove(record, srcConn);
 
-					logDebug("OpenMRS index updated for resource {} with UUID {}", resourceType, uuid);
-				} catch (EtlExceptionImpl exception) {
-					recordFailure(record, exception, srcConn);
-				} catch (java.net.ConnectException e) {
+				logDebug("OpenMRS index updated for resource {} with UUID {}", resourceType, uuid);
+			} catch (EtlExceptionImpl exception) {
+				recordFailure(record, exception, srcConn);
+			} catch (Exception e) {
 
-					Throwable cause = e;
+				Throwable cause = e;
 
-					Throwable rootCause = e.getCause();
+				Throwable rootCause = e.getCause();
 
-					while (rootCause != null) {
-						cause = rootCause;
+				while (rootCause != null) {
+					cause = rootCause;
 
-						rootCause = cause.getCause();
-					}
-
-					recordFailure(record, (Exception) cause, srcConn);
+					rootCause = cause.getCause();
 				}
+
+				recordFailure(record, (Exception) cause, srcConn);
 			}
-		} catch (Exception exception) {
-			getTaskResultInfo().setFatalException(exception);
 		}
 	}
 
@@ -108,6 +102,10 @@ public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
 	}
 
 	private void recordFailure(EtlDatabaseObject record, Exception exception, Connection srcConn) throws DBException {
+
+		int retry_count = Integer.parseInt(record.getFieldValue("retry_count").toString()) + 1;
+
+		record.setFieldValue("retry_count", retry_count);
 
 		record.setFieldValue("processing_state", EtlLoadStatus.NOT_LOADED_DUE_ERRORS);
 
