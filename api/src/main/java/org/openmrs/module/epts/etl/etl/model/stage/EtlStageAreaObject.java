@@ -410,15 +410,20 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	}
 
 	public static List<EtlDatabaseObject> collectAllKeyInfo(List<EtlStageAreaObject> stageInfo) {
-		List<EtlDatabaseObject> collected = new ArrayList<>(stageInfo.size());
 
-		for (EtlStageAreaObject sti : stageInfo) {
-			if (sti.getKeyInfo() != null && sti.hasParentKey()) {
-				collected.addAll(sti.getKeyInfo());
+		if (utilities.listHasElement(stageInfo)) {
+
+			List<EtlDatabaseObject> collected = new ArrayList<>(stageInfo.size());
+
+			for (EtlStageAreaObject sti : stageInfo) {
+				if (sti.getKeyInfo() != null && sti.hasParentKey()) {
+					collected.addAll(sti.getKeyInfo());
+				}
 			}
-		}
 
-		return collected;
+			return collected;
+		} else
+			return new ArrayList<>();
 	}
 
 	private boolean hasParentKey() {

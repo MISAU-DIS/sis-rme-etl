@@ -73,6 +73,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	private volatile boolean stopRequested;
 
+	/**
+	 * True while {@link #run()} still owns the Engine lifecycle. A stop request may
+	 * prevent new work, but must not publish STOPPED while a processing strategy is
+	 * committing its current work or flushing auxiliary persistence.
+	 */
+	private volatile boolean executionActive;
+
 	protected TableOperationProgressInfo tableOperationProgressInfo;
 
 	protected List<IntervalExtremeRecord> excludedRecordsLimits;
@@ -353,6 +360,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@Override
 	public void run() {
+		beginExecutionLifecycle();
 		try {
 			boolean restart;
 
@@ -375,6 +383,22 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			this.stopOperationDueError(e);
 
 			logErr(e.getLocalizedMessage(), e);
+		} finally {
+			completeExecutionLifecycle();
+		}
+	}
+
+	void beginExecutionLifecycle() {
+		executionActive = true;
+	}
+
+	void completeExecutionLifecycle() {
+		executionActive = false;
+
+		if (stopRequested() && !isFinished()) {
+			// Reaching this point means the active strategy has returned. Its workers,
+			// transaction and final auxiliary-persistence flush are no longer in flight.
+			changeStatusToStopped();
 		}
 	}
 
@@ -729,59 +753,66 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
-		// The reload query reads this auxiliary table, so it must only start after
-		// every successful worker registration is durable.
-		flushDefaultParentsUsingDedicatedConnection();
-
 		ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
 
-		logDebug("TRY TO PROCESS SKIPPED RECORDS ON INTERVAL " + iManager.getCurrentLimits());
+		if (!getRelatedEtlOperationConfig().doNotProcessSkippedRecords()) {
+			// The reload query reads this auxiliary table, so it must only start after
+			// every successful worker registration is durable.
+			flushDefaultParentsUsingDedicatedConnection();
 
-		TaskProcessor<T> taskProcessor = getController()
-				.initRelatedTaskProcessor(this, getThreadRecordIntervalsManager().getCurrentLimits(), false)
-				.initReloadRecordsWithDefaultParentsTaskProcessor(iManager);
+			logDebug("TRY TO PROCESS SKIPPED RECORDS ON INTERVAL " + iManager.getCurrentLimits());
 
-		if (taskProcessor != null) {
-			String originalExtraCondition = getSearchParams().getExtraCondition();
-			String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
+			TaskProcessor<T> taskProcessor = getController()
+					.initRelatedTaskProcessor(this, getThreadRecordIntervalsManager().getCurrentLimits(), false)
+					.initReloadRecordsWithDefaultParentsTaskProcessor(iManager);
 
-			try {
-				getSrcConf().setExtraConditionForExtract(null);
+			if (taskProcessor != null) {
+				String originalExtraCondition = getSearchParams().getExtraCondition();
+				String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
 
-				getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
+				try {
+					getSrcConf().setExtraConditionForExtract(null);
 
-				taskProcessor.setProcessorId(this.getEngineId());
+					getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
 
-				boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
-				boolean useMultiThreadSearch = true;
+					taskProcessor.setProcessorId(this.getEngineId());
 
-				performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork,
-						openSrcConn(this), tryToOpenDstConn(this));
+					boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
+					boolean useMultiThreadSearch = true;
 
-				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
-				getSearchParams().setExtraCondition(originalExtraCondition);
+					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork,
+							openSrcConn(this), tryToOpenDstConn(this));
 
-				if (taskProcessor.getTaskResultInfo().hasFatalError()) {
-					stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
-				} else {
-					OpenConnection srcConn = openSrcConn(this);
+					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+					getSearchParams().setExtraCondition(originalExtraCondition);
 
-					try {
-						RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
+					if (taskProcessor.getTaskResultInfo().hasFatalError()) {
+						stopOperationDueError(taskProcessor.getTaskResultInfo().getFatalException());
+					} else {
+						OpenConnection srcConn = openSrcConn(this);
 
-						srcConn.markAsSuccessifullyTerminated();
-					} finally {
-						srcConn.finalizeConnection(this);
+						try {
+							RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), srcConn);
+
+							srcConn.markAsSuccessifullyTerminated();
+						} finally {
+							srcConn.finalizeConnection(this);
+						}
+
+						iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+						iManager.save();
 					}
-
-					iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
-					iManager.save();
+				} finally {
+					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+					getSearchParams().setExtraCondition(originalExtraCondition);
 				}
-			} finally {
-				getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
-				getSearchParams().setExtraCondition(originalExtraCondition);
+			} else {
+				iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+				iManager.save();
 			}
 		} else {
+			warn("Skipping record with default parents reload as 'doNotProcessSkippedRecords' is set to true");
+
 			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
 			iManager.save();
 		}
@@ -1301,34 +1332,21 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 
 		synchronized (LOCK) {
+			if (isStopped() || isFinished() || stopRequested()) {
+				return;
+			}
+
 			this.stopRequested = true;
 
 			changeStatusToStopping();
 
-			boolean stopNow = false;
-
-			if (utilities.listHasElement(this.getCurrentTaskProcessor())) {
-				boolean atLeaseOneIsRunning = false;
-
-				for (TaskProcessor<T> t : this.getCurrentTaskProcessor()) {
-					if (!t.isStopped() && !t.isFinished()) {
-						atLeaseOneIsRunning = true;
-					}
-				}
-
-				if (!atLeaseOneIsRunning) {
-					stopNow = true;
-				}
-			} else {
-				stopNow = true;
-			}
-
-			if (stopNow) {
-				logWarn("No task is running, stopping the Engine now: " + this.getEngineId());
-
+			if (!executionActive) {
+				logWarn("Engine execution is not active, stopping now: " + this.getEngineId());
 				changeStatusToStopped();
+			} else {
+				logWarn("Engine will stop after the active strategy commits and flushes pending persistence: {}",
+						this.getEngineId());
 			}
-
 		}
 	}
 
@@ -1546,7 +1564,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		log.append("\n");
 
 		if (taskProcessor != null) {
-			log.append(formatReportLine("REPORTING LIMITS", taskProcessor.getLimits()));
+			log.append(formatReportLine("REPORTING THREAD",
+					taskProcessor.getOperationId() + "(" + taskProcessor.getLimits() + ")"));
 		}
 
 		log.append(formatReportLine("PROCESSING TIME", globalProgressMeter.getHumanReadbleProcessingTime()));

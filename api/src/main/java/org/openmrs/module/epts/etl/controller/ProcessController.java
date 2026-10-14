@@ -270,7 +270,21 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	@Override
 	public boolean isStopped() {
-		return this.operationStatus.stopped();
+		if (this.operationStatus.stopped()) {
+			return true;
+		}
+
+		if (!stopRequested() || !utilities.listHasElement(this.getOperationsControllers())) {
+			return false;
+		}
+
+		for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
+			if (!controller.isStopped()) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	@Override
@@ -311,33 +325,9 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 					}
 				}
 
-				this.waitUntilNoOperationIsRunning();
-
-				this.changeStatusToStopped();
+				logWarn("Stop was propagated. Waiting asynchronously for the Engines to commit and flush pending work.");
 			}
 		}
-	}
-
-	private void waitUntilNoOperationIsRunning() {
-		boolean atLeastOneIsRunning = true;
-
-		while (atLeastOneIsRunning) {
-			atLeastOneIsRunning = false;
-
-			for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
-
-				if (controller.isRunning()) {
-					atLeastOneIsRunning = true;
-					break;
-				}
-			}
-
-			warn("WAINTING UNTIL ALL OPERATIONS STOP...", 60 * 15, true);
-
-			TimeCountDown.sleep(15);
-		}
-
-		warn("The process is stoping as requested....");
 	}
 
 	@Override

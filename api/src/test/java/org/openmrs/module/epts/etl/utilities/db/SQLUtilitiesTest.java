@@ -4,6 +4,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+
 import org.junit.Test;
 
 public class SQLUtilitiesTest {
@@ -50,5 +52,24 @@ public class SQLUtilitiesTest {
 		assertFalse(SQLUtilities.isImmediatelyPrecededByEquality("value >= source.value", "source.value"));
 		assertFalse(SQLUtilities.isImmediatelyPrecededByEquality("value <= source.value", "source.value"));
 		assertFalse(SQLUtilities.isImmediatelyPrecededByEquality("value != source.value", "source.value"));
+	}
+
+	@Test
+	public void shouldLocateTransformableElementsInTheirOriginalQueryOrder() {
+		String query = "encounter_id = encounter_src_ds.encounter_id "
+				+ "and concept_id = @data_proxima_consulta_concept_id";
+		String parameter = "@data_proxima_consulta_concept_id";
+		String dataSourceElement = "encounter_src_ds.encounter_id";
+
+		assertEquals(dataSourceElement,
+				SQLUtilities.findFirstLiteralToken(query, Arrays.asList(parameter, dataSourceElement)));
+	}
+
+	@Test
+	public void shouldOnlyLocateCompleteLiteralTokens() {
+		String query = "source.patient_id_extra = 1 and source.patient_id = 2";
+
+		assertEquals(query.lastIndexOf("source.patient_id"),
+				SQLUtilities.findFirstLiteralTokenIndex(query, "source.patient_id"));
 	}
 }

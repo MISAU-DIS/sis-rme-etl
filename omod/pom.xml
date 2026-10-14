@@ -20,6 +20,8 @@
 			<groupId>${project.parent.groupId}</groupId>
 			<artifactId>sisrme-etl-api</artifactId>
 			<version>${project.parent.version}</version>
+			<!-- Use the lightweight API artifact; the main artifact is the standalone fat JAR. -->
+			<classifier>omod</classifier>
 		</dependency>
 
 		<dependency>
@@ -210,7 +212,12 @@
 							<includeGroupIds>${project.parent.groupId}</includeGroupIds>
 							<includeArtifactIds>sisrme-etl-api</includeArtifactIds>
 							<excludeTransitive>true</excludeTransitive>
-							<includes>**/*</includes>
+							<!--
+								The API classes are already packaged in lib/sisrme-etl-api-*.jar.
+								Only expand the OpenMRS resources that must live at the OMOD root;
+								unpacking **/* duplicated the complete API and all shaded classes.
+							-->
+							<includes>**/moduleApplicationContext.xml,**/messages*.properties</includes>
 							<outputDirectory>${project.build.directory}/classes</outputDirectory>
 						</configuration>
 					</execution>
