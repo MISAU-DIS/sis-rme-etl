@@ -2,25 +2,14 @@ package org.openmrs.module.epts.etl.service;
 
 import org.openmrs.module.epts.etl.Main;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
-import org.openmrs.module.epts.etl.config.EtlGlobalPropertyService;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.controller.ProcessStarter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EtlProcessService {
 
-    private final EtlGlobalPropertyService globalPropertyService;
-
     private volatile ProcessStarter processStarter;
-
-    @Autowired
-    public EtlProcessService(
-            EtlGlobalPropertyService globalPropertyService) {
-
-        this.globalPropertyService = globalPropertyService;
-    }
 
     /**
      * Gets the ProcessStarter instance that is actually managed
@@ -39,7 +28,7 @@ public class EtlProcessService {
     }
 
     public boolean isEnabled() {
-        return globalPropertyService.isEnabled();
+        return Main.isOpenMrsEtlEnabled();
     }
 
     public boolean isInitialized() {

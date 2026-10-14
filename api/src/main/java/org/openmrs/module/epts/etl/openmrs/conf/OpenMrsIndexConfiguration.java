@@ -23,7 +23,7 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 	private final int connectTimeoutSeconds;
 	private final int requestTimeoutSeconds;
 
-	private OpenMrsIndexConfiguration(Properties properties) {
+	private OpenMrsIndexConfiguration(Properties properties, boolean requireAutentication) {
 		String bU = required(properties, "openmrs_base_url");
 
 		this.baseUrl = bU + PATH;
@@ -38,16 +38,19 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 		this.connectTimeoutSeconds = positiveInteger(properties, "connect_timeout_seconds", 1800);
 		this.requestTimeoutSeconds = positiveInteger(properties, "request_timeout_seconds", 1800);
 
-		if (isDefined(username) != isDefined(password)) {
-			throw new IllegalStateException(
-					"Both epts.etl.openmrs.index.username and epts.etl.openmrs.index.password must be configured");
+		if (requireAutentication) {
+			if (isDefined(username) != isDefined(password)) {
+				throw new IllegalStateException(
+						"Both epts.etl.openmrs.index.username and epts.etl.openmrs.index.password must be configured");
+			}
 		}
 	}
 
-	public static OpenMrsIndexConfiguration load() {
+	public static OpenMrsIndexConfiguration load(boolean requireAutentication) {
 		Properties properties = new Properties();
 
 		Properties fileProperties = EtlDataConfiguration.loadProperties(System.getProperty("etl.env.file"));
+
 		Properties openMrsProperties = EtlDataConfiguration.loadOpenMrsGlobalProperties();
 
 		for (String name : new String[] { "openmrs_base_url", "openmrs_endpoint", "openmrs_username",
@@ -79,15 +82,29 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 
 		}
 
-		return new OpenMrsIndexConfiguration(properties);
+		return new OpenMrsIndexConfiguration(properties, requireAutentication);
 	}
 
 	private static String resolve(String name, Properties openMrsProperties, Properties fileProperties) {
 		String shortName = name;
 
 		String fullName = EtlDataConfiguration.ETL_GLOBAL_PROPERTY_PREFIX + shortName;
+		String indexName = toIndexPropertyName(name);
+		String fullIndexName = EtlDataConfiguration.ETL_GLOBAL_PROPERTY_PREFIX + indexName;
 
-		String value = fileProperties.getProperty(utilities.parsetoSnakeCase(shortName));
+		String value = fileProperties.getProperty(fullIndexName);
+
+		if (value == null)
+			value = fileProperties.getProperty(indexName);
+
+		if (value == null)
+			value = openMrsProperties.getProperty(fullIndexName);
+
+		if (value == null)
+			value = openMrsProperties.getProperty(indexName);
+
+		if (value == null)
+			value = fileProperties.getProperty(utilities.parsetoSnakeCase(shortName));
 
 		if (value == null)
 			value = openMrsProperties.getProperty(shortName);
@@ -97,13 +114,23 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 		if (value == null)
 			value = fileProperties.getProperty(fullName, fileProperties.getProperty(shortName));
 		if (value == null)
-			value = System.getProperty(fullName, System.getProperty(shortName));
+			value = System.getProperty(fullIndexName,
+					System.getProperty(indexName, System.getProperty(fullName, System.getProperty(shortName))));
+		if (value == null)
+			value = System.getenv(fullIndexName);
+		if (value == null)
+			value = System.getenv(fullIndexName.toUpperCase().replace('.', '_'));
 		if (value == null)
 			value = System.getenv(fullName);
 		if (value == null)
 			value = System.getenv(fullName.toUpperCase().replace('.', '_'));
 
 		return value;
+	}
+
+	private static String toIndexPropertyName(String name) {
+		String property = name.startsWith("openmrs_") ? name.substring("openmrs_".length()) : name;
+		return "openmrs.index." + property;
 	}
 
 	private static String required(Properties properties, String name) {
@@ -178,6 +205,16 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 
 	public int getRequestTimeoutSeconds() {
 		return requestTimeoutSeconds;
+	}
+
+	@Override
+	public String toString() {
+		return "OpenMrsIndexConfiguration{" + "baseUrl='" + baseUrl + '\'' + ", endpoint='" + endpoint + '\''
+				+ ", username='" + username + '\'' + ", passwordConfigured=" + isDefined(password)
+				+ ", bearerTokenConfigured=" + isDefined(bearerToken) + ", resourceTypeField='" + resourceTypeField
+				+ '\'' + ", uuidField='" + uuidField + '\'' + ", operationField='" + operationField + '\''
+				+ ", connectTimeoutSeconds=" + connectTimeoutSeconds + ", requestTimeoutSeconds="
+				+ requestTimeoutSeconds + '}';
 	}
 
 	@Override

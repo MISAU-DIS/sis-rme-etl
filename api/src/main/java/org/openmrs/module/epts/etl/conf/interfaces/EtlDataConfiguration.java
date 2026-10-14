@@ -442,6 +442,10 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		Properties javaProps = System.getProperties();
 		Properties sysProps = utilities.toProperties(System.getenv());
 
+		if (openMrsProps == null) {
+			openMrsProps = new Properties();
+		}
+
 		if (text == null || text.isBlank()) {
 			return text;
 		}
@@ -507,7 +511,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	 * support {@code ${epts.etl.location_name}}.
 	 */
 	public static Properties loadOpenMrsGlobalProperties() {
-		Properties properties = new Properties();
+		Properties properties = cachedOpenMrsGlobalProperties();
 		Class<?> contextClass;
 
 		try {
@@ -523,6 +527,8 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			boolean sessionOpen = Boolean.TRUE.equals(contextClass.getMethod("isSessionOpen").invoke(null));
 			if (!sessionOpen)
 				return properties;
+
+			Properties loadedProperties = new Properties();
 
 			Object administrationService = contextClass.getMethod("getAdministrationService").invoke(null);
 			ClassLoader openMrsClassLoader = contextClass.getClassLoader();
@@ -541,15 +547,33 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 				if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
 					String normalizedValue = stripWrappingQuotes(value);
-					properties.setProperty(name, normalizedValue);
-					properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
+					loadedProperties.setProperty(name, normalizedValue);
+					loadedProperties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
 				}
 			}
+
+			OpenMrsGlobalPropertiesCache.properties = loadedProperties;
+			return copyProperties(loadedProperties);
 		} catch (ReflectiveOperationException exception) {
+			if (!properties.isEmpty())
+				return properties;
 			throw new IllegalStateException("Could not load ETL global properties from the OpenMRS runtime", exception);
 		}
+	}
 
-		return properties;
+	private static Properties cachedOpenMrsGlobalProperties() {
+		return copyProperties(OpenMrsGlobalPropertiesCache.properties);
+	}
+
+	private static Properties copyProperties(Properties source) {
+		Properties copy = new Properties();
+		copy.putAll(source);
+		return copy;
+	}
+
+	class OpenMrsGlobalPropertiesCache {
+
+		private static volatile Properties properties = new Properties();
 	}
 
 	public static String escapeJsonString(String value) {

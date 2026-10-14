@@ -1,24 +1,17 @@
 package org.openmrs.module.epts.etl.openmrs.processor;
 
-import java.sql.Connection;
-import java.util.List;
 import java.util.Locale;
 
+import org.openmrs.Concept;
 import org.openmrs.OpenmrsObject;
+import org.openmrs.Patient;
+import org.openmrs.Person;
 import org.openmrs.api.context.Context;
-import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
-import org.openmrs.module.epts.etl.etl.model.EtlLoadStatus;
-import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
-import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.openmrs.conf.OpenMrsIndexConfiguration;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
-import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
  * Updates the OpenMRS search index through the in-process OpenMRS API.
@@ -29,7 +22,9 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * HTTP request back to the same OpenMRS server.
  * </p>
  */
-public class OpenMrsInternalIndexUpdateProcessor extends EtlProcessor {
+public class OpenMrsInternalIndexUpdateProcessor extends AbstractOpenMrsIndexUpdateProcessor {
+
+	private OpenMrsContextSession contextSession;
 
 	public OpenMrsInternalIndexUpdateProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
 			Boolean runningInConcurrency) {
@@ -37,44 +32,67 @@ public class OpenMrsInternalIndexUpdateProcessor extends EtlProcessor {
 	}
 
 	@Override
-	public void transformAndLoad(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn)
-			throws DBException {
+	protected OpenMrsIndexConfiguration getIndexConfiguration() {
+		return OpenMrsInternalIndexConfigurationProvider.INSTANCE;
+	}
 
-		OpenMrsIndexConfiguration configuration = OpenMrsIndexConfiguration.load();
-		EtlActionType afterAction = getRelatedEtlOperationConfig().getAfterEtlActionType();
+	@Override
+	protected void beforeBatch(OpenMrsIndexConfiguration configuration) {
+		contextSession = OpenMrsContextSession.open(configuration);
+	}
 
-		if (afterAction == null || !afterAction.isDelete()) {
-			throw new ForbiddenOperationException(
-					"OpenMrsInternalIndexUpdateProcessor requires DELETE as afterEtlActionType so that only "
-							+ "successfully indexed records are removed from staging; configured value: "
-							+ afterAction);
-		}
-
-		OpenMrsContextSession contextSession = OpenMrsContextSession.open(configuration);
-
-		try {
-			for (EtlDatabaseObject record : records) {
-				try {
-					String resourceType = requiredRecordValue(record, configuration.getResourceTypeField());
-					String uuid = readUuid(record, configuration);
-					OpenmrsObject openMrsObject = resolveObject(resourceType, uuid);
-
-					if (openMrsObject == null) {
-						throw new IllegalArgumentException("No OpenMRS " + resourceType + " found with UUID " + uuid);
-					}
-
-					Context.updateSearchIndexForObject(openMrsObject);
-					getTaskResultInfo().addToRecordsWithNoError(record);
-
-					DatabaseObjectDAO.remove(record, srcConn);
-					logDebug("OpenMRS index updated internally for resource {} with UUID {}", resourceType, uuid);
-				} catch (Exception exception) {
-					recordFailure(record, rootCause(exception), srcConn);
-				}
-			}
-		} finally {
+	@Override
+	protected void afterBatch() {
+		if (contextSession != null) {
 			contextSession.close();
+			contextSession = null;
 		}
+	}
+
+	@Override
+	protected void updateIndex(String resourceType, String uuid, String operation) {
+		OpenmrsObject openMrsObject = resolveObject(resourceType, uuid);
+		if (openMrsObject == null) {
+			logWarn("No OpenMRS {} found with UUID {}. The staging record will be discarded without an index update.",
+					resourceType, uuid);
+			return;
+		}
+
+		updateIndexableObjects(openMrsObject);
+	}
+
+	/**
+	 * Root domain objects such as Patient, Person and Concept are not @Indexed in
+	 * OpenMRS 2.x. Their searchable data is stored in associated indexed entities.
+	 */
+	private void updateIndexableObjects(OpenmrsObject openMrsObject) {
+		if (openMrsObject instanceof Patient) {
+			Patient patient = (Patient) openMrsObject;
+			patient.getNames().forEach(Context::updateSearchIndexForObject);
+			patient.getAttributes().forEach(Context::updateSearchIndexForObject);
+			patient.getIdentifiers().forEach(Context::updateSearchIndexForObject);
+			return;
+		}
+
+		if (openMrsObject instanceof Person) {
+			Person person = (Person) openMrsObject;
+			person.getNames().forEach(Context::updateSearchIndexForObject);
+			person.getAttributes().forEach(Context::updateSearchIndexForObject);
+			return;
+		}
+
+		if (openMrsObject instanceof Concept) {
+			Concept concept = (Concept) openMrsObject;
+			concept.getNames().forEach(Context::updateSearchIndexForObject);
+			return;
+		}
+
+		Context.updateSearchIndexForObject(openMrsObject);
+	}
+
+	@Override
+	protected String getIndexModeDescription() {
+		return "internally";
 	}
 
 	private OpenmrsObject resolveObject(String resourceType, String uuid) {
@@ -124,59 +142,18 @@ public class OpenMrsInternalIndexUpdateProcessor extends EtlProcessor {
 		return resourceType.trim().toLowerCase(Locale.ROOT).replace("_", "").replace("-", "").replace(" ", "");
 	}
 
-	private String readUuid(EtlDatabaseObject record, OpenMrsIndexConfiguration configuration) {
-		String uuid = optionalRecordValue(record, configuration.getUuidField());
-		if (uuid == null)
-			uuid = record.getUuid();
-		if (uuid == null || uuid.isBlank())
-			throw new IllegalArgumentException("Staging record does not contain an OpenMRS UUID");
-		return uuid;
-	}
-
-	private String requiredRecordValue(EtlDatabaseObject record, String fieldName) {
-		String value = optionalRecordValue(record, fieldName);
-		if (value == null)
-			throw new IllegalArgumentException("Staging record field '" + fieldName + "' is required");
-		return value;
-	}
-
-	private String optionalRecordValue(EtlDatabaseObject record, String fieldName) {
-		if (fieldName == null || fieldName.isBlank())
-			return null;
-		try {
-			Object value = record.getFieldValue(fieldName);
-			return value == null || value.toString().isBlank() ? null : value.toString().trim();
-		} catch (RuntimeException exception) {
-			return null;
-		}
-	}
-
-	private Exception rootCause(Exception exception) {
-		Throwable cause = exception;
-		while (cause.getCause() != null)
-			cause = cause.getCause();
-		return cause instanceof Exception ? (Exception) cause : exception;
-	}
-
-	private void recordFailure(EtlDatabaseObject record, Exception exception, Connection srcConn) throws DBException {
-		int retryCount = Integer.parseInt(record.getFieldValue("retry_count").toString()) + 1;
-
-		record.setFieldValue("retry_count", retryCount);
-		record.setFieldValue("processing_state", EtlLoadStatus.NOT_LOADED_DUE_ERRORS);
-		record.setFieldValue("processing_date", DateAndTimeUtilities.getCurrentSystemDate(srcConn));
-		record.setFieldValue("processing_error",
-				exception.getLocalizedMessage() != null ? exception.getLocalizedMessage()
-						: exception.getClass().getCanonicalName());
-
-		logWarn("Could not update the OpenMRS index internally for staging record {}. Error: {}", record.getObjectId(),
-				record.getFieldValue("processing_error"));
-		record.update((TableConfiguration) record.getRelatedConfiguration(), srcConn);
-	}
-
 	@Override
 	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(
 			IntervalExtremeRecord limits) {
 		return new OpenMrsInternalIndexUpdateProcessor(getEngine(), limits, Boolean.FALSE);
+	}
+
+	private static final class OpenMrsInternalIndexConfigurationProvider {
+
+		private static final OpenMrsIndexConfiguration INSTANCE = OpenMrsIndexConfiguration.load(false);
+
+		private OpenMrsInternalIndexConfigurationProvider() {
+		}
 	}
 
 	/** Owns only the OpenMRS context session opened by this processor. */
@@ -189,7 +166,9 @@ public class OpenMrsInternalIndexUpdateProcessor extends EtlProcessor {
 		}
 
 		private static OpenMrsContextSession open(OpenMrsIndexConfiguration configuration) {
+
 			boolean openedHere = false;
+
 			if (!Context.isSessionOpen()) {
 				Context.openSession();
 				openedHere = true;
