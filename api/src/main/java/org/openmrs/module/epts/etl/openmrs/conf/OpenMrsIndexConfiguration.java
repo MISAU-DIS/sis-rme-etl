@@ -35,8 +35,8 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 		this.resourceTypeField = optional(properties, "resource_type_field", "resource_type");
 		this.uuidField = optional(properties, "uuid_field", "record_uuid");
 		this.operationField = optional(properties, "operation_field", "operation_type");
-		this.connectTimeoutSeconds = positiveInteger(properties, "connect_timeout_seconds", 60);
-		this.requestTimeoutSeconds = positiveInteger(properties, "request_timeout_seconds", 60);
+		this.connectTimeoutSeconds = positiveInteger(properties, "connect_timeout_seconds", 1800);
+		this.requestTimeoutSeconds = positiveInteger(properties, "request_timeout_seconds", 1800);
 
 		if (isDefined(username) != isDefined(password)) {
 			throw new IllegalStateException(
