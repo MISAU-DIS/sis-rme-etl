@@ -15,9 +15,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
+import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadCurrentIntervals;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
@@ -127,6 +131,18 @@ public class CheckpointCommitOrderingTest {
 		final List<RecordingConnection> connections = Collections.synchronizedList(new ArrayList<>());
 		final EtlConfiguration configuration = new EtlConfiguration();
 		final EtlOperationConfig operation = new EtlOperationConfig();
+		final EtlItemConfiguration item = new EtlItemConfiguration() {
+			@Override
+			public <R extends EtlDatabaseObject> ConnectorRecordReader<R> createSourceReader(
+					AbstractEtlSearchParams<R> searchParams, BaseConfiguration openedFrom, Connection dst) {
+				Connection src = connection("src");
+				return new ConnectorRecordReader<R>() {
+					@Override public ConnectorResource getResource() { return null; }
+					@Override public List<R> read(ConnectorReadRequest<R> request) { return Collections.emptyList(); }
+					@Override public <N> N unwrap(Class<N> nativeType) { return nativeType.cast(src); }
+				};
+			}
+		};
 		final ThreadRecordIntervalsManager<EtlDatabaseObject> intervals;
 		final ParallelProcessingStrategyType mode;
 		String failCommit;
@@ -155,11 +171,11 @@ public class CheckpointCommitOrderingTest {
 
 		IntervalExtremeRecord interval() { return intervals.getCurrentLimits().getInternalIntervals().get(0); }
 		@Override public EtlConfiguration getRelatedEtlConf() { return configuration; }
+		@Override public EtlItemConfiguration getEtlItemConfiguration() { return item; }
 		@Override public EtlOperationConfig getRelatedEtlOperationConfig() { return operation; }
 		@Override public ParallelProcessingStrategyType getParallelProcessingStrategy() { return mode; }
 		@Override public ThreadRecordIntervalsManager<EtlDatabaseObject> getThreadRecordIntervalsManager() { return intervals; }
 		@Override void stopOperationDueError(Exception e) { failure = e; }
-		@Override public OpenConnection openSrcConn(BaseConfiguration owner) { return connection("src"); }
 		@Override public OpenConnection tryToOpenDstConn(BaseConfiguration owner) {
 			return noDestinationConnection ? null : connection("dst");
 		}
@@ -172,7 +188,8 @@ public class CheckpointCommitOrderingTest {
 			return connection;
 		}
 
-		@Override public List<EtlDatabaseObject> extract(IntervalExtremeRecord interval, Connection src, Connection dst) {
+		@Override public List<EtlDatabaseObject> extract(IntervalExtremeRecord interval,
+				ConnectorRecordReader<EtlDatabaseObject> reader) {
 			if (emptyExtraction) return Collections.emptyList();
 			EtlDatabaseObject record = (EtlDatabaseObject) Proxy.newProxyInstance(getClass().getClassLoader(),
 					new Class<?>[] { EtlDatabaseObject.class }, (proxy, method, args) -> {
@@ -201,10 +218,10 @@ public class CheckpointCommitOrderingTest {
 		@Override TaskProcessor<EtlDatabaseObject> initTaskProcessor(IntervalExtremeRecord interval, boolean concurrent,
 				String processorId) {
 			TaskProcessor<EtlDatabaseObject> processor = new TaskProcessor<EtlDatabaseObject>(this, interval, concurrent) {
-				@Override public void extractTransformAndLoad(boolean multi, Connection src, Connection dst) {}
-				@Override public void transformAndLoadExtractedRecords(List<EtlDatabaseObject> records, Connection src, Connection dst) {}
-				@Override public void transformExtractedRecords(List<EtlDatabaseObject> records, Connection src, Connection dst) {}
-				@Override public void loadTransformedRecords(List<EtlDatabaseObject> records, Connection src, Connection dst) {}
+				@Override public void extractTransformAndLoad(boolean multi, ConnectorRecordReader<EtlDatabaseObject> reader, Connection dst) {}
+				@Override public void transformAndLoadExtractedRecords(List<EtlDatabaseObject> records, ConnectorRecordReader<EtlDatabaseObject> reader, Connection dst) {}
+				@Override public void transformExtractedRecords(List<EtlDatabaseObject> records, ConnectorRecordReader<EtlDatabaseObject> reader, Connection dst) {}
+				@Override public void loadTransformedRecords(List<EtlDatabaseObject> records, ConnectorRecordReader<EtlDatabaseObject> reader, Connection dst) {}
 				@Override public void transformAndLoad(List<EtlDatabaseObject> records, Connection src, Connection dst) throws DBException {}
 				@Override public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
 					throw new UnsupportedOperationException();

@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
@@ -32,8 +33,10 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 
 		List<CompletableFuture<Void>> tasks = new ArrayList<>(intervals.size());
 
-		OpenConnection sharedSrcConn = engine.openSrcConn(engine);
 		OpenConnection sharedDstConn = engine.tryToOpenDstConn(engine);
+		ConnectorRecordReader<T> sharedReader = engine.getEtlItemConfiguration().createSourceReader(
+				engine.getSearchParams(), engine, sharedDstConn);
+		OpenConnection sharedSrcConn = sharedReader.unwrap(OpenConnection.class);
 
 		try {
 
@@ -41,7 +44,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 				TaskProcessor<T> processor = engine.initConcurrentTaskProcessor(intervals.get(i), i);
 				engine.getCurrentTaskProcessor().add(processor);
 				tasks.add(CompletableFuture.runAsync(
-						() -> engine.processRangePartition(processor, sharedConnections, sharedSrcConn, sharedDstConn),
+						() -> engine.processRangePartition(processor, sharedConnections, sharedReader, sharedDstConn),
 						executor));
 			}
 
@@ -55,7 +58,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 				return;
 			}
 
-			persistPendingData(engine, sharedConnections, sharedSrcConn, sharedDstConn);
+			persistPendingData(engine, sharedConnections, sharedReader, sharedDstConn);
 
 			if (!engine.getRelatedEtlConf().hasTestingItem() && sharedConnections) {
 				OpenConnection.markAllAsSuccessifullyTerminected(sharedSrcConn, sharedDstConn);
@@ -91,12 +94,12 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 		return results;
 	}
 
-	private void persistPendingData(Engine<?> engine, boolean sharedConnections, OpenConnection srcConn,
+	private void persistPendingData(Engine<?> engine, boolean sharedConnections, ConnectorRecordReader<?> reader,
 			OpenConnection dstConn) throws Exception {
 		if (engine.getRelatedEtlConf().hasTestingItem()) {
 			engine.discardPendingPersistence();
 		} else if (sharedConnections) {
-			engine.flushPendingPersistence(srcConn, dstConn);
+			engine.flushPendingPersistence(reader.unwrap(OpenConnection.class), dstConn);
 		} else {
 			engine.flushPendingPersistenceUsingDedicatedConnection();
 		}

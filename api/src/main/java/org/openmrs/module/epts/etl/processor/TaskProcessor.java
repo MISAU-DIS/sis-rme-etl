@@ -16,6 +16,8 @@ import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
+import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -200,7 +202,8 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				+ " For table " + dstConf.getFullTableName());
 	}
 
-	public void extractTransformAndLoad(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn)
+	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReader<T> reader,
+			Connection dstConn)
 			throws DBException {
 
 		if (this.getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
@@ -218,20 +221,14 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 			logInfo("SERCHING NEXT RECORDS " + threads);
 		}
 
-		List<T> records = null;
-
-		if (useMultiThreadSearch) {
-			records = getSearchParams().searchNextRecordsInMultiThreads(getLimits(), null, null, srcConn, dstConn);
-		} else {
-			records = getSearchParams().search(getLimits(), null, null, srcConn, dstConn);
-		}
+		List<T> records = reader.read(new ConnectorReadRequest<>(getLimits(), null, null, useMultiThreadSearch));
 
 		logDebug("SERCH NEXT MIGRATION RECORDS FOR ETL '" + this.getEtlItemConfiguration().getConfigCode()
 				+ "' ON TABLE '" + getSrcConf().getTableName() + "' FINISHED. FOUND: '" + utilities.arraySize(records)
 				+ "' RECORDS.");
 
 		if (utilities.listHasElement(records)) {
-			transformAndLoadExtractedRecords(records, srcConn, dstConn);
+			transformAndLoadExtractedRecords(records, reader, dstConn);
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
@@ -242,8 +239,10 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	 * Processes records that were already extracted by the engine. This is used by
 	 * result-partitioning strategies, where extraction must happen exactly once.
 	 */
-	public void transformAndLoadExtractedRecords(List<T> records, Connection srcConn, Connection dstConn)
+	public void transformAndLoadExtractedRecords(List<T> records, ConnectorRecordReader<T> reader,
+			Connection dstConn)
 			throws DBException {
+		Connection srcConn = reader.unwrap(Connection.class);
 
 		prepareExtractedRecords(records, dstConn);
 
@@ -264,16 +263,18 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	/** Prepares and transforms records already extracted by the engine. */
 	@SuppressWarnings("unchecked")
-	public void transformExtractedRecords(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void transformExtractedRecords(List<T> records, ConnectorRecordReader<T> reader, Connection dstConn)
+			throws DBException {
 		prepareExtractedRecords(records, dstConn);
-		transform((List<EtlDatabaseObject>) (List<?>) records, srcConn, dstConn);
+		transform((List<EtlDatabaseObject>) (List<?>) records, reader.unwrap(Connection.class), dstConn);
 	}
 
 	/** Loads records previously transformed by one or more processors. */
 	@SuppressWarnings("unchecked")
-	public void loadTransformedRecords(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void loadTransformedRecords(List<T> records, ConnectorRecordReader<T> reader, Connection dstConn)
+			throws DBException {
 		getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) (List<?>) records);
-		load((List<EtlDatabaseObject>) (List<?>) records, srcConn, dstConn);
+		load((List<EtlDatabaseObject>) (List<?>) records, reader.unwrap(Connection.class), dstConn);
 	}
 
 	private void prepareExtractedRecords(List<T> records, Connection dstConn) throws DBException {

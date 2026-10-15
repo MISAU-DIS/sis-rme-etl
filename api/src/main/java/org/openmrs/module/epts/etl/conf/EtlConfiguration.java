@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfParamsAsDataSource;
@@ -2338,6 +2340,21 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		return conn;
+	}
+
+	OpenConnection openSourceConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom)
+			throws DBException {
+		if (resource == null || resource.getEndpoint().getType() != ConnectorType.JDBC) {
+			throw new ForbiddenOperationException("A JDBC source connection requires a resolved JDBC resource");
+		}
+
+		DBConnectionInfo connectionInfo = resource.getEndpoint().unwrap(DBConnectionInfo.class);
+		OpenConnection connection = connectionInfo.openConnection(openedFrom);
+
+		if (doNotResolveRelationship()) {
+			DBUtilities.disableForegnKeyChecks(connection);
+		}
+		return connection;
 	}
 
 	public boolean doNotResolveRelationship() {

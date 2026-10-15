@@ -8,14 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
-import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -23,6 +18,16 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaderFactory;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDynamicItemSearchParams;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -253,29 +258,60 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.resolvedDstResources = Collections.unmodifiableList(resolveDstResources(registry));
 	}
 
+	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, Connection dstConnection)
+			throws DBException {
+
+		if (resolvedSrcResource == null) {
+			throw new IllegalStateException("Source resource has not been initialized");
+		}
+
+		OpenConnection srcConnection = null;
+
+		try {
+			if (resolvedSrcResource.getEndpoint().getType() == ConnectorType.JDBC) {
+				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(resolvedSrcResource, openedFrom);
+			}
+			return ConnectorRecordReaderFactory.create(resolvedSrcResource, searchParams, srcConnection, dstConnection);
+		} catch (RuntimeException e) {
+			if (srcConnection != null) {
+				srcConnection.finalizeConnection(openedFrom);
+			}
+			throw e;
+		}
+	}
+
 	private ConnectorResource resolveSrcResource(ConnectorRegistry registry) {
 		String connectorId = srcResource == null ? null : srcResource.getConnector();
+
 		ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.SOURCE,
 				srcResource == null && srcConf != null);
-		return ConnectorConfigurationResolver.resolveResource(srcResource, srcConf,
-				ConnectorDirection.SOURCE, endpoint);
+
+		return ConnectorConfigurationResolver.resolveResource(srcResource, srcConf, ConnectorDirection.SOURCE,
+				endpoint);
 	}
 
 	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {
 		List<ConnectorResource> resolved = new ArrayList<>();
+
 		int configuredCount = dstResources == null ? 0 : dstResources.size();
 		int legacyCount = dstConf == null ? 0 : dstConf.size();
 		int resourceCount = Math.max(configuredCount, legacyCount);
 
 		for (int i = 0; i < resourceCount; i++) {
 			ConnectorResourceConfiguration configured = i < configuredCount ? dstResources.get(i) : null;
+
 			DstConf legacy = i < legacyCount ? dstConf.get(i) : null;
+
 			String connectorId = configured == null ? null : configured.getConnector();
+
 			ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.DESTINATION,
 					configured == null && legacy != null);
+
 			resolved.add(ConnectorConfigurationResolver.resolveResource(configured, legacy,
 					ConnectorDirection.DESTINATION, endpoint));
 		}
+
 		return resolved;
 	}
 
@@ -285,9 +321,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				resolveSrcResource(registry);
 			}
 		} catch (RuntimeException e) {
-			issues.add("Invalid source connector on etlItemConfiguration '" + getConfigCode() + "': "
-					+ e.getMessage());
+			issues.add("Invalid source connector on etlItemConfiguration '" + getConfigCode() + "': " + e.getMessage());
 		}
+
 		try {
 			resolveDstResources(registry);
 		} catch (RuntimeException e) {
@@ -298,8 +334,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private ConnectorEndpoint selectConnector(ConnectorRegistry registry, String connectorId,
 			ConnectorDirection direction, boolean preferLegacy) {
-		String defaultId = direction == ConnectorDirection.SOURCE
-				? getRelatedEtlConf().getDefaultSourceConnector()
+		String defaultId = direction == ConnectorDirection.SOURCE ? getRelatedEtlConf().getDefaultSourceConnector()
 				: getRelatedEtlConf().getDefaultDestinationConnector();
 		return registry.select(connectorId, defaultId, direction, preferLegacy);
 	}
