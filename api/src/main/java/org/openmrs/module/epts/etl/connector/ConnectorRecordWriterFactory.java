@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.Collections;
 
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordWriter;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 /** Selects the destination execution adapter for resolved resources. */
@@ -26,6 +27,9 @@ public final class ConnectorRecordWriterFactory {
 		ConnectorEndpoint endpoint = resource.getEndpoint();
 		if (endpoint.getType() == ConnectorType.JDBC) {
 			return new JdbcConnectorRecordWriter<>(resource, destinationConnection);
+		}
+		if (endpoint.getType() == ConnectorType.FILE) {
+			return new FileConnectorRecordWriter<>(resource);
 		}
 
 		throw new UnsupportedConnectorTypeException(endpoint.getType(), ConnectorDirection.DESTINATION);

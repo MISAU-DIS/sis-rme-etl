@@ -59,7 +59,12 @@ public final class ConnectorRecordWriters {
 	public <N> N unwrapShared(Class<N> nativeType) {
 		N shared = null;
 		for (ConnectorRecordWriter<?> writer : writers.values()) {
-			N value = writer.unwrap(nativeType);
+			N value;
+			try {
+				value = writer.unwrap(nativeType);
+			} catch (IllegalArgumentException e) {
+				continue;
+			}
 			if (shared != null && shared != value) {
 				throw new IllegalStateException("Destination writers do not share one " + nativeType.getName());
 			}
@@ -71,7 +76,12 @@ public final class ConnectorRecordWriters {
 	public <N> List<N> unwrapAll(Class<N> nativeType) {
 		List<N> values = new ArrayList<>();
 		for (ConnectorRecordWriter<?> writer : writers.values()) {
-			N value = writer.unwrap(nativeType);
+			N value;
+			try {
+				value = writer.unwrap(nativeType);
+			} catch (IllegalArgumentException e) {
+				continue;
+			}
 			if (!containsIdentity(values, value)) {
 				values.add(value);
 			}

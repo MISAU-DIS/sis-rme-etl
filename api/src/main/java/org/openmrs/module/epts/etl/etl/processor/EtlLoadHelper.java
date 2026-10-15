@@ -14,9 +14,10 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -222,6 +223,13 @@ public class EtlLoadHelper {
 	private void load(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
 			throws ParentNotYetMigratedException, DBException {
 
+		if (writers.getResource(dstConf).getEndpoint().getType() != ConnectorType.JDBC) {
+			
+			loadToConnector(dstConf, writers);
+			
+			return;
+		}
+
 		EtlDstType dstType = getProcessor().determineDstType(dstConf);
 
 		if (dstType.isDb()) {
@@ -233,6 +241,17 @@ public class EtlLoadHelper {
 		} else {
 			throw new ForbiddenOperationException("Unsupported dstType '" + dstType + "'");
 		}
+	}
+
+	private void loadToConnector(DstConf dstConf, ConnectorRecordWriters writers) throws DBException {
+		List<EtlDatabaseObject> records = getAllTransformedObjects(dstConf);
+		for (EtlDatabaseObject record : records) {
+			record.loadObjectIdData();
+			record.getEtlInfo().markAsReady();
+		}
+		List<EtlDatabaseObject> ready = getAllReadyTransformedObjects(dstConf);
+		ConnectorRecordWriter<EtlDatabaseObject> writer = writers.get(dstConf);
+		loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, ready)), dstConf);
 	}
 
 	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)
@@ -353,28 +372,28 @@ public class EtlLoadHelper {
 				recordToCreate = objects;
 			}
 
-			this.loadAndAddResult(writer.write(
-					new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, recordToCreate)), dstConf);
+			this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, recordToCreate)),
+					dstConf);
 			logDebug(recordToCreate.size() + " " + dstConf.getTableName() + "  inserted on db!");
 
 			if (!recordToUpdate.isEmpty()) {
-				this.loadAndAddResult(writer.write(
-						new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE, recordToUpdate)), dstConf);
+				this.loadAndAddResult(
+						writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE, recordToUpdate)), dstConf);
 				logDebug(recordToUpdate.size() + " " + dstConf.getTableName() + "  updated on db!");
 			}
 
 		} else if (getActionType().isUpdate()) {
 			logDebug("Starting the update of " + objects.size() + " " + dstConf.getTableName() + " on db...");
 
-			this.loadAndAddResult(writer.write(
-					new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE_ALL, objects)), dstConf);
+			this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE_ALL, objects)),
+					dstConf);
 			logDebug(objects.size() + " " + dstConf.getTableName() + " updated from db!");
 
 		} else if (getActionType().isDelete()) {
 			logDebug("Starting the deletion of " + objects.size() + " " + dstConf.getTableName() + " on db...");
 
-			this.loadAndAddResult(writer.write(
-					new ConnectorWriteRequest<>(ConnectorWriteMode.DELETE_ALL, objects)), dstConf);
+			this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.DELETE_ALL, objects)),
+					dstConf);
 
 			logDebug(objects.size() + " " + dstConf.getTableName() + "  deleted on db!");
 

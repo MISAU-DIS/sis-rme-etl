@@ -83,6 +83,17 @@ class ConnectorConfigurationResolverTest {
 	}
 
 	@Test
+	void shouldAdvertiseFileDestinationCapabilitiesOnly() {
+		ConnectorEndpointConfiguration configured = new ConnectorEndpointConfiguration();
+		configured.setType(ConnectorType.FILE);
+		configured.setUri("data/out");
+		ConnectorEndpoint endpoint = ConnectorConfigurationResolver.resolveEndpoint(configured, null);
+
+		assertFalse(endpoint.supports(ConnectorCapability.READ));
+		assertTrue(endpoint.supports(ConnectorCapability.WRITE));
+	}
+
+	@Test
 	void shouldResolveLegacyJdbcTableAndRejectDivergentTransitionalNames() {
 		DBConnectionInfo jdbc = new DBConnectionInfo();
 		ConnectorEndpoint endpoint = ConnectorConfigurationResolver.resolveEndpoint(null, jdbc);

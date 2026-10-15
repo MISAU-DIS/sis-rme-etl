@@ -38,6 +38,9 @@ final class ConfiguredConnectorEndpoint implements ConnectorEndpoint {
 
 	@Override
 	public Set<ConnectorCapability> getCapabilities() {
+		if (configuration.getType() == ConnectorType.FILE) {
+			return java.util.EnumSet.of(ConnectorCapability.WRITE, ConnectorCapability.BATCH_WRITE);
+		}
 		return Collections.emptySet();
 	}
 
