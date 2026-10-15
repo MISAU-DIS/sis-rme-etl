@@ -20,7 +20,6 @@ import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
-import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorEndpoint;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -334,7 +333,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 					+ "' does not use the legacy EtlDstType classification");
 		}
 
-		if (!(resource.getEndpoint() instanceof JdbcConnectorEndpoint)) {
+		if (!getEtlItemConfiguration().usesLegacyDestinationResource(dstConf)) {
 			return EtlDstType.db;
 		}
 

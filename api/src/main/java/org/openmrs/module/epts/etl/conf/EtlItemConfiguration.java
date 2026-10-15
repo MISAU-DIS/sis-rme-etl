@@ -258,16 +258,29 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	@JsonIgnore
 	public ConnectorResource getResolvedDstResource(DstConf dstConfiguration) {
+		int index = indexOfDstConfiguration(dstConfiguration);
+
+		if (index >= getResolvedDstResources().size()) {
+			throw new IllegalStateException("Destination resources have not been completely initialized");
+		}
+
+		return getResolvedDstResources().get(index);
+	}
+
+	@JsonIgnore
+	public boolean usesLegacyDestinationResource(DstConf dstConfiguration) {
+		int index = indexOfDstConfiguration(dstConfiguration);
+		return dstResources == null || index >= dstResources.size() || dstResources.get(index) == null;
+	}
+
+	private int indexOfDstConfiguration(DstConf dstConfiguration) {
 		if (dstConfiguration == null) {
 			throw new IllegalArgumentException("Destination configuration cannot be null");
 		}
 
 		for (int index = 0; index < getDstConf().size(); index++) {
 			if (getDstConf().get(index) == dstConfiguration) {
-				if (index >= getResolvedDstResources().size()) {
-					throw new IllegalStateException("Destination resources have not been completely initialized");
-				}
-				return getResolvedDstResources().get(index);
+				return index;
 			}
 		}
 
