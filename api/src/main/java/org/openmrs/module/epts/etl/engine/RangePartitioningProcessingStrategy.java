@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
@@ -33,10 +34,11 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 
 		List<CompletableFuture<Void>> tasks = new ArrayList<>(intervals.size());
 
-		OpenConnection sharedDstConn = engine.tryToOpenDstConn(engine);
+		ConnectorRecordWriters sharedWriters = engine.getEtlItemConfiguration().createDestinationWriters(engine);
 		ConnectorRecordReader<T> sharedReader = engine.getEtlItemConfiguration().createSourceReader(
-				engine.getSearchParams(), engine, sharedDstConn);
+				engine.getSearchParams(), engine, sharedWriters);
 		OpenConnection sharedSrcConn = sharedReader.unwrap(OpenConnection.class);
+		OpenConnection sharedDstConn = sharedWriters.unwrapShared(OpenConnection.class);
 
 		try {
 
@@ -44,7 +46,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 				TaskProcessor<T> processor = engine.initConcurrentTaskProcessor(intervals.get(i), i);
 				engine.getCurrentTaskProcessor().add(processor);
 				tasks.add(CompletableFuture.runAsync(
-						() -> engine.processRangePartition(processor, sharedConnections, sharedReader, sharedDstConn),
+						() -> engine.processRangePartition(processor, sharedConnections, sharedReader, sharedWriters),
 						executor));
 			}
 
@@ -58,7 +60,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 				return;
 			}
 
-			persistPendingData(engine, sharedConnections, sharedReader, sharedDstConn);
+			persistPendingData(engine, sharedConnections, sharedReader, sharedWriters);
 
 			if (!engine.getRelatedEtlConf().hasTestingItem() && sharedConnections) {
 				OpenConnection.markAllAsSuccessifullyTerminected(sharedSrcConn, sharedDstConn);
@@ -95,11 +97,12 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 	}
 
 	private void persistPendingData(Engine<?> engine, boolean sharedConnections, ConnectorRecordReader<?> reader,
-			OpenConnection dstConn) throws Exception {
+			ConnectorRecordWriters writers) throws Exception {
 		if (engine.getRelatedEtlConf().hasTestingItem()) {
 			engine.discardPendingPersistence();
 		} else if (sharedConnections) {
-			engine.flushPendingPersistence(reader.unwrap(OpenConnection.class), dstConn);
+			engine.flushPendingPersistence(reader.unwrap(OpenConnection.class),
+					writers.unwrapShared(OpenConnection.class));
 		} else {
 			engine.flushPendingPersistenceUsingDedicatedConnection();
 		}

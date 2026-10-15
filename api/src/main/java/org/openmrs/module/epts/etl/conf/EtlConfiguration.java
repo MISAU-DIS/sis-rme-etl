@@ -2357,6 +2357,19 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return connection;
 	}
 
+	OpenConnection openDestinationConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom)
+			throws DBException {
+		if (resource == null || resource.getEndpoint().getType() != ConnectorType.JDBC) {
+			throw new ForbiddenOperationException("A JDBC destination connection requires a resolved JDBC resource");
+		}
+		DBConnectionInfo connectionInfo = resource.getEndpoint().unwrap(DBConnectionInfo.class);
+		OpenConnection connection = connectionInfo.openConnection(openedFrom);
+		if (doNotResolveRelationship()) {
+			DBUtilities.disableForegnKeyChecks(connection);
+		}
+		return connection;
+	}
+
 	public boolean doNotResolveRelationship() {
 		return this.getRelationshipResolutionStrategy().skip();
 	}

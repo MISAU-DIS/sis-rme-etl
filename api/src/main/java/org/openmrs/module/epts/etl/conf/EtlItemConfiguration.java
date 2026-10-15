@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,9 @@ import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaderFactory;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriterFactory;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
@@ -259,7 +263,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
-			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, Connection dstConnection)
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWriters writers)
 			throws DBException {
 
 		if (resolvedSrcResource == null) {
@@ -272,13 +276,46 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			if (resolvedSrcResource.getEndpoint().getType() == ConnectorType.JDBC) {
 				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(resolvedSrcResource, openedFrom);
 			}
-			return ConnectorRecordReaderFactory.create(resolvedSrcResource, searchParams, srcConnection, dstConnection);
+			Connection destinationConnection = writers == null ? null : writers.unwrapShared(Connection.class);
+			return ConnectorRecordReaderFactory.create(resolvedSrcResource, searchParams, srcConnection,
+					destinationConnection);
 		} catch (RuntimeException e) {
 			if (srcConnection != null) {
 				srcConnection.finalizeConnection(openedFrom);
 			}
 			throw e;
 		}
+	}
+
+	public ConnectorRecordWriters createDestinationWriters(BaseConfiguration openedFrom) throws DBException {
+		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
+		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+		Map<String, Connection> connections = new HashMap<>();
+
+		for (int index = 0; index < getResolvedDstResources().size(); index++) {
+			ConnectorResource resource = getResolvedDstResources().get(index);
+			String endpointKey = resource.getEndpoint().getType() + "|" + resource.getEndpoint().getUri() + "|"
+					+ resource.getEndpoint().getUserName();
+			Connection connection = connections.get(endpointKey);
+			if (connection == null && resource.getEndpoint().getType() == ConnectorType.JDBC) {
+				connection = getRelatedEtlConf().openDestinationConnectorConnection(resource, openedFrom);
+				connections.put(endpointKey, connection);
+			}
+			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+			resources.put(getDstConf().get(index), resource);
+		}
+		return new ConnectorRecordWriters(writers, resources);
+	}
+
+	public ConnectorRecordWriters bindDestinationWriters(Connection connection) {
+		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
+		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+		for (int index = 0; index < getResolvedDstResources().size(); index++) {
+			ConnectorResource resource = getResolvedDstResources().get(index);
+			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+			resources.put(getDstConf().get(index), resource);
+		}
+		return new ConnectorRecordWriters(writers, resources);
 	}
 
 	private ConnectorResource resolveSrcResource(ConnectorRegistry registry) {

@@ -14,6 +14,11 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
@@ -45,12 +50,14 @@ public class EtlLoadHelper {
 	private EtlProcessor processor;
 
 	private LoadingType loadingType;
+	private EtlItemConfiguration etlItemConf;
 
 	private List<DstConf> dstConf;
 
 	public EtlLoadHelper(EtlProcessor processor, EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> srcObjects,
 			LoadingType loadingType, boolean ignoreNoDstIssue) {
 		this.processor = processor;
+		this.etlItemConf = etlItemConf;
 		this.srcObjects = srcObjects;
 		this.loadingType = loadingType;
 
@@ -100,12 +107,14 @@ public class EtlLoadHelper {
 		return srcObjects;
 	}
 
-	public void load(Connection srcConn, Connection dstConn) throws ParentNotYetMigratedException, DBException {
+	public void load(ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
+			throws ParentNotYetMigratedException, DBException {
+		Connection srcConn = reader.unwrap(Connection.class);
 
 		if (this.hasDstConf()) {
 			for (DstConf dst : this.getDstConf()) {
 				try {
-					load(dst, srcConn, dstConn);
+					load(dst, srcConn, writers);
 				} catch (Exception e) {
 					logWarn("Error happened while perfoming load within etl {} with dstConf {}", dst.getParentConf(),
 							dst);
@@ -144,10 +153,25 @@ public class EtlLoadHelper {
 		if (writeOperation) {
 			logInfo("Registering StageArea persistence within {}", generateAvaliableEtl());
 
-			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn, dstConn);
+			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn,
+					writers.unwrapShared(Connection.class));
 
 			logDebug("StageArea persistence registered!");
 		}
+	}
+
+	void load(Connection srcConn, Connection dstConn) throws ParentNotYetMigratedException, DBException {
+		load(new NativeConnectionReader(srcConn), etlItemConf.bindDestinationWriters(dstConn));
+	}
+
+	private static final class NativeConnectionReader implements ConnectorRecordReader<EtlDatabaseObject> {
+		private final Connection connection;
+		private NativeConnectionReader(Connection connection) { this.connection = connection; }
+		@Override public org.openmrs.module.epts.etl.connector.ConnectorResource getResource() { return null; }
+		@Override public List<EtlDatabaseObject> read(org.openmrs.module.epts.etl.connector.ConnectorReadRequest<EtlDatabaseObject> request) {
+			throw new UnsupportedOperationException();
+		}
+		@Override public <N> N unwrap(Class<N> nativeType) { return nativeType.cast(connection); }
 	}
 
 	private Set<EtlItemConfiguration> generateAvaliableEtl() {
@@ -209,13 +233,13 @@ public class EtlLoadHelper {
 		}
 	}
 
-	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)
+	private void load(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
 			throws ParentNotYetMigratedException, DBException {
 
 		EtlDstType dstType = getProcessor().determineDstType(dstConf);
 
 		if (dstType.isDb()) {
-			loadToDb(dstConf, srcConn, dstConn);
+			loadToDb(dstConf, srcConn, writers);
 		} else if (dstType.isFile()) {
 			loadToFile(dstConf);
 		} else if (dstType.isInstantaneo()) {
@@ -225,8 +249,14 @@ public class EtlLoadHelper {
 		}
 	}
 
-	private void loadToDb(DstConf dstConf, Connection srcConn, Connection dstConn)
+	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)
 			throws ParentNotYetMigratedException, DBException {
+		load(dstConf, srcConn, etlItemConf.bindDestinationWriters(dstConn));
+	}
+
+	private void loadToDb(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
+			throws ParentNotYetMigratedException, DBException {
+		Connection dstConn = writers.unwrap(writers.getResource(dstConf), Connection.class);
 
 		if (!dstConf.isFullLoaded()) {
 			dstConf.fullLoad();
@@ -234,7 +264,7 @@ public class EtlLoadHelper {
 
 		this.beforeLoadToDb(dstConf, srcConn, dstConn);
 
-		this.onLoadToDb(dstConf, dstConn);
+		this.onLoadToDb(dstConf, writers);
 
 		this.afterLoadToDb(dstConf, srcConn, dstConn);
 
@@ -294,9 +324,12 @@ public class EtlLoadHelper {
 	 * @throws DBException
 	 * @throws ForbiddenOperationException
 	 */
-	public void onLoadToDb(DstConf dstConf, Connection dstConn) throws DBException, ForbiddenOperationException {
+	public void onLoadToDb(DstConf dstConf, ConnectorRecordWriters writers)
+			throws DBException, ForbiddenOperationException {
 
 		List<EtlDatabaseObject> objects = getAllReadyTransformedObjects(dstConf);
+		ConnectorRecordWriter<EtlDatabaseObject> writer = writers.get(dstConf);
+		Connection dstConn = writer.unwrap(Connection.class);
 
 		if (getActionType().isCreate()) {
 			logDebug("Starting the insertion of " + objects.size() + " " + dstConf.getTableName() + " on db...");
@@ -334,24 +367,28 @@ public class EtlLoadHelper {
 				recordToCreate = objects;
 			}
 
-			this.loadAndAddResult(DatabaseObjectDAO.load(recordToCreate, dstConf, dstConn), dstConf);
+			this.loadAndAddResult(writer.write(
+					new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, recordToCreate)), dstConf);
 			logDebug(recordToCreate.size() + " " + dstConf.getTableName() + "  inserted on db!");
 
 			if (!recordToUpdate.isEmpty()) {
-				this.loadAndAddResult(DatabaseObjectDAO.update(recordToUpdate, dstConf, dstConn), dstConf);
+				this.loadAndAddResult(writer.write(
+						new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE, recordToUpdate)), dstConf);
 				logDebug(recordToUpdate.size() + " " + dstConf.getTableName() + "  updated on db!");
 			}
 
 		} else if (getActionType().isUpdate()) {
 			logDebug("Starting the update of " + objects.size() + " " + dstConf.getTableName() + " on db...");
 
-			this.loadAndAddResult(DatabaseObjectDAO.updateAll(objects, dstConf, dstConn), dstConf);
+			this.loadAndAddResult(writer.write(
+					new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE_ALL, objects)), dstConf);
 			logDebug(objects.size() + " " + dstConf.getTableName() + " updated from db!");
 
 		} else if (getActionType().isDelete()) {
 			logDebug("Starting the deletion of " + objects.size() + " " + dstConf.getTableName() + " on db...");
 
-			this.loadAndAddResult(DatabaseObjectDAO.deleteAll(objects, dstConf, dstConn), dstConf);
+			this.loadAndAddResult(writer.write(
+					new ConnectorWriteRequest<>(ConnectorWriteMode.DELETE_ALL, objects)), dstConf);
 
 			logDebug(objects.size() + " " + dstConf.getTableName() + "  deleted on db!");
 

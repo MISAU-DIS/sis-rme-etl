@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
@@ -50,7 +51,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  * 
  * @author jpboane
  */
-public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseModelGenerationRecord> {
+public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<DatabaseModelGenerationRecord> {
 
 	private final DatabaseModelGenerationVisitTracker<String> generationVisitTracker;
 
@@ -76,11 +77,11 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 	@Override
 	public void extractTransformAndLoad(boolean useMultiThreadSearch,
-			ConnectorRecordReader<DatabaseModelGenerationRecord> reader, Connection dstConn)
+			ConnectorRecordReader<DatabaseModelGenerationRecord> reader, ConnectorRecordWriters writers)
 			throws DBException {
 		this.getSearchParams().setProcessor(this);
 
-		super.extractTransformAndLoad(false, reader, dstConn);
+		super.extractTransformAndLoad(false, reader, writers);
 	}
 
 	@Override

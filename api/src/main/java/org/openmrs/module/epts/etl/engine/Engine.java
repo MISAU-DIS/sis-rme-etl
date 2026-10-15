@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
@@ -578,11 +579,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	void processRangePartition(TaskProcessor<T> processor, boolean useSharedConnection,
 			ConnectorRecordReader<T> sharedReader,
-			OpenConnection sharedDstConn) {
+			ConnectorRecordWriters sharedWriters) {
 
 		if (useSharedConnection) {
 			performExtractTransformationAndLoading(processor, false, false,
-					sharedReader, sharedDstConn);
+					sharedReader, sharedWriters);
 
 			return;
 		}
@@ -590,16 +591,18 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			OpenConnection srcConn = null;
 			OpenConnection dstConn = null;
+			ConnectorRecordWriters writers = null;
 			boolean flushWorkerPersistence = false;
 			boolean retryTransaction = false;
 
 			try {
-				dstConn = tryToOpenDstConn(this);
+				writers = getEtlItemConfiguration().createDestinationWriters(this);
+				dstConn = writers.unwrapShared(OpenConnection.class);
 				ConnectorRecordReader<T> reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this,
-						dstConn);
+						writers);
 				srcConn = reader.unwrap(OpenConnection.class);
 
-				performExtractTransformationAndLoading(processor, false, false, reader, dstConn);
+				performExtractTransformationAndLoading(processor, false, false, reader, writers);
 
 				Exception failure = processor.getTaskResultInfo().getFatalException();
 				retryTransaction = failure != null && isRetryableTransactionFailure(failure, dstConn)
@@ -772,11 +775,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
 					boolean useMultiThreadSearch = true;
 
-					OpenConnection dstConn = tryToOpenDstConn(this);
+					ConnectorRecordWriters writers = getEtlItemConfiguration().createDestinationWriters(this);
 					ConnectorRecordReader<T> reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this,
-							dstConn);
+							writers);
 					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork,
-							reader, dstConn);
+							reader, writers);
 
 					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
 					getSearchParams().setExtraCondition(originalExtraCondition);
@@ -862,7 +865,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
-			boolean sharedConnections, ConnectorRecordReader<T> sharedReader, OpenConnection sharedDstConn) {
+			boolean sharedConnections, ConnectorRecordReader<T> sharedReader, ConnectorRecordWriters sharedWriters) {
 
 		if (!sharedConnections) {
 			consumeTransformAndLoadQueueWithWorkerTransactionRetry(processor, transformationQueue);
@@ -871,7 +874,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 
 		OpenConnection srcConn = sharedReader.unwrap(OpenConnection.class);
-		OpenConnection dstConn = sharedDstConn;
+		OpenConnection dstConn = sharedWriters.unwrapShared(OpenConnection.class);
 
 		try {
 			processor.changeStatusToRunning();
@@ -879,7 +882,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			T record;
 
 			while (!processor.getTaskResultInfo().hasFatalError() && (record = transformationQueue.poll()) != null) {
-				processor.transformAndLoadExtractedRecords(utilities.parseToList(record), sharedReader, dstConn);
+				processor.transformAndLoadExtractedRecords(utilities.parseToList(record), sharedReader, sharedWriters);
 			}
 
 			completeExtractedTask(processor, srcConn, dstConn, true);
@@ -898,12 +901,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			OpenConnection srcConn = null;
 			OpenConnection dstConn = null;
+			ConnectorRecordWriters writers = null;
 			ConnectorRecordReader<T> reader = null;
 			boolean retryTransaction = false;
 
 			try {
-				dstConn = tryToOpenDstConn(this);
-				reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this, dstConn);
+				writers = getEtlItemConfiguration().createDestinationWriters(this);
+				dstConn = writers.unwrapShared(OpenConnection.class);
+				reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this, writers);
 				srcConn = reader.unwrap(OpenConnection.class);
 				processor.changeStatusToRunning();
 
@@ -912,7 +917,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					while ((sourceRecord = transformationQueue.poll()) != null) {
 						claimedRecords.add(sourceRecord);
 						T attemptRecord = (T) sourceRecord.createACopy();
-						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader, dstConn);
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader, writers);
 						if (processor.getTaskResultInfo().hasFatalError()) {
 							break;
 						}
@@ -920,7 +925,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				} else {
 					for (T sourceRecord : claimedRecords) {
 						T attemptRecord = (T) sourceRecord.createACopy();
-						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader, dstConn);
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader, writers);
 						if (processor.getTaskResultInfo().hasFatalError()) {
 							break;
 						}
@@ -964,16 +969,18 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue, boolean sharedConnections,
-			ConnectorRecordReader<T> sharedReader, OpenConnection sharedDstConn) {
+			ConnectorRecordReader<T> sharedReader, ConnectorRecordWriters sharedWriters) {
 
 		OpenConnection srcConn = sharedReader.unwrap(OpenConnection.class);
-		OpenConnection dstConn = sharedDstConn;
+		ConnectorRecordWriters writers = sharedWriters;
+		OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
 		ConnectorRecordReader<T> reader = sharedReader;
 
 		try {
 			if (!sharedConnections) {
-				dstConn = tryToOpenDstConn(this);
-				reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this, dstConn);
+				writers = getEtlItemConfiguration().createDestinationWriters(this);
+				dstConn = writers.unwrapShared(OpenConnection.class);
+				reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this, writers);
 				srcConn = reader.unwrap(OpenConnection.class);
 			}
 
@@ -982,7 +989,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			T record;
 
 			while ((record = transformationQueue.poll()) != null) {
-				processor.transformExtractedRecords(utilities.parseToList(record), reader, dstConn);
+				processor.transformExtractedRecords(utilities.parseToList(record), reader, writers);
 			}
 
 			processor.changeStatusToFinished();
@@ -1175,15 +1182,16 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	 * @return
 	 */
 	void performExtractTransformationAndLoading(TaskProcessor<T> taskProcessor, boolean useMultiTreadSearch,
-			boolean persistTheWork, ConnectorRecordReader<T> reader, OpenConnection dstConn) {
+			boolean persistTheWork, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers) {
 		OpenConnection srcConn = reader.unwrap(OpenConnection.class);
+		OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
 
 		try {
 			taskProcessor.changeStatusToRunning();
 
 			logTrace("INITIALIZING TASK FOR INTERVAL " + taskProcessor.getLimits());
 
-			taskProcessor.extractTransformAndLoad(useMultiTreadSearch, reader, dstConn);
+			taskProcessor.extractTransformAndLoad(useMultiTreadSearch, reader, writers);
 
 			completeExtractedTask(taskProcessor, srcConn, dstConn, true);
 

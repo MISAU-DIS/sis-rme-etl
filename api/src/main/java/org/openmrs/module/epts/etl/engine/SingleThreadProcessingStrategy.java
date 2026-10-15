@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -25,13 +26,14 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 
 			boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-			OpenConnection dstConn = engine.tryToOpenDstConn(engine);
+			ConnectorRecordWriters writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
 			ConnectorRecordReader<T> reader = engine.getEtlItemConfiguration().createSourceReader(
-					engine.getSearchParams(), engine, dstConn);
+					engine.getSearchParams(), engine, writers);
 			OpenConnection srcConn = reader.unwrap(OpenConnection.class);
+			OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
 
 			try {
-				engine.performExtractTransformationAndLoading(processor, true, persistWork, reader, dstConn);
+				engine.performExtractTransformationAndLoading(processor, true, persistWork, reader, writers);
 
 				if (processor.getTaskResultInfo().hasFatalError()) {
 					engine.stopOperationDueError(processor.getTaskResultInfo().getFatalException());

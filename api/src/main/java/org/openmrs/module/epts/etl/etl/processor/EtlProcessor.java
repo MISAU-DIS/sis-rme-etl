@@ -13,6 +13,8 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -29,13 +31,14 @@ import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
+import org.openmrs.module.epts.etl.processor.JdbcTaskProcessor;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.ConnectionKeepAlive;
 import org.openmrs.module.epts.etl.utilities.db.conn.ConnectionKeepAliveManager;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
+public class EtlProcessor extends JdbcTaskProcessor<EtlDatabaseObject> {
 
 	private ConnectionKeepAliveManager keepAliveManager = ConnectionKeepAliveManager.getInstance();
 
@@ -58,8 +61,45 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	@Override
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriters writers) throws DBException {
+		Connection srcConn = reader.unwrap(Connection.class);
+		Connection dstConn = writers.unwrapShared(Connection.class);
+		try {
+			performTransformation(getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn, dstConn);
+			load(etlObjects, reader, writers);
+		} catch (Exception e) {
+			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
+			logError(e.getLocalizedMessage(), e);
+			getTaskResultInfo().setFatalException(e);
+		}
+	}
+
+	@Override
+	public void transform(List<EtlDatabaseObject> etlObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriters writers) throws DBException {
+		performTransformation(getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL,
+				reader.unwrap(Connection.class), writers.unwrapShared(Connection.class));
+	}
+
+	@Override
+	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriters writers) throws DBException {
+		Connection srcConn = reader.unwrap(Connection.class);
+		Connection dstConn = writers.unwrapShared(Connection.class);
+		performLoading(getEtlItemConfiguration(), etlObjects, LoadingType.PRINCIPAL, reader, writers);
+		EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
+		if (action != null && !action.isUndefined()) {
+			for (EtlDatabaseObject obj : etlObjects) {
+				applyAfterEtlAction(obj, action, srcConn, dstConn);
+			}
+		}
+	}
+
+	@Override
 	public void transform(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
 			throws DBException {
+
 		this.performTransformation(getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, srcConn,
 				dstConn);
 	}
@@ -69,6 +109,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		performLoading(this.getEtlItemConfiguration(), etlObjects, LoadingType.PRINCIPAL, srcConn, dstConn);
 
 		EtlActionType action = getRelatedEtlOperationConfig().getAfterEtlActionType();
+
 		if (action == null || action.isUndefined()) {
 			return;
 		}
@@ -217,6 +258,26 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			tryToPerfomeEtlOnChild(etlItemConf, etlObjects, srcConn, dstConn);
 		}
 
+		return loadHelper;
+	}
+
+	private EtlLoadHelper performLoading(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+			LoadingType loadingType, ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
+			throws DBException, ParentNotYetMigratedException {
+		Connection srcConn = reader.unwrap(Connection.class);
+		Connection dstConn = writers.unwrapShared(Connection.class);
+		EtlLoadHelper loadHelper = null;
+		try {
+			loadHelper = new EtlLoadHelper(this, etlItemConf, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
+		} catch (NoDstForGivenSrcException e) {
+			tryToLogOrThrowNoDstForGivenSrcException(etlObjects, e, srcConn, dstConn);
+		}
+		if (loadHelper != null && loadHelper.hasDstConf()) {
+			loadHelper.load(reader, writers);
+			tryToPerfomeEtlOnChild(etlItemConf, loadHelper, srcConn, dstConn);
+		} else {
+			tryToPerfomeEtlOnChild(etlItemConf, etlObjects, srcConn, dstConn);
+		}
 		return loadHelper;
 	}
 
