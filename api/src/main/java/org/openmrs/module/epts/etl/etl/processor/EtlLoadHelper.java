@@ -110,6 +110,7 @@ public class EtlLoadHelper {
 
 	public void load(ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
 			throws ParentNotYetMigratedException, DBException {
+
 		Connection srcConn = reader.unwrap(Connection.class);
 
 		if (this.hasDstConf()) {
@@ -222,35 +223,43 @@ public class EtlLoadHelper {
 
 	private void load(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
 			throws ParentNotYetMigratedException, DBException {
+		loadToConnector(dstConf, srcConn, writers);
+	}
 
-		if (writers.getResource(dstConf).getEndpoint().getType() != ConnectorType.JDBC) {
-			
-			loadToConnector(dstConf, writers);
-			
+	private void loadToConnector(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
+			throws ParentNotYetMigratedException, DBException {
+
+		if (writers.getResource(dstConf).getEndpoint().getType() == ConnectorType.JDBC) {
+			EtlDstType dstType = getProcessor().determineDstType(dstConf);
+
+			if (dstType.isDb()) {
+				loadToDb(dstConf, srcConn, writers);
+			} else if (dstType.isFile()) {
+				loadToFile(dstConf);
+			} else if (dstType.isInstantaneo()) {
+				getEngine().requestDisplayOfEtlResult(dstConf, getAllTransformedObjects(dstConf));
+			} else {
+				throw new ForbiddenOperationException("Unsupported dstType '" + dstType + "'");
+			}
+
 			return;
 		}
 
-		EtlDstType dstType = getProcessor().determineDstType(dstConf);
-
-		if (dstType.isDb()) {
-			loadToDb(dstConf, srcConn, writers);
-		} else if (dstType.isFile()) {
-			loadToFile(dstConf);
-		} else if (dstType.isInstantaneo()) {
-			getEngine().requestDisplayOfEtlResult(dstConf, getAllTransformedObjects(dstConf));
-		} else {
-			throw new ForbiddenOperationException("Unsupported dstType '" + dstType + "'");
-		}
+		writeToConnector(dstConf, writers);
 	}
 
-	private void loadToConnector(DstConf dstConf, ConnectorRecordWriters writers) throws DBException {
+	private void writeToConnector(DstConf dstConf, ConnectorRecordWriters writers) throws DBException {
 		List<EtlDatabaseObject> records = getAllTransformedObjects(dstConf);
+
 		for (EtlDatabaseObject record : records) {
 			record.loadObjectIdData();
 			record.getEtlInfo().markAsReady();
 		}
+
 		List<EtlDatabaseObject> ready = getAllReadyTransformedObjects(dstConf);
+
 		ConnectorRecordWriter<EtlDatabaseObject> writer = writers.get(dstConf);
+
 		loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, ready)), dstConf);
 	}
 
@@ -333,6 +342,7 @@ public class EtlLoadHelper {
 			throws DBException, ForbiddenOperationException {
 
 		List<EtlDatabaseObject> objects = getAllReadyTransformedObjects(dstConf);
+
 		ConnectorRecordWriter<EtlDatabaseObject> writer = writers.get(dstConf);
 		Connection dstConn = writer.unwrap(Connection.class);
 
@@ -374,6 +384,7 @@ public class EtlLoadHelper {
 
 			this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, recordToCreate)),
 					dstConf);
+
 			logDebug(recordToCreate.size() + " " + dstConf.getTableName() + "  inserted on db!");
 
 			if (!recordToUpdate.isEmpty()) {

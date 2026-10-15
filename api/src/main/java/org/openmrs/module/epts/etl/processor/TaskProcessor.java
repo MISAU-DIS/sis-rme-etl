@@ -18,6 +18,9 @@ import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorEndpoint;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -319,6 +322,26 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	public EtlDstType determineDstType(DstConf dstConf) {
+		ConnectorResource resource = getEtlItemConfiguration().getResolvedDstResource(dstConf);
+		ConnectorType connectorType = resource.getEndpoint().getType();
+
+		if (connectorType == ConnectorType.FILE) {
+			return EtlDstType.json;
+		}
+
+		if (connectorType != ConnectorType.JDBC) {
+			throw new ForbiddenOperationException("Connector type '" + connectorType
+					+ "' does not use the legacy EtlDstType classification");
+		}
+
+		if (!(resource.getEndpoint() instanceof JdbcConnectorEndpoint)) {
+			return EtlDstType.db;
+		}
+
+		return determineLegacyDstType(dstConf);
+	}
+
+	private EtlDstType determineLegacyDstType(DstConf dstConf) {
 		EtlDstType dstType = dstConf.getDstType();
 
 		if (dstType == null) {

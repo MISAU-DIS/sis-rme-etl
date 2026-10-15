@@ -256,6 +256,24 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return resolvedDstResources == null ? Collections.emptyList() : resolvedDstResources;
 	}
 
+	@JsonIgnore
+	public ConnectorResource getResolvedDstResource(DstConf dstConfiguration) {
+		if (dstConfiguration == null) {
+			throw new IllegalArgumentException("Destination configuration cannot be null");
+		}
+
+		for (int index = 0; index < getDstConf().size(); index++) {
+			if (getDstConf().get(index) == dstConfiguration) {
+				if (index >= getResolvedDstResources().size()) {
+					throw new IllegalStateException("Destination resources have not been completely initialized");
+				}
+				return getResolvedDstResources().get(index);
+			}
+		}
+
+		throw new IllegalArgumentException("Destination configuration does not belong to this ETL item");
+	}
+
 	private void initializeConnectorResources() {
 		ConnectorRegistry registry = getRelatedEtlConf().getInitializedConnectorRegistry();
 		this.resolvedSrcResource = resolveSrcResource(registry);
@@ -1077,10 +1095,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			return false;
 		}
 
-		EtlDstType dstType = processor.determineDstType(this.getDstConf().get(0));
+		DstConf destination = this.getDstConf().get(0);
+		ConnectorType connectorType = getResolvedDstResource(destination).getEndpoint().getType();
 
-		if (dstType.isFile()) {
+		if (connectorType == ConnectorType.FILE) {
 			return true;
+		}
+
+		if (connectorType == ConnectorType.JDBC) {
+			EtlDstType dstType = processor.determineDstType(destination);
+			if (dstType.isFile()) {
+				return true;
+			}
 		}
 
 		if (this.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
