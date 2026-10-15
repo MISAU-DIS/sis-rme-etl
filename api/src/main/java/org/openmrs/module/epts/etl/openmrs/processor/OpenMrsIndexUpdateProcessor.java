@@ -20,7 +20,7 @@ import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /** Sends staging records to an OpenMRS index-update endpoint. */
-public class OpenMrsIndexUpdateProcessor extends EtlProcessor {
+public class OpenMrsIndexUpdateProcessor extends org.openmrs.module.epts.etl.etl.processor.JdbcEtlProcessor {
 
 	public OpenMrsIndexUpdateProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
 			Boolean runningInConcurrency) {

@@ -29,7 +29,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * HTTP request back to the same OpenMRS server.
  * </p>
  */
-public class OpenMrsInternalIndexUpdateProcessor extends EtlProcessor {
+public class OpenMrsInternalIndexUpdateProcessor extends org.openmrs.module.epts.etl.etl.processor.JdbcEtlProcessor {
 
 	public OpenMrsInternalIndexUpdateProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
 			Boolean runningInConcurrency) {

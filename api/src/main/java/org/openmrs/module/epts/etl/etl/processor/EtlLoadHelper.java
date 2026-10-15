@@ -160,20 +160,6 @@ public class EtlLoadHelper {
 		}
 	}
 
-	void load(Connection srcConn, Connection dstConn) throws ParentNotYetMigratedException, DBException {
-		load(new NativeConnectionReader(srcConn), etlItemConf.bindDestinationWriters(dstConn));
-	}
-
-	private static final class NativeConnectionReader implements ConnectorRecordReader<EtlDatabaseObject> {
-		private final Connection connection;
-		private NativeConnectionReader(Connection connection) { this.connection = connection; }
-		@Override public org.openmrs.module.epts.etl.connector.ConnectorResource getResource() { return null; }
-		@Override public List<EtlDatabaseObject> read(org.openmrs.module.epts.etl.connector.ConnectorReadRequest<EtlDatabaseObject> request) {
-			throw new UnsupportedOperationException();
-		}
-		@Override public <N> N unwrap(Class<N> nativeType) { return nativeType.cast(connection); }
-	}
-
 	private Set<EtlItemConfiguration> generateAvaliableEtl() {
 		Set<EtlItemConfiguration> itemConf = new HashSet<>();
 
@@ -627,7 +613,7 @@ public class EtlLoadHelper {
 
 		EtlItemConfiguration conf = dstConf.getParentConf();
 
-		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,
+		return processor.performTransformationAndLoadingJdbc(conf, utilities.parseToList(srcRecord), null,
 				LoadingType.PARENT, srcConn, dstConn);
 	}
 

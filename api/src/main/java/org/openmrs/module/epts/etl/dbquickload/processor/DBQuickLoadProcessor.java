@@ -17,7 +17,7 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
-public class DBQuickLoadProcessor extends EtlProcessor {
+public class DBQuickLoadProcessor extends org.openmrs.module.epts.etl.etl.processor.JdbcEtlProcessor {
 	
 	public DBQuickLoadProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
