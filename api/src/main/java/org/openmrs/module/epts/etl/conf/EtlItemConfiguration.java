@@ -3,10 +3,17 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -28,6 +35,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private String id;
@@ -39,6 +48,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	private SrcConf srcConf;
 
 	private List<DstConf> dstConf;
+
+	private ConnectorResourceConfiguration srcResource;
+
+	private List<ConnectorResourceConfiguration> dstResources;
+
+	private transient ConnectorResource resolvedSrcResource;
+
+	private transient List<ConnectorResource> resolvedDstResources;
 
 	private Boolean disabled;
 
@@ -204,6 +221,89 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.dstConf = dstConf;
 	}
 
+	public ConnectorResourceConfiguration getSrcResource() {
+		return srcResource;
+	}
+
+	public void setSrcResource(ConnectorResourceConfiguration srcResource) {
+		this.srcResource = srcResource;
+	}
+
+	public List<ConnectorResourceConfiguration> getDstResources() {
+		return dstResources;
+	}
+
+	public void setDstResources(List<ConnectorResourceConfiguration> dstResources) {
+		this.dstResources = dstResources;
+	}
+
+	@JsonIgnore
+	public ConnectorResource getResolvedSrcResource() {
+		return resolvedSrcResource;
+	}
+
+	@JsonIgnore
+	public List<ConnectorResource> getResolvedDstResources() {
+		return resolvedDstResources == null ? Collections.emptyList() : resolvedDstResources;
+	}
+
+	private void initializeConnectorResources() {
+		ConnectorRegistry registry = getRelatedEtlConf().getInitializedConnectorRegistry();
+		this.resolvedSrcResource = resolveSrcResource(registry);
+		this.resolvedDstResources = Collections.unmodifiableList(resolveDstResources(registry));
+	}
+
+	private ConnectorResource resolveSrcResource(ConnectorRegistry registry) {
+		String connectorId = srcResource == null ? null : srcResource.getConnector();
+		ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.SOURCE,
+				srcResource == null && srcConf != null);
+		return ConnectorConfigurationResolver.resolveResource(srcResource, srcConf,
+				ConnectorDirection.SOURCE, endpoint);
+	}
+
+	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {
+		List<ConnectorResource> resolved = new ArrayList<>();
+		int configuredCount = dstResources == null ? 0 : dstResources.size();
+		int legacyCount = dstConf == null ? 0 : dstConf.size();
+		int resourceCount = Math.max(configuredCount, legacyCount);
+
+		for (int i = 0; i < resourceCount; i++) {
+			ConnectorResourceConfiguration configured = i < configuredCount ? dstResources.get(i) : null;
+			DstConf legacy = i < legacyCount ? dstConf.get(i) : null;
+			String connectorId = configured == null ? null : configured.getConnector();
+			ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.DESTINATION,
+					configured == null && legacy != null);
+			resolved.add(ConnectorConfigurationResolver.resolveResource(configured, legacy,
+					ConnectorDirection.DESTINATION, endpoint));
+		}
+		return resolved;
+	}
+
+	void validateConnectorResources(ConnectorRegistry registry, List<String> issues) {
+		try {
+			if (srcResource != null || srcConf != null) {
+				resolveSrcResource(registry);
+			}
+		} catch (RuntimeException e) {
+			issues.add("Invalid source connector on etlItemConfiguration '" + getConfigCode() + "': "
+					+ e.getMessage());
+		}
+		try {
+			resolveDstResources(registry);
+		} catch (RuntimeException e) {
+			issues.add("Invalid destination connector on etlItemConfiguration '" + getConfigCode() + "': "
+					+ e.getMessage());
+		}
+	}
+
+	private ConnectorEndpoint selectConnector(ConnectorRegistry registry, String connectorId,
+			ConnectorDirection direction, boolean preferLegacy) {
+		String defaultId = direction == ConnectorDirection.SOURCE
+				? getRelatedEtlConf().getDefaultSourceConnector()
+				: getRelatedEtlConf().getDefaultDestinationConnector();
+		return registry.select(connectorId, defaultId, direction, preferLegacy);
+	}
+
 	public static EtlItemConfiguration fastCreate(AbstractTableConfiguration tableConfig,
 			boolean useMainEtlTableAsSrcConfIfNotExists, Connection conn) throws DBException {
 
@@ -270,6 +370,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.tryToLoadFromTemplate();
 		this.setRelatedEtlConfig(relatedEtlConf);
 		this.setTesting(testing);
+		this.initializeConnectorResources();
 
 		if (!this.getSrcConf().doNotUseAsDatasource()) {
 			this.getSrcConf().init(this, srcConn, dstConn);
