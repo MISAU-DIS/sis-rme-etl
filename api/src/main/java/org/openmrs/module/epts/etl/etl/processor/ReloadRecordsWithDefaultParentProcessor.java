@@ -30,7 +30,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * 
  * @author jpboane
  */
-public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
+public class ReloadRecordsWithDefaultParentProcessor extends JdbcEtlProcessor {
 	
 	private EtlProcessor relatedEtlProcessor;
 	

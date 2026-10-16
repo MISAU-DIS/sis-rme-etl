@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class ChangedRecordsDetectorProcessor extends TaskProcessor<EtlDatabaseObject> {
+public class ChangedRecordsDetectorProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<EtlDatabaseObject> {
 	
 	public ChangedRecordsDetectorProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
 	    boolean runningInConcurrency) {

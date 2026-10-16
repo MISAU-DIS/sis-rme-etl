@@ -8,10 +8,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Workers consume a shared queue and each performs transform and load. */
 public class ResultPartitioningProcessingStrategy extends AbstractResultPartitioningProcessingStrategy {
@@ -19,7 +20,7 @@ public class ResultPartitioningProcessingStrategy extends AbstractResultPartitio
 	@Override
 	protected <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> records, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			OpenConnection srcConn, OpenConnection dstConn) throws Exception {
+			ConnectorRecordReader<T> reader, ConnectorRecordWriters writers) throws Exception {
 
 		boolean sharedConnections = engine.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
 
@@ -36,7 +37,7 @@ public class ResultPartitioningProcessingStrategy extends AbstractResultPartitio
 				engine.getCurrentTaskProcessor().add(processor);
 
 				tasks.add(CompletableFuture.runAsync(() -> engine.consumeTransformAndLoadQueue(processor, queue,
-						sharedConnections, srcConn, dstConn), executor));
+						sharedConnections, reader, writers), executor));
 			}
 
 			CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
