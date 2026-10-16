@@ -5,6 +5,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
@@ -16,7 +18,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 	protected abstract <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> extractedRecords, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			OpenConnection srcConn, OpenConnection dstConn) throws Exception;
+			ConnectorRecordReader<T> reader, ConnectorRecordWriters writers) throws Exception;
 
 	@Override
 	public <T extends EtlDatabaseObject> void process(Engine<T> engine, List<IntervalExtremeRecord> intervals)
@@ -39,11 +41,14 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 		boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-		OpenConnection srcConn = engine.openSrcConn(engine);
-		OpenConnection dstConn = engine.tryToOpenDstConn(engine);
+		ConnectorRecordWriters writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
+		ConnectorRecordReader<T> reader = engine.getEtlItemConfiguration().createSourceReader(engine.getSearchParams(),
+				engine, writers);
+		OpenConnection srcConn = reader.unwrap(OpenConnection.class);
+		OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
 
 		try {
-			List<T> records = engine.extract(interval, srcConn, dstConn);
+			List<T> records = engine.extract(interval, reader);
 
 			if (!UTILITIES.listHasElement(records)) {
 				persistCompletedInterval(engine, interval, srcConn, dstConn, persistWork);
@@ -54,7 +59,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 			Queue<T> queue = new ConcurrentLinkedQueue<>(records);
 
-			processQueue(engine, interval, records, queue, processorCount, threadFactory, srcConn, dstConn);
+			processQueue(engine, interval, records, queue, processorCount, threadFactory, reader, writers);
 
 			persistCompletedInterval(engine, interval, srcConn, dstConn, persistWork);
 		} catch (Exception e) {

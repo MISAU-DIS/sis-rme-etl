@@ -265,7 +265,7 @@ public final class OnDemandParentService {
 		OpenConnection srcConn = null;
 
 		try {
-			srcConn = engine.openSrcConn(processor);
+			srcConn = engine.getRelatedEtlConf().openSrcConn(processor);
 			OpenConnection dstConn = engine.tryToOpenDstConn(processor);
 			return new IndependentConnections(srcConn, dstConn);
 		} catch (DBException e) {

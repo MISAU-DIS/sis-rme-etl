@@ -15,7 +15,7 @@ import org.openmrs.module.epts.etl.reconciliation.model.ConciliationReasonType;
 import org.openmrs.module.epts.etl.reconciliation.model.DataReconciliationRecord;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class CentralAndRemoteDataReconciliationProcessor extends TaskProcessor<EtlDatabaseObject> {
+public class CentralAndRemoteDataReconciliationProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<EtlDatabaseObject> {
 	
 	public CentralAndRemoteDataReconciliationProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
 	    boolean runningInConcurrency) {

@@ -29,6 +29,8 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
@@ -65,6 +67,10 @@ public class SrcConf extends AbstractTableConfiguration
 	private List<JsonDataSource> extraJsonDataSource;
 
 	private EtlDstType dstType;
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
 
 	private List<FieldsMapping> joinFields;
 
@@ -279,6 +285,24 @@ public class SrcConf extends AbstractTableConfiguration
 
 	public void setDstType(EtlDstType dstType) {
 		this.dstType = dstType;
+	}
+
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
 	}
 
 	public List<AuxExtractTable> getAuxExtractTable() {
@@ -908,6 +932,7 @@ public class SrcConf extends AbstractTableConfiguration
 			}
 
 			this.setDstType(toCloneFrom.getDstType());
+			this.setResource(toCloneFrom.getResource() == null ? null : toCloneFrom.getResource().copy());
 		}
 	}
 
