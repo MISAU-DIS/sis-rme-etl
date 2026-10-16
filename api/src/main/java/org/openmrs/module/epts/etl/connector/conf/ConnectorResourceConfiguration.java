@@ -35,6 +35,14 @@ public class ConnectorResourceConfiguration {
 		this.properties = properties == null ? null : new LinkedHashMap<>(properties);
 	}
 
+	public ConnectorResourceConfiguration copy() {
+		ConnectorResourceConfiguration copy = new ConnectorResourceConfiguration();
+		copy.setConnector(connector);
+		copy.setName(name);
+		copy.setProperties(properties);
+		return copy;
+	}
+
 	@Override
 	public String toString() {
 		return "ConnectorResourceConfiguration[connector=" + connector + ", name=" + name + ", properties="

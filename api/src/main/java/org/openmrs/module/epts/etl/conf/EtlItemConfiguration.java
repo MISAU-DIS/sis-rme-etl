@@ -58,14 +58,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private List<DstConf> dstConf;
 
-	private ConnectorResourceConfiguration srcResource;
-
-	private List<ConnectorResourceConfiguration> dstResources;
-
-	private transient ConnectorResource resolvedSrcResource;
-
-	private transient List<ConnectorResource> resolvedDstResources;
-
 	private Boolean disabled;
 
 	private Boolean fullLoaded;
@@ -230,47 +222,42 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.dstConf = dstConf;
 	}
 
-	public ConnectorResourceConfiguration getSrcResource() {
-		return srcResource;
-	}
-
-	public void setSrcResource(ConnectorResourceConfiguration srcResource) {
-		this.srcResource = srcResource;
-	}
-
-	public List<ConnectorResourceConfiguration> getDstResources() {
-		return dstResources;
-	}
-
-	public void setDstResources(List<ConnectorResourceConfiguration> dstResources) {
-		this.dstResources = dstResources;
-	}
-
 	@JsonIgnore
 	public ConnectorResource getResolvedSrcResource() {
-		return resolvedSrcResource;
+		return srcConf == null ? null : srcConf.getResolvedResource();
 	}
 
 	@JsonIgnore
 	public List<ConnectorResource> getResolvedDstResources() {
-		return resolvedDstResources == null ? Collections.emptyList() : resolvedDstResources;
+		if (dstConf == null || dstConf.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		List<ConnectorResource> resources = new ArrayList<>(dstConf.size());
+		for (DstConf destination : dstConf) {
+			ConnectorResource resource = destination.getResolvedResource();
+			if (resource == null) {
+				return Collections.emptyList();
+			}
+			resources.add(resource);
+		}
+		return Collections.unmodifiableList(resources);
 	}
 
 	@JsonIgnore
 	public ConnectorResource getResolvedDstResource(DstConf dstConfiguration) {
-		int index = indexOfDstConfiguration(dstConfiguration);
-
-		if (index >= getResolvedDstResources().size()) {
-			throw new IllegalStateException("Destination resources have not been completely initialized");
+		indexOfDstConfiguration(dstConfiguration);
+		ConnectorResource resource = dstConfiguration.getResolvedResource();
+		if (resource == null) {
+			throw new IllegalStateException("Destination resource has not been initialized for " + dstConfiguration);
 		}
-
-		return getResolvedDstResources().get(index);
+		return resource;
 	}
 
 	@JsonIgnore
 	public boolean usesLegacyDestinationResource(DstConf dstConfiguration) {
-		int index = indexOfDstConfiguration(dstConfiguration);
-		return dstResources == null || index >= dstResources.size() || dstResources.get(index) == null;
+		indexOfDstConfiguration(dstConfiguration);
+		return dstConfiguration.getResource() == null;
 	}
 
 	private int indexOfDstConfiguration(DstConf dstConfiguration) {
@@ -289,26 +276,40 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private void initializeConnectorResources() {
 		ConnectorRegistry registry = getRelatedEtlConf().getInitializedConnectorRegistry();
-		this.resolvedSrcResource = resolveSrcResource(registry);
-		this.resolvedDstResources = Collections.unmodifiableList(resolveDstResources(registry));
+		ConnectorResource source = resolveSrcResource(registry);
+		List<ConnectorResource> destinations = Collections.unmodifiableList(resolveDstResources(registry));
+
+		if (srcConf != null) {
+			srcConf.setResolvedResource(source);
+		}
+
+		if (dstConf != null) {
+			for (int index = 0; index < dstConf.size(); index++) {
+				if (index >= destinations.size()) {
+					throw new IllegalStateException("No resolved destination resource for dstConf at index " + index);
+				}
+				dstConf.get(index).setResolvedResource(destinations.get(index));
+			}
+		}
 	}
 
 	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
 			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWriters writers)
 			throws DBException {
 
-		if (resolvedSrcResource == null) {
+		ConnectorResource sourceResource = getResolvedSrcResource();
+		if (sourceResource == null) {
 			throw new IllegalStateException("Source resource has not been initialized");
 		}
 
 		OpenConnection srcConnection = null;
 
 		try {
-			if (resolvedSrcResource.getEndpoint().getType() == ConnectorType.JDBC) {
-				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(resolvedSrcResource, openedFrom);
+			if (sourceResource.getEndpoint().getType() == ConnectorType.JDBC) {
+				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(sourceResource, openedFrom);
 			}
 			Connection destinationConnection = writers == null ? null : writers.unwrapShared(Connection.class);
-			return ConnectorRecordReaderFactory.create(resolvedSrcResource, searchParams, srcConnection,
+			return ConnectorRecordReaderFactory.create(sourceResource, searchParams, srcConnection,
 					destinationConnection);
 		} catch (RuntimeException e) {
 			if (srcConnection != null) {
@@ -323,8 +324,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
 		Map<String, Connection> connections = new HashMap<>();
 
-		for (int index = 0; index < getResolvedDstResources().size(); index++) {
-			ConnectorResource resource = getResolvedDstResources().get(index);
+		for (DstConf destination : getDstConf()) {
+			ConnectorResource resource = getResolvedDstResource(destination);
 			String endpointKey = resource.getEndpoint().getType() + "|" + resource.getEndpoint().getUri() + "|"
 					+ resource.getEndpoint().getUserName();
 			Connection connection = connections.get(endpointKey);
@@ -333,7 +334,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				connections.put(endpointKey, connection);
 			}
 			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
-			resources.put(getDstConf().get(index), resource);
+			resources.put(destination, resource);
 		}
 		return new ConnectorRecordWriters(writers, resources);
 	}
@@ -341,42 +342,40 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	public ConnectorRecordWriters bindDestinationWriters(Connection connection) {
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
-		for (int index = 0; index < getResolvedDstResources().size(); index++) {
-			ConnectorResource resource = getResolvedDstResources().get(index);
+		for (DstConf destination : getDstConf()) {
+			ConnectorResource resource = getResolvedDstResource(destination);
 			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
-			resources.put(getDstConf().get(index), resource);
+			resources.put(destination, resource);
 		}
 		return new ConnectorRecordWriters(writers, resources);
 	}
 
 	private ConnectorResource resolveSrcResource(ConnectorRegistry registry) {
-		String connectorId = srcResource == null ? null : srcResource.getConnector();
+		ConnectorResourceConfiguration configured = srcConf == null ? null : srcConf.getResource();
+		String connectorId = configured == null ? null : configured.getConnector();
 
 		ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.SOURCE,
-				srcResource == null && srcConf != null);
+				configured == null && srcConf != null);
 
-		return ConnectorConfigurationResolver.resolveResource(srcResource, srcConf, ConnectorDirection.SOURCE,
+		return ConnectorConfigurationResolver.resolveResource(configured, srcConf, ConnectorDirection.SOURCE,
 				endpoint);
 	}
 
 	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {
 		List<ConnectorResource> resolved = new ArrayList<>();
+		if (dstConf == null) {
+			return resolved;
+		}
 
-		int configuredCount = dstResources == null ? 0 : dstResources.size();
-		int legacyCount = dstConf == null ? 0 : dstConf.size();
-		int resourceCount = Math.max(configuredCount, legacyCount);
-
-		for (int i = 0; i < resourceCount; i++) {
-			ConnectorResourceConfiguration configured = i < configuredCount ? dstResources.get(i) : null;
-
-			DstConf legacy = i < legacyCount ? dstConf.get(i) : null;
+		for (DstConf destination : dstConf) {
+			ConnectorResourceConfiguration configured = destination.getResource();
 
 			String connectorId = configured == null ? null : configured.getConnector();
 
 			ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.DESTINATION,
-					configured == null && legacy != null);
+					configured == null);
 
-			resolved.add(ConnectorConfigurationResolver.resolveResource(configured, legacy,
+			resolved.add(ConnectorConfigurationResolver.resolveResource(configured, destination,
 					ConnectorDirection.DESTINATION, endpoint));
 		}
 
@@ -385,7 +384,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	void validateConnectorResources(ConnectorRegistry registry, List<String> issues) {
 		try {
-			if (srcResource != null || srcConf != null) {
+			if (srcConf != null) {
 				resolveSrcResource(registry);
 			}
 		} catch (RuntimeException e) {

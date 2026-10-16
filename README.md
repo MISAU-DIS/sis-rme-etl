@@ -15,7 +15,7 @@ adapted internally to JDBC connectors.
 
 An ETL execution is represented by `EtlConfiguration`. It contains:
 
-- a catalog of reusable connector endpoints;
+- an optional catalog of reusable connector endpoints;
 - root `EtlItemConfiguration` items;
 - one or more `EtlOperationConfig` operations;
 - optional data-model, validation, finalization and template settings.
@@ -27,8 +27,8 @@ EtlConfiguration
   ├─ connectors[]
   ├─ operations[]
   └─ etlItemConfiguration[]
-       ├─ srcResource  ──> ConnectorRecordReader
-       └─ dstResources[] ──> ConnectorRecordWriters
+       ├─ srcConf.resource    ──> ConnectorRecordReader
+       └─ dstConf[].resource  ──> ConnectorRecordWriters
 ```
 
 The engine and `TaskProcessor` contracts receive a reader and a destination
@@ -39,8 +39,8 @@ have not yet been migrated.
 ## Connector configuration
 
 Connectors are declared once at `EtlConfiguration.connectors`. A connector is
-not intrinsically a source or destination; its use by `srcResource` or
-`dstResources` determines the direction and required capability.
+not intrinsically a source or destination; its use by `srcConf.resource` or
+`dstConf[].resource` determines the direction and required capability.
 
 ```json
 {
@@ -77,7 +77,7 @@ not intrinsically a source or destination; its use by `srcResource` or
 | Property | Meaning |
 |---|---|
 | `id` | Unique connector identifier. |
-| `type` | `JDBC`, `FILE`, `REST`, `MESSAGE_QUEUE` or `CUSTOM`. |
+| `type` | `JDBC`, `FILE`, `REST`, `MESSAGE_QUEUE` or `CUSTOM`; defaults to `JDBC`. |
 | `uri` | Native endpoint address, such as a JDBC URL or filesystem root. |
 | `userName` | Optional endpoint user name. |
 | `password` | Optional endpoint password. |
@@ -92,34 +92,44 @@ A resource identifies what is read or written. Its `connector` selects an
 endpoint and its `name` identifies a table, file, route, queue, topic or another
 endpoint-specific resource.
 
+| Property | Meaning |
+|---|---|
+| `connector` | Optional connector ID. When omitted, selection uses the defaults described below. |
+| `name` | Required resource name whenever `resource` is declared. |
+| `properties` | Optional resource-specific settings. |
+
 ```json
 {
   "configCode": "export-patients",
-  "srcResource": {
-    "connector": "openmrs-source",
-    "name": "patient"
-  },
-  "dstResources": [
-    {
-      "connector": "jsonl-output",
-      "name": "patients.jsonl"
-    }
-  ],
   "srcConf": {
-    "tableName": "patient"
+    "tableName": "patient",
+    "resource": {
+      "connector": "openmrs-source",
+      "name": "patient"
+    }
   },
   "dstConf": [
     {
-      "tableName": "patient_export"
+      "tableName": "patient_export",
+      "resource": {
+        "connector": "jsonl-output",
+        "name": "patients.jsonl"
+      }
     }
   ]
 }
 ```
 
-During the transition, `srcConf` and `dstConf` still describe the database
-model, query, mapping and transformation rules. The resource selects the I/O
-adapter. A neutral JDBC resource paired with a legacy table must use the same
-resource `name` and `tableName`.
+`srcConf` and `dstConf` remain the centre of the ETL item: they describe the
+model, query, mapping and transformation rules. Their embedded `resource`
+selects the I/O adapter. A JDBC resource paired with a table configuration must
+use the same resource `name` and `tableName`.
+
+Resources belong exclusively to `srcConf` and `dstConf`. There are no parallel
+resource properties at `EtlItemConfiguration` level, so a destination and its
+resource cannot become misaligned by position. The former `srcResource` and
+`dstResources` properties are no longer accepted and cause configuration
+deserialization to fail.
 
 Resource selection follows this order:
 
@@ -140,7 +150,8 @@ transformation behaviour.
 
 Existing configurations do not need to declare connectors. The ETL creates
 internal `legacy-src` and `legacy-dst` adapters from `srcConnInfo` and
-`dstConnInfo`. For mappings, parents, transformers, templates and the complete
+`dstConnInfo` when `resource` is omitted from the corresponding `srcConf` or
+`dstConf`. For mappings, parents, transformers, templates and the complete
 database configuration, see the [legacy README](README-legacy.md).
 
 ### FILE destination
@@ -152,6 +163,13 @@ one compact JSON object per transformed record.
 {
   "connectors": [
     {
+      "id": "openmrs-source",
+      "type": "JDBC",
+      "uri": "jdbc:mysql://source-host/openmrs",
+      "userName": "etl_reader",
+      "password": "${source_password}"
+    },
+    {
       "id": "jsonl-output",
       "type": "FILE",
       "uri": "/var/lib/sis-rme-etl/output"
@@ -159,10 +177,20 @@ one compact JSON object per transformed record.
   ],
   "etlItemConfiguration": [
     {
-      "dstResources": [
+      "srcConf": {
+        "tableName": "patient",
+        "resource": {
+          "connector": "openmrs-source",
+          "name": "patient"
+        }
+      },
+      "dstConf": [
         {
-          "connector": "jsonl-output",
-          "name": "daily/patients.jsonl"
+          "tableName": "patient_export",
+          "resource": {
+            "connector": "jsonl-output",
+            "name": "daily/patients.jsonl"
+          }
         }
       ]
     }
@@ -208,8 +236,8 @@ The previous configuration model remains supported:
 ```
 
 No immediate migration is required. New configurations should declare the
-connector catalog and resource references so endpoint selection is no longer
-encoded only in database-specific fields.
+connector catalog and embed resource references in `srcConf` and `dstConf` so
+endpoint selection is no longer encoded only in database-specific fields.
 
 For every legacy property and advanced ETL capability, consult
 [README-legacy.md](README-legacy.md).
@@ -233,6 +261,10 @@ See [The Operation configuration](README-legacy.md#the-operation-configuration).
 
 ## Connector architecture notes
 
+These documents record the architecture at each implementation phase. Earlier
+phases may show intermediate configuration forms; the contract documented in
+this README is authoritative for the current version.
+
 - [Phase 0 — baseline](docs/connector-architecture-phase-0.md)
 - [Phase 1 — neutral contracts](docs/connector-architecture-phase-1.md)
 - [Phase 2 — connector catalog and resources](docs/connector-architecture-phase-2.md)
@@ -252,7 +284,7 @@ mvn clean install -DskipTests
 Run the standalone API JAR with an ETL configuration:
 
 ```bash
-java -Dlog.level=INFO -jar epts-etl-api-1.0.jar "path/to/configuration/file.json"
+java -Dlog.level=INFO -jar sisrme-etl-api-1.0.jar "path/to/configuration/file.json"
 ```
 
 Supported log levels include `DEBUG`, `INFO`, `WARN` and `ERR`. Runnable

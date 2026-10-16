@@ -321,7 +321,10 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	public EtlDstType determineDstType(DstConf dstConf) {
-		ConnectorResource resource = getEtlItemConfiguration().getResolvedDstResource(dstConf);
+		ConnectorResource resource = dstConf.getResolvedResource();
+		if (resource == null) {
+			throw new IllegalStateException("Destination resource has not been initialized for " + dstConf);
+		}
 		ConnectorType connectorType = resource.getEndpoint().getType();
 
 		if (connectorType == ConnectorType.FILE) {
