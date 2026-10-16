@@ -11,6 +11,7 @@ import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
+import org.openmrs.module.epts.etl.exceptions.MissingEtlConfException;
 
 public class EtlConfCheckExpression {
 
@@ -99,7 +100,7 @@ public class EtlConfCheckExpression {
 		}
 
 		if (relatedConfiguration == null) {
-			throw new EtlConfException("The related Etl Conf cannot be found within the given context " + this);
+			throw new MissingEtlConfException("The related Etl Conf cannot be found within the given context " + this);
 		}
 	}
 
@@ -132,10 +133,12 @@ public class EtlConfCheckExpression {
 		}
 
 		try {
-			EtlDataSource ds1 = srcConf.findDataSourceOnAllAvaliabeDatasources(this.confName);
+			if (srcConf != null) {
+				EtlDataSource ds1 = srcConf.findDataSourceOnAllAvaliabeDatasources(this.confName);
 
-			if (ds1 != null) {
-				return ds1;
+				if (ds1 != null) {
+					return ds1;
+				}
 			}
 		} catch (DatabaseResourceDoesNotExists e) {
 		} catch (EtlExceptionImpl e) {
@@ -147,5 +150,9 @@ public class EtlConfCheckExpression {
 	@Override
 	public String toString() {
 		return "ETL_CONF_CHECK(confName:" + this.confName + ", operation:" + this.operation + ")";
+	}
+
+	public boolean allowMissingEtlConf() {
+		return this.getOperation() == EtlConfCheckType.EXISTS || this.getOperation() == EtlConfCheckType.DOES_NOT_EXIST;
 	}
 }

@@ -44,7 +44,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 	protected String inputExpression;
 
-	protected ActionOnEtlIssue onNullTransformedvalue;
+	protected ActionOnEtlIssue onNullTransformedValue;
 
 	protected List<String> skipRelationshipResolutionForFields;
 
@@ -132,12 +132,12 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		logTrace("Finished transformation of field {} within {}", field.toString(), this.toString());
 	}
 
-	public ActionOnEtlIssue getOnNullTransformedvalue() {
-		return onNullTransformedvalue;
+	public ActionOnEtlIssue getOnNullTransformedValue() {
+		return onNullTransformedValue;
 	}
 
-	public void setOnNullTransformedvalue(ActionOnEtlIssue onNullTransformedvalue) {
-		this.onNullTransformedvalue = onNullTransformedvalue;
+	public void setOnNullTransformedValue(ActionOnEtlIssue onNullTransformedValue) {
+		this.onNullTransformedValue = onNullTransformedValue;
 	}
 
 	public List<Object> getParameters() {

@@ -43,9 +43,13 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	private static final int DEFAULT_BATCH_PROCESSING = 1000;
 
+	private Boolean doNotProcessSkippedRecords;
+
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
 	private EtlOperationType operationType;
+
+	private String identifier;
 
 	private int processingBatch;
 
@@ -60,6 +64,15 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 	private EtlProcessingModeType processingMode;
 
 	private List<String> sourceFolders;
+
+	/**
+	 * Codes of root ETL items included in this operation. An empty list means that
+	 * every root item is initially included.
+	 */
+	private List<String> etlItemConfigCodeWhiteList;
+
+	/** Codes of root ETL items explicitly excluded from this operation. */
+	private List<String> etlItemConfigCodeBlackList;
 
 	private List<OperationController<? extends EtlDatabaseObject>> relatedControllers;
 
@@ -115,6 +128,58 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	}
 
+	public String getIdentifier() {
+		return identifier;
+	}
+
+	public void setIdentifier(String identifier) {
+		this.identifier = utilities.stringHasValue(identifier) ? identifier.trim() : null;
+	}
+
+	public List<String> getEtlItemConfigCodeWhiteList() {
+		return etlItemConfigCodeWhiteList;
+	}
+
+	public void setEtlItemConfigCodeWhiteList(List<String> etlItemConfigCodeWhiteList) {
+		this.etlItemConfigCodeWhiteList = normalizeConfigCodes(etlItemConfigCodeWhiteList);
+	}
+
+	public List<String> getEtlItemConfigCodeBlackList() {
+		return etlItemConfigCodeBlackList;
+	}
+
+	public void setEtlItemConfigCodeBlackList(List<String> etlItemConfigCodeBlackList) {
+		this.etlItemConfigCodeBlackList = normalizeConfigCodes(etlItemConfigCodeBlackList);
+	}
+
+	private List<String> normalizeConfigCodes(List<String> configCodes) {
+		if (configCodes == null) return null;
+
+		List<String> normalized = new ArrayList<>(configCodes.size());
+		for (String configCode : configCodes) {
+			normalized.add(configCode == null ? null : configCode.trim());
+		}
+		return normalized;
+	}
+
+	@JsonIgnore
+	public List<String> resolveEtlItemConfigCodeWhiteList() {
+		if (utilities.listHasElement(this.etlItemConfigCodeWhiteList)) {
+			return this.etlItemConfigCodeWhiteList;
+		}
+
+		return this.hasParent() ? this.getParentConf().resolveEtlItemConfigCodeWhiteList() : new ArrayList<>();
+	}
+
+	@JsonIgnore
+	public List<String> resolveEtlItemConfigCodeBlackList() {
+		if (utilities.listHasElement(this.etlItemConfigCodeBlackList)) {
+			return this.etlItemConfigCodeBlackList;
+		}
+
+		return this.hasParent() ? this.getParentConf().resolveEtlItemConfigCodeBlackList() : new ArrayList<>();
+	}
+
 	public Boolean finishAfterOneExecution() {
 		return isTrue(this.getFinishAfterOneExecution());
 	}
@@ -142,6 +207,14 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		if (this.hasChild()) {
 			this.getChild().changeRelatedEtlConf(relatedEtlConf);
 		}
+	}
+
+	public Boolean getDoNotProcessSkippedRecords() {
+		return doNotProcessSkippedRecords;
+	}
+
+	public void setDoNotProcessSkippedRecords(Boolean doNotProcessSkippedRecords) {
+		this.doNotProcessSkippedRecords = doNotProcessSkippedRecords;
 	}
 
 	public Boolean getMustRestartInTheEnd() {
@@ -728,8 +801,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		int errNum = 0;
 
 		if (!this.isSupportedOperation())
-			errorMsg += ++errNum + ". This operation [" + this.getOperationType()
-					+ "] Cannot be configured in ETL\n";
+			errorMsg += ++errNum + ". This operation [" + this.getOperationType() + "] Cannot be configured in ETL\n";
 
 		if (this.getTotalCountStrategy().isUseProvided() && this.getTotalAvaliableRecordsToProcess() == null) {
 			errorMsg += ++errNum
@@ -821,7 +893,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 		if (this.getParallelProcessingStrategy().isMultiThreaded()) {
 
-			List<EtlItemConfiguration> allSync = getRelatedEtlConf().getEtlItemConfiguration();
+			List<EtlItemConfiguration> allSync = getRelatedEtlConf().resolveEtlItems(this);
 
 			double items = avaliableItems.size();
 
@@ -860,13 +932,18 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		return this.getChild() != null;
 	}
 
+	public boolean hasParent() {
+		return this.getParentConf() != null;
+	}
+
 	public boolean mustRestartInTheEnd() {
 		return isTrue(this.mustRestartInTheEnd);
 	}
 
 	public boolean moveProcessedRecordsToStageArea() {
 		if (this.getAfterEtlActionType() != null && (this.getAfterEtlActionType().moveToStageArea()
-				|| this.getAfterEtlActionType().moveToStageAreaOnSuccess())) {
+				|| this.getAfterEtlActionType().moveToStageAreaOnSuccess()
+				|| this.getAfterEtlActionType().moveToStageAreaOnNoError())) {
 			return true;
 		}
 
@@ -890,6 +967,15 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 		this.applyIncludes();
 		this.tryToLoadFromTemplate();
+
+		if (this.getDoNotProcessSkippedRecords() == null) {
+			this.setDoNotProcessSkippedRecords(
+					this.hasParent() ? this.getParentConf().getDoNotProcessSkippedRecords() : false);
+		}
+
+		if (this.getMaxSupportedProcessors() <= 0) {
+			this.setMaxSupportedProcessors(utilities.getAvailableProcessors());
+		}
 
 		if (this.dstType == null) {
 			this.dstType = EtlDstType.db;
@@ -952,6 +1038,7 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasChild()) {
+			this.getChild().setParent(this);
 			this.getChild().init(this.getRelatedEtlConf());
 		}
 
@@ -975,5 +1062,9 @@ public class EtlOperationConfig extends AbstractEtlDataConfiguration {
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+	}
+
+	public boolean doNotProcessSkippedRecords() {
+		return isTrue(this.doNotProcessSkippedRecords);
 	}
 }

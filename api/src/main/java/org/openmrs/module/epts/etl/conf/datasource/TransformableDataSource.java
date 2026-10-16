@@ -29,6 +29,7 @@ import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingIn
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -437,14 +438,29 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		Map<String, FieldTransformingInfo> values = this.getFieldsValuesGeneratorInstance()
 				.generateObjectFields(processor, srcObject, dstObject, this, avaliableSrcObjects, conn, conn);
 
+		if (values == null || values.isEmpty()) {
+			srcObject.getRelatedConfiguration().getRelatedEtlConf().err(
+					"A transformable DataSource returned null values for fields. Src object:{} Dst Object:", srcObject,
+					dstObject);
+
+			throw new EtlTransformationException(
+					"A transformable DataSource returned null values for fields. Src object: " + srcObject
+							+ ", dstObject: " + dstObject);
+		}
+
 		EtlDatabaseObject obj = this.newInstance();
 
 		for (TransformableDataSourceField field : this.getObjectFields()) {
 			FieldTransformingInfo valueInfo = values.get(field.getName());
 
-			obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());
+			if (valueInfo != null) {
+				obj.setFieldValue(field.getName(), valueInfo.getTransformedValue());
 
-			obj.getField(field.getName()).setTransformingInfo(valueInfo);
+				obj.getField(field.getName()).setTransformingInfo(valueInfo);
+			} else {
+				valueInfo = new FieldTransformingInfo(field, null, null);
+			}
+
 			valueInfo.setTransformationDatasource(this);
 		}
 

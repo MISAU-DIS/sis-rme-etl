@@ -6,8 +6,8 @@ import java.util.List;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.engine.EtlProgressMeter;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.OperationProgressInfo;
-import org.openmrs.module.epts.etl.model.ProcessProgressInfo;
 import org.openmrs.module.epts.etl.model.TableOperationProgressInfo;
 import org.openmrs.module.epts.etl.monitor.dto.MonitorInfoDTO;
 import org.openmrs.module.epts.etl.monitor.dto.TaskMonitorInfoDTO;
@@ -25,7 +25,7 @@ public class EtlMonitorService {
         this.processService = processService;
     }
 
-    public MonitorInfoDTO getMonitor() {
+    public MonitorInfoDTO getMonitor(String operationIdentifier) {
 
         MonitorInfoDTO monitor = new MonitorInfoDTO();
 
@@ -33,7 +33,7 @@ public class EtlMonitorService {
                 processService.getCurrentController();
 
         if (controller == null) {
-            monitor.setOperationId(null);
+            monitor.setOperationIdentifier(null);
             monitor.setProgress(0.0);
             monitor.setProcessed(0L);
             monitor.setTotal(0L);
@@ -50,13 +50,31 @@ public class EtlMonitorService {
             return monitor;
         }
 
-        monitor.setOperationId(controller.getControllerId());
+        OperationController<? extends EtlDatabaseObject> operationController =
+                controller.findOperationControllerByIdentifier(operationIdentifier);
 
-        ProcessProgressInfo processProgressInfo =
-                controller.getProgressInfo();
+        if (operationController == null) {
+            monitor.setOperationIdentifier(operationIdentifier);
+            monitor.setProgress(0.0);
+            monitor.setProcessed(0L);
+            monitor.setTotal(0L);
+            monitor.setTasks(new ArrayList<TaskMonitorInfoDTO>());
+            monitor.setStatus(operationIdentifier == null || operationIdentifier.trim().isEmpty()
+                    ? "OPERATION_NOT_SELECTED"
+                    : "OPERATION_NOT_FOUND");
+            monitor.setMessage(operationIdentifier == null || operationIdentifier.trim().isEmpty()
+                    ? "No operation identifier was provided."
+                    : "No operation was found for identifier '" + operationIdentifier + "'.");
 
-        if (processProgressInfo == null) {
-            setControllerStatus(monitor, controller);
+            return monitor;
+        }
+
+        monitor.setOperationIdentifier(operationController.getOperationIdentifier());
+
+        OperationProgressInfo operation = operationController.getProgressInfo();
+
+        if (operation == null) {
+            setControllerStatus(monitor, operationController);
 
             monitor.setProgress(0.0);
             monitor.setProcessed(0L);
@@ -66,51 +84,31 @@ public class EtlMonitorService {
             return monitor;
         }
 
-        List<OperationProgressInfo> operations =
-                processProgressInfo.getOperationsProgressInfo();
-
         long total = 0L;
         long processed = 0L;
 
         List<TaskMonitorInfoDTO> tasks =
                 new ArrayList<TaskMonitorInfoDTO>();
 
-        if (operations != null) {
+        List<TableOperationProgressInfo> items = operation.getItemsProgressInfo();
 
-            for (OperationProgressInfo operation : operations) {
-
-                if (operation == null) {
+        if (items != null) {
+            for (TableOperationProgressInfo item : items) {
+                if (item == null) {
                     continue;
                 }
 
-                List<TableOperationProgressInfo> items =
-                        operation.getItemsProgressInfo();
+                EtlProgressMeter meter = item.getProgressMeter();
 
-                if (items == null) {
+                if (meter == null) {
                     continue;
                 }
 
-                for (TableOperationProgressInfo item : items) {
+                total += meter.getTotal();
+                processed += meter.getProcessed();
 
-                    if (item == null) {
-                        continue;
-                    }
-
-                    EtlProgressMeter meter =
-                            item.getProgressMeter();
-
-                    if (meter == null) {
-                        continue;
-                    }
-
-                    total += meter.getTotal();
-                    processed += meter.getProcessed();
-
-                    TaskMonitorInfoDTO task =
-                            createTaskInfo(operation, item, meter);
-
-                    tasks.add(task);
-                }
+                TaskMonitorInfoDTO task = createTaskInfo(operation, item, meter);
+                tasks.add(task);
             }
         }
 
@@ -128,7 +126,7 @@ public class EtlMonitorService {
 
         monitor.setTasks(tasks);
 
-        setControllerStatus(monitor, controller);
+        setControllerStatus(monitor, operationController);
 
         return monitor;
     }
@@ -192,7 +190,7 @@ public class EtlMonitorService {
 
     private void setControllerStatus(
             MonitorInfoDTO monitor,
-            ProcessController controller) {
+            OperationController<? extends EtlDatabaseObject> controller) {
 
         if (controller.isRunning()) {
             monitor.setStatus("RUNNING");

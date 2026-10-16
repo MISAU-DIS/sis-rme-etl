@@ -1,27 +1,20 @@
 <%@ include file="/WEB-INF/template/include.jsp" %>
 
-<openmrs:htmlInclude file="/moduleResources/epts-etl/scripts/jquery.min.js"/>
-
 <%@ page contentType="text/html; charset=UTF-8" %>
 
 <%
     pageContext.setAttribute("moduleName", "epts-etl");
 %>
 
-<!DOCTYPE html>
-
-<html>
-<head>
-
-    <title>SIS-RME: Consola de Sincronização de Dados</title>
+<%@ include file="/WEB-INF/template/header.jsp" %>
 
     <style>
 
-        * {
+        #etl-monitor, #etl-monitor * {
             box-sizing: border-box;
         }
 
-        body {
+        #etl-monitor {
             margin: 0;
             padding: 0;
             font-family: Arial, Helvetica, sans-serif;
@@ -30,15 +23,15 @@
             font-size: 13px;
         }
 
-        .page {
-            min-height: 100vh;
+        #etl-monitor.page {
+            min-height: 600px;
         }
 
         /* =========================================================
            HEADER
            ========================================================= */
 
-        .header {
+        #etl-monitor .header {
             height: 48px;
             background: #5b9bd5;
             color: #ffffff;
@@ -49,7 +42,7 @@
             font-weight: bold;
         }
 
-        .header-title {
+        #etl-monitor .header-title {
             letter-spacing: 0.2px;
         }
 
@@ -57,7 +50,7 @@
            CONTENT
            ========================================================= */
 
-        .content {
+        #etl-monitor .content {
             display: flex;
             padding: 14px;
             gap: 14px;
@@ -67,12 +60,12 @@
            SIDEBAR
            ========================================================= */
 
-        .sidebar {
+        #etl-monitor .sidebar {
             width: 180px;
             min-width: 180px;
         }
 
-        .status-panel {
+        #etl-monitor .status-panel {
             background: #ffffff;
             border: 1px solid #e1e1e1;
             border-radius: 6px;
@@ -80,20 +73,20 @@
             margin-bottom: 14px;
         }
 
-        .status-title {
+        #etl-monitor .status-title {
             font-weight: bold;
             margin-bottom: 10px;
             color: #555;
         }
 
-        .status-indicator {
+        #etl-monitor .status-indicator {
             display: flex;
             align-items: center;
             margin-bottom: 12px;
             font-size: 13px;
         }
 
-        .status-dot {
+        #etl-monitor .status-dot {
             width: 9px;
             height: 9px;
             border-radius: 50%;
@@ -101,27 +94,27 @@
             margin-right: 7px;
         }
 
-        .status-dot.running {
+        #etl-monitor .status-dot.running {
             background: #5b9bd5;
         }
 
-        .status-dot.completed {
+        #etl-monitor .status-dot.completed {
             background: #70ad47;
         }
 
-        .status-dot.error {
+        #etl-monitor .status-dot.error {
             background: #d9534f;
         }
 
-        .status-dot.rejected {
+        #etl-monitor .status-dot.rejected {
             background: #f0ad4e;
         }
 
-        .status-dot.idle {
+        #etl-monitor .status-dot.idle {
             background: #999999;
         }
 
-        .status-text {
+        #etl-monitor .status-text {
             font-weight: bold;
         }
 
@@ -129,7 +122,7 @@
            CONTROL BUTTONS
            ========================================================= */
 
-        .control-button {
+        #etl-monitor .control-button {
             width: 100%;
             height: 32px;
             margin-bottom: 7px;
@@ -145,16 +138,16 @@
             align-items: center;
         }
 
-        .control-button:hover {
+        #etl-monitor .control-button:hover {
             background: #eeeeee;
         }
 
-        .control-button:disabled {
+        #etl-monitor .control-button:disabled {
             cursor: not-allowed;
             opacity: 0.55;
         }
 
-        .button-icon {
+        #etl-monitor .button-icon {
             width: 20px;
             min-width: 20px;
             margin-right: 7px;
@@ -167,7 +160,7 @@
            MAIN
            ========================================================= */
 
-        .main {
+        #etl-monitor .main {
             flex: 1;
             min-width: 0;
         }
@@ -176,14 +169,14 @@
            SUMMARY
            ========================================================= */
 
-        .summary {
+        #etl-monitor .summary {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             margin-bottom: 12px;
         }
 
-        .summary-card {
+        #etl-monitor .summary-card {
             background: #ffffff;
             border: 1px solid #e1e1e1;
             border-radius: 5px;
@@ -191,60 +184,60 @@
             padding: 12px;
         }
 
-        .summary-card.pending {
+        #etl-monitor .summary-card.pending {
             background: #fffdf3;
         }
 
-        .summary-card.success {
+        #etl-monitor .summary-card.success {
             background: #f0f8ed;
         }
 
-        .summary-card.error {
+        #etl-monitor .summary-card.error {
             background: #fff0f2;
         }
 
-        .summary-card.info {
+        #etl-monitor .summary-card.info {
             background: #f7f9fb;
         }
 
-        .summary-label {
+        #etl-monitor .summary-label {
             font-size: 11px;
             color: #777;
             margin-bottom: 8px;
         }
 
-        .summary-value {
+        #etl-monitor .summary-value {
             font-size: 22px;
             font-weight: bold;
             color: #555;
         }
 
-        .summary-description {
+        #etl-monitor .summary-description {
             margin-top: 4px;
             font-size: 10px;
             color: #999;
         }
 
-        .summary-icon {
+        #etl-monitor .summary-icon {
             display: inline-block;
             margin-right: 5px;
             font-size: 14px;
             font-weight: bold;
         }
 
-        .icon-success {
+        #etl-monitor .icon-success {
             color: #70ad47;
         }
 
-        .icon-error {
+        #etl-monitor .icon-error {
             color: #d9534f;
         }
 
-        .icon-rejected {
+        #etl-monitor .icon-rejected {
             color: #f0ad4e;
         }
 
-        .icon-info {
+        #etl-monitor .icon-info {
             color: #5b9bd5;
         }
 
@@ -252,7 +245,7 @@
            OPERATION PANEL
            ========================================================= */
 
-        .operation-panel {
+        #etl-monitor .operation-panel {
             background: #ffffff;
             border: 1px solid #e1e1e1;
             border-radius: 5px;
@@ -260,20 +253,20 @@
             margin-bottom: 12px;
         }
 
-        .operation-header {
+        #etl-monitor .operation-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
         }
 
-        .operation-title {
+        #etl-monitor .operation-title {
             font-size: 14px;
             font-weight: bold;
             color: #555;
         }
 
-        .operation-status {
+        #etl-monitor .operation-status {
             display: inline-flex;
             align-items: center;
             padding: 4px 10px;
@@ -284,40 +277,40 @@
             color: #666666;
         }
 
-        .operation-status.running {
+        #etl-monitor .operation-status.running {
             background: #d9edf7;
             color: #31708f;
         }
 
-        .operation-status.completed {
+        #etl-monitor .operation-status.completed {
             background: #dff0d8;
             color: #3c763d;
         }
 
-        .operation-status.error {
+        #etl-monitor .operation-status.error {
             background: #f2dede;
             color: #a94442;
         }
 
-        .operation-status.rejected {
+        #etl-monitor .operation-status.rejected {
             background: #fcf8e3;
             color: #8a6d3b;
         }
 
-        .status-icon {
+        #etl-monitor .status-icon {
             margin-right: 5px;
             font-size: 13px;
             font-weight: bold;
         }
 
-        .operation-id {
+        #etl-monitor .operation-id {
             color: #888;
             font-size: 11px;
             margin-bottom: 10px;
             word-break: break-all;
         }
 
-        .progress-label {
+        #etl-monitor .progress-label {
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
@@ -325,7 +318,7 @@
             color: #777;
         }
 
-        .progress-container {
+        #etl-monitor .progress-container {
             width: 100%;
             height: 22px;
             background: #eeeeee;
@@ -333,7 +326,7 @@
             overflow: hidden;
         }
 
-        .progress-bar {
+        #etl-monitor .progress-bar {
             width: 0%;
             height: 100%;
             background: #5b9bd5;
@@ -345,7 +338,7 @@
             font-weight: bold;
         }
 
-        .message {
+        #etl-monitor .message {
             display: none;
             margin-top: 10px;
             padding: 9px;
@@ -355,7 +348,7 @@
             border: 1px solid #f0cccc;
         }
 
-        .message.visible {
+        #etl-monitor .message.visible {
             display: block;
         }
 
@@ -363,13 +356,13 @@
            REFRESH CARD
            ========================================================= */
 
-        .refresh-value {
+        #etl-monitor .refresh-value {
             font-size: 20px;
             font-weight: bold;
             color: #5b9bd5;
         }
 
-        .refresh-last {
+        #etl-monitor .refresh-last {
             margin-top: 5px;
             font-size: 10px;
             color: #999;
@@ -381,11 +374,11 @@
 
         @media (max-width: 900px) {
 
-            .summary {
+            #etl-monitor .summary {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .sidebar {
+            #etl-monitor .sidebar {
                 width: 150px;
                 min-width: 150px;
             }
@@ -393,27 +386,23 @@
 
         @media (max-width: 650px) {
 
-            .content {
+            #etl-monitor .content {
                 display: block;
             }
 
-            .sidebar {
+            #etl-monitor .sidebar {
                 width: 100%;
                 margin-bottom: 12px;
             }
 
-            .summary {
+            #etl-monitor .summary {
                 grid-template-columns: 1fr;
             }
         }
 
     </style>
 
-</head>
-
-<body>
-
-<div class="page">
+<div id="etl-monitor" class="page">
 
     <!-- =========================================================
          HEADER
@@ -956,7 +945,7 @@
            ----------------------------------------------------- */
 
         document.getElementById("operationId").innerText =
-            data.operationId || "-";
+            data.operationIdentifier || "-";
 
 
         var operationStatus =
@@ -1318,8 +1307,20 @@
 
     function loadMonitor() {
 
+        var operationIdentifier =
+            new URLSearchParams(window.location.search)
+                .get("operationIdentifier");
+
+        var monitorUrl =
+            "${pageContext.request.contextPath}/module/epts/etl/monitorData.json";
+
+        if (operationIdentifier) {
+            monitorUrl += "?operationIdentifier=" +
+                encodeURIComponent(operationIdentifier);
+        }
+
         fetch(
-            "${pageContext.request.contextPath}/module/epts/etl/monitorData.json",
+            monitorUrl,
             {
                 method: "GET",
                 headers: {
@@ -1430,5 +1431,4 @@
 
 </script>
 
-</body>
-</html>
+<%@ include file="/WEB-INF/template/footer.jsp" %>

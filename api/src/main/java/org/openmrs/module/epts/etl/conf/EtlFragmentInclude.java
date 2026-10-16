@@ -67,6 +67,10 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 			throw new EtlConfException("Target EtlDataConfiguration cannot be null.");
 		}
 
+		if (this.parent == null) {
+			this.parent = dc;
+		}
+
 		if (target == null || target.isBlank()) {
 			throw new EtlConfException("Include target cannot be null or empty.");
 		}
@@ -84,40 +88,49 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		targetField.setAccessible(true);
 
 		try {
-			if (List.class.isAssignableFrom(targetField.getType())) {
-				includeList(dc, targetField);
-			} else {
-				includeSingle(dc, targetField);
+			for (String sourcePath : parseSourcePaths()) {
+				if (List.class.isAssignableFrom(targetField.getType())) {
+					includeList(dc, targetField, sourcePath);
+				} else {
+					includeSingle(dc, targetField, sourcePath);
+				}
 			}
 		} catch (Exception e) {
 			throw new EtlConfException("Error applying include for target '" + target + "' from '" + srcPath + "'", e);
 		}
 	}
 
-	private void includeSingle(EtlDataConfiguration dc, Field targetField) throws Exception {
+	private List<String> parseSourcePaths() {
+		List<String> sourcePaths = new ArrayList<>();
+		for (String path : srcPath.split(",", -1)) {
+			String normalizedPath = path.trim();
+			if (normalizedPath.isEmpty()) {
+				throw new EtlConfException("Include srcPath contains an empty path: " + srcPath);
+			}
+			sourcePaths.add(normalizedPath);
+		}
+		return sourcePaths;
+	}
 
-		File file = resolveSingleFile(srcPath);
+	private void includeSingle(EtlDataConfiguration dc, Field targetField, String sourcePath) throws Exception {
+
+		File file = resolveSingleFile(sourcePath);
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(targetField.getType());
 
 		Object value = mapper.readValue(
-				EtlDataConfiguration.resolvePlaceholders(
-						file,
-						null,
-						retrieveAllAvailableTemplateParameters()
-				),
-				targetField.getType()
-		);
+				EtlDataConfiguration.resolvePlaceholders(file, null, retrieveAllAvailableTemplateParameters()),
+				targetField.getType());
 
 		targetField.set(dc, value);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void includeList(EtlDataConfiguration dc, Field targetField) throws Exception {
+	private void includeList(EtlDataConfiguration dc, Field targetField, String sourcePath) throws Exception {
 
 		Class<?> itemType = resolveListItemType(targetField);
 
-		List<File> files = resolveFiles(dc.getRelatedEtlConf().getEtlConfDir(), srcPath);
+		List<File> files = resolveFiles(dc.getRelatedEtlConf().getEtlConfDir(), sourcePath);
 
 		ObjectMapper mapper = new ObjectMapperProvider().getContext(itemType);
 
@@ -136,13 +149,10 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 
 		for (File file : files) {
 			Object item = mapper.readValue(
-					EtlDataConfiguration.resolvePlaceholders(
-							file,
-							null,
-							retrieveAllAvailableTemplateParameters()
-					),
-					itemType
-			);
+					EtlDataConfiguration.resolvePlaceholders(file, null, retrieveAllAvailableTemplateParameters()),
+					itemType);
+
+			targetList.add(item);
 		}
 	}
 
@@ -276,31 +286,32 @@ public class EtlFragmentInclude extends AbstractEtlDataConfiguration {
 		return null;
 	}
 
+	private void addParameters(Map<String, Object> allParameters, EtlConfiguration etlConfiguration) {
+		if (etlConfiguration != null && etlConfiguration.getParams() != null
+				&& !etlConfiguration.getParams().isEmpty()) {
+			allParameters.putAll(etlConfiguration.getParams());
+		}
+	}
+
 	@Override
 	public Map<String, Object> retrieveAllAvailableTemplateParameters() {
 		Map<String, Object> allParameters = new HashMap<>();
 
-		if (parent == null) {
-			return allParameters;
-		}
+		if (parent != null) {
+			Map<String, Object> parentParameters = parent.retrieveAllAvailableTemplateParameters();
 
-		// 1. Parameters inherited from the parent configuration
-		Map<String, Object> parentParameters =
-				parent.retrieveAllAvailableTemplateParameters();
+			if (parentParameters != null) {
+				allParameters.putAll(parentParameters);
+			}
 
-		if (parentParameters != null && !parentParameters.isEmpty()) {
-			allParameters.putAll(parentParameters);
-		}
+			if (parent.getRelatedEtlConf() != null) {
+				addParameters(allParameters, parent.getRelatedEtlConf());
+			} else {
+				addParameters(allParameters, this.getRelatedEtlConf());
 
-		// 2. Global ETL parameters
-		EtlConfiguration etlConfiguration =
-				parent.getRelatedEtlConf();
-
-		if (etlConfiguration != null
-				&& etlConfiguration.getParams() != null
-				&& !etlConfiguration.getParams().isEmpty()) {
-
-			allParameters.putAll(etlConfiguration.getParams());
+			}
+		} else {
+			addParameters(allParameters, this.getRelatedEtlConf());
 		}
 
 		return allParameters;

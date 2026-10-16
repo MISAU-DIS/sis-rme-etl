@@ -26,11 +26,10 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
-import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public interface EtlDataConfiguration extends BaseConfiguration {
 
@@ -165,6 +164,9 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	default void applyIncludes() {
 		if (hasInclude()) {
 			for (EtlFragmentInclude i : this.getInclude()) {
+				if (i.getParent() == null) {
+					i.setParent(this);
+				}
 				i.include(this);
 			}
 		}
@@ -440,6 +442,10 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		Properties javaProps = System.getProperties();
 		Properties sysProps = utilities.toProperties(System.getenv());
 
+		if (openMrsProps == null) {
+			openMrsProps = new Properties();
+		}
+
 		if (text == null || text.isBlank()) {
 			return text;
 		}
@@ -505,7 +511,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	 * support {@code ${epts.etl.location_name}}.
 	 */
 	public static Properties loadOpenMrsGlobalProperties() {
-		Properties properties = new Properties();
+		Properties properties = cachedOpenMrsGlobalProperties();
 		Class<?> contextClass;
 
 		try {
@@ -522,13 +528,14 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			if (!sessionOpen)
 				return properties;
 
+			Properties loadedProperties = new Properties();
+
 			Object administrationService = contextClass.getMethod("getAdministrationService").invoke(null);
 			ClassLoader openMrsClassLoader = contextClass.getClassLoader();
 			Class<?> administrationServiceClass = Class.forName("org.openmrs.api.AdministrationService", false,
 					openMrsClassLoader);
 			Class<?> globalPropertyClass = Class.forName("org.openmrs.GlobalProperty", false, openMrsClassLoader);
-			Object result = administrationServiceClass
-					.getMethod("getGlobalPropertiesByPrefix", String.class)
+			Object result = administrationServiceClass.getMethod("getGlobalPropertiesByPrefix", String.class)
 					.invoke(administrationService, ETL_GLOBAL_PROPERTY_PREFIX);
 
 			if (!(result instanceof Iterable<?>))
@@ -540,15 +547,33 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 				if (name != null && name.startsWith(ETL_GLOBAL_PROPERTY_PREFIX) && value != null) {
 					String normalizedValue = stripWrappingQuotes(value);
-					properties.setProperty(name, normalizedValue);
-					properties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
+					loadedProperties.setProperty(name, normalizedValue);
+					loadedProperties.setProperty(name.substring(ETL_GLOBAL_PROPERTY_PREFIX.length()), normalizedValue);
 				}
 			}
+
+			OpenMrsGlobalPropertiesCache.properties = loadedProperties;
+			return copyProperties(loadedProperties);
 		} catch (ReflectiveOperationException exception) {
+			if (!properties.isEmpty())
+				return properties;
 			throw new IllegalStateException("Could not load ETL global properties from the OpenMRS runtime", exception);
 		}
+	}
 
-		return properties;
+	private static Properties cachedOpenMrsGlobalProperties() {
+		return copyProperties(OpenMrsGlobalPropertiesCache.properties);
+	}
+
+	private static Properties copyProperties(Properties source) {
+		Properties copy = new Properties();
+		copy.putAll(source);
+		return copy;
+	}
+
+	class OpenMrsGlobalPropertiesCache {
+
+		private static volatile Properties properties = new Properties();
 	}
 
 	public static String escapeJsonString(String value) {
@@ -564,21 +589,13 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
 		try {
 			@SuppressWarnings("unchecked")
-			Set<String> allowed = allowedPlaceholders instanceof Set
-					? (Set<String>) allowedPlaceholders
-					: null;
+			Set<String> allowed = allowedPlaceholders instanceof Set ? (Set<String>) allowedPlaceholders : null;
 
 			@SuppressWarnings("unchecked")
-			Map<String, ?> environment = env instanceof Map
-					? (Map<String, ?>) env
-					: null;
+			Map<String, ?> environment = env instanceof Map ? (Map<String, ?>) env : null;
 
-			return resolvePlaceholders(
-					FileUtilities.realAllFileAsString(file),
-					allowed,
-					environment,
-					true
-			);
+			return resolvePlaceholders(org.openmrs.module.epts.etl.utilities.io.FileUtilities.realAllFileAsString(file),
+					allowed, environment, true);
 
 		} catch (IOException e) {
 			throw new EtlConfException(e);

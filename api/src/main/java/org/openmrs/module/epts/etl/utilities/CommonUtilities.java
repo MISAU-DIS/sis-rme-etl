@@ -1595,14 +1595,21 @@ public class CommonUtilities implements Serializable {
 	}
 
 	/**
-	 * Converte o atributo para uma coluna na BD Por exemplo: imageFile =>
-	 * image_file
-	 * 
+	 * Converte o nome de um atributo para snake_case.
+	 *
+	 * Exemplos: imageFile => image_file etl.openmrs.base_url =>
+	 * etl_openmrs_base_url patientId => patient_id
+	 *
 	 * @param fieldName nome do atributo
 	 * @return nome da coluna correspondente ao atributo
 	 */
 	public String parsetoSnakeCase(String fieldName) {
-		return fieldName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+
+		if (fieldName == null || fieldName.isEmpty()) {
+			return fieldName;
+		}
+
+		return fieldName.replace('.', '_').replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT);
 	}
 
 	public String parseToCamelCase(String token) {
@@ -1618,7 +1625,7 @@ public class CommonUtilities implements Serializable {
 
 		StringBuilder camelCase = new StringBuilder();
 
-		String[] parts = token.split("_+");
+		String[] parts = token.replace('.', '_').split("_+");
 
 		boolean firstPart = true;
 

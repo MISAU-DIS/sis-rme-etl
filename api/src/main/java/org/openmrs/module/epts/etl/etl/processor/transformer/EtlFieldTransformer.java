@@ -29,9 +29,9 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
 			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException;
 
-	ActionOnEtlIssue getOnNullTransformedvalue();
+	ActionOnEtlIssue getOnNullTransformedValue();
 
-	void setOnNullTransformedvalue(ActionOnEtlIssue onNullTransformedvalue);
+	void setOnNullTransformedValue(ActionOnEtlIssue onNullTransformedvalue);
 
 	String getInputExpression();
 

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -22,257 +23,168 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Web controller responsible for the ETL monitor page
- * and the monitor control operations.
+ * Web controller responsible for the ETL monitor page and the monitor control
+ * operations.
  * <p>
- * Browser
- * ↓ HTTP
- * MonitorController
- * ↓
- * EtlMonitorService / EtlProcessService
- * ↓
+ * Browser ↓ HTTP MonitorController ↓ EtlMonitorService / EtlProcessService ↓
  * ProcessController
  */
 @Controller(MonitorController.CONTROLLER_NAME)
 public class MonitorController {
 
-    public static final String CONTROLLER_NAME =
-            "epts.etl.monitorController";
+	public static final String CONTROLLER_NAME = "epts.etl.monitorController";
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(MonitorController.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MonitorController.class);
 
-    private final EtlMonitorService monitorService;
+	private final EtlMonitorService monitorService;
 
-    private final EtlProcessService processService;
+	private final EtlProcessService processService;
 
-    private final ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
 
-    @Autowired
-    public MonitorController(
-            EtlMonitorService monitorService,
-            EtlProcessService processService) {
+	@Autowired
+	public MonitorController(EtlMonitorService monitorService, EtlProcessService processService) {
 
-        this.monitorService = monitorService;
-        this.processService = processService;
-        this.objectMapper = new ObjectMapper();
-    }
+		this.monitorService = monitorService;
+		this.processService = processService;
+		this.objectMapper = new ObjectMapper();
+	}
 
-    // =========================================================
-    // MONITOR PAGE
-    // =========================================================
+	// =========================================================
+	// MONITOR PAGE
+	// =========================================================
 
-    /**
-     * Displays the ETL monitor page.
-     * <p>
-     * URL:
-     * GET /module/epts/etl/monitorData.form
-     */
-    @RequestMapping(
-            value = "/module/epts/etl/monitorData.form",
-            method = RequestMethod.GET
-    )
-    public ModelAndView monitor() {
+	/**
+	 * Displays the ETL monitor page.
+	 * <p>
+	 * URL: GET /module/epts/etl/monitorData.form
+	 */
+	@RequestMapping(value = "/module/epts/etl/monitorData.form", method = RequestMethod.GET)
+	public ModelAndView monitor() {
 
-        return new ModelAndView(
-                "module/etl/monitorData"
-        );
-    }
+		return new ModelAndView("module/etl/monitorData");
+	}
 
-    // =========================================================
-    // MONITOR DATA
-    // =========================================================
+	// =========================================================
+	// MONITOR DATA
+	// =========================================================
 
-    /**
-     * Returns the current ETL monitor information as JSON.
-     * <p>
-     * URL:
-     * GET /module/epts/etl/monitorData.json
-     */
-    @RequestMapping(
-            value = "/module/epts/etl/monitorData.json",
-            method = RequestMethod.GET,
-            produces = "application/json"
-    )
-    @ResponseBody
-    public String monitorData() {
+	/**
+	 * Returns the current ETL monitor information as JSON.
+	 * <p>
+	 * URL: GET /module/epts/etl/monitorData.json
+	 */
+	@RequestMapping(value = "/module/epts/etl/monitorData.json", method = RequestMethod.GET, produces = "application/json")
+	@ResponseBody
+	public String monitorData(
+			@RequestParam(value = "operationIdentifier", required = false) String operationIdentifier) {
 
-        try {
+		try {
 
-            LOGGER.debug(
-                    "[ETL-MONITOR] Getting ETL monitor"
-            );
+			LOGGER.debug("[ETL-MONITOR] Getting ETL monitor");
 
-            MonitorInfoDTO response =
-                    monitorService.getMonitor();
+			if (operationIdentifier == null)
+				operationIdentifier = "sync-processor";
 
-            if (response == null) {
+			MonitorInfoDTO response = monitorService.getMonitor(operationIdentifier);
 
-                LOGGER.warn(
-                        "[ETL-MONITOR] No monitor available"
-                );
+			if (response == null) {
 
-                return createErrorResponse(
-                        "No ETL monitor available"
-                );
-            }
+				LOGGER.warn("[ETL-MONITOR] No monitor available");
 
-            return objectMapper.writeValueAsString(
-                    response
-            );
+				return createErrorResponse("No ETL monitor available");
+			}
 
-        } catch (Exception e) {
+			return objectMapper.writeValueAsString(response);
 
-            LOGGER.error(
-                    "[ETL-MONITOR] Error getting ETL monitor",
-                    e
-            );
+		} catch (Exception e) {
 
-            return createErrorResponse(
-                    "Unable to get ETL monitor: "
-                            + (
-                            e.getMessage() != null
-                                    ? e.getMessage()
-                                    : e.getClass().getSimpleName()
-                    )
-            );
-        }
-    }
+			LOGGER.error("[ETL-MONITOR] Error getting ETL monitor", e);
 
-    // =========================================================
-    // START
-    // =========================================================
+			return createErrorResponse("Unable to get ETL monitor: "
+					+ (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+		}
+	}
 
-    /**
-     * Starts the ETL asynchronously.
-     * <p>
-     * URL:
-     * POST /module/epts/etl/start.form
-     */
-    @RequestMapping(
-            value = "/module/epts/etl/start.form",
-            method = RequestMethod.POST,
-            produces = "application/json"
-    )
-    @ResponseBody
-    public String start() {
+	// =========================================================
+	// START
+	// =========================================================
 
-        try {
+	/**
+	 * Starts the ETL asynchronously.
+	 * <p>
+	 * URL: POST /module/epts/etl/start.form
+	 */
+	@RequestMapping(value = "/module/epts/etl/start.form", method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public String start() {
 
-            LOGGER.info(
-                    "[ETL-START] Starting ETL..."
-            );
+		try {
 
-            ProcessController controller =
-                    processService.start();
+			LOGGER.info("[ETL-START] Starting ETL...");
 
-            String operationId =
-                    controller != null
-                            ? controller.getControllerId()
-                            : null;
+			ProcessController controller = processService.start();
 
-            LOGGER.info(
-                    "[ETL-START] ETL started: {}",
-                    operationId
-            );
+			String operationId = controller != null ? controller.getControllerId() : null;
 
-            return createOperationResponse(
-                    "STARTED",
-                    "ETL iniciado com sucesso",
-                    operationId
-            );
+			LOGGER.info("[ETL-START] ETL started: {}", operationId);
 
-        } catch (Exception e) {
+			return createOperationResponse("STARTED", "ETL iniciado com sucesso", operationId);
 
-            LOGGER.error(
-                    "[ETL-START] Error starting ETL",
-                    e
-            );
+		} catch (Exception e) {
 
-            return createOperationErrorResponse(
-                    "Não foi possível iniciar o ETL: "
-                            + (
-                            e.getMessage() != null
-                                    ? e.getMessage()
-                                    : e.getClass().getSimpleName()
-                    )
-            );
-        }
-    }
+			LOGGER.error("[ETL-START] Error starting ETL", e);
 
-    // =========================================================
+			return createOperationErrorResponse("Não foi possível iniciar o ETL: "
+					+ (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+		}
+	}
+
+	// =========================================================
 // STOP
 // =========================================================
 
-    /**
-     * Requests the current ETL process to stop.
-     *
-     * URL:
-     * POST /module/epts/etl/stop.form
-     */
-    @RequestMapping(
-            value = "/module/epts/etl/stop.form",
-            method = RequestMethod.POST,
-            produces = "application/json"
-    )
-    @ResponseBody
-    public String stop() {
+	/**
+	 * Requests the current ETL process to stop.
+	 *
+	 * URL: POST /module/epts/etl/stop.form
+	 */
+	@RequestMapping(value = "/module/epts/etl/stop.form", method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public String stop() {
 
-        try {
+		try {
 
-            LOGGER.info(
-                    "[ETL-STOP] Stopping ETL..."
-            );
+			LOGGER.info("[ETL-STOP] Stopping ETL...");
 
-            ProcessController controller =
-                    processService.getCurrentController();
+			ProcessController controller = processService.getCurrentController();
 
-            processService.stop();
+			processService.stop();
 
-            String operationId =
-                    controller != null
-                            ? controller.getControllerId()
-                            : null;
+			String operationId = controller != null ? controller.getControllerId() : null;
 
-            LOGGER.info(
-                    "[ETL-STOP] Stop requested: {}",
-                    operationId
-            );
+			LOGGER.info("[ETL-STOP] Stop requested: {}", operationId);
 
-            return createOperationResponse(
-                    "STOP_REQUESTED",
-                    "ETL stop requested successfully",
-                    operationId
-            );
+			return createOperationResponse("STOP_REQUESTED", "ETL stop requested successfully", operationId);
 
-        } catch (Exception e) {
+		} catch (Exception e) {
 
-            LOGGER.error(
-                    "[ETL-STOP] Error stopping ETL",
-                    e
-            );
+			LOGGER.error("[ETL-STOP] Error stopping ETL", e);
 
-            return createOperationErrorResponse(
-                    "Não foi possível parar o ETL: "
-                            + (
-                            e.getMessage() != null
-                                    ? e.getMessage()
-                                    : e.getClass().getSimpleName()
-                    )
-            );
-        }
-    }
+			return createOperationErrorResponse("Não foi possível parar o ETL: "
+					+ (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+		}
+	}
 
-    // =========================================================
-    // RESTART
-    // =========================================================
+	// =========================================================
+	// RESTART
+	// =========================================================
 
-    /**
-     * Restarts the ETL.
-     * <p>
-     * URL:
-     * POST /module/epts/etl/restart.form
-     */
+	/**
+	 * Restarts the ETL.
+	 * <p>
+	 * URL: POST /module/epts/etl/restart.form
+	 */
 //    @RequestMapping(
 //            value = "/module/epts/etl/restart.form",
 //            method = RequestMethod.POST,
@@ -324,107 +236,81 @@ public class MonitorController {
 //        }
 //    }
 
-    // =========================================================
-    // RESPONSES
-    // =========================================================
+	// =========================================================
+	// RESPONSES
+	// =========================================================
 
-    /**
-     * Creates an error response for the monitor endpoint.
-     */
-    private String createErrorResponse(
-            String message) {
+	/**
+	 * Creates an error response for the monitor endpoint.
+	 */
+	private String createErrorResponse(String message) {
 
-        try {
+		try {
 
-            MonitorInfoDTO response =
-                    new MonitorInfoDTO();
+			MonitorInfoDTO response = new MonitorInfoDTO();
 
-            response.setStatus("ERROR");
-            response.setMessage(message);
-            response.setOperationId(null);
-            response.setProgress(0.0);
-            response.setProcessed(0L);
-            response.setTotal(0L);
+			response.setStatus("ERROR");
+			response.setMessage(message);
+			response.setOperationIdentifier(null);
+			response.setProgress(0.0);
+			response.setProcessed(0L);
+			response.setTotal(0L);
 
-            return objectMapper.writeValueAsString(
-                    response
-            );
+			return objectMapper.writeValueAsString(response);
 
-        } catch (Exception e) {
+		} catch (Exception e) {
 
-            LOGGER.error(
-                    "[ETL-MONITOR] Error serializing error response",
-                    e
-            );
+			LOGGER.error("[ETL-MONITOR] Error serializing error response", e);
 
-            return "{\"status\":\"ERROR\","
-                    + "\"message\":\"Unable to serialize response\"}";
-        }
-    }
+			return "{\"status\":\"ERROR\"," + "\"message\":\"Unable to serialize response\"}";
+		}
+	}
 
-    /**
-     * Creates a successful response for an ETL operation.
-     */
-    private String createOperationResponse(
-            String status,
-            String message,
-            String operationId) {
+	/**
+	 * Creates a successful response for an ETL operation.
+	 */
+	private String createOperationResponse(String status, String message, String operationId) {
 
-        try {
+		try {
 
-            Map<String, Object> response =
-                    new HashMap<String, Object>();
+			Map<String, Object> response = new HashMap<String, Object>();
 
-            response.put("status", status);
-            response.put("success", true);
-            response.put("message", message);
-            response.put("operationId", operationId);
+			response.put("status", status);
+			response.put("success", true);
+			response.put("message", message);
+			response.put("operationId", operationId);
 
-            return objectMapper.writeValueAsString(
-                    response
-            );
+			return objectMapper.writeValueAsString(response);
 
-        } catch (Exception e) {
+		} catch (Exception e) {
 
-            LOGGER.error(
-                    "[ETL] Error serializing operation response",
-                    e
-            );
+			LOGGER.error("[ETL] Error serializing operation response", e);
 
-            return "{\"success\":false,"
-                    + "\"message\":\"Unable to serialize response\"}";
-        }
-    }
+			return "{\"success\":false," + "\"message\":\"Unable to serialize response\"}";
+		}
+	}
 
-    /**
-     * Creates an error response for an ETL operation.
-     */
-    private String createOperationErrorResponse(
-            String message) {
+	/**
+	 * Creates an error response for an ETL operation.
+	 */
+	private String createOperationErrorResponse(String message) {
 
-        try {
+		try {
 
-            Map<String, Object> response =
-                    new HashMap<String, Object>();
+			Map<String, Object> response = new HashMap<String, Object>();
 
-            response.put("status", "ERROR");
-            response.put("success", false);
-            response.put("message", message);
-            response.put("operationId", null);
+			response.put("status", "ERROR");
+			response.put("success", false);
+			response.put("message", message);
+			response.put("operationId", null);
 
-            return objectMapper.writeValueAsString(
-                    response
-            );
+			return objectMapper.writeValueAsString(response);
 
-        } catch (Exception e) {
+		} catch (Exception e) {
 
-            LOGGER.error(
-                    "[ETL] Error serializing operation error response",
-                    e
-            );
+			LOGGER.error("[ETL] Error serializing operation error response", e);
 
-            return "{\"success\":false,"
-                    + "\"message\":\"Unable to serialize response\"}";
-        }
-    }
+			return "{\"success\":false," + "\"message\":\"Unable to serialize response\"}";
+		}
+	}
 }

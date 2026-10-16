@@ -111,7 +111,7 @@ public class OperationProgressInfo {
 		if (this.getConfiguration().hasTestingItem()) {
 			allItem = utilities.parseToList(this.getConfiguration().getTestingEtlItemConfiguration());
 		} else {
-			allItem = this.getConfiguration().getEtlItemConfiguration();
+			allItem = this.getController().getEtlItemConfiguration();
 		}
 		
 		for (EtlItemConfiguration tabConf : allItem) {

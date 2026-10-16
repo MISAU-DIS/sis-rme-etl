@@ -138,29 +138,38 @@ public class ProcessStarter implements ControllerStarter {
 					EtlConfiguration childConfig = EtlConfiguration
 							.loadFromFile(new File(controller.getRelatedEtlConf().getChildConfigFilePath()));
 
-					ProcessController child = new ProcessController(this, childConfig);
-
-					this.currentController = child;
-
-					if (this.currentController.isDisabled()) {
-						logger.info("Operation " + this.currentController.getControllerId()
-								+ " is marked as disabled... skipping...");
-
-						this.currentController.markAsFinished();
-
-						this.handleControllerFinalization(this.currentController);
-					} else {
-						ExecutorService executor = ThreadPoolService.getInstance()
-								.createNewThreadPoolExecutor(this.currentController.getControllerId());
-
-						executor.execute(this.currentController);
-
-						if (!controllerToFinalize.isDisabled()) {
-							ThreadPoolService.getInstance().terminateTread(logger,
-									controllerToFinalize.getControllerId(), controllerToFinalize);
-						}
+					while (childConfig != null && childConfig.isDisabled()) {
+						logger.warn("Disabled config was found on the tree", childConfig.getConfigFilePath());
+						
+						childConfig = EtlConfiguration.loadFromFile(new File(childConfig.getChildConfigFilePath()));
 					}
 
+					if (childConfig == null) {
+						this.finalized = true;
+					} else {
+						ProcessController child = new ProcessController(this, childConfig);
+
+						this.currentController = child;
+
+						if (this.currentController.isDisabled()) {
+							logger.info("Operation " + this.currentController.getControllerId()
+									+ " is marked as disabled... skipping...");
+
+							this.currentController.markAsFinished();
+
+							this.handleControllerFinalization(this.currentController);
+						} else {
+							ExecutorService executor = ThreadPoolService.getInstance()
+									.createNewThreadPoolExecutor(this.currentController.getControllerId());
+
+							executor.execute(this.currentController);
+
+							if (!controllerToFinalize.isDisabled()) {
+								ThreadPoolService.getInstance().terminateTread(logger,
+										controllerToFinalize.getControllerId(), controllerToFinalize);
+							}
+						}
+					}
 				} catch (DBException e) {
 					throw new RuntimeException(e);
 				} catch (IOException e) {

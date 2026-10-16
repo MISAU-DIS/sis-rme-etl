@@ -78,5 +78,8 @@ public class EtlExceptionImpl extends RuntimeException implements EtlException {
 				+ super.getLocalizedMessage();
 	}
 
-	
+	public String getSuperLocalizedMessage() {
+		return super.getLocalizedMessage();
+	}
+
 }
