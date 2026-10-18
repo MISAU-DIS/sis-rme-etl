@@ -959,6 +959,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				this.recordWithDefaultParentsInfoTabConf = new EtlConfigurationTableConf(
 						this.getRecordWithDefaultParentInfoTableName(), this);
 
+				this.recordWithDefaultParentsInfoTabConf.setParentConf(this);
+
 				if (this.hasMainConnInfo()) {
 					this.getMainConnInfo().init(this);
 				}
@@ -1636,8 +1638,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			if (!utilities.stringHasValue(configCode)) {
 				issues.add("Operation '" + operationName + "' has an empty configCode in " + propertyName);
 			} else if (!visited.add(configCode)) {
-				issues.add("Operation '" + operationName + "' repeats configCode '" + configCode + "' in "
-						+ propertyName);
+				issues.add(
+						"Operation '" + operationName + "' repeats configCode '" + configCode + "' in " + propertyName);
 			} else if (!availableCodes.contains(configCode)) {
 				issues.add("Operation '" + operationName + "' references unknown root etlItemConfiguration configCode '"
 						+ configCode + "' in " + propertyName);
