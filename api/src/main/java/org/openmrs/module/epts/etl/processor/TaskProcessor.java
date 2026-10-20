@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.processor;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,15 +15,18 @@ import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
+import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
-import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
-import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
@@ -170,20 +172,14 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		}
 	}
 
-	private void tryToInitIdGenerator(List<T> etlObjects, Connection conn)
+	private void tryToInitIdGenerator(List<T> etlObjects, ConnectorRecordWriters writers)
 			throws DBException, ForbiddenOperationException {
 
 		logDebug("Initializing ID Generator");
 
 		if (getEtlItemConfiguration().hasDstConf()) {
-			for (DstConf dst : getEtlItemConfiguration().getDstConf()) {
-				if (dst.isDisabled())
-					continue;
-
-				if (dst.useManualGeneratedObjectId()) {
-					addIdGeneratorManager(dst.initIdGenerator(this, etlObjects, conn));
-				}
-			}
+			TaskProcessorConnectorSupport.initializeIdGenerators(this, etlObjects, writers,
+					this::addIdGeneratorManager);
 		}
 
 		logDebug("ID Generator Initialized!");
@@ -200,8 +196,8 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				+ " For table " + dstConf.getFullTableName());
 	}
 
-	public void extractTransformAndLoad(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn)
-			throws DBException {
+	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReader<T> reader,
+			ConnectorRecordWriters writers) throws DBException {
 
 		if (this.getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
 				|| this.getRelatedEtlOperationConfig().getParallelProcessingStrategy().isRangePartitioning()
@@ -218,20 +214,14 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 			logInfo("SERCHING NEXT RECORDS " + threads);
 		}
 
-		List<T> records = null;
-
-		if (useMultiThreadSearch) {
-			records = getSearchParams().searchNextRecordsInMultiThreads(getLimits(), null, null, srcConn, dstConn);
-		} else {
-			records = getSearchParams().search(getLimits(), null, null, srcConn, dstConn);
-		}
+		List<T> records = reader.read(new ConnectorReadRequest<>(getLimits(), null, null, useMultiThreadSearch));
 
 		logDebug("SERCH NEXT MIGRATION RECORDS FOR ETL '" + this.getEtlItemConfiguration().getConfigCode()
 				+ "' ON TABLE '" + getSrcConf().getTableName() + "' FINISHED. FOUND: '" + utilities.arraySize(records)
 				+ "' RECORDS.");
 
 		if (utilities.listHasElement(records)) {
-			transformAndLoadExtractedRecords(records, srcConn, dstConn);
+			transformAndLoadExtractedRecords(records, reader, writers);
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
@@ -242,18 +232,18 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	 * Processes records that were already extracted by the engine. This is used by
 	 * result-partitioning strategies, where extraction must happen exactly once.
 	 */
-	public void transformAndLoadExtractedRecords(List<T> records, Connection srcConn, Connection dstConn)
-			throws DBException {
+	public void transformAndLoadExtractedRecords(List<T> records, ConnectorRecordReader<T> reader,
+			ConnectorRecordWriters writers) throws DBException {
 
-		prepareExtractedRecords(records, dstConn);
+		prepareExtractedRecords(records, writers);
 
 		logWarn("PERFORMING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
 				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "'");
 
 		if (getActionType().isDelete()) {
-			performeDelete(records, srcConn, dstConn);
+			performeDelete(records, writers);
 		} else {
-			transformAndLoad(records, srcConn, dstConn);
+			transformAndLoad(records, reader, writers);
 		}
 
 		logWarn("TASK {} ON {} RECORDS OF TABLE {} DONE ",
@@ -264,36 +254,57 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	/** Prepares and transforms records already extracted by the engine. */
 	@SuppressWarnings("unchecked")
-	public void transformExtractedRecords(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
-		prepareExtractedRecords(records, dstConn);
-		transform((List<EtlDatabaseObject>) (List<?>) records, srcConn, dstConn);
+	public void transformExtractedRecords(List<T> records, ConnectorRecordReader<T> reader,
+			ConnectorRecordWriters writers) throws DBException {
+
+		prepareExtractedRecords(records, writers);
+
+		transform((List<EtlDatabaseObject>) (List<?>) records, reader, writers);
 	}
 
 	/** Loads records previously transformed by one or more processors. */
 	@SuppressWarnings("unchecked")
-	public void loadTransformedRecords(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
+	public void loadTransformedRecords(List<T> records, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers)
+			throws DBException {
+
 		getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) (List<?>) records);
-		load((List<EtlDatabaseObject>) (List<?>) records, srcConn, dstConn);
+
+		load((List<EtlDatabaseObject>) (List<?>) records, reader, writers);
 	}
 
-	private void prepareExtractedRecords(List<T> records, Connection dstConn) throws DBException {
+	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriters writers) throws DBException {
+		throw new ForbiddenOperationException("This processor does not support an independent load phase");
+	}
+
+	public void transformAndLoad(List<T> records, ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
+			throws DBException {
+		throw new ForbiddenOperationException("This processor does not support transform and load");
+	}
+
+	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriters writers) throws DBException {
+
+		throw new ForbiddenOperationException("This processor does not support an independent transform phase");
+	}
+
+	private void prepareExtractedRecords(List<T> records, ConnectorRecordWriters writers) throws DBException {
+
 		if (!utilities.listHasElement(records)) {
 			return;
 		}
 
-		tryToInitIdGenerator(records, dstConn);
+		tryToInitIdGenerator(records, writers);
 
-		beforeSync(records, null, dstConn);
+		beforeSync(records);
 
 		getTaskResultInfo().addProcessedRecords(records);
 	}
 
-	@SuppressWarnings("unchecked")
-	private void performeDelete(List<T> records, Connection srcConn, Connection dstConn) throws DBException {
+	private void performeDelete(List<T> records, ConnectorRecordWriters writers) throws DBException {
 		logDebug("Starting the deletion of " + records.size() + " " + getSrcConf().getTableName() + " on db...");
 
-		this.loadAndAddResult((EtlOperationResultHeader<T>) DatabaseObjectDAO
-				.deleteAll((List<EtlDatabaseObject>) records, getSrcConf(), dstConn));
+		this.loadAndAddResult(TaskProcessorConnectorSupport.delete(this, records, writers));
 
 		logDebug(records.size() + " " + getSrcConf().getTableName() + "  deleted on db!");
 
@@ -310,6 +321,29 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	public EtlDstType determineDstType(DstConf dstConf) {
+		ConnectorResource resource = dstConf.getResolvedResource();
+		if (resource == null) {
+			throw new IllegalStateException("Destination resource has not been initialized for " + dstConf);
+		}
+		ConnectorType connectorType = resource.getEndpoint().getType();
+
+		if (connectorType == ConnectorType.FILE) {
+			return EtlDstType.json;
+		}
+
+		if (connectorType != ConnectorType.JDBC) {
+			throw new ForbiddenOperationException("Connector type '" + connectorType
+					+ "' does not use the legacy EtlDstType classification");
+		}
+
+		if (!getEtlItemConfiguration().usesLegacyDestinationResource(dstConf)) {
+			return EtlDstType.db;
+		}
+
+		return determineLegacyDstType(dstConf);
+	}
+
+	private EtlDstType determineLegacyDstType(DstConf dstConf) {
 		EtlDstType dstType = dstConf.getDstType();
 
 		if (dstType == null) {
@@ -323,7 +357,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return dstType;
 	}
 
-	private void beforeSync(List<T> records, Connection srcConn, Connection dstConn) {
+	private void beforeSync(List<T> records) {
 		for (EtlObject rec : records) {
 			if (rec instanceof EtlDatabaseObject) {
 				((EtlDatabaseObject) rec).loadObjectIdData(getSrcConf());
@@ -463,27 +497,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	@Override
 	public void run() {
 		throw new ForbiddenOperationException("Unimplemented method!");
-	}
-
-	public abstract void transformAndLoad(List<T> records, Connection srcConn, Connection dstConn) throws DBException;
-
-	public void transform(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
-			throws DBException {
-		throw new ForbiddenOperationException("This processor does not support an independent transform phase");
-	}
-
-	/**
-	 * Compatibility hook used by processors whose transformation API includes the
-	 * complete ETL context.
-	 */
-	public void transform(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn, Connection dstConn)
-			throws DBException {
-		throw new ForbiddenOperationException("This processor does not support an independent transform phase");
-	}
-
-	public void load(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
-		throw new ForbiddenOperationException("This processor does not support an independent load phase");
 	}
 
 	public abstract TaskProcessor<T> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits);

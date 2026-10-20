@@ -13,7 +13,7 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class InconsistenceSolverProcessor extends TaskProcessor<EtlDatabaseObject> {
+public class InconsistenceSolverProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<EtlDatabaseObject> {
 	
 	public InconsistenceSolverProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
 	    boolean runningInConcurrency) {

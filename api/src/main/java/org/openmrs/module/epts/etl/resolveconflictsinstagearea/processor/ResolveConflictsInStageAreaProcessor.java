@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.resolveconflictsinstagearea.controller.ResolveConflictsInStageAreaController;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class ResolveConflictsInStageAreaProcessor extends TaskProcessor<EtlStageRecordVO> {
+public class ResolveConflictsInStageAreaProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<EtlStageRecordVO> {
 	
 	public ResolveConflictsInStageAreaProcessor(Engine<EtlStageRecordVO> monitor, IntervalExtremeRecord limits,
 	    boolean runningInConcurrency) {

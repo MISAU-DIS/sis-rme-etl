@@ -18,7 +18,7 @@ import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
-public class DBExportProcessor extends TaskProcessor<EtlDatabaseObject> {
+public class DBExportProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<EtlDatabaseObject> {
 	
 	public DBExportProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
