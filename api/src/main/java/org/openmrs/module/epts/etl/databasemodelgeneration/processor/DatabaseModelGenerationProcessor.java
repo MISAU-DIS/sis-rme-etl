@@ -121,8 +121,6 @@ public class DatabaseModelGenerationProcessor extends TaskProcessor<DatabaseMode
 
 				destination.setRelatedConnInfo(destinationConnectionInfo);
 
-				stepIntoBreakpoint(getRelatedEtlConf(), destination.getTableAlias().equals("lab_result_orders_dst_ds"));
-
 				destination.init(item, srcConn, dstConn);
 
 				generate(destinationConnectionInfo, destination);

@@ -1082,11 +1082,16 @@ public class DstConf extends AbstractTableConfiguration
 		return (EtlItemConfiguration) super.getParentConf();
 	}
 
-	public IdGeneratorManager initIdGenerator(TaskProcessor<? extends EtlDatabaseObject> processor,
+	public void initIdGenerator(TaskProcessor<? extends EtlDatabaseObject> processor,
 			List<? extends EtlObject> etlObjects, Connection conn) throws DBException, ForbiddenOperationException {
 
-		return IdGeneratorManager.init(processor, this, etlObjects, conn);
+		IdGeneratorManager.init(processor, this, etlObjects, conn);
+	}
 
+	public void initIdGenerator(TaskProcessor<? extends EtlDatabaseObject> processor, Connection conn)
+			throws DBException, ForbiddenOperationException {
+
+		IdGeneratorManager.init(processor, this, conn);
 	}
 
 	private void setCurrThreadStartId(int currThreadStartId) {
@@ -1121,7 +1126,7 @@ public class DstConf extends AbstractTableConfiguration
 		}
 
 		this.setCurrThreadStartId(this.getCurrThreadStartId() + this.currQtyRecords);
-		this.currQtyRecords = idGeneratorMgt.getEtlObjects().size();
+		this.currQtyRecords = idGeneratorMgt.getEtlObjects() != null ? idGeneratorMgt.getEtlObjects().size() : 1;
 
 		return this.getCurrThreadStartId();
 	}

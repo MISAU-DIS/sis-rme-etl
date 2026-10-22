@@ -335,8 +335,6 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private PhysicalTableMetadata resolvePhysicalTableMetadata(Connection conn)
 			throws java.io.IOException, SQLException {
 
-		stepIntoBreakpoint(getRelatedEtlConf(), this.getRelatedEtlConf() == null);
-
 		SchemaMetadataMode mode = this.getRelatedEtlConf().getSchemaMetadataMode();
 
 		if (mode != null && mode.usesFilesFirst()) {

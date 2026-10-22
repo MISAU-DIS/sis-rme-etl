@@ -161,16 +161,17 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return getEngine().getSearchParams();
 	}
 
-	private void addIdGeneratorManager(IdGeneratorManager im) {
-		if (idGeneratorManager == null)
+	public void addIdGeneratorManager(IdGeneratorManager im) {
+		if (idGeneratorManager == null) {
 			idGeneratorManager = new ArrayList<>();
+		}
 
 		if (!idGeneratorManager.contains(im)) {
 			idGeneratorManager.add(im);
 		}
 	}
 
-	private void tryToInitIdGenerator(List<T> etlObjects, Connection conn)
+	protected void tryToInitIdGenerator(List<T> etlObjects, Connection conn)
 			throws DBException, ForbiddenOperationException {
 
 		logDebug("Initializing ID Generator");
@@ -181,7 +182,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 					continue;
 
 				if (dst.useManualGeneratedObjectId()) {
-					addIdGeneratorManager(dst.initIdGenerator(this, etlObjects, conn));
+					dst.initIdGenerator(this, etlObjects, conn);
 				}
 			}
 		}

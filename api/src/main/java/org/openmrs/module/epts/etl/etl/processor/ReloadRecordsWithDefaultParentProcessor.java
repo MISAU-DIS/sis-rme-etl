@@ -31,182 +31,189 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * @author jpboane
  */
 public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
-	
+
 	private EtlProcessor relatedEtlProcessor;
-	
+
 	public ReloadRecordsWithDefaultParentProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
-	    boolean runningInConcurrency) {
+			boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);
 	}
-	
+
 	public EtlProcessor getRelatedEtlProcessor() {
 		return relatedEtlProcessor;
 	}
-	
+
 	public void setRelatedEtlProcessor(EtlProcessor relatedEtlProcessor) {
 		this.relatedEtlProcessor = relatedEtlProcessor;
 	}
-	
+
 	public EtlItemConfiguration getRelatedEtlItemConfiguration() {
 		return relatedEtlProcessor.getEtlItemConfiguration();
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> getSearchParams() {
 		return (EtlDatabaseObjectSearchParams) super.getSearchParams();
 	}
-	
+
 	public DBConnectionInfo getDstConnInfo() {
 		return this.getRelatedOperationController().getDstConnInfo();
 	}
-	
+
 	public DBConnectionInfo getSrcConnInfo() {
 		return this.getRelatedOperationController().getSrcConnInfo();
 	}
-	
+
 	@Override
 	public EtlController getRelatedOperationController() {
 		return (EtlController) super.getRelatedOperationController();
 	}
-	
+
 	@Override
-	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn) throws DBException {
-		
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
+			throws DBException {
+
 		try {
-			
+
 			SrcConf mainSrc = getRelatedEtlItemConfiguration().getSrcConf();
-			
+
 			if (!mainSrc.isFullLoaded()) {
 				mainSrc.fullLoad(srcConn);
 			}
-			
+
 			for (EtlDatabaseObject etlObj : etlObjects) {
 				EtlDatabaseObject dstObject = reloadDefaultsParents(mainSrc, etlObj, srcConn, dstConn);
-				
+
 				if (dstObject != null) {
 					dstObject.update((TableConfiguration) dstObject.getRelatedConfiguration(), dstConn);
 				}
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logWarn("Error ocurred on thread " + getProcessorId() + " On Records [" + getLimits() + "]... \n");
 			logError(e.getLocalizedMessage(), e);
-			
+
 			getTaskResultInfo().setFatalException(e);
 		}
-		
+
 	}
-	
+
+	@Override
+	protected void tryToInitIdGenerator(List<EtlDatabaseObject> etlObjects, Connection conn)
+			throws DBException, ForbiddenOperationException {
+
+		// ID generator is disabled for this processor
+	}
+
 	private EtlDatabaseObject reloadDefaultsParents(SrcConf mainSrc, EtlDatabaseObject etlObj, Connection srcConn,
-	        Connection dstConn) throws DBException, ForbiddenOperationException {
+			Connection dstConn) throws DBException, ForbiddenOperationException {
 		List<RecordWithDefaultParentInfo> rcs = RecordWithDefaultParentInfo.getAllOfSrcRecord(mainSrc,
-		    etlObj.getObjectId().asSimpleNumericValue(), srcConn);
-		
+				etlObj.getObjectId().asSimpleNumericValue(), srcConn);
+
 		EtlDatabaseObject srcObject = null;
 		EtlDatabaseObject dstObject = null;
-		
+
 		for (RecordWithDefaultParentInfo recWithDefaultParentInfo : rcs) {
-			
+
 			if (srcObject != null) {
 				recWithDefaultParentInfo.setSrcRelatedObject(srcObject);
 				recWithDefaultParentInfo.setDstRelatedObject(dstObject);
 			}
-			
+
 			try {
 				recWithDefaultParentInfo.fullLoad(this.getRelatedEtlItemConfiguration(), srcConn, dstConn);
-			}
-			catch (RecordNotFoundException e) {
+			} catch (RecordNotFoundException e) {
 				logWarn("A issue happened while processing record with default values: " + e.getLocalizedMessage());
-				
+
 				recWithDefaultParentInfo.setFieldValue("status", "ERR");
 				recWithDefaultParentInfo.setFieldValue("last_err", e.getLocalizedMessage());
-				
+
 				recWithDefaultParentInfo.save((TableConfiguration) recWithDefaultParentInfo.getRelatedConfiguration(),
-				    srcConn);
-				
+						srcConn);
+
 				continue;
-			}catch (Exception e) {
+			} catch (Exception e) {
 				throw e;
 			}
-			
+
 			srcObject = recWithDefaultParentInfo.getSrcRelatedObject();
 			dstObject = recWithDefaultParentInfo.getDstRelatedObject();
-			
+
 			ParentTable parentRefInfo = recWithDefaultParentInfo.getParentRefInfo();
-			
+
 			List<SrcConf> avaliableSrcForCurrParent = parentRefInfo
-			        .findRelatedSrcConfWhichAsAtLeastOnematchingDst(getRelatedEtlOperationConfig());
-			
+					.findRelatedSrcConfWhichAsAtLeastOnematchingDst(getRelatedEtlOperationConfig());
+
 			if (utilities.listHasNoElement(avaliableSrcForCurrParent)) {
 				throw new ForbiddenOperationException(
-				        "There are relashioship which cannot auto resolved as there is no configured etl for "
-				                + parentRefInfo.getTableName() + " as source and destination!");
+						"There are relashioship which cannot auto resolved as there is no configured etl for "
+								+ parentRefInfo.getTableName() + " as source and destination!");
 			}
-			
+
 			EtlDatabaseObject dstParent = null;
 			EtlDatabaseObject parentAsSrc = null;
-			
+
 			for (SrcConf src : avaliableSrcForCurrParent) {
 				DstConf dst = ((EtlItemConfiguration) src.getParentConf()).findDstTable_(getRelatedEtlOperationConfig(),
-				    parentRefInfo.getTableName());
-				
+						parentRefInfo.getTableName());
+
+				dst.initIdGenerator(this, dstConn);
+
 				parentAsSrc = src.createRecordInstance();
 				parentAsSrc.setRelatedConfiguration(src);
-				
+
 				parentAsSrc.copyFrom(recWithDefaultParentInfo.getParentRecordInOrigin());
-				
-				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, null, dst, null, TransformationType.INNER,
-				    srcConn, dstConn);
-				
+
+				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, null, dst, null,
+						TransformationType.INNER, srcConn, dstConn);
+
 				if (dstParent != null) {
 					DBException exception = null;
 					parentAsSrc.addDestinationRecord(dstParent);
-					
+
 					try {
 						EtlLoadHelper.performeParentLoading(parentAsSrc, srcConn, dstConn);
-						
+
 						dstParent = parentAsSrc.getDestinationObjects().get(0);
-						
+
 						dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);
-					}
-					catch (DBException e) {
+					} catch (DBException e) {
 						if (e.isDuplicatePrimaryOrUniqueKeyException()) {
 							dstParent = DatabaseObjectDAO.getByUniqueKeys(dstParent, dstConn);
 							dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);
 						} else
 							throw new EtlExceptionImpl(e);
-					}
-					finally {
-						
+					} finally {
+
 						if (dstParent.getEtlInfo() != null && dstParent.getEtlInfo().hasParentsWithDefaultValues()
-						        || (exception != null && exception.isIntegrityConstraintViolationException())) {
-							
+								|| (exception != null && exception.isIntegrityConstraintViolationException())) {
+
 							String msg = "The parent for default for parent ["
-							        + recWithDefaultParentInfo.getParentRecordInOrigin()
-							        + "] could not be loaded. The dstRecord [" + dstObject + "]";
-							
+									+ recWithDefaultParentInfo.getParentRecordInOrigin()
+									+ "] could not be loaded. The dstRecord [" + dstObject + "]";
+
 							logDebug(msg);
-							
+
 							InconsistenceInfo incInfo = InconsistenceInfo.generate(dstObject, parentRefInfo,
-							    mainSrc.getOriginAppLocationCode());
-							
+									mainSrc.getOriginAppLocationCode());
+
 							incInfo.save(mainSrc, srcConn);
-							
+
 							recWithDefaultParentInfo.setAsInconsistent(srcConn);
 						}
 					}
-					
+
 					break;
 				}
-				
+
 			}
 		}
-		
+
 		return dstObject;
 	}
-	
+
 	@Override
-	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
+	public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(
+			IntervalExtremeRecord limits) {
 		throw new ForbiddenOperationException("This method is forbidden");
 	}
 }
