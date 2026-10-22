@@ -19,6 +19,8 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
@@ -75,6 +77,10 @@ public class DstConf extends AbstractTableConfiguration
 	private Boolean automaticalyGenerated;
 
 	private EtlDstType dstType;
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
 
 	private String csvDelimiter;
 
@@ -399,6 +405,24 @@ public class DstConf extends AbstractTableConfiguration
 
 	public void setDstType(EtlDstType dstType) {
 		this.dstType = dstType;
+	}
+
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
 	}
 
 	public List<List<FieldsMapping>> getGeneratedJoinFields() {
@@ -1236,6 +1260,7 @@ public class DstConf extends AbstractTableConfiguration
 		this.setUnmappedFieldBehavior(toCloneFrom.unmappedFieldBehavior());
 		this.setIgnorableFields(toCloneFrom.getIgnorableFields());
 		this.setDstType(toCloneFrom.getDstType());
+		this.setResource(toCloneFrom.getResource() == null ? null : toCloneFrom.getResource().copy());
 		this.setTransformer(toCloneFrom.getTransformer());
 		this.setTransformerInstance(toCloneFrom.getTransformerInstance());
 		this.setIncludeAllFieldsFromDataSource(toCloneFrom.includeAllFieldsFromDataSource());

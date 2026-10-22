@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.model.EtlLoadStatus;
@@ -25,8 +27,8 @@ public abstract class AbstractOpenMrsIndexUpdateProcessor extends EtlProcessor {
 	}
 
 	@Override
-	public final void transformAndLoad(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn)
-			throws DBException {
+	public final void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriters writers) throws DBException {
 		OpenMrsIndexConfiguration configuration = getIndexConfiguration();
 		logInfo("Loaded OpenMRS index configuration: {}", configuration);
 		validateAfterEtlAction();
@@ -34,14 +36,14 @@ public abstract class AbstractOpenMrsIndexUpdateProcessor extends EtlProcessor {
 		beforeBatch(configuration);
 		try {
 			for (EtlDatabaseObject record : records)
-				processRecord(record, configuration, srcConn);
+				processRecord(record, configuration, reader.unwrap(Connection.class));
 		} finally {
 			afterBatch();
 		}
 	}
 
-	private void processRecord(EtlDatabaseObject record, OpenMrsIndexConfiguration configuration,
-			Connection srcConn) throws DBException {
+	private void processRecord(EtlDatabaseObject record, OpenMrsIndexConfiguration configuration, Connection srcConn)
+			throws DBException {
 		try {
 			String resourceType = requiredRecordValue(record, configuration.getResourceTypeField());
 			String uuid = readUuid(record, configuration);
@@ -77,7 +79,10 @@ public abstract class AbstractOpenMrsIndexUpdateProcessor extends EtlProcessor {
 	protected void beforeBatch(OpenMrsIndexConfiguration configuration) {
 	}
 
-	/** Hook for resources acquired by {@link #beforeBatch(OpenMrsIndexConfiguration)}. */
+	/**
+	 * Hook for resources acquired by
+	 * {@link #beforeBatch(OpenMrsIndexConfiguration)}.
+	 */
 	protected void afterBatch() {
 	}
 

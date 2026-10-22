@@ -16,6 +16,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfParamsAsDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfigurationSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
@@ -87,6 +92,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private DBConnectionInfo srcConnInfo;
 
 	private DBConnectionInfo dstConnInfo;
+
+	private List<ConnectorEndpointConfiguration> connectors;
+
+	private String defaultSourceConnector;
+
+	private String defaultDestinationConnector;
+
+	private transient ConnectorRegistry connectorRegistry;
 
 	private File relatedConfFile;
 
@@ -796,6 +809,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public void setSrcConnInfo(DBConnectionInfo srcConnInfo) {
 		this.srcConnInfo = srcConnInfo;
+		this.connectorRegistry = null;
 	}
 
 	public DBConnectionInfo getDstConnInfo() {
@@ -804,10 +818,51 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public void setDstConnInfo(DBConnectionInfo dstConnInfo) {
 		this.dstConnInfo = dstConnInfo;
+		this.connectorRegistry = null;
+	}
+
+	public List<ConnectorEndpointConfiguration> getConnectors() {
+		return connectors;
+	}
+
+	public void setConnectors(List<ConnectorEndpointConfiguration> connectors) {
+		this.connectors = connectors;
+		this.connectorRegistry = null;
+	}
+
+	public String getDefaultSourceConnector() {
+		return defaultSourceConnector;
+	}
+
+	public void setDefaultSourceConnector(String defaultSourceConnector) {
+		this.defaultSourceConnector = defaultSourceConnector;
+	}
+
+	public String getDefaultDestinationConnector() {
+		return defaultDestinationConnector;
+	}
+
+	public void setDefaultDestinationConnector(String defaultDestinationConnector) {
+		this.defaultDestinationConnector = defaultDestinationConnector;
+	}
+
+	private synchronized void initializeConnectorRegistry() {
+		if (this.connectorRegistry == null) {
+			this.connectorRegistry = new ConnectorRegistry(this.connectors, this.srcConnInfo, this.dstConnInfo);
+		}
+	}
+
+	@JsonIgnore
+	ConnectorRegistry getInitializedConnectorRegistry() {
+		if (this.connectorRegistry == null) {
+			throw new IllegalStateException("Connector registry has not been initialized");
+		}
+
+		return this.connectorRegistry;
 	}
 
 	public List<EtlItemConfiguration> getEtlItemConfiguration() {
-		return etlItemConfiguration;
+		return this.etlItemConfiguration;
 	}
 
 	public List<String> parseEtlConfigurationsToString_() {
@@ -823,7 +878,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public String getEtlRootDirectory() {
-		return etlRootDirectory;
+		return this.etlRootDirectory;
 	}
 
 	public void setEtlRootDirectory(String etlRootDirectory) {
@@ -862,6 +917,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
 			String configCode = item.getConfigCode();
 			boolean included = whiteList.isEmpty() || whiteList.contains(configCode);
+
 			if (included && !blackList.contains(configCode)) {
 				resolved.add(item);
 			}
@@ -944,6 +1000,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				this.ensureEtlConfDirResolved();
 
 				this.applyIncludes();
+
+				this.initializeConnectorRegistry();
 
 				this.getDataModel().init(this);
 
@@ -1510,6 +1568,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			errorMsg += ++errNum + ". " + selectionIssue + "\n";
 		}
 
+		for (String connectorIssue : validateConnectorConfigurations()) {
+			errorMsg += ++errNum + ". " + connectorIssue + "\n";
+		}
+
 		if (this.hasFinalizer()) {
 			this.getFinalizer().loadFinalizer();
 
@@ -1580,6 +1642,50 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			this.childConfig.validate();
 		}
 
+	}
+
+	List<String> validateConnectorConfigurations() {
+		List<String> issues = new ArrayList<>();
+		ConnectorRegistry registry;
+		try {
+			registry = new ConnectorRegistry(connectors, srcConnInfo, dstConnInfo);
+		} catch (RuntimeException e) {
+			issues.add("Invalid connectors: " + e.getMessage());
+			return issues;
+		}
+
+		validateDefaultConnector(registry, defaultSourceConnector, ConnectorDirection.SOURCE, issues);
+		validateDefaultConnector(registry, defaultDestinationConnector, ConnectorDirection.DESTINATION, issues);
+
+		if (hasEtlItemsConf()) {
+			for (EtlItemConfiguration item : getEtlItemConfiguration()) {
+				validateItemConnectorConfigurations(item, registry, issues);
+			}
+		}
+		return issues;
+	}
+
+	private void validateItemConnectorConfigurations(EtlItemConfiguration item, ConnectorRegistry registry,
+			List<String> issues) {
+		item.setRelatedEtlConf(this);
+		item.validateConnectorResources(registry, issues);
+		if (utilities.listHasElement(item.getChildItemConf())) {
+			for (EtlChildItemConfiguration child : item.getChildItemConf()) {
+				validateItemConnectorConfigurations(child, registry, issues);
+			}
+		}
+	}
+
+	private void validateDefaultConnector(ConnectorRegistry registry, String connectorId, ConnectorDirection direction,
+			List<String> issues) {
+		if (!utilities.stringHasValue(connectorId))
+			return;
+		try {
+			registry.select(connectorId, null, direction, false);
+		} catch (RuntimeException e) {
+			issues.add("Invalid " + (direction == ConnectorDirection.SOURCE ? "defaultSourceConnector"
+					: "defaultDestinationConnector") + ": " + e.getMessage());
+		}
 	}
 
 	List<String> validateEtlItemOperationSelections() {
@@ -2229,6 +2335,34 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		return conn;
+	}
+
+	OpenConnection openSourceConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom)
+			throws DBException {
+		if (resource == null || resource.getEndpoint().getType() != ConnectorType.JDBC) {
+			throw new ForbiddenOperationException("A JDBC source connection requires a resolved JDBC resource");
+		}
+
+		DBConnectionInfo connectionInfo = resource.getEndpoint().unwrap(DBConnectionInfo.class);
+		OpenConnection connection = connectionInfo.openConnection(openedFrom);
+
+		if (doNotResolveRelationship()) {
+			DBUtilities.disableForegnKeyChecks(connection);
+		}
+		return connection;
+	}
+
+	OpenConnection openDestinationConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom)
+			throws DBException {
+		if (resource == null || resource.getEndpoint().getType() != ConnectorType.JDBC) {
+			throw new ForbiddenOperationException("A JDBC destination connection requires a resolved JDBC resource");
+		}
+		DBConnectionInfo connectionInfo = resource.getEndpoint().unwrap(DBConnectionInfo.class);
+		OpenConnection connection = connectionInfo.openConnection(openedFrom);
+		if (doNotResolveRelationship()) {
+			DBUtilities.disableForegnKeyChecks(connection);
+		}
+		return connection;
 	}
 
 	public boolean doNotResolveRelationship() {

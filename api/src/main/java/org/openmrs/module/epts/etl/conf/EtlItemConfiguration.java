@@ -3,12 +3,15 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -16,6 +19,19 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaderFactory;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriterFactory;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDynamicItemSearchParams;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -27,6 +43,8 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
@@ -204,6 +222,190 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.dstConf = dstConf;
 	}
 
+	@JsonIgnore
+	public ConnectorResource getResolvedSrcResource() {
+		return srcConf == null ? null : srcConf.getResolvedResource();
+	}
+
+	@JsonIgnore
+	public List<ConnectorResource> getResolvedDstResources() {
+		if (dstConf == null || dstConf.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		List<ConnectorResource> resources = new ArrayList<>(dstConf.size());
+		for (DstConf destination : dstConf) {
+			ConnectorResource resource = destination.getResolvedResource();
+			if (resource == null) {
+				return Collections.emptyList();
+			}
+			resources.add(resource);
+		}
+		return Collections.unmodifiableList(resources);
+	}
+
+	@JsonIgnore
+	public ConnectorResource getResolvedDstResource(DstConf dstConfiguration) {
+		indexOfDstConfiguration(dstConfiguration);
+		ConnectorResource resource = dstConfiguration.getResolvedResource();
+		if (resource == null) {
+			throw new IllegalStateException("Destination resource has not been initialized for " + dstConfiguration);
+		}
+		return resource;
+	}
+
+	@JsonIgnore
+	public boolean usesLegacyDestinationResource(DstConf dstConfiguration) {
+		indexOfDstConfiguration(dstConfiguration);
+		return dstConfiguration.getResource() == null;
+	}
+
+	private int indexOfDstConfiguration(DstConf dstConfiguration) {
+		if (dstConfiguration == null) {
+			throw new IllegalArgumentException("Destination configuration cannot be null");
+		}
+
+		for (int index = 0; index < getDstConf().size(); index++) {
+			if (getDstConf().get(index) == dstConfiguration) {
+				return index;
+			}
+		}
+
+		throw new IllegalArgumentException("Destination configuration does not belong to this ETL item");
+	}
+
+	private void initializeConnectorResources() {
+		ConnectorRegistry registry = getRelatedEtlConf().getInitializedConnectorRegistry();
+		ConnectorResource source = resolveSrcResource(registry);
+		List<ConnectorResource> destinations = Collections.unmodifiableList(resolveDstResources(registry));
+
+		if (srcConf != null) {
+			srcConf.setResolvedResource(source);
+		}
+
+		if (dstConf != null) {
+			for (int index = 0; index < dstConf.size(); index++) {
+				if (index >= destinations.size()) {
+					throw new IllegalStateException("No resolved destination resource for dstConf at index " + index);
+				}
+				dstConf.get(index).setResolvedResource(destinations.get(index));
+			}
+		}
+	}
+
+	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWriters writers)
+			throws DBException {
+
+		ConnectorResource sourceResource = getResolvedSrcResource();
+		if (sourceResource == null) {
+			throw new IllegalStateException("Source resource has not been initialized");
+		}
+
+		OpenConnection srcConnection = null;
+
+		try {
+			if (sourceResource.getEndpoint().getType() == ConnectorType.JDBC) {
+				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(sourceResource, openedFrom);
+			}
+			Connection destinationConnection = writers == null ? null : writers.unwrapShared(Connection.class);
+			return ConnectorRecordReaderFactory.create(sourceResource, searchParams, srcConnection,
+					destinationConnection);
+		} catch (RuntimeException e) {
+			if (srcConnection != null) {
+				srcConnection.finalizeConnection(openedFrom);
+			}
+			throw e;
+		}
+	}
+
+	public ConnectorRecordWriters createDestinationWriters(BaseConfiguration openedFrom) throws DBException {
+		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
+		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+		Map<String, Connection> connections = new HashMap<>();
+
+		for (DstConf destination : getDstConf()) {
+			ConnectorResource resource = getResolvedDstResource(destination);
+			String endpointKey = resource.getEndpoint().getType() + "|" + resource.getEndpoint().getUri() + "|"
+					+ resource.getEndpoint().getUserName();
+			Connection connection = connections.get(endpointKey);
+			if (connection == null && resource.getEndpoint().getType() == ConnectorType.JDBC) {
+				connection = getRelatedEtlConf().openDestinationConnectorConnection(resource, openedFrom);
+				connections.put(endpointKey, connection);
+			}
+			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+			resources.put(destination, resource);
+		}
+		return new ConnectorRecordWriters(writers, resources);
+	}
+
+	public ConnectorRecordWriters bindDestinationWriters(Connection connection) {
+		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
+		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+		for (DstConf destination : getDstConf()) {
+			ConnectorResource resource = getResolvedDstResource(destination);
+			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+			resources.put(destination, resource);
+		}
+		return new ConnectorRecordWriters(writers, resources);
+	}
+
+	private ConnectorResource resolveSrcResource(ConnectorRegistry registry) {
+		ConnectorResourceConfiguration configured = srcConf == null ? null : srcConf.getResource();
+		String connectorId = configured == null ? null : configured.getConnector();
+
+		ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.SOURCE,
+				configured == null && srcConf != null);
+
+		return ConnectorConfigurationResolver.resolveResource(configured, srcConf, ConnectorDirection.SOURCE,
+				endpoint);
+	}
+
+	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {
+		List<ConnectorResource> resolved = new ArrayList<>();
+		if (dstConf == null) {
+			return resolved;
+		}
+
+		for (DstConf destination : dstConf) {
+			ConnectorResourceConfiguration configured = destination.getResource();
+
+			String connectorId = configured == null ? null : configured.getConnector();
+
+			ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.DESTINATION,
+					configured == null);
+
+			resolved.add(ConnectorConfigurationResolver.resolveResource(configured, destination,
+					ConnectorDirection.DESTINATION, endpoint));
+		}
+
+		return resolved;
+	}
+
+	void validateConnectorResources(ConnectorRegistry registry, List<String> issues) {
+		try {
+			if (srcConf != null) {
+				resolveSrcResource(registry);
+			}
+		} catch (RuntimeException e) {
+			issues.add("Invalid source connector on etlItemConfiguration '" + getConfigCode() + "': " + e.getMessage());
+		}
+
+		try {
+			resolveDstResources(registry);
+		} catch (RuntimeException e) {
+			issues.add("Invalid destination connector on etlItemConfiguration '" + getConfigCode() + "': "
+					+ e.getMessage());
+		}
+	}
+
+	private ConnectorEndpoint selectConnector(ConnectorRegistry registry, String connectorId,
+			ConnectorDirection direction, boolean preferLegacy) {
+		String defaultId = direction == ConnectorDirection.SOURCE ? getRelatedEtlConf().getDefaultSourceConnector()
+				: getRelatedEtlConf().getDefaultDestinationConnector();
+		return registry.select(connectorId, defaultId, direction, preferLegacy);
+	}
+
 	public static EtlItemConfiguration fastCreate(AbstractTableConfiguration tableConfig,
 			boolean useMainEtlTableAsSrcConfIfNotExists, Connection conn) throws DBException {
 
@@ -270,6 +472,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.tryToLoadFromTemplate();
 		this.setRelatedEtlConfig(relatedEtlConf);
 		this.setTesting(testing);
+		this.initializeConnectorResources();
 
 		if (!this.getSrcConf().doNotUseAsDatasource()) {
 			this.getSrcConf().init(this, srcConn, dstConn);
@@ -904,10 +1107,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			return false;
 		}
 
-		EtlDstType dstType = processor.determineDstType(this.getDstConf().get(0));
+		DstConf destination = this.getDstConf().get(0);
+		ConnectorType connectorType = getResolvedDstResource(destination).getEndpoint().getType();
 
-		if (dstType.isFile()) {
+		if (connectorType == ConnectorType.FILE) {
 			return true;
+		}
+
+		if (connectorType == ConnectorType.JDBC) {
+			EtlDstType dstType = processor.determineDstType(destination);
+			if (dstType.isFile()) {
+				return true;
+			}
 		}
 
 		if (this.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
