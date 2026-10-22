@@ -97,13 +97,6 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 
 	}
 
-	@Override
-	protected void tryToInitIdGenerator(List<EtlDatabaseObject> etlObjects, Connection conn)
-			throws DBException, ForbiddenOperationException {
-
-		// ID generator is disabled for this processor
-	}
-
 	private EtlDatabaseObject reloadDefaultsParents(SrcConf mainSrc, EtlDatabaseObject etlObj, Connection srcConn,
 			Connection dstConn) throws DBException, ForbiddenOperationException {
 		List<RecordWithDefaultParentInfo> rcs = RecordWithDefaultParentInfo.getAllOfSrcRecord(mainSrc,
@@ -155,8 +148,6 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 			for (SrcConf src : avaliableSrcForCurrParent) {
 				DstConf dst = ((EtlItemConfiguration) src.getParentConf()).findDstTable_(getRelatedEtlOperationConfig(),
 						parentRefInfo.getTableName());
-
-				dst.initIdGenerator(this, dstConn);
 
 				parentAsSrc = src.createRecordInstance();
 				parentAsSrc.setRelatedConfiguration(src);

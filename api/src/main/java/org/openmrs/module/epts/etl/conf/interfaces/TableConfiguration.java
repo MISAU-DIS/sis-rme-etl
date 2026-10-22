@@ -91,8 +91,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	List<String> getPatchFields();
 
 	/**
-	 * @return the initial increment to be done on the table ID for the first record
-	 *         when the ID is manually generated
+	 * @return the initial ID for the table's native auto-increment counter, or for
+	 *         manual generation when the schema has no native auto-increment
 	 */
 	Integer getPrimaryKeyInitialIncrementValue();
 
@@ -1474,7 +1474,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					}
 				}
 
-				if (overrideAutoIncrement()) {
+				if (useConfiguredNativeAutoIncrement(conn)) {
+					DBUtilities.setMySQLAutoIncrementValue(getFullTableName(),
+							getPrimaryKeyInitialIncrementValue(), conn);
+					this.setAutoIncrementId(true);
+					this.setIncludePrimaryKeyOnInsert(false);
+				} else if (overrideAutoIncrement()) {
 					this.setAutoIncrementId(false);
 					this.setIncludePrimaryKeyOnInsert(true);
 				} else {
@@ -1539,6 +1544,19 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default Boolean overrideAutoIncrement() {
 		return this.getAutoIncrementHandlingType() != null
 				&& this.getAutoIncrementHandlingType().isIgnoreSchemaDefinition();
+	}
+
+	/**
+	 * A configured initial value takes precedence over manual ID generation when
+	 * the empty destination table already provides a native MySQL AUTO_INCREMENT.
+	 * Existing tables with records keep their current schema-defined sequence.
+	 */
+	default Boolean useConfiguredNativeAutoIncrement(Connection conn) throws DBException {
+		return this.getPrimaryKeyInitialIncrementValue() != null
+				&& this.getPrimaryKeyInitialIncrementValue() > 0
+				&& DBUtilities.isMySQLDB(conn)
+				&& this.useAutoIncrementId(conn)
+				&& DBUtilities.isTableEmpty(this.getFullTableName(), conn);
 	}
 
 	default void addParent(ParentTable p) {

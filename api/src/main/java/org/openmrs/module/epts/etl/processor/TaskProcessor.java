@@ -1,7 +1,6 @@
 package org.openmrs.module.epts.etl.processor;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
@@ -9,7 +8,6 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
-import org.openmrs.module.epts.etl.conf.IdGeneratorManager;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
@@ -59,8 +57,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	protected EtlOperationResultHeader<T> taskResultInfo;
 
-	protected List<IdGeneratorManager> idGeneratorManager;
-
 	protected EtlOperationStatus operationStatus;
 
 	public TaskProcessor(Engine<T> monitr, IntervalExtremeRecord limits, boolean runningInConcurrency) {
@@ -91,10 +87,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		this.operationStatus = operationStatus;
 	}
 
-	public List<IdGeneratorManager> getIdGeneratorManager() {
-		return idGeneratorManager;
-	}
-
 	public EtlOperationResultHeader<T> getTaskResultInfo() {
 		return taskResultInfo;
 	}
@@ -105,7 +97,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	public void resetForTransactionRetry() {
 		this.taskResultInfo = new EtlOperationResultHeader<>(limits);
-		this.idGeneratorManager = null;
 		this.operationStatus = EtlOperationStatus.NOT_INITIALIZED;
 	}
 
@@ -159,46 +150,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	public AbstractEtlSearchParams<T> getSearchParams() {
 		return getEngine().getSearchParams();
-	}
-
-	public void addIdGeneratorManager(IdGeneratorManager im) {
-		if (idGeneratorManager == null) {
-			idGeneratorManager = new ArrayList<>();
-		}
-
-		if (!idGeneratorManager.contains(im)) {
-			idGeneratorManager.add(im);
-		}
-	}
-
-	protected void tryToInitIdGenerator(List<T> etlObjects, Connection conn)
-			throws DBException, ForbiddenOperationException {
-
-		logDebug("Initializing ID Generator");
-
-		if (getEtlItemConfiguration().hasDstConf()) {
-			for (DstConf dst : getEtlItemConfiguration().getDstConf()) {
-				if (dst.isDisabled())
-					continue;
-
-				if (dst.useManualGeneratedObjectId()) {
-					dst.initIdGenerator(this, etlObjects, conn);
-				}
-			}
-		}
-
-		logDebug("ID Generator Initialized!");
-	}
-
-	public IdGeneratorManager findIdGenerator(DstConf dstConf) {
-		for (IdGeneratorManager mgt : this.getIdGeneratorManager()) {
-			if (mgt.getDstConf() == dstConf) {
-				return mgt;
-			}
-		}
-
-		throw new ForbiddenOperationException("No IdGeneratorManager found on processor " + getProcessorId()
-				+ " For table " + dstConf.getFullTableName());
 	}
 
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, Connection srcConn, Connection dstConn)
@@ -281,8 +232,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		if (!utilities.listHasElement(records)) {
 			return;
 		}
-
-		tryToInitIdGenerator(records, dstConn);
 
 		beforeSync(records, null, dstConn);
 

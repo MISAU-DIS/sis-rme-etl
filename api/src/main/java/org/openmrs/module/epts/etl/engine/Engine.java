@@ -15,7 +15,6 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
-import org.openmrs.module.epts.etl.conf.IdGeneratorManager;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
@@ -96,8 +95,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	private int currentIteration;
 
 	private final EnginePersistenceCoordinator persistenceCoordinator;
-
-	protected List<IdGeneratorManager> idGeneratorManager;
 
 	public Engine(OperationController<T> controller, EtlItemConfiguration etlItemConfiguration,
 			TableOperationProgressInfo tableOperationProgressInfo) {

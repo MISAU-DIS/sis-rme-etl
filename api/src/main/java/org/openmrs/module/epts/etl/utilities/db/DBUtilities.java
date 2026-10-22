@@ -768,6 +768,34 @@ public class DBUtilities {
 		}
 	}
 
+	public static void setMySQLAutoIncrementValue(String fullTableName, long initialValue, Connection conn)
+			throws DBException {
+		if (!isMySQLDB(conn)) {
+			throw new ForbiddenOperationException(
+					"Setting a native AUTO_INCREMENT value is only supported for MySQL tables");
+		}
+
+		if (initialValue <= 0) {
+			throw new ForbiddenOperationException("The AUTO_INCREMENT initial value must be greater than zero");
+		}
+
+		executeBatch(conn, "ALTER TABLE " + fullTableName + " AUTO_INCREMENT = " + initialValue);
+	}
+
+	public static boolean isTableEmpty(String fullTableName, Connection conn) throws DBException {
+		String sql = "SELECT 1 FROM " + fullTableName;
+
+		try (PreparedStatement statement = conn.prepareStatement(sql)) {
+			statement.setMaxRows(1);
+
+			try (ResultSet resultSet = statement.executeQuery()) {
+				return !resultSet.next();
+			}
+		} catch (SQLException e) {
+			throw new DBException(e);
+		}
+	}
+
 	public static void createDb(DBConnectionInfo connInfo, String dbName) throws EtlExceptionImpl {
 		executeCommandOnDbServer(connInfo, "CREATE DATABASE IF NOT EXISTS `" + dbName + "`");
 	}

@@ -190,7 +190,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 
 		if (dstConf.useManualGeneratedObjectId() && !dstConf.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
-			Object nextId = dstConf.retriveNextRecordId(processor);
+			Object nextId = dstConf.retrieveNextRecordId(dstConn);
 
 			transformedRec.getObjectId().asSimpleKey().setValue(nextId);
 			transformedRec.setFieldValue(pkField.getName(), nextId);
