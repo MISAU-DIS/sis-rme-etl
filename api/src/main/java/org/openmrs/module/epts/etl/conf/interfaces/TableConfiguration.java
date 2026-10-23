@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.AbstractRelatedTable;
 import org.openmrs.module.epts.etl.conf.ChildTable;
@@ -1475,8 +1477,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				}
 
 				if (useConfiguredNativeAutoIncrement(conn)) {
-					DBUtilities.setMySQLAutoIncrementValue(getFullTableName(),
-							getPrimaryKeyInitialIncrementValue(), conn);
+					DBUtilities.setMySQLAutoIncrementValue(getFullTableName(), getPrimaryKeyInitialIncrementValue(),
+							conn);
 					this.setAutoIncrementId(true);
 					this.setIncludePrimaryKeyOnInsert(false);
 				} else if (overrideAutoIncrement()) {
@@ -1503,8 +1505,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				}
 
 				if (this.hasExtraConditionForExtract()) {
-					this.setExtraConditionForExtract(this.getExtraConditionForExtract()
-							.replaceAll(getTableName() + "\\.", this.getTableAlias() + "\\."));
+					String tableName = Pattern.quote(this.getTableName());
+					String tableAlias = this.getTableAlias();
+
+					this.setExtraConditionForExtract(this.getExtraConditionForExtract().replaceAll(
+							"(?<![^,\\s])" + tableName + "\\.", Matcher.quoteReplacement(tableAlias + ".")));
 				}
 
 				this.loadOwnElements(null, conn);
@@ -1552,10 +1557,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	 * Existing tables with records keep their current schema-defined sequence.
 	 */
 	default Boolean useConfiguredNativeAutoIncrement(Connection conn) throws DBException {
-		return this.getPrimaryKeyInitialIncrementValue() != null
-				&& this.getPrimaryKeyInitialIncrementValue() > 0
-				&& DBUtilities.isMySQLDB(conn)
-				&& this.useAutoIncrementId(conn)
+		return this.getPrimaryKeyInitialIncrementValue() != null && this.getPrimaryKeyInitialIncrementValue() > 0
+				&& DBUtilities.isMySQLDB(conn) && this.useAutoIncrementId(conn)
 				&& DBUtilities.isTableEmpty(this.getFullTableName(), conn);
 	}
 

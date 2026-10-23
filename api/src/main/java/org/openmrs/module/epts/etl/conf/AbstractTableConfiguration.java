@@ -770,7 +770,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	@Override
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 
-		if (hasExtraConditionForExtract()) {
+		if (this.hasExtraConditionForExtract()) {
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getExtraConditionForExtract(),
 					null)) {
 				throw new EtlConfException("Invalid extraConditionForExtract  \n" + this.getExtraConditionForExtract());
