@@ -260,7 +260,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		for (IntervalExtremeRecord limits : currIntervas.getInternalIntervals()) {
 			tasks.add(CompletableFuture.supplyAsync(() -> {
 				try {
-					return SearchParamsDAO.countAll(this, limits, conn);
+					return SearchParamsDAO.countAll(this.cloneMe(), limits, conn);
 				} catch (DBException e) {
 					throw new EtlExceptionImpl(e);
 				}
