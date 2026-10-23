@@ -578,12 +578,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void processRangePartition(TaskProcessor<T> processor, boolean useSharedConnection,
-			ConnectorRecordReader<T> sharedReader,
-			ConnectorRecordWriters sharedWriters) {
+			ConnectorRecordReader<T> sharedReader, ConnectorRecordWriters sharedWriters) {
 
 		if (useSharedConnection) {
-			performExtractTransformationAndLoading(processor, false, false,
-					sharedReader, sharedWriters);
+			performExtractTransformationAndLoading(processor, false, false, sharedReader, sharedWriters);
 
 			return;
 		}
@@ -720,6 +718,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			moveToNextCurrentLimitsWhenCompleted(intervalManager);
 
 			if (shouldFinishBecauseNoRecordsRemain()) {
+				tryToProcessSkippedrecords();
+
 				return;
 			}
 
@@ -776,10 +776,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					boolean useMultiThreadSearch = true;
 
 					ConnectorRecordWriters writers = getEtlItemConfiguration().createDestinationWriters(this);
-					ConnectorRecordReader<T> reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this,
+					ConnectorRecordReader<T> reader = getEtlItemConfiguration().createSourceReader(getSearchParams(),
+							this, writers);
+					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork, reader,
 							writers);
-					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork,
-							reader, writers);
 
 					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
 					getSearchParams().setExtraCondition(originalExtraCondition);
@@ -810,9 +810,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 		} else {
 			warn("Skipping record with default parents reload as 'doNotProcessSkippedRecords' is set to true");
-
-			iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
-			iManager.save();
 		}
 	}
 
@@ -917,7 +914,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					while ((sourceRecord = transformationQueue.poll()) != null) {
 						claimedRecords.add(sourceRecord);
 						T attemptRecord = (T) sourceRecord.createACopy();
-						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader, writers);
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader,
+								writers);
 						if (processor.getTaskResultInfo().hasFatalError()) {
 							break;
 						}
@@ -925,7 +923,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				} else {
 					for (T sourceRecord : claimedRecords) {
 						T attemptRecord = (T) sourceRecord.createACopy();
-						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader, writers);
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader,
+								writers);
 						if (processor.getTaskResultInfo().hasFatalError()) {
 							break;
 						}

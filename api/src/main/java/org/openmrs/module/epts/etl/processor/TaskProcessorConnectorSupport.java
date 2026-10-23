@@ -27,7 +27,8 @@ final class TaskProcessorConnectorSupport {
 		for (DstConf destination : processor.getEtlItemConfiguration().getDstConf()) {
 			if (!destination.isDisabled() && destination.useManualGeneratedObjectId()) {
 				Connection connection = writers.get(destination).unwrap(Connection.class);
-				collector.accept(destination.initIdGenerator(processor, records, connection));
+				// collector.accept(destination.initIdGenerator(processor, records,
+				// connection));
 			}
 		}
 	}

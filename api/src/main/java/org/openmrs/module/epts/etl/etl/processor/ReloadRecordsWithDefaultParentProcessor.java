@@ -8,6 +8,8 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -70,8 +72,11 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 	}
 
 	@Override
-	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, Connection srcConn, Connection dstConn)
-			throws DBException {
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriters writers) throws DBException {
+
+		Connection srcConn = reader.unwrap(Connection.class);
+		Connection dstConn = writers.unwrapShared(Connection.class);
 
 		try {
 

@@ -246,32 +246,19 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	@JsonIgnore
 	public ConnectorResource getResolvedDstResource(DstConf dstConfiguration) {
-		indexOfDstConfiguration(dstConfiguration);
+
 		ConnectorResource resource = dstConfiguration.getResolvedResource();
+
 		if (resource == null) {
 			throw new IllegalStateException("Destination resource has not been initialized for " + dstConfiguration);
 		}
+
 		return resource;
 	}
 
 	@JsonIgnore
 	public boolean usesLegacyDestinationResource(DstConf dstConfiguration) {
-		indexOfDstConfiguration(dstConfiguration);
 		return dstConfiguration.getResource() == null;
-	}
-
-	private int indexOfDstConfiguration(DstConf dstConfiguration) {
-		if (dstConfiguration == null) {
-			throw new IllegalArgumentException("Destination configuration cannot be null");
-		}
-
-		for (int index = 0; index < getDstConf().size(); index++) {
-			if (getDstConf().get(index) == dstConfiguration) {
-				return index;
-			}
-		}
-
-		throw new IllegalArgumentException("Destination configuration does not belong to this ETL item");
 	}
 
 	private void initializeConnectorResources() {
@@ -357,8 +344,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.SOURCE,
 				configured == null && srcConf != null);
 
-		return ConnectorConfigurationResolver.resolveResource(configured, srcConf, ConnectorDirection.SOURCE,
-				endpoint);
+		return ConnectorConfigurationResolver.resolveResource(configured, srcConf, ConnectorDirection.SOURCE, endpoint);
 	}
 
 	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {
