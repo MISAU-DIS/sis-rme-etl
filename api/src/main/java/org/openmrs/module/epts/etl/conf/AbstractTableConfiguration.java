@@ -334,6 +334,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private PhysicalTableMetadata resolvePhysicalTableMetadata(Connection conn)
 			throws java.io.IOException, SQLException {
+		if (this.getRelatedEtlConf().isDatabaseModelRegenerationMode()) {
+			this.physicalMetadataLoadedFromStaticData = false;
+			return null;
+		}
 
 		SchemaMetadataMode mode = this.getRelatedEtlConf().getSchemaMetadataMode();
 

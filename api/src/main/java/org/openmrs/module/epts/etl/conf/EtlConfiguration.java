@@ -36,6 +36,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.ProcessController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -101,6 +102,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private transient ConnectorRegistry connectorRegistry;
 
+	private transient boolean databaseModelRegenerationMode;
+
 	private File relatedConfFile;
 
 	private List<EtlOperationConfig> operations;
@@ -147,11 +150,21 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private List<TableConfiguration> fullLoadedTables;
 
-	private static final PhysicalTableConfigurationRegistry physicalTableConfigurationRegistry = new PhysicalTableConfigurationRegistry();
+	private final PhysicalTableConfigurationRegistry physicalTableConfigurationRegistry = new PhysicalTableConfigurationRegistry();
 
 	@JsonIgnore
 	public PhysicalTableConfigurationRegistry getPhysicalTableConfigurationRegistry() {
-		return EtlConfiguration.physicalTableConfigurationRegistry;
+		return this.physicalTableConfigurationRegistry;
+	}
+
+	@JsonIgnore
+	public boolean isDatabaseModelRegenerationMode() {
+		return databaseModelRegenerationMode;
+	}
+
+	@JsonIgnore
+	public void setDatabaseModelRegenerationMode(boolean databaseModelRegenerationMode) {
+		this.databaseModelRegenerationMode = databaseModelRegenerationMode;
 	}
 
 	private List<String> busyTableAliasName;
@@ -1051,6 +1064,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				for (EtlOperationConfig operation : this.getOperations()) {
 					operation.init(this);
 				}
+
+				// Operation templates/includes must be resolved before deciding whether this
+				// execution is a database-model regeneration. This still runs before any ETL
+				// item is initialized and can attach static physical metadata.
+				DatabaseModelGenerationProcessor.prepareForRegeneration(this);
 
 				srcConn = openSrcConn(this);
 

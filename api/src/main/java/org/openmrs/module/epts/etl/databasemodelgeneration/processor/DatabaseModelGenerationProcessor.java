@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
@@ -60,6 +61,36 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 	private boolean databaseModelGenerated;
 
 	private Set<EtlItemConfiguration> visitedItemConfigurations;
+
+	/**
+	 * Activates live-schema regeneration before table configurations can attach
+	 * static physical metadata. Existing artifacts are preserved until the
+	 * corresponding configuration tree element is actually regenerated.
+	 */
+	public static void prepareForRegeneration(EtlConfiguration configuration) {
+		if (configuration == null || !configuration.shouldOverrideExistingDataModelElement()
+				|| !hasDatabaseModelGenerationOperation(configuration)) {
+			return;
+		}
+
+		configuration.setDatabaseModelRegenerationMode(true);
+		configuration.getPhysicalTableConfigurationRegistry().clear();
+	}
+
+	private static boolean hasDatabaseModelGenerationOperation(EtlConfiguration configuration) {
+		if (configuration.getOperations() == null) return false;
+		for (EtlOperationConfig operation : configuration.getOperations()) {
+			if (hasEnabledDatabaseModelGenerationOperation(operation)) return true;
+		}
+		return false;
+	}
+
+	private static boolean hasEnabledDatabaseModelGenerationOperation(EtlOperationConfig operation) {
+		if (operation == null || operation.isDisabled()) return false;
+		if (operation.getOperationType() != null && operation.isDatabaseModelGeneration()) return true;
+		return hasEnabledDatabaseModelGenerationOperation(operation.getChild());
+	}
+
 
 	public DatabaseModelGenerationProcessor(Engine<DatabaseModelGenerationRecord> monitor, IntervalExtremeRecord limits,
 			boolean runningInConcurrency) {

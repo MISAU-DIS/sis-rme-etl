@@ -68,6 +68,18 @@ public class DatabaseModelGenerationController extends OperationController<Datab
 	}
 
 	@Override
+	public void onFinish() {
+		getEtlConfiguration().setDatabaseModelRegenerationMode(false);
+		super.onFinish();
+	}
+
+	@Override
+	public void onStop() {
+		getEtlConfiguration().setDatabaseModelRegenerationMode(false);
+		super.onStop();
+	}
+
+	@Override
 	public void afterEtl(List<DatabaseModelGenerationRecord> objs, Connection srcConn, Connection dstConn) throws DBException {
 	}
 }
