@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
@@ -17,6 +18,7 @@ import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -227,6 +229,43 @@ class EtlConnectorConfigurationTest {
 		assertEquals("jdbc:mysql://first/etl", first.getRelatedConnInfo().getConnectionURI());
 		assertEquals("jdbc:mysql://second/etl", second.getRelatedConnInfo().getConnectionURI());
 		assertNotSame(first.getRelatedConnInfo(), second.getRelatedConnInfo());
+	}
+
+	@Test
+	void shouldCreateLazyDestinationConnectionAggregator() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		ConnectorEndpointConfiguration database = jdbcConnector("destination-db", "jdbc:invalid:must-not-open");
+		ConnectorEndpointConfiguration file = new ConnectorEndpointConfiguration();
+		file.setId("jsonl-output");
+		file.setType(ConnectorType.FILE);
+		file.setUri("data/output");
+		configuration.setConnectors(java.util.Arrays.asList(database, file));
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		SrcConf source = new SrcConf();
+		source.setTableName("patient");
+		item.setSrcConf(source);
+		DstConf jdbcDestination = new DstConf("patient_copy");
+		jdbcDestination.setResource(resource("destination-db", "patient_copy"));
+		DstConf fileDestination = new DstConf("patient_export");
+		fileDestination.setResource(resource("jsonl-output", "patients.jsonl"));
+		item.setDstConf(java.util.Arrays.asList(jdbcDestination, fileDestination));
+
+		initializeConnectors(configuration);
+		initializeResources(item);
+
+		DestinationConnectorConnections connections = item.createDestinationConnections(item);
+
+		assertTrue(connections.isJdbc(jdbcDestination));
+		assertFalse(connections.isJdbc(fileDestination));
+		assertSame(jdbcDestination.getResolvedResource(), connections.getResource(jdbcDestination));
+		assertTrue(connections.getOpenedConnections().isEmpty());
+		assertThrows(ForbiddenOperationException.class, () -> connections.get(fileDestination));
+
+		connections.close();
+		assertThrows(IllegalStateException.class, () -> connections.get(jdbcDestination));
 	}
 
 	@Test

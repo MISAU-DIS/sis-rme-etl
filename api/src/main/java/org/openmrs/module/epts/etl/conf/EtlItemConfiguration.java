@@ -336,6 +336,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return new ConnectorRecordWriters(writers, resources);
 	}
 
+	/**
+	 * Creates the lazy connection scope for this item's destinations. No JDBC
+	 * connection is opened until a destination is requested from the returned
+	 * aggregator.
+	 */
+	public DestinationConnectorConnections createDestinationConnections(BaseConfiguration openedFrom) {
+		return new DestinationConnectorConnections(getRelatedEtlConf(), getDstConf(), openedFrom);
+	}
+
 	public ConnectorRecordWriters bindDestinationWriters(Connection connection) {
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
