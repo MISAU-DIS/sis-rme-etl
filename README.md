@@ -242,6 +242,29 @@ endpoint selection is no longer encoded only in database-specific fields.
 For every legacy property and advanced ETL capability, consult
 [README-legacy.md](README-legacy.md).
 
+### Conditional parent relationships
+
+A parent relationship may use `conditionalFields` to restrict the records to
+which it applies. A conditional field accepts either one value or multiple
+alternative values separated by commas. Multiple values use OR semantics:
+
+```json
+"conditionalFields": [
+  {
+    "name": "person_attribute_type_id",
+    "value": "7, 8, 9"
+  }
+]
+```
+
+In this example, the relationship applies when `person_attribute_type_id` is
+`7`, `8` or `9`. Whitespace around comma-separated values is ignored and value
+comparison remains case-sensitive. Only one conditional field per parent
+relationship is currently supported.
+
+See [Parents configuration](README-legacy.md#parents-configuration) for the
+complete parent relationship configuration.
+
 ## Data model
 
 The optional `dataModel` configuration controls precompiled POJOs and static

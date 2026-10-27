@@ -517,8 +517,8 @@ When explicitly defined, a parent configuration should follow the structure show
             ],
             "conditionalFields":[
                {
-                  "name":"",
-                  "value":""
+                  "name":"person_attribute_type_id",
+                  "value":"7, 8, 9"
                }
             ],
             "defaultValueDueInconsistency":"",
@@ -535,6 +535,8 @@ For each parent, it is possible to define a **mapping**, which specifies how chi
 - *ignorable*: Indicates whether the relationship can be ignored when inconsistencies occur.
 
 In addition to field mappings, the parent configuration supports *conditionalFields*. These fields define conditions under which a specific relationship should be applied, allowing relationships to be selectively enforced rather than globally applied to all records.
+
+The *value* of a conditional field may contain either a single value or multiple alternative values separated by commas. Multiple values are evaluated using OR semantics. For example, `"value":"7, 8, 9"` applies the relationship when the record field is `7`, `8`, or `9`. Whitespace around each comma-separated value is ignored, while comparison remains case-sensitive. Only one conditional field per parent relationship is currently supported.
 
 A common example can be found in the OpenMRS data model. In the *person_attribute* table, the fields *person_attribute_type_id* and *value* are used such that the meaning of *value* depends on the type. For instance, when *person_attribute_type_id = 7*, the *value* represents a reference to a record in the *location* table. In this scenario, a conditional relationship can be defined between *person_attribute* and *location*, where the condition is based on *person_attribute_type_id = 7*.
 

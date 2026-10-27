@@ -71,6 +71,31 @@ public interface ParentTable extends RelatedTable {
 		return utilities.listHasElement(this.getConditionalFields());
 	}
 
+	/**
+	 * Checks whether a record value matches one of the comma-separated values
+	 * configured for a conditional field.
+	 */
+	default boolean matchesConditionalFieldValue(Field conditionalField, Object recordValue) {
+		if (conditionalField == null || conditionalField.getValue() == null || recordValue == null) {
+			return false;
+		}
+
+		String configuredValue = conditionalField.getValue().toString();
+		String currentValue = recordValue.toString();
+
+		if (!configuredValue.contains(",")) {
+			return configuredValue.equals(currentValue);
+		}
+
+		for (String acceptedValue : configuredValue.split(",", -1)) {
+			if (acceptedValue.trim().equals(currentValue)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	default List<DstConf> findRelatedDstConf(EtlOperationConfig operationConf) throws DBException {
 		List<DstConf> allDstForTable = new ArrayList<>();
 
