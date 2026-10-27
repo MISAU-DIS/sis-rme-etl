@@ -30,7 +30,7 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 			ConnectorRecordReader<T> reader = engine.getEtlItemConfiguration().createSourceReader(
 					engine.getSearchParams(), engine, writers);
 			OpenConnection srcConn = reader.unwrap(OpenConnection.class);
-			OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
+			List<OpenConnection> dstConnections = engine.destinationConnections(writers);
 
 			try {
 				engine.performExtractTransformationAndLoading(processor, true, persistWork, reader, writers);
@@ -39,7 +39,7 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 					engine.stopOperationDueError(processor.getTaskResultInfo().getFatalException());
 				}
 			} finally {
-				OpenConnection.finalizeAllConnections(engine, srcConn, dstConn);
+				engine.finalizeConnections(srcConn, dstConnections);
 			}
 		}
 	}

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
@@ -321,7 +322,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
 		Map<String, Connection> connections = new HashMap<>();
 
-		for (DstConf destination : getDstConf()) {
+		for (DstConf destination : collectDestinationConfigurations()) {
 			ConnectorResource resource = getResolvedDstResource(destination);
 			String endpointKey = resource.getEndpoint().getType() + "|" + resource.getEndpoint().getUri() + "|"
 					+ resource.getEndpoint().getUserName();
@@ -349,12 +350,34 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	public ConnectorRecordWriters bindDestinationWriters(Connection connection) {
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
-		for (DstConf destination : getDstConf()) {
+		for (DstConf destination : collectDestinationConfigurations()) {
 			ConnectorResource resource = getResolvedDstResource(destination);
 			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
 			resources.put(destination, resource);
 		}
 		return new ConnectorRecordWriters(writers, resources);
+	}
+
+	private List<DstConf> collectDestinationConfigurations() {
+		List<DstConf> destinations = new ArrayList<>();
+		Set<EtlItemConfiguration> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+		collectDestinationConfigurations(this, destinations, visited);
+		return destinations;
+	}
+
+	private void collectDestinationConfigurations(EtlItemConfiguration item, List<DstConf> destinations,
+	        Set<EtlItemConfiguration> visited) {
+		if (item == null || !visited.add(item)) {
+			return;
+		}
+		if (item.getDstConf() != null) {
+			destinations.addAll(item.getDstConf());
+		}
+		if (item.getChildItemConf() != null) {
+			for (EtlItemConfiguration child : item.getChildItemConf()) {
+				collectDestinationConfigurations(child, destinations, visited);
+			}
+		}
 	}
 
 	private ConnectorResource resolveSrcResource(ConnectorRegistry registry) {

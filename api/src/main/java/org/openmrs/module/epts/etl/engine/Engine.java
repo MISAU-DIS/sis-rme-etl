@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.engine;
 import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -588,14 +589,15 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			OpenConnection srcConn = null;
-			OpenConnection dstConn = null;
+			List<OpenConnection> dstConnections = Collections.emptyList();
 			ConnectorRecordWriters writers = null;
 			boolean flushWorkerPersistence = false;
 			boolean retryTransaction = false;
 
 			try {
 				writers = getEtlItemConfiguration().createDestinationWriters(this);
-				dstConn = writers.unwrapShared(OpenConnection.class);
+				dstConnections = writers.unwrapAll(OpenConnection.class);
+				OpenConnection dstConn = firstDestinationConnection(dstConnections);
 				ConnectorRecordReader<T> reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this,
 						writers);
 				srcConn = reader.unwrap(OpenConnection.class);
@@ -608,17 +610,18 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 				if (!retryTransaction && !getRelatedEtlConf().hasTestingItem()
 						&& !processor.getTaskResultInfo().hasFatalError()) {
-					OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+					markConnectionsAsSuccessfullyTerminated(srcConn, dstConnections);
 					flushWorkerPersistence = true;
 				}
 			} catch (DBException e) {
-				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS && isRetryableTransactionFailure(e, dstConn);
+				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS
+						&& isRetryableTransactionFailure(e, firstDestinationConnection(dstConnections));
 				if (!retryTransaction) {
 					failRangeProcessor(processor, e, true);
 				}
 			} finally {
 				try {
-					finalizeRangeWorkerConnections(srcConn, dstConn);
+					finalizeWorkerConnections(srcConn, dstConnections);
 				} catch (RuntimeException e) {
 					retryTransaction = false;
 					flushWorkerPersistence = false;
@@ -684,9 +687,28 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 	}
 
-	private void finalizeRangeWorkerConnections(OpenConnection srcConn, OpenConnection dstConn) {
-		// Commit destination data before source-side tracking/deletion.
-		OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
+	private void finalizeWorkerConnections(OpenConnection srcConn, List<OpenConnection> dstConnections) {
+		List<OpenConnection> connections = new ArrayList<>(dstConnections);
+		connections.add(srcConn);
+		OpenConnection.finalizeAllConnections(connections, this);
+	}
+
+	OpenConnection firstDestinationConnection(List<OpenConnection> connections) {
+		return connections == null || connections.isEmpty() ? null : connections.get(0);
+	}
+
+	List<OpenConnection> destinationConnections(ConnectorRecordWriters writers) {
+		return writers.unwrapAll(OpenConnection.class);
+	}
+
+	void markConnectionsAsSuccessfullyTerminated(OpenConnection srcConn, List<OpenConnection> dstConnections) {
+		List<OpenConnection> connections = new ArrayList<>(dstConnections);
+		connections.add(srcConn);
+		OpenConnection.markAllAsSuccessifullyTerminected(connections);
+	}
+
+	void finalizeConnections(OpenConnection srcConn, List<OpenConnection> dstConnections) {
+		finalizeWorkerConnections(srcConn, dstConnections);
 	}
 
 	private void failRangeProcessor(TaskProcessor<T> processor, Exception failure, boolean discardPersistence) {
@@ -871,7 +893,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 
 		OpenConnection srcConn = sharedReader.unwrap(OpenConnection.class);
-		OpenConnection dstConn = sharedWriters.unwrapShared(OpenConnection.class);
+		OpenConnection dstConn = firstDestinationConnection(destinationConnections(sharedWriters));
 
 		try {
 			processor.changeStatusToRunning();
@@ -897,14 +919,15 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			OpenConnection srcConn = null;
-			OpenConnection dstConn = null;
+			List<OpenConnection> dstConnections = Collections.emptyList();
 			ConnectorRecordWriters writers = null;
 			ConnectorRecordReader<T> reader = null;
 			boolean retryTransaction = false;
 
 			try {
 				writers = getEtlItemConfiguration().createDestinationWriters(this);
-				dstConn = writers.unwrapShared(OpenConnection.class);
+				dstConnections = writers.unwrapAll(OpenConnection.class);
+				OpenConnection dstConn = firstDestinationConnection(dstConnections);
 				reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this, writers);
 				srcConn = reader.unwrap(OpenConnection.class);
 				processor.changeStatusToRunning();
@@ -939,16 +962,17 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 				if (!retryTransaction && !getRelatedEtlConf().hasTestingItem()
 						&& !processor.getTaskResultInfo().hasFatalError()) {
-					OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+					markConnectionsAsSuccessfullyTerminated(srcConn, dstConnections);
 				}
 			} catch (Exception e) {
-				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS && isRetryableTransactionFailure(e, dstConn);
+				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS
+						&& isRetryableTransactionFailure(e, firstDestinationConnection(dstConnections));
 				if (!retryTransaction) {
 					processor.changeStatusToStopped();
 					processor.getTaskResultInfo().setFatalException(e);
 				}
 			} finally {
-				OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
+				finalizeWorkerConnections(srcConn, dstConnections);
 			}
 
 			if (!retryTransaction) {
@@ -972,13 +996,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 		OpenConnection srcConn = sharedReader.unwrap(OpenConnection.class);
 		ConnectorRecordWriters writers = sharedWriters;
-		OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
+		List<OpenConnection> dstConnections = destinationConnections(writers);
 		ConnectorRecordReader<T> reader = sharedReader;
 
 		try {
 			if (!sharedConnections) {
 				writers = getEtlItemConfiguration().createDestinationWriters(this);
-				dstConn = writers.unwrapShared(OpenConnection.class);
+				dstConnections = destinationConnections(writers);
 				reader = getEtlItemConfiguration().createSourceReader(getSearchParams(), this, writers);
 				srcConn = reader.unwrap(OpenConnection.class);
 			}
@@ -994,14 +1018,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			processor.changeStatusToFinished();
 
 			if (!sharedConnections && !getRelatedEtlConf().hasTestingItem()) {
-				OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
+				markConnectionsAsSuccessfullyTerminated(srcConn, dstConnections);
 			}
 		} catch (Exception e) {
 			processor.changeStatusToStopped();
 			processor.getTaskResultInfo().setFatalException(e);
 		} finally {
 			if (!sharedConnections) {
-				OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
+				finalizeConnections(srcConn, dstConnections);
 			}
 		}
 	}
@@ -1183,7 +1207,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	void performExtractTransformationAndLoading(TaskProcessor<T> taskProcessor, boolean useMultiTreadSearch,
 			boolean persistTheWork, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers) {
 		OpenConnection srcConn = reader.unwrap(OpenConnection.class);
-		OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
+		List<OpenConnection> dstConnections = destinationConnections(writers);
+		OpenConnection dstConn = firstDestinationConnection(dstConnections);
 
 		try {
 			taskProcessor.changeStatusToRunning();
@@ -1204,8 +1229,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				if (persistTheWork) {
 					logTrace("PERSISTING WORK OF TASK ON INTERVAL " + taskProcessor.getLimits());
 
-					OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-					OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
+					markConnectionsAsSuccessfullyTerminated(srcConn, dstConnections);
+					finalizeConnections(srcConn, dstConnections);
 
 					// Never expose an uncommitted interval to any checkpoint writer.
 					taskProcessor.getLimits().markAsProcessed();

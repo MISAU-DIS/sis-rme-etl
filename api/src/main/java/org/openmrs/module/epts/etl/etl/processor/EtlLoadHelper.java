@@ -156,7 +156,7 @@ public class EtlLoadHelper {
 			logInfo("Registering StageArea persistence within {}", generateAvaliableEtl());
 
 			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn,
-					writers.unwrapShared(Connection.class));
+					null);
 
 			logDebug("StageArea persistence registered!");
 		}

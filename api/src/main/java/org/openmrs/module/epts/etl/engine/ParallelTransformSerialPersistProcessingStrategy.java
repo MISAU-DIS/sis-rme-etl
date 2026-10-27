@@ -25,7 +25,7 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 	protected <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> records, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
 			ConnectorRecordReader<T> reader, ConnectorRecordWriters writers) throws Exception {
-		OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
+		OpenConnection dstConn = engine.firstDestinationConnection(engine.destinationConnections(writers));
 
 		boolean sharedConnections = engine.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
 
