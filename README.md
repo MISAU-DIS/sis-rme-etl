@@ -152,6 +152,41 @@ Resource selection follows this order:
 
 Connector and resource references are validated before processing starts.
 
+### Logical record schema
+
+JDBC resources obtain their fields from precompiled schema metadata or from
+the database. A non-JDBC resource must declare a logical `recordSchema` in its
+`srcConf` or `dstConf`. Non-JDBC records currently use JSON format.
+
+```json
+{
+  "tableName": "patient-export",
+  "resource": {
+    "connector": "jsonl-output",
+    "name": "patients.jsonl"
+  },
+  "recordSchema": {
+    "format": "JSON",
+    "fields": [
+      {
+        "name": "uuid",
+        "dataType": "java.lang.String",
+        "allowNull": false
+      },
+      {
+        "name": "birthdate",
+        "dataType": "java.util.Date"
+      }
+    ]
+  }
+}
+```
+
+The schema is loaded into the normal `SrcConf`/`DstConf` field collection, so
+existing mappings and transformations use the same `Field` model regardless
+of whether the resource is JDBC or JSON. Missing schemas, empty field lists and
+duplicated field names are rejected during configuration validation.
+
 ## Supported execution adapters
 
 ### JDBC source and destination
@@ -166,10 +201,12 @@ internal `legacy-src` and `legacy-dst` adapters from `srcConnInfo` and
 `dstConf`. For mappings, parents, transformers, templates and the complete
 database configuration, see the [legacy README](README-legacy.md).
 
-### FILE destination
+### FILE source and destination
 
-`FILE` is the first non-JDBC destination adapter. It writes JSON Lines (JSONL):
-one compact JSON object per transformed record.
+`FILE` is the first complete non-JDBC adapter. It reads and writes JSON Lines
+(JSONL): one compact JSON object per line. A FILE source requires a
+`recordSchema`; line numbers are used as stable, one-based processing
+intervals.
 
 ```json
 {
@@ -219,8 +256,14 @@ The writer:
 - rejects resource paths outside the configured root;
 - currently supports `INSERT` requests only.
 
-FILE currently provides destination capabilities only. Extraction from files
-requires a future reader adapter.
+The reader:
+
+- reads UTF-8 JSONL files;
+- converts values according to the configured `Field.dataType`;
+- rejects non-object records, unknown fields and missing required fields;
+- supports the normal ETL range partitioning through JSONL line numbers;
+- exposes the internal JDBC `srcConnInfo` connection to transformation and
+  state-persistence code without using it to extract source records.
 
 ## Legacy compatibility
 

@@ -1278,7 +1278,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			if (total == 0) {
-				if (countStrategy.isUseMaxRecordIdAsCount()) {
+				if (getEtlItemConfiguration().getResolvedSrcResource().getEndpoint()
+						.getType() != org.openmrs.module.epts.etl.connector.ConnectorType.JDBC) {
+					total = (int) this.getProgressMeter().getMaxRecordId();
+					remaining = total;
+				} else if (countStrategy.isUseMaxRecordIdAsCount()) {
 					total = (int) this.getProgressMeter().getMaxRecordId();
 					remaining = total;
 				} else if (countStrategy.isUseProvided()) {

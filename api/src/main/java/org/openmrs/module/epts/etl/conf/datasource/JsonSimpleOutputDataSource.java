@@ -1,11 +1,11 @@
 package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
+import org.openmrs.module.epts.etl.conf.RecordSchemaConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.json.JsonEtlObjectParent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
@@ -33,6 +33,8 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	private SrcConf parent;
 
 	private List<String> fields;
+
+	private RecordSchemaConfiguration recordSchema;
 
 	private List<Field> dataSourceFields;
 
@@ -100,7 +102,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad() throws DBException {
-		fullLoad();
+		fullLoad(null);
 	}
 
 	@Override
@@ -112,24 +114,29 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 			if (isFullLoaded())
 				return;
 
-			List<Field> dsFields = new ArrayList<>();
-
 			if (!utilities.stringHasValue(this.getName())) {
 				throw new EtlConfException("Name is required for outputDatasource.");
 			}
 
-			if (utilities.listHasNoElement(fields)) {
+			if (recordSchema == null && utilities.listHasNoElement(fields)) {
 				throw new EtlConfException("The fields list cannot be null in the Datasource " + this.getName());
 			}
 
-			for (String fieldName : this.fields) {
-				dsFields.add(Field.fastCreateField(fieldName));
-			}
-
-			this.dataSourceFields = dsFields;
+			RecordSchemaConfiguration schema = recordSchema != null ? recordSchema
+					: RecordSchemaConfiguration.fromFieldNames(this.fields);
+			this.dataSourceFields = schema
+					.resolveFields("JSON data source '" + this.getName() + "'");
 
 		}
 
+	}
+
+	public RecordSchemaConfiguration getRecordSchema() {
+		return recordSchema;
+	}
+
+	public void setRecordSchema(RecordSchemaConfiguration recordSchema) {
+		this.recordSchema = recordSchema;
 	}
 
 	@Override

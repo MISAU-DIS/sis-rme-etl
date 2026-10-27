@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.connector;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordReader;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
@@ -27,6 +28,9 @@ public final class ConnectorRecordReaderFactory {
 
 		if (resource.getEndpoint().getType() == ConnectorType.JDBC) {
 			return new JdbcConnectorRecordReader<>(resource, searchParams, srcConnection, dstConnection);
+		}
+		if (resource.getEndpoint().getType() == ConnectorType.FILE) {
+			return new FileConnectorRecordReader<>(resource, searchParams.getSrcConf(), srcConnection);
 		}
 
 		throw new UnsupportedConnectorTypeException(resource.getEndpoint().getType(), ConnectorDirection.SOURCE);

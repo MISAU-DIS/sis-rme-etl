@@ -731,8 +731,6 @@ public class DstConf extends AbstractTableConfiguration
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
 		if (!this.isInMemoryTable()) {
-			this.tryToGenerateTableAlias(getRelatedEtlConf());
-
 			if (!hasManualMapPrimaryKeyOnField()) {
 				setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 			}

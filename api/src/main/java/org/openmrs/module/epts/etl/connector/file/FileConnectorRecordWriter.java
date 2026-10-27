@@ -2,11 +2,9 @@ package org.openmrs.module.epts.etl.connector.file;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,7 +14,6 @@ import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
@@ -36,7 +33,7 @@ public final class FileConnectorRecordWriter<T extends EtlDatabaseObject> implem
 
 	public FileConnectorRecordWriter(ConnectorResource resource) {
 		this.resource = resource;
-		this.path = resolvePath(resource);
+		this.path = FileConnectorPathResolver.resolve(resource);
 	}
 
 	@Override public ConnectorResource getResource() { return resource; }
@@ -77,21 +74,6 @@ public final class FileConnectorRecordWriter<T extends EtlDatabaseObject> implem
 				new org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord());
 		for (T record : records) result.addToRecordsWithNoError(record);
 		return result;
-	}
-
-	private static Path resolvePath(ConnectorResource resource) {
-		String uri = resource.getEndpoint().getUri();
-		if (uri == null || uri.trim().isEmpty()) {
-			throw new IllegalArgumentException("FILE connector uri cannot be empty");
-		}
-		Path root = uri.startsWith("file:") ? Paths.get(URI.create(uri)) : Paths.get(uri);
-		ConnectorResourceConfiguration configuration = resource.unwrap(ConnectorResourceConfiguration.class);
-		Path resolved = root.resolve(configuration.getName()).normalize().toAbsolutePath();
-		Path normalizedRoot = root.normalize().toAbsolutePath();
-		if (!resolved.startsWith(normalizedRoot)) {
-			throw new IllegalArgumentException("FILE resource must remain below connector uri: " + resource.getName());
-		}
-		return resolved;
 	}
 
 	@Override

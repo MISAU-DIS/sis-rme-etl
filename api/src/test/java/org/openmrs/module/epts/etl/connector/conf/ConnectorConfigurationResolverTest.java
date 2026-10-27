@@ -83,13 +83,14 @@ class ConnectorConfigurationResolverTest {
 	}
 
 	@Test
-	void shouldAdvertiseFileDestinationCapabilitiesOnly() {
+	void shouldAdvertiseFileSourceAndDestinationCapabilities() {
 		ConnectorEndpointConfiguration configured = new ConnectorEndpointConfiguration();
 		configured.setType(ConnectorType.FILE);
 		configured.setUri("data/out");
 		ConnectorEndpoint endpoint = ConnectorConfigurationResolver.resolveEndpoint(configured, null);
 
-		assertFalse(endpoint.supports(ConnectorCapability.READ));
+		assertTrue(endpoint.supports(ConnectorCapability.READ));
+		assertTrue(endpoint.supports(ConnectorCapability.BATCH_READ));
 		assertTrue(endpoint.supports(ConnectorCapability.WRITE));
 	}
 

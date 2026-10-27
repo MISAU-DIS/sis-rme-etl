@@ -294,6 +294,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		try {
 			if (sourceResource.getEndpoint().getType() == ConnectorType.JDBC) {
 				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(sourceResource, openedFrom);
+			} else {
+				srcConnection = getRelatedEtlConf().openSrcConn(openedFrom);
 			}
 			Connection destinationConnection = writers == null ? null : writers.unwrapShared(Connection.class);
 			return ConnectorRecordReaderFactory.create(sourceResource, searchParams, srcConnection,
@@ -371,17 +373,32 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	void validateConnectorResources(ConnectorRegistry registry, List<String> issues) {
 		try {
 			if (srcConf != null) {
-				resolveSrcResource(registry);
+				ConnectorResource source = resolveSrcResource(registry);
+				validateRecordSchema(srcConf, source);
 			}
 		} catch (RuntimeException e) {
 			issues.add("Invalid source connector on etlItemConfiguration '" + getConfigCode() + "': " + e.getMessage());
 		}
 
 		try {
-			resolveDstResources(registry);
+			List<ConnectorResource> destinations = resolveDstResources(registry);
+			for (int index = 0; dstConf != null && index < dstConf.size(); index++) {
+				validateRecordSchema(dstConf.get(index), destinations.get(index));
+			}
 		} catch (RuntimeException e) {
 			issues.add("Invalid destination connector on etlItemConfiguration '" + getConfigCode() + "': "
 					+ e.getMessage());
+		}
+	}
+
+	private void validateRecordSchema(AbstractTableConfiguration configuration, ConnectorResource resource) {
+		if (resource != null && resource.getEndpoint().getType() != ConnectorType.JDBC) {
+			if (configuration.getRecordSchema() == null) {
+				throw new IllegalArgumentException("recordSchema is required for non-JDBC resource '"
+						+ resource.getName() + "'");
+			}
+			configuration.getRecordSchema().resolveFields(resource.getEndpoint().getType() + " resource '"
+					+ resource.getName() + "'");
 		}
 	}
 
@@ -650,6 +667,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					map.setParentConf(this);
 					map.setDstType(this.getSrcConf().getDstType());
 
+					if (map.usesNonJdbcResource()) {
+						map.init(this, srcConn, dstConn);
+						map.fullLoad(dstConn);
+						continue;
+					}
+
 					try {
 						map.tryToLoadSchemaInfo(this.relatedEtlSchemaObject, dstConn);
 					} catch (DatabaseResourceDoesNotExists e) {
@@ -690,6 +713,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 					for (DstConf dstConf : this.getDstConf()) {
 						dstConf.init(this, srcConn, dstConn);
+
+						if (dstConf.usesNonJdbcResource()) {
+							dstConf.setDstType(this.getSrcConf().getDstType());
+							dstConf.fullLoad(dstConn);
+							continue;
+						}
 
 						dstConf.setInMemoryTable(true);
 						dstConf.setDstType(this.getSrcConf().getDstType());
