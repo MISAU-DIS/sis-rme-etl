@@ -717,9 +717,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		conf.setDoNotFullLoadDstConf(true);
 
-		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
+		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn);
 
-		conf.init(getRelatedEtlConf(), false, srcConn, dstConn);
+		conf.init(getRelatedEtlConf(), false, srcConn);
 
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 

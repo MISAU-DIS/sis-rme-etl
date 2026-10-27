@@ -1118,7 +1118,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 								for (EtlItemConfiguration dItem : dynamicItems) {
 									allItem.add(dItem);
 
-									dItem.init(this, false, srcConn, dstConn);
+									dItem.init(this, false, srcConn);
 								}
 
 							} else {
@@ -1138,7 +1138,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 							info("Starting initialization of item " + counter);
 
-							item.init(this, false, srcConn, dstConn);
+							item.init(this, false, srcConn);
 
 							info("Item initialized: " + item.getConfigCode());
 						}
@@ -1148,7 +1148,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				}
 
 				if (this.hasTestingItem()) {
-					this.getTestingEtlItemConfiguration().init(this, true, srcConn, dstConn);
+					this.getTestingEtlItemConfiguration().init(this, true, srcConn);
 				}
 
 				if (this.relatedEtlSrcTables != null) {

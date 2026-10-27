@@ -104,7 +104,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			List<EtlDatabaseObject> etlObjects, EtlDatabaseObject parentMigratedRec, LoadingType loadingType,
 			Connection srcConn, Connection dstConn) throws DBException {
 
-		ConnectorRecordWriters writers = etlItemConf.bindDestinationWriters(dstConn);
+		ConnectorRecordWriters writers = JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn);
 		this.performTransformation(etlItemConf, etlObjects, parentMigratedRec, loadingType, srcConn, writers);
 
 		return performLoading(etlItemConf, etlObjects, loadingType, JdbcConnectorRuntimeAdapters.reader(srcConn),

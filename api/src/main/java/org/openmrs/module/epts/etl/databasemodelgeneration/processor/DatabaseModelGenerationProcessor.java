@@ -132,7 +132,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 		if (item == null || !visitedItemConfigurations.add(item))
 			return;
 
-		item.init(getRelatedEtlConf(), item.isTesting(), srcConn, dstConn);
+		item.init(getRelatedEtlConf(), item.isTesting(), srcConn);
 
 		try (DestinationConnectorConnections destinationConnections = item.createDestinationConnections(this)) {
 			item.fullLoad(operationConfig, srcConn, destinationConnections);

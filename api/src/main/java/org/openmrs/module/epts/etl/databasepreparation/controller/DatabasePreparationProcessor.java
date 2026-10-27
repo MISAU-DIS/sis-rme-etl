@@ -33,8 +33,7 @@ public class DatabasePreparationProcessor extends org.openmrs.module.epts.etl.pr
 	public void transformAndLoad(List<DatabasePreparationRecord> records, Connection srcConn, Connection dstConn)
 	        throws DBException {
 		
-		getEtlItemConfiguration().ensureEtlStageTableExists(new EtlCounter(), getRelatedEtlOperationConfig(), srcConn,
-		    dstConn);
+		getEtlItemConfiguration().ensureEtlStageTableExists(new EtlCounter(), getRelatedEtlOperationConfig(), srcConn);
 		
 		this.done = true;
 	}

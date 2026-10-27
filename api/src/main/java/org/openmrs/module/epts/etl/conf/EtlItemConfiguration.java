@@ -347,17 +347,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return new DestinationConnectorConnections(getRelatedEtlConf(), getDstConf(), openedFrom);
 	}
 
-	public ConnectorRecordWriters bindDestinationWriters(Connection connection) {
-		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
-		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
-		for (DstConf destination : collectDestinationConfigurations()) {
-			ConnectorResource resource = getResolvedDstResource(destination);
-			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
-			resources.put(destination, resource);
-		}
-		return new ConnectorRecordWriters(writers, resources);
-	}
-
 	private List<DstConf> collectDestinationConfigurations() {
 		List<DstConf> destinations = new ArrayList<>();
 		Set<EtlItemConfiguration> visited = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -503,7 +492,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.id = id;
 	}
 
-	public void init(EtlConfiguration relatedEtlConf, boolean testing, Connection srcConn, Connection dstConn)
+	public void init(EtlConfiguration relatedEtlConf, boolean testing, Connection srcConn)
 			throws DBException {
 
 		if (isInitialized())
@@ -519,7 +508,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.initializeConnectorResources();
 
 		if (!this.getSrcConf().doNotUseAsDatasource()) {
-			this.getSrcConf().init(this, srcConn, dstConn);
+			this.getSrcConf().init(this, srcConn, null);
 
 			relatedEtlConf.addConfiguredTable(this.getSrcConf());
 		}
@@ -529,16 +518,19 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		List<String> alreadyIncludedTables = new ArrayList<>();
 
 		if (utilities.listHasElement(this.getDstConf())) {
-			for (DstConf dst : this.getDstConf()) {
-				dst.init(this, srcConn, dstConn);
+			try (DestinationConnectorConnections destinationConnections = createDestinationConnections(this)) {
+				for (DstConf dst : this.getDstConf()) {
+					dst.init(this, srcConn, destinationConnections.getIfJdbc(dst));
 
-				relatedEtlConf.addConfiguredTable(dst);
+					relatedEtlConf.addConfiguredTable(dst);
 
-				if (!alreadyIncludedTables.contains(dst.getTableName())) {
-					alreadyIncludedTables.add(dst.getTableName());
+					if (!alreadyIncludedTables.contains(dst.getTableName())) {
+						alreadyIncludedTables.add(dst.getTableName());
 
-					codeElements = utilities.stringHasValue(codeElements) ? codeElements + "_and_" + dst.getTableName()
-							: dst.getTableName();
+						codeElements = utilities.stringHasValue(codeElements)
+								? codeElements + "_and_" + dst.getTableName()
+								: dst.getTableName();
+					}
 				}
 			}
 		}
@@ -553,7 +545,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			this.setConfigCode(getRelatedEtlConf().finalizeItemCodeGeneration(codeElements));
 		}
 
-		this.tryToLoadChildItemConf(testing, srcConn, dstConn);
+		this.tryToLoadChildItemConf(testing, srcConn);
 
 		this.markAsInitialized();
 	}
@@ -564,7 +556,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return codeElements;
 	}
 
-	private void tryToLoadChildItemConf(boolean testing, Connection srcConn, Connection dstConn) throws DBException {
+	private void tryToLoadChildItemConf(boolean testing, Connection srcConn) throws DBException {
 
 		if (this.hasChildItemConf()) {
 			for (EtlChildItemConfiguration childItem : this.getChildItemConf()) {
@@ -581,7 +573,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 				childItem.setRelatedParentDstConf(this.findDstConf(childItem.getRelatedParentDstConfName()));
 				childItem.setRelatedEtlConfig(getRelatedEtlConf());
-				childItem.init(getRelatedEtlConf(), testing, srcConn, dstConn);
+				childItem.init(getRelatedEtlConf(), testing, srcConn);
 			}
 		}
 	}
@@ -748,7 +740,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
-	public synchronized void fullLoad(EtlOperationConfig operationConfig, Connection srcConn, Connection dstConn)
+	private synchronized void fullLoad(EtlOperationConfig operationConfig, Connection srcConn, Connection dstConn)
 			throws DBException {
 
 		if (this.isFullLoaded()) {
@@ -1112,19 +1104,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
-	public void doMinimalTableInitialization(Connection srcConn, Connection dstConn)
-			throws DatabaseResourceDoesNotExists, DBException, ForbiddenOperationException {
-
-		this.srcConf.tryToLoadSchemaInfo(null, srcConn);
-
-		if (hasDstConf()) {
-			for (DstConf conf : this.getDstConf()) {
-				conf.tryToLoadSchemaInfo(null, dstConn);
-
-			}
-		}
-	}
-
 	public void doMinimalTableInitialization(Connection srcConn,
 	        DestinationConnectorConnections destinationConnections)
 	        throws DatabaseResourceDoesNotExists, DBException, ForbiddenOperationException {
@@ -1160,34 +1139,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		return allParameters;
-	}
-
-	public void ensureEtlStageTableExists(EtlCounter counter, EtlOperationConfig operationConfig, Connection srcConn,
-			Connection dstConn) throws DBException {
-
-		counter.increase();
-
-		this.fullLoad(operationConfig, srcConn, dstConn);
-
-		if (!this.getSrcConf().doNotUseAsDatasource()) {
-			this.getSrcConf().ensureEtlStageTableExists(counter, srcConn, dstConn);
-		}
-
-		if (hasDstConf()) {
-			for (DstConf dstConf : this.getDstConf()) {
-
-				if (dstConf.isDisabled())
-					continue;
-
-				dstConf.ensureEtlStageTableExists(counter, srcConn, dstConn);
-			}
-		}
-
-		if (hasChildItemConf()) {
-			for (EtlItemConfiguration child : this.getChildItemConf()) {
-				child.ensureEtlStageTableExists(counter, operationConfig, srcConn, dstConn);
-			}
-		}
 	}
 
 	public void ensureEtlStageTableExists(EtlCounter counter, EtlOperationConfig operationConfig,

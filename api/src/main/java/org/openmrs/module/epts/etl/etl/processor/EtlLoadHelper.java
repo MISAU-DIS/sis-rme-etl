@@ -265,7 +265,8 @@ public class EtlLoadHelper {
 
 	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)
 			throws ParentNotYetMigratedException, DBException {
-		load(dstConf, srcConn, etlItemConf.bindDestinationWriters(dstConn));
+		load(dstConf, srcConn,
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn));
 	}
 
 	private void loadToDb(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)

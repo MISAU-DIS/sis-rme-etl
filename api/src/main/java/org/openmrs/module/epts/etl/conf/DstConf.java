@@ -1339,46 +1339,6 @@ public class DstConf extends AbstractTableConfiguration
 		}
 	}
 
-	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn, Connection dstConn)
-			throws DBException {
-		this.fullLoad(dstConn);
-
-		this.createRelatedDstSyncStage(srcConn);
-
-		this.createRelatedSyncStageAreaDstUniqueKeysTable(srcConn);
-
-		if (hasMapping()) {
-			for (FieldsMapping map : this.getMapping()) {
-
-				if (map.hasTransformer()) {
-					map.tryToLoadTransformer(this, srcConn);
-					map.getTransformerInstance().init(srcConn, dstConn);
-
-					map.getTransformerInstance().determineTransformerType();
-
-					if (map.getTransformerType().isParentOnDemand()
-							|| map.getTransformerType().isParentOnDemandWithDefaults()) {
-						ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) map
-								.getTransformerInstance();
-
-						onDemand.init(srcConn, dstConn);
-
-						if (onDemand.getExistingParentItemConf() != null) {
-							onDemand.getExistingParentItemConf().ensureEtlStageTableExists(counter,
-									getParentConf().getRelatedEtlConf().getDefaultOperation(), srcConn, dstConn);
-						}
-
-						EtlItemConfiguration onDemandEtlConf = onDemand.getOnDemandCreateParentItemConf();
-						EtlOperationConfig defaultOperation = getParentConf().getRelatedEtlConf().getDefaultOperation();
-
-						onDemandEtlConf.ensureEtlStageTableExists(counter, defaultOperation, srcConn, dstConn);
-
-					}
-				}
-			}
-		}
-	}
-
 	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn,
 			DestinationConnectorConnections destinationConnections) throws DBException {
 		Connection dstConn = destinationConnections.getIfJdbc(this);
