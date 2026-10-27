@@ -19,7 +19,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * 
  * @author jpboane
  */
-public class DetectGapesProcessor extends EtlProcessor {
+public class DetectGapesProcessor extends org.openmrs.module.epts.etl.etl.processor.JdbcEtlProcessor {
 	
 	/*
 	 * The previous dstRecord

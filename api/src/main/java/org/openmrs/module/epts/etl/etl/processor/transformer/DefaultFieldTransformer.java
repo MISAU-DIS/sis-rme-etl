@@ -67,6 +67,10 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 
 		List<EtlDatabaseObject> availableObjects = new ArrayList<>();
 
+		if (srcObject != null) {
+			availableObjects.add(srcObject);
+		}
+
 		if (additionalSrcObjects != null) {
 			availableObjects.addAll(additionalSrcObjects);
 		}
@@ -150,7 +154,7 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 
 			if (srcField.getTransformingInfo() != null && srcField.getTransformingInfo().getTransformedValue() != null
 					&& srcField.getTransformingInfo().getTransformedValue().equals(value)) {
-				
+
 				return srcField.getTransformingInfo();
 			}
 
@@ -181,7 +185,6 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 
 		return null;
 	}
-
 
 	private static class FieldValueResolution {
 

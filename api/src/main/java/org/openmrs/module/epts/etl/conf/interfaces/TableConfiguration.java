@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.AbstractRelatedTable;
 import org.openmrs.module.epts.etl.conf.ChildTable;
@@ -91,8 +93,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	List<String> getPatchFields();
 
 	/**
-	 * @return the initial increment to be done on the table ID for the first record
-	 *         when the ID is manually generated
+	 * @return the initial ID for the table's native auto-increment counter, or for
+	 *         manual generation when the schema has no native auto-increment
 	 */
 	Integer getPrimaryKeyInitialIncrementValue();
 
@@ -1474,7 +1476,12 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					}
 				}
 
-				if (overrideAutoIncrement()) {
+				if (useConfiguredNativeAutoIncrement(conn)) {
+					DBUtilities.setMySQLAutoIncrementValue(getFullTableName(), getPrimaryKeyInitialIncrementValue(),
+							conn);
+					this.setAutoIncrementId(true);
+					this.setIncludePrimaryKeyOnInsert(false);
+				} else if (overrideAutoIncrement()) {
 					this.setAutoIncrementId(false);
 					this.setIncludePrimaryKeyOnInsert(true);
 				} else {
@@ -1498,8 +1505,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				}
 
 				if (this.hasExtraConditionForExtract()) {
-					this.setExtraConditionForExtract(this.getExtraConditionForExtract()
-							.replaceAll(getTableName() + "\\.", this.getTableAlias() + "\\."));
+					String tableName = Pattern.quote(this.getTableName());
+					String tableAlias = this.getTableAlias();
+
+					this.setExtraConditionForExtract(this.getExtraConditionForExtract().replaceAll(
+							"(?<![^,\\s])" + tableName + "\\.", Matcher.quoteReplacement(tableAlias + ".")));
 				}
 
 				this.loadOwnElements(null, conn);
@@ -1539,6 +1549,17 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default Boolean overrideAutoIncrement() {
 		return this.getAutoIncrementHandlingType() != null
 				&& this.getAutoIncrementHandlingType().isIgnoreSchemaDefinition();
+	}
+
+	/**
+	 * A configured initial value takes precedence over manual ID generation when
+	 * the empty destination table already provides a native MySQL AUTO_INCREMENT.
+	 * Existing tables with records keep their current schema-defined sequence.
+	 */
+	default Boolean useConfiguredNativeAutoIncrement(Connection conn) throws DBException {
+		return this.getPrimaryKeyInitialIncrementValue() != null && this.getPrimaryKeyInitialIncrementValue() > 0
+				&& DBUtilities.isMySQLDB(conn) && this.useAutoIncrementId(conn)
+				&& DBUtilities.isTableEmpty(this.getFullTableName(), conn);
 	}
 
 	default void addParent(ParentTable p) {

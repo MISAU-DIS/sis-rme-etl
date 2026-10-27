@@ -162,6 +162,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs, Connection srcConn,
 			Connection dstConn) throws EtlTransformationException, DBException {
 
+		dstConf.stepIntoBreakpoint(null, dstConf.getTableName().contains("orders"));
+
 		if (!dstConf.useSharedPKKey()) {
 			return resolveNonSharedPrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
 					availableSrcObjs, srcConn, dstConn);
@@ -188,7 +190,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 
 		if (dstConf.useManualGeneratedObjectId() && !dstConf.getRelatedEtlConf().isDoNotTransformsPrimaryKeys()) {
-			Object nextId = dstConf.retriveNextRecordId(processor);
+			Object nextId = dstConf.retrieveNextRecordId(dstConn);
 
 			transformedRec.getObjectId().asSimpleKey().setValue(nextId);
 			transformedRec.setFieldValue(pkField.getName(), nextId);

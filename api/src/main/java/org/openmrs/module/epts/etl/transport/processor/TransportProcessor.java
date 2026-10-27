@@ -26,7 +26,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * 
  * @author jpboane
  */
-public class TransportProcessor extends TaskProcessor<TransportRecord> {
+public class TransportProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<TransportRecord> {
 	
 	public TransportProcessor(Engine<TransportRecord> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		super(monitor, limits, runningInConcurrency);

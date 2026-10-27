@@ -22,7 +22,7 @@ import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class DataBasesMergeFromSourceProcessor extends TaskProcessor<EtlDatabaseObject> {
+public class DataBasesMergeFromSourceProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<EtlDatabaseObject> {
 	
 	public DataBasesMergeFromSourceProcessor(Engine<EtlDatabaseObject> monitor, IntervalExtremeRecord limits,
 	    boolean runningInConcurrency) {

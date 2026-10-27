@@ -19,7 +19,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * 
  * @author jpboane
  */
-public class DatabasePreparationProcessor extends TaskProcessor<DatabasePreparationRecord> {
+public class DatabasePreparationProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<DatabasePreparationRecord> {
 	
 	private boolean done;
 	

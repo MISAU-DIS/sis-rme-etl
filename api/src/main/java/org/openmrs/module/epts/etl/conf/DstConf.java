@@ -19,6 +19,8 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
@@ -34,9 +36,7 @@ import org.openmrs.module.epts.etl.exceptions.IncompleteFieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
-import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -61,13 +61,8 @@ public class DstConf extends AbstractTableConfiguration
 
 	private DBConnectionInfo relatedConnInfo;
 
-	private static final int DEFAULT_NEXT_TREAD_ID = -1;
-
-	private int currThreadStartId;
-
-	private int currQtyRecords;
-
-	private final String stringLock = new String("LOCK_STRING");
+	@JsonIgnore
+	private transient volatile IdGeneratorManager idGeneratorManager;
 
 	private List<String> preferredDataSource;
 
@@ -82,6 +77,10 @@ public class DstConf extends AbstractTableConfiguration
 	private Boolean automaticalyGenerated;
 
 	private EtlDstType dstType;
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
 
 	private String csvDelimiter;
 
@@ -406,6 +405,24 @@ public class DstConf extends AbstractTableConfiguration
 
 	public void setDstType(EtlDstType dstType) {
 		this.dstType = dstType;
+	}
+
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
 	}
 
 	public List<List<FieldsMapping>> getGeneratedJoinFields() {
@@ -747,7 +764,7 @@ public class DstConf extends AbstractTableConfiguration
 			super.fullLoad(conn);
 		} else {
 			try {
-				this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
+				this.idGeneratorManager = null;
 
 				this.setFieldsLoaded(true);
 
@@ -854,7 +871,7 @@ public class DstConf extends AbstractTableConfiguration
 			getIncompleteMappingBehavior().validateOnIncompleteMapping("incompleteMappingBehavior");
 		}
 
-		this.setCurrThreadStartId(DEFAULT_NEXT_TREAD_ID);
+		this.idGeneratorManager = null;
 
 		loadJoinFields(conn);
 
@@ -1068,8 +1085,8 @@ public class DstConf extends AbstractTableConfiguration
 		return this.getParentConf().getSrcConf();
 	}
 
-	public long retriveNextRecordId(TaskProcessor<EtlDatabaseObject> processor) {
-		return processor.findIdGenerator(this).retriveNextIdForRecord();
+	public long retrieveNextRecordId(Connection conn) throws DBException, ForbiddenOperationException {
+		return getOrInitializeIdGenerator(conn).retrieveNextIdForRecord();
 	}
 
 	@Override
@@ -1082,48 +1099,32 @@ public class DstConf extends AbstractTableConfiguration
 		return (EtlItemConfiguration) super.getParentConf();
 	}
 
-	public IdGeneratorManager initIdGenerator(TaskProcessor<? extends EtlDatabaseObject> processor,
-			List<? extends EtlObject> etlObjects, Connection conn) throws DBException, ForbiddenOperationException {
+	private IdGeneratorManager getOrInitializeIdGenerator(Connection conn) throws DBException {
+		IdGeneratorManager generator = idGeneratorManager;
 
-		return IdGeneratorManager.init(processor, this, etlObjects, conn);
+		if (generator == null) {
+			synchronized (this) {
+				generator = idGeneratorManager;
 
-	}
-
-	private void setCurrThreadStartId(int currThreadStartId) {
-		this.currThreadStartId = currThreadStartId;
-	}
-
-	private int getCurrThreadStartId() {
-		return currThreadStartId;
-	}
-
-	public long determineNextStartId(IdGeneratorManager idGeneratorMgt, Connection conn)
-			throws DBException, ForbiddenOperationException {
-		synchronized (stringLock) {
-			if (this.getCurrThreadStartId() == DEFAULT_NEXT_TREAD_ID) {
-
-				if (isInMemoryTable()) {
-					this.setCurrThreadStartId(0);
-					if (this.getPrimaryKeyInitialIncrementValue() == null) {
-						this.setPrimaryKeyInitialIncrementValue(0);
-					}
-				} else {
-					this.setCurrThreadStartId(DatabaseObjectDAO.getLastRecord(this, conn));
+				if (generator == null) {
+					generator = new IdGeneratorManager(this, determineLastGeneratedId(conn));
+					idGeneratorManager = generator;
 				}
 			}
-
-			// This mean that the table is empty so let try to add the increase
-			if (this.getCurrThreadStartId() == 0) {
-				this.setCurrThreadStartId(this.getCurrThreadStartId() + this.getPrimaryKeyInitialIncrementValue() - 1);
-			}
-
-			this.setCurrThreadStartId(this.getCurrThreadStartId() + 1);
 		}
 
-		this.setCurrThreadStartId(this.getCurrThreadStartId() + this.currQtyRecords);
-		this.currQtyRecords = idGeneratorMgt.getEtlObjects().size();
+		return generator;
+	}
 
-		return this.getCurrThreadStartId();
+	private long determineLastGeneratedId(Connection conn) throws DBException {
+		long lastGeneratedId = isInMemoryTable() ? 0 : DatabaseObjectDAO.getLastRecord(this, conn);
+
+		if (lastGeneratedId == 0) {
+			Integer initialValue = getPrimaryKeyInitialIncrementValue();
+			return initialValue != null ? initialValue - 1L : 0;
+		}
+
+		return lastGeneratedId;
 	}
 
 	/**
@@ -1259,6 +1260,7 @@ public class DstConf extends AbstractTableConfiguration
 		this.setUnmappedFieldBehavior(toCloneFrom.unmappedFieldBehavior());
 		this.setIgnorableFields(toCloneFrom.getIgnorableFields());
 		this.setDstType(toCloneFrom.getDstType());
+		this.setResource(toCloneFrom.getResource() == null ? null : toCloneFrom.getResource().copy());
 		this.setTransformer(toCloneFrom.getTransformer());
 		this.setTransformerInstance(toCloneFrom.getTransformerInstance());
 		this.setIncludeAllFieldsFromDataSource(toCloneFrom.includeAllFieldsFromDataSource());

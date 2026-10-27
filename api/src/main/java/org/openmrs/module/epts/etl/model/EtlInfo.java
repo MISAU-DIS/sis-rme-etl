@@ -417,14 +417,10 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 				throw new ForbiddenOperationException("Currently not supported multiple conditional fields");
 			}
 
-			String conditionalFieldName = refInfo.getConditionalFields().get(0).getName();
-			Object conditionalvalue = refInfo.getConditionalFields().get(0).getValue();
+			Field conditionalField = refInfo.getConditionalFields().get(0);
+			Object recordValue = getTransformedObject().getFieldValue(conditionalField.getName());
 
-			if (!conditionalvalue.equals(getTransformedObject().getFieldValue(conditionalFieldName).toString())) {
-				return false;
-			} else {
-				return true;
-			}
+			return refInfo.matchesConditionalFieldValue(conditionalField, recordValue);
 		} else {
 			return true;
 		}

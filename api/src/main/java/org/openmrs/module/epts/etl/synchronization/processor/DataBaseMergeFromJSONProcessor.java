@@ -15,7 +15,7 @@ import org.openmrs.module.epts.etl.synchronization.controller.DatabaseMergeFromJ
 import org.openmrs.module.epts.etl.synchronization.model.DataBaseMergeFromJSONSearchParams;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public class DataBaseMergeFromJSONProcessor extends TaskProcessor<EtlStageRecordVO> {
+public class DataBaseMergeFromJSONProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<EtlStageRecordVO> {
 	
 	public DataBaseMergeFromJSONProcessor(Engine<EtlStageRecordVO> monitor, IntervalExtremeRecord limits,
 	    boolean runningInConcurrency) {
