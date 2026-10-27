@@ -86,6 +86,18 @@ not intrinsically a source or destination; its use by `srcConf.resource` or
 `REST`, `MESSAGE_QUEUE` and `CUSTOM` are architectural extension points. They
 require concrete reader or writer adapters before they can execute.
 
+The ETL runtime still uses a JDBC source connection to persist its own state.
+That connection is resolved independently from the connector used to read an
+item:
+
+1. an explicit `srcConnInfo` always supplies the runtime state connection;
+2. when `srcConnInfo` is absent, a JDBC `defaultSourceConnector` supplies it;
+3. when `defaultSourceConnector` is absent or is not JDBC, `srcConnInfo` is
+   required.
+
+This allows `defaultSourceConnector` to be a non-JDBC source without coupling
+the ETL state store to that source.
+
 ## ETL item resources
 
 A resource identifies what is read or written. Its `connector` selects an

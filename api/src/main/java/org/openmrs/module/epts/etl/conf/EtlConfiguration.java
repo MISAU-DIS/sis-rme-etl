@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
@@ -849,6 +850,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	public void setDefaultSourceConnector(String defaultSourceConnector) {
 		this.defaultSourceConnector = defaultSourceConnector;
+		this.connectorRegistry = null;
 	}
 
 	public String getDefaultDestinationConnector() {
@@ -862,7 +864,29 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private synchronized void initializeConnectorRegistry() {
 		if (this.connectorRegistry == null) {
 			this.connectorRegistry = new ConnectorRegistry(this.connectors, this.srcConnInfo, this.dstConnInfo);
+			if (this.srcConnInfo == null) {
+				this.srcConnInfo = resolveRequiredSrcConnInfo(this.connectorRegistry);
+			}
 		}
+	}
+
+	private DBConnectionInfo resolveRequiredSrcConnInfo(ConnectorRegistry registry) {
+		if (this.srcConnInfo != null) {
+			return this.srcConnInfo;
+		}
+
+		if (!utilities.stringHasValue(this.defaultSourceConnector)) {
+			throw new IllegalArgumentException("srcConnInfo is required when defaultSourceConnector is not configured");
+		}
+
+		ConnectorEndpoint endpoint = registry.get(this.defaultSourceConnector);
+		if (endpoint.getType() != ConnectorType.JDBC) {
+			throw new IllegalArgumentException("srcConnInfo is required when defaultSourceConnector '"
+					+ this.defaultSourceConnector + "' is not JDBC");
+		}
+
+		registry.select(this.defaultSourceConnector, null, ConnectorDirection.SOURCE, false);
+		return endpoint.unwrap(DBConnectionInfo.class);
 	}
 
 	@JsonIgnore
@@ -1065,12 +1089,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					operation.init(this);
 				}
 
-				// Operation templates/includes must be resolved before deciding whether this
-				// execution is a database-model regeneration. This still runs before any ETL
-				// item is initialized and can attach static physical metadata.
 				DatabaseModelGenerationProcessor.prepareForRegeneration(this);
 
-				srcConn = openSrcConn(this);
+				srcConn = this.openSrcConn(this);
 
 				ensureEtlBaseSchemaTablesExists(srcConn);
 
@@ -1504,17 +1525,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public void setOperations(List<EtlOperationConfig> operations) {
-		/*
-		 * for (EtlOperationConfig operation : operations) {
-		 * operation.setRelatedEtlConf(this);
-		 * 
-		 * if (operation.getChild() != null) { EtlOperationConfig child =
-		 * operation.getChild();
-		 * 
-		 * while (child != null) { child.setRelatedEtlConf(this);
-		 * 
-		 * child = child.getChild(); } } }
-		 */
 		this.operations = operations;
 	}
 
@@ -1673,6 +1683,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		validateDefaultConnector(registry, defaultSourceConnector, ConnectorDirection.SOURCE, issues);
+		try {
+			resolveRequiredSrcConnInfo(registry);
+		} catch (RuntimeException e) {
+			issues.add("Invalid source state connection: " + e.getMessage());
+		}
 		validateDefaultConnector(registry, defaultDestinationConnector, ConnectorDirection.DESTINATION, issues);
 
 		if (hasEtlItemsConf()) {
@@ -2346,6 +2361,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public OpenConnection openSrcConn(BaseConfiguration opendFrom) throws DBException, ForbiddenOperationException {
+
+		initializeConnectorRegistry();
+
 		OpenConnection conn = getSrcConnInfo().openConnection(opendFrom);
 
 		if (this.doNotResolveRelationship()) {

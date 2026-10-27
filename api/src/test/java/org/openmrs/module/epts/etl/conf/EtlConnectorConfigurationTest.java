@@ -74,6 +74,7 @@ class EtlConnectorConfigurationTest {
 
 		assertEquals("jdbc:mysql://legacy/source", configuration.getSrcConnInfo().getConnectionURI());
 		initializeConnectors(configuration);
+		assertEquals("jdbc:mysql://legacy/source", configuration.getSrcConnInfo().getConnectionURI());
 		assertEquals("jdbc:mysql://neutral/source",
 				configuration.getInitializedConnectorRegistry().select(null, "source-db", ConnectorDirection.SOURCE,
 						false).getUri());
@@ -122,6 +123,7 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldResolveResourcesEmbeddedInSourceAndDestinations() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		ConnectorEndpointConfiguration sourceConnector = jdbcConnector("source-db", "jdbc:mysql://source/openmrs");
 		ConnectorEndpointConfiguration databaseConnector = jdbcConnector("destination-db",
 				"jdbc:mysql://destination/openmrs");
@@ -161,6 +163,7 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldReportUnavailableConnectorCapabilitiesDuringConfigurationValidation() {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		ConnectorEndpointConfiguration source = new ConnectorEndpointConfiguration();
 		source.setId("events");
 		source.setType(ConnectorType.MESSAGE_QUEUE);
@@ -173,6 +176,7 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldSelectDifferentConnectorsForResourcesInTheSameItem() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		ConnectorEndpointConfiguration sourceConnector = jdbcConnector("source-db", "jdbc:mysql://source/openmrs");
 		ConnectorEndpointConfiguration archiveConnector = jdbcConnector("archive-db", "jdbc:mysql://archive/history");
 		configuration.setConnectors(java.util.Arrays.asList(sourceConnector, archiveConnector));
@@ -200,6 +204,7 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldRejectAmbiguousConnectorSelection() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		configuration.setConnectors(java.util.Arrays.asList(jdbcConnector("first", "jdbc:first"),
 				jdbcConnector("second", "jdbc:second")));
 		EtlItemConfiguration item = new EtlItemConfiguration();
@@ -213,6 +218,56 @@ class EtlConnectorConfigurationTest {
 		InvocationTargetException error = org.junit.jupiter.api.Assertions.assertThrows(InvocationTargetException.class,
 				() -> initializeResources(item));
 		assertTrue(error.getCause().getMessage().contains("ambiguous"));
+	}
+
+	@Test
+	void shouldDeriveSrcConnInfoFromJdbcDefaultSourceConnectorWhenItIsAbsent() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setConnectors(java.util.Collections
+				.singletonList(jdbcConnector("source-db", "jdbc:mysql://source/openmrs")));
+		configuration.setDefaultSourceConnector("source-db");
+
+		initializeConnectors(configuration);
+
+		assertEquals("jdbc:mysql://source/openmrs", configuration.getSrcConnInfo().getConnectionURI());
+	}
+
+	@Test
+	void shouldKeepExplicitSrcConnInfoWhenDefaultSourceConnectorIsNotJdbc() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		DBConnectionInfo stateConnection = new DBConnectionInfo();
+		stateConnection.setConnectionURI("jdbc:mysql://state/etl");
+		configuration.setSrcConnInfo(stateConnection);
+		ConnectorEndpointConfiguration source = new ConnectorEndpointConfiguration();
+		source.setId("events");
+		source.setType(ConnectorType.MESSAGE_QUEUE);
+		configuration.setConnectors(java.util.Collections.singletonList(source));
+		configuration.setDefaultSourceConnector("events");
+
+		initializeConnectors(configuration);
+
+		assertSame(stateConnection, configuration.getSrcConnInfo());
+	}
+
+	@Test
+	void shouldRequireSrcConnInfoWhenDefaultSourceConnectorIsAbsent() {
+		EtlConfiguration configuration = new EtlConfiguration();
+
+		assertTrue(configuration.validateConnectorConfigurations().stream()
+				.anyMatch(issue -> issue.contains("srcConnInfo is required")));
+	}
+
+	@Test
+	void shouldRequireSrcConnInfoWhenDefaultSourceConnectorIsNotJdbc() {
+		EtlConfiguration configuration = new EtlConfiguration();
+		ConnectorEndpointConfiguration source = new ConnectorEndpointConfiguration();
+		source.setId("events");
+		source.setType(ConnectorType.MESSAGE_QUEUE);
+		configuration.setConnectors(java.util.Collections.singletonList(source));
+		configuration.setDefaultSourceConnector("events");
+
+		assertTrue(configuration.validateConnectorConfigurations().stream()
+				.anyMatch(issue -> issue.contains("srcConnInfo is required")));
 	}
 
 	private ConnectorEndpointConfiguration jdbcConnector(String id, String uri) {

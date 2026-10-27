@@ -20,6 +20,8 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprin
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -40,6 +42,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		implements Comparable<AbstractTableConfiguration>, TableConfiguration {
 
 	private String tableName;
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
 
 	private List<String> ignorableFields;
 
@@ -117,6 +123,35 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private Boolean allRelatedTablesFullLoaded;
 
 	private String schema;
+
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
+	}
+
+	@Override
+	public void clone(TableConfiguration toCloneFrom, EtlDataConfiguration parent, EtlDatabaseObject schemaInfoSrc,
+			Connection conn) throws DBException {
+		TableConfiguration.super.clone(toCloneFrom, parent, schemaInfoSrc, conn);
+
+		if (toCloneFrom instanceof AbstractTableConfiguration) {
+			ConnectorResourceConfiguration sourceResource = ((AbstractTableConfiguration) toCloneFrom).getResource();
+			this.setResource(sourceResource == null ? null : sourceResource.copy());
+		}
+	}
 
 	private Boolean usingManualDefinedAlias;
 
