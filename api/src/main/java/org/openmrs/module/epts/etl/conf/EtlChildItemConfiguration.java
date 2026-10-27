@@ -149,7 +149,17 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 			throws DBException {
 
 		super.fullLoad(operationConfig, srcConn, dstConn);
+		resolveRelatedParentDestination();
+	}
 
+	@Override
+	public void fullLoad(EtlOperationConfig operationConfig, Connection srcConn,
+	        DestinationConnectorConnections destinationConnections) throws DBException {
+		super.fullLoad(operationConfig, srcConn, destinationConnections);
+		resolveRelatedParentDestination();
+	}
+
+	private void resolveRelatedParentDestination() {
 		if (this.hasParentItemConf() && this.getRelatedParentDstConf() == null) {
 
 			if (!utilities.stringHasValue(this.getRelatedParentDstConfName())) {

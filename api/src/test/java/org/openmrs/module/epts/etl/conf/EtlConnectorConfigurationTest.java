@@ -262,6 +262,7 @@ class EtlConnectorConfigurationTest {
 		assertFalse(connections.isJdbc(fileDestination));
 		assertSame(jdbcDestination.getResolvedResource(), connections.getResource(jdbcDestination));
 		assertTrue(connections.getOpenedConnections().isEmpty());
+		assertNull(connections.getIfJdbc(fileDestination));
 		assertThrows(ForbiddenOperationException.class, () -> connections.get(fileDestination));
 
 		connections.close();

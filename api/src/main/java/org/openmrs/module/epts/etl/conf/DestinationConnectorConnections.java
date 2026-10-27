@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.conf;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -85,6 +86,11 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 			connectionsByEndpoint.put(endpoint, connection);
 		}
 		return connection;
+	}
+
+	/** Returns the lazy JDBC connection, or {@code null} for a non-JDBC destination. */
+	public Connection getIfJdbc(DstConf destination) throws DBException {
+		return isJdbc(destination) ? get(destination) : null;
 	}
 
 	public synchronized List<OpenConnection> getOpenedConnections() {
