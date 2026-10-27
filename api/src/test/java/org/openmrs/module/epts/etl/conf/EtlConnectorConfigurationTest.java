@@ -270,6 +270,35 @@ class EtlConnectorConfigurationTest {
 	}
 
 	@Test
+	void shouldGenerateDefaultDestinationFromConnectorWithoutOpeningLegacyConnection() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		ConnectorEndpointConfiguration destination = jdbcConnector("destination-db", "jdbc:invalid:must-not-open");
+		destination.setProperties(java.util.Collections.singletonMap("schema", "target_schema"));
+		configuration.setConnectors(java.util.Collections.singletonList(destination));
+		configuration.setDefaultDestinationConnector("destination-db");
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		SrcConf source = new SrcConf();
+		source.setTableName("patient");
+		item.setSrcConf(source);
+
+		initializeConnectors(configuration);
+		Method prepare = EtlItemConfiguration.class
+		        .getDeclaredMethod("prepareDestinationConfigurationsForConnectorFullLoad");
+		prepare.setAccessible(true);
+		prepare.invoke(item);
+
+		assertEquals(1, item.getDstConf().size());
+		DstConf generated = item.getDstConf().get(0);
+		assertEquals("patient", generated.getTableName());
+		assertEquals("target_schema", generated.getSchema());
+		assertEquals("jdbc:invalid:must-not-open", generated.getRelatedConnInfo().getConnectionURI());
+		assertSame(generated.getResolvedResource(), item.getResolvedDstResource(generated));
+	}
+
+	@Test
 	void shouldRejectAmbiguousConnectorSelection() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
 		configuration.setSrcConnInfo(new DBConnectionInfo());

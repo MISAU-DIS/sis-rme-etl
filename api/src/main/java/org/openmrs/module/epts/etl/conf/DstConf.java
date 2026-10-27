@@ -1171,24 +1171,8 @@ public class DstConf extends AbstractTableConfiguration
 				dstConn = itemConf.getRelatedEtlConf().openDstConn(itemConf);
 
 				try {
-					DstConf map = new DstConf();
-
-					map.setTableName(itemConf.getSrcConf().getTableName());
-					map.setSchema(dstConn.getSchema());
-					map.setDstType(itemConf.getSrcConf().getDstType());
-
-					map.setObservationDateFields(itemConf.getSrcConf().getObservationDateFields());
-					map.setRemoveForbidden(itemConf.getSrcConf().isRemoveForbidden());
-					map.setOnConflict(itemConf.getSrcConf().onConflict());
-					map.setWinningRecordFieldsInfo(itemConf.getSrcConf().getWinningRecordFieldsInfo());
-					map.setManualMapPrimaryKeyOnField(itemConf.getSrcConf().getManualMapPrimaryKeyOnField());
-
-					map.setRelatedConnInfo(itemConf.getRelatedEtlConf().getDstConnInfo());
-					map.setAutomaticalyGenerated(true);
-					map.setParentConf(itemConf);
-					map.setDstType(itemConf.getSrcConf().getDstType());
-
-					return utilities.parseToList(map);
+					return createDefaultDstConf(itemConf, dstConn.getSchema(),
+							itemConf.getRelatedEtlConf().getDstConnInfo());
 				} catch (SQLException e) {
 					throw new DBException(e);
 				} finally {
@@ -1198,6 +1182,31 @@ public class DstConf extends AbstractTableConfiguration
 				return null;
 			}
 		}
+	}
+
+	public static List<DstConf> generateDefaultDstConf(final EtlItemConfiguration itemConf,
+			DBConnectionInfo connectionInfo) {
+		synchronized (itemConf) {
+			return itemConf.hasDstConf() ? null
+					: createDefaultDstConf(itemConf, connectionInfo.getSchema(), connectionInfo);
+		}
+	}
+
+	private static List<DstConf> createDefaultDstConf(EtlItemConfiguration itemConf, String schema,
+			DBConnectionInfo connectionInfo) {
+		DstConf map = new DstConf();
+		map.setTableName(itemConf.getSrcConf().getTableName());
+		map.setSchema(schema);
+		map.setDstType(itemConf.getSrcConf().getDstType());
+		map.setObservationDateFields(itemConf.getSrcConf().getObservationDateFields());
+		map.setRemoveForbidden(itemConf.getSrcConf().isRemoveForbidden());
+		map.setOnConflict(itemConf.getSrcConf().onConflict());
+		map.setWinningRecordFieldsInfo(itemConf.getSrcConf().getWinningRecordFieldsInfo());
+		map.setManualMapPrimaryKeyOnField(itemConf.getSrcConf().getManualMapPrimaryKeyOnField());
+		map.setRelatedConnInfo(connectionInfo);
+		map.setAutomaticalyGenerated(true);
+		map.setParentConf(itemConf);
+		return utilities.parseToList(map);
 	}
 
 	public Boolean hasMapping() {
@@ -1365,6 +1374,41 @@ public class DstConf extends AbstractTableConfiguration
 						onDemandEtlConf.ensureEtlStageTableExists(counter, defaultOperation, srcConn, dstConn);
 
 					}
+				}
+			}
+		}
+	}
+
+	public void ensureEtlStageTableExists(EtlCounter counter, Connection srcConn,
+			DestinationConnectorConnections destinationConnections) throws DBException {
+		Connection dstConn = destinationConnections.getIfJdbc(this);
+		this.fullLoad(dstConn);
+		this.createRelatedDstSyncStage(srcConn);
+		this.createRelatedSyncStageAreaDstUniqueKeysTable(srcConn);
+
+		if (hasMapping()) {
+			for (FieldsMapping map : this.getMapping()) {
+				if (!map.hasTransformer()) {
+					continue;
+				}
+				map.tryToLoadTransformer(this, srcConn);
+				map.getTransformerInstance().init(srcConn, dstConn);
+				map.getTransformerInstance().determineTransformerType();
+
+				if (map.getTransformerType().isParentOnDemand()
+						|| map.getTransformerType().isParentOnDemandWithDefaults()) {
+					ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) map
+							.getTransformerInstance();
+					onDemand.init(srcConn, dstConn);
+
+					if (onDemand.getExistingParentItemConf() != null) {
+						onDemand.getExistingParentItemConf().ensureEtlStageTableExists(counter,
+								getParentConf().getRelatedEtlConf().getDefaultOperation(), srcConn);
+					}
+
+					EtlItemConfiguration onDemandEtlConf = onDemand.getOnDemandCreateParentItemConf();
+					EtlOperationConfig defaultOperation = getParentConf().getRelatedEtlConf().getDefaultOperation();
+					onDemandEtlConf.ensureEtlStageTableExists(counter, defaultOperation, srcConn);
 				}
 			}
 		}

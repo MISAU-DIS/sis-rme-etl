@@ -1213,12 +1213,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		EtlCounter counter = new EtlCounter();
 
 		for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
-			item.ensureEtlStageTableExists(counter, this.getDefaultOperation(), srcConn, dstConn);
+			item.ensureEtlStageTableExists(counter, this.getDefaultOperation(), srcConn);
 		}
 
 		if (hasTestingItem()) {
-			this.getTestingEtlItemConfiguration().ensureEtlStageTableExists(counter, this.getDefaultOperation(),
-					srcConn, dstConn);
+			this.getTestingEtlItemConfiguration().ensureEtlStageTableExists(counter, this.getDefaultOperation(), srcConn);
 		}
 
 	}

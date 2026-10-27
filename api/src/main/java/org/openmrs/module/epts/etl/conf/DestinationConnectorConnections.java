@@ -36,16 +36,21 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 	private boolean closed;
 
 	DestinationConnectorConnections(EtlConfiguration etlConfiguration, List<DstConf> destinations,
-	        BaseConfiguration openedFrom) {
+			BaseConfiguration openedFrom) {
+
 		if (etlConfiguration == null) {
 			throw new IllegalArgumentException("The related ETL configuration is required");
 		}
+
 		if (openedFrom == null) {
 			throw new IllegalArgumentException("The connection owner is required");
 		}
+
 		this.etlConfiguration = etlConfiguration;
 		this.openedFrom = openedFrom;
+
 		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+
 		if (destinations != null) {
 			for (DstConf destination : destinations) {
 				if (destination == null || destination.getResolvedResource() == null) {
@@ -54,14 +59,17 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 				resources.put(destination, destination.getResolvedResource());
 			}
 		}
+
 		this.resourcesByConfiguration = Collections.unmodifiableMap(resources);
 	}
 
 	public ConnectorResource getResource(DstConf destination) {
 		ConnectorResource resource = resourcesByConfiguration.get(destination);
+
 		if (resource == null) {
 			throw new IllegalArgumentException("No destination resource registered for " + destination);
 		}
+
 		return resource;
 	}
 
@@ -73,22 +81,29 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 	 * Returns the connection for a JDBC destination, opening it on first use.
 	 */
 	public synchronized OpenConnection get(DstConf destination) throws DBException {
+
 		ensureOpen();
 		ConnectorResource resource = getResource(destination);
+
 		if (resource.getEndpoint().getType() != ConnectorType.JDBC) {
 			throw new ForbiddenOperationException(
-			        "Destination resource " + resource.getName() + " is not backed by a JDBC connector");
+					"Destination resource " + resource.getName() + " is not backed by a JDBC connector");
 		}
+
 		ConnectorEndpoint endpoint = resource.getEndpoint();
 		OpenConnection connection = connectionsByEndpoint.get(endpoint);
+
 		if (connection == null) {
 			connection = etlConfiguration.openDestinationConnectorConnection(resource, openedFrom);
 			connectionsByEndpoint.put(endpoint, connection);
 		}
+
 		return connection;
 	}
 
-	/** Returns the lazy JDBC connection, or {@code null} for a non-JDBC destination. */
+	/**
+	 * Returns the lazy JDBC connection, or {@code null} for a non-JDBC destination.
+	 */
 	public Connection getIfJdbc(DstConf destination) throws DBException {
 		return isJdbc(destination) ? get(destination) : null;
 	}

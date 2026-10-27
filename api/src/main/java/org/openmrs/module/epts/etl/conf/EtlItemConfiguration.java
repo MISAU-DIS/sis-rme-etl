@@ -342,6 +342,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	 * aggregator.
 	 */
 	public DestinationConnectorConnections createDestinationConnections(BaseConfiguration openedFrom) {
+		prepareDestinationConfigurationsForConnectorFullLoad();
 		return new DestinationConnectorConnections(getRelatedEtlConf(), getDstConf(), openedFrom);
 	}
 
@@ -563,64 +564,59 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public void tryToCreateDefaultRecordsForAllTables() throws DBException {
-		OpenConnection dstConn = getRelatedEtlConf().tryOpenDstConn(this);
 		OpenConnection srcConn = getRelatedEtlConf().openSrcConn(this);
 
-		if (dstConn == null)
-			return;
-
 		try {
-			if (!this.hasDstConf()) {
-				this.setDstConf(DstConf.generateDefaultDstConf(this));
-			}
-
-			if (this.hasDstConf()) {
-
-				for (DstConf dst : this.getDstConf()) {
-					if (!dst.isParentsLoaded()) {
-						dst.loadParents(dstConn);
-					}
-
-					if (!dst.hasParentRefInfo()) {
-						continue;
-					}
-
-					for (ParentTable refInfo : dst.getParentRefInfo()) {
-						if (refInfo.isMetadata())
+			try (DestinationConnectorConnections destinationConnections = createDestinationConnections(this)) {
+				if (this.hasDstConf()) {
+					for (DstConf dst : this.getDstConf()) {
+						if (!destinationConnections.isJdbc(dst)) {
 							continue;
+						}
+						Connection dstConn = destinationConnections.get(dst);
 
-						if (!refInfo.isFullLoaded()) {
-							refInfo.fullLoad(dstConn);
+						if (!dst.isParentsLoaded()) {
+							dst.loadParents(dstConn);
 						}
 
-						if (refInfo.useSharedPKKey()) {
-							if (!refInfo.getSharedKeyRefInfo(dstConn).isFullLoaded()) {
-								refInfo.getSharedKeyRefInfo(dstConn).fullLoad(dstConn);
+						if (!dst.hasParentRefInfo()) {
+							continue;
+						}
+
+						for (ParentTable refInfo : dst.getParentRefInfo()) {
+							if (refInfo.isMetadata())
+								continue;
+
+							if (!refInfo.isFullLoaded()) {
+								refInfo.fullLoad(dstConn);
 							}
-						}
 
-						if (refInfo.getDefaultObject(dstConn) == null) {
-							getRelatedEtlConf()
-									.debug("Creating default dstRecord for table " + refInfo.getFullTableDescription());
+							if (refInfo.useSharedPKKey()) {
+								if (!refInfo.getSharedKeyRefInfo(dstConn).isFullLoaded()) {
+									refInfo.getSharedKeyRefInfo(dstConn).fullLoad(dstConn);
+								}
+							}
 
-							try {
-								refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
-							} catch (Exception e) {
-								getRelatedEtlConf()
-										.err("Error creating default record for table: " + refInfo.getTableAlias(), e);
+							if (refInfo.getDefaultObject(dstConn) == null) {
+								getRelatedEtlConf().debug(
+								        "Creating default dstRecord for table " + refInfo.getFullTableDescription());
+
+								try {
+									refInfo.generateAndSaveDefaultObject(srcConn, dstConn);
+								} catch (Exception e) {
+									getRelatedEtlConf().err(
+									        "Error creating default record for table: " + refInfo.getTableAlias(), e);
+								}
 							}
 						}
 					}
+					destinationConnections.markAllAsSuccessfullyTerminated();
 				}
-
-				dstConn.markAsSuccessifullyTerminated();
-				srcConn.markAsSuccessifullyTerminated();
 			}
+			srcConn.markAsSuccessifullyTerminated();
 		} finally {
-			dstConn.finalizeConnection(this);
 			srcConn.finalizeConnection(this);
 		}
-
 	}
 
 	public Boolean hasManualMapPrimaryKeyOnField() {
@@ -631,7 +627,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		OpenConnection srcConn = this.getRelatedEtlConf().openSrcConn(this);
 
 		try {
-			prepareDestinationConfigurationsForConnectorFullLoad();
 			try (DestinationConnectorConnections destinationConnections = createDestinationConnections(this)) {
 				this.fullLoad(operationConfig, srcConn, destinationConnections);
 			}
@@ -640,10 +635,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
-	private void prepareDestinationConfigurationsForConnectorFullLoad() throws DBException {
+	private void prepareDestinationConfigurationsForConnectorFullLoad() {
 		if (!hasDstConf() && (getRelatedEtlConf().hasDstConnInfo()
 		        || utilities.stringHasValue(getRelatedEtlConf().getDefaultDestinationConnector()))) {
-			setDstConf(DstConf.generateDefaultDstConf(this));
+			ConnectorEndpoint endpoint = selectConnector(getRelatedEtlConf().getInitializedConnectorRegistry(), null,
+			        ConnectorDirection.DESTINATION, true);
+			if (endpoint.getType() == ConnectorType.JDBC) {
+				setDstConf(DstConf.generateDefaultDstConf(this, endpoint.unwrap(DBConnectionInfo.class)));
+			}
 		}
 		initializeConnectorResources();
 	}
@@ -1103,6 +1102,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
+	public void doMinimalTableInitialization(Connection srcConn,
+	        DestinationConnectorConnections destinationConnections)
+	        throws DatabaseResourceDoesNotExists, DBException, ForbiddenOperationException {
+		this.srcConf.tryToLoadSchemaInfo(null, srcConn);
+		if (hasDstConf()) {
+			for (DstConf conf : this.getDstConf()) {
+				conf.tryToLoadSchemaInfo(null, destinationConnections.getIfJdbc(conf));
+			}
+		}
+	}
+
 	@Override
 	public void tryToLoadFromTemplate() {
 		Boolean disabled = this.isDisabled();
@@ -1153,6 +1163,37 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		if (hasChildItemConf()) {
 			for (EtlItemConfiguration child : this.getChildItemConf()) {
 				child.ensureEtlStageTableExists(counter, operationConfig, srcConn, dstConn);
+			}
+		}
+	}
+
+	public void ensureEtlStageTableExists(EtlCounter counter, EtlOperationConfig operationConfig,
+	        Connection srcConn) throws DBException {
+		try (DestinationConnectorConnections destinationConnections = createDestinationConnections(this)) {
+			ensureEtlStageTableExists(counter, operationConfig, srcConn, destinationConnections);
+		}
+	}
+
+	public void ensureEtlStageTableExists(EtlCounter counter, EtlOperationConfig operationConfig, Connection srcConn,
+	        DestinationConnectorConnections destinationConnections) throws DBException {
+		counter.increase();
+		this.fullLoad(operationConfig, srcConn, destinationConnections);
+
+		if (!this.getSrcConf().doNotUseAsDatasource()) {
+			this.getSrcConf().ensureEtlStageTableExists(counter, srcConn, null);
+		}
+
+		if (hasDstConf()) {
+			for (DstConf destination : this.getDstConf()) {
+				if (!destination.isDisabled()) {
+					destination.ensureEtlStageTableExists(counter, srcConn, destinationConnections);
+				}
+			}
+		}
+
+		if (hasChildItemConf()) {
+			for (EtlItemConfiguration child : this.getChildItemConf()) {
+				child.ensureEtlStageTableExists(counter, operationConfig, srcConn);
 			}
 		}
 	}

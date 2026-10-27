@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
+import org.openmrs.module.epts.etl.conf.DestinationConnectorConnections;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
@@ -212,22 +213,26 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		if (getEtlConfiguration().hasEtlItemsConf() || getEtlConfiguration().hasTestingItem()) {
 
 			OpenConnection srcConn = openSrcConnection(this);
-			OpenConnection dstConn = tryToOpenDstConn(this);
 
 			try {
 				if (getEtlConfiguration().hasEtlItemsConf()) {
 					for (EtlItemConfiguration config : getEtlItemConfiguration()) {
-						config.doMinimalTableInitialization(srcConn, dstConn);
+						try (DestinationConnectorConnections connections = config
+						        .createDestinationConnections(this)) {
+							config.doMinimalTableInitialization(srcConn, connections);
+						}
 					}
 				}
 
 				if (getEtlConfiguration().hasTestingItem()) {
-					getEtlConfiguration().getTestingEtlItemConfiguration().doMinimalTableInitialization(srcConn,
-							dstConn);
+					EtlItemConfiguration testingItem = getEtlConfiguration().getTestingEtlItemConfiguration();
+					try (DestinationConnectorConnections connections = testingItem
+					        .createDestinationConnections(this)) {
+						testingItem.doMinimalTableInitialization(srcConn, connections);
+					}
 				}
 			} finally {
 				finalizeConnection(srcConn, this);
-				finalizeConnection(dstConn, this);
 			}
 		}
 	}

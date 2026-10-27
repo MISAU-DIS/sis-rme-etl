@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.DestinationConnectorConnections;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
@@ -133,33 +134,34 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 
 		item.init(getRelatedEtlConf(), item.isTesting(), srcConn, dstConn);
 
-		item.fullLoad(operationConfig, srcConn, dstConn);
+		try (DestinationConnectorConnections destinationConnections = item.createDestinationConnections(this)) {
+			item.fullLoad(operationConfig, srcConn, destinationConnections);
 
-		DBConnectionInfo sourceConnectionInfo = item.getSrcConnInfo();
+			DBConnectionInfo sourceConnectionInfo = item.getSrcConnInfo();
 
-		if (!item.getSrcConf().doNotUseAsDatasource()) {
+			if (!item.getSrcConf().doNotUseAsDatasource()) {
+				generate(sourceConnectionInfo, item.getSrcConf());
 
-			generate(sourceConnectionInfo, item.getSrcConf());
-
-			for (EtlAdditionalDataSource dataSource : item.getSrcConf().getAvaliableExtraDataSource()) {
-				generate(sourceConnectionInfo, dataSource);
+				for (EtlAdditionalDataSource dataSource : item.getSrcConf().getAvaliableExtraDataSource()) {
+					generate(sourceConnectionInfo, dataSource);
+				}
 			}
-		}
 
-		if (item.hasDstConf() && getRelatedEtlConfiguration().hasDstConnInfo()) {
-			DBConnectionInfo destinationConnectionInfo = getRelatedEtlConfiguration().getDstConnInfo();
+			if (item.hasDstConf()) {
+				for (DstConf destination : item.getDstConf()) {
+					if (destination.isDisabled() || !destinationConnections.isJdbc(destination))
+						continue;
 
-			for (DstConf destination : item.getDstConf()) {
-				if (destination.isDisabled())
-					continue;
+					Connection destinationConnection = destinationConnections.get(destination);
+					DBConnectionInfo destinationConnectionInfo = destination.getRelatedConnInfo();
 
-				destination.setRelatedConnInfo(destinationConnectionInfo);
+					destination.init(item, srcConn, destinationConnection);
 
-				destination.init(item, srcConn, dstConn);
+					generate(destinationConnectionInfo, destination);
 
-				generate(destinationConnectionInfo, destination);
-
-				generateOnDemandConfigurationTrees(destination, operationConfig, srcConn, dstConn);
+					generateOnDemandConfigurationTrees(destination, operationConfig, srcConn,
+					        destinationConnection);
+				}
 			}
 		}
 
