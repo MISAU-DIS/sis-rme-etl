@@ -397,7 +397,6 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			}
 		}
 
-		this.attachPhysicalTableConfiguration(dstConn);
 	}
 
 	private void attachPhysicalTableConfiguration(Connection conn) throws DBException {

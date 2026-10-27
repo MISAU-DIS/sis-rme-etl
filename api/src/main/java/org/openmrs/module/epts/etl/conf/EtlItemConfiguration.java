@@ -275,7 +275,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				if (index >= destinations.size()) {
 					throw new IllegalStateException("No resolved destination resource for dstConf at index " + index);
 				}
-				dstConf.get(index).setResolvedResource(destinations.get(index));
+				DstConf destinationConfiguration = dstConf.get(index);
+				ConnectorResource destinationResource = destinations.get(index);
+				destinationConfiguration.setResolvedResource(destinationResource);
+				if (destinationResource.getEndpoint().getType() == ConnectorType.JDBC) {
+					destinationConfiguration
+							.setRelatedConnInfo(destinationResource.getEndpoint().unwrap(DBConnectionInfo.class));
+				} else {
+					destinationConfiguration.setRelatedConnInfo(null);
+				}
 			}
 		}
 	}
@@ -662,8 +670,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					if (map.isDisabled())
 						continue;
 
-					map.setRelatedConnInfo(getRelatedEtlConf().getDstConnInfo());
-
 					map.setParentConf(this);
 					map.setDstType(this.getSrcConf().getDstType());
 
@@ -1046,8 +1052,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 				if (dstConf.isDisabled())
 					continue;
-
-				dstConf.setRelatedConnInfo(((OpenConnection) dstConn).getDbConnInfo());
 
 				dstConf.ensureEtlStageTableExists(counter, srcConn, dstConn);
 			}

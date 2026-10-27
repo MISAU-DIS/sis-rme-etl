@@ -203,6 +203,33 @@ class EtlConnectorConfigurationTest {
 	}
 
 	@Test
+	void shouldBindEachJdbcDestinationToItsOwnConnectorConnectionInfo() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		ConnectorEndpointConfiguration firstConnector = jdbcConnector("first-db", "jdbc:mysql://first/etl");
+		ConnectorEndpointConfiguration secondConnector = jdbcConnector("second-db", "jdbc:mysql://second/etl");
+		configuration.setConnectors(java.util.Arrays.asList(firstConnector, secondConnector));
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		SrcConf source = new SrcConf();
+		source.setTableName("patient");
+		item.setSrcConf(source);
+		DstConf first = new DstConf("patient_first");
+		first.setResource(resource("first-db", "patient_first"));
+		DstConf second = new DstConf("patient_second");
+		second.setResource(resource("second-db", "patient_second"));
+		item.setDstConf(java.util.Arrays.asList(first, second));
+
+		initializeConnectors(configuration);
+		initializeResources(item);
+
+		assertEquals("jdbc:mysql://first/etl", first.getRelatedConnInfo().getConnectionURI());
+		assertEquals("jdbc:mysql://second/etl", second.getRelatedConnInfo().getConnectionURI());
+		assertNotSame(first.getRelatedConnInfo(), second.getRelatedConnInfo());
+	}
+
+	@Test
 	void shouldRejectAmbiguousConnectorSelection() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
 		configuration.setSrcConnInfo(new DBConnectionInfo());
