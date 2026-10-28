@@ -1217,7 +1217,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		if (hasTestingItem()) {
-			this.getTestingEtlItemConfiguration().ensureEtlStageTableExists(counter, this.getDefaultOperation(), srcConn);
+			this.getTestingEtlItemConfiguration().ensureEtlStageTableExists(counter, this.getDefaultOperation(),
+					srcConn);
 		}
 
 	}
@@ -1764,7 +1765,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private void validateOperationConfigCodeList(String operationName, String propertyName, List<String> configCodes,
 			Set<String> availableCodes, List<String> issues) {
+
 		Set<String> visited = new LinkedHashSet<>();
+
 		for (String configCode : configCodes) {
 			if (!utilities.stringHasValue(configCode)) {
 				issues.add("Operation '" + operationName + "' has an empty configCode in " + propertyName);
