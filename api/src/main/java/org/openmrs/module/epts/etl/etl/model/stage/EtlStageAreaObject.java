@@ -100,7 +100,8 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 			this.setRelatedConfiguration(dstStageTable);
 
-			EtlConfigurationTableConf srcStageTable = this.getRelatedEtlObject().getEtlInfo().getSrcConf()
+			EtlConfigurationTableConf srcStageTable = this.getRelatedEtlObject().getEtlInfo().getPrimaryDataSource()
+					.requireJdbc()
 					.generateRelatedSrcStageTableConf(srcConn);
 
 			keyInfoTabConf = etlTable.generateRelatedStageDstUniqueKeysTableConf(srcConn);

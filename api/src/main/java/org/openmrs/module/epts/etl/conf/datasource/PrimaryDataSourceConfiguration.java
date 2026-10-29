@@ -3,18 +3,21 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 
 /**
  * A mutually exclusive primary source variant configured under {@code source}.
  */
-public interface PrimaryDataSourceConfiguration extends EtlDatabaseObjectConfiguration {
+public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcConf {
 
 	SourceConfiguration getParentSource();
 
 	void setParentSource(SourceConfiguration parentSource);
 
-	Boolean doNotUseAsDatasource();
+	default Boolean doNotUseAsDatasource() {
+		return Boolean.FALSE;
+	}
 
 	default ConnectorResourceConfiguration getSourceResource() {
 		return getParentSource() == null ? null : getParentSource().getResource();

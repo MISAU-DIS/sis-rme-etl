@@ -633,7 +633,7 @@ public class EtlLoadHelper {
 
 		etlInfo.getProcessor().logTrace(msg);
 
-		new EtlLoadHelper(etlInfo.getProcessor(), etlInfo.getSrcConf().getParentConf(),
+		new EtlLoadHelper(etlInfo.getProcessor(), etlInfo.getPrimaryDataSource().getParentItemConfiguration(),
 				utilities.parseToList(srcObject), LoadingType.PARENT, false)
 				.load(etlInfo.getDstConf(), srcConn, dstConn);
 	}
