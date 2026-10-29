@@ -468,12 +468,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return this.getOnDemandCreateParentItemConf().getDstConf().get(0);
 	}
 
+	@SuppressWarnings("deprecation")
 	SrcConf loadSrcConfForNonExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
 
 		return this.getOnDemandCreateParentItemConf().getSrcConf();
 	}
 
+	@SuppressWarnings("deprecation")
 	SrcConf loadSrcConfForExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForExistingSrcParentInitialized(srcConn, dstConn);
 
