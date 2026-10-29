@@ -2260,19 +2260,19 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 		List<FieldsMapping> joinFields = new ArrayList<>();
 
-		// Assuming that this datasource is parent
+		ParentTable ref = null;
+
+		// Assuming that this data source is parent
 		List<ParentTable> pInfo = relatedTabConf.findAllRefToParent(this.getTableName());
 
+		if (!utilities.listHasElement(pInfo)) {
+			// Assuming that this data source is child
+			pInfo = this.findAllRefToParent(relatedTabConf.getTableName());
+		}
+
 		if (utilities.listHasElement(pInfo)) {
-
 			if (utilities.listHasExactlyOneElement(pInfo)) {
-
-				ParentTable ref = pInfo.get(0);
-
-				for (RefMapping map : ref.getRefMapping()) {
-					joinFields.add(generateJoinMapping(map.getParentField().getName(), map.getChildField().getName(),
-							target, dsName, conn));
-				}
+				ref = pInfo.get(0);
 			} else {
 				throw new ForbiddenOperationException(
 						"The mapping joinFields cannot be auto generated! Multiple references were found between "
@@ -2281,30 +2281,17 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 			}
 		} else {
-
-			// Assuning that this data src is child
-			pInfo = this.findAllRefToParent(relatedTabConf.getTableName());
-
-			if (utilities.listHasElement(pInfo)) {
-				if (utilities.listHasExactlyOneElement(pInfo)) {
-
-					ParentTable ref = pInfo.get(0);
-
-					for (RefMapping map : ref.getRefMapping()) {
-						joinFields.add(generateJoinMapping(map.getChildField().getName(),
-								map.getParentField().getName(), target, dsName, conn));
-					}
-				} else {
-					throw new ForbiddenOperationException(
-							"The mapping cannot be auto generated! Multiple references were found between "
-									+ this.getTableName() + " And " + relatedTabConf.getTableName());
-
-				}
-			}
+			throw new MissingJoiningElementsException(this, relatedTabConf);
 		}
 
-		if (!utilities.listHasElement(joinFields)) {
-			throw new MissingJoiningElementsException(this, relatedTabConf);
+		for (RefMapping map : ref.getRefMapping()) {
+			String srcField = dsSide.otherIsDataSource() ? map.getParentField().getName()
+					: map.getChildField().getName();
+
+			String dstField = dsSide.otherIsDataSource() ? map.getChildField().getName()
+					: map.getParentField().getName();
+
+			joinFields.add(generateJoinMapping(srcField, dstField, target, dsName, conn));
 		}
 
 		return joinFields;
@@ -2332,11 +2319,15 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			Connection conn)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
+		FieldsMapping fm;
+
 		if (utilities.stringHasValue(dsName)) {
-			return FieldsMapping.fastCreate(target, srcField, dsName, dstField, conn);
+			fm = FieldsMapping.fastCreate(target, srcField, dsName, dstField, conn);
 		} else {
-			return FieldsMapping.fastCreate(target, srcField, dstField, conn);
+			fm = FieldsMapping.fastCreate(target, srcField, dstField, conn);
 		}
+
+		return fm;
 	}
 
 	default List<EtlDataSource> retrieveAvaliableDataSources(Connection conn) {
@@ -2391,42 +2382,62 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		if (utilities.listHasElement(joinFields)) {
 
 			for (int i = 0; i < joinFields.size(); i++) {
-				if (i > 0)
+				if (i > 0) {
 					conditionFields += " AND ";
+				}
 
 				FieldsMapping field = joinFields.get(i);
 
-				String[] dstFieldParts = field.getDstField().split("\\.");
-
-				String dstFieldName = dstFieldParts[dstFieldParts.length - 1];
-				String dstTableAlias = dstFieldParts.length > 1 ? dstFieldParts[0] : null;
-
 				if (!field.hasSrcField()) {
-					field.setSrcField(dstFieldName);
+					field.setSrcField(field.getDstField().split("\\.")[0]);
 				}
 
-				Object value = dstFieldName;
+				String dataSourceName = null;
+
+				String dataSourceFieldName = null;
+
+				String fullDataSourceFieldName = null;
+				String fullTargetFieldName = null;
+
+				if (field.isManuallyConfigured()) {
+					// Notice that on manual configured joining fields the dstField is the source of
+					// data to be used to query the
+					// related record and the srcField is the target
+
+					fullTargetFieldName = this.tryToConvertFieldToAlias(field.getSrcField());
+
+					fullDataSourceFieldName = field.getDstField();
+
+				} else {
+					fullDataSourceFieldName = field.getFullSrcField();
+					fullTargetFieldName = field.getDstField();
+				}
+
+				String[] dataSourceFieldNameParts = fullDataSourceFieldName.split("\\.");
+
+				dataSourceName = dataSourceFieldNameParts.length > 1 ? dataSourceFieldNameParts[0] : null;
+
+				dataSourceFieldName = dataSourceFieldNameParts[dataSourceFieldNameParts.length > 1 ? 1 : 0];
 
 				if (parentObject != null) {
-					try {
-						if (dstTableAlias != null
-								&& !dstTableAlias.equals(parentObject.getRelatedConfiguration().getAlias())) {
+					Object value = dataSourceFieldName;
 
+					try {
+						if (dataSourceName != null
+								&& !dataSourceName.equals(parentObject.getRelatedConfiguration().getAlias())) {
 							throw new EtlExceptionImpl(
 									"The declared field source within dstField " + field.getDstField()
 											+ " differ from provided parent object name: " + parentObject);
 						}
 
-						value = parentObject.getFieldValue(dstFieldName);
+						value = parentObject.getFieldValue(dataSourceFieldName);
 					} catch (ForbiddenOperationException e) {
 						value = parentObject.getFieldValue(field.getDstFieldAsClassField());
 					}
 
-					conditionFields += AttDefinedElements
-							.defineSqlAtribuitionString(this.tryToConvertFieldToAlias(field.getSrcField()), value);
+					conditionFields += AttDefinedElements.defineSqlAtribuitionString(fullTargetFieldName, value);
 				} else {
-					conditionFields += utilities.concatCondition(this.tryToConvertFieldToAlias(field.getSrcField()),
-							field.getFullSrcField(), " = ");
+					conditionFields += utilities.concatCondition(fullDataSourceFieldName, fullTargetFieldName, " = ");
 				}
 
 			}

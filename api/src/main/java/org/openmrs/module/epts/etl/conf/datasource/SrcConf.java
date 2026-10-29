@@ -41,10 +41,10 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -117,6 +117,8 @@ public class SrcConf extends AbstractTableConfiguration
 	private ActionOnEtlIssue missingRequiredObjectBehavior;
 
 	private Boolean doNotLoadJoiningFields;
+
+	private Boolean joinFieldsAlredyLoaded;
 
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
@@ -399,6 +401,7 @@ public class SrcConf extends AbstractTableConfiguration
 	@Override
 	public void loadJoinElements(EtlDatabaseObject schemaInfo, DataSourceSide dsSide, Connection conn)
 			throws DBException {
+
 		try {
 			JoinableEntity.super.loadJoinElements(schemaInfo, dsSide, conn);
 		} catch (MissingJoiningElementsException e) {
@@ -1151,4 +1154,14 @@ public class SrcConf extends AbstractTableConfiguration
 
 		obj.setFieldValue("processing_status", status.toString());
 	}
+	
+	@Override
+	public boolean joinFieldsAlredyLoaded() {
+		return isTrue(this.joinFieldsAlredyLoaded);
+	}
+
+	@Override
+	public void markJoinFieldAsLoaded() {
+		this.joinFieldsAlredyLoaded = true;
+	}	
 }

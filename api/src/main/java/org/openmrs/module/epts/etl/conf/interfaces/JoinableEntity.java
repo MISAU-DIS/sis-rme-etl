@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
  * (the {@link MainJoiningEntity})
  */
 public interface JoinableEntity extends TableConfiguration {
+	static final Object LOCK_FOR_JOIN_FIELDS = new Object();
 
 	List<FieldsMapping> getJoinFields();
 
@@ -39,6 +40,10 @@ public interface JoinableEntity extends TableConfiguration {
 	void setJoinExtraConditionScope(ConditionClauseScope joinExtraConditionScope);
 
 	Boolean doNotUseAsDatasource();
+
+	boolean joinFieldsAlredyLoaded();
+
+	void markJoinFieldAsLoaded();
 
 	void setJoinFields(List<FieldsMapping> joinFields);
 
@@ -89,9 +94,24 @@ public interface JoinableEntity extends TableConfiguration {
 	default void tryToLoadJoinFields(DataSourceSide dsSide, Connection conn)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
-		if (!this.hasJoinFields()) {
-			this.setJoinFields(this.tryToLoadJoinFields(this.getJoiningEntity(), dsSide, conn));
+		if (this.joinFieldsAlredyLoaded()) {
+			return;
+		} else {
+			synchronized (LOCK_FOR_JOIN_FIELDS) {
+				if (this.joinFieldsAlredyLoaded()) {
+					return;
+				}
+
+				if (!this.hasJoinFields()) {
+					this.setJoinFields(this.tryToLoadJoinFields(this.getJoiningEntity(), dsSide, conn));
+				} else {
+					this.ensureManualConfiguredJoinFieldAreMarked();
+				}
+
+				markJoinFieldAsLoaded();
+			}
 		}
+
 	}
 
 	@Override
@@ -136,6 +156,7 @@ public interface JoinableEntity extends TableConfiguration {
 
 	default void loadJoinElements(EtlDatabaseObject schemaInfo, DataSourceSide dsSide, Connection conn)
 			throws DBException {
+
 		if (this.hasJoinExtraCondition()) {
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getJoinExtraCondition(), null)) {
 				throw new EtlConfException("Invalid joinExtraCondition \n" + this.getJoinExtraCondition());
@@ -220,6 +241,14 @@ public interface JoinableEntity extends TableConfiguration {
 		}
 
 		return allParameters;
+	}
+
+	default void ensureManualConfiguredJoinFieldAreMarked() {
+		if (hasJoinFields()) {
+			for (FieldsMapping j : this.getJoinFields()) {
+				j.setManuallyConfigured(true);
+			}
+		}
 	}
 
 }

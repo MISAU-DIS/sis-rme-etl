@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
@@ -63,6 +64,12 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
+	default String generateFullPackageName(DatabaseModelGenerationContext context) {
+		return utilities.concatStringsWithSeparator("org.openmrs.module.epts.etl.model.pojo",
+				context.getPojoPackageName(), ".");
+	}
+
+	@JsonIgnore
 	default String getOriginAppLocationCode() {
 		return getRelatedEtlConf().getOriginAppLocationCode();
 	}
@@ -70,6 +77,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	@JsonIgnore
 	default String getClassPackage(DBConnectionInfo connInfo) {
 		return getRelatedEtlConf().getPojoPackage(connInfo);
+	}
+
+	@JsonIgnore
+	default String getClassPackage(DatabaseModelGenerationContext context) {
+		return context.getPojoPackageName();
 	}
 
 	default String getClassPackageForForder(DBConnectionInfo connInfo) {
@@ -86,6 +98,10 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return pF;
 	}
 
+	default String getClassPackageForForder(DatabaseModelGenerationContext context) {
+		return getClassPackage(context).replace('.', File.separatorChar);
+	}
+
 	@JsonIgnore
 	default String generateFullClassName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
@@ -95,6 +111,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
 		return utilities.concatStringsWithSeparator(fullPackageName, generateClassName(), ".");
+	}
+
+	@JsonIgnore
+	default String generateFullClassName(DatabaseModelGenerationContext context) {
+		return utilities.concatStringsWithSeparator(generateFullPackageName(context), generateClassName(), ".");
 	}
 
 	@JsonIgnore
@@ -127,6 +148,21 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	Boolean isDestinationInstallationType();
 
 	void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass);
+
+	default void generateRelatedPojoClass(DatabaseModelGenerationContext context, Boolean fullClass) {
+		try {
+			if (fullClass) {
+				setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, context));
+			} else {
+				throw new ForbiddenOperationException(
+						"Skeleton generation is only supported by the legacy DBConnectionInfo contract");
+			}
+		} catch (ClassNotFoundException exception) {
+			throw new RuntimeException(exception);
+		} catch (java.io.IOException | java.sql.SQLException exception) {
+			throw new RuntimeException(exception);
+		}
+	}
 
 	List<ParentTable> getParentRefInfo();
 

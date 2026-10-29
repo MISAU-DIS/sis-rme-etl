@@ -2062,7 +2062,20 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
+	public File getPojoPackageAsDirectory(String pojoPackageName) {
+		String path = getPOJOCompiledFilesDirectory().getAbsolutePath() + FileUtilities.getPathSeparator();
+		path += getPojoPackageRelativePath(pojoPackageName).replaceAll("/",
+				Matcher.quoteReplacement(FileUtilities.getPathSeparator()));
+		return new File(path);
+	}
+
+	@JsonIgnore
 	public String getPojoPackageRelativePath(DBConnectionInfo app) {
+		return getPojoPackageRelativePath(this.getPojoPackage(app));
+	}
+
+	@JsonIgnore
+	public String getPojoPackageRelativePath(String pojoPackageName) {
 		String relativePathSeparator = "/";
 
 		String pojoPackageDir = "";
@@ -2075,7 +2088,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		pojoPackageDir += "model" + relativePathSeparator;
 		pojoPackageDir += "pojo" + relativePathSeparator;
 
-		pojoPackageDir += this.getPojoPackage(app) + relativePathSeparator;
+		pojoPackageDir += pojoPackageName + relativePathSeparator;
 
 		return pojoPackageDir;
 	}

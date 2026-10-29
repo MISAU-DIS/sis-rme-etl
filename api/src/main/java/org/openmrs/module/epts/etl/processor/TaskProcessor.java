@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.processor;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
