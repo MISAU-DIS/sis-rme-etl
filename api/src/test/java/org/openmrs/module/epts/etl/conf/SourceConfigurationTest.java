@@ -17,7 +17,6 @@ import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguratio
 import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -43,7 +42,7 @@ class SourceConfigurationTest {
 	@Test
 	void shouldInferJdbcTableAsTheUniquePrimarySource() throws Exception {
 		SourceConfiguration source = read("{" +
-				"\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
+				"\"connector\":\"source-db\"," +
 				"\"tableDataSource\":{\"tableName\":\"patient\"}" +
 				"}");
 
@@ -51,19 +50,20 @@ class SourceConfigurationTest {
 
 		assertTrue(source.getPrimaryDataSource() instanceof org.openmrs.module.epts.etl.conf.datasource.SrcConf);
 		assertSame(source, source.getPrimaryDataSource().getParentSource());
-		assertSame(source.getResource(), source.getPrimaryDataSource().getSourceResource());
+		assertEquals("source-db", source.getConnector());
+		assertEquals("patient", source.getPrimaryDataSource().getResourceName());
 		assertEquals("patient", source.getTableDataSource().getTableName());
 	}
 
 	@Test
 	void shouldInferJsonAndCsvWithoutDependingOnConnectorType() throws Exception {
 		SourceConfiguration json = read("{" +
-				"\"resource\":{\"connector\":\"patient-api\",\"name\":\"/patients\"}," +
-				"\"jsonDataSource\":{\"recordPath\":\"results\",\"layout\":\"ARRAY\"," +
+				"\"connector\":\"patient-api\"," +
+				"\"jsonDataSource\":{\"name\":\"/patients\",\"recordPath\":\"results\",\"layout\":\"ARRAY\"," +
 				"\"fields\":[{\"name\":\"uuid\"}]}}");
 		SourceConfiguration csv = read("{" +
-				"\"resource\":{\"connector\":\"input-files\",\"name\":\"patients.csv\"}," +
-				"\"csvDataSource\":{\"delimiter\":\";\",\"hasHeader\":true," +
+				"\"connector\":\"input-files\"," +
+				"\"csvDataSource\":{\"name\":\"patients.csv\",\"delimiter\":\";\",\"hasHeader\":true," +
 				"\"fields\":[{\"name\":\"uuid\"}]}}");
 
 		json.initialize(new EtlItemConfiguration());
@@ -84,10 +84,11 @@ class SourceConfigurationTest {
 
 	@Test
 	void shouldRejectMissingOrAmbiguousPrimarySource() throws Exception {
-		SourceConfiguration missing = read("{\"resource\":{\"connector\":\"source\",\"name\":\"records\"}}");
+		SourceConfiguration missing = read("{\"connector\":\"source\"}");
 		SourceConfiguration ambiguous = read("{" +
-				"\"resource\":{\"connector\":\"source\",\"name\":\"records\"}," +
-				"\"jsonDataSource\":{},\"csvDataSource\":{}}");
+				"\"connector\":\"source\"," +
+				"\"jsonDataSource\":{\"name\":\"records.json\"},"
+				+ "\"csvDataSource\":{\"name\":\"records.csv\"}}");
 
 		EtlConfException missingError = assertThrows(EtlConfException.class,
 				() -> missing.initialize(new EtlItemConfiguration()));
@@ -101,9 +102,9 @@ class SourceConfigurationTest {
 	@Test
 	void shouldRequireFieldsOwnedByJsonAndCsv() throws Exception {
 		SourceConfiguration json = read("{" +
-				"\"resource\":{\"connector\":\"api\",\"name\":\"/patients\"},\"jsonDataSource\":{}}");
+				"\"connector\":\"api\",\"jsonDataSource\":{\"name\":\"/patients\"}}");
 		SourceConfiguration csv = read("{" +
-				"\"resource\":{\"connector\":\"files\",\"name\":\"patients.csv\"},\"csvDataSource\":{}}");
+				"\"connector\":\"files\",\"csvDataSource\":{\"name\":\"patients.csv\"}}");
 
 		EtlConfException jsonError = assertThrows(EtlConfException.class,
 				() -> json.initialize(new EtlItemConfiguration()));
@@ -115,9 +116,13 @@ class SourceConfigurationTest {
 	}
 
 	@Test
-	void shouldKeepThePrimaryResourceAtSourceLevel() throws Exception {
+	void shouldRejectTheFormerSourceResourceAndNestedPrimaryResource() throws Exception {
+		assertThrows(UnrecognizedPropertyException.class, () -> read("{"
+				+ "\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"},"
+				+ "\"tableDataSource\":{\"tableName\":\"patient\"}}"));
+
 		SourceConfiguration source = read("{" +
-				"\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
+				"\"connector\":\"source-db\"," +
 				"\"tableDataSource\":{\"tableName\":\"patient\"," +
 				"\"resource\":{\"connector\":\"other-db\",\"name\":\"patient\"}}}");
 
@@ -130,7 +135,7 @@ class SourceConfigurationTest {
 	@Test
 	void shouldKeepAdditionalSourceFamiliesDirectlyOnSource() throws Exception {
 		SourceConfiguration source = read("{" +
-				"\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
+				"\"connector\":\"source-db\"," +
 				"\"tableDataSource\":{\"tableName\":\"patient\"}," +
 				"\"extraTableDataSource\":[{\"tableName\":\"person\"}]," +
 				"\"extraQueryDataSource\":[{\"name\":\"visits\",\"query\":\"select 1\"}]," +
@@ -148,11 +153,9 @@ class SourceConfigurationTest {
 	@Test
 	void shouldAllowConnectorNeutralAdditionalSourcesWithJsonPrimary() throws Exception {
 		SourceConfiguration source = new SourceConfiguration();
-		ConnectorResourceConfiguration resource = new ConnectorResourceConfiguration();
-		resource.setConnector("patient-api");
-		resource.setName("/patients");
-		source.setResource(resource);
+		source.setConnector("patient-api");
 		JsonPrimaryDataSourceConfiguration primary = new JsonPrimaryDataSourceConfiguration();
+		primary.setName("/patients");
 		primary.setFields(Collections.singletonList(Field.fastCreateWithType("uuid", "java.lang.String")));
 		source.setJsonDataSource(primary);
 

@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
@@ -37,6 +39,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	private String name;
 	private PrimaryKey primaryKey;
 	private List<String> excludedFieldsFromObjectDesc;
+	private Map<String, Object> resourceProperties;
 
 	@JsonIgnore
 	private transient SourceConfiguration parentSource;
@@ -59,6 +62,15 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	@Override
+	public Map<String, Object> getResourceProperties() {
+		return resourceProperties == null ? Collections.emptyMap() : Collections.unmodifiableMap(resourceProperties);
+	}
+
+	public void setResourceProperties(Map<String, Object> resourceProperties) {
+		this.resourceProperties = resourceProperties == null ? null : new LinkedHashMap<>(resourceProperties);
 	}
 
 	public void setPrimaryKey(PrimaryKey primaryKey) {
@@ -150,7 +162,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	public String getObjectName() {
 		if (utilities.stringHasValue(name))
 			return name;
-		return getSourceResource() == null ? getSourceTypeName() + "_record" : getSourceResource().getName();
+		return getSourceTypeName() + "_record";
 	}
 
 	@Override

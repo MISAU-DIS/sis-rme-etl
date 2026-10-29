@@ -299,7 +299,7 @@ class EtlConnectorConfigurationTest {
 	}
 
 	@Test
-	void shouldRejectAmbiguousConnectorSelection() throws Exception {
+	void shouldPreferLegacyStateConnectorWhenSourceConnectorIsOmitted() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
 		configuration.setSrcConnInfo(new DBConnectionInfo());
 		configuration.setConnectors(java.util.Arrays.asList(jdbcConnector("first", "jdbc:first"),
@@ -312,9 +312,9 @@ class EtlConnectorConfigurationTest {
 		item.setSrcConf(sourceConfiguration);
 		initializeConnectors(configuration);
 
-		InvocationTargetException error = org.junit.jupiter.api.Assertions.assertThrows(InvocationTargetException.class,
-				() -> initializeResources(item));
-		assertTrue(error.getCause().getMessage().contains("ambiguous"));
+		initializeResources(item);
+		assertSame(configuration.getSrcConnInfo(),
+				item.getResolvedSrcResource().getEndpoint().unwrap(DBConnectionInfo.class));
 	}
 
 	@Test

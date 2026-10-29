@@ -2,11 +2,11 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
@@ -66,8 +66,12 @@ public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcCon
 		return Collections.emptyList();
 	}
 
-	default ConnectorResourceConfiguration getSourceResource() {
-		return getParentSource() == null ? null : getParentSource().getResource();
+	default String getResourceName() {
+		return getName();
+	}
+
+	default Map<String, Object> getResourceProperties() {
+		return Collections.emptyMap();
 	}
 
 	default String getName() {

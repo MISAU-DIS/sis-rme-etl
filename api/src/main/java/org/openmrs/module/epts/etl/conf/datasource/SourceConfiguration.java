@@ -15,7 +15,6 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -30,7 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
-	private ConnectorResourceConfiguration resource;
+	private String connector;
 
 	private SrcConf tableDataSource;
 
@@ -77,12 +76,12 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		return this.missingRequiredObjectBehavior;
 	}
 
-	public ConnectorResourceConfiguration getResource() {
-		return resource;
+	public String getConnector() {
+		return connector;
 	}
 
-	public void setResource(ConnectorResourceConfiguration resource) {
-		this.resource = resource;
+	public void setConnector(String connector) {
+		this.connector = connector;
 	}
 
 	public SrcConf getTableDataSource() {
@@ -421,9 +420,6 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 							+ names);
 		}
 		PrimaryDataSourceConfiguration resolvedPrimary = configured.get(0);
-		if (resource == null && resolvedPrimary != tableDataSource) {
-			throw new EtlConfException("source.resource is required");
-		}
 		validatePrimaryDataSource(resolvedPrimary);
 		this.primaryDataSource = resolvedPrimary;
 		this.primaryDataSource.setParentSource(this);
@@ -432,7 +428,10 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	private void validatePrimaryDataSource(PrimaryDataSourceConfiguration resolvedPrimary) {
 		if (resolvedPrimary == tableDataSource && tableDataSource.getResource() != null) {
 			throw new EtlConfException(
-					"source.tableDataSource.resource is not allowed; configure the common source.resource instead");
+					"source.tableDataSource.resource is not allowed; configure source.connector and the primary data source name instead");
+		}
+		if (!utilities.stringHasValue(resolvedPrimary.getResourceName())) {
+			throw new EtlConfException("The primary data source resource name is required");
 		}
 		if (resolvedPrimary != tableDataSource
 				&& (resolvedPrimary.getFields() == null || resolvedPrimary.getFields().isEmpty())) {

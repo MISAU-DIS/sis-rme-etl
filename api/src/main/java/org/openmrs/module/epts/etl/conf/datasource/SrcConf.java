@@ -76,7 +76,19 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	 */
 	private List<EtlField> etlFields;
 
+	private Map<String, Object> resourceProperties;
+
 	private String joinExtraCondition;
+
+	@Override
+	public Map<String, Object> getResourceProperties() {
+		return resourceProperties == null ? java.util.Collections.emptyMap()
+				: java.util.Collections.unmodifiableMap(resourceProperties);
+	}
+
+	public void setResourceProperties(Map<String, Object> resourceProperties) {
+		this.resourceProperties = resourceProperties == null ? null : new HashMap<>(resourceProperties);
+	}
 
 	private Boolean limitToOneResult;
 
@@ -432,6 +444,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public SrcConf getParentSrcConf() {
 		if (hasParentItemConf()) {
 			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
@@ -825,6 +838,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		return this.joinFields;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public TableConfiguration getJoiningEntity() {
 		if (!isJoinable()) {
@@ -882,6 +896,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		return this;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public MainJoiningEntity getMainExtractTable() {
 		if (!isJoinable()) {

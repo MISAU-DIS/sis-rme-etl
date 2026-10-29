@@ -241,7 +241,16 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			}
 			SourceConfiguration normalized = new SourceConfiguration();
 
-			normalized.setResource(srcConf.getResource());
+			ConnectorResourceConfiguration legacyResource = srcConf.getResource();
+			if (legacyResource != null) {
+				normalized.setConnector(legacyResource.getConnector());
+				srcConf.setResourceProperties(legacyResource.getProperties());
+				if (utilities.stringHasValue(legacyResource.getName())
+						&& !legacyResource.getName().equals(srcConf.getTableName())) {
+					throw new EtlConfException("Legacy source resource name '" + legacyResource.getName()
+							+ "' differs from tableName '" + srcConf.getTableName() + "'");
+				}
+			}
 
 			srcConf.setResource(null);
 
@@ -273,7 +282,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	private void synchronizeLegacyJdbcSourceView() {
-		srcConf.setResource(source.getResource());
 		srcConf.setExtraTableDataSource(source.getExtraTableDataSource());
 		srcConf.setExtraQueryDataSource(source.getExtraQueryDataSource());
 		srcConf.setExtraObjectDataSource(source.getExtraObjectDataSource());
@@ -491,15 +499,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	private ConnectorResource resolveSrcResource(ConnectorRegistry registry) {
 		prepareSourceConfiguration();
 
-		ConnectorResourceConfiguration configured = source.getResource();
+		PrimaryDataSourceConfiguration primary = source.getPrimaryDataSource();
+		ConnectorResourceConfiguration configured = new ConnectorResourceConfiguration();
+		configured.setConnector(source.getConnector());
+		configured.setName(primary.getResourceName());
+		configured.setProperties(primary.getResourceProperties());
 
-		String connectorId = configured == null ? null : configured.getConnector();
+		ConnectorEndpoint endpoint = selectConnector(registry, source.getConnector(), ConnectorDirection.SOURCE,
+				source.getConnector() == null && primary instanceof SrcConf);
 
-		ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.SOURCE,
-				configured == null && source.getPrimaryDataSource() instanceof SrcConf);
-
-		TableConfiguration legacyTable = source.getPrimaryDataSource() instanceof TableConfiguration
-				? (TableConfiguration) source.getPrimaryDataSource()
+		TableConfiguration legacyTable = primary instanceof TableConfiguration
+				? (TableConfiguration) primary
 				: null;
 
 		return ConnectorConfigurationResolver.resolveResource(configured, legacyTable, ConnectorDirection.SOURCE,
@@ -786,6 +796,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	private void prepareDestinationConfigurationsForConnectorFullLoad() {
+		prepareSourceConfiguration();
 		if (!hasDstConf() && (getRelatedEtlConf().hasDstConnInfo()
 				|| utilities.stringHasValue(getRelatedEtlConf().getDefaultDestinationConnector()))) {
 			ConnectorEndpoint endpoint = selectConnector(getRelatedEtlConf().getInitializedConnectorRegistry(), null,

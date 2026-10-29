@@ -31,8 +31,8 @@ class EtlItemSourceCompatibilityTest {
 		assertSame(legacySource, item.getPrimaryDataSource());
 		assertSame(legacySource, item.getSource().getTableDataSource());
 		assertSame(legacySource, item.getSrcConf());
-		assertSame(item.getSource().getResource(), legacySource.getResource());
-		assertEquals("source-db", item.getSource().getResource().getConnector());
+		assertNull(legacySource.getResource());
+		assertEquals("source-db", item.getSource().getConnector());
 		assertSame(item.getSource().getExtraTableDataSource(), legacySource.getExtraTableDataSource());
 		assertTrue(item.getSource().getProcessingPolicy().getLimitToOneResult());
 		assertTrue(item.getSource().getProcessingPolicy().getTrackProcessingState());
@@ -41,14 +41,15 @@ class EtlItemSourceCompatibilityTest {
 	@Test
 	void shouldExposeNewJdbcSourceThroughTheTemporaryLegacyView() throws Exception {
 		EtlItemConfiguration item = read("{" +
-				"\"source\":{\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
+				"\"source\":{\"connector\":\"source-db\"," +
 				"\"tableDataSource\":{\"tableName\":\"patient\"}," +
 				"\"extraQueryDataSource\":[{\"name\":\"visits\",\"query\":\"select 1\"}]}}" );
 
 		item.prepareSourceConfiguration();
 
 		assertSame(item.getSource().getTableDataSource(), item.getSrcConf());
-		assertSame(item.getSource().getResource(), item.getSrcConf().getResource());
+		assertNull(item.getSrcConf().getResource());
+		assertEquals("source-db", item.getSource().getConnector());
 		assertSame(item.getSource().getExtraQueryDataSource(), item.getSrcConf().getExtraQueryDataSource());
 		assertEquals("patient", item.getSrcConf().getTableName());
 
@@ -62,8 +63,8 @@ class EtlItemSourceCompatibilityTest {
 	@Test
 	void shouldKeepNonJdbcPrimaryIndependentFromLegacySrcConf() throws Exception {
 		EtlItemConfiguration item = read("{" +
-				"\"source\":{\"resource\":{\"connector\":\"patient-api\",\"name\":\"/patients\"}," +
-				"\"jsonDataSource\":{\"fields\":[{\"name\":\"uuid\"}]}}}" );
+				"\"source\":{\"connector\":\"patient-api\"," +
+				"\"jsonDataSource\":{\"name\":\"/patients\",\"fields\":[{\"name\":\"uuid\"}]}}}" );
 
 		item.prepareSourceConfiguration();
 
@@ -76,7 +77,7 @@ class EtlItemSourceCompatibilityTest {
 	void shouldRejectSourceAndSrcConfDeclaredTogether() throws Exception {
 		EtlItemConfiguration item = read("{" +
 				"\"srcConf\":{\"tableName\":\"legacy_patient\"}," +
-				"\"source\":{\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
+				"\"source\":{\"connector\":\"source-db\"," +
 				"\"tableDataSource\":{\"tableName\":\"patient\"}}}" );
 
 		EtlConfException error = assertThrows(EtlConfException.class, item::prepareSourceConfiguration);
