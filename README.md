@@ -1,46 +1,47 @@
 # SIS-RME ETL
 
-The SIS-RME ETL module provides configurable extraction, transformation and
-loading pipelines. Its runtime architecture is based on **connectors**: an ETL
-item selects a source resource and one or more destination resources without
-making the orchestration layer depend directly on JDBC connections.
+SIS-RME ETL is a configurable extraction, transformation and loading engine.
+The current architecture separates the logical source model from the connector
+that transports its records. An ETL item describes **what** its source records
+look like under `source` and **where** they are obtained under
+`source.resource`.
 
-The project continues to support the original database-oriented configuration.
-Its complete reference is preserved in the
-[legacy README](README-legacy.md). Existing configurations based on
-`srcConnInfo`, `dstConnInfo`, `srcConf` and `dstConf` remain valid and are
-adapted internally to JDBC connectors.
+The previous database-oriented configuration remains supported and is
+documented separately in [README-legacy.md](README-legacy.md).
 
-## Architecture
+## Configuration overview
 
-An ETL execution is represented by `EtlConfiguration`. It contains:
+An `EtlConfiguration` normally contains:
 
-- an optional catalog of reusable connector endpoints;
-- root `EtlItemConfiguration` items;
-- one or more `EtlOperationConfig` operations;
-- optional data-model, validation, finalization and template settings.
-
-Each ETL item resolves its resources once during initialization:
+- a reusable `connectors` catalog;
+- optional default source and destination connectors;
+- one or more root `etlItemConfiguration` entries;
+- one or more `operations`;
+- optional data-model, template, validation and finalization settings.
 
 ```text
 EtlConfiguration
   ├─ connectors[]
   ├─ operations[]
   └─ etlItemConfiguration[]
-       ├─ srcConf.resource    ──> ConnectorRecordReader
-       └─ dstConf[].resource  ──> ConnectorRecordWriters
+       ├─ source
+       │    ├─ resource ───────────────> ConnectorRecordReader
+       │    ├─ exactly one primary source
+       │    │    ├─ jdbcTable
+       │    │    ├─ json
+       │    │    └─ csv
+       │    └─ extra*DataSource[]
+       └─ dstConf[].resource ──────────> ConnectorRecordWriter
 ```
 
-The engine and `TaskProcessor` contracts receive a reader and a destination
-writer aggregate. Native JDBC connections are confined to JDBC adapters and to
-temporary compatibility paths used by transformations and processors that
-have not yet been migrated.
+The primary source is inferred during initialization. There is no `primary`
+property: exactly one of `jdbcTable`, `json` or `csv` must be configured.
 
-## Connector configuration
+## Connectors
 
-Connectors are declared once at `EtlConfiguration.connectors`. A connector is
-not intrinsically a source or destination; its use by `srcConf.resource` or
-`dstConf[].resource` determines the direction and required capability.
+Connectors are declared once in `EtlConfiguration.connectors`. A connector is
+not intrinsically a source or destination; the resource referencing it
+determines the required read or write capability.
 
 ```json
 {
@@ -57,11 +58,9 @@ not intrinsically a source or destination; its use by `srcConf.resource` or
       }
     },
     {
-      "id": "migration-database",
-      "type": "JDBC",
-      "uri": "jdbc:mysql://destination-host/migration",
-      "userName": "etl_writer",
-      "password": "${destination_password}"
+      "id": "input-files",
+      "type": "FILE",
+      "uri": "/var/lib/sis-rme-etl/input"
     },
     {
       "id": "jsonl-output",
@@ -70,278 +69,259 @@ not intrinsically a source or destination; its use by `srcConf.resource` or
     }
   ],
   "defaultSourceConnector": "openmrs-source",
-  "defaultDestinationConnector": "migration-database"
+  "defaultDestinationConnector": "jsonl-output"
 }
 ```
 
 | Property | Meaning |
 |---|---|
 | `id` | Unique connector identifier. |
-| `type` | `JDBC`, `FILE`, `REST`, `MESSAGE_QUEUE` or `CUSTOM`; defaults to `JDBC`. |
+| `type` | `JDBC`, `FILE`, `REST`, `MESSAGE_QUEUE` or `CUSTOM`. |
 | `uri` | Native endpoint address, such as a JDBC URL or filesystem root. |
 | `userName` | Optional endpoint user name. |
 | `password` | Optional endpoint password. |
 | `properties` | Connector-specific properties. |
 
-`REST`, `MESSAGE_QUEUE` and `CUSTOM` are architectural extension points. They
-require concrete reader or writer adapters before they can execute.
+`REST`, `MESSAGE_QUEUE` and `CUSTOM` are extension points and require a
+concrete reader or writer implementation before use.
 
-The ETL runtime still uses a JDBC source connection to persist its own state.
-That connection is resolved independently from the connector used to read an
-item:
+### ETL state connection
 
-1. an explicit `srcConnInfo` always supplies the runtime state connection;
-2. when `srcConnInfo` is absent, a JDBC `defaultSourceConnector` supplies it;
-3. when `defaultSourceConnector` is absent or is not JDBC, `srcConnInfo` is
-   required.
+The runtime currently persists its own processing state through a JDBC source
+connection. This connection is independent from the connector that reads the
+business records:
 
-This allows `defaultSourceConnector` to be a non-JDBC source without coupling
-the ETL state store to that source.
+1. an explicit `srcConnInfo` supplies the state connection;
+2. otherwise, a JDBC `defaultSourceConnector` supplies it;
+3. if neither is available, or the default connector is not JDBC,
+   `srcConnInfo` is required.
 
-## ETL item resources
+An item can therefore read JSON or CSV while ETL state remains in a database.
 
-A resource identifies what is read or written. Its `connector` selects an
-endpoint and its `name` identifies a table, file, route, queue, topic or another
-endpoint-specific resource.
+## The `source` configuration
+
+`source` is the connector-neutral aggregate for all inputs of one ETL item. It
+owns the resource, one inferred primary source, optional additional sources
+and source processing policies.
+
+### Source resource
+
+```jsonc
+"resource": {
+  "connector": "openmrs-source",
+  "name": "patient",
+  "properties": {}
+}
+```
 
 | Property | Meaning |
 |---|---|
-| `connector` | Optional connector ID. When omitted, selection uses the defaults described below. |
-| `name` | Required resource name whenever `resource` is declared. |
+| `connector` | Connector ID. If omitted, `defaultSourceConnector` is used. |
+| `name` | Connector-specific table, file, route, queue or topic name. |
 | `properties` | Optional resource-specific settings. |
+
+The resource belongs only to `source`; it must not be repeated inside a
+primary source variant.
+
+### JDBC table source
 
 ```json
 {
-  "configCode": "export-patients",
-  "srcConf": {
-    "tableName": "patient",
+  "configCode": "migrate-patients",
+  "source": {
     "resource": {
       "connector": "openmrs-source",
       "name": "patient"
+    },
+    "jdbcTable": {
+      "tableName": "patient"
     }
   },
   "dstConf": [
     {
-      "tableName": "patient_export",
+      "tableName": "patient",
       "resource": {
-        "connector": "jsonl-output",
-        "name": "patients.jsonl"
+        "connector": "destination-db",
+        "name": "patient"
       }
     }
   ]
 }
 ```
 
-`srcConf` and `dstConf` remain the centre of the ETL item: they describe the
-model, query, mapping and transformation rules. Their embedded `resource`
-selects the I/O adapter. A JDBC resource paired with a table configuration must
-use the same resource `name` and `tableName`.
+`jdbcTable` contains table-specific extraction and relational metadata. Its
+`tableName` and the source resource `name` must identify the same table.
 
-Resources belong exclusively to `srcConf` and `dstConf`. There are no parallel
-resource properties at `EtlItemConfiguration` level, so a destination and its
-resource cannot become misaligned by position. The former `srcResource` and
-`dstResources` properties are no longer accepted and cause configuration
-deserialization to fail.
-
-Resource selection follows this order:
-
-1. the resource's explicit `connector`;
-2. `defaultSourceConnector` or `defaultDestinationConnector`;
-3. the internal legacy connector when only `srcConf`/`dstConf` is present;
-4. the only explicitly configured connector, when selection is unambiguous.
-
-Connector and resource references are validated before processing starts.
-
-### Logical record schema
-
-JDBC resources obtain their fields from precompiled schema metadata or from
-the database. A non-JDBC resource must declare a logical `recordSchema` in its
-`srcConf` or `dstConf`. Non-JDBC records currently use JSON format.
+### JSON source
 
 ```json
 {
-  "tableName": "patient-export",
-  "resource": {
-    "connector": "jsonl-output",
-    "name": "patients.jsonl"
-  },
-  "recordSchema": {
-    "format": "JSON",
-    "fields": [
-      {
-        "name": "uuid",
-        "dataType": "java.lang.String",
-        "allowNull": false
-      },
-      {
-        "name": "birthdate",
-        "dataType": "java.util.Date"
-      }
-    ]
-  }
-}
-```
-
-The schema is loaded into the normal `SrcConf`/`DstConf` field collection, so
-existing mappings and transformations use the same `Field` model regardless
-of whether the resource is JDBC or JSON. Missing schemas, empty field lists and
-duplicated field names are rejected during configuration validation.
-
-## Supported execution adapters
-
-### JDBC source and destination
-
-JDBC is the complete compatibility implementation. It supports reading,
-inserts, updates, deletes, batching and the existing SQL-based extraction and
-transformation behaviour.
-
-Existing configurations do not need to declare connectors. The ETL creates
-internal `legacy-src` and `legacy-dst` adapters from `srcConnInfo` and
-`dstConnInfo` when `resource` is omitted from the corresponding `srcConf` or
-`dstConf`. For mappings, parents, transformers, templates and the complete
-database configuration, see the [legacy README](README-legacy.md).
-
-### FILE source and destination
-
-`FILE` is the first complete non-JDBC adapter. It reads and writes JSON Lines
-(JSONL): one compact JSON object per line. A FILE source requires a
-`recordSchema`; line numbers are used as stable, one-based processing
-intervals.
-
-```json
-{
-  "connectors": [
-    {
-      "id": "openmrs-source",
-      "type": "JDBC",
-      "uri": "jdbc:mysql://source-host/openmrs",
-      "userName": "etl_reader",
-      "password": "${source_password}"
+  "configCode": "import-patient-events",
+  "source": {
+    "resource": {
+      "connector": "input-files",
+      "name": "events/patients.jsonl"
     },
-    {
-      "id": "jsonl-output",
-      "type": "FILE",
-      "uri": "/var/lib/sis-rme-etl/output"
-    }
-  ],
-  "etlItemConfiguration": [
-    {
-      "srcConf": {
-        "tableName": "patient",
-        "resource": {
-          "connector": "openmrs-source",
-          "name": "patient"
-        }
-      },
-      "dstConf": [
+    "json": {
+      "layout": "JSON_LINES",
+      "fields": [
         {
-          "tableName": "patient_export",
-          "resource": {
-            "connector": "jsonl-output",
-            "name": "daily/patients.jsonl"
-          }
+          "name": "uuid",
+          "dataType": "java.lang.String",
+          "allowNull": false
+        },
+        {
+          "name": "birthdate",
+          "dataType": "java.util.Date"
         }
       ]
     }
+  },
+  "dstConf": [
+    { "tableName": "patient" }
   ]
 }
 ```
 
-The writer:
+`recordPath` may select records inside an enclosing JSON object. The `fields`
+list is mandatory and feeds the normal ETL `Field` model used by mappings and
+transformations.
 
-- creates missing directories and files;
-- writes UTF-8;
-- appends one JSON document per line;
-- serializes ETL record fields rather than internal processing state;
-- rejects resource paths outside the configured root;
-- currently supports `INSERT` requests only.
-
-The reader:
-
-- reads UTF-8 JSONL files;
-- converts values according to the configured `Field.dataType`;
-- rejects non-object records, unknown fields and missing required fields;
-- supports the normal ETL range partitioning through JSONL line numbers;
-- exposes the internal JDBC `srcConnInfo` connection to transformation and
-  state-persistence code without using it to extract source records.
-
-## Legacy compatibility
-
-The previous configuration model remains supported:
+### CSV source
 
 ```json
 {
-  "srcConnInfo": {
-    "connectionURI": "jdbc:mysql://source-host/openmrs",
-    "dataBaseUserName": "reader",
-    "dataBaseUserPassword": "${source_password}"
+  "configCode": "import-patients-csv",
+  "source": {
+    "resource": {
+      "connector": "input-files",
+      "name": "patients.csv"
+    },
+    "csv": {
+      "delimiter": ";",
+      "hasHeader": true,
+      "charset": "UTF-8",
+      "quote": "\"",
+      "escape": "\\",
+      "fields": [
+        { "name": "uuid", "dataType": "java.lang.String", "allowNull": false },
+        { "name": "gender", "dataType": "java.lang.String" }
+      ]
+    }
   },
-  "dstConnInfo": {
-    "connectionURI": "jdbc:mysql://destination-host/migration",
-    "dataBaseUserName": "writer",
-    "dataBaseUserPassword": "${destination_password}"
+  "dstConf": [
+    { "tableName": "patient" }
+  ]
+}
+```
+
+The CSV variant owns delimiter, header, charset, quoting and field metadata.
+Its connector must provide a compatible record reader.
+
+### Additional data sources
+
+Additional sources are direct children of `source` and enrich the current
+transformation context without replacing the primary record:
+
+```jsonc
+"source": {
+  "resource": {
+    "connector": "openmrs-source",
+    "name": "patient"
   },
-  "etlItemConfiguration": [
+  "jdbcTable": {
+    "tableName": "patient"
+  },
+  "extraTableDataSource": [
+    { "tableName": "person" }
+  ],
+  "extraQueryDataSource": [
     {
-      "srcConf": { "tableName": "patient" },
-      "dstConf": [{ "tableName": "patient" }]
+      "name": "latestVisit",
+      "query": "select encounter_id, patient_id from encounter"
+    }
+  ],
+  "extraObjectDataSource": [
+    { "name": "calculatedValues" }
+  ],
+  "extraJsonDataSource": [
+    {
+      "name": "demographics",
+      "payload": "${demographics_payload}"
     }
   ]
 }
 ```
 
-No immediate migration is required. New configurations should declare the
-connector catalog and embed resource references in `srcConf` and `dstConf` so
-endpoint selection is no longer encoded only in database-specific fields.
+`extraObjectDataSource` and `extraJsonDataSource` are connector-neutral and
+can enrich JDBC, JSON or CSV records. Table and query additional sources
+execute SQL and therefore require a JDBC primary source.
 
-For every legacy property and advanced ETL capability, consult
-[README-legacy.md](README-legacy.md).
+## Destination configuration
 
-### Conditional parent relationships
+Destination transformation rules continue to be expressed by `dstConf`. Each
+destination owns its resource so the logical destination and writer cannot
+become misaligned:
 
-A parent relationship may use `conditionalFields` to restrict the records to
-which it applies. A conditional field accepts either one value or multiple
-alternative values separated by commas. Multiple values use OR semantics:
-
-```json
-"conditionalFields": [
+```jsonc
+"dstConf": [
   {
-    "name": "person_attribute_type_id",
-    "value": "7, 8, 9"
+    "tableName": "patient_export",
+    "resource": {
+      "connector": "jsonl-output",
+      "name": "daily/patients.jsonl"
+    },
+    "mapping": [
+      { "srcField": "uuid", "dstField": "uuid" },
+      { "srcField": "birthdate", "dstField": "birthdate" }
+    ]
   }
 ]
 ```
 
-In this example, the relationship applies when `person_attribute_type_id` is
-`7`, `8` or `9`. Whitespace around comma-separated values is ignored and value
-comparison remains case-sensitive. Only one conditional field per parent
-relationship is currently supported.
+JDBC remains the complete relational writer. The FILE writer produces UTF-8
+JSON Lines, creates missing directories, confines paths to the connector root
+and currently supports insert requests.
 
-See [Parents configuration](README-legacy.md#parents-configuration) for the
-complete parent relationship configuration.
+Detailed database mappings, parents and other configuration from the previous
+surface are kept in [README-legacy.md](README-legacy.md).
+
+## Validation rules
+
+Validation occurs before processing. In particular:
+
+- `source` must define exactly one primary variant;
+- JSON and CSV sources require a non-empty, valid `fields` list;
+- `source.resource` is required for non-JDBC primary sources;
+- a resource must not be declared inside the primary variant;
+- connector IDs and resource names must resolve unambiguously;
+- table/query additional sources require a JDBC primary source;
+- connector-neutral additional sources accept any primary source;
+- unknown JSON configuration properties are rejected.
+
+## Operations and item selection
+
+Operations may select root items through `etlItemConfigCodeWhiteList` and
+`etlItemConfigCodeBlackList`. Manually assigned `configCode` values must be
+unique. Child operations inherit omitted lists from their parent operation,
+and references are validated before execution.
+
+See the complete operation reference in
+[README-legacy.md](README-legacy.md#the-operation-configuration).
 
 ## Data model
 
 The optional `dataModel` configuration controls precompiled POJOs and static
 schema metadata independently for source and destination models. It also owns
-the additional classpath and source/binary POJO directories.
+the additional classpath and POJO source and binary directories.
 
-See [The Data Model configuration](README-legacy.md#the-data-model-configuration).
+See the complete property reference in
+[README-legacy.md](README-legacy.md#the-data-model-configuration).
 
-## Operations and item selection
+## Architecture history
 
-Operations may select root ETL items using `etlItemConfigCodeWhiteList` and
-`etlItemConfigCodeBlackList`. Manually assigned `configCode` values must be
-unique. Child operations inherit omitted lists from their parent operation,
-and all references are validated before execution.
-
-See [The Operation configuration](README-legacy.md#the-operation-configuration).
-
-## Connector architecture notes
-
-These documents record the architecture at each implementation phase. Earlier
-phases may show intermediate configuration forms; the contract documented in
-this README is authoritative for the current version.
+These documents record the connector migration by implementation phase. They
+are historical design records; this README defines the current contract.
 
 - [Phase 0 — baseline](docs/connector-architecture-phase-0.md)
 - [Phase 1 — neutral contracts](docs/connector-architecture-phase-1.md)

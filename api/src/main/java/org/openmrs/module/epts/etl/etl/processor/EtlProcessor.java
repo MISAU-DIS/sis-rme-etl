@@ -10,8 +10,8 @@ import java.util.function.Function;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
@@ -115,8 +115,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	private void performTransformation(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, Connection srcConn,
-			ConnectorRecordWriters writers)
-			throws DBException {
+			ConnectorRecordWriters writers) throws DBException {
 
 		PrimaryDataSourceConfiguration primarySource = etlItemConf.getPrimaryDataSource();
 		this.debug("Starting transformation of {} {}", etlObjects.size(), primarySource.getAlias());
@@ -125,16 +124,14 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		try {
 
 			if (etlItemConf.canQuickTransform(this)) {
-				logWarn("Performing quick tranformation of {} {}", etlObjects.size(),
-						primarySource.getAlias());
+				logWarn("Performing quick tranformation of {} {}", etlObjects.size(), primarySource.getAlias());
 
 				for (EtlDatabaseObject srcRecord : etlObjects) {
 					this.quickTransformRecord(srcRecord, srcConn,
 							destinationConnection(writers, etlItemConf.getDstConf().get(0)));
 				}
 
-				logWarn("Quick tranformation done on {} {}", etlObjects.size(),
-						primarySource.getAlias());
+				logWarn("Quick tranformation done on {} {}", etlObjects.size(), primarySource.getAlias());
 
 			} else {
 
@@ -146,9 +143,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 					 * srcRecord.changeStatusToProcessing(srcConn); }
 					 */
 
-					if (primarySource instanceof TableConfiguration
-							&& (!(primarySource instanceof SrcConf)
-									|| !((SrcConf) primarySource).doNotUseAsDatasource())) {
+					if (primarySource instanceof TableConfiguration && (!(primarySource instanceof SrcConf)
+							|| !((SrcConf) primarySource).doNotUseAsDatasource())) {
 						srcRecord.loadObjectIdData((TableConfiguration) primarySource);
 					}
 
@@ -253,8 +249,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		try {
 			loadHelper = new EtlLoadHelper(this, etlItemConf, etlObjects, loadingType, etlItemConf.ignoreNoDstIssue());
 		} catch (NoDstForGivenSrcException e) {
-			tryToLogOrThrowNoDstForGivenSrcException(etlObjects, e, srcConn,
-					firstJdbcDestinationConnection(writers));
+			tryToLogOrThrowNoDstForGivenSrcException(etlObjects, e, srcConn, firstJdbcDestinationConnection(writers));
 		}
 		if (loadHelper != null && loadHelper.hasDstConf()) {
 			loadHelper.load(reader, writers);
@@ -484,8 +479,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 						: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
 
-				List<EtlDatabaseObject> etlObjects = itemConf.requireJdbcPrimaryDataSource().searchRecords(this.getEngine(), srcObject,
-						avaliableSrcObjects, srcConn);
+				List<EtlDatabaseObject> etlObjects = itemConf.requireJdbcPrimaryDataSource()
+						.searchRecords(this.getEngine(), srcObject, avaliableSrcObjects, srcConn);
 
 				if (!etlObjects.isEmpty()) {
 					for (EtlDatabaseObject obj : etlObjects) {
