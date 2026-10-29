@@ -156,7 +156,7 @@ public class EtlLoadHelper {
 			logInfo("Registering StageArea persistence within {}", generateAvaliableEtl());
 
 			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn,
-					writers.unwrapShared(Connection.class));
+					null);
 
 			logDebug("StageArea persistence registered!");
 		}
@@ -265,7 +265,8 @@ public class EtlLoadHelper {
 
 	private void load(DstConf dstConf, Connection srcConn, Connection dstConn)
 			throws ParentNotYetMigratedException, DBException {
-		load(dstConf, srcConn, etlItemConf.bindDestinationWriters(dstConn));
+		load(dstConf, srcConn,
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn));
 	}
 
 	private void loadToDb(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
@@ -632,7 +633,7 @@ public class EtlLoadHelper {
 
 		etlInfo.getProcessor().logTrace(msg);
 
-		new EtlLoadHelper(etlInfo.getProcessor(), etlInfo.getSrcConf().getParentConf(),
+		new EtlLoadHelper(etlInfo.getProcessor(), etlInfo.getPrimaryDataSource().getParentItemConfiguration(),
 				utilities.parseToList(srcObject), LoadingType.PARENT, false)
 				.load(etlInfo.getDstConf(), srcConn, dstConn);
 	}

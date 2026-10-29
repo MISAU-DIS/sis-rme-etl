@@ -47,6 +47,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	private ConditionClauseScope joinExtraConditionScope;
 
+	private Boolean joinFieldsAlredyLoaded;
+
 	public TableDataSourceConfig() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.joinType = JoinType.LEFT;
@@ -55,6 +57,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	@Override
 	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
 			Connection dstConn) throws DBException {
+
 		super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 
 		if (this.auxExtractTable != null) {
@@ -337,7 +340,16 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public String getCondition() {
-		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public boolean joinFieldsAlredyLoaded() {
+		return isTrue(this.joinFieldsAlredyLoaded);
+	}
+
+	@Override
+	public void markJoinFieldAsLoaded() {
+		this.joinFieldsAlredyLoaded = true;
 	}
 }

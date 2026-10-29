@@ -468,12 +468,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return this.getOnDemandCreateParentItemConf().getDstConf().get(0);
 	}
 
+	@SuppressWarnings("deprecation")
 	SrcConf loadSrcConfForNonExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
 
 		return this.getOnDemandCreateParentItemConf().getSrcConf();
 	}
 
+	@SuppressWarnings("deprecation")
 	SrcConf loadSrcConfForExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForExistingSrcParentInitialized(srcConn, dstConn);
 
@@ -503,7 +505,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				if (!etlTransformTarget.isFullLoaded()) {
 
 					if (!usesTemplate()) {
-						etlTransformTarget.getSrcConf().setDoNotUseAsDatasource(true);
+						etlTransformTarget.getPrimaryDataSource().requireJdbc().setDoNotUseAsDatasource(true);
 						etlTransformTarget.setMapping(this.getOnDemandParentFieldMappings());
 					}
 
@@ -627,13 +629,15 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						avaliableDataSource = new ArrayList<>();
 
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllAvaliableDataSource()) {
-							if (p != this.relatedEtlTransformTarget.getSrcConf().getSharedKeyRefInfo(dstConn)) {
+							if (p != this.relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc()
+							        .getSharedKeyRefInfo(dstConn)) {
 								avaliableDataSource.add(p);
 							}
 						}
 
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllPrefferredDataSource()) {
-							if (p != this.relatedEtlTransformTarget.getSrcConf().getSharedKeyRefInfo(dstConn)) {
+							if (p != this.relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc()
+							        .getSharedKeyRefInfo(dstConn)) {
 								preferredDataSource.add(p);
 							}
 						}
@@ -650,7 +654,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 					etlTransformTarget.addAllToAvaliableDataSource(avaliableDataSource);
 
-					etlTransformTarget.addToPrefferedDataSource(etlTransformTarget.getSrcConf());
+					etlTransformTarget.addToPrefferedDataSource(etlTransformTarget.getPrimaryDataSource());
 					etlTransformTarget.addAllToPreferredDataSource(preferredDataSource);
 
 					etlTransformTarget.fullLoad(dstConn);
@@ -717,9 +721,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		conf.setDoNotFullLoadDstConf(true);
 
-		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn, dstConn);
+		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn);
 
-		conf.init(getRelatedEtlConf(), false, srcConn, dstConn);
+		conf.init(getRelatedEtlConf(), false, srcConn);
 
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 

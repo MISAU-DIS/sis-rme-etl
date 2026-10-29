@@ -19,7 +19,7 @@ public class DataBaseMergeFromSourceDBSearchParams extends AbstractEtlSearchPara
 	
 	public DataBaseMergeFromSourceDBSearchParams(Engine<EtlStageRecordVO> engine,
 	    ThreadRecordIntervalsManager<EtlStageRecordVO> limits) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 	}
 	
 	@Override

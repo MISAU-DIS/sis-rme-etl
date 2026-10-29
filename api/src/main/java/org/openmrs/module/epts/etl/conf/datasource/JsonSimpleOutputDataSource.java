@@ -1,11 +1,11 @@
 package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
+import org.openmrs.module.epts.etl.conf.RecordSchemaConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.json.JsonEtlObjectParent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
@@ -30,9 +30,11 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	private String name;
 
-	private SrcConf parent;
+	private PrimaryDataSourceConfiguration parent;
 
 	private List<String> fields;
+
+	private RecordSchemaConfiguration recordSchema;
 
 	private List<Field> dataSourceFields;
 
@@ -81,10 +83,10 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
-		if (relatedParent instanceof SrcConf) {
-			this.parent = (SrcConf) relatedParent;
+		if (relatedParent instanceof PrimaryDataSourceConfiguration) {
+			this.parent = (PrimaryDataSourceConfiguration) relatedParent;
 		} else {
-			throw new ForbiddenOperationException("The parent of JsonOutputDataSource must be a SrcConf!");
+			throw new ForbiddenOperationException("The parent of JsonOutputDataSource must be a primary data source!");
 		}
 	}
 
@@ -100,7 +102,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad() throws DBException {
-		fullLoad();
+		fullLoad(null);
 	}
 
 	@Override
@@ -112,24 +114,29 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 			if (isFullLoaded())
 				return;
 
-			List<Field> dsFields = new ArrayList<>();
-
 			if (!utilities.stringHasValue(this.getName())) {
 				throw new EtlConfException("Name is required for outputDatasource.");
 			}
 
-			if (utilities.listHasNoElement(fields)) {
+			if (recordSchema == null && utilities.listHasNoElement(fields)) {
 				throw new EtlConfException("The fields list cannot be null in the Datasource " + this.getName());
 			}
 
-			for (String fieldName : this.fields) {
-				dsFields.add(Field.fastCreateField(fieldName));
-			}
-
-			this.dataSourceFields = dsFields;
+			RecordSchemaConfiguration schema = recordSchema != null ? recordSchema
+					: RecordSchemaConfiguration.fromFieldNames(this.fields);
+			this.dataSourceFields = schema
+					.resolveFields("JSON data source '" + this.getName() + "'");
 
 		}
 
+	}
+
+	public RecordSchemaConfiguration getRecordSchema() {
+		return recordSchema;
+	}
+
+	public void setRecordSchema(RecordSchemaConfiguration recordSchema) {
+		this.recordSchema = recordSchema;
 	}
 
 	@Override
@@ -145,7 +152,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public SrcConf getParentConf() {
+	public PrimaryDataSourceConfiguration getParentConf() {
 		return this.parent;
 	}
 
@@ -191,7 +198,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		return this.getRelatedSrcConf().getRelatedConnInfo();
+		return this.getRelatedPrimaryDataSource().getRelatedConnInfo();
 	}
 
 	@Override
@@ -256,12 +263,22 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public SrcConf getRelatedSrcConf() {
-		return this.parent;
+		return this.parent.requireJdbc();
 	}
 
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		this.parent = relatedSrcConf;
+	}
+
+	@Override
+	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
+		return parent;
+	}
+
+	@Override
+	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
+		this.parent = primaryDataSource;
 	}
 
 	public JsonEtlObjectParent select(List<JsonEtlObjectParent> parents) {

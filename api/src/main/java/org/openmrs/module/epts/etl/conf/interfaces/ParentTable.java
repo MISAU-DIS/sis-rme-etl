@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -117,15 +117,17 @@ public interface ParentTable extends RelatedTable {
 		return allDstForTable;
 	}
 
-	default SrcConf findRelatedSrcConf(EtlOperationConfig operationConf) throws DBException {
+	default PrimaryDataSourceConfiguration findRelatedPrimaryDataSource(EtlOperationConfig operationConf)
+			throws DBException {
 		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
 			if (!conf.isFullLoaded()) {
 				conf.fullLoad(operationConf);
 			}
 
-			if (conf.getSrcConf().getTableName().equals(this.getTableName())) {
-				return conf.getSrcConf();
+			PrimaryDataSourceConfiguration primary = conf.getPrimaryDataSource();
+			if (primary.getObjectName().equals(this.getTableName())) {
+				return primary;
 			}
 		}
 
@@ -139,25 +141,27 @@ public interface ParentTable extends RelatedTable {
 	 * @return
 	 * @throws DBException
 	 */
-	default List<SrcConf> findRelatedSrcConfWhichAsAtLeastOnematchingDst(EtlOperationConfig operationConf)
+	default List<PrimaryDataSourceConfiguration> findRelatedPrimaryDataSourcesWithMatchingDestination(
+			EtlOperationConfig operationConf)
 			throws DBException {
-		List<SrcConf> srcs = new ArrayList<>();
+		List<PrimaryDataSourceConfiguration> sources = new ArrayList<>();
 
 		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
-			if (conf.getSrcConf().getTableName().equals(this.getTableName())) {
+			PrimaryDataSourceConfiguration primary = conf.getPrimaryDataSource();
+			if (primary.getObjectName().equals(this.getTableName())) {
 
 				if (!conf.isFullLoaded()) {
 					conf.fullLoad(operationConf);
 				}
 
 				if (conf.containsDstTable(this.getTableName())) {
-					srcs.add(conf.getSrcConf());
+					sources.add(primary);
 				}
 			}
 		}
 
-		return srcs;
+		return sources;
 	}
 
 	Object getDefaultValueDueInconsistency();

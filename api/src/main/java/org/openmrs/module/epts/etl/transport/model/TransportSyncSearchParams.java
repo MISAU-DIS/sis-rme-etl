@@ -28,7 +28,7 @@ public class TransportSyncSearchParams extends AbstractEtlSearchParams<Transport
 	private Engine<TransportRecord> relatedEngine;
 	
 	public TransportSyncSearchParams(Engine<TransportRecord> engine, ThreadRecordIntervalsManager<TransportRecord> limits) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		if (limits != null) {
 			this.firstFileName = getSrcConf().getTableName() + "_"

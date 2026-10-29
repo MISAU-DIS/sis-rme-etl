@@ -42,7 +42,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	private FieldsMapping payloadFieldsMap;
 
-	private SrcConf relatedSrcConf;
+	private PrimaryDataSourceConfiguration relatedPrimaryDataSource;
 
 	private volatile Boolean fullLoaded;
 
@@ -121,10 +121,10 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
-		if (relatedParent instanceof SrcConf) {
-			this.relatedSrcConf = (SrcConf) relatedParent;
+		if (relatedParent instanceof PrimaryDataSourceConfiguration) {
+			this.relatedPrimaryDataSource = (PrimaryDataSourceConfiguration) relatedParent;
 		} else {
-			throw new ForbiddenOperationException("The parent of JsonDataSource must be a SrcConf!");
+			throw new ForbiddenOperationException("The parent of JsonDataSource must be a primary data source!");
 		}
 	}
 
@@ -208,8 +208,8 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public SrcConf getParentConf() {
-		return this.relatedSrcConf;
+	public PrimaryDataSourceConfiguration getParentConf() {
+		return this.relatedPrimaryDataSource;
 	}
 
 	@Override
@@ -249,7 +249,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		return this.getSrcConf().getRelatedConnInfo();
+		return this.relatedPrimaryDataSource.getRelatedConnInfo();
 	}
 
 	@Override
@@ -313,13 +313,9 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 			if (isLoadedDataSourceInfo())
 				return;
 
-			this.addToAvaliableDataSource(this.getSrcConf());
-			this.addAllToAvaliableDataSource(this.getSrcConf().getAvaliableExtraDataSource());
-
-			if (this.getSrcConf().hasParentItemConf()) {
-				this.addAllToAvaliableDataSource(
-						this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
-			}
+			this.addToAvaliableDataSource((EtlDataSource) relatedPrimaryDataSource);
+			this.addAllToAvaliableDataSource(
+					relatedPrimaryDataSource.getParentSource().getAvailableAdditionalDataSources());
 
 			this.setAllNotPrefferredDataSource(this.getAllAvaliableDataSource());
 
@@ -376,8 +372,8 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public SrcConf getSrcConf() {
-		return this.relatedSrcConf;
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return this.relatedPrimaryDataSource;
 	}
 
 	@Override
@@ -400,12 +396,22 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public SrcConf getRelatedSrcConf() {
-		return this.relatedSrcConf;
+		return this.relatedPrimaryDataSource.requireJdbc();
 	}
 
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
-		this.relatedSrcConf = relatedSrcConf;
+		this.relatedPrimaryDataSource = relatedSrcConf;
+	}
+
+	@Override
+	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
+		return relatedPrimaryDataSource;
+	}
+
+	@Override
+	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
+		this.relatedPrimaryDataSource = primaryDataSource;
 	}
 
 	@Override

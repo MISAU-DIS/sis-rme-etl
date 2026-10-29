@@ -34,7 +34,7 @@ public class InconsistenceSolverProcessor extends org.openmrs.module.epts.etl.pr
 		
 		for (EtlDatabaseObject obj : syncRecordsAsOpenMRSObjects) {
 			try {
-				obj.resolveInconsistence(getSrcConf(), srcConn);
+				obj.resolveInconsistence(getJdbcPrimaryDataSource(), srcConn);
 				
 				getTaskResultInfo().addToRecordsWithNoError(obj);
 			}

@@ -45,13 +45,14 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 		ConnectorRecordReader<T> reader = engine.getEtlItemConfiguration().createSourceReader(engine.getSearchParams(),
 				engine, writers);
 		OpenConnection srcConn = reader.unwrap(OpenConnection.class);
-		OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
+		List<OpenConnection> dstConnections = engine.destinationConnections(writers);
+		OpenConnection dstConn = engine.firstDestinationConnection(dstConnections);
 
 		try {
 			List<T> records = engine.extract(interval, reader);
 
 			if (!UTILITIES.listHasElement(records)) {
-				persistCompletedInterval(engine, interval, srcConn, dstConn, persistWork);
+				persistCompletedInterval(engine, interval, srcConn, dstConnections, persistWork);
 				return;
 			}
 
@@ -61,23 +62,24 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 			processQueue(engine, interval, records, queue, processorCount, threadFactory, reader, writers);
 
-			persistCompletedInterval(engine, interval, srcConn, dstConn, persistWork);
+			persistCompletedInterval(engine, interval, srcConn, dstConnections, persistWork);
 		} catch (Exception e) {
 			engine.stopOperationDueError(e);
 
 			throw e;
 		} finally {
-			OpenConnection.finalizeAllConnections(engine, dstConn, srcConn);
+			engine.finalizeConnections(srcConn, dstConnections);
 		}
 	}
 
 	private void persistCompletedInterval(Engine<?> engine, IntervalExtremeRecord interval, OpenConnection srcConn,
-			OpenConnection dstConn, boolean persistWork) throws Exception {
+			List<OpenConnection> dstConnections, boolean persistWork) throws Exception {
 
 		if (persistWork) {
+			OpenConnection dstConn = engine.firstDestinationConnection(dstConnections);
 			engine.flushPendingPersistence(srcConn, dstConn);
-			OpenConnection.markAllAsSuccessifullyTerminected(srcConn, dstConn);
-			OpenConnection.finalizeAllConnections(engine, dstConn, srcConn);
+			engine.markConnectionsAsSuccessfullyTerminated(srcConn, dstConnections);
+			engine.finalizeConnections(srcConn, dstConnections);
 			interval.markAsProcessed();
 			engine.getThreadRecordIntervalsManager().save();
 		} else {

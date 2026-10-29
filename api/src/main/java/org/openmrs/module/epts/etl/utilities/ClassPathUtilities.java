@@ -220,14 +220,18 @@ public class ClassPathUtilities {
 	}
 	
 	public static void addClassToClassPath(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo) {
-		String pojoPackageDir = pojoble.getRelatedEtlConf().getPojoPackageAsDirectory(connInfo).getAbsolutePath();
+		addClassToClassPath(pojoble, pojoble.getRelatedEtlConf().getPojoPackage(connInfo));
+	}
+
+	public static void addClassToClassPath(EtlDatabaseObjectConfiguration pojoble, String pojoPackageName) {
+		String pojoPackageDir = pojoble.getRelatedEtlConf().getPojoPackageAsDirectory(pojoPackageName).getAbsolutePath();
 		
 		File clazzFile = new File(
 		        pojoPackageDir + FileUtilities.getPathSeparator() + pojoble.generateClassName() + ".class");
 		
 		if (clazzFile.exists()) {
 			addClassToClassPath(utilities.parseObjectToArray(clazzFile),
-			    pojoble.getRelatedEtlConf().getPojoPackageRelativePath(connInfo),
+			    pojoble.getRelatedEtlConf().getPojoPackageRelativePath(pojoPackageName),
 			    pojoble.getRelatedEtlConf());
 		}
 	}

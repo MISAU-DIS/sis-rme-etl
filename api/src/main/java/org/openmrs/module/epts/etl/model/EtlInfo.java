@@ -13,7 +13,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -90,8 +90,9 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			this.transformedObject.loadUniqueKeyValues();
 		}
 
-		if (!(this.relatedSrcObject.getRelatedConfiguration() instanceof SrcConf)) {
-			throw new EtlExceptionImpl("Attempt to transform not SrcConf Objecrt " + this.relatedSrcObject);
+		if (!(this.relatedSrcObject.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration)) {
+			throw new EtlExceptionImpl("Attempt to transform an object not associated with a primary data source: "
+					+ this.relatedSrcObject);
 		}
 
 		this.resultItem = new EtlOperationItemResult<EtlDatabaseObject>(this.relatedSrcObject);
@@ -173,8 +174,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		return getTaskProcessor().getDstConnInfo();
 	}
 
-	public SrcConf getSrcConf() {
-		return (SrcConf) this.relatedSrcObject.getRelatedConfiguration();
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return (PrimaryDataSourceConfiguration) this.relatedSrcObject.getRelatedConfiguration();
 	}
 
 	public EtlConfiguration getEtlConfiguration() {
@@ -203,10 +204,11 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 				DatabaseObjectDAO.insert(recursive, srcConn);
 			} else {
-				List<SrcConf> avaliableSrcForCurrParent = parentInfo.getParentTableConfInDst()
-						.findRelatedSrcConfWhichAsAtLeastOnematchingDst(getEtlOperationConfig());
+				List<PrimaryDataSourceConfiguration> availableSourcesForCurrentParent = parentInfo
+						.getParentTableConfInDst()
+						.findRelatedPrimaryDataSourcesWithMatchingDestination(getEtlOperationConfig());
 
-				if (utilities.listHasNoElement(avaliableSrcForCurrParent)) {
+				if (utilities.listHasNoElement(availableSourcesForCurrentParent)) {
 					throw new ForbiddenOperationException(
 							"There are relashioship which cannot auto resolved as there is no configured etl for "
 									+ parentInfo.getParentTableConfInDst().getTableName()
@@ -216,12 +218,12 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 				EtlDatabaseObject dstParent = null;
 				EtlDatabaseObject recordAsSrc = null;
 
-				for (SrcConf src : avaliableSrcForCurrParent) {
-					DstConf dst = ((EtlItemConfiguration) src.getParentConf()).findDstTable_(getEtlOperationConfig(),
+				for (PrimaryDataSourceConfiguration source : availableSourcesForCurrentParent) {
+					DstConf dst = source.getParentItemConfiguration().findDstTable_(getEtlOperationConfig(),
 							parentInfo.getParentTableConfInDst().getTableName());
 
-					recordAsSrc = src.createRecordInstance();
-					recordAsSrc.setRelatedConfiguration(src);
+					recordAsSrc = source.newInstance();
+					recordAsSrc.setRelatedConfiguration(source);
 
 					recordAsSrc.copyFrom(parentInfo.getParentRecordInOrigin());
 
@@ -343,7 +345,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 					}
 
 					EtlDatabaseObject parentInSrc = this.getTransformedObject()
-							.retrieveParentInSrcUsingDstParentInfo(refInfo, this.getSrcConf(), srcConn);
+							.retrieveParentInSrcUsingDstParentInfo(refInfo, this.getPrimaryDataSource(), srcConn);
 
 					EtlDatabaseObject parentInDst = null;
 
@@ -437,7 +439,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			throws DBException, ForbiddenOperationException {
 
 		EtlDatabaseObject parentInOrigin = getTransformedObject().retrieveParentInSrcUsingDstParentInfo(refInfo,
-				getSrcConf(), srcConn);
+				getPrimaryDataSource(), srcConn);
 
 		EtlDatabaseObject parent = null;
 
@@ -536,7 +538,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		}
 
 		EtlDatabaseObject parentInOrigin = this.getTransformedObject().retrieveParentInSrcUsingDstParentInfo(refInfo,
-				getSrcConf(), srcConn);
+				getPrimaryDataSource(), srcConn);
 
 		if (parentInOrigin == null) {
 			return null;

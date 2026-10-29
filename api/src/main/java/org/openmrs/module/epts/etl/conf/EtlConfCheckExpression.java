@@ -82,7 +82,7 @@ public class EtlConfCheckExpression {
 				}
 			}
 
-			ds = ((FieldsMapping) context).getTransformationTargetObject().getSrcConf();
+			ds = ((FieldsMapping) context).getTransformationTargetObject().getPrimaryDataSource();
 
 			if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf(ds))) {
 				return;
@@ -91,7 +91,8 @@ public class EtlConfCheckExpression {
 		}
 
 		if (context instanceof TransformableDataSourceField) {
-			SrcConf ds = ((TransformableDataSourceField) context).getTransformationTargetObject().getSrcConf();
+			EtlDataSource ds = ((TransformableDataSourceField) context).getTransformationTargetObject()
+			        .getPrimaryDataSource();
 
 			if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf(ds))) {
 				return;
@@ -129,7 +130,7 @@ public class EtlConfCheckExpression {
 		} else if (ds instanceof SrcConf) {
 			srcConf = (SrcConf) ds;
 		} else if (ds instanceof DstConf) {
-			srcConf = ((DstConf) ds).getSrcConf();
+			srcConf = ((DstConf) ds).getPrimaryDataSource().requireJdbc();
 		}
 
 		try {

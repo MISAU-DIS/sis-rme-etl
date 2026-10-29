@@ -51,7 +51,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	private Boolean fullLoaded;
 
-	private SrcConf relatedSrcConf;
+	private PrimaryDataSourceConfiguration relatedPrimaryDataSource;
 
 	private Boolean required;
 
@@ -162,7 +162,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
-		return this.relatedSrcConf.getRelatedEtlConf();
+		return this.relatedPrimaryDataSource.getRelatedEtlConf();
 	}
 
 	public String getFieldsValuesGenerator() {
@@ -291,7 +291,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public EtlDataConfiguration getParentConf() {
-		return this.relatedSrcConf;
+		return this.relatedPrimaryDataSource;
 	}
 
 	@Override
@@ -345,7 +345,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		return this.relatedSrcConf.getRelatedConnInfo();
+		return this.relatedPrimaryDataSource.getRelatedConnInfo();
 	}
 
 	@Override
@@ -403,12 +403,22 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public SrcConf getRelatedSrcConf() {
-		return this.relatedSrcConf;
+		return this.relatedPrimaryDataSource.requireJdbc();
 	}
 
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
-		this.relatedSrcConf = relatedSrcConf;
+		this.relatedPrimaryDataSource = relatedSrcConf;
+	}
+
+	@Override
+	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
+		return relatedPrimaryDataSource;
+	}
+
+	@Override
+	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
+		this.relatedPrimaryDataSource = primaryDataSource;
 	}
 
 	@Override
@@ -592,12 +602,14 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
-		this.relatedSrcConf = (SrcConf) relatedParent;
+		if (!(relatedParent instanceof PrimaryDataSourceConfiguration))
+			throw new ForbiddenOperationException("The parent of TransformableDataSource must be a primary data source");
+		this.relatedPrimaryDataSource = (PrimaryDataSourceConfiguration) relatedParent;
 	}
 
 	@Override
-	public SrcConf getSrcConf() {
-		return this.relatedSrcConf;
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return this.relatedPrimaryDataSource;
 	}
 
 	public Boolean getFullLoaded() {
@@ -678,13 +690,9 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
-		this.addToAvaliableDataSource(this.getSrcConf());
-		this.addAllToAvaliableDataSource(this.getSrcConf().getAvaliableExtraDataSource());
-
-		if (this.getSrcConf().hasParentItemConf()) {
-			this.addAllToAvaliableDataSource(
-					this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
-		}
+		this.addToAvaliableDataSource((EtlDataSource) relatedPrimaryDataSource);
+		this.addAllToAvaliableDataSource(
+				relatedPrimaryDataSource.getParentSource().getAvailableAdditionalDataSources());
 
 		this.setAllNotPrefferredDataSource(this.getAllAvaliableDataSource());
 	}

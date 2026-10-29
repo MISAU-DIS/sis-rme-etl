@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.DefaultEtlValidator;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.Extension;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -213,7 +213,8 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 	}
 
 	protected Object[] resolveDstValues(EtlDatabaseObject srcObject, List<FieldTransformingInfo> params,
-			SrcConf srcConf, TableConfiguration dstConf, Connection srcConn, Connection dstConn) throws DBException {
+			PrimaryDataSourceConfiguration primarySource, TableConfiguration dstConf, Connection srcConn,
+			Connection dstConn) throws DBException {
 
 		Object[] resolvedParams = new Object[params.size()];
 
@@ -254,9 +255,10 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 			auxObject.setFieldValue(refInfo.getChildColumnOnSimpleMapping(), transformedValue);
 
-			srcConf.fullLoad(srcConn);
+			primarySource.fullLoad(srcConn);
 
-			EtlDatabaseObject parentInSrc = auxObject.retrieveParentInSrcUsingDstParentInfo(refInfo, srcConf, srcConn);
+			EtlDatabaseObject parentInSrc = auxObject.retrieveParentInSrcUsingDstParentInfo(refInfo, primarySource,
+					srcConn);
 			EtlDatabaseObject parentInDst = null;
 
 			refInfo.fullLoad(dstConn);
@@ -267,7 +269,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				throw new EtlTransformationException(
 						"The " + refInfo.getTableName() + "(" + transformedValue + ") of " + dstConf.getTableName()
 								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on src db",
-						srcObject, srcConf.getRelatedEtlConf().getDefaultInconsistencyBehavior());
+						srcObject, primarySource.getRelatedEtlConf().getDefaultInconsistencyBehavior());
 			}
 
 			if (parentInDst == null) {
@@ -275,7 +277,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				throw new EtlTransformationException(
 						"The " + refInfo.getTableName() + "(" + transformedValue + ") of " + dstConf.getTableName()
 								+ "(" + srcObject.getObjectId().asSimpleNumericValue() + ") cannot be found on dst db",
-						srcObject, srcConf.getRelatedEtlConf().getDefaultInconsistencyBehavior());
+						srcObject, primarySource.getRelatedEtlConf().getDefaultInconsistencyBehavior());
 			}
 
 			resolvedParams[i] = parentInDst.getObjectId().asSimpleNumericValue();

@@ -40,24 +40,24 @@ public class DuplicatedUsersProcessor extends org.openmrs.module.epts.etl.etl.pr
 		int i = 1;
 		
 		if (this.usersTableConf == null) {
-			this.usersTableConf = new GenericTableConfiguration("users", getSrcConf());
+			this.usersTableConf = new GenericTableConfiguration("users", getJdbcPrimaryDataSource());
 			this.usersTableConf.setMustLoadChildrenInfo(true);
 			this.usersTableConf.fullLoad(srcConn);
 			
-			this.getSrcConf().setEtlRecordClass(TmpUserVO.class);
+			this.getJdbcPrimaryDataSource().setEtlRecordClass(TmpUserVO.class);
 		}
 		
 		for (EtlDatabaseObject record : etlObjects) {
 			String startingStrLog = utilities.garantirXCaracterOnNumber(i,
 			    ("" + getSearchParams().getQtdRecordPerSelected()).length()) + "/" + etlObjects.size();
 			
-			List<TmpUserVO> allDuplicatedByUuid = DatabaseObjectDAO.getByField(this.getSrcConf(), "user_uuid",
+			List<TmpUserVO> allDuplicatedByUuid = DatabaseObjectDAO.getByField(this.getJdbcPrimaryDataSource(), "user_uuid",
 			    record.getFieldValue("user_uuid").toString(), srcConn);
 			
 			logDebug(startingStrLog + " RESOLVING..." + record);
 			
 			TmpUserVO preservedUser = TmpUserVO.getWinningRecord(allDuplicatedByUuid, srcConn);
-			preservedUser.setUsersSyncTableConfiguration(this.getSrcConf());
+			preservedUser.setUsersSyncTableConfiguration(this.getJdbcPrimaryDataSource());
 			
 			for (int j = 0; j < allDuplicatedByUuid.size(); j++) {
 				TmpUserVO dup = allDuplicatedByUuid.get(j);
@@ -66,7 +66,7 @@ public class DuplicatedUsersProcessor extends org.openmrs.module.epts.etl.etl.pr
 					continue;
 				}
 				
-				dup.setUsersSyncTableConfiguration(this.getSrcConf());
+				dup.setUsersSyncTableConfiguration(this.getJdbcPrimaryDataSource());
 				
 				GenericDatabaseObject user = new GenericDatabaseObject(this.usersTableConf);
 				

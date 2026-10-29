@@ -28,7 +28,7 @@ public class CentralAndRemoteDataReconciliationSearchParams extends AbstractEtlS
 	
 	public CentralAndRemoteDataReconciliationSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits, EtlOperationType type) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.type = type;
 		this.relatedEngine = engine;

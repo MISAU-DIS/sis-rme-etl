@@ -20,6 +20,9 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprin
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -40,6 +43,12 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		implements Comparable<AbstractTableConfiguration>, TableConfiguration {
 
 	private String tableName;
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
+
+	private RecordSchemaConfiguration recordSchema;
 
 	private List<String> ignorableFields;
 
@@ -117,6 +126,75 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private Boolean allRelatedTablesFullLoaded;
 
 	private String schema;
+
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
+	}
+
+	public RecordSchemaConfiguration getRecordSchema() {
+		return recordSchema;
+	}
+
+	public void setRecordSchema(RecordSchemaConfiguration recordSchema) {
+		this.recordSchema = recordSchema;
+	}
+
+	@JsonIgnore
+	public boolean usesNonJdbcResource() {
+		return resolvedResource != null && resolvedResource.getEndpoint().getType() != ConnectorType.JDBC;
+	}
+
+	protected void loadConfiguredRecordSchema() throws DBException {
+		if (recordSchema == null) {
+			throw new EtlConfException("recordSchema is required for non-JDBC resource " + getResourceDescription());
+		}
+
+		this.tryToGenerateTableAlias(getRelatedEtlConf());
+		this.setFields(recordSchema.resolveFields(getResourceDescription()));
+		this.setFieldsLoaded(true);
+		this.setTableNameInfoLoaded(true);
+		this.setPrimaryKeyInfoLoaded(true);
+		this.setUniqueKeyInfoLoaded(true);
+		this.setParentsLoaded(true);
+		this.setEtlRecordClass(org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject.class);
+		this.setAutoIncrementId(false);
+		this.setIncludePrimaryKeyOnInsert(true);
+		this.schemaMetadataLoadSource = SchemaMetadataLoadSource.CONFIGURED_RECORD_SCHEMA;
+	}
+
+	private String getResourceDescription() {
+		if (resolvedResource == null) {
+			return String.valueOf(this);
+		}
+		return resolvedResource.getEndpoint().getType() + " resource '" + resolvedResource.getName() + "'";
+	}
+
+	@Override
+	public void clone(TableConfiguration toCloneFrom, EtlDataConfiguration parent, EtlDatabaseObject schemaInfoSrc,
+			Connection conn) throws DBException {
+		TableConfiguration.super.clone(toCloneFrom, parent, schemaInfoSrc, conn);
+
+		if (toCloneFrom instanceof AbstractTableConfiguration) {
+			AbstractTableConfiguration source = (AbstractTableConfiguration) toCloneFrom;
+			ConnectorResourceConfiguration sourceResource = source.getResource();
+			this.setResource(sourceResource == null ? null : sourceResource.copy());
+			this.setRecordSchema(source.getRecordSchema() == null ? null : source.getRecordSchema().copy());
+		}
+	}
 
 	private Boolean usingManualDefinedAlias;
 
@@ -249,6 +327,20 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
+		if (usesNonJdbcResource()) {
+			if (this.isFullLoaded())
+				return;
+			synchronized (this) {
+				if (this.isFullLoaded())
+					return;
+				loadConfiguredRecordSchema();
+				this.loadOwnElements(null, conn);
+				this.setEtlRecordClass(org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject.class);
+				this.setFullLoaded(true);
+			}
+			return;
+		}
+
 		boolean alreadyLoaded = this.isFullLoaded();
 
 		if (!alreadyLoaded) {
@@ -305,7 +397,6 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			}
 		}
 
-		this.attachPhysicalTableConfiguration(dstConn);
 	}
 
 	private void attachPhysicalTableConfiguration(Connection conn) throws DBException {

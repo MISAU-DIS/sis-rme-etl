@@ -8,6 +8,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -29,8 +30,9 @@ import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 
 public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDatabaseObject> {
 
-	public EtlDatabaseObjectSearchParams(SrcConf srcConf, ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
-		super(srcConf, limits);
+	public EtlDatabaseObjectSearchParams(PrimaryDataSourceConfiguration primaryDataSource,
+			ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
+		super(primaryDataSource, limits);
 	}
 
 	@Override

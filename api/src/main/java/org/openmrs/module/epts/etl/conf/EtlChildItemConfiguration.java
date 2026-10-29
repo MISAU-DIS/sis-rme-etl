@@ -145,11 +145,13 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	@Override
-	public void fullLoad(EtlOperationConfig operationConfig, Connection srcConn, Connection dstConn)
-			throws DBException {
+	public void fullLoad(EtlOperationConfig operationConfig, Connection srcConn,
+	        DestinationConnectorConnections destinationConnections) throws DBException {
+		super.fullLoad(operationConfig, srcConn, destinationConnections);
+		resolveRelatedParentDestination();
+	}
 
-		super.fullLoad(operationConfig, srcConn, dstConn);
-
+	private void resolveRelatedParentDestination() {
 		if (this.hasParentItemConf() && this.getRelatedParentDstConf() == null) {
 
 			if (!utilities.stringHasValue(this.getRelatedParentDstConfName())) {

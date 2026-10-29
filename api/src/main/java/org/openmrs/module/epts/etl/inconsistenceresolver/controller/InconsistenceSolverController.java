@@ -53,7 +53,7 @@ public class InconsistenceSolverController extends OperationController<EtlDataba
 		try {
 			conn = openSrcConnection(this);
 			
-			EtlDatabaseObject obj = DatabaseObjectDAO.getFirstNeverProcessedRecordOnOrigin(engine.getSrcConf(), conn);
+			EtlDatabaseObject obj = DatabaseObjectDAO.getFirstNeverProcessedRecordOnOrigin(engine.getJdbcPrimaryDataSource(), conn);
 			
 			if (obj != null)
 				return obj.getObjectId().getSimpleValueAsInt();
@@ -77,7 +77,7 @@ public class InconsistenceSolverController extends OperationController<EtlDataba
 		try {
 			conn = openSrcConnection(this);
 			
-			EtlDatabaseObject obj = DatabaseObjectDAO.getLastNeverProcessedRecordOnOrigin(engine.getSrcConf(), conn);
+			EtlDatabaseObject obj = DatabaseObjectDAO.getLastNeverProcessedRecordOnOrigin(engine.getJdbcPrimaryDataSource(), conn);
 			
 			if (obj != null)
 				return obj.getObjectId().getSimpleValueAsInt();

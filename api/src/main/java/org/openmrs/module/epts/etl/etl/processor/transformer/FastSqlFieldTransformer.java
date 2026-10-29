@@ -167,12 +167,12 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 				if (this.dataSourceConfig == null) {
 
 					EtlConfiguration relatedEtlConfiguration = field.getTransformationTargetObject()
-							.getSrcConf() != null
-									? field.getTransformationTargetObject().getSrcConf().getRelatedEtlConf()
+							.getPrimaryDataSource() != null
+									? field.getTransformationTargetObject().getPrimaryDataSource().getRelatedEtlConf()
 									: field.getTransformationTargetObject().getRelatedEtlConf();
 
 					QueryDataSourceConfig conf = new QueryDataSourceConfig(this.sqlQuery,
-							field.getTransformationTargetObject().getSrcConf());
+							field.getTransformationTargetObject().getPrimaryDataSource().requireJdbc());
 
 					conf.setRelatedEtlConf(relatedEtlConfiguration);
 

@@ -9,9 +9,12 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.DestinationConnectorConnections;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -25,6 +28,7 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprin
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
@@ -36,9 +40,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
  * The processor responsible for transport synchronization files from origin to
@@ -131,35 +133,39 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 		if (item == null || !visitedItemConfigurations.add(item))
 			return;
 
-		item.init(getRelatedEtlConf(), item.isTesting(), srcConn, dstConn);
+		item.init(getRelatedEtlConf(), item.isTesting(), srcConn);
 
-		item.fullLoad(operationConfig, srcConn, dstConn);
+		try (DestinationConnectorConnections destinationConnections = item.createDestinationConnections(this)) {
+			item.fullLoad(operationConfig, srcConn, destinationConnections);
 
-		DBConnectionInfo sourceConnectionInfo = item.getSrcConnInfo();
+			DatabaseModelGenerationContext sourceContext = DatabaseModelGenerationContext.source(
+					getRelatedEtlConfiguration().getDataModel(), srcConn);
 
-		if (!item.getSrcConf().doNotUseAsDatasource()) {
+			PrimaryDataSourceConfiguration primarySource = item.getPrimaryDataSource();
+			if (!(primarySource instanceof SrcConf) || !((SrcConf) primarySource).doNotUseAsDatasource()) {
+				generate(sourceContext, primarySource);
 
-			generate(sourceConnectionInfo, item.getSrcConf());
-
-			for (EtlAdditionalDataSource dataSource : item.getSrcConf().getAvaliableExtraDataSource()) {
-				generate(sourceConnectionInfo, dataSource);
+				for (EtlAdditionalDataSource dataSource : item.getSource().getAvailableAdditionalDataSources()) {
+					generate(sourceContext, dataSource);
+				}
 			}
-		}
 
-		if (item.hasDstConf() && getRelatedEtlConfiguration().hasDstConnInfo()) {
-			DBConnectionInfo destinationConnectionInfo = getRelatedEtlConfiguration().getDstConnInfo();
+			if (item.hasDstConf()) {
+				for (DstConf destination : item.getDstConf()) {
+					if (destination.isDisabled() || !destinationConnections.isJdbc(destination))
+						continue;
 
-			for (DstConf destination : item.getDstConf()) {
-				if (destination.isDisabled())
-					continue;
+					Connection destinationConnection = destinationConnections.get(destination);
+					DatabaseModelGenerationContext destinationContext = DatabaseModelGenerationContext.destination(
+							getRelatedEtlConfiguration().getDataModel(), destinationConnection);
 
-				destination.setRelatedConnInfo(destinationConnectionInfo);
+					destination.init(item, srcConn, destinationConnection);
 
-				destination.init(item, srcConn, dstConn);
+					generate(destinationContext, destination);
 
-				generate(destinationConnectionInfo, destination);
-
-				generateOnDemandConfigurationTrees(destination, operationConfig, srcConn, dstConn);
+					generateOnDemandConfigurationTrees(destination, operationConfig, srcConn,
+					        destinationConnection);
+				}
 			}
 		}
 
@@ -195,25 +201,22 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 		}
 	}
 
-	private void generate(DBConnectionInfo app, EtlDatabaseObjectConfiguration objectConfiguration) {
-		if (!utilities.stringHasValue(getRelatedEtlConfiguration().getPojoPackage(app))) {
-			throw new ForbiddenOperationException("The connInfo " + app + " has no package name!");
+	private void generate(DatabaseModelGenerationContext context,
+			EtlDatabaseObjectConfiguration objectConfiguration) {
+		if (!utilities.stringHasValue(context.getPojoPackageName())) {
+			throw new ForbiddenOperationException("No POJO package is configured for " + context.getSide());
 		}
 
-		String fullClassName = objectConfiguration.generateFullClassName(app);
+		String fullClassName = objectConfiguration.generateFullClassName(context);
 		if (!generationVisitTracker.begin(fullClassName))
 			return;
 
-		OpenConnection appConn = null;
-
 		try {
+			if (!objectConfiguration.isFullLoaded())
+				objectConfiguration.fullLoad(context.getConnection());
 
-			appConn = app.openConnection(this);
-
-			objectConfiguration.fullLoad(appConn);
-
-			objectConfiguration.generateRelatedPojoClass(app, true);
-			persistPhysicalMetadata(app, objectConfiguration, appConn);
+			objectConfiguration.generateRelatedPojoClass(context, true);
+			persistPhysicalMetadata(context, objectConfiguration);
 			generationVisitTracker.complete(fullClassName);
 
 		} catch (DBException e) {
@@ -222,8 +225,6 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 		} catch (RuntimeException e) {
 			generationVisitTracker.fail(fullClassName);
 			throw e;
-		} finally {
-			finalizeConnection(appConn);
 		}
 
 		if (objectConfiguration instanceof TableConfiguration) {
@@ -231,14 +232,14 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 
 			if (tabConf.hasParentRefInfo() && tabConf.autoGenerateDataModelForParents()) {
 				for (ParentTable p : tabConf.getParentRefInfo()) {
-					generate(app, p);
+					generate(context, p);
 				}
 			}
 		}
 	}
 
-	private void persistPhysicalMetadata(DBConnectionInfo app, EtlDatabaseObjectConfiguration tableConfiguration,
-			Connection connection) {
+	private void persistPhysicalMetadata(DatabaseModelGenerationContext context,
+			EtlDatabaseObjectConfiguration tableConfiguration) {
 		if (!(tableConfiguration instanceof AbstractTableConfiguration))
 			return;
 
@@ -248,7 +249,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 
 		try {
 			PhysicalTableKey key = PhysicalTableKeyFactory.create(table,
-					getRelatedEtlConfiguration().getDataModelId(app), connection);
+					context.getDataModelId(), context.getConnection());
 			if (!physicalMetadataVisitTracker.begin(key))
 				return;
 
@@ -264,7 +265,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 								"Existing physical metadata could not be loaded after it was preserved: " + key));
 				new FileDatabaseModelManifestRepository(getRelatedEtlConfiguration().getSchemaMetadataDirectory())
 						.record(new DatabaseModelManifest.Entry(key.toString(),
-								tableConfiguration.generateFullClassName(app),
+								tableConfiguration.generateFullClassName(context),
 								PhysicalTableMetadataFingerprint.sha256(persistedMetadata)));
 				physicalMetadataVisitTracker.complete(key);
 			} catch (IOException | RuntimeException exception) {

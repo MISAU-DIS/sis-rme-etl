@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -594,8 +595,10 @@ public interface EtlDatabaseObject extends EtlObject {
 		return child;
 	}
 
-	default EtlDatabaseObject retrieveParentInSrcUsingDstParentInfo(ParentTable refInfo, SrcConf src,
+	default EtlDatabaseObject retrieveParentInSrcUsingDstParentInfo(ParentTable refInfo,
+			PrimaryDataSourceConfiguration primarySource,
 			Connection srcConn) throws DBException {
+		SrcConf src = primarySource.requireJdbc();
 
 		Oid prentOid = refInfo.generateParentOidFromChild(this);
 
@@ -1017,7 +1020,8 @@ public interface EtlDatabaseObject extends EtlObject {
 
 			EtlDatabaseObjectConfiguration conf = this.getRelatedConfiguration();
 
-			if (conf instanceof SrcConf && ((SrcConf) conf).doNotUseAsDatasource()) {
+			if (conf instanceof PrimaryDataSourceConfiguration
+			        && ((PrimaryDataSourceConfiguration) conf).doNotUseAsDatasource()) {
 			} else {
 				avaliableSrcOjects.add(this);
 			}
@@ -1075,7 +1079,9 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default void trackProcessingState(EtlStageAreaObject processedRec, Connection srcConn)
 			throws EtlConfException, DBException {
-		SrcConf srcConf = (SrcConf) processedRec.getRelatedEtlObject().getRelatedConfiguration();
+		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) processedRec
+		        .getRelatedEtlObject().getRelatedConfiguration();
+		SrcConf srcConf = primarySource.requireJdbc();
 
 		if (!srcConf.isTrackabled()) {
 			throw new EtlConfException("The table " + this + " is not trackable!!");
@@ -1087,10 +1093,14 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean isTrackable() {
-		if (!(this.getRelatedConfiguration() instanceof SrcConf))
+		if (!(this.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration))
 			return false;
 
-		SrcConf srcConf = (SrcConf) this.getRelatedConfiguration();
+		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) this.getRelatedConfiguration();
+		if (!primarySource.isJdbc())
+			return false;
+
+		SrcConf srcConf = primarySource.requireJdbc();
 
 		return srcConf.isTrackabled();
 	}
@@ -1104,7 +1114,8 @@ public interface EtlDatabaseObject extends EtlObject {
 			throw new ForbiddenOperationException("Attempt to track not trackable object " + this);
 		}
 
-		SrcConf srcConf = (SrcConf) this.getRelatedConfiguration();
+		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) this.getRelatedConfiguration();
+		SrcConf srcConf = primarySource.requireJdbc();
 
 		srcConf.changeObjectStatus(this, status, srcConn);
 

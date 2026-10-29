@@ -83,7 +83,7 @@ public class CentralAndRemoteDataReconciliationController extends OperationContr
 	
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
-		if (engine.getSrcConf().getTableName().equalsIgnoreCase("users"))
+		if (engine.getJdbcPrimaryDataSource().getTableName().equalsIgnoreCase("users"))
 			return 0;
 		
 		OpenConnection conn = null;
@@ -94,13 +94,13 @@ public class CentralAndRemoteDataReconciliationController extends OperationContr
 			conn = openSrcConnection(this);
 			
 			if (isMissingRecordsDetector()) {
-				EtlStageRecordVO record = SyncImportInfoDAO.getFirstMissingRecordInDestination(engine.getSrcConf(), conn);
+				EtlStageRecordVO record = SyncImportInfoDAO.getFirstMissingRecordInDestination(engine.getJdbcPrimaryDataSource(), conn);
 				
 				id = record != null ? record.getId() : 0;
 			} else if (isOutdateRecordsDetector()) {
-				id = DatabaseObjectDAO.getFirstRecord(engine.getSrcConf(), conn);
+				id = DatabaseObjectDAO.getFirstRecord(engine.getJdbcPrimaryDataSource(), conn);
 			} else if (isPhantomRecordsDetector()) {
-				EtlDatabaseObject record = DatabaseObjectDAO.getFirstPhantomRecordInDestination(engine.getSrcConf(), conn);
+				EtlDatabaseObject record = DatabaseObjectDAO.getFirstPhantomRecordInDestination(engine.getJdbcPrimaryDataSource(), conn);
 				
 				id = record != null ? record.getObjectId().getSimpleValueAsInt() : 0;
 			}
@@ -119,7 +119,7 @@ public class CentralAndRemoteDataReconciliationController extends OperationContr
 	
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
-		if (engine.getSrcConf().getTableName().equalsIgnoreCase("users"))
+		if (engine.getJdbcPrimaryDataSource().getTableName().equalsIgnoreCase("users"))
 			return 0;
 		
 		OpenConnection conn = null;
@@ -130,13 +130,13 @@ public class CentralAndRemoteDataReconciliationController extends OperationContr
 			conn = openSrcConnection(this);
 			
 			if (isMissingRecordsDetector()) {
-				EtlStageRecordVO record = SyncImportInfoDAO.getLastMissingRecordInDestination(engine.getSrcConf(), conn);
+				EtlStageRecordVO record = SyncImportInfoDAO.getLastMissingRecordInDestination(engine.getJdbcPrimaryDataSource(), conn);
 				
 				id = record != null ? record.getId() : 0;
 			} else if (isOutdateRecordsDetector()) {
-				id = DatabaseObjectDAO.getLastRecord(engine.getSrcConf(), conn);
+				id = DatabaseObjectDAO.getLastRecord(engine.getJdbcPrimaryDataSource(), conn);
 			} else if (isPhantomRecordsDetector()) {
-				EtlDatabaseObject record = DatabaseObjectDAO.getLastPhantomRecordInDestination(engine.getSrcConf(), conn);
+				EtlDatabaseObject record = DatabaseObjectDAO.getLastPhantomRecordInDestination(engine.getJdbcPrimaryDataSource(), conn);
 				
 				id = record != null ? record.getObjectId().getSimpleValueAsInt() : 0;
 			}

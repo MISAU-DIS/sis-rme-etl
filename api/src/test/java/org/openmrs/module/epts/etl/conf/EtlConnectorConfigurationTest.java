@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
@@ -17,6 +18,8 @@ import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
@@ -74,6 +77,7 @@ class EtlConnectorConfigurationTest {
 
 		assertEquals("jdbc:mysql://legacy/source", configuration.getSrcConnInfo().getConnectionURI());
 		initializeConnectors(configuration);
+		assertEquals("jdbc:mysql://legacy/source", configuration.getSrcConnInfo().getConnectionURI());
 		assertEquals("jdbc:mysql://neutral/source",
 				configuration.getInitializedConnectorRegistry().select(null, "source-db", ConnectorDirection.SOURCE,
 						false).getUri());
@@ -122,6 +126,7 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldResolveResourcesEmbeddedInSourceAndDestinations() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		ConnectorEndpointConfiguration sourceConnector = jdbcConnector("source-db", "jdbc:mysql://source/openmrs");
 		ConnectorEndpointConfiguration databaseConnector = jdbcConnector("destination-db",
 				"jdbc:mysql://destination/openmrs");
@@ -161,6 +166,7 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldReportUnavailableConnectorCapabilitiesDuringConfigurationValidation() {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		ConnectorEndpointConfiguration source = new ConnectorEndpointConfiguration();
 		source.setId("events");
 		source.setType(ConnectorType.MESSAGE_QUEUE);
@@ -173,6 +179,7 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldSelectDifferentConnectorsForResourcesInTheSameItem() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		ConnectorEndpointConfiguration sourceConnector = jdbcConnector("source-db", "jdbc:mysql://source/openmrs");
 		ConnectorEndpointConfiguration archiveConnector = jdbcConnector("archive-db", "jdbc:mysql://archive/history");
 		configuration.setConnectors(java.util.Arrays.asList(sourceConnector, archiveConnector));
@@ -198,8 +205,103 @@ class EtlConnectorConfigurationTest {
 	}
 
 	@Test
-	void shouldRejectAmbiguousConnectorSelection() throws Exception {
+	void shouldBindEachJdbcDestinationToItsOwnConnectorConnectionInfo() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		ConnectorEndpointConfiguration firstConnector = jdbcConnector("first-db", "jdbc:mysql://first/etl");
+		ConnectorEndpointConfiguration secondConnector = jdbcConnector("second-db", "jdbc:mysql://second/etl");
+		configuration.setConnectors(java.util.Arrays.asList(firstConnector, secondConnector));
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		SrcConf source = new SrcConf();
+		source.setTableName("patient");
+		item.setSrcConf(source);
+		DstConf first = new DstConf("patient_first");
+		first.setResource(resource("first-db", "patient_first"));
+		DstConf second = new DstConf("patient_second");
+		second.setResource(resource("second-db", "patient_second"));
+		item.setDstConf(java.util.Arrays.asList(first, second));
+
+		initializeConnectors(configuration);
+		initializeResources(item);
+
+		assertEquals("jdbc:mysql://first/etl", first.getRelatedConnInfo().getConnectionURI());
+		assertEquals("jdbc:mysql://second/etl", second.getRelatedConnInfo().getConnectionURI());
+		assertNotSame(first.getRelatedConnInfo(), second.getRelatedConnInfo());
+	}
+
+	@Test
+	void shouldCreateLazyDestinationConnectionAggregator() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		ConnectorEndpointConfiguration database = jdbcConnector("destination-db", "jdbc:invalid:must-not-open");
+		ConnectorEndpointConfiguration file = new ConnectorEndpointConfiguration();
+		file.setId("jsonl-output");
+		file.setType(ConnectorType.FILE);
+		file.setUri("data/output");
+		configuration.setConnectors(java.util.Arrays.asList(database, file));
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		SrcConf source = new SrcConf();
+		source.setTableName("patient");
+		item.setSrcConf(source);
+		DstConf jdbcDestination = new DstConf("patient_copy");
+		jdbcDestination.setResource(resource("destination-db", "patient_copy"));
+		DstConf fileDestination = new DstConf("patient_export");
+		fileDestination.setResource(resource("jsonl-output", "patients.jsonl"));
+		item.setDstConf(java.util.Arrays.asList(jdbcDestination, fileDestination));
+
+		initializeConnectors(configuration);
+		initializeResources(item);
+
+		DestinationConnectorConnections connections = item.createDestinationConnections(item);
+
+		assertTrue(connections.isJdbc(jdbcDestination));
+		assertFalse(connections.isJdbc(fileDestination));
+		assertSame(jdbcDestination.getResolvedResource(), connections.getResource(jdbcDestination));
+		assertTrue(connections.getOpenedConnections().isEmpty());
+		assertNull(connections.getIfJdbc(fileDestination));
+		assertThrows(ForbiddenOperationException.class, () -> connections.get(fileDestination));
+
+		connections.close();
+		assertThrows(IllegalStateException.class, () -> connections.get(jdbcDestination));
+	}
+
+	@Test
+	void shouldGenerateDefaultDestinationFromConnectorWithoutOpeningLegacyConnection() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		ConnectorEndpointConfiguration destination = jdbcConnector("destination-db", "jdbc:invalid:must-not-open");
+		destination.setProperties(java.util.Collections.singletonMap("schema", "target_schema"));
+		configuration.setConnectors(java.util.Collections.singletonList(destination));
+		configuration.setDefaultDestinationConnector("destination-db");
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		SrcConf source = new SrcConf();
+		source.setTableName("patient");
+		item.setSrcConf(source);
+
+		initializeConnectors(configuration);
+		Method prepare = EtlItemConfiguration.class
+		        .getDeclaredMethod("prepareDestinationConfigurationsForConnectorFullLoad");
+		prepare.setAccessible(true);
+		prepare.invoke(item);
+
+		assertEquals(1, item.getDstConf().size());
+		DstConf generated = item.getDstConf().get(0);
+		assertEquals("patient", generated.getTableName());
+		assertEquals("target_schema", generated.getSchema());
+		assertEquals("jdbc:invalid:must-not-open", generated.getRelatedConnInfo().getConnectionURI());
+		assertSame(generated.getResolvedResource(), item.getResolvedDstResource(generated));
+	}
+
+	@Test
+	void shouldPreferLegacyStateConnectorWhenSourceConnectorIsOmitted() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
 		configuration.setConnectors(java.util.Arrays.asList(jdbcConnector("first", "jdbc:first"),
 				jdbcConnector("second", "jdbc:second")));
 		EtlItemConfiguration item = new EtlItemConfiguration();
@@ -210,9 +312,131 @@ class EtlConnectorConfigurationTest {
 		item.setSrcConf(sourceConfiguration);
 		initializeConnectors(configuration);
 
-		InvocationTargetException error = org.junit.jupiter.api.Assertions.assertThrows(InvocationTargetException.class,
-				() -> initializeResources(item));
-		assertTrue(error.getCause().getMessage().contains("ambiguous"));
+		initializeResources(item);
+		assertSame(configuration.getSrcConnInfo(),
+				item.getResolvedSrcResource().getEndpoint().unwrap(DBConnectionInfo.class));
+	}
+
+	@Test
+	void shouldDeriveSrcConnInfoFromJdbcDefaultSourceConnectorWhenItIsAbsent() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setConnectors(java.util.Collections
+				.singletonList(jdbcConnector("source-db", "jdbc:mysql://source/openmrs")));
+		configuration.setDefaultSourceConnector("source-db");
+
+		initializeConnectors(configuration);
+
+		assertEquals("jdbc:mysql://source/openmrs", configuration.getSrcConnInfo().getConnectionURI());
+	}
+
+	@Test
+	void shouldKeepExplicitSrcConnInfoWhenDefaultSourceConnectorIsNotJdbc() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		DBConnectionInfo stateConnection = new DBConnectionInfo();
+		stateConnection.setConnectionURI("jdbc:mysql://state/etl");
+		configuration.setSrcConnInfo(stateConnection);
+		ConnectorEndpointConfiguration source = new ConnectorEndpointConfiguration();
+		source.setId("events");
+		source.setType(ConnectorType.MESSAGE_QUEUE);
+		configuration.setConnectors(java.util.Collections.singletonList(source));
+		configuration.setDefaultSourceConnector("events");
+
+		initializeConnectors(configuration);
+
+		assertSame(stateConnection, configuration.getSrcConnInfo());
+	}
+
+	@Test
+	void shouldRequireSrcConnInfoWhenDefaultSourceConnectorIsAbsent() {
+		EtlConfiguration configuration = new EtlConfiguration();
+
+		assertTrue(configuration.validateConnectorConfigurations().stream()
+				.anyMatch(issue -> issue.contains("srcConnInfo is required")));
+	}
+
+	@Test
+	void shouldRequireSrcConnInfoWhenDefaultSourceConnectorIsNotJdbc() {
+		EtlConfiguration configuration = new EtlConfiguration();
+		ConnectorEndpointConfiguration source = new ConnectorEndpointConfiguration();
+		source.setId("events");
+		source.setType(ConnectorType.MESSAGE_QUEUE);
+		configuration.setConnectors(java.util.Collections.singletonList(source));
+		configuration.setDefaultSourceConnector("events");
+
+		assertTrue(configuration.validateConnectorConfigurations().stream()
+				.anyMatch(issue -> issue.contains("srcConnInfo is required")));
+	}
+
+	@Test
+	void shouldDeserializeLogicalRecordSchemaForNonJdbcResource() throws Exception {
+		String json = "{\"srcConnInfo\":{\"connectionURI\":\"jdbc:mysql://state/etl\"},"
+				+ "\"connectors\":[{\"id\":\"jsonl-output\",\"type\":\"FILE\",\"uri\":\"data/output\"}],"
+				+ "\"etlItemConfiguration\":[{\"srcConf\":{\"tableName\":\"patient\"},\"dstConf\":[{"
+				+ "\"tableName\":\"patient-export\",\"resource\":{\"connector\":\"jsonl-output\","
+				+ "\"name\":\"patients.jsonl\"},\"recordSchema\":{\"fields\":["
+				+ "{\"name\":\"uuid\",\"dataType\":\"java.lang.String\",\"allowNull\":false},"
+				+ "{\"name\":\"birthdate\",\"dataType\":\"java.util.Date\"}]}}]}]}";
+
+		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class)
+				.readValue(json, EtlConfiguration.class);
+		DstConf destination = configuration.getEtlItemConfiguration().get(0).getDstConf().get(0);
+
+		assertEquals(RecordFormat.JSON, destination.getRecordSchema().getFormat());
+		assertEquals(2, destination.getRecordSchema().getFields().size());
+		assertEquals(String.class, destination.getRecordSchema().getFields().get(0).getTypeClass());
+	}
+
+	@Test
+	void shouldRejectNonJdbcResourceWithoutRecordSchema() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		ConnectorEndpointConfiguration output = new ConnectorEndpointConfiguration();
+		output.setId("jsonl-output");
+		output.setType(ConnectorType.FILE);
+		configuration.setConnectors(java.util.Collections.singletonList(output));
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		SrcConf source = new SrcConf();
+		source.setTableName("patient");
+		item.setSrcConf(source);
+		DstConf destination = new DstConf("patient-export");
+		destination.setResource(resource("jsonl-output", "patients.jsonl"));
+		item.setDstConf(java.util.Collections.singletonList(destination));
+		configuration.setEtlItemConfiguration(java.util.Collections.singletonList(item));
+
+		assertTrue(configuration.validateConnectorConfigurations().stream()
+				.anyMatch(issue -> issue.contains("recordSchema is required")));
+	}
+
+	@Test
+	void shouldRejectDuplicatedLogicalFieldNamesIgnoringCase() {
+		RecordSchemaConfiguration schema = new RecordSchemaConfiguration();
+		schema.setFields(java.util.Arrays.asList(Field.fastCreateField("uuid"), Field.fastCreateField("UUID")));
+
+		Exception error = org.junit.jupiter.api.Assertions.assertThrows(Exception.class,
+				() -> schema.resolveFields("test resource"));
+
+		assertTrue(error.getMessage().contains("Duplicated recordSchema field"));
+	}
+
+	@Test
+	void shouldLoadConfiguredFieldsWithoutJdbcMetadata() throws Exception {
+		ExposedTableConfiguration configuration = new ExposedTableConfiguration();
+		configuration.setTableName("patient-event");
+		configuration.setTableAlias("patient_event");
+		RecordSchemaConfiguration schema = new RecordSchemaConfiguration();
+		Field configuredField = Field.fastCreateWithType("uuid", "java.lang.String");
+		schema.setFields(java.util.Collections.singletonList(configuredField));
+		configuration.setRecordSchema(schema);
+
+		configuration.loadRecordSchema();
+
+		assertEquals(1, configuration.getFields().size());
+		assertEquals("uuid", configuration.getFields().get(0).getName());
+		assertNotSame(configuredField, configuration.getFields().get(0));
+		assertEquals(SchemaMetadataLoadSource.CONFIGURED_RECORD_SCHEMA,
+				configuration.getSchemaMetadataLoadSource());
 	}
 
 	private ConnectorEndpointConfiguration jdbcConnector(String id, String uri) {
@@ -239,5 +463,12 @@ class EtlConnectorConfigurationTest {
 		Method method = EtlItemConfiguration.class.getDeclaredMethod("initializeConnectorResources");
 		method.setAccessible(true);
 		method.invoke(item);
+	}
+
+	private static class ExposedTableConfiguration extends GenericTableConfiguration {
+
+		void loadRecordSchema() throws Exception {
+			loadConfiguredRecordSchema();
+		}
 	}
 }

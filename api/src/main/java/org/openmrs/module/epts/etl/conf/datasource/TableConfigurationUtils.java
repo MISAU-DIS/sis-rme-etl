@@ -18,7 +18,7 @@ public class TableConfigurationUtils {
 		if (tab instanceof SrcConf) {
 			srcConf = (SrcConf) tab;
 		} else if (tab instanceof DstConf) {
-			srcConf = ((DstConf) tab).getSrcConf();
+			srcConf = ((DstConf) tab).getPrimaryDataSource().requireJdbc();
 		} else if (tab instanceof TableDataSourceConfig) {
 			srcConf = ((TableDataSourceConfig) tab).getRelatedSrcConf();
 		} else if (tab instanceof JoinableEntity) {

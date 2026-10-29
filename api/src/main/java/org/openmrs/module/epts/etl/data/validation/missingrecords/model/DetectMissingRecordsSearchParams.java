@@ -23,7 +23,7 @@ public class DetectMissingRecordsSearchParams extends EtlDatabaseObjectSearchPar
 	public DetectMissingRecordsSearchParams(Engine<EtlDatabaseObject> relatedEngine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
 		
-		super(relatedEngine.getSrcConf(), limits);
+		super(relatedEngine.getJdbcPrimaryDataSource(), limits);
 		
 		this.excludedRecords = null;
 		

@@ -24,7 +24,7 @@ public class DatabaseIntegrityConsolidationSearchParams extends EtlDatabaseObjec
 	public DatabaseIntegrityConsolidationSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
 		
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.relatedEngine = engine;
 	}

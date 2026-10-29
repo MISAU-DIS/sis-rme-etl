@@ -20,7 +20,7 @@ public class MozartLInkedFileSearchParams extends EtlDatabaseObjectSearchParams 
 	
 	public MozartLInkedFileSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.relatedEngine = engine;
 	}

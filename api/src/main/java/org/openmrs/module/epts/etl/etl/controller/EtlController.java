@@ -11,6 +11,8 @@ import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordReader;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -54,12 +56,17 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
+		if (engine.getEtlItemConfiguration().getResolvedSrcResource().getEndpoint().getType() == ConnectorType.FILE) {
+			return FileConnectorRecordReader
+					.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource()) > 0 ? 1 : 0;
+		}
+
 		OpenConnection conn = null;
 
 		try {
 			conn = openSrcConnection(this);
 
-			return engine.getSrcConf().getMinRecordId(engine, conn);
+			return engine.getJdbcPrimaryDataSource().getMinRecordId(engine, conn);
 		} catch (DBException e) {
 			e.printStackTrace();
 
@@ -71,12 +78,16 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
+		if (engine.getEtlItemConfiguration().getResolvedSrcResource().getEndpoint().getType() == ConnectorType.FILE) {
+			return FileConnectorRecordReader.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource());
+		}
+
 		OpenConnection conn = null;
 
 		try {
 			conn = openSrcConnection(this);
 
-			return engine.getSrcConf().getMaxRecordId(engine, conn);
+			return engine.getJdbcPrimaryDataSource().getMaxRecordId(engine, conn);
 		} catch (DBException e) {
 			e.printStackTrace();
 
@@ -94,7 +105,7 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 	public AbstractEtlSearchParams<EtlDatabaseObject> initMainSearchParams(
 			ThreadRecordIntervalsManager<EtlDatabaseObject> intervalsMgt, Engine<EtlDatabaseObject> engine) {
 
-		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new EtlDatabaseObjectSearchParams(engine.getSrcConf(),
+		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new EtlDatabaseObjectSearchParams(engine.getPrimaryDataSource(),
 				intervalsMgt);
 		searchParams.setQtdRecordPerSelected(getQtyRecordsPerProcessing());
 		searchParams.setSyncStartDate(getEtlConfiguration().getStartDate());
