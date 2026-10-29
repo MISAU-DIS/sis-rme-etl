@@ -48,7 +48,8 @@ class SourceConfigurationTest {
 		assertTrue(json.getPrimaryDataSource() instanceof JsonPrimaryDataSourceConfiguration);
 		assertTrue(json.getPrimaryDataSource() instanceof EtlDatabaseObjectConfiguration);
 		assertEquals("results", json.getJson().getRecordPath());
-		json.getPrimaryDataSource().fullLoad(null);
+		json.fullLoad(null);
+		assertTrue(json.isFullLoaded());
 		assertTrue(json.getPrimaryDataSource().isFullLoaded());
 		assertEquals(GenericDatabaseObject.class, json.getPrimaryDataSource().getEtlRecordClass());
 		assertSame(json.getPrimaryDataSource(), json.getPrimaryDataSource().getLoadHealper().getTableConf());

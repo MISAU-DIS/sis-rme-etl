@@ -1,5 +1,7 @@
 package org.openmrs.module.epts.etl.conf;
 
+import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -8,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
@@ -48,6 +51,12 @@ class EtlItemSourceCompatibilityTest {
 		assertSame(item.getSource().getResource(), item.getSrcConf().getResource());
 		assertSame(item.getSource().getExtraQueryDataSource(), item.getSrcConf().getExtraQueryDataSource());
 		assertEquals("patient", item.getSrcConf().getTableName());
+
+		QueryDataSourceConfig replacement = new QueryDataSourceConfig();
+		replacement.setName("replacement");
+		item.getSrcConf().setExtraQueryDataSource(Collections.singletonList(replacement));
+		assertSame(item.getSource().getExtraQueryDataSource(), item.getSrcConf().getExtraQueryDataSource());
+		assertEquals("replacement", item.getSource().getExtraQueryDataSource().get(0).getName());
 	}
 
 	@Test

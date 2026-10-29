@@ -639,11 +639,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.prepareSourceConfiguration();
 		this.initializeConnectorResources();
 
-		if (this.getSrcConf() != null && !this.getSrcConf().doNotUseAsDatasource()) {
-			this.getSrcConf().init(this, srcConn, null);
-
-			relatedEtlConf.addConfiguredTable(this.getSrcConf());
-		}
+		this.getSource().initializeDataSources(srcConn, null);
 
 		String codeElements = "";
 
@@ -805,23 +801,23 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		if (!hasManualMapPrimaryKeyOnField()) {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
-		if (!this.srcConf.hasDstType()) {
-			this.srcConf.setDstType(operationConfig.getDstType());
+		SrcConf jdbcSource = getPrimaryDataSource() instanceof SrcConf ? (SrcConf) getPrimaryDataSource() : null;
+		if (jdbcSource != null && !jdbcSource.hasDstType()) {
+			jdbcSource.setDstType(operationConfig.getDstType());
 		}
-		if (!this.getSrcConf().doNotUseAsDatasource()) {
-			this.getSrcConf().init(this, srcConn, null);
-			this.getSrcConf().fullLoad(srcConn);
-		}
+		this.getSource().fullLoad(srcConn);
 
 		try {
-			getSrcConf().setParentConf(this);
+			if (jdbcSource != null)
+				jdbcSource.setParentConf(this);
 			if (hasDstConf()) {
 				for (DstConf map : getDstConf()) {
 					if (map.isDisabled()) {
 						continue;
 					}
 					map.setParentConf(this);
-					map.setDstType(getSrcConf().getDstType());
+					map.setDstType(jdbcSource != null && jdbcSource.hasDstType() ? jdbcSource.getDstType()
+							: operationConfig.getDstType());
 					Connection destinationConnection = destinationConnections.getIfJdbc(map);
 
 					if (map.usesNonJdbcResource()) {
@@ -846,8 +842,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 						}
 					} else {
 						map.loadFields(destinationConnection);
-						if (map.isAutomaticalyGenerated() && getSrcConf().hasParents()) {
-							map.setParents(getSrcConf().tryToCloneAllParentsForOtherTable(map, destinationConnection));
+						if (map.isAutomaticalyGenerated() && jdbcSource != null && jdbcSource.hasParents()) {
+							map.setParents(jdbcSource.tryToCloneAllParentsForOtherTable(map, destinationConnection));
 						}
 						if (!isDoNotFullLoadDstConf()) {
 							map.init(this, srcConn, destinationConnection);
@@ -860,8 +856,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			if (operationConfig.writeOperationHistory()
 					|| operationConfig.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
-				if (!getSrcConf().doNotUseAsDatasource()) {
-					getSrcConf().generateStagingTables(srcConn);
+				if (jdbcSource != null && !jdbcSource.doNotUseAsDatasource()) {
+					jdbcSource.generateStagingTables(srcConn);
 				}
 			}
 
@@ -1191,18 +1187,19 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	public List<EtlDataSource> collectAllAvaliableDataSources(Connection conn) {
 		List<EtlDataSource> ds = new ArrayList<>();
 
-		if (!this.getSrcConf().doNotUseAsDatasource()) {
-			ds.add(this.getSrcConf());
-
-			ds.addAll(this.getSrcConf().getAvaliableExtraDataSource());
+		PrimaryDataSourceConfiguration primary = this.getPrimaryDataSource();
+		if (primary instanceof EtlDataSource
+				&& (!(primary instanceof SrcConf) || !((SrcConf) primary).doNotUseAsDatasource())) {
+			ds.add((EtlDataSource) primary);
+			ds.addAll(this.getSource().getAvailableAdditionalDataSources());
 		}
 
-		if (this.getSrcConf().hasExpansionDs()) {
-			ds.add(this.getSrcConf().getExpansionDataSource());
+		if (primary instanceof SrcConf && ((SrcConf) primary).hasExpansionDs()) {
+			ds.add(((SrcConf) primary).getExpansionDataSource());
 		}
 
-		if (this.getSrcConf().hasAuxExtractTable()) {
-			ds.addAll(this.getSrcConf().getAuxExtractTable());
+		if (primary instanceof SrcConf && ((SrcConf) primary).hasAuxExtractTable()) {
+			ds.addAll(((SrcConf) primary).getAuxExtractTable());
 		}
 
 		return ds;
