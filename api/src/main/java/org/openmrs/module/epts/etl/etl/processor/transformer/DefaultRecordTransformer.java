@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
-import org.openmrs.module.epts.etl.conf.datasource.AbstractRecordPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -358,7 +357,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			Connection srcConn) throws DBException {
 
 		if (srcObject.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration) {
-			AbstractRecordPrimaryDataSourceConfiguration srcConf = (AbstractRecordPrimaryDataSourceConfiguration) srcObject
+			PrimaryDataSourceConfiguration srcConf = (PrimaryDataSourceConfiguration) srcObject
 					.getRelatedConfiguration();
 
 			if (!srcConf.doNotUseAsDatasource()) {
