@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
@@ -45,7 +45,7 @@ public class DstConf extends AbstractTableConfiguration
 		implements EtlDataSource, EtlDstConf, EtlTransformTarget, EtlItemConfigurationComponent {
 
 	/*
-	 * The user defined joinFields with #getSrcConf()
+	 * The user-defined join fields with {@link #getPrimaryDataSource()}.
 	 */
 	private List<FieldsMapping> joinFields;
 
@@ -303,7 +303,8 @@ public class DstConf extends AbstractTableConfiguration
 
 	public DstConf getParentDstConf() {
 		if (hasParentDstConf()) {
-			return ((EtlChildItemConfiguration) this.getSrcConf().getParentConf()).getRelatedParentDstConf();
+			return ((EtlChildItemConfiguration) this.getPrimaryDataSource().getParentConf())
+			        .getRelatedParentDstConf();
 		}
 
 		return null;
@@ -322,11 +323,11 @@ public class DstConf extends AbstractTableConfiguration
 	}
 
 	public Boolean isDoNotUseSrcConfAsDataSource() {
-		return this.getSrcConf().doNotUseAsDatasource();
+		return this.getPrimaryDataSource().doNotUseAsDatasource();
 	}
 
 	public Boolean hasParentDstConf() {
-		return this.getSrcConf().getParentConf() instanceof EtlChildItemConfiguration;
+		return this.getPrimaryDataSource().getParentConf() instanceof EtlChildItemConfiguration;
 	}
 
 	public Boolean hasChildDstConf() {
@@ -569,8 +570,8 @@ public class DstConf extends AbstractTableConfiguration
 
 				FieldsMapping fm = null;
 
-				EtlField etlField = this.getSrcConf().doNotUseAsDatasource() ? null
-						: this.getSrcConf().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
+				EtlField etlField = this.getPrimaryDataSource().doNotUseAsDatasource() ? null
+						: this.getPrimaryDataSource().getEtlField(field.getName(), this.getAllPrefferredDataSource(), true);
 
 				if (etlField != null) {
 					fm = FieldsMapping.fastCreate(this, etlField.getSrcField().getName(), field.getName(), true, conn);
@@ -719,10 +720,10 @@ public class DstConf extends AbstractTableConfiguration
 	private List<EtlDataSource> avaliableDataSources() {
 		List<EtlDataSource> dataSource = new ArrayList<>();
 
-		dataSource.add(this.getSrcConf());
+		dataSource.add(this.getPrimaryDataSource());
 
-		if (this.getSrcConf().hasExtraDataSource()) {
-			dataSource.addAll(this.getSrcConf().getAvaliableExtraDataSource());
+		if (this.getParentConf().getSource().hasAdditionalDataSource()) {
+			dataSource.addAll(this.getParentConf().getSource().getAvailableAdditionalDataSources());
 		}
 
 		return dataSource;
@@ -758,7 +759,7 @@ public class DstConf extends AbstractTableConfiguration
 					this.setAllMapping(this.getMapping());
 
 					if (this.includeAllFieldsFromDataSource()) {
-						for (EtlField field : this.getSrcConf().getEtlFields()) {
+						for (EtlField field : this.getPrimaryDataSource().getEtlFields()) {
 							if (!this.containsField(field.getName())) {
 								this.getFields().add(field);
 								this.addMapping(FieldsMapping.converteFromEtlField(field, this, conn));
@@ -766,20 +767,20 @@ public class DstConf extends AbstractTableConfiguration
 						}
 					}
 				} else {
-					this.setFields(EtlField.convertToSimpleFiled(this.getSrcConf().getEtlFields()));
+					this.setFields(EtlField.convertToSimpleFiled(this.getPrimaryDataSource().getEtlFields()));
 				}
 
-				if (this.getSrcConf().hasPK()) {
+				if (this.getPrimaryDataSource().hasPK()) {
 					if (this.containsAllFields(
-							utilities.parseList(this.getSrcConf().getPrimaryKey().getFields(), Field.class))) {
-						this.setPrimaryKey((PrimaryKey) this.getSrcConf().getPrimaryKey().clone());
+							utilities.parseList(this.getPrimaryDataSource().getPrimaryKey().getFields(), Field.class))) {
+						this.setPrimaryKey((PrimaryKey) ((PrimaryKey) this.getPrimaryDataSource().getPrimaryKey()).clone());
 					}
 				}
 
 				this.setPrimaryKeyInfoLoaded(true);
 
-				if (this.getSrcConf().hasUniqueKeys()) {
-					for (UniqueKeyInfo uk : this.getSrcConf().getUniqueKeys()) {
+				if (!this.getPrimaryDataSource().getUniqueKeys().isEmpty()) {
+					for (UniqueKeyInfo uk : this.getPrimaryDataSource().getUniqueKeys()) {
 						if (this.containsAllFields(utilities.parseList(uk.getFields(), Field.class))) {
 							if (this.hasUniqueKeys() && !this.getUniqueKeys().contains(uk)) {
 								this.addUniqueKey(uk);
@@ -819,7 +820,7 @@ public class DstConf extends AbstractTableConfiguration
 					"The table " + dstParent.getTableName() + " is not parent of " + this.getTableName());
 		}
 
-		parents = getSrcConf().findAllRefToParent(dstParent.getTableName());
+		parents = getPrimaryDataSource().requireJdbc().findAllRefToParent(dstParent.getTableName());
 
 		if (!utilities.listHasElement(parents)) {
 			throw new ForbiddenOperationException("The table " + dstParent.getTableName() + " is not parent of "
@@ -928,7 +929,8 @@ public class DstConf extends AbstractTableConfiguration
 			this.preferredDataSource = new ArrayList<>();
 
 			for (EtlDataSource tDs : this.getAllAvaliableDataSource()) {
-				if (tDs instanceof SrcConf && ((SrcConf) tDs).doNotUseAsDatasource()) {
+				if (tDs instanceof PrimaryDataSourceConfiguration
+				        && ((PrimaryDataSourceConfiguration) tDs).doNotUseAsDatasource()) {
 					continue;
 				}
 
@@ -943,12 +945,13 @@ public class DstConf extends AbstractTableConfiguration
 				this.preferredDataSource.add(prefferredDs);
 			}
 
-			if (!this.preferredDataSource.contains(getSrcConf().getName()) && useSrcConfAsDataSource()) {
-				this.preferredDataSource.add(getSrcConf().getAlias());
+			if (!this.preferredDataSource.contains(getPrimaryDataSource().getName()) && useSrcConfAsDataSource()) {
+				this.preferredDataSource.add(getPrimaryDataSource().getAlias());
 			}
 
-			if (this.getSrcConf().hasExpansionDs()) {
-				this.preferredDataSource.add(this.getSrcConf().getExpansionDataSource().getAlias());
+			if (this.getPrimaryDataSource().isJdbc() && this.getPrimaryDataSource().requireJdbc().hasExpansionDs()) {
+				this.preferredDataSource
+				        .add(this.getPrimaryDataSource().requireJdbc().getExpansionDataSource().getAlias());
 			}
 
 		}
@@ -1011,15 +1014,15 @@ public class DstConf extends AbstractTableConfiguration
 		if (this.hasUniqueKeys()) {
 			// If no joinField is defined but the dst table has uk, tries to map the uk with
 			// src fields
-			tryToAutoGenerateJoinFields(this, this.getSrcConf(), conn);
+			tryToAutoGenerateJoinFields(this, this.getPrimaryDataSource().requireJdbc(), conn);
 
-			if (!hasJoinFields() && this.getSrcConf().hasUniqueKeys()) {
-				tryToAutoGenerateJoinFields(this.getSrcConf(), this, conn);
+			if (!hasJoinFields() && !this.getPrimaryDataSource().getUniqueKeys().isEmpty()) {
+				tryToAutoGenerateJoinFields(this.getPrimaryDataSource().requireJdbc(), this, conn);
 			}
-		} else if (this.getSrcConf().hasUniqueKeys()) {
+		} else if (!this.getPrimaryDataSource().getUniqueKeys().isEmpty()) {
 			// If no joinField is defined but the src table has uk, tries to map the uk with
 			// dst fields
-			tryToAutoGenerateJoinFields(this.getSrcConf(), this, conn);
+			tryToAutoGenerateJoinFields(this.getPrimaryDataSource().requireJdbc(), this, conn);
 		}
 	}
 
@@ -1055,8 +1058,8 @@ public class DstConf extends AbstractTableConfiguration
 		}
 	}
 
-	public SrcConf getSrcConf() {
-		return this.getParentConf().getSrcConf();
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return this.getParentConf().getPrimaryDataSource();
 	}
 
 	public long retrieveNextRecordId(Connection conn) throws DBException, ForbiddenOperationException {
@@ -1114,7 +1117,7 @@ public class DstConf extends AbstractTableConfiguration
 		String fullCondition = "";
 
 		String ownAlias = getTableAlias();
-		String relatedTableAlias = getSrcConf().getTableAlias();
+		String relatedTableAlias = getPrimaryDataSource().requireJdbc().getTableAlias();
 
 		for (int outerConter = 0; outerConter < this.getGeneratedJoinFields().size(); outerConter++) {
 			List<FieldsMapping> joindFields = this.getGeneratedJoinFields().get(outerConter);
@@ -1131,9 +1134,9 @@ public class DstConf extends AbstractTableConfiguration
 					ownAlias = getSharedKeyRefInfo(null).getAlias();
 				}
 
-				if (getSrcConf().useSharedPKKey()
-						&& !getSrcConf().containsField(joindFields.get(innerCounter).getSrcField())) {
-					relatedTableAlias = getSrcConf().getSharedKeyRefInfo(null).getAlias();
+				if (getPrimaryDataSource().requireJdbc().useSharedPKKey()
+						&& !getPrimaryDataSource().containsField(joindFields.get(innerCounter).getSrcField())) {
+					relatedTableAlias = getPrimaryDataSource().requireJdbc().getSharedKeyRefInfo(null).getAlias();
 				}
 
 				currJoinCondition += ownAlias + "." + joindFields.get(innerCounter).getDstField() + " = "
@@ -1150,7 +1153,8 @@ public class DstConf extends AbstractTableConfiguration
 
 		if (!utilities.stringHasValue(fullCondition) && this.isMetadata()) {
 			fullCondition = getTableAlias() + "." + getPrimaryKey().retrieveSimpleKeyColumnName() + " = "
-					+ getSrcConf().getTableAlias() + "." + getPrimaryKey().retrieveSimpleKeyColumnName();
+					+ getPrimaryDataSource().requireJdbc().getTableAlias() + "."
+					+ getPrimaryKey().retrieveSimpleKeyColumnName();
 		}
 
 		return fullCondition;
@@ -1194,15 +1198,16 @@ public class DstConf extends AbstractTableConfiguration
 
 	private static List<DstConf> createDefaultDstConf(EtlItemConfiguration itemConf, String schema,
 			DBConnectionInfo connectionInfo) {
+		var sourceTable = itemConf.getPrimaryDataSource().requireJdbc();
 		DstConf map = new DstConf();
-		map.setTableName(itemConf.getSrcConf().getTableName());
+		map.setTableName(sourceTable.getTableName());
 		map.setSchema(schema);
-		map.setDstType(itemConf.getSrcConf().getDstType());
-		map.setObservationDateFields(itemConf.getSrcConf().getObservationDateFields());
-		map.setRemoveForbidden(itemConf.getSrcConf().isRemoveForbidden());
-		map.setOnConflict(itemConf.getSrcConf().onConflict());
-		map.setWinningRecordFieldsInfo(itemConf.getSrcConf().getWinningRecordFieldsInfo());
-		map.setManualMapPrimaryKeyOnField(itemConf.getSrcConf().getManualMapPrimaryKeyOnField());
+		map.setDstType(sourceTable.getDstType());
+		map.setObservationDateFields(sourceTable.getObservationDateFields());
+		map.setRemoveForbidden(sourceTable.isRemoveForbidden());
+		map.setOnConflict(sourceTable.onConflict());
+		map.setWinningRecordFieldsInfo(sourceTable.getWinningRecordFieldsInfo());
+		map.setManualMapPrimaryKeyOnField(sourceTable.getManualMapPrimaryKeyOnField());
 		map.setRelatedConnInfo(connectionInfo);
 		map.setAutomaticalyGenerated(true);
 		map.setParentConf(itemConf);

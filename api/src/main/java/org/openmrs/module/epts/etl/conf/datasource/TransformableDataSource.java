@@ -608,8 +608,8 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public SrcConf getSrcConf() {
-		return this.relatedPrimaryDataSource.requireJdbc();
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return this.relatedPrimaryDataSource;
 	}
 
 	public Boolean getFullLoaded() {

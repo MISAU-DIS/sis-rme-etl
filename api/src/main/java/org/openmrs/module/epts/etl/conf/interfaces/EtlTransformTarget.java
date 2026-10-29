@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AtomicCondition;
 import org.openmrs.module.epts.etl.conf.DstConf;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
@@ -37,7 +37,7 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 	ActionOnEtlIssue onMultipleDataSourceForSameMapping();
 
-	SrcConf getSrcConf();
+	PrimaryDataSourceConfiguration getPrimaryDataSource();
 
 	List<FieldsMapping> getAllMapping();
 
@@ -174,7 +174,8 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 		if (this.getAllAvaliableDataSource() != null) {
 			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
-				if (ds instanceof SrcConf && ((SrcConf) ds).doNotUseAsDatasource()) {
+				if (ds instanceof PrimaryDataSourceConfiguration
+				        && ((PrimaryDataSourceConfiguration) ds).doNotUseAsDatasource()) {
 					continue;
 				}
 
@@ -186,7 +187,8 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 
 		if (this.getAllAvaliableDataSource() != null) {
 			for (EtlDataSource ds : this.getAllAvaliableDataSource()) {
-				if (ds instanceof SrcConf && ((SrcConf) ds).doNotUseAsDatasource()) {
+				if (ds instanceof PrimaryDataSourceConfiguration
+				        && ((PrimaryDataSourceConfiguration) ds).doNotUseAsDatasource()) {
 					continue;
 				}
 
@@ -369,7 +371,7 @@ public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, Cond
 			fm.loadType(this, null, conn);
 
 			if (fm.getDataSource() == null) {
-				fm.setDataSource(this.getSrcConf());
+				fm.setDataSource(this.getPrimaryDataSource());
 			}
 		}
 

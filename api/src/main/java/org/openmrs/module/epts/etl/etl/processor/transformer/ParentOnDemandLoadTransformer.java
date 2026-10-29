@@ -505,7 +505,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				if (!etlTransformTarget.isFullLoaded()) {
 
 					if (!usesTemplate()) {
-						etlTransformTarget.getSrcConf().setDoNotUseAsDatasource(true);
+						etlTransformTarget.getPrimaryDataSource().requireJdbc().setDoNotUseAsDatasource(true);
 						etlTransformTarget.setMapping(this.getOnDemandParentFieldMappings());
 					}
 
@@ -629,13 +629,15 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						avaliableDataSource = new ArrayList<>();
 
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllAvaliableDataSource()) {
-							if (p != this.relatedEtlTransformTarget.getSrcConf().getSharedKeyRefInfo(dstConn)) {
+							if (p != this.relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc()
+							        .getSharedKeyRefInfo(dstConn)) {
 								avaliableDataSource.add(p);
 							}
 						}
 
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllPrefferredDataSource()) {
-							if (p != this.relatedEtlTransformTarget.getSrcConf().getSharedKeyRefInfo(dstConn)) {
+							if (p != this.relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc()
+							        .getSharedKeyRefInfo(dstConn)) {
 								preferredDataSource.add(p);
 							}
 						}
@@ -652,7 +654,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 					etlTransformTarget.addAllToAvaliableDataSource(avaliableDataSource);
 
-					etlTransformTarget.addToPrefferedDataSource(etlTransformTarget.getSrcConf());
+					etlTransformTarget.addToPrefferedDataSource(etlTransformTarget.getPrimaryDataSource());
 					etlTransformTarget.addAllToPreferredDataSource(preferredDataSource);
 
 					etlTransformTarget.fullLoad(dstConn);

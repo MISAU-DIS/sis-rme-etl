@@ -413,7 +413,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 					EtlDataSource ds;
 
 					if (dsF.getParent() instanceof TransformableDataSource) {
-						ds = dsF.getParent().getSrcConf();
+						ds = dsF.getParent().getPrimaryDataSource();
 					} else if (dsF.getParent() instanceof EtlAdditionalDataSource) {
 						ds = ((EtlAdditionalDataSource) dsF.getParent()).getRelatedSrcConf();
 					} else {
