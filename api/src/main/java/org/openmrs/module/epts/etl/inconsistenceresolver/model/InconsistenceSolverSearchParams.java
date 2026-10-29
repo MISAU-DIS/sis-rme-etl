@@ -24,7 +24,7 @@ public class InconsistenceSolverSearchParams extends AbstractEtlSearchParams<Etl
 	
 	public InconsistenceSolverSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.relatedEngine = engine;
 	}

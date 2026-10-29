@@ -104,13 +104,13 @@ public class DBExportProcessor extends org.openmrs.module.epts.etl.processor.Jdb
 	
 	private void markAllAsSynchronized(List<EtlDatabaseObject> syncRecords, Connection srcConn) throws DBException {
 		
-		DatabaseObjectDAO.refreshLastSyncDateOnOrigin(syncRecords, getSrcConf(),
+		DatabaseObjectDAO.refreshLastSyncDateOnOrigin(syncRecords, getJdbcPrimaryDataSource(),
 		    getEtlItemConfiguration().getOriginAppLocationCode(), srcConn);
 		
 	}
 	
 	private File generateJSONTempFile(SyncJSONInfo jsonInfo, Integer startRecord, Integer lastRecord) throws IOException {
-		return getRelatedOperationController().generateJSONTempFile(jsonInfo, getSrcConf(), startRecord, lastRecord);
+		return getRelatedOperationController().generateJSONTempFile(jsonInfo, getJdbcPrimaryDataSource(), startRecord, lastRecord);
 	}
 	
 	@Override

@@ -24,7 +24,7 @@ public class DetectGapesSearchParams extends EtlDatabaseObjectSearchParams {
 	
 	public DetectGapesSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.engine = engine;
 	}

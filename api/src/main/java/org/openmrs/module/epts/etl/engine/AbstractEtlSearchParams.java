@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
@@ -48,17 +49,18 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	protected int savedCount;
 
-	protected SrcConf srcConf;
+	private PrimaryDataSourceConfiguration primaryDataSource;
 
 	private MigrationFinalCheckStatus finalCheckStatus;
 
-	public AbstractEtlSearchParams(SrcConf srcConf, ThreadRecordIntervalsManager<T> limits) {
+	public AbstractEtlSearchParams(PrimaryDataSourceConfiguration primaryDataSource,
+			ThreadRecordIntervalsManager<T> limits) {
 		this.threadRecordIntervalsManager = limits;
 		this.searchSourceType = SearchSourceType.SOURCE;
-		this.srcConf = srcConf;
+		this.primaryDataSource = primaryDataSource;
 
-		if (this.srcConf != null) {
-			this.setQueryOrderingInfo(srcConf.getQueryOrderingInfo());
+		if (primaryDataSource instanceof SrcConf) {
+			this.setQueryOrderingInfo(((SrcConf) primaryDataSource).getQueryOrderingInfo());
 		}
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
@@ -81,7 +83,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	}
 
 	public EtlItemConfiguration getConfig() {
-		return getSrcConf().getParentConf();
+		return getPrimaryDataSource().getParentItemConfiguration();
 	}
 
 	public ThreadRecordIntervalsManager<T> getThreadRecordIntervalsManager() {
@@ -147,14 +149,15 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	public void tryToAddExtraConditionForExport(SearchClauses<T> searchClauses, T parentObject,
 			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
 
-		tryToAddExtraCondition(this.srcConf.getExtraConditionForExtract(), searchClauses, parentObject,
+		tryToAddExtraCondition(this.getJdbcPrimaryDataSource().getExtraConditionForExtract(), searchClauses, parentObject,
 				dataSourceObjects, dbmsType);
 	}
 
 	public void tryToAddExtraJoinExtraConditions(SearchClauses<T> searchClauses, T parentObject,
 			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
 
-		if (!srcConf.isJoinable()) {
+		SrcConf jdbcSource = getJdbcPrimaryDataSource();
+		if (!jdbcSource.isJoinable()) {
 			return;
 		}
 
@@ -162,14 +165,14 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 			throw new EtlExceptionImpl("The joinable srcConf requires the parent object!");
 		}
 
-		String extraCondition = srcConf.generateConditionsFields(parentObject, srcConf.getJoinFields(),
-				srcConf.getJoinExtraCondition());
+		String extraCondition = jdbcSource.generateConditionsFields(parentObject, jdbcSource.getJoinFields(),
+				jdbcSource.getJoinExtraCondition());
 
 		tryToAddExtraCondition(extraCondition, searchClauses, parentObject, dataSourceObjects, dbmsType);
 	}
 
 	public EtlConfiguration getRelatedEtlConf() {
-		return srcConf.getRelatedEtlConf();
+		return getPrimaryDataSource().getRelatedEtlConf();
 	}
 
 	/**
@@ -192,15 +195,25 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	@SuppressWarnings("unchecked")
 	public Class<T> getRecordClass() {
-		return (Class<T>) getSrcConf().generateEtlRecordClass(getSrcConf().getSrcConnInfo());
+		return (Class<T>) getPrimaryDataSource().generateEtlRecordClass(getPrimaryDataSource().getSrcConnInfo());
 	}
 
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return primaryDataSource;
+	}
+
+	@Deprecated
 	public SrcConf getSrcConf() {
-		return this.srcConf;
+		return getJdbcPrimaryDataSource();
 	}
 
+	public SrcConf getJdbcPrimaryDataSource() {
+		return getPrimaryDataSource().requireJdbc();
+	}
+
+	@Deprecated
 	public void setSrcConf(SrcConf srcConf) {
-		this.srcConf = srcConf;
+		this.primaryDataSource = srcConf;
 	}
 
 	/**
@@ -214,7 +227,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	 * @return
 	 */
 	public AbstractTableConfiguration getDstLastTableConfiguration() {
-		return utilities.getLastRecordOnArray(srcConf.getParentConf().getDstConf());
+		return utilities.getLastRecordOnArray(getJdbcPrimaryDataSource().getParentConf().getDstConf());
 	}
 
 	public int countAllRecords(OperationController<T> controller, Connection conn) throws DBException {

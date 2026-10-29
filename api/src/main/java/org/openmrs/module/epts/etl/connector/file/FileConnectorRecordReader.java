@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -31,12 +31,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implements ConnectorRecordReader<T> {
 
 	private final ConnectorResource resource;
-	private final SrcConf sourceConfiguration;
+	private final PrimaryDataSourceConfiguration sourceConfiguration;
 	private final Connection supportingConnection;
 	private final Path path;
 	private final ObjectMapper mapper = new ObjectMapperProvider().getContext(EtlDatabaseObject.class);
 
-	public FileConnectorRecordReader(ConnectorResource resource, SrcConf sourceConfiguration,
+	public FileConnectorRecordReader(ConnectorResource resource, PrimaryDataSourceConfiguration sourceConfiguration,
 			Connection supportingConnection) {
 		if (sourceConfiguration == null || !sourceConfiguration.isFullLoaded()) {
 			throw new IllegalArgumentException("The source configuration must be fully loaded before creating a FILE reader");

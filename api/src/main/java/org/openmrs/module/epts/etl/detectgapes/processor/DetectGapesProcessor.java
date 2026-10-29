@@ -53,7 +53,7 @@ public class DetectGapesProcessor extends org.openmrs.module.epts.etl.etl.proces
 				
 				for (int i = prevRec.getObjectId().getSimpleValueAsInt() + 1; i < rec.getObjectId()
 				        .getSimpleValueAsInt(); i++) {
-					GapeDAO.insert(getSrcConf(), i, srcConn);
+					GapeDAO.insert(getJdbcPrimaryDataSource(), i, srcConn);
 				}
 			}
 			

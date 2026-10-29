@@ -44,7 +44,7 @@ public class ChangedRecordsDetectorProcessor extends org.openmrs.module.epts.etl
 		 * ((GenericDatabaseObject) obj).setRelatedConfiguration(getSrcConf());
 		 * 
 		 * processedRecords.add(DetectedRecordInfo.generate(obj,
-		 * getEngine().getSrcConf().getOriginAppLocationCode()));
+		 * getEngine().getJdbcPrimaryDataSource().getOriginAppLocationCode()));
 		 * 
 		 * if (getRelatedOperationController().getActionPerformeApp().
 		 * isSinglePerformingMode()) {

@@ -21,7 +21,7 @@ public class LoadedRecordsSearchParams extends AbstractEtlSearchParams<EtlDataba
 	public LoadedRecordsSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits, String appOriginLocationCode) {
 		
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.appOriginLocationCode = appOriginLocationCode;
 	}

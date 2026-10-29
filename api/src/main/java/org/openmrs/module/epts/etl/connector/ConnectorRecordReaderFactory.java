@@ -30,7 +30,7 @@ public final class ConnectorRecordReaderFactory {
 			return new JdbcConnectorRecordReader<>(resource, searchParams, srcConnection, dstConnection);
 		}
 		if (resource.getEndpoint().getType() == ConnectorType.FILE) {
-			return new FileConnectorRecordReader<>(resource, searchParams.getSrcConf(), srcConnection);
+			return new FileConnectorRecordReader<>(resource, searchParams.getPrimaryDataSource(), srcConnection);
 		}
 
 		throw new UnsupportedConnectorTypeException(resource.getEndpoint().getType(), ConnectorDirection.SOURCE);

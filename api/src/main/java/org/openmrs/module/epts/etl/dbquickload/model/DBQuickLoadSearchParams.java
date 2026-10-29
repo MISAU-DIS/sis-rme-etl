@@ -35,7 +35,7 @@ public class DBQuickLoadSearchParams extends AbstractEtlSearchParams<EtlDatabase
 	private Engine<EtlDatabaseObject> engine;
 	
 	public DBQuickLoadSearchParams(Engine<EtlDatabaseObject> engine, QuickLoadLimits limits) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.engine = engine;
 	}

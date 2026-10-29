@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
@@ -254,8 +255,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return getProgressMeter().getMaxRecordId();
 	}
 
-	public SrcConf getSrcConf() {
-		return this.getEtlItemConfiguration().getSrcConf();
+	public SrcConf getJdbcPrimaryDataSource() {
+		return this.getEtlItemConfiguration().requireJdbcPrimaryDataSource();
+	}
+
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return this.getEtlItemConfiguration().getPrimaryDataSource();
 	}
 
 	public String getEngineId() {
@@ -447,7 +452,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		long minRecId = this.tableOperationProgressInfo.getProgressMeter().getMinRecordId();
 
 		if (minRecId == 0) {
-			logInfo("DETERMINING MIN RECORD FOR " + getSrcConf().getTableName());
+			logInfo("DETERMINING MIN RECORD FOR " + getPrimaryDataSource().getObjectName());
 
 			minRecId = getController().getMinRecordId(this);
 
@@ -480,7 +485,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 
 		if (maxRecId == 0 && minRecId == 0) {
-			String msg = "NO RECORD TO PROCESS FOR ETL CONFIG '" + getSrcConf().getTableName().toUpperCase()
+			String msg = "NO RECORD TO PROCESS FOR ETL CONFIG '" + getPrimaryDataSource().getObjectName().toUpperCase()
 					+ "' NO ENGINE WILL BE CRIETED BY NOW!";
 
 			if (mustRestartInTheEnd()) {
@@ -785,12 +790,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			if (taskProcessor != null) {
 				String originalExtraCondition = getSearchParams().getExtraCondition();
-				String originalExtraConditionForExtract = getSrcConf().getExtraConditionForExtract();
+				String originalExtraConditionForExtract = getJdbcPrimaryDataSource().getExtraConditionForExtract();
 
 				try {
-					getSrcConf().setExtraConditionForExtract(null);
+					getJdbcPrimaryDataSource().setExtraConditionForExtract(null);
 
-					getSearchParams().setExtraCondition(getSrcConf().generateSkippedRecordInclusionClause());
+					getSearchParams()
+							.setExtraCondition(getJdbcPrimaryDataSource().generateSkippedRecordInclusionClause());
 
 					taskProcessor.setProcessorId(this.getEngineId());
 
@@ -803,7 +809,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork, reader,
 							writers);
 
-					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+					getJdbcPrimaryDataSource().setExtraConditionForExtract(originalExtraConditionForExtract);
 					getSearchParams().setExtraCondition(originalExtraCondition);
 
 					if (taskProcessor.getTaskResultInfo().hasFatalError()) {
@@ -812,7 +818,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 						OpenConnection cleanupSrcConn = getRelatedEtlConf().openSrcConn(this);
 
 						try {
-							RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getSrcConf(), cleanupSrcConn);
+							RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getJdbcPrimaryDataSource(),
+									cleanupSrcConn);
 
 							cleanupSrcConn.markAsSuccessifullyTerminated();
 						} finally {
@@ -823,7 +830,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 						iManager.save();
 					}
 				} finally {
-					getSrcConf().setExtraConditionForExtract(originalExtraConditionForExtract);
+					getJdbcPrimaryDataSource().setExtraConditionForExtract(originalExtraConditionForExtract);
 					getSearchParams().setExtraCondition(originalExtraCondition);
 				}
 			} else {
@@ -1190,7 +1197,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		List<T> records = reader.read(new ConnectorReadRequest<>(interval, null, null, useMultiThreadSearch));
 
 		logDebug("SERCH RECORDS FOR NEXT ITERATION ON ETL '{}' ON TABLE '{}' WAS FINISHED! FOUND '{}' RECORDS",
-				this.getEtlItemConfiguration().getConfigCode(), getSrcConf().getTableName(),
+				this.getEtlItemConfiguration().getConfigCode(), getPrimaryDataSource().getObjectName(),
 				utilities.arraySize(records));
 
 		return records;

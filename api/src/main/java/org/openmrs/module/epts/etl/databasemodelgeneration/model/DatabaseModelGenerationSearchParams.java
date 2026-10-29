@@ -21,7 +21,7 @@ public class DatabaseModelGenerationSearchParams extends AbstractEtlSearchParams
 	public DatabaseModelGenerationSearchParams(Engine<DatabaseModelGenerationRecord> engine,
 			ThreadRecordIntervalsManager<DatabaseModelGenerationRecord> limits) {
 
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 	}
 
 	public void setProcessor(DatabaseModelGenerationProcessor processor) {

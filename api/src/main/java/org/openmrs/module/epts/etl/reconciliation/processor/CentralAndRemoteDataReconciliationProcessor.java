@@ -62,7 +62,7 @@ public class CentralAndRemoteDataReconciliationProcessor extends org.openmrs.mod
 			
 			logInfo(startingStrLog + ": Restoring dstRecord: [" + record + "]");
 			
-			DataReconciliationRecord data = new DataReconciliationRecord((EtlDatabaseObject) record, getSrcConf(),
+			DataReconciliationRecord data = new DataReconciliationRecord((EtlDatabaseObject) record, getJdbcPrimaryDataSource(),
 			        ConciliationReasonType.MISSING);
 			
 			data.reloadRelatedRecordDataFromRemote(srcConn);
@@ -89,7 +89,7 @@ public class CentralAndRemoteDataReconciliationProcessor extends org.openmrs.mod
 			
 			logInfo(startingStrLog + ": Updating dstRecord: [" + record + "]");
 			
-			DataReconciliationRecord.tryToReconciliate((EtlDatabaseObject) record, getSrcConf(), srcConn);
+			DataReconciliationRecord.tryToReconciliate((EtlDatabaseObject) record, getJdbcPrimaryDataSource(), srcConn);
 			
 			getTaskResultInfo().addToRecordsWithNoError(record);
 			i++;
@@ -109,7 +109,7 @@ public class CentralAndRemoteDataReconciliationProcessor extends org.openmrs.mod
 			logInfo(startingStrLog + ": Removing dstRecord: [" + record + "]");
 			
 			DataReconciliationRecord data = new DataReconciliationRecord(((EtlDatabaseObject) record).getUuid(),
-			        getSrcConf(), ConciliationReasonType.PHANTOM);
+			        getJdbcPrimaryDataSource(), ConciliationReasonType.PHANTOM);
 			data.reloadRelatedRecordDataFromDestination(srcConn);
 			data.removeRelatedRecord(srcConn);
 			data.save(srcConn);

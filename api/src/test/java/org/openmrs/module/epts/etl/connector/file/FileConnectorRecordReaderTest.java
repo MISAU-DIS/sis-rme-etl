@@ -10,7 +10,8 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -59,14 +60,14 @@ class FileConnectorRecordReaderTest {
 		assertEquals(true, error.getMessage().contains("Unknown JSON field 'unexpected'"));
 	}
 
-	private SrcConf sourceConfiguration() {
-		SrcConf source = new SrcConf();
+	private PrimaryDataSourceConfiguration sourceConfiguration() throws Exception {
+		JsonPrimaryDataSourceConfiguration source = new JsonPrimaryDataSourceConfiguration();
 		Field id = Field.fastCreateWithType("patient_id", "java.lang.Integer");
 		id.setAllowNull(false);
 		Field name = Field.fastCreateWithType("name", "java.lang.String");
 		name.setAllowNull(true);
 		source.setFields(Arrays.asList(id, name));
-		source.setFullLoaded(true);
+		source.fullLoad(null);
 		return source;
 	}
 

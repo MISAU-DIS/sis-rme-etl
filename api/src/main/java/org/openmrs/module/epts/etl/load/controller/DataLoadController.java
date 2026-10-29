@@ -54,7 +54,7 @@ public class DataLoadController extends EtlController {
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		LoadSyncDataSearchParams searchParams = new LoadSyncDataSearchParams((Engine<EtlDatabaseObject>) engine, null);
 		
-		File[] files = getSyncDirectory(engine.getSrcConf()).listFiles(searchParams);
+		File[] files = getSyncDirectory(engine.getJdbcPrimaryDataSource()).listFiles(searchParams);
 		
 		if (files == null || files.length == 0)
 			return 0;
@@ -75,7 +75,7 @@ public class DataLoadController extends EtlController {
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		LoadSyncDataSearchParams searchParams = new LoadSyncDataSearchParams((Engine<EtlDatabaseObject>) engine, null);
 		
-		File[] files = getSyncDirectory(engine.getSrcConf()).listFiles(searchParams);
+		File[] files = getSyncDirectory(engine.getJdbcPrimaryDataSource()).listFiles(searchParams);
 		
 		if (files == null || files.length == 0)
 			return 0;

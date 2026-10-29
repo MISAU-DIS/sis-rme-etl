@@ -213,6 +213,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.manualMapPrimaryKeyOnField = manualMapPrimaryKeyOnField;
 	}
 
+	@Deprecated
 	public SrcConf getSrcConf() {
 		return srcConf;
 	}
@@ -301,6 +302,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			throw new IllegalStateException("Source configuration has not been prepared");
 
 		return source.getPrimaryDataSource();
+	}
+
+	@JsonIgnore
+	public SrcConf requireJdbcPrimaryDataSource() {
+		return getPrimaryDataSource().requireJdbc();
 	}
 
 	public List<DstConf> getDstConf() {

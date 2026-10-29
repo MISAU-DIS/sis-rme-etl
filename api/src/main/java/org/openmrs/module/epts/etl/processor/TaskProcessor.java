@@ -8,7 +8,9 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
@@ -143,11 +145,15 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	public String getMainSrcTableName() {
-		return getSrcConf().getTableName();
+		return getPrimaryDataSource().getObjectName();
 	}
 
-	public SrcConf getSrcConf() {
-		return monitor.getSrcConf();
+	public SrcConf getJdbcPrimaryDataSource() {
+		return monitor.getJdbcPrimaryDataSource();
+	}
+
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return monitor.getPrimaryDataSource();
 	}
 
 	public AbstractEtlSearchParams<T> getSearchParams() {
@@ -175,7 +181,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		List<T> records = reader.read(new ConnectorReadRequest<>(getLimits(), null, null, useMultiThreadSearch));
 
 		logDebug("SERCH NEXT MIGRATION RECORDS FOR ETL '" + this.getEtlItemConfiguration().getConfigCode()
-				+ "' ON TABLE '" + getSrcConf().getTableName() + "' FINISHED. FOUND: '" + utilities.arraySize(records)
+				+ "' ON SOURCE '" + getPrimaryDataSource().getObjectName() + "' FINISHED. FOUND: '" + utilities.arraySize(records)
 				+ "' RECORDS.");
 
 		if (utilities.listHasElement(records)) {
@@ -196,7 +202,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		prepareExtractedRecords(records, writers);
 
 		logWarn("PERFORMING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
-				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "'");
+				+ records.size() + "' RECORDS OF SOURCE '" + this.getPrimaryDataSource().getAlias() + "'");
 
 		if (getActionType().isDelete()) {
 			performeDelete(records, writers);
@@ -206,7 +212,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 		logWarn("TASK {} ON {} RECORDS OF TABLE {} DONE ",
 				getRelatedOperationController().getOperationType().name().toLowerCase(), " OF '" + records.size(),
-				this.getSrcConf().getTableAlias());
+				this.getPrimaryDataSource().getAlias());
 
 	}
 
@@ -258,11 +264,11 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	private void performeDelete(List<T> records, ConnectorRecordWriters writers) throws DBException {
-		logDebug("Starting the deletion of " + records.size() + " " + getSrcConf().getTableName() + " on db...");
+		logDebug("Starting the deletion of " + records.size() + " " + getJdbcPrimaryDataSource().getTableName() + " on db...");
 
 		this.loadAndAddResult(TaskProcessorConnectorSupport.delete(this, records, writers));
 
-		logDebug(records.size() + " " + getSrcConf().getTableName() + "  deleted on db!");
+		logDebug(records.size() + " " + getJdbcPrimaryDataSource().getTableName() + "  deleted on db!");
 
 	}
 
@@ -303,7 +309,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		EtlDstType dstType = dstConf.getDstType();
 
 		if (dstType == null) {
-			dstType = dstConf.getSrcConf().getDstType();
+			dstType = dstConf.getParentConf().requireJdbcPrimaryDataSource().getDstType();
 		}
 
 		if (dstType == null) {
@@ -314,9 +320,11 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	private void beforeSync(List<T> records) {
+		if (!(getPrimaryDataSource() instanceof TableConfiguration))
+			return;
 		for (EtlObject rec : records) {
 			if (rec instanceof EtlDatabaseObject) {
-				((EtlDatabaseObject) rec).loadObjectIdData(getSrcConf());
+				((EtlDatabaseObject) rec).loadObjectIdData((TableConfiguration) getPrimaryDataSource());
 			}
 		}
 	}

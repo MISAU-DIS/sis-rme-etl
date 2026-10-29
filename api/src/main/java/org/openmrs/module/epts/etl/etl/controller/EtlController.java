@@ -66,7 +66,7 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 		try {
 			conn = openSrcConnection(this);
 
-			return engine.getSrcConf().getMinRecordId(engine, conn);
+			return engine.getJdbcPrimaryDataSource().getMinRecordId(engine, conn);
 		} catch (DBException e) {
 			e.printStackTrace();
 
@@ -87,7 +87,7 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 		try {
 			conn = openSrcConnection(this);
 
-			return engine.getSrcConf().getMaxRecordId(engine, conn);
+			return engine.getJdbcPrimaryDataSource().getMaxRecordId(engine, conn);
 		} catch (DBException e) {
 			e.printStackTrace();
 
@@ -105,7 +105,7 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 	public AbstractEtlSearchParams<EtlDatabaseObject> initMainSearchParams(
 			ThreadRecordIntervalsManager<EtlDatabaseObject> intervalsMgt, Engine<EtlDatabaseObject> engine) {
 
-		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new EtlDatabaseObjectSearchParams(engine.getSrcConf(),
+		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new EtlDatabaseObjectSearchParams(engine.getPrimaryDataSource(),
 				intervalsMgt);
 		searchParams.setQtdRecordPerSelected(getQtyRecordsPerProcessing());
 		searchParams.setSyncStartDate(getEtlConfiguration().getStartDate());

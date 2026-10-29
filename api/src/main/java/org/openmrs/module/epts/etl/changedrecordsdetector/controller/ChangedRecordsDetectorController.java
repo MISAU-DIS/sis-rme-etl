@@ -61,10 +61,10 @@ public class ChangedRecordsDetectorController extends OperationController<EtlDat
 			conn = openSrcConnection(this);
 
 			if (operationConfig.isChangedRecordsDetector()) {
-				return DetectedRecordInfoDAO.getFirstChangedRecord(engine.getSrcConf(),
+				return DetectedRecordInfoDAO.getFirstChangedRecord(engine.getJdbcPrimaryDataSource(),
 						getEtlConfiguration().getStartDate(), conn);
 			} else if (operationConfig.isNewRecordsDetector()) {
-				return DetectedRecordInfoDAO.getFirstNewRecord(engine.getSrcConf(),
+				return DetectedRecordInfoDAO.getFirstNewRecord(engine.getJdbcPrimaryDataSource(),
 						getEtlConfiguration().getStartDate(), conn);
 			} else
 				throw new ForbiddenOperationException(
@@ -87,10 +87,10 @@ public class ChangedRecordsDetectorController extends OperationController<EtlDat
 			conn = openSrcConnection(this);
 
 			if (operationConfig.isChangedRecordsDetector()) {
-				return DetectedRecordInfoDAO.getLastChangedRecord(engine.getSrcConf(),
+				return DetectedRecordInfoDAO.getLastChangedRecord(engine.getJdbcPrimaryDataSource(),
 						getEtlConfiguration().getStartDate(), conn);
 			} else if (operationConfig.isNewRecordsDetector()) {
-				return DetectedRecordInfoDAO.getLastNewRecord(engine.getSrcConf(), getEtlConfiguration().getStartDate(),
+				return DetectedRecordInfoDAO.getLastNewRecord(engine.getJdbcPrimaryDataSource(), getEtlConfiguration().getStartDate(),
 						conn);
 			} else
 				throw new ForbiddenOperationException(

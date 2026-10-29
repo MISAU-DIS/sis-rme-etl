@@ -27,7 +27,7 @@ public class ChangedRecordsDetectorSearchParams extends EtlDatabaseObjectSearchP
 	
 	public ChangedRecordsDetectorSearchParams(Engine<EtlDatabaseObject> engine,
 	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits, EtlOperationType type) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.type = type;
 	}
