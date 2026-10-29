@@ -30,7 +30,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	private String name;
 
-	private SrcConf parent;
+	private PrimaryDataSourceConfiguration parent;
 
 	private List<String> fields;
 
@@ -83,10 +83,10 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
-		if (relatedParent instanceof SrcConf) {
-			this.parent = (SrcConf) relatedParent;
+		if (relatedParent instanceof PrimaryDataSourceConfiguration) {
+			this.parent = (PrimaryDataSourceConfiguration) relatedParent;
 		} else {
-			throw new ForbiddenOperationException("The parent of JsonOutputDataSource must be a SrcConf!");
+			throw new ForbiddenOperationException("The parent of JsonOutputDataSource must be a primary data source!");
 		}
 	}
 
@@ -152,7 +152,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public SrcConf getParentConf() {
+	public PrimaryDataSourceConfiguration getParentConf() {
 		return this.parent;
 	}
 
@@ -198,7 +198,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		return this.getRelatedSrcConf().getRelatedConnInfo();
+		return this.getRelatedPrimaryDataSource().getRelatedConnInfo();
 	}
 
 	@Override
@@ -263,12 +263,22 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public SrcConf getRelatedSrcConf() {
-		return this.parent;
+		return this.parent.requireJdbc();
 	}
 
 	@Override
 	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
 		this.parent = relatedSrcConf;
+	}
+
+	@Override
+	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
+		return parent;
+	}
+
+	@Override
+	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
+		this.parent = primaryDataSource;
 	}
 
 	public JsonEtlObjectParent select(List<JsonEtlObjectParent> parents) {

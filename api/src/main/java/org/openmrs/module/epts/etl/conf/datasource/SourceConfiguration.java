@@ -8,10 +8,9 @@ import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
-import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -156,22 +155,29 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	public void initialize(EtlItemConfiguration parentItem) {
 		if (isInitialized())
 			return;
+
 		this.parentItem = parentItem;
+
 		applyIncludes();
 		resolvePrimaryDataSource();
 		markAsInitialized();
 	}
 
 	public synchronized void initializeDataSources(Connection srcConn, Connection dstConn) throws DBException {
-		if (dataSourcesInitialized)
+		if (dataSourcesInitialized) {
 			return;
-		if (!isInitialized())
+		}
+
+		if (!isInitialized()) {
 			throw new IllegalStateException("SourceConfiguration must be structurally initialized first");
+		}
 
 		if (primaryDataSource instanceof SrcConf) {
 			SrcConf jdbcSource = (SrcConf) primaryDataSource;
+
 			if (!jdbcSource.doNotUseAsDatasource()) {
 				jdbcSource.init(parentItem, srcConn, dstConn);
+
 				getRelatedEtlConf().addConfiguredTable(jdbcSource);
 			}
 		}
@@ -179,25 +185,39 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		for (EtlAdditionalDataSource additional : getConfiguredAdditionalDataSources()) {
 			initAdditionalDataSource(additional, srcConn, dstConn);
 		}
+
 		dataSourcesInitialized = true;
 	}
 
-	private void initAdditionalDataSource(EtlAdditionalDataSource additional, Connection srcConn,
-			Connection dstConn) throws DBException {
-		SrcConf jdbcSource = requireJdbcPrimaryForAdditionalSources();
-		additional.init(jdbcSource, parentItem.getRelatedEtlSchemaObject(), srcConn, dstConn);
-		additional.setRelatedSrcConf(jdbcSource);
+	private void initAdditionalDataSource(EtlAdditionalDataSource additional, Connection srcConn, Connection dstConn)
+			throws DBException {
+
+		if (isConnectorNeutralAdditionalSource(additional)) {
+			additional.setRelatedPrimaryDataSource(primaryDataSource);
+			additional.init(primaryDataSource, parentItem.getRelatedEtlSchemaObject(), srcConn, dstConn);
+		} else {
+			SrcConf jdbcSource = this.requireJdbcPrimaryForAdditionalSources();
+			additional.init(jdbcSource, parentItem.getRelatedEtlSchemaObject(), srcConn, dstConn);
+			additional.setRelatedSrcConf(jdbcSource);
+		}
 
 		if (additional instanceof AbstractTableConfiguration) {
 			TableConfiguration table = (TableConfiguration) additional;
+
 			if (table.hasAlias()) {
 				table.setUsingManualDefinedAlias(true);
 				getRelatedEtlConf().tryToAddToBusyTableAliasName(table.getTableAlias());
 			} else {
 				table.tryToGenerateTableAlias(getRelatedEtlConf());
 			}
+
 			getRelatedEtlConf().addConfiguredTable((AbstractTableConfiguration) additional);
 		}
+	}
+
+	private boolean isConnectorNeutralAdditionalSource(EtlAdditionalDataSource additional) {
+		return additional instanceof TransformableDataSource || additional instanceof JsonDataSource
+				|| additional instanceof JsonSimpleOutputDataSource;
 	}
 
 	public synchronized void fullLoad(Connection srcConn) throws DBException {
@@ -214,9 +234,11 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	private void loadAdditionalDataSources(EtlDatabaseObject schemaInfo, Connection srcConn) throws DBException {
 		if (!hasAdditionalDataSource())
 			return;
-		SrcConf jdbcSource = requireJdbcPrimaryForAdditionalSources();
+		SrcConf jdbcSource = primaryDataSource instanceof SrcConf ? (SrcConf) primaryDataSource : null;
 
 		if (hasExtraTableDataSourceConfig()) {
+			if (jdbcSource == null)
+				requireJdbcPrimaryForAdditionalSources();
 			for (TableDataSourceConfig table : extraTableDataSource) {
 				TableConfiguration loaded = jdbcSource.findFullConfiguredConfInAllRelatedTable(table.getFullTableName(),
 						new ArrayList<>());
@@ -239,6 +261,8 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasExtraQueryDataSourceConfig()) {
+			if (jdbcSource == null)
+				requireJdbcPrimaryForAdditionalSources();
 			for (QueryDataSourceConfig query : extraQueryDataSource) {
 				query.setRelatedSrcConf(jdbcSource);
 				query.fullLoad(srcConn);
@@ -247,12 +271,13 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 		if (hasExtraObjectDataSourceConfig()) {
 			for (TransformableDataSource dataSource : extraObjectDataSource) {
-				dataSource.setRelatedSrcConf(jdbcSource);
+				dataSource.setRelatedPrimaryDataSource(primaryDataSource);
 				if (dataSource.hasObjectFields()) {
 					for (DataSourceField field : dataSource.getObjectFields()) {
 						field.setName(SQLUtilities.tryToReplaceParamsInQuery(field.getName().toString(), schemaInfo));
 						if (field.hasValue() && schemaInfo != null)
-							field.setValue(SQLUtilities.tryToReplaceParamsInQuery(field.getValue().toString(), schemaInfo));
+							field.setValue(
+									SQLUtilities.tryToReplaceParamsInQuery(field.getValue().toString(), schemaInfo));
 					}
 				}
 				dataSource.fullLoad(srcConn);
@@ -261,7 +286,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 		if (hasExtraJsonSourceConfig()) {
 			for (JsonDataSource dataSource : extraJsonDataSource) {
-				dataSource.setRelatedSrcConf(jdbcSource);
+				dataSource.setRelatedPrimaryDataSource(primaryDataSource);
 				dataSource.fullLoad(srcConn);
 			}
 		}
@@ -280,7 +305,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	private SrcConf requireJdbcPrimaryForAdditionalSources() {
 		if (!(primaryDataSource instanceof SrcConf)) {
 			throw new EtlConfException(
-					"The current extra*DataSource implementations still require source.jdbcTable");
+					"extraTableDataSource and extraQueryDataSource require source.jdbcTable");
 		}
 		return (SrcConf) primaryDataSource;
 	}
@@ -376,8 +401,8 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		add(configured, names, "csv", csv);
 
 		if (configured.size() != 1) {
-			throw new EtlConfException("source must define exactly one of [jdbcTable, json, csv]; configured: "
-					+ names);
+			throw new EtlConfException(
+					"source must define exactly one of [jdbcTable, json, csv]; configured: " + names);
 		}
 		PrimaryDataSourceConfiguration resolvedPrimary = configured.get(0);
 		if (resource == null && resolvedPrimary != jdbcTable) {
@@ -393,10 +418,9 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 			throw new EtlConfException(
 					"source.jdbcTable.resource is not allowed; configure the common source.resource instead");
 		}
-		if (resolvedPrimary != jdbcTable && (resolvedPrimary.getFields() == null
-				|| resolvedPrimary.getFields().isEmpty())) {
-			throw new EtlConfException("source."
-					+ (resolvedPrimary == json ? "json" : "csv") + ".fields is required");
+		if (resolvedPrimary != jdbcTable
+				&& (resolvedPrimary.getFields() == null || resolvedPrimary.getFields().isEmpty())) {
+			throw new EtlConfException("source." + (resolvedPrimary == json ? "json" : "csv") + ".fields is required");
 		}
 	}
 

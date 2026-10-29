@@ -1,5 +1,8 @@
 package org.openmrs.module.epts.etl.conf;
 
+import java.sql.Connection;
+import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,11 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.datasource.CsvPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonMainOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 class SourceConfigurationTest {
 
@@ -119,6 +131,71 @@ class SourceConfigurationTest {
 		assertEquals("visits", source.getExtraQueryDataSource().get(0).getName());
 		assertEquals("calculatedValues", source.getExtraObjectDataSource().get(0).getName());
 		assertEquals("demographics", source.getExtraJsonDataSource().get(0).getName());
+	}
+
+	@Test
+	void shouldAllowConnectorNeutralAdditionalSourcesWithJsonPrimary() throws Exception {
+		SourceConfiguration source = new SourceConfiguration();
+		ConnectorResourceConfiguration resource = new ConnectorResourceConfiguration();
+		resource.setConnector("patient-api");
+		resource.setName("/patients");
+		source.setResource(resource);
+		JsonPrimaryDataSourceConfiguration primary = new JsonPrimaryDataSourceConfiguration();
+		primary.setFields(Collections.singletonList(Field.fastCreateWithType("uuid", "java.lang.String")));
+		source.setJson(primary);
+
+		TrackingTransformableDataSource transformable = new TrackingTransformableDataSource();
+		TrackingJsonDataSource json = new TrackingJsonDataSource();
+		JsonMainOutputDataSource output = new TrackingJsonOutputDataSource();
+		json.setOutputDataSource(output);
+		source.setExtraObjectDataSource(Collections.singletonList(transformable));
+		source.setExtraJsonDataSource(Collections.singletonList(json));
+
+		source.initialize(new EtlItemConfiguration());
+		source.fullLoad(null);
+
+		assertSame(primary, transformable.getRelatedPrimaryDataSource());
+		assertSame(primary, json.getRelatedPrimaryDataSource());
+		assertSame(primary, output.getRelatedPrimaryDataSource());
+		assertTrue(transformable.loaded);
+		assertTrue(json.loaded);
+	}
+
+	private static class TrackingTransformableDataSource extends TransformableDataSource {
+		private boolean loaded;
+
+		@Override
+		public void init(EtlDataConfiguration parent, EtlDatabaseObject schema, Connection src, Connection dst) {
+			setRelatedPrimaryDataSource((PrimaryDataSourceConfiguration) parent);
+		}
+
+		@Override
+		public synchronized void fullLoad(Connection connection) {
+			loaded = true;
+		}
+	}
+
+	private static class TrackingJsonDataSource extends JsonDataSource {
+		private boolean loaded;
+
+		@Override
+		public void init(EtlDataConfiguration parent, EtlDatabaseObject schema, Connection src, Connection dst)
+				throws DBException {
+			setRelatedPrimaryDataSource((PrimaryDataSourceConfiguration) parent);
+			getOutputDataSource().init(parent, schema, src, dst);
+		}
+
+		@Override
+		public void fullLoad(Connection connection) {
+			loaded = true;
+		}
+	}
+
+	private static class TrackingJsonOutputDataSource extends JsonMainOutputDataSource {
+		@Override
+		public void init(EtlDataConfiguration parent, EtlDatabaseObject schema, Connection src, Connection dst) {
+			setParentConf(parent);
+		}
 	}
 
 	private SourceConfiguration read(String json) throws Exception {

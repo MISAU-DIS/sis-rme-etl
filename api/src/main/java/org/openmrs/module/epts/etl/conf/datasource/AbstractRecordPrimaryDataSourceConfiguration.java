@@ -14,9 +14,11 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -30,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /** Common ETL record-model capabilities for non-JDBC primary sources. */
 public abstract class AbstractRecordPrimaryDataSourceConfiguration extends AbstractEtlDataConfiguration
-		implements PrimaryDataSourceConfiguration {
+		implements PrimaryDataSourceConfiguration, EtlDataSource {
 
 	private String name;
 	private PrimaryKey primaryKey;
@@ -44,6 +46,8 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	private transient Class<? extends EtlDatabaseObject> etlRecordClass = GenericDatabaseObject.class;
 	@JsonIgnore
 	private transient DatabaseObjectLoaderHelper loadHelper = new DatabaseObjectLoaderHelper(this);
+	@JsonIgnore
+	private transient PreparedQuery defaultPreparedQuery;
 
 	public abstract void setFields(List<Field> fields);
 
@@ -63,6 +67,21 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	public void setExcludedFieldsFromObjectDesc(List<String> excludedFieldsFromObjectDesc) {
 		this.excludedFieldsFromObjectDesc = excludedFieldsFromObjectDesc;
+	}
+
+	@Override
+	public PreparedQuery getDefaultPreparedQuery() {
+		return defaultPreparedQuery;
+	}
+
+	@Override
+	public void setDefaultPreparedQuery(PreparedQuery defaultPreparedQuery) {
+		this.defaultPreparedQuery = defaultPreparedQuery;
+	}
+
+	@Override
+	public String getQuery() {
+		return null;
 	}
 
 	@Override
@@ -237,6 +256,19 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	@Override
 	public EtlDataConfiguration getParentConf() {
 		return parentSource;
+	}
+
+	@Override
+	public void setParentConf(EtlDataConfiguration relatedParent) {
+		if (!(relatedParent instanceof SourceConfiguration))
+			throw new EtlConfException("A record primary source must belong to SourceConfiguration");
+		this.parentSource = (SourceConfiguration) relatedParent;
+	}
+
+	@Override
+	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn)
+			throws DBException, ForbiddenOperationException, DatabaseResourceDoesNotExists {
+		// The record schema is declared by this source configuration.
 	}
 
 	@Override
