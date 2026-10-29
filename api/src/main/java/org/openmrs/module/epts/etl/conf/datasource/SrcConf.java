@@ -49,7 +49,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class SrcConf extends AbstractTableConfiguration
-		implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent {
+		implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent,
+		PrimaryDataSourceConfiguration {
 
 	private static final String[] TRACKING_FIELDS = { "processing_status", "processing_date", "processing_error",
 			"retry_count" };
@@ -120,9 +121,22 @@ public class SrcConf extends AbstractTableConfiguration
 
 	private Boolean joinFieldsAlredyLoaded;
 
+	@JsonIgnore
+	private transient SourceConfiguration parentSource;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
+	}
+
+	@Override
+	public SourceConfiguration getParentSource() {
+		return parentSource;
+	}
+
+	@Override
+	public void setParentSource(SourceConfiguration parentSource) {
+		this.parentSource = parentSource;
 	}
 
 	public Boolean getDoNotLoadJoiningFields() {
