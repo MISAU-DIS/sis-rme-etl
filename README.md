@@ -27,15 +27,16 @@ EtlConfiguration
        ├─ source
        │    ├─ resource ───────────────> ConnectorRecordReader
        │    ├─ exactly one primary source
-       │    │    ├─ jdbcTable
-       │    │    ├─ json
-       │    │    └─ csv
+       │    │    ├─ tableDataSource
+       │    │    ├─ jsonDataSource
+       │    │    └─ csvDataSource
        │    └─ extra*DataSource[]
        └─ dstConf[].resource ──────────> ConnectorRecordWriter
 ```
 
 The primary source is inferred during initialization. There is no `primary`
-property: exactly one of `jdbcTable`, `json` or `csv` must be configured.
+property: exactly one of `tableDataSource`, `jsonDataSource` or
+`csvDataSource` must be configured.
 
 ## Connectors
 
@@ -133,7 +134,7 @@ primary source variant.
       "connector": "openmrs-source",
       "name": "patient"
     },
-    "jdbcTable": {
+    "tableDataSource": {
       "tableName": "patient"
     }
   },
@@ -149,8 +150,8 @@ primary source variant.
 }
 ```
 
-`jdbcTable` contains table-specific extraction and relational metadata. Its
-`tableName` and the source resource `name` must identify the same table.
+`tableDataSource` contains table-specific extraction and relational metadata.
+Its `tableName` and the source resource `name` must identify the same table.
 
 ### JSON source
 
@@ -162,7 +163,7 @@ primary source variant.
       "connector": "input-files",
       "name": "events/patients.jsonl"
     },
-    "json": {
+    "jsonDataSource": {
       "layout": "JSON_LINES",
       "fields": [
         {
@@ -197,7 +198,7 @@ transformations.
       "connector": "input-files",
       "name": "patients.csv"
     },
-    "csv": {
+    "csvDataSource": {
       "delimiter": ";",
       "hasHeader": true,
       "charset": "UTF-8",
@@ -229,7 +230,7 @@ transformation context without replacing the primary record:
     "connector": "openmrs-source",
     "name": "patient"
   },
-  "jdbcTable": {
+  "tableDataSource": {
     "tableName": "patient"
   },
   "extraTableDataSource": [

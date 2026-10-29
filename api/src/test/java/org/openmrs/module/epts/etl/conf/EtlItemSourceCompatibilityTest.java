@@ -29,7 +29,7 @@ class EtlItemSourceCompatibilityTest {
 		item.prepareSourceConfiguration();
 
 		assertSame(legacySource, item.getPrimaryDataSource());
-		assertSame(legacySource, item.getSource().getJdbcTable());
+		assertSame(legacySource, item.getSource().getTableDataSource());
 		assertSame(legacySource, item.getSrcConf());
 		assertSame(item.getSource().getResource(), legacySource.getResource());
 		assertEquals("source-db", item.getSource().getResource().getConnector());
@@ -42,12 +42,12 @@ class EtlItemSourceCompatibilityTest {
 	void shouldExposeNewJdbcSourceThroughTheTemporaryLegacyView() throws Exception {
 		EtlItemConfiguration item = read("{" +
 				"\"source\":{\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
-				"\"jdbcTable\":{\"tableName\":\"patient\"}," +
+				"\"tableDataSource\":{\"tableName\":\"patient\"}," +
 				"\"extraQueryDataSource\":[{\"name\":\"visits\",\"query\":\"select 1\"}]}}" );
 
 		item.prepareSourceConfiguration();
 
-		assertSame(item.getSource().getJdbcTable(), item.getSrcConf());
+		assertSame(item.getSource().getTableDataSource(), item.getSrcConf());
 		assertSame(item.getSource().getResource(), item.getSrcConf().getResource());
 		assertSame(item.getSource().getExtraQueryDataSource(), item.getSrcConf().getExtraQueryDataSource());
 		assertEquals("patient", item.getSrcConf().getTableName());
@@ -63,7 +63,7 @@ class EtlItemSourceCompatibilityTest {
 	void shouldKeepNonJdbcPrimaryIndependentFromLegacySrcConf() throws Exception {
 		EtlItemConfiguration item = read("{" +
 				"\"source\":{\"resource\":{\"connector\":\"patient-api\",\"name\":\"/patients\"}," +
-				"\"json\":{\"fields\":[{\"name\":\"uuid\"}]}}}" );
+				"\"jsonDataSource\":{\"fields\":[{\"name\":\"uuid\"}]}}}" );
 
 		item.prepareSourceConfiguration();
 
@@ -77,7 +77,7 @@ class EtlItemSourceCompatibilityTest {
 		EtlItemConfiguration item = read("{" +
 				"\"srcConf\":{\"tableName\":\"legacy_patient\"}," +
 				"\"source\":{\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
-				"\"jdbcTable\":{\"tableName\":\"patient\"}}}" );
+				"\"tableDataSource\":{\"tableName\":\"patient\"}}}" );
 
 		EtlConfException error = assertThrows(EtlConfException.class, item::prepareSourceConfiguration);
 

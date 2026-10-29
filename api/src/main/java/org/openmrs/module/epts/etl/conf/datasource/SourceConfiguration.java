@@ -32,11 +32,11 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private ConnectorResourceConfiguration resource;
 
-	private SrcConf jdbcTable;
+	private SrcConf tableDataSource;
 
-	private JsonPrimaryDataSourceConfiguration json;
+	private JsonPrimaryDataSourceConfiguration jsonDataSource;
 
-	private CsvPrimaryDataSourceConfiguration csv;
+	private CsvPrimaryDataSourceConfiguration csvDataSource;
 
 	private List<TableDataSourceConfig> extraTableDataSource;
 
@@ -85,28 +85,28 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		this.resource = resource;
 	}
 
-	public SrcConf getJdbcTable() {
-		return jdbcTable;
+	public SrcConf getTableDataSource() {
+		return tableDataSource;
 	}
 
-	public void setJdbcTable(SrcConf jdbcTable) {
-		this.jdbcTable = jdbcTable;
+	public void setTableDataSource(SrcConf tableDataSource) {
+		this.tableDataSource = tableDataSource;
 	}
 
-	public JsonPrimaryDataSourceConfiguration getJson() {
-		return json;
+	public JsonPrimaryDataSourceConfiguration getJsonDataSource() {
+		return jsonDataSource;
 	}
 
-	public void setJson(JsonPrimaryDataSourceConfiguration json) {
-		this.json = json;
+	public void setJsonDataSource(JsonPrimaryDataSourceConfiguration jsonDataSource) {
+		this.jsonDataSource = jsonDataSource;
 	}
 
-	public CsvPrimaryDataSourceConfiguration getCsv() {
-		return csv;
+	public CsvPrimaryDataSourceConfiguration getCsvDataSource() {
+		return csvDataSource;
 	}
 
-	public void setCsv(CsvPrimaryDataSourceConfiguration csv) {
-		this.csv = csv;
+	public void setCsvDataSource(CsvPrimaryDataSourceConfiguration csvDataSource) {
+		this.csvDataSource = csvDataSource;
 	}
 
 	public List<TableDataSourceConfig> getExtraTableDataSource() {
@@ -319,7 +319,8 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private SrcConf requireJdbcPrimaryForAdditionalSources() {
 		if (!(primaryDataSource instanceof SrcConf)) {
-			throw new EtlConfException("extraTableDataSource and extraQueryDataSource require source.jdbcTable");
+			throw new EtlConfException(
+					"extraTableDataSource and extraQueryDataSource require source.tableDataSource");
 		}
 		return (SrcConf) primaryDataSource;
 	}
@@ -410,16 +411,17 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	private void resolvePrimaryDataSource() {
 		List<PrimaryDataSourceConfiguration> configured = new ArrayList<>();
 		List<String> names = new ArrayList<>();
-		add(configured, names, "jdbcTable", jdbcTable);
-		add(configured, names, "json", json);
-		add(configured, names, "csv", csv);
+		add(configured, names, "tableDataSource", tableDataSource);
+		add(configured, names, "jsonDataSource", jsonDataSource);
+		add(configured, names, "csvDataSource", csvDataSource);
 
 		if (configured.size() != 1) {
 			throw new EtlConfException(
-					"source must define exactly one of [jdbcTable, json, csv]; configured: " + names);
+					"source must define exactly one of [tableDataSource, jsonDataSource, csvDataSource]; configured: "
+							+ names);
 		}
 		PrimaryDataSourceConfiguration resolvedPrimary = configured.get(0);
-		if (resource == null && resolvedPrimary != jdbcTable) {
+		if (resource == null && resolvedPrimary != tableDataSource) {
 			throw new EtlConfException("source.resource is required");
 		}
 		validatePrimaryDataSource(resolvedPrimary);
@@ -428,13 +430,15 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	private void validatePrimaryDataSource(PrimaryDataSourceConfiguration resolvedPrimary) {
-		if (resolvedPrimary == jdbcTable && jdbcTable.getResource() != null) {
+		if (resolvedPrimary == tableDataSource && tableDataSource.getResource() != null) {
 			throw new EtlConfException(
-					"source.jdbcTable.resource is not allowed; configure the common source.resource instead");
+					"source.tableDataSource.resource is not allowed; configure the common source.resource instead");
 		}
-		if (resolvedPrimary != jdbcTable
+		if (resolvedPrimary != tableDataSource
 				&& (resolvedPrimary.getFields() == null || resolvedPrimary.getFields().isEmpty())) {
-			throw new EtlConfException("source." + (resolvedPrimary == json ? "json" : "csv") + ".fields is required");
+			throw new EtlConfException("source."
+					+ (resolvedPrimary == jsonDataSource ? "jsonDataSource" : "csvDataSource")
+					+ ".fields is required");
 		}
 	}
 

@@ -71,6 +71,6 @@ public class CsvPrimaryDataSourceConfiguration extends AbstractRecordPrimaryData
 
 	@Override
 	protected String getSourceTypeName() {
-		return "csv";
+		return "csvDataSource";
 	}
 }

@@ -41,6 +41,6 @@ public class JsonPrimaryDataSourceConfiguration extends AbstractRecordPrimaryDat
 
 	@Override
 	protected String getSourceTypeName() {
-		return "json";
+		return "jsonDataSource";
 	}
 }

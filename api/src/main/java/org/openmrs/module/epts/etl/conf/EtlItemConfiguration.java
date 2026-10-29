@@ -231,7 +231,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	void prepareSourceConfiguration() {
-		if (source != null && srcConf != null && source.getJdbcTable() != srcConf) {
+		if (source != null && srcConf != null && source.getTableDataSource() != srcConf) {
 			throw new EtlConfException("etlItemConfiguration cannot define both 'source' and legacy 'srcConf'");
 		}
 
@@ -245,7 +245,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			srcConf.setResource(null);
 
-			normalized.setJdbcTable(srcConf);
+			normalized.setTableDataSource(srcConf);
 			normalized.setExtraTableDataSource(srcConf.getExtraTableDataSource());
 			normalized.setExtraQueryDataSource(srcConf.getExtraQueryDataSource());
 			normalized.setExtraObjectDataSource(srcConf.getExtraObjectDataSource());
