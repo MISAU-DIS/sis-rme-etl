@@ -5,12 +5,16 @@ import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 
-/** A mutually exclusive primary source variant configured under {@code source}. */
+/**
+ * A mutually exclusive primary source variant configured under {@code source}.
+ */
 public interface PrimaryDataSourceConfiguration extends EtlDatabaseObjectConfiguration {
 
 	SourceConfiguration getParentSource();
 
 	void setParentSource(SourceConfiguration parentSource);
+
+	Boolean doNotUseAsDatasource();
 
 	default ConnectorResourceConfiguration getSourceResource() {
 		return getParentSource() == null ? null : getParentSource().getResource();
@@ -30,8 +34,7 @@ public interface PrimaryDataSourceConfiguration extends EtlDatabaseObjectConfigu
 
 	default SrcConf requireJdbc() {
 		if (!(this instanceof SrcConf)) {
-			throw new ForbiddenOperationException("Primary data source '" + getObjectName()
-					+ "' is not JDBC-backed");
+			throw new ForbiddenOperationException("Primary data source '" + getObjectName() + "' is not JDBC-backed");
 		}
 		return (SrcConf) this;
 	}

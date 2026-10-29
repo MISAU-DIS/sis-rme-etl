@@ -47,9 +47,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class SrcConf extends AbstractTableConfiguration
-		implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent,
-		PrimaryDataSourceConfiguration {
+public class SrcConf extends AbstractTableConfiguration implements MainJoiningEntity, JoinableEntity, EtlSrcConf,
+		EtlItemConfigurationComponent, PrimaryDataSourceConfiguration {
 
 	private static final String[] TRACKING_FIELDS = { "processing_status", "processing_date", "processing_error",
 			"retry_count" };
@@ -1027,7 +1026,7 @@ public class SrcConf extends AbstractTableConfiguration
 
 		obj.setFieldValue("processing_status", status.toString());
 	}
-	
+
 	@Override
 	public boolean joinFieldsAlredyLoaded() {
 		return isTrue(this.joinFieldsAlredyLoaded);
@@ -1036,5 +1035,5 @@ public class SrcConf extends AbstractTableConfiguration
 	@Override
 	public void markJoinFieldAsLoaded() {
 		this.joinFieldsAlredyLoaded = true;
-	}	
+	}
 }

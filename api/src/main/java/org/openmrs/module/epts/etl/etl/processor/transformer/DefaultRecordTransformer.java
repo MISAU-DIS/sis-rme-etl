@@ -8,7 +8,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.AbstractRecordPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -356,11 +357,12 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, TransformationType transformationType,
 			Connection srcConn) throws DBException {
 
-		if (srcObject.getRelatedConfiguration() instanceof SrcConf) {
-			SrcConf srcConf = (SrcConf) srcObject.getRelatedConfiguration();
+		if (srcObject.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration) {
+			AbstractRecordPrimaryDataSourceConfiguration srcConf = (AbstractRecordPrimaryDataSourceConfiguration) srcObject
+					.getRelatedConfiguration();
 
 			if (!srcConf.doNotUseAsDatasource()) {
-				for (EtlAdditionalDataSource ds : srcConf.getAvaliableExtraDataSource()) {
+				for (EtlAdditionalDataSource ds : srcConf.getParentSource().getAvailableAdditionalDataSources()) {
 
 					List<EtlDatabaseObject> avaliableObjects = srcObjects.stream()
 							.collect(java.util.stream.Collectors.toList());
@@ -380,7 +382,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 						 */
 						if (ds.isRequired() && transformationType.isPrincipal()) {
 							throw new MissingRequiredTransformationObject(srcObject, ds,
-									srcConf.getMissingRequiredObjectBehavior());
+									srcConf.getParentSource().getMissingRequiredObjectBehavior());
 						} else if (!transformationType.isPrincipal()) {
 							relatedSrcObject = ds.newInstance();
 							relatedSrcObject.setRelatedConfiguration(ds);

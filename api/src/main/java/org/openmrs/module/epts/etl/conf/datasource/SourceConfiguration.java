@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -61,6 +62,20 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	@JsonIgnore
 	private transient boolean fullLoaded;
+
+	private ActionOnEtlIssue missingRequiredObjectBehavior;
+
+	public ActionOnEtlIssue getMissingRequiredObjectBehavior() {
+		return missingRequiredObjectBehavior;
+	}
+
+	public void setMissingRequiredObjectBehavior(ActionOnEtlIssue missingRequiredObjectBehavior) {
+		this.missingRequiredObjectBehavior = missingRequiredObjectBehavior;
+	}
+
+	public ActionOnEtlIssue missingRequiredObjectBehavior() {
+		return this.missingRequiredObjectBehavior;
+	}
 
 	public ConnectorResourceConfiguration getResource() {
 		return resource;
@@ -304,8 +319,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private SrcConf requireJdbcPrimaryForAdditionalSources() {
 		if (!(primaryDataSource instanceof SrcConf)) {
-			throw new EtlConfException(
-					"extraTableDataSource and extraQueryDataSource require source.jdbcTable");
+			throw new EtlConfException("extraTableDataSource and extraQueryDataSource require source.jdbcTable");
 		}
 		return (SrcConf) primaryDataSource;
 	}
