@@ -7,9 +7,9 @@ import java.util.Map;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
+import org.openmrs.module.epts.etl.exceptions.RequireJdbcException;
 
 /**
  * A mutually exclusive primary source variant configured under {@code source}.
@@ -29,19 +29,22 @@ public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcCon
 	}
 
 	default EtlField getEtlField(String fieldName, List<EtlDataSource> preferredDataSources, Boolean deepCheck) {
+
 		for (EtlField field : getEtlFields()) {
+
 			if ((field.getName().equals(fieldName)
-			        || field.hasSrcField() && field.getSrcField().getName().equals(fieldName))
-			        && matchesPreferredDataSource(field, preferredDataSources)) {
+					|| field.hasSrcField() && field.getSrcField().getName().equals(fieldName))
+					&& matchesPreferredDataSource(field, preferredDataSources)) {
 				return field;
 			}
 		}
 
 		if (Boolean.TRUE.equals(deepCheck) && getParentSource() != null) {
+
 			for (EtlDataSource dataSource : getParentSource().getAvailableAdditionalDataSources()) {
-				if (dataSource.containsField(fieldName)
-				        && (preferredDataSources == null || preferredDataSources.isEmpty()
-				                || preferredDataSources.contains(dataSource))) {
+
+				if (dataSource.containsField(fieldName) && (preferredDataSources == null
+						|| preferredDataSources.isEmpty() || preferredDataSources.contains(dataSource))) {
 					return EtlField.fastCreate(fieldName, dataSource, false);
 				}
 			}
@@ -51,10 +54,13 @@ public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcCon
 	}
 
 	default boolean matchesPreferredDataSource(EtlField field, List<EtlDataSource> preferredDataSources) {
+
 		if (preferredDataSources == null || preferredDataSources.isEmpty()) {
 			return true;
 		}
+
 		for (EtlDataSource preferred : preferredDataSources) {
+
 			if (field.checkIfUsesSameDataSouce(preferred)) {
 				return true;
 			}
@@ -86,10 +92,12 @@ public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcCon
 		return this instanceof SrcConf;
 	}
 
-	default SrcConf requireJdbc() {
+	default SrcConf requireJdbc() throws RequireJdbcException {
+
 		if (!(this instanceof SrcConf)) {
-			throw new ForbiddenOperationException("Primary data source '" + getObjectName() + "' is not JDBC-backed");
+			throw new RequireJdbcException("Primary data source '" + getObjectName() + "' is not JDBC-backed");
 		}
+
 		return (SrcConf) this;
 	}
 }

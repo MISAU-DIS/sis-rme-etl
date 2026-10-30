@@ -193,29 +193,29 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	public synchronized void initializeDataSources(Connection srcConn, Connection dstConn) throws DBException {
 
-		if (dataSourcesInitialized) {
+		if (this.dataSourcesInitialized) {
 			return;
 		}
 
-		if (!isInitialized()) {
+		if (!this.isInitialized()) {
 			throw new IllegalStateException("SourceConfiguration must be structurally initialized first");
 		}
 
-		if (primaryDataSource instanceof SrcConf) {
-			SrcConf jdbcSource = (SrcConf) primaryDataSource;
+		if (this.primaryDataSource instanceof SrcConf) {
+			SrcConf jdbcSource = (SrcConf) this.primaryDataSource;
 
 			if (!jdbcSource.doNotUseAsDatasource()) {
-				jdbcSource.init(parentItem, srcConn, dstConn);
+				jdbcSource.init(this.parentItem, srcConn, dstConn);
 
-				getRelatedEtlConf().addConfiguredTable(jdbcSource);
+				this.getRelatedEtlConf().addConfiguredTable(jdbcSource);
 			}
 		}
 
-		for (EtlAdditionalDataSource additional : getConfiguredAdditionalDataSources()) {
-			initAdditionalDataSource(additional, srcConn, dstConn);
+		for (EtlAdditionalDataSource additional : this.getConfiguredAdditionalDataSources()) {
+			this.initAdditionalDataSource(additional, srcConn, dstConn);
 		}
 
-		dataSourcesInitialized = true;
+		this.dataSourcesInitialized = true;
 	}
 
 	private void initAdditionalDataSource(EtlAdditionalDataSource additional, Connection srcConn, Connection dstConn)

@@ -1,8 +1,8 @@
 {
-  "name": "data_model_for_dynamic_objects",
-  "parameters": [],
-  "template": {
-    "databaseObjectInstantiationMode": "DYNAMIC_GENERIC",
-    "schemaMetadataMode": "LIVE_DATABASE"
-  }
+	"name": "data_model_for_dynamic_objects",
+	"parameters": [],
+	"template": {
+		"databaseObjectInstantiationMode": "DYNAMIC_GENERIC",
+		"schemaMetadataMode": "LIVE_DATABASE"
+	}
 }

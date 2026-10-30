@@ -1,5 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -19,11 +20,26 @@
 			<artifactId>org.eclipse.jdt.core</artifactId>
 			<version>3.26.0</version>
 			<exclusions>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.core.resources</artifactId></exclusion>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.core.runtime</artifactId></exclusion>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.core.filesystem</artifactId></exclusion>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.text</artifactId></exclusion>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.team.core</artifactId></exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.core.resources</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.core.runtime</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.core.filesystem</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.text</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.team.core</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -31,10 +47,22 @@
 			<artifactId>org.eclipse.text</artifactId>
 			<version>3.11.0</version>
 			<exclusions>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.core.commands</artifactId></exclusion>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.equinox.common</artifactId></exclusion>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.equinox.preferences</artifactId></exclusion>
-				<exclusion><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.core.runtime</artifactId></exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.core.commands</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.equinox.common</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.equinox.preferences</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.platform</groupId>
+					<artifactId>org.eclipse.core.runtime</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -47,7 +75,10 @@
 			<artifactId>org.eclipse.core.resources</artifactId>
 			<version>3.16.0</version>
 			<exclusions>
-				<exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -55,7 +86,10 @@
 			<artifactId>org.eclipse.core.jobs</artifactId>
 			<version>3.12.0</version>
 			<exclusions>
-				<exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -63,7 +97,10 @@
 			<artifactId>org.eclipse.core.runtime</artifactId>
 			<version>3.20.0</version>
 			<exclusions>
-				<exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -81,7 +118,10 @@
 			<artifactId>org.eclipse.core.contenttype</artifactId>
 			<version>3.7.800</version>
 			<exclusions>
-				<exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -89,7 +129,10 @@
 			<artifactId>org.eclipse.equinox.preferences</artifactId>
 			<version>3.8.200</version>
 			<exclusions>
-				<exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 
@@ -283,7 +326,8 @@
 							<goal>jar</goal>
 						</goals>
 						<configuration>
-							<!-- Lightweight API artifact consumed only by the OMOD. -->
+							<!-- Lightweight API artifact consumed only by the
+							OMOD. -->
 							<classifier>omod</classifier>
 						</configuration>
 					</execution>
@@ -305,10 +349,12 @@
 							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<transformers>
 								<!-- add Main-Class to manifest file -->
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<mainClass>org.openmrs.module.epts.etl.Main</mainClass>
 								</transformer>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
 							</transformers>
 							<filters>
 								<filter>

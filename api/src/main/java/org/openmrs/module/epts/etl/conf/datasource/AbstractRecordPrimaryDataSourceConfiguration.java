@@ -17,8 +17,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -53,6 +53,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	protected abstract String getSourceTypeName();
 
+	@Override
 	public String getName() {
 		return name;
 	}
@@ -112,17 +113,19 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	}
 
 	private void validateFields() {
+
 		if (getFields() == null || getFields().isEmpty()) {
 			throw new EtlConfException("source." + getSourceTypeName() + ".fields is required");
 		}
-		
+
 		Set<String> names = new HashSet<>();
-		
+
 		for (Field field : getFields()) {
+
 			if (field == null || field.getName() == null || field.getName().trim().isEmpty()) {
 				throw new EtlConfException("Every source." + getSourceTypeName() + " field must have a name");
 			}
-			
+
 			if (!names.add(field.getName().trim().toLowerCase(Locale.ROOT))) {
 				throw new EtlConfException(
 						"Duplicated source field '" + field.getName() + "' in source." + getSourceTypeName());
@@ -142,17 +145,22 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 		String normalized = objectName == null ? getSourceTypeName() + "_record"
 				: objectName.replaceFirst("\\.[^.]+$", "").replaceAll("[^A-Za-z0-9]+", "_");
 		StringBuilder className = new StringBuilder();
+
 		for (String part : normalized.split("_")) {
-			if (!part.isEmpty())
+
+			if (!part.isEmpty()) {
 				className.append(utilities.capitalize(part));
+			}
 		}
 		return className.append("VO").toString();
 	}
 
 	@Override
 	public String getObjectName() {
-		if (utilities.stringHasValue(name))
+
+		if (utilities.stringHasValue(name)) {
 			return name;
+		}
 		return getSourceTypeName() + "_record";
 	}
 
@@ -208,6 +216,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	@Override
 	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+
 		try {
 			setEtlRecordClass(fullClass ? DatabaseEntityPOJOGenerator.generate(this, connInfo)
 					: DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo));
@@ -263,8 +272,10 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
-		if (!(relatedParent instanceof SourceConfiguration))
+
+		if (!(relatedParent instanceof SourceConfiguration)) {
 			throw new EtlConfException("A record primary source must belong to SourceConfiguration");
+		}
 		this.parentSource = (SourceConfiguration) relatedParent;
 	}
 
@@ -276,7 +287,9 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
-		if (name != null)
+
+		if (name != null) {
 			name = utilities.tryToReplacePlaceholders(name, schemaInfoSrc);
+		}
 	}
 }

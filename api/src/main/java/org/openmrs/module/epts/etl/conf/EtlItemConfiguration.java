@@ -45,6 +45,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.SearchClauses;
+import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -232,17 +233,20 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	void prepareSourceConfiguration() {
+
 		if (source != null && srcConf != null && source.getTableDataSource() != srcConf) {
 			throw new EtlConfException("etlItemConfiguration cannot define both 'source' and legacy 'srcConf'");
 		}
 
 		if (source == null) {
+
 			if (srcConf == null) {
 				throw new EtlConfException("etlItemConfiguration must define 'source' or legacy 'srcConf'");
 			}
 			SourceConfiguration normalized = new SourceConfiguration();
 
 			ConnectorResourceConfiguration legacyResource = srcConf.getResource();
+
 			if (legacyResource != null) {
 				normalized.setConnector(legacyResource.getConnector());
 				SourceResourceConfiguration normalizedResource = new SourceResourceConfiguration();
@@ -250,6 +254,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				normalizedResource.setName(legacyResource.getName());
 				normalizedResource.setProperties(legacyResource.getProperties());
 				normalized.setResource(normalizedResource);
+
 				if (utilities.stringHasValue(legacyResource.getName())
 						&& !legacyResource.getName().equals(srcConf.getTableName())) {
 					throw new EtlConfException("Legacy source resource name '" + legacyResource.getName()
@@ -295,6 +300,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		SourceProcessingPolicy policy = source.getProcessingPolicy();
 
 		if (policy != null) {
+
 			if (policy.getLimitToOneResult() != null) {
 				srcConf.setLimitToOneResult(policy.getLimitToOneResult());
 			}
@@ -311,8 +317,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	@JsonIgnore
 	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
-		if (source == null)
+
+		if (source == null) {
 			throw new IllegalStateException("Source configuration has not been prepared");
+		}
 
 		return source.getPrimaryDataSource();
 	}
@@ -382,11 +390,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		this.source.setResolvedResource(source);
 
-		if (srcConf != null)
+		if (srcConf != null) {
 			srcConf.setResolvedResource(source);
+		}
 
 		if (dstConf != null) {
+
 			for (int index = 0; index < dstConf.size(); index++) {
+
 				if (index >= destinations.size()) {
 					throw new IllegalStateException("No resolved destination resource for dstConf at index " + index);
 				}
@@ -418,6 +429,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		OpenConnection srcConnection = null;
 
 		try {
+
 			if (sourceResource.getEndpoint().getType() == ConnectorType.JDBC) {
 				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(sourceResource, openedFrom);
 			} else {
@@ -428,6 +440,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			return ConnectorRecordReaderFactory.create(sourceResource, searchParams, srcConnection,
 					destinationConnection);
 		} catch (RuntimeException e) {
+
 			if (srcConnection != null) {
 				srcConnection.finalizeConnection(openedFrom);
 			}
@@ -495,6 +508,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		if (item.getChildItemConf() != null) {
+
 			for (EtlItemConfiguration child : item.getChildItemConf()) {
 				collectDestinationConfigurations(child, destinations, visited);
 			}
@@ -506,6 +520,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		PrimaryDataSourceConfiguration primary = source.getPrimaryDataSource();
 		ConnectorResourceConfiguration configured;
+
 		if (source.getResource() != null) {
 			configured = source.getResource();
 		} else {
@@ -518,9 +533,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		ConnectorEndpoint endpoint = selectConnector(registry, source.getConnector(), ConnectorDirection.SOURCE,
 				source.getConnector() == null && primary instanceof SrcConf);
 
-		TableConfiguration legacyTable = primary instanceof TableConfiguration
-				? (TableConfiguration) primary
-				: null;
+		TableConfiguration legacyTable = primary instanceof TableConfiguration ? (TableConfiguration) primary : null;
 
 		return ConnectorConfigurationResolver.resolveResource(configured, legacyTable, ConnectorDirection.SOURCE,
 				endpoint);
@@ -550,11 +563,13 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	void validateConnectorResources(ConnectorRegistry registry, List<String> issues) {
+
 		try {
 			prepareSourceConfiguration();
 
 			if (source != null) {
 				ConnectorResource source = resolveSrcResource(registry);
+
 				if (getPrimaryDataSource() instanceof AbstractTableConfiguration) {
 					validateRecordSchema((AbstractTableConfiguration) getPrimaryDataSource(), source);
 				}
@@ -576,6 +591,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	private void validateRecordSchema(AbstractTableConfiguration configuration, ConnectorResource resource) {
+
 		if (resource != null && resource.getEndpoint().getType() != ConnectorType.JDBC) {
 
 			if (configuration.getRecordSchema() == null) {
@@ -652,8 +668,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	public void init(EtlConfiguration relatedEtlConf, boolean testing, Connection srcConn) throws DBException {
 
-		if (isInitialized())
+		if (isInitialized()) {
 			return;
+		}
 
 		this.setRelatedEtlConf(relatedEtlConf);
 
@@ -672,7 +689,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		List<String> alreadyIncludedTables = new ArrayList<>();
 
 		if (utilities.listHasElement(this.getDstConf())) {
+
 			try (DestinationConnectorConnections destinationConnections = createDestinationConnections(this)) {
+
 				for (DstConf dst : this.getDstConf()) {
 					dst.init(this, srcConn, destinationConnections.getIfJdbc(dst));
 
@@ -714,10 +733,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	private void tryToLoadChildItemConf(boolean testing, Connection srcConn) throws DBException {
 
 		if (this.hasChildItemConf()) {
+
 			for (EtlChildItemConfiguration childItem : this.getChildItemConf()) {
 				childItem.setParentItemConf(this);
 
 				if (!utilities.stringHasValue(childItem.getRelatedParentDstConfName())) {
+
 					if (utilities.listHasExactlyOneElement(this.getDstConf())) {
 						childItem.setRelatedParentDstConfName(this.getDstConf().get(0).getName());
 					} else {
@@ -737,9 +758,13 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		OpenConnection srcConn = getRelatedEtlConf().openSrcConn(this);
 
 		try {
+
 			try (DestinationConnectorConnections destinationConnections = createDestinationConnections(this)) {
+
 				if (this.hasDstConf()) {
+
 					for (DstConf dst : this.getDstConf()) {
+
 						if (!destinationConnections.isJdbc(dst)) {
 							continue;
 						}
@@ -754,14 +779,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 						}
 
 						for (ParentTable refInfo : dst.getParentRefInfo()) {
-							if (refInfo.isMetadata())
+
+							if (refInfo.isMetadata()) {
 								continue;
+							}
 
 							if (!refInfo.isFullLoaded()) {
 								refInfo.fullLoad(dstConn);
 							}
 
 							if (refInfo.useSharedPKKey()) {
+
 								if (!refInfo.getSharedKeyRefInfo(dstConn).isFullLoaded()) {
 									refInfo.getSharedKeyRefInfo(dstConn).fullLoad(dstConn);
 								}
@@ -797,6 +825,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		OpenConnection srcConn = this.getRelatedEtlConf().openSrcConn(this);
 
 		try {
+
 			try (DestinationConnectorConnections destinationConnections = createDestinationConnections(this)) {
 				this.fullLoad(operationConfig, srcConn, destinationConnections);
 			}
@@ -807,10 +836,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private void prepareDestinationConfigurationsForConnectorFullLoad() {
 		prepareSourceConfiguration();
+
 		if (!hasDstConf() && (getRelatedEtlConf().hasDstConnInfo()
 				|| utilities.stringHasValue(getRelatedEtlConf().getDefaultDestinationConnector()))) {
 			ConnectorEndpoint endpoint = selectConnector(getRelatedEtlConf().getInitializedConnectorRegistry(), null,
 					ConnectorDirection.DESTINATION, true);
+
 			if (endpoint.getType() == ConnectorType.JDBC) {
 				setDstConf(DstConf.generateDefaultDstConf(this, endpoint.unwrap(DBConnectionInfo.class)));
 			}
@@ -820,25 +851,35 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	public synchronized void fullLoad(EtlOperationConfig operationConfig, Connection srcConn,
 			DestinationConnectorConnections destinationConnections) throws DBException {
+
 		if (this.isFullLoaded()) {
 			return;
 		}
+
 		this.getRelatedEtlConf().info("Starting full load of etlItemConfiguration {}", this);
 
 		if (!hasManualMapPrimaryKeyOnField()) {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
+
 		SrcConf jdbcSource = getPrimaryDataSource() instanceof SrcConf ? (SrcConf) getPrimaryDataSource() : null;
+
 		if (jdbcSource != null && !jdbcSource.hasDstType()) {
 			jdbcSource.setDstType(operationConfig.getDstType());
 		}
+
 		this.getSource().fullLoad(srcConn);
 
 		try {
-			if (jdbcSource != null)
+
+			if (jdbcSource != null) {
 				jdbcSource.setParentConf(this);
+			}
+
 			if (hasDstConf()) {
+
 				for (DstConf map : getDstConf()) {
+
 					if (map.isDisabled()) {
 						continue;
 					}
@@ -856,6 +897,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					try {
 						map.tryToLoadSchemaInfo(relatedEtlSchemaObject, destinationConnection);
 					} catch (DatabaseResourceDoesNotExists e) {
+
 						if (map.getDstType().isDb() && !createDstTableIfNotExists()) {
 							throw e;
 						}
@@ -864,14 +906,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 					if (map.isInMemoryTable()) {
 						map.fullLoad(destinationConnection);
+
 						if (map.getDstType().isDb() && createDstTableIfNotExists()) {
 							map.createTable(destinationConnection);
 						}
 					} else {
 						map.loadFields(destinationConnection);
+
 						if (map.isAutomaticalyGenerated() && jdbcSource != null && jdbcSource.hasParents()) {
 							map.setParents(jdbcSource.tryToCloneAllParentsForOtherTable(map, destinationConnection));
 						}
+
 						if (!isDoNotFullLoadDstConf()) {
 							map.init(this, srcConn, destinationConnection);
 							map.fullLoad(destinationConnection);
@@ -883,6 +928,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			if (operationConfig.writeOperationHistory()
 					|| operationConfig.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
+
 				if (jdbcSource != null && !jdbcSource.doNotUseAsDatasource()) {
 					jdbcSource.generateStagingTables(srcConn);
 				}
@@ -896,8 +942,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public DstConf findDstConf(String dstConfName) {
+
 		if (this.hasDstConf()) {
+
 			for (DstConf conf : this.getDstConf()) {
+
 				if (conf.getTableAlias() != null && conf.getTableAlias().equals(dstConfName)) {
 					return conf;
 				}
@@ -908,6 +957,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			for (DstConf conf : this.getDstConf()) {
 
 				if (conf.getTableName().equals(dstConfName)) {
+
 					if (found != null) {
 						throw new ForbiddenOperationException("Multiple dstParent found with name '" + dstConfName
 								+ "'. Please use tableAlias to refere one of them.");
@@ -931,6 +981,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.setRelatedEtlConf(relatedEtlConf);
 
 		if (this.hasChildItemConf()) {
+
 			for (EtlChildItemConfiguration child : this.getChildItemConf()) {
 				child.setRelatedEtlConf(relatedEtlConf);
 			}
@@ -961,12 +1012,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return getRelatedEtlConf().getOriginAppLocationCode();
 	}
 
+	@Override
 	public DBConnectionInfo getSrcConnInfo() {
 		return getRelatedEtlConf().getSrcConnInfo();
 	}
 
 	public Boolean hasDstWithJoinFieldsToSrc() {
+
 		for (DstConf dst : this.dstConf) {
+
 			if (dst.hasJoinFields()) {
 				return true;
 			}
@@ -1001,7 +1055,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			String sql = searchClauses.generateSQL(srcConn);
 
-			EtlDatabaseObject simpleValue = DatabaseObjectDAO.find(getSrcConf().getLoadHealper(),
+			EtlDatabaseObject simpleValue = BaseDAO.find(getSrcConf().getLoadHealper(),
 					getSrcConf().generateEtlRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(), srcConn);
 
 			return simpleValue;
@@ -1009,13 +1063,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public Boolean containsDstTable(String tableName) {
+
 		if (utilities.listHasElement(getDstConf())) {
+
 			for (DstConf dst : getDstConf()) {
+
 				if (dst.getTableName().equals(tableName)) {
 					return true;
 				}
 			}
 		} else {
+
 			if (getSrcConf().getTableName().equals(tableName)) {
 				return true;
 			}
@@ -1026,14 +1084,16 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	public DstConf findDstTable_(EtlOperationConfig operationConfig, String tableName) throws DBException {
 
-		if (!containsDstTable(tableName))
+		if (!containsDstTable(tableName)) {
 			return null;
+		}
 
 		if (!isFullLoaded()) {
 			fullLoad(operationConfig);
 		}
 
 		for (DstConf dst : getDstConf()) {
+
 			if (dst.getTableName().equals(tableName)) {
 				return dst;
 			}
@@ -1129,6 +1189,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+
 		if (hasManualConfigCode()) {
 			setConfigCode(utilities.tryToReplacePlaceholders(this.configCode, schemaInfoSrc));
 		}
@@ -1136,6 +1197,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.getSrcConf().tryToReplacePlaceholders(schemaInfoSrc);
 
 		if (hasDstConf()) {
+
 			for (DstConf dstConf : this.getDstConf()) {
 				dstConf.tryToReplacePlaceholders(schemaInfoSrc);
 			}
@@ -1144,10 +1206,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	public void doMinimalTableInitialization(Connection srcConn, DestinationConnectorConnections destinationConnections)
 			throws DatabaseResourceDoesNotExists, DBException, ForbiddenOperationException {
-		
+
 		this.getPrimaryDataSource().tryToLoadSchemaInfo(null, srcConn);
-		
+
 		if (hasDstConf()) {
+
 			for (DstConf conf : this.getDstConf()) {
 				conf.tryToLoadSchemaInfo(null, destinationConnections.getIfJdbc(conf));
 			}
@@ -1162,6 +1225,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		super.tryToLoadFromTemplate();
 
 		setDisabled(disabled);
+
 		if (utilities.stringHasValue(manuallyConfiguredCode)) {
 			setConfigCode(manuallyConfiguredCode);
 		}
@@ -1199,7 +1263,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasDstConf()) {
+
 			for (DstConf destination : this.getDstConf()) {
+
 				if (!destination.isDisabled()) {
 					destination.ensureEtlStageTableExists(counter, srcConn, destinationConnections);
 				}
@@ -1207,6 +1273,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasChildItemConf()) {
+
 			for (EtlItemConfiguration child : this.getChildItemConf()) {
 				child.ensureEtlStageTableExists(counter, operationConfig, srcConn);
 			}
@@ -1217,9 +1284,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		List<EtlDataSource> ds = new ArrayList<>();
 
 		PrimaryDataSourceConfiguration primary = this.getPrimaryDataSource();
+
 		if (primary instanceof EtlDataSource
 				&& (!(primary instanceof SrcConf) || !((SrcConf) primary).doNotUseAsDatasource())) {
-			ds.add((EtlDataSource) primary);
+			ds.add(primary);
 			ds.addAll(this.getSource().getAvailableAdditionalDataSources());
 		}
 
@@ -1239,7 +1307,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public boolean hasAllDstConfDisabled() {
+
 		for (DstConf dstConf : this.getDstConf()) {
+
 			if (!dstConf.isDisabled()) {
 				return false;
 			}
@@ -1249,7 +1319,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public boolean allDstConfIgnoreNoDstIssue() {
+
 		for (DstConf dstConf : this.getDstConf()) {
+
 			if (!dstConf.ignoreNoDstIssue()) {
 				return false;
 			}
@@ -1260,6 +1332,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	@Override
 	public boolean equals(Object obj) {
+
 		if (obj instanceof EtlItemConfiguration) {
 			EtlItemConfiguration objAsItem = (EtlItemConfiguration) obj;
 
@@ -1272,6 +1345,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public boolean canQuickTransform(EtlProcessor processor) {
+
 		if (this.getDstConf().size() != 1) {
 			return false;
 		}
@@ -1285,6 +1359,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		if (connectorType == ConnectorType.JDBC) {
 			EtlDstType dstType = processor.determineDstType(destination);
+
 			if (dstType.isFile()) {
 				return true;
 			}

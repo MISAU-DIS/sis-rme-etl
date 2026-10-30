@@ -1,31 +1,31 @@
 {
-   "originAppLocationCode":"",
-   "syncStageSchema":"",
-   "etlRootDirectory":"",
-   "srcConnInfo":{
-      "dataBaseUserName":"",
-      "dataBaseUserPassword":"",
-      "connectionURI":"",
-      "driveClassName":""
-   },
-   "dstConnInfo":{
-      "dataBaseUserName":"",
-      "dataBaseUserPassword":"",
-      "connectionURI":"",
-      "driveClassName":""
-   },
-   "operations":[
-      {
-         "operationType":"ETL",
-         "processingBatch":1000,
-         "dstType":"db"
-      }
-   ],
-   "etlItemConfiguration":[
-      {
-         "srcConf":{
-            "tableName":""
-         }
-      }
-   ]
+	"originAppLocationCode": "",
+	"syncStageSchema": "",
+	"etlRootDirectory": "",
+	"srcConnInfo": {
+		"dataBaseUserName": "",
+		"dataBaseUserPassword": "",
+		"connectionURI": "",
+		"driveClassName": ""
+	},
+	"dstConnInfo": {
+		"dataBaseUserName": "",
+		"dataBaseUserPassword": "",
+		"connectionURI": "",
+		"driveClassName": ""
+	},
+	"operations": [
+		{
+			"operationType": "ETL",
+			"processingBatch": 1000,
+			"dstType": "db"
+		}
+	],
+	"etlItemConfiguration": [
+		{
+			"srcConf": {
+				"tableName": ""
+			}
+		}
+	]
 }
