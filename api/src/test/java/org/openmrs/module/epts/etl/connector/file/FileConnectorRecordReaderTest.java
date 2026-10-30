@@ -11,7 +11,11 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonRecordCardinality;
+import org.openmrs.module.epts.etl.conf.datasource.JsonRecordDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonRecordLayout;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -60,6 +64,38 @@ class FileConnectorRecordReaderTest {
 		assertEquals(true, error.getMessage().contains("Unknown JSON field 'unexpected'"));
 	}
 
+	@Test
+	void shouldReadPrimaryAndExtraJsonRecordDataSources() throws Exception {
+		String document = "{\"person_data\":[{\"id\":100,\"full_name\":\"Josh Muhamad\","
+				+ "\"creation_date\":\"2026-10-27 22:08:14\","
+				+ "\"uuid\":\"9acc18fb-44ef-11ef-97f9-e86a64ea1bc5\","
+				+ "\"address\":{\"id\":1,\"person_id\":100,"
+				+ "\"full_address\":\"Josh Muhamad's address\","
+				+ "\"creation_date\":\"2024-07-18 14:20:41\","
+				+ "\"uuid\":\"4b6f44d2-4500-11ef-97f9-e86a64ea1bc5\"},"
+				+ "\"identifiers\":[{\"value\":\"A-1\"},{\"value\":\"B-2\"}]}]}";
+		Files.writeString(directory.resolve("person-data.json"), document, StandardCharsets.UTF_8);
+		JsonPrimaryDataSourceConfiguration source = nestedSourceConfiguration();
+		ConnectorResource resource = jsonResource("person-data.json", JsonRecordLayout.ARRAY, "/person_data");
+		FileConnectorRecordReader<EtlDatabaseObject> reader = new FileConnectorRecordReader<>(resource, source, null);
+
+		java.util.List<EtlDatabaseObject> records = reader
+				.read(new ConnectorReadRequest<>(null, null, null, false));
+
+		assertEquals(1, records.size());
+		assertEquals(100, records.get(0).getFieldValue("id"));
+		assertEquals(3, records.get(0).getAuxLoadObject().size());
+		EtlDatabaseObject address = records.get(0).getAuxLoadObject().get(0);
+		assertEquals("address", address.getRelatedConfiguration().getObjectName());
+		assertEquals("Josh Muhamad's address", address.getFieldValue("full_address"));
+		assertEquals("4b6f44d2-4500-11ef-97f9-e86a64ea1bc5", address.getFieldValue("uuid"));
+		address.setFieldValue("id", 2);
+		assertEquals(2, address.getFieldValue("id"));
+		assertEquals("A-1", records.get(0).getAuxLoadObject().get(1).getFieldValue("value"));
+		assertEquals("B-2", records.get(0).getAuxLoadObject().get(2).getFieldValue("value"));
+		assertEquals(1, FileConnectorRecordReader.countRecords(resource));
+	}
+
 	private PrimaryDataSourceConfiguration sourceConfiguration() throws Exception {
 		JsonPrimaryDataSourceConfiguration source = new JsonPrimaryDataSourceConfiguration();
 		Field id = Field.fastCreateWithType("patient_id", "java.lang.Integer");
@@ -69,6 +105,52 @@ class FileConnectorRecordReaderTest {
 		source.setFields(Arrays.asList(id, name));
 		source.fullLoad(null);
 		return source;
+	}
+
+	private JsonPrimaryDataSourceConfiguration nestedSourceConfiguration() throws Exception {
+		JsonPrimaryDataSourceConfiguration source = new JsonPrimaryDataSourceConfiguration();
+		source.setName("person");
+		JsonRecordDataSourceConfiguration address = new JsonRecordDataSourceConfiguration();
+		address.setName("address");
+		address.setPath("/address");
+		address.setCardinality(JsonRecordCardinality.ONE);
+		address.setRequired(true);
+		address.setFields(Arrays.asList(
+				Field.fastCreateWithType("id", "java.lang.Integer"),
+				Field.fastCreateWithType("person_id", "java.lang.Integer"),
+				Field.fastCreateWithType("full_address", "java.lang.String"),
+				Field.fastCreateWithType("creation_date", "java.lang.String"),
+				Field.fastCreateWithType("uuid", "java.lang.String")));
+		JsonRecordDataSourceConfiguration identifiers = new JsonRecordDataSourceConfiguration();
+		identifiers.setName("identifiers");
+		identifiers.setPath("/identifiers");
+		identifiers.setCardinality(JsonRecordCardinality.MANY);
+		identifiers.setFields(
+				java.util.Collections.singletonList(Field.fastCreateWithType("value", "java.lang.String")));
+		source.setFields(Arrays.asList(
+				Field.fastCreateWithType("id", "java.lang.Integer"),
+				Field.fastCreateWithType("full_name", "java.lang.String"),
+				Field.fastCreateWithType("creation_date", "java.lang.String"),
+				Field.fastCreateWithType("uuid", "java.lang.String")));
+		source.setExtraJsonRecordDataSource(Arrays.asList(address, identifiers));
+		source.fullLoad(null);
+		address.setRelatedPrimaryDataSource(source);
+		address.fullLoad(null);
+		identifiers.setRelatedPrimaryDataSource(source);
+		identifiers.fullLoad(null);
+		return source;
+	}
+
+	private ConnectorResource jsonResource(String name, JsonRecordLayout layout, String recordPath) {
+		ConnectorEndpointConfiguration endpointConfiguration = new ConnectorEndpointConfiguration();
+		endpointConfiguration.setType(ConnectorType.FILE);
+		endpointConfiguration.setUri(directory.toString());
+		SourceResourceConfiguration resourceConfiguration = new SourceResourceConfiguration();
+		resourceConfiguration.setName(name);
+		resourceConfiguration.setLayout(layout);
+		resourceConfiguration.setRecordPath(recordPath);
+		return ConnectorConfigurationResolver.resolveResource(resourceConfiguration, null, ConnectorDirection.SOURCE,
+				ConnectorConfigurationResolver.resolveEndpoint(endpointConfiguration, null));
 	}
 
 	private ConnectorResource resource(String name) {

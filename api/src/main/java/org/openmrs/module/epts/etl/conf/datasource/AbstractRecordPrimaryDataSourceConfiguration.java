@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
@@ -39,7 +37,6 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	private String name;
 	private PrimaryKey primaryKey;
 	private List<String> excludedFieldsFromObjectDesc;
-	private Map<String, Object> resourceProperties;
 
 	@JsonIgnore
 	private transient SourceConfiguration parentSource;
@@ -62,15 +59,6 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	@Override
-	public Map<String, Object> getResourceProperties() {
-		return resourceProperties == null ? Collections.emptyMap() : Collections.unmodifiableMap(resourceProperties);
-	}
-
-	public void setResourceProperties(Map<String, Object> resourceProperties) {
-		this.resourceProperties = resourceProperties == null ? null : new LinkedHashMap<>(resourceProperties);
 	}
 
 	public void setPrimaryKey(PrimaryKey primaryKey) {
@@ -127,11 +115,14 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 		if (getFields() == null || getFields().isEmpty()) {
 			throw new EtlConfException("source." + getSourceTypeName() + ".fields is required");
 		}
+		
 		Set<String> names = new HashSet<>();
+		
 		for (Field field : getFields()) {
 			if (field == null || field.getName() == null || field.getName().trim().isEmpty()) {
 				throw new EtlConfException("Every source." + getSourceTypeName() + " field must have a name");
 			}
+			
 			if (!names.add(field.getName().trim().toLowerCase(Locale.ROOT))) {
 				throw new EtlConfException(
 						"Duplicated source field '" + field.getName() + "' in source." + getSourceTypeName());

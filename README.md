@@ -2,9 +2,9 @@
 
 SIS-RME ETL is a configurable extraction, transformation and loading engine.
 The current architecture separates the logical source model from the connector
-that transports its records. An ETL item describes **what** its source records
-look like under `source` and **where** they are obtained under
-`source.resource`.
+that transports its records. An ETL item selects the endpoint through
+`source.connector`; its primary data source describes the records and names
+the physical table, file, route, queue or topic.
 
 The previous database-oriented configuration remains supported and is
 documented separately in [README-legacy.md](README-legacy.md).
@@ -25,11 +25,11 @@ EtlConfiguration
   ├─ operations[]
   └─ etlItemConfiguration[]
        ├─ source
-       │    ├─ resource ───────────────> ConnectorRecordReader
+       │    ├─ connector ──────────────> connector endpoint
        │    ├─ exactly one primary source
-       │    │    ├─ tableDataSource
-       │    │    ├─ jsonDataSource
-       │    │    └─ csvDataSource
+       │    │    ├─ tableDataSource ───> tableName
+       │    │    ├─ jsonDataSource ────> name
+       │    │    └─ csvDataSource ─────> name
        │    └─ extra*DataSource[]
        └─ dstConf[].resource ──────────> ConnectorRecordWriter
 ```
@@ -41,8 +41,8 @@ property: exactly one of `tableDataSource`, `jsonDataSource` or
 ## Connectors
 
 Connectors are declared once in `EtlConfiguration.connectors`. A connector is
-not intrinsically a source or destination; the resource referencing it
-determines the required read or write capability.
+not intrinsically a source or destination; the source or destination that
+references it determines the required read or write capability.
 
 ```json
 {
@@ -102,27 +102,33 @@ An item can therefore read JSON or CSV while ETL state remains in a database.
 ## The `source` configuration
 
 `source` is the connector-neutral aggregate for all inputs of one ETL item. It
-owns the resource, one inferred primary source, optional additional sources
-and source processing policies.
+selects the connector and owns one inferred primary source, optional
+additional sources and source processing policies.
 
-### Source resource
+### Connector and resource identity
 
 ```jsonc
-"resource": {
+"source": {
   "connector": "openmrs-source",
-  "name": "patient",
-  "properties": {}
+  "resource": {
+    "name": "patient"
+  },
+  "tableDataSource": {
+    "tableName": "patient"
+  }
 }
 ```
 
-| Property | Meaning |
-|---|---|
-| `connector` | Connector ID. If omitted, `defaultSourceConnector` is used. |
-| `name` | Connector-specific table, file, route, queue or topic name. |
-| `properties` | Optional resource-specific settings. |
+`source.connector` identifies the endpoint and `source.resource` identifies
+what is read inside that endpoint. If the connector is omitted,
+`defaultSourceConnector` is used; for a JDBC table, the legacy state connector
+may also provide the endpoint. For JDBC sources, `resource` is optional because
+the table name already provides a safe physical fallback. For non-JDBC sources,
+it is required so that physical access remains separate from the logical data
+model.
 
-The resource belongs only to `source`; it must not be repeated inside a
-primary source variant.
+The primary data source `name` is the logical ETL data-source identity. The
+physical file, route, queue, topic or table belongs to `resource.name`.
 
 ### JDBC table source
 
@@ -130,10 +136,7 @@ primary source variant.
 {
   "configCode": "migrate-patients",
   "source": {
-    "resource": {
-      "connector": "openmrs-source",
-      "name": "patient"
-    },
+    "connector": "openmrs-source",
     "tableDataSource": {
       "tableName": "patient"
     }
@@ -151,7 +154,7 @@ primary source variant.
 ```
 
 `tableDataSource` contains table-specific extraction and relational metadata.
-Its `tableName` and the source resource `name` must identify the same table.
+Its `tableName` is also the physical resource name supplied to the connector.
 
 ### JSON source
 
@@ -159,12 +162,14 @@ Its `tableName` and the source resource `name` must identify the same table.
 {
   "configCode": "import-patient-events",
   "source": {
+    "connector": "input-files",
     "resource": {
-      "connector": "input-files",
-      "name": "events/patients.jsonl"
+      "name": "events/patients.jsonl",
+      "layout": "JSON_LINES",
+      "recordPath": "/"
     },
     "jsonDataSource": {
-      "layout": "JSON_LINES",
+      "name": "patientEvent",
       "fields": [
         {
           "name": "uuid",
@@ -184,9 +189,62 @@ Its `tableName` and the source resource `name` must identify the same table.
 }
 ```
 
-`recordPath` may select records inside an enclosing JSON object. The `fields`
-list is mandatory and feeds the normal ETL `Field` model used by mappings and
-transformations.
+`resource.recordPath` uses JSON Pointer syntax to locate the records in the
+physical content. `/` selects the root. `JSON_LINES`, `ARRAY` and `OBJECT`
+describe the physical layout. The `jsonDataSource` describes only one logical
+record; its `fields` list feeds the normal ETL `Field` model used by mappings
+and transformations.
+
+Related objects embedded in a JSON record are declared as
+`extraJsonRecordDataSource`. They become ordinary auxiliary ETL source objects,
+keeping the existing data-source and transformation model intact. For example,
+given a document whose records are stored in `person_data` and contain an
+`address` object:
+
+```json
+{
+  "configCode": "import-person-data",
+  "source": {
+    "connector": "input-files",
+    "resource": {
+      "name": "person-data.json",
+      "layout": "ARRAY",
+      "recordPath": "/person_data"
+    },
+    "jsonDataSource": {
+      "name": "person",
+      "fields": [
+        { "name": "id", "dataType": "java.lang.Integer", "allowNull": false },
+        { "name": "full_name", "dataType": "java.lang.String" },
+        { "name": "uuid", "dataType": "java.lang.String" }
+      ],
+      "extraJsonRecordDataSource": [
+        {
+          "name": "address",
+          "path": "/address",
+          "cardinality": "ONE",
+          "required": false,
+          "fields": [
+            { "name": "id", "dataType": "java.lang.Integer" },
+            { "name": "person_id", "dataType": "java.lang.Integer" },
+            { "name": "full_address", "dataType": "java.lang.String" },
+            { "name": "uuid", "dataType": "java.lang.String" }
+          ]
+        }
+      ]
+    }
+  },
+  "dstConf": [
+    { "tableName": "person" }
+  ]
+}
+```
+
+Each extra source has its own flat field model and is attached to the primary
+record through `auxLoadObject`. `ONE` requires an object at the relative path;
+`MANY` requires an array and produces one auxiliary object per element.
+Unknown properties and missing required fields are validated independently for
+the primary and every extra data source.
 
 ### CSV source
 
@@ -194,11 +252,12 @@ transformations.
 {
   "configCode": "import-patients-csv",
   "source": {
+    "connector": "input-files",
     "resource": {
-      "connector": "input-files",
       "name": "patients.csv"
     },
     "csvDataSource": {
+      "name": "patient",
       "delimiter": ";",
       "hasHeader": true,
       "charset": "UTF-8",
@@ -216,8 +275,8 @@ transformations.
 }
 ```
 
-The CSV variant owns delimiter, header, charset, quoting and field metadata.
-Its connector must provide a compatible record reader.
+The resource owns the physical file name. The CSV variant owns delimiter, header, charset,
+quoting and field metadata. Its connector must provide a compatible reader.
 
 ### Additional data sources
 
@@ -226,10 +285,7 @@ transformation context without replacing the primary record:
 
 ```jsonc
 "source": {
-  "resource": {
-    "connector": "openmrs-source",
-    "name": "patient"
-  },
+  "connector": "openmrs-source",
   "tableDataSource": {
     "tableName": "patient"
   },
@@ -293,9 +349,9 @@ Validation occurs before processing. In particular:
 
 - `source` must define exactly one primary variant;
 - JSON and CSV sources require a non-empty, valid `fields` list;
-- `source.resource` is required for non-JDBC primary sources;
-- a resource must not be declared inside the primary variant;
-- connector IDs and resource names must resolve unambiguously;
+- JSON and CSV primary sources require `name`;
+- `source.resource` is rejected by the current configuration contract;
+- connector IDs and primary resource names must resolve unambiguously;
 - table/query additional sources require a JDBC primary source;
 - connector-neutral additional sources accept any primary source;
 - unknown JSON configuration properties are rejected.

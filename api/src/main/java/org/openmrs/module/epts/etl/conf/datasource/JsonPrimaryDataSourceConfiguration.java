@@ -7,26 +7,17 @@ import org.openmrs.module.epts.etl.model.Field;
 /** Logical JSON records, independently of the connector transporting them. */
 public class JsonPrimaryDataSourceConfiguration extends AbstractRecordPrimaryDataSourceConfiguration {
 
-	private String recordPath;
-
-	private JsonRecordLayout layout = JsonRecordLayout.JSON_LINES;
-
 	private List<Field> fields;
 
-	public String getRecordPath() {
-		return recordPath;
+	private List<JsonRecordDataSourceConfiguration> extraJsonRecordDataSource;
+
+	public List<JsonRecordDataSourceConfiguration> getExtraJsonRecordDataSource() {
+		return extraJsonRecordDataSource;
 	}
 
-	public void setRecordPath(String recordPath) {
-		this.recordPath = recordPath;
-	}
-
-	public JsonRecordLayout getLayout() {
-		return layout;
-	}
-
-	public void setLayout(JsonRecordLayout layout) {
-		this.layout = layout;
+	public void setExtraJsonRecordDataSource(
+			List<JsonRecordDataSourceConfiguration> extraJsonRecordDataSource) {
+		this.extraJsonRecordDataSource = extraJsonRecordDataSource;
 	}
 
 	@Override

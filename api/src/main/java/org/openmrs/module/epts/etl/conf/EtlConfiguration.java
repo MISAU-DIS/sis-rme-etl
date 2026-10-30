@@ -1484,7 +1484,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			for (EtlItemConfiguration item : this.getEtlItemConfiguration()) {
 				item.setRelatedEtlConfig(this);
 
-				item.getSrcConf().setParentConf(item);
+				item.getPrimaryDataSource().setParentConf(item);
 
 				if (item.hasDstConf()) {
 					for (DstConf dst : item.getDstConf()) {

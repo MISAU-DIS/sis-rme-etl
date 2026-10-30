@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.JsonMainOutputDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -59,11 +60,13 @@ class SourceConfigurationTest {
 	void shouldInferJsonAndCsvWithoutDependingOnConnectorType() throws Exception {
 		SourceConfiguration json = read("{" +
 				"\"connector\":\"patient-api\"," +
-				"\"jsonDataSource\":{\"name\":\"/patients\",\"recordPath\":\"results\",\"layout\":\"ARRAY\"," +
+				"\"resource\":{\"name\":\"patients.json\",\"recordPath\":\"/results\",\"layout\":\"ARRAY\"}," +
+				"\"jsonDataSource\":{\"name\":\"patients\"," +
 				"\"fields\":[{\"name\":\"uuid\"}]}}");
 		SourceConfiguration csv = read("{" +
 				"\"connector\":\"input-files\"," +
-				"\"csvDataSource\":{\"name\":\"patients.csv\",\"delimiter\":\";\",\"hasHeader\":true," +
+				"\"resource\":{\"name\":\"patients.csv\"}," +
+				"\"csvDataSource\":{\"name\":\"patients\",\"delimiter\":\";\",\"hasHeader\":true," +
 				"\"fields\":[{\"name\":\"uuid\"}]}}");
 
 		json.initialize(new EtlItemConfiguration());
@@ -71,7 +74,7 @@ class SourceConfigurationTest {
 
 		assertTrue(json.getPrimaryDataSource() instanceof JsonPrimaryDataSourceConfiguration);
 		assertTrue(json.getPrimaryDataSource() instanceof EtlDatabaseObjectConfiguration);
-		assertEquals("results", json.getJsonDataSource().getRecordPath());
+		assertEquals("/results", json.getResource().getRecordPath());
 		json.fullLoad(null);
 		assertTrue(json.isFullLoaded());
 		assertTrue(json.getPrimaryDataSource().isFullLoaded());
@@ -102,9 +105,11 @@ class SourceConfigurationTest {
 	@Test
 	void shouldRequireFieldsOwnedByJsonAndCsv() throws Exception {
 		SourceConfiguration json = read("{" +
-				"\"connector\":\"api\",\"jsonDataSource\":{\"name\":\"/patients\"}}");
+				"\"connector\":\"api\",\"resource\":{\"name\":\"patients.json\"},"
+				+ "\"jsonDataSource\":{\"name\":\"patients\"}}");
 		SourceConfiguration csv = read("{" +
-				"\"connector\":\"files\",\"csvDataSource\":{\"name\":\"patients.csv\"}}");
+				"\"connector\":\"files\",\"resource\":{\"name\":\"patients.csv\"},"
+				+ "\"csvDataSource\":{\"name\":\"patients\"}}");
 
 		EtlConfException jsonError = assertThrows(EtlConfException.class,
 				() -> json.initialize(new EtlItemConfiguration()));
@@ -116,10 +121,12 @@ class SourceConfigurationTest {
 	}
 
 	@Test
-	void shouldRejectTheFormerSourceResourceAndNestedPrimaryResource() throws Exception {
-		assertThrows(UnrecognizedPropertyException.class, () -> read("{"
+	void shouldAcceptSourceResourceAndRejectNestedPrimaryResource() throws Exception {
+		SourceConfiguration configured = read("{"
 				+ "\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"},"
-				+ "\"tableDataSource\":{\"tableName\":\"patient\"}}"));
+				+ "\"tableDataSource\":{\"tableName\":\"patient\"}}");
+		configured.initialize(new EtlItemConfiguration());
+		assertEquals("patient", configured.getResource().getName());
 
 		SourceConfiguration source = read("{" +
 				"\"connector\":\"source-db\"," +
@@ -154,6 +161,9 @@ class SourceConfigurationTest {
 	void shouldAllowConnectorNeutralAdditionalSourcesWithJsonPrimary() throws Exception {
 		SourceConfiguration source = new SourceConfiguration();
 		source.setConnector("patient-api");
+		SourceResourceConfiguration resource = new SourceResourceConfiguration();
+		resource.setName("patients.json");
+		source.setResource(resource);
 		JsonPrimaryDataSourceConfiguration primary = new JsonPrimaryDataSourceConfiguration();
 		primary.setName("/patients");
 		primary.setFields(Collections.singletonList(Field.fastCreateWithType("uuid", "java.lang.String")));
@@ -174,6 +184,27 @@ class SourceConfigurationTest {
 		assertSame(primary, output.getRelatedPrimaryDataSource());
 		assertTrue(transformable.loaded);
 		assertTrue(json.loaded);
+	}
+
+	@Test
+	void shouldInitializeExtraJsonRecordDataSources() throws Exception {
+		SourceConfiguration source = read("{"
+				+ "\"connector\":\"input-files\","
+				+ "\"resource\":{\"name\":\"persons.json\",\"layout\":\"ARRAY\","
+				+ "\"recordPath\":\"/person_data\"},"
+				+ "\"jsonDataSource\":{\"name\":\"person\","
+				+ "\"fields\":[{\"name\":\"id\",\"dataType\":\"java.lang.Integer\"}],"
+				+ "\"extraJsonRecordDataSource\":[{\"name\":\"address\",\"path\":\"/address\","
+				+ "\"cardinality\":\"ONE\",\"fields\":[{\"name\":\"uuid\"}]}]}}" );
+
+		source.initialize(new EtlItemConfiguration());
+		source.fullLoad(null);
+
+		assertEquals(1, source.getExtraJsonRecordDataSource().size());
+		assertSame(source.getPrimaryDataSource(),
+				source.getExtraJsonRecordDataSource().get(0).getRelatedPrimaryDataSource());
+		assertTrue(source.getExtraJsonRecordDataSource().get(0).isFullLoaded());
+		assertTrue(source.getAvailableAdditionalDataSources().contains(source.getExtraJsonRecordDataSource().get(0)));
 	}
 
 	private static class TrackingTransformableDataSource extends TransformableDataSource {

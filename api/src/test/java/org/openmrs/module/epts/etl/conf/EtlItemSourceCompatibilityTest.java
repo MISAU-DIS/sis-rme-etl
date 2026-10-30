@@ -64,7 +64,8 @@ class EtlItemSourceCompatibilityTest {
 	void shouldKeepNonJdbcPrimaryIndependentFromLegacySrcConf() throws Exception {
 		EtlItemConfiguration item = read("{" +
 				"\"source\":{\"connector\":\"patient-api\"," +
-				"\"jsonDataSource\":{\"name\":\"/patients\",\"fields\":[{\"name\":\"uuid\"}]}}}" );
+				"\"resource\":{\"name\":\"patients.json\"}," +
+				"\"jsonDataSource\":{\"name\":\"patients\",\"fields\":[{\"name\":\"uuid\"}]}}}" );
 
 		item.prepareSourceConfiguration();
 

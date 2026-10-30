@@ -7,20 +7,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
+import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonRecordLayout;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.json.JsonRecordParser;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -35,6 +34,8 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 	private final Connection supportingConnection;
 	private final Path path;
 	private final ObjectMapper mapper = new ObjectMapperProvider().getContext(EtlDatabaseObject.class);
+	private final SourceResourceConfiguration resourceConfiguration;
+	private final JsonRecordParser jsonRecordParser;
 
 	public FileConnectorRecordReader(ConnectorResource resource, PrimaryDataSourceConfiguration sourceConfiguration,
 			Connection supportingConnection) {
@@ -45,6 +46,10 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 		this.sourceConfiguration = sourceConfiguration;
 		this.supportingConnection = supportingConnection;
 		this.path = FileConnectorPathResolver.resolve(resource);
+		this.resourceConfiguration = unwrapSourceResource(resource);
+		this.jsonRecordParser = sourceConfiguration instanceof JsonPrimaryDataSourceConfiguration
+				? new JsonRecordParser((JsonPrimaryDataSourceConfiguration) sourceConfiguration, mapper)
+				: null;
 	}
 
 	@Override
@@ -57,6 +62,10 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 		if (request == null) {
 			throw new IllegalArgumentException("request cannot be null");
 		}
+		if (resourceConfiguration.jsonLayout() != JsonRecordLayout.JSON_LINES) {
+			return readJsonDocument(request);
+		}
+
 		IntervalExtremeRecord interval = request.getInterval();
 		long firstLine = interval == null ? 1 : Math.max(1, interval.getMinRecordId());
 		long lastLine = interval == null ? Long.MAX_VALUE : interval.getMaxRecordId();
@@ -73,7 +82,41 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 					break;
 				if (line.trim().isEmpty())
 					throw new EtlConfException("Empty JSON record at line " + lineNumber + " of " + path);
-				records.add(parse(line, lineNumber));
+				JsonNode recordNode = JsonRecordParser.select(mapper.readTree(line),
+						resourceConfiguration.normalizedRecordPath());
+				records.add(parse(recordNode, "line " + lineNumber));
+			}
+			return records;
+		} catch (IOException e) {
+			throw new FileConnectorReadException("Unable to read source resource " + path, e);
+		}
+	}
+
+	private List<T> readJsonDocument(ConnectorReadRequest<T> request) {
+		try {
+			JsonNode root = mapper.readTree(Files.readString(path, StandardCharsets.UTF_8));
+			JsonNode selected = JsonRecordParser.select(root, resourceConfiguration.normalizedRecordPath());
+			List<JsonNode> recordNodes = new ArrayList<>();
+			if (resourceConfiguration.jsonLayout() == JsonRecordLayout.ARRAY && selected != null && selected.isArray()) {
+				selected.forEach(recordNodes::add);
+			} else if (resourceConfiguration.jsonLayout() == JsonRecordLayout.OBJECT && selected != null
+					&& selected.isObject()) {
+				recordNodes.add(selected);
+			} else {
+				throw new EtlConfException("JSON layout " + resourceConfiguration.jsonLayout()
+						+ " is incompatible with the node at recordPath '"
+						+ resourceConfiguration.normalizedRecordPath() + "' in " + path);
+			}
+
+			IntervalExtremeRecord interval = request.getInterval();
+			long first = interval == null ? 1 : Math.max(1, interval.getMinRecordId());
+			long last = interval == null ? Long.MAX_VALUE : interval.getMaxRecordId();
+			List<T> records = new ArrayList<>();
+			for (int index = 0; index < recordNodes.size(); index++) {
+				long recordNumber = index + 1L;
+				if (recordNumber >= first && recordNumber <= last) {
+					records.add(parse(recordNodes.get(index), "record " + recordNumber));
+				}
 			}
 			return records;
 		} catch (IOException e) {
@@ -82,45 +125,45 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 	}
 
 	@SuppressWarnings("unchecked")
-	private T parse(String json, long lineNumber) throws IOException {
-		JsonNode document = mapper.readTree(json);
-		if (document == null || !document.isObject()) {
-			throw new EtlConfException("Expected one JSON object at line " + lineNumber + " of " + path);
+	private T parse(JsonNode document, String recordDescription) {
+		if (jsonRecordParser == null) {
+			throw new EtlConfException("FILE JSON reading requires source.jsonDataSource");
 		}
-
-		Set<String> knownFields = new HashSet<>();
-		for (Field field : sourceConfiguration.getFields()) {
-			knownFields.add(field.getName());
-		}
-		Iterator<String> documentFields = document.fieldNames();
-		while (documentFields.hasNext()) {
-			String fieldName = documentFields.next();
-			if (!knownFields.contains(fieldName)) {
-				throw new EtlConfException("Unknown JSON field '" + fieldName + "' at line " + lineNumber + " of " + path);
-			}
-		}
-
-		GenericDatabaseObject record = new GenericDatabaseObject(sourceConfiguration);
-		for (Field field : sourceConfiguration.getFields()) {
-			JsonNode value = document.get(field.getName());
-			if ((value == null || value.isNull()) && !field.allowNull()) {
-				throw new EtlConfException("Required JSON field '" + field.getName() + "' is missing at line "
-						+ lineNumber + " of " + path);
-			}
-			Object converted = value == null || value.isNull() ? null
-					: field.getTypeClass() == null ? mapper.convertValue(value, Object.class)
-							: mapper.convertValue(value, field.getTypeClass());
-			record.setFieldValue(field.getName(), converted);
-		}
-		return (T) record;
+		return (T) jsonRecordParser.parse(document, recordDescription + " of " + path);
 	}
 
 	public static long countRecords(ConnectorResource resource) {
 		Path path = FileConnectorPathResolver.resolve(resource);
+		SourceResourceConfiguration sourceResource = unwrapSourceResource(resource);
+		if (sourceResource.jsonLayout() != JsonRecordLayout.JSON_LINES) {
+			try {
+				ObjectMapper mapper = new ObjectMapperProvider().getContext(EtlDatabaseObject.class);
+				JsonNode selected = JsonRecordParser.select(
+						mapper.readTree(Files.readString(path, StandardCharsets.UTF_8)),
+						sourceResource.normalizedRecordPath());
+				if (selected == null || selected.isMissingNode())
+					return 0;
+				if (sourceResource.jsonLayout() == JsonRecordLayout.ARRAY)
+					return selected.isArray() ? selected.size() : 0;
+				return selected.isObject() ? 1 : 0;
+			} catch (IOException e) {
+				throw new FileConnectorReadException("Unable to count source records in " + path, e);
+			}
+		}
 		try (java.util.stream.Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
 			return lines.count();
 		} catch (IOException e) {
 			throw new FileConnectorReadException("Unable to count source records in " + path, e);
+		}
+	}
+
+	private static SourceResourceConfiguration unwrapSourceResource(ConnectorResource resource) {
+		try {
+			return resource.unwrap(SourceResourceConfiguration.class);
+		} catch (IllegalArgumentException e) {
+			SourceResourceConfiguration defaults = new SourceResourceConfiguration();
+			defaults.setName(resource.getName());
+			return defaults;
 		}
 	}
 

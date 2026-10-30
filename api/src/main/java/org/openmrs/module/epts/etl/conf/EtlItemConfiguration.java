@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceProcessingPolicy;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -244,7 +245,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			ConnectorResourceConfiguration legacyResource = srcConf.getResource();
 			if (legacyResource != null) {
 				normalized.setConnector(legacyResource.getConnector());
-				srcConf.setResourceProperties(legacyResource.getProperties());
+				SourceResourceConfiguration normalizedResource = new SourceResourceConfiguration();
+				normalizedResource.setConnector(legacyResource.getConnector());
+				normalizedResource.setName(legacyResource.getName());
+				normalizedResource.setProperties(legacyResource.getProperties());
+				normalized.setResource(normalizedResource);
 				if (utilities.stringHasValue(legacyResource.getName())
 						&& !legacyResource.getName().equals(srcConf.getTableName())) {
 					throw new EtlConfException("Legacy source resource name '" + legacyResource.getName()
@@ -500,10 +505,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		prepareSourceConfiguration();
 
 		PrimaryDataSourceConfiguration primary = source.getPrimaryDataSource();
-		ConnectorResourceConfiguration configured = new ConnectorResourceConfiguration();
-		configured.setConnector(source.getConnector());
-		configured.setName(primary.getResourceName());
-		configured.setProperties(primary.getResourceProperties());
+		ConnectorResourceConfiguration configured;
+		if (source.getResource() != null) {
+			configured = source.getResource();
+		} else {
+			configured = new ConnectorResourceConfiguration();
+			configured.setConnector(source.getConnector());
+			configured.setName(primary.getResourceName());
+			configured.setProperties(primary.getResourceProperties());
+		}
 
 		ConnectorEndpoint endpoint = selectConnector(registry, source.getConnector(), ConnectorDirection.SOURCE,
 				source.getConnector() == null && primary instanceof SrcConf);
@@ -1134,7 +1144,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	public void doMinimalTableInitialization(Connection srcConn, DestinationConnectorConnections destinationConnections)
 			throws DatabaseResourceDoesNotExists, DBException, ForbiddenOperationException {
-		this.srcConf.tryToLoadSchemaInfo(null, srcConn);
+		
+		this.getPrimaryDataSource().tryToLoadSchemaInfo(null, srcConn);
+		
 		if (hasDstConf()) {
 			for (DstConf conf : this.getDstConf()) {
 				conf.tryToLoadSchemaInfo(null, destinationConnections.getIfJdbc(conf));

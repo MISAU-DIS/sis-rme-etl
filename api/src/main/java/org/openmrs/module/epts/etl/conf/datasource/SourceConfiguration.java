@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
@@ -30,6 +31,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private String connector;
+
+	private SourceResourceConfiguration resource;
 
 	private SrcConf tableDataSource;
 
@@ -82,6 +85,14 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	public void setConnector(String connector) {
 		this.connector = connector;
+	}
+
+	public SourceResourceConfiguration getResource() {
+		return resource;
+	}
+
+	public void setResource(SourceResourceConfiguration resource) {
+		this.resource = resource;
 	}
 
 	public SrcConf getTableDataSource() {
@@ -150,6 +161,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	@JsonIgnore
 	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+
 		if (primaryDataSource == null) {
 			throw new IllegalStateException("Primary data source has not been resolved; initialize source first");
 		}
@@ -167,8 +179,10 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public void initialize(EtlItemConfiguration parentItem) {
-		if (isInitialized())
+
+		if (isInitialized()) {
 			return;
+		}
 
 		this.parentItem = parentItem;
 
@@ -178,6 +192,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public synchronized void initializeDataSources(Connection srcConn, Connection dstConn) throws DBException {
+
 		if (dataSourcesInitialized) {
 			return;
 		}
@@ -231,52 +246,78 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private boolean isConnectorNeutralAdditionalSource(EtlAdditionalDataSource additional) {
 		return additional instanceof TransformableDataSource || additional instanceof JsonDataSource
-				|| additional instanceof JsonSimpleOutputDataSource;
+				|| additional instanceof JsonSimpleOutputDataSource
+				|| additional instanceof JsonRecordDataSourceConfiguration;
 	}
 
 	public synchronized void fullLoad(Connection srcConn) throws DBException {
-		if (fullLoaded)
+
+		if (fullLoaded) {
 			return;
+		}
+
 		initializeDataSources(srcConn, null);
+
 		primaryDataSource.fullLoad(srcConn);
+
 		loadAdditionalDataSources(null, srcConn);
-		if (primaryDataSource instanceof SrcConf)
+
+		if (primaryDataSource instanceof SrcConf) {
 			loadEtlFields((SrcConf) primaryDataSource);
+		}
+
 		fullLoaded = true;
 	}
 
 	private void loadAdditionalDataSources(EtlDatabaseObject schemaInfo, Connection srcConn) throws DBException {
-		if (!hasAdditionalDataSource())
+
+		if (!hasAdditionalDataSource()) {
 			return;
+		}
+
 		SrcConf jdbcSource = primaryDataSource instanceof SrcConf ? (SrcConf) primaryDataSource : null;
 
 		if (hasExtraTableDataSourceConfig()) {
-			if (jdbcSource == null)
+
+			if (jdbcSource == null) {
 				requireJdbcPrimaryForAdditionalSources();
+			}
+
 			for (TableDataSourceConfig table : extraTableDataSource) {
 				TableConfiguration loaded = jdbcSource.findFullConfiguredConfInAllRelatedTable(table.getFullTableName(),
 						new ArrayList<>());
+
 				table.tryToGenerateTableAlias(getRelatedEtlConf());
-				if (loaded != null)
+
+				if (loaded != null) {
 					table.clone(loaded, jdbcSource, null, srcConn);
-				else
+				} else {
 					table.fullLoad(srcConn);
+				}
+
 				table.setRelatedSrcConf(jdbcSource);
+
 				if (table.useSharedPKKey()) {
 					table.getSharedKeyRefInfo(srcConn).tryToGenerateTableAlias(getRelatedEtlConf());
+
 					loaded = jdbcSource.findFullConfiguredConfInAllRelatedTable(
 							table.getSharedKeyRefInfo(srcConn).getFullTableName(), new ArrayList<>());
-					if (loaded != null)
+
+					if (loaded != null) {
 						table.getSharedKeyRefInfo(srcConn).clone(loaded, jdbcSource, null, srcConn);
-					else
+					} else {
 						table.getSharedKeyRefInfo(srcConn).fullLoad(srcConn);
+					}
 				}
 			}
 		}
 
 		if (hasExtraQueryDataSourceConfig()) {
-			if (jdbcSource == null)
+
+			if (jdbcSource == null) {
 				requireJdbcPrimaryForAdditionalSources();
+			}
+
 			for (QueryDataSourceConfig query : extraQueryDataSource) {
 				query.setRelatedSrcConf(jdbcSource);
 				query.fullLoad(srcConn);
@@ -284,22 +325,37 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		if (hasExtraObjectDataSourceConfig()) {
+
 			for (TransformableDataSource dataSource : extraObjectDataSource) {
 				dataSource.setRelatedPrimaryDataSource(primaryDataSource);
+
 				if (dataSource.hasObjectFields()) {
+
 					for (DataSourceField field : dataSource.getObjectFields()) {
 						field.setName(SQLUtilities.tryToReplaceParamsInQuery(field.getName().toString(), schemaInfo));
-						if (field.hasValue() && schemaInfo != null)
+
+						if (field.hasValue() && schemaInfo != null) {
 							field.setValue(
 									SQLUtilities.tryToReplaceParamsInQuery(field.getValue().toString(), schemaInfo));
+						}
 					}
 				}
+
 				dataSource.fullLoad(srcConn);
 			}
 		}
 
 		if (hasExtraJsonSourceConfig()) {
+
 			for (JsonDataSource dataSource : extraJsonDataSource) {
+				dataSource.setRelatedPrimaryDataSource(primaryDataSource);
+				dataSource.fullLoad(srcConn);
+			}
+		}
+
+		if (hasExtraJsonRecordDataSourceConfig()) {
+
+			for (JsonRecordDataSourceConfiguration dataSource : getExtraJsonRecordDataSource()) {
 				dataSource.setRelatedPrimaryDataSource(primaryDataSource);
 				dataSource.fullLoad(srcConn);
 			}
@@ -308,64 +364,113 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private void loadEtlFields(SrcConf jdbcSource) {
 		jdbcSource.setEtlFields(new ArrayList<>());
+
 		boolean preserveOriginalNames = !hasAdditionalDataSource() && !jdbcSource.hasAuxExtractTable();
+
 		jdbcSource.loadOwnFieldsToEtlFields(jdbcSource.getEtlFields(), preserveOriginalNames);
+
 		if (!preserveOriginalNames) {
-			for (EtlDataSource dataSource : getAvailableAdditionalDataSources())
+
+			for (EtlDataSource dataSource : getAvailableAdditionalDataSources()) {
 				dataSource.loadOwnFieldsToEtlFields(jdbcSource.getEtlFields(), false);
+			}
 		}
 	}
 
 	private SrcConf requireJdbcPrimaryForAdditionalSources() {
+
 		if (!(primaryDataSource instanceof SrcConf)) {
-			throw new EtlConfException(
-					"extraTableDataSource and extraQueryDataSource require source.tableDataSource");
+			throw new EtlConfException("extraTableDataSource and extraQueryDataSource require source.tableDataSource");
 		}
+
 		return (SrcConf) primaryDataSource;
 	}
 
 	@JsonIgnore
 	public List<EtlAdditionalDataSource> getAvailableAdditionalDataSources() {
 		List<EtlAdditionalDataSource> dataSources = new ArrayList<>();
+
 		if (primaryDataSource instanceof SrcConf) {
 			SrcConf jdbcSource = (SrcConf) primaryDataSource;
-			if (jdbcSource.useSharedPKKey() && jdbcSource.isFullLoaded())
+
+			if (jdbcSource.useSharedPKKey() && jdbcSource.isFullLoaded()) {
 				dataSources.add((EtlAdditionalDataSource) jdbcSource.getSharedKeyRefInfo(null));
-		}
-		if (hasExtraJsonSourceConfig()) {
-			for (JsonDataSource jsonSource : extraJsonDataSource) {
-				dataSources.add(jsonSource.getOutputDataSource());
-				if (jsonSource.getOutputDataSource().hasParents())
-					dataSources.addAll(jsonSource.getOutputDataSource().getParentOutputDataSource());
 			}
 		}
-		if (hasExtraTableDataSourceConfig())
+
+		if (hasExtraJsonSourceConfig()) {
+
+			for (JsonDataSource jsonSource : extraJsonDataSource) {
+				dataSources.add(jsonSource.getOutputDataSource());
+
+				if (jsonSource.getOutputDataSource().hasParents()) {
+					dataSources.addAll(jsonSource.getOutputDataSource().getParentOutputDataSource());
+				}
+			}
+		}
+
+		if (hasExtraTableDataSourceConfig()) {
 			dataSources.addAll(extraTableDataSource);
-		if (hasExtraQueryDataSourceConfig())
+		}
+
+		if (hasExtraQueryDataSourceConfig()) {
 			dataSources.addAll(extraQueryDataSource);
-		if (hasExtraObjectDataSourceConfig())
+		}
+
+		if (hasExtraObjectDataSourceConfig()) {
 			dataSources.addAll(extraObjectDataSource);
+		}
+
+		if (hasExtraJsonRecordDataSourceConfig()) {
+			dataSources.addAll(getExtraJsonRecordDataSource());
+		}
 
 		if (parentItem instanceof EtlChildItemConfiguration) {
 			EtlItemConfiguration parent = ((EtlChildItemConfiguration) parentItem).getParentItemConf();
-			if (parent != null && parent.getSource() != null)
+
+			if (parent != null && parent.getSource() != null) {
 				dataSources.addAll(parent.getSource().getAvailableAdditionalDataSources());
+			}
 		}
+
 		return dataSources;
 	}
 
 	@JsonIgnore
 	public List<EtlAdditionalDataSource> getConfiguredAdditionalDataSources() {
 		List<EtlAdditionalDataSource> configured = new ArrayList<>();
-		if (hasExtraTableDataSourceConfig())
+
+		if (hasExtraTableDataSourceConfig()) {
 			configured.addAll(extraTableDataSource);
-		if (hasExtraQueryDataSourceConfig())
+		}
+
+		if (hasExtraQueryDataSourceConfig()) {
 			configured.addAll(extraQueryDataSource);
-		if (hasExtraObjectDataSourceConfig())
+		}
+
+		if (hasExtraObjectDataSourceConfig()) {
 			configured.addAll(extraObjectDataSource);
-		if (hasExtraJsonSourceConfig())
+		}
+
+		if (hasExtraJsonSourceConfig()) {
 			configured.addAll(extraJsonDataSource);
+		}
+
+		if (hasExtraJsonRecordDataSourceConfig()) {
+			configured.addAll(getExtraJsonRecordDataSource());
+		}
 		return configured;
+	}
+
+	@JsonIgnore
+	public List<JsonRecordDataSourceConfiguration> getExtraJsonRecordDataSource() {
+		return jsonDataSource == null || jsonDataSource.getExtraJsonRecordDataSource() == null
+				? java.util.Collections.<JsonRecordDataSourceConfiguration>emptyList()
+				: jsonDataSource.getExtraJsonRecordDataSource();
+	}
+
+	public boolean hasExtraJsonRecordDataSourceConfig() {
+		return utilities.listHasElement(getExtraJsonRecordDataSource());
 	}
 
 	public boolean hasExtraTableDataSourceConfig() {
@@ -395,13 +500,19 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	public List<Field> generateAllAvailableFields() {
 		List<Field> fields = new ArrayList<>();
-		if (primaryDataSource.getFields() != null)
+
+		if (primaryDataSource.getFields() != null) {
 			fields.addAll(primaryDataSource.getFields());
+		}
+
 		for (TableDataSourceConfig table : hasExtraTableDataSourceConfig() ? extraTableDataSource
 				: java.util.Collections.<TableDataSourceConfig>emptyList()) {
+
 			for (Field field : table.getFields()) {
-				if (!fields.contains(field))
+
+				if (!fields.contains(field)) {
 					fields.add(field);
+				}
 			}
 		}
 		return fields;
@@ -426,23 +537,77 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	private void validatePrimaryDataSource(PrimaryDataSourceConfiguration resolvedPrimary) {
+
 		if (resolvedPrimary == tableDataSource && tableDataSource.getResource() != null) {
 			throw new EtlConfException(
-					"source.tableDataSource.resource is not allowed; configure source.connector and the primary data source name instead");
+					"source.tableDataSource.resource is not allowed; configure source.resource instead");
 		}
-		if (!utilities.stringHasValue(resolvedPrimary.getResourceName())) {
-			throw new EtlConfException("The primary data source resource name is required");
+
+		if (resource != null && utilities.stringHasValue(resource.getConnector())) {
+
+			if (utilities.stringHasValue(connector) && !connector.equals(resource.getConnector())) {
+				throw new EtlConfException("source.connector differs from source.resource.connector");
+			}
+			connector = resource.getConnector();
 		}
+
+		if (resolvedPrimary != tableDataSource && resource == null) {
+			throw new EtlConfException("source.resource is required for non-JDBC primary data sources");
+		}
+
+		if (resolvedPrimary != tableDataSource && !utilities.stringHasValue(resolvedPrimary.getName())) {
+			throw new EtlConfException("The logical primary data source name is required");
+		}
+
+		if (resource != null && !utilities.stringHasValue(resource.getName())) {
+			throw new EtlConfException("source.resource.name is required");
+		}
+
 		if (resolvedPrimary != tableDataSource
 				&& (resolvedPrimary.getFields() == null || resolvedPrimary.getFields().isEmpty())) {
 			throw new EtlConfException("source."
-					+ (resolvedPrimary == jsonDataSource ? "jsonDataSource" : "csvDataSource")
-					+ ".fields is required");
+					+ (resolvedPrimary == jsonDataSource ? "jsonDataSource" : "csvDataSource") + ".fields is required");
+		}
+
+		if (resolvedPrimary == jsonDataSource) {
+			validateJsonDataSources();
+		}
+	}
+
+	private void validateJsonDataSources() {
+		String recordPath = resource.normalizedRecordPath();
+
+		if (!"/".equals(recordPath) && !recordPath.startsWith("/")) {
+			throw new EtlConfException("source.resource.recordPath must use JSON Pointer syntax");
+		}
+		Set<String> names = new java.util.HashSet<>();
+		names.add(jsonDataSource.getName().trim().toLowerCase(java.util.Locale.ROOT));
+
+		for (JsonRecordDataSourceConfiguration extra : getExtraJsonRecordDataSource()) {
+
+			if (extra == null || !utilities.stringHasValue(extra.getName())) {
+				throw new EtlConfException("Every extraJsonRecordDataSource must have a name");
+			}
+
+			if (!names.add(extra.getName().trim().toLowerCase(java.util.Locale.ROOT))) {
+				throw new EtlConfException("Duplicated JSON data source name '" + extra.getName() + "'");
+			}
+
+			if (!utilities.stringHasValue(extra.getPath()) || "/".equals(extra.getPath().trim())
+					|| !extra.getPath().trim().startsWith("/")) {
+				throw new EtlConfException("extraJsonRecordDataSource '" + extra.getName()
+						+ "' must define a child path using JSON Pointer syntax");
+			}
+
+			if (extra.getFields() == null || extra.getFields().isEmpty()) {
+				throw new EtlConfException("extraJsonRecordDataSource '" + extra.getName() + "' must define fields");
+			}
 		}
 	}
 
 	private void add(List<PrimaryDataSourceConfiguration> configured, List<String> names, String name,
 			PrimaryDataSourceConfiguration candidate) {
+
 		if (candidate != null) {
 			configured.add(candidate);
 			names.add(name);
