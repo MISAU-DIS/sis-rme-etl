@@ -292,11 +292,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	private void synchronizeLegacyJdbcSourceView() {
-		srcConf.setExtraTableDataSource(source.getExtraTableDataSource());
-		srcConf.setExtraQueryDataSource(source.getExtraQueryDataSource());
-		srcConf.setExtraObjectDataSource(source.getExtraObjectDataSource());
-		srcConf.setExtraJsonDataSource(source.getExtraJsonDataSource());
-
 		SourceProcessingPolicy policy = source.getProcessingPolicy();
 
 		if (policy != null) {

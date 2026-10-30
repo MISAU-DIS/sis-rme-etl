@@ -55,14 +55,6 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 
 	private List<AuxExtractTable> auxExtractTable;
 
-	private List<TableDataSourceConfig> extraTableDataSource;
-
-	private List<QueryDataSourceConfig> extraQueryDataSource;
-
-	private List<TransformableDataSource> extraObjectDataSource;
-
-	private List<JsonDataSource> extraJsonDataSource;
-
 	private EtlDstType dstType;
 
 	private List<FieldsMapping> joinFields;
@@ -134,6 +126,9 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	@JsonIgnore
 	private transient SourceConfiguration parentSource;
 
+	@JsonIgnore
+	private transient SourceConfiguration detachedLegacySource;
+
 	public SrcConf() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
@@ -146,7 +141,42 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 
 	@Override
 	public void setParentSource(SourceConfiguration parentSource) {
+		if (parentSource != null && detachedLegacySource != null) {
+			transferLegacyAdditionalDataSources(parentSource);
+		}
 		this.parentSource = parentSource;
+		this.detachedLegacySource = null;
+	}
+
+	private SourceConfiguration additionalDataSourcesOwner() {
+		if (parentSource != null)
+			return parentSource;
+		if (detachedLegacySource == null)
+			detachedLegacySource = new SourceConfiguration();
+		return detachedLegacySource;
+	}
+
+	private void transferLegacyAdditionalDataSources(SourceConfiguration target) {
+		mergeLegacy("extraTableDataSource", detachedLegacySource.getExtraTableDataSource(),
+				target.getExtraTableDataSource(), target::setExtraTableDataSource);
+		mergeLegacy("extraQueryDataSource", detachedLegacySource.getExtraQueryDataSource(),
+				target.getExtraQueryDataSource(), target::setExtraQueryDataSource);
+		mergeLegacy("extraObjectDataSource", detachedLegacySource.getExtraObjectDataSource(),
+				target.getExtraObjectDataSource(), target::setExtraObjectDataSource);
+		mergeLegacy("extraJsonDataSource", detachedLegacySource.getExtraJsonDataSource(),
+				target.getExtraJsonDataSource(), target::setExtraJsonDataSource);
+	}
+
+	private <E> void mergeLegacy(String property, List<E> legacy, List<E> configured,
+			java.util.function.Consumer<List<E>> setter) {
+		if (!utilities.listHasElement(legacy))
+			return;
+		if (legacy == configured)
+			return;
+		if (utilities.listHasElement(configured))
+			throw new org.openmrs.module.epts.etl.exceptions.EtlConfException(
+					property + " cannot be configured both in source and legacy srcConf/tableDataSource");
+		setter.accept(legacy);
 	}
 
 	public Boolean getDoNotLoadJoiningFields() {
@@ -274,23 +304,19 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	}
 
 	public List<JsonDataSource> getExtraJsonDataSource() {
-		return parentSource == null ? extraJsonDataSource : parentSource.getExtraJsonDataSource();
+		return additionalDataSourcesOwner().getExtraJsonDataSource();
 	}
 
 	public void setExtraJsonDataSource(List<JsonDataSource> extraJsonDataSOurce) {
-		this.extraJsonDataSource = extraJsonDataSOurce;
-		if (parentSource != null)
-			parentSource.setExtraJsonDataSource(extraJsonDataSOurce);
+		additionalDataSourcesOwner().setExtraJsonDataSource(extraJsonDataSOurce);
 	}
 
 	public List<TransformableDataSource> getExtraObjectDataSource() {
-		return parentSource == null ? extraObjectDataSource : parentSource.getExtraObjectDataSource();
+		return additionalDataSourcesOwner().getExtraObjectDataSource();
 	}
 
 	public void setExtraObjectDataSource(List<TransformableDataSource> extraObjectDataSource) {
-		this.extraObjectDataSource = extraObjectDataSource;
-		if (parentSource != null)
-			parentSource.setExtraObjectDataSource(extraObjectDataSource);
+		additionalDataSourcesOwner().setExtraObjectDataSource(extraObjectDataSource);
 	}
 
 	public List<EtlField> getEtlFields() {
@@ -329,23 +355,19 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	}
 
 	public List<QueryDataSourceConfig> getExtraQueryDataSource() {
-		return parentSource == null ? extraQueryDataSource : parentSource.getExtraQueryDataSource();
+		return additionalDataSourcesOwner().getExtraQueryDataSource();
 	}
 
 	public void setExtraQueryDataSource(List<QueryDataSourceConfig> extraQueryDataSource) {
-		this.extraQueryDataSource = extraQueryDataSource;
-		if (parentSource != null)
-			parentSource.setExtraQueryDataSource(extraQueryDataSource);
+		additionalDataSourcesOwner().setExtraQueryDataSource(extraQueryDataSource);
 	}
 
 	public List<TableDataSourceConfig> getExtraTableDataSource() {
-		return parentSource == null ? extraTableDataSource : parentSource.getExtraTableDataSource();
+		return additionalDataSourcesOwner().getExtraTableDataSource();
 	}
 
 	public void setExtraTableDataSource(List<TableDataSourceConfig> extraTableDataSource) {
-		this.extraTableDataSource = extraTableDataSource;
-		if (parentSource != null)
-			parentSource.setExtraTableDataSource(extraTableDataSource);
+		additionalDataSourcesOwner().setExtraTableDataSource(extraTableDataSource);
 	}
 
 	@Override

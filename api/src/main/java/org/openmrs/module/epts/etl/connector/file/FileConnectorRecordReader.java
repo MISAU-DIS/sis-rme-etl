@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonRecordDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordLayout;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
@@ -47,9 +48,16 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 		this.supportingConnection = supportingConnection;
 		this.path = FileConnectorPathResolver.resolve(resource);
 		this.resourceConfiguration = unwrapSourceResource(resource);
-		this.jsonRecordParser = sourceConfiguration instanceof JsonPrimaryDataSourceConfiguration
-				? new JsonRecordParser((JsonPrimaryDataSourceConfiguration) sourceConfiguration, mapper)
-				: null;
+		this.jsonRecordParser = createJsonRecordParser(sourceConfiguration);
+	}
+
+	private JsonRecordParser createJsonRecordParser(PrimaryDataSourceConfiguration configuration) {
+		if (!(configuration instanceof JsonPrimaryDataSourceConfiguration))
+			return null;
+		List<JsonRecordDataSourceConfiguration> extras = configuration
+				.getParentSource() == null ? java.util.Collections.emptyList()
+						: configuration.getParentSource().getExtraJsonRecordDataSource();
+		return new JsonRecordParser((JsonPrimaryDataSourceConfiguration) configuration, extras, mapper);
 	}
 
 	@Override

@@ -196,7 +196,8 @@ record; its `fields` list feeds the normal ETL `Field` model used by mappings
 and transformations.
 
 Related objects embedded in a JSON record are declared as
-`extraJsonRecordDataSource`. They become ordinary auxiliary ETL source objects,
+`extraJsonRecordDataSource` directly under `source`, alongside the other
+`extra*DataSource` families. They become ordinary auxiliary ETL source objects,
 keeping the existing data-source and transformation model intact. For example,
 given a document whose records are stored in `person_data` and contain an
 `address` object:
@@ -217,8 +218,9 @@ given a document whose records are stored in `person_data` and contain an
         { "name": "id", "dataType": "java.lang.Integer", "allowNull": false },
         { "name": "full_name", "dataType": "java.lang.String" },
         { "name": "uuid", "dataType": "java.lang.String" }
-      ],
-      "extraJsonRecordDataSource": [
+      ]
+    },
+    "extraJsonRecordDataSource": [
         {
           "name": "address",
           "path": "/address",
@@ -231,8 +233,7 @@ given a document whose records are stored in `person_data` and contain an
             { "name": "uuid", "dataType": "java.lang.String" }
           ]
         }
-      ]
-    }
+    ]
   },
   "dstConf": [
     { "tableName": "person" }

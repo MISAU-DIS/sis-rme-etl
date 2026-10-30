@@ -193,9 +193,9 @@ class SourceConfigurationTest {
 				+ "\"resource\":{\"name\":\"persons.json\",\"layout\":\"ARRAY\","
 				+ "\"recordPath\":\"/person_data\"},"
 				+ "\"jsonDataSource\":{\"name\":\"person\","
-				+ "\"fields\":[{\"name\":\"id\",\"dataType\":\"java.lang.Integer\"}],"
+				+ "\"fields\":[{\"name\":\"id\",\"dataType\":\"java.lang.Integer\"}]},"
 				+ "\"extraJsonRecordDataSource\":[{\"name\":\"address\",\"path\":\"/address\","
-				+ "\"cardinality\":\"ONE\",\"fields\":[{\"name\":\"uuid\"}]}]}}" );
+				+ "\"cardinality\":\"ONE\",\"fields\":[{\"name\":\"uuid\"}]}]}" );
 
 		source.initialize(new EtlItemConfiguration());
 		source.fullLoad(null);

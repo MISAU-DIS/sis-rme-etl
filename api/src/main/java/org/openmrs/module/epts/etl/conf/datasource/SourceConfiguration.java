@@ -48,6 +48,8 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private List<JsonDataSource> extraJsonDataSource;
 
+	private List<JsonRecordDataSourceConfiguration> extraJsonRecordDataSource;
+
 	private SourceProcessingPolicy processingPolicy;
 
 	@JsonIgnore
@@ -149,6 +151,17 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	public void setExtraJsonDataSource(List<JsonDataSource> extraJsonDataSource) {
 		this.extraJsonDataSource = extraJsonDataSource;
+	}
+
+	public List<JsonRecordDataSourceConfiguration> getExtraJsonRecordDataSource() {
+		return extraJsonRecordDataSource == null
+				? java.util.Collections.<JsonRecordDataSourceConfiguration>emptyList()
+				: extraJsonRecordDataSource;
+	}
+
+	public void setExtraJsonRecordDataSource(
+			List<JsonRecordDataSourceConfiguration> extraJsonRecordDataSource) {
+		this.extraJsonRecordDataSource = extraJsonRecordDataSource;
 	}
 
 	public SourceProcessingPolicy getProcessingPolicy() {
@@ -462,15 +475,8 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		return configured;
 	}
 
-	@JsonIgnore
-	public List<JsonRecordDataSourceConfiguration> getExtraJsonRecordDataSource() {
-		return jsonDataSource == null || jsonDataSource.getExtraJsonRecordDataSource() == null
-				? java.util.Collections.<JsonRecordDataSourceConfiguration>emptyList()
-				: jsonDataSource.getExtraJsonRecordDataSource();
-	}
-
 	public boolean hasExtraJsonRecordDataSourceConfig() {
-		return utilities.listHasElement(getExtraJsonRecordDataSource());
+		return utilities.listHasElement(extraJsonRecordDataSource);
 	}
 
 	public boolean hasExtraTableDataSourceConfig() {

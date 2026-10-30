@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.conf.datasource.JsonRecordDataSourceConfigura
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordLayout;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -132,12 +133,16 @@ class FileConnectorRecordReaderTest {
 				Field.fastCreateWithType("full_name", "java.lang.String"),
 				Field.fastCreateWithType("creation_date", "java.lang.String"),
 				Field.fastCreateWithType("uuid", "java.lang.String")));
-		source.setExtraJsonRecordDataSource(Arrays.asList(address, identifiers));
-		source.fullLoad(null);
-		address.setRelatedPrimaryDataSource(source);
-		address.fullLoad(null);
-		identifiers.setRelatedPrimaryDataSource(source);
-		identifiers.fullLoad(null);
+		SourceConfiguration parent = new SourceConfiguration();
+		SourceResourceConfiguration configuredResource = new SourceResourceConfiguration();
+		configuredResource.setName("person-data.json");
+		configuredResource.setLayout(JsonRecordLayout.ARRAY);
+		configuredResource.setRecordPath("/person_data");
+		parent.setResource(configuredResource);
+		parent.setJsonDataSource(source);
+		parent.setExtraJsonRecordDataSource(Arrays.asList(address, identifiers));
+		parent.initialize(new org.openmrs.module.epts.etl.conf.EtlItemConfiguration());
+		parent.fullLoad(null);
 		return source;
 	}
 

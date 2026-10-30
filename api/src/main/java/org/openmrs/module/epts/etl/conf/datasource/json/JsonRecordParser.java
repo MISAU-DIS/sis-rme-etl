@@ -24,8 +24,12 @@ public final class JsonRecordParser {
 
 	private final ObjectMapper mapper;
 
-	public JsonRecordParser(JsonPrimaryDataSourceConfiguration primaryConfiguration, ObjectMapper mapper) {
+	private final List<JsonRecordDataSourceConfiguration> extraDataSources;
+
+	public JsonRecordParser(JsonPrimaryDataSourceConfiguration primaryConfiguration,
+			List<JsonRecordDataSourceConfiguration> extraDataSources, ObjectMapper mapper) {
 		this.primaryConfiguration = primaryConfiguration;
+		this.extraDataSources = extraDataSources == null ? java.util.Collections.emptyList() : extraDataSources;
 		this.mapper = mapper;
 	}
 
@@ -35,8 +39,8 @@ public final class JsonRecordParser {
 		}
 
 		Set<String> structuralFields = new HashSet<>();
-		if (primaryConfiguration.getExtraJsonRecordDataSource() != null) {
-			for (JsonRecordDataSourceConfiguration extra : primaryConfiguration.getExtraJsonRecordDataSource()) {
+		if (!extraDataSources.isEmpty()) {
+			for (JsonRecordDataSourceConfiguration extra : extraDataSources) {
 				structuralFields.add(firstPathSegment(extra.getPath()));
 			}
 		}
@@ -44,8 +48,8 @@ public final class JsonRecordParser {
 		GenericDatabaseObject primary = parseObject(recordNode, primaryConfiguration.getFields(), structuralFields,
 				primaryConfiguration, recordDescription);
 		List<EtlDatabaseObject> auxiliary = new ArrayList<>();
-		if (primaryConfiguration.getExtraJsonRecordDataSource() != null) {
-			for (JsonRecordDataSourceConfiguration extra : primaryConfiguration.getExtraJsonRecordDataSource()) {
+		if (!extraDataSources.isEmpty()) {
+			for (JsonRecordDataSourceConfiguration extra : extraDataSources) {
 				parseExtra(recordNode, extra, auxiliary, recordDescription);
 			}
 		}
