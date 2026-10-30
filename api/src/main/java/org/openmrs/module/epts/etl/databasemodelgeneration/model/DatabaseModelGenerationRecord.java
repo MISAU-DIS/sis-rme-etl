@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
-import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -21,19 +20,20 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObjectUniqueKeyInfo;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
 
 public class DatabaseModelGenerationRecord implements EtlDatabaseObject {
 
-	private AbstractTableConfiguration tableConfiguration;
+	private EtlDatabaseObjectConfiguration tableConfiguration;
 
-	public DatabaseModelGenerationRecord(AbstractTableConfiguration tableConfiguration) {
+	public DatabaseModelGenerationRecord(EtlDatabaseObjectConfiguration tableConfiguration) {
 		this.tableConfiguration = tableConfiguration;
 	}
 
-	public AbstractTableConfiguration getTableConfiguration() {
+	public EtlDatabaseObjectConfiguration getTableConfiguration() {
 		return tableConfiguration;
 	}
 

@@ -5,13 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.controller.OperationController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
 import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.base.VOLoaderHelper;
-import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class DatabaseModelGenerationSearchParams extends AbstractEtlSearchParams<DatabaseModelGenerationRecord> {
@@ -21,7 +21,7 @@ public class DatabaseModelGenerationSearchParams extends AbstractEtlSearchParams
 	public DatabaseModelGenerationSearchParams(Engine<DatabaseModelGenerationRecord> engine,
 			ThreadRecordIntervalsManager<DatabaseModelGenerationRecord> limits) {
 
-		super(engine.getJdbcPrimaryDataSource(), limits);
+		super(engine.getPrimaryDataSource(), limits);
 	}
 
 	public void setProcessor(DatabaseModelGenerationProcessor processor) {
@@ -30,23 +30,23 @@ public class DatabaseModelGenerationSearchParams extends AbstractEtlSearchParams
 
 	@Override
 	public List<DatabaseModelGenerationRecord> search(IntervalExtremeRecord intervalExtremeRecord,
-			DatabaseModelGenerationRecord parentObject, List<DatabaseModelGenerationRecord> auxDataSourceObjects, Connection srcConn,
-			Connection dstCOnn) throws DBException {
+			DatabaseModelGenerationRecord parentObject, List<DatabaseModelGenerationRecord> auxDataSourceObjects,
+			Connection srcConn, Connection dstCOnn) throws DBException {
 
 		if (processor.isDatabaseModelGenerated())
 			return null;
 
 		List<DatabaseModelGenerationRecord> records = new ArrayList<>();
 
-		records.add(new DatabaseModelGenerationRecord(getSrcConf()));
+		records.add(new DatabaseModelGenerationRecord(getPrimaryDataSource()));
 
 		return records;
 	}
 
 	@Override
 	public SearchClauses<DatabaseModelGenerationRecord> generateSearchClauses(IntervalExtremeRecord recordLimits,
-			DatabaseModelGenerationRecord parentObject, List<DatabaseModelGenerationRecord> auxDataSourceObjects, Connection srcConn,
-			Connection dstConn) throws DBException {
+			DatabaseModelGenerationRecord parentObject, List<DatabaseModelGenerationRecord> auxDataSourceObjects,
+			Connection srcConn, Connection dstConn) throws DBException {
 
 		return null;
 	}
