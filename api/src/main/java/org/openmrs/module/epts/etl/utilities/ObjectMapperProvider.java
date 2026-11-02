@@ -3,6 +3,8 @@
  */
 package org.openmrs.module.epts.etl.utilities;
 
+import java.util.Date;
+
 import javax.ws.rs.ext.ContextResolver;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -10,6 +12,7 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
 
@@ -48,6 +51,12 @@ public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
 		result.configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true);
 
 		result.registerSubtypes(types);
+
+		SimpleModule module = new SimpleModule();
+
+		module.addDeserializer(Date.class, new FlexibleDateDeserializer());
+
+		result.registerModule(module);
 
 		return result;
 	}

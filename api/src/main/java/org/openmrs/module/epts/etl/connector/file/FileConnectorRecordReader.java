@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implements ConnectorRecordReader<T> {
 
 	private final ConnectorResource resource;
+	@SuppressWarnings("unused")
 	private final PrimaryDataSourceConfiguration sourceConfiguration;
 	private final Connection supportingConnection;
 	private final Path path;
@@ -40,8 +41,10 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 
 	public FileConnectorRecordReader(ConnectorResource resource, PrimaryDataSourceConfiguration sourceConfiguration,
 			Connection supportingConnection) {
+
 		if (sourceConfiguration == null || !sourceConfiguration.isFullLoaded()) {
-			throw new IllegalArgumentException("The source configuration must be fully loaded before creating a FILE reader");
+			throw new IllegalArgumentException(
+					"The source configuration must be fully loaded before creating a FILE reader");
 		}
 		this.resource = resource;
 		this.sourceConfiguration = sourceConfiguration;
@@ -54,9 +57,9 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 	private JsonRecordParser createJsonRecordParser(PrimaryDataSourceConfiguration configuration) {
 		if (!(configuration instanceof JsonPrimaryDataSourceConfiguration))
 			return null;
-		List<JsonRecordDataSourceConfiguration> extras = configuration
-				.getParentSource() == null ? java.util.Collections.emptyList()
-						: configuration.getParentSource().getExtraJsonRecordDataSource();
+		List<JsonRecordDataSourceConfiguration> extras = configuration.getParentSource() == null
+				? java.util.Collections.emptyList()
+				: configuration.getParentSource().getExtraJsonRecordDataSource();
 		return new JsonRecordParser((JsonPrimaryDataSourceConfiguration) configuration, extras, mapper);
 	}
 
@@ -67,9 +70,11 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 
 	@Override
 	public List<T> read(ConnectorReadRequest<T> request) throws DBException {
+
 		if (request == null) {
 			throw new IllegalArgumentException("request cannot be null");
 		}
+
 		if (resourceConfiguration.jsonLayout() != JsonRecordLayout.JSON_LINES) {
 			return readJsonDocument(request);
 		}
@@ -82,6 +87,7 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 		try (BufferedReader input = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
 			String line;
 			long lineNumber = 0;
+
 			while ((line = input.readLine()) != null) {
 				lineNumber++;
 				if (lineNumber < firstLine)
@@ -101,11 +107,14 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 	}
 
 	private List<T> readJsonDocument(ConnectorReadRequest<T> request) {
+
 		try {
 			JsonNode root = mapper.readTree(Files.readString(path, StandardCharsets.UTF_8));
 			JsonNode selected = JsonRecordParser.select(root, resourceConfiguration.normalizedRecordPath());
 			List<JsonNode> recordNodes = new ArrayList<>();
-			if (resourceConfiguration.jsonLayout() == JsonRecordLayout.ARRAY && selected != null && selected.isArray()) {
+
+			if (resourceConfiguration.jsonLayout() == JsonRecordLayout.ARRAY && selected != null
+					&& selected.isArray()) {
 				selected.forEach(recordNodes::add);
 			} else if (resourceConfiguration.jsonLayout() == JsonRecordLayout.OBJECT && selected != null
 					&& selected.isObject()) {
@@ -120,8 +129,10 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 			long first = interval == null ? 1 : Math.max(1, interval.getMinRecordId());
 			long last = interval == null ? Long.MAX_VALUE : interval.getMaxRecordId();
 			List<T> records = new ArrayList<>();
+
 			for (int index = 0; index < recordNodes.size(); index++) {
 				long recordNumber = index + 1L;
+
 				if (recordNumber >= first && recordNumber <= last) {
 					records.add(parse(recordNodes.get(index), "record " + recordNumber));
 				}
@@ -134,16 +145,20 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 
 	@SuppressWarnings("unchecked")
 	private T parse(JsonNode document, String recordDescription) {
+
 		if (jsonRecordParser == null) {
 			throw new EtlConfException("FILE JSON reading requires source.jsonDataSource");
 		}
+		
 		return (T) jsonRecordParser.parse(document, recordDescription + " of " + path);
 	}
 
 	public static long countRecords(ConnectorResource resource) {
 		Path path = FileConnectorPathResolver.resolve(resource);
 		SourceResourceConfiguration sourceResource = unwrapSourceResource(resource);
+
 		if (sourceResource.jsonLayout() != JsonRecordLayout.JSON_LINES) {
+
 			try {
 				ObjectMapper mapper = new ObjectMapperProvider().getContext(EtlDatabaseObject.class);
 				JsonNode selected = JsonRecordParser.select(
@@ -158,6 +173,7 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 				throw new FileConnectorReadException("Unable to count source records in " + path, e);
 			}
 		}
+
 		try (java.util.stream.Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
 			return lines.count();
 		} catch (IOException e) {
@@ -166,6 +182,7 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 	}
 
 	private static SourceResourceConfiguration unwrapSourceResource(ConnectorResource resource) {
+
 		try {
 			return resource.unwrap(SourceResourceConfiguration.class);
 		} catch (IllegalArgumentException e) {
@@ -181,7 +198,7 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 			return nativeType.cast(path);
 		if (nativeType != null && nativeType.isInstance(supportingConnection))
 			return nativeType.cast(supportingConnection);
-		throw new IllegalArgumentException("FILE reader cannot be unwrapped as "
-				+ (nativeType == null ? "null" : nativeType.getName()));
+		throw new IllegalArgumentException(
+				"FILE reader cannot be unwrapped as " + (nativeType == null ? "null" : nativeType.getName()));
 	}
 }

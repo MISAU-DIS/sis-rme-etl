@@ -39,6 +39,7 @@ public final class JsonRecordParser {
 		}
 
 		Set<String> structuralFields = new HashSet<>();
+		
 		if (!extraDataSources.isEmpty()) {
 			for (JsonRecordDataSourceConfiguration extra : extraDataSources) {
 				structuralFields.add(firstPathSegment(extra.getPath()));
@@ -47,13 +48,16 @@ public final class JsonRecordParser {
 
 		GenericDatabaseObject primary = parseObject(recordNode, primaryConfiguration.getFields(), structuralFields,
 				primaryConfiguration, recordDescription);
+		
 		List<EtlDatabaseObject> auxiliary = new ArrayList<>();
+		
 		if (!extraDataSources.isEmpty()) {
 			for (JsonRecordDataSourceConfiguration extra : extraDataSources) {
 				parseExtra(recordNode, extra, auxiliary, recordDescription);
 			}
 		}
 		primary.setAuxLoadObject(auxiliary);
+		
 		return primary;
 	}
 
