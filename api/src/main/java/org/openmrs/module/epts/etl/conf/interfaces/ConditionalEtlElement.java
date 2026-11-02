@@ -134,6 +134,7 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 		try {
 			expression.init(this);
 		} catch (MissingEtlConfException e) {
+
 			if (!expression.allowMissingEtlConf()) {
 				throw e;
 			}
@@ -280,31 +281,45 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 
 	default Boolean evaluateIn(EtlDatabaseObject obj, String condition, boolean negated) {
 
-		String[] parts = condition.split(negated ? "(?i)not\\s+in" : "(?i)in");
+		if (condition == null || condition.trim().isEmpty()) {
+			return false;
+		}
 
-		String field = parts[0].trim();
-		String valuesPart = parts[1].trim();
+		String operator = negated ? "\\bNOT\\s+IN\\b" : "\\bIN\\b";
 
-		valuesPart = valuesPart.replaceAll("[()]", "");
+		Pattern pattern = Pattern.compile("^\\s*(.*?)\\s+" + operator + "\\s*\\((.*)\\)\\s*$",
+				Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+		Matcher matcher = pattern.matcher(condition);
+
+		if (!matcher.matches()) {
+			throw new IllegalArgumentException("Invalid IN condition: " + condition);
+		}
+
+		String field = matcher.group(1).trim();
+		String valuesPart = matcher.group(2).trim();
 
 		Object value = null;
 
 		try {
 			value = obj.getFieldValue(field);
 		} catch (ForbiddenOperationException e) {
+			// Treat field as a literal value.
 		}
 
 		if (value == null) {
-			value = field;
+			value = stripQuotes(field);
 		}
 
-		String actual = value.toString();
+		String actual = String.valueOf(value);
 
 		boolean found = false;
 
-		for (String v : valuesPart.split(",")) {
+		for (String item : valuesPart.split(",")) {
 
-			if (actual.equals(stripQuotes(v.trim()))) {
+			String expected = stripQuotes(item.trim());
+
+			if (actual.equals(expected)) {
 				found = true;
 				break;
 			}
