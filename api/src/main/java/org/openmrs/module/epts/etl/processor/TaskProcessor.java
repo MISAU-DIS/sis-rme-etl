@@ -183,7 +183,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		List<T> records = null;
 
 		if (this instanceof DatabasePreparationProcessor || this instanceof DatabaseModelGenerationProcessor) {
-			records = getSearchParams().search(getLimits(), null, null, reader.unwrap(Connection.class), null);
+			records = this.getSearchParams().search(getLimits(), null, null, reader.unwrap(Connection.class), null);
 		} else {
 			records = reader.read(new ConnectorReadRequest<>(this.getLimits(), null, null, useMultiThreadSearch));
 		}
