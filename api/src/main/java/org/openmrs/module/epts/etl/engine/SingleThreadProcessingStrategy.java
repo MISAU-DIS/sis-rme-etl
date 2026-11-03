@@ -27,9 +27,8 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 
 			boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-			ConnectorRecordWriters writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
-			ConnectorRecordReader<T> reader = engine.getEtlItemConfiguration()
-					.createSourceReader(engine.getSearchParams(), engine, writers);
+			ConnectorRecordWriters writers = processor.createRecordWriters();
+			ConnectorRecordReader<T> reader = processor.createRecordReader(writers);
 
 			OpenConnection srcConn = reader.unwrap(OpenConnection.class);
 

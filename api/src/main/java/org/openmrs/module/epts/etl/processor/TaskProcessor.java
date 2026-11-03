@@ -163,6 +163,16 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return getEngine().getSearchParams();
 	}
 
+	/** Creates the writer scope appropriate for this processor. */
+	public ConnectorRecordWriters createRecordWriters() throws DBException {
+		return getEtlItemConfiguration().createDestinationWriters(getEngine());
+	}
+
+	/** Creates the reader appropriate for this processor. */
+	public ConnectorRecordReader<T> createRecordReader(ConnectorRecordWriters writers) throws DBException {
+		return getEtlItemConfiguration().createSourceReader(getSearchParams(), getEngine(), writers);
+	}
+
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReader<T> reader,
 			ConnectorRecordWriters writers) throws DBException {
 

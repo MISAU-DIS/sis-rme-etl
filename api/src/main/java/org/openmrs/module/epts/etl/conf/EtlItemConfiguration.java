@@ -580,6 +580,41 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return new ConnectorRecordWriters(writers, resources);
 	}
 
+	/** Creates the writer scope used by processors that persist on the ETL database. */
+	public ConnectorRecordWriters createEtlDatabaseWriters(BaseConfiguration openedFrom) throws DBException {
+		JdbcDataSource dataSource = getEtlDatabaseDataSource();
+		ConnectorEndpoint endpoint = dataSource.getResolvedResource().getEndpoint();
+		ConnectorResource resource = ConnectorConfigurationResolver.resolveResource(null, dataSource,
+				ConnectorDirection.DESTINATION, endpoint);
+		Connection connection = getRelatedEtlConf().openDestinationConnectorConnection(resource, openedFrom);
+
+		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
+		writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+
+		return new ConnectorRecordWriters(writers, Collections.emptyMap());
+	}
+
+	/** Creates the reader used by processors that operate on the ETL database. */
+	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createEtlDatabaseReader(
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWriters writers)
+			throws DBException {
+		ConnectorResource resource = getEtlDatabaseDataSource().getResolvedResource();
+		OpenConnection sourceConnection = null;
+
+		try {
+			sourceConnection = getRelatedEtlConf().openSourceConnectorConnection(resource, openedFrom);
+			Connection destinationConnection = writers == null ? null : writers.unwrapShared(Connection.class);
+
+			return ConnectorRecordReaderFactory.create(resource, searchParams, sourceConnection,
+					destinationConnection);
+		} catch (RuntimeException exception) {
+			if (sourceConnection != null) {
+				sourceConnection.finalizeConnection(openedFrom);
+			}
+			throw exception;
+		}
+	}
+
 	/**
 	 * Creates the lazy connection scope for this item's destinations. No JDBC
 	 * connection is opened until a destination is requested from the returned

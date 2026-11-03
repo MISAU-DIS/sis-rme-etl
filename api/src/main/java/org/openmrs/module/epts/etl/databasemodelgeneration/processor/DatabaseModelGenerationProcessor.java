@@ -114,6 +114,17 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 	}
 
 	@Override
+	public ConnectorRecordWriters createRecordWriters() throws DBException {
+		return getEtlItemConfiguration().createEtlDatabaseWriters(getEngine());
+	}
+
+	@Override
+	public ConnectorRecordReader<DatabaseModelGenerationRecord> createRecordReader(ConnectorRecordWriters writers)
+			throws DBException {
+		return getEtlItemConfiguration().createEtlDatabaseReader(getSearchParams(), getEngine(), writers);
+	}
+
+	@Override
 	public void extractTransformAndLoad(boolean useMultiThreadSearch,
 			ConnectorRecordReader<DatabaseModelGenerationRecord> reader, ConnectorRecordWriters writers)
 			throws DBException {

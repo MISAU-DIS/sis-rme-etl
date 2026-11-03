@@ -6,6 +6,8 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.databasepreparation.model.DatabasePreparationRecord;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -27,6 +29,17 @@ public class DatabasePreparationProcessor extends org.openmrs.module.epts.etl.pr
 	/** JDBC datasource representing the current item on the ETL database. */
 	public JdbcDataSource getEtlDatabaseDataSource() {
 		return getEtlItemConfiguration().getEtlDatabaseDataSource();
+	}
+
+	@Override
+	public ConnectorRecordWriters createRecordWriters() throws DBException {
+		return getEtlItemConfiguration().createEtlDatabaseWriters(getEngine());
+	}
+
+	@Override
+	public ConnectorRecordReader<DatabasePreparationRecord> createRecordReader(ConnectorRecordWriters writers)
+			throws DBException {
+		return getEtlItemConfiguration().createEtlDatabaseReader(getSearchParams(), getEngine(), writers);
 	}
 	
 	public DatabasePreparationProcessor(Engine<DatabasePreparationRecord> monitr, IntervalExtremeRecord limits,
