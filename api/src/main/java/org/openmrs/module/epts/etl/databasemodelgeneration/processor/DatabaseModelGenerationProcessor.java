@@ -8,27 +8,27 @@ import java.util.List;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.DestinationConnectorConnections;
+import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
-import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.conf.physical.FilePhysicalTableMetadataRepository;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
@@ -51,10 +51,11 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * moving files from export directory to import directory
  * <p>
  * In the future a propery transportation method should be implemented.
- * 
+ *
  * @author jpboane
  */
-public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<DatabaseModelGenerationRecord> {
+public class DatabaseModelGenerationProcessor
+		extends org.openmrs.module.epts.etl.processor.JdbcTaskProcessor<DatabaseModelGenerationRecord> {
 
 	private final DatabaseModelGenerationVisitTracker<String> generationVisitTracker;
 
@@ -70,6 +71,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 	 * corresponding configuration tree element is actually regenerated.
 	 */
 	public static void prepareForRegeneration(EtlConfiguration configuration) {
+
 		if (configuration == null || !configuration.shouldOverrideExistingDataModelElement()
 				|| !hasDatabaseModelGenerationOperation(configuration)) {
 			return;
@@ -80,19 +82,33 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 	}
 
 	private static boolean hasDatabaseModelGenerationOperation(EtlConfiguration configuration) {
-		if (configuration.getOperations() == null) return false;
-		for (EtlOperationConfig operation : configuration.getOperations()) {
-			if (hasEnabledDatabaseModelGenerationOperation(operation)) return true;
+
+		if (configuration.getOperations() == null) {
+			return false;
 		}
+
+		for (EtlOperationConfig operation : configuration.getOperations()) {
+
+			if (hasEnabledDatabaseModelGenerationOperation(operation)) {
+				return true;
+			}
+		}
+
 		return false;
 	}
 
 	private static boolean hasEnabledDatabaseModelGenerationOperation(EtlOperationConfig operation) {
-		if (operation == null || operation.isDisabled()) return false;
-		if (operation.getOperationType() != null && operation.isDatabaseModelGeneration()) return true;
+
+		if (operation == null || operation.isDisabled()) {
+			return false;
+		}
+
+		if (operation.getOperationType() != null && operation.isDatabaseModelGeneration()) {
+			return true;
+		}
+
 		return hasEnabledDatabaseModelGenerationOperation(operation.getChild());
 	}
-
 
 	public DatabaseModelGenerationProcessor(Engine<DatabaseModelGenerationRecord> monitor, IntervalExtremeRecord limits,
 			boolean runningInConcurrency) {
@@ -146,8 +162,10 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 
 	private void generateConfigurationTree(EtlItemConfiguration item, EtlOperationConfig operationConfig,
 			Connection srcConn, Connection dstConn) throws DBException {
-		if (item == null || !visitedItemConfigurations.add(item))
+
+		if (item == null || !visitedItemConfigurations.add(item)) {
 			return;
+		}
 
 		item.init(getRelatedEtlConf(), item.isTesting(), srcConn);
 
@@ -155,11 +173,13 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 			item.fullLoad(operationConfig, srcConn, destinationConnections);
 			item.getEtlDatabaseDataSource();
 
-			DatabaseModelGenerationContext sourceContext = DatabaseModelGenerationContext.source(
-					getRelatedEtlConfiguration().getDataModel(), srcConn);
+			DatabaseModelGenerationContext sourceContext = DatabaseModelGenerationContext
+					.source(getRelatedEtlConfiguration().getDataModel(), srcConn);
 
 			PrimaryDataSourceConfiguration primarySource = item.getPrimaryDataSource();
-			if (!(primarySource instanceof JdbcTablePrimaryDataSourceConfiguration) || !((JdbcTablePrimaryDataSourceConfiguration) primarySource).doNotUseAsDatasource()) {
+
+			if (!(primarySource instanceof JdbcTablePrimaryDataSourceConfiguration)
+					|| !((JdbcTablePrimaryDataSourceConfiguration) primarySource).doNotUseAsDatasource()) {
 				generate(sourceContext, primarySource);
 
 				for (EtlAdditionalDataSource dataSource : item.getSource().getAvailableAdditionalDataSources()) {
@@ -168,25 +188,28 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 			}
 
 			if (item.hasDstConf()) {
+
 				for (DstConf destination : item.getDstConf()) {
-					if (destination.isDisabled() || !destinationConnections.isJdbc(destination))
+
+					if (destination.isDisabled() || !destinationConnections.isJdbc(destination)) {
 						continue;
+					}
 
 					Connection destinationConnection = destinationConnections.get(destination);
-					DatabaseModelGenerationContext destinationContext = DatabaseModelGenerationContext.destination(
-							getRelatedEtlConfiguration().getDataModel(), destinationConnection);
+					DatabaseModelGenerationContext destinationContext = DatabaseModelGenerationContext
+							.destination(getRelatedEtlConfiguration().getDataModel(), destinationConnection);
 
 					destination.init(item, srcConn, destinationConnection);
 
 					generate(destinationContext, destination);
 
-					generateOnDemandConfigurationTrees(destination, operationConfig, srcConn,
-					        destinationConnection);
+					generateOnDemandConfigurationTrees(destination, operationConfig, srcConn, destinationConnection);
 				}
 			}
 		}
 
 		if (item.hasChildItemConf()) {
+
 			for (EtlItemConfiguration child : item.getChildItemConf()) {
 				generateConfigurationTree(child, operationConfig, srcConn, dstConn);
 			}
@@ -196,20 +219,25 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 	private void generateOnDemandConfigurationTrees(DstConf destination, EtlOperationConfig operationConfig,
 			Connection srcConn, Connection dstConn) throws DBException {
 
-		if (!destination.hasMapping())
+		if (!destination.hasMapping()) {
 			return;
+		}
 
 		destination.fullLoad(dstConn);
 
 		for (FieldsMapping mapping : destination.getMapping()) {
-			if (!mapping.hasTransformer())
+
+			if (!mapping.hasTransformer()) {
 				continue;
+			}
 			mapping.tryToLoadTransformer(destination, srcConn);
 			mapping.getTransformerInstance().init(srcConn, dstConn);
 			mapping.getTransformerInstance().determineTransformerType();
+
 			if (!mapping.getTransformerType().isParentOnDemand()
-					&& !mapping.getTransformerType().isParentOnDemandWithDefaults())
+					&& !mapping.getTransformerType().isParentOnDemandWithDefaults()) {
 				continue;
+			}
 
 			ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) mapping.getTransformerInstance();
 			onDemand.init(srcConn, dstConn);
@@ -218,19 +246,23 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 		}
 	}
 
-	private void generate(DatabaseModelGenerationContext context,
-			EtlDatabaseObjectConfiguration objectConfiguration) {
+	private void generate(DatabaseModelGenerationContext context, EtlDatabaseObjectConfiguration objectConfiguration) {
+
 		if (!utilities.stringHasValue(context.getPojoPackageName())) {
 			throw new ForbiddenOperationException("No POJO package is configured for " + context.getSide());
 		}
 
 		String fullClassName = objectConfiguration.generateFullClassName(context);
-		if (!generationVisitTracker.begin(fullClassName))
+
+		if (!generationVisitTracker.begin(fullClassName)) {
 			return;
+		}
 
 		try {
-			if (!objectConfiguration.isFullLoaded())
+
+			if (!objectConfiguration.isFullLoaded()) {
 				objectConfiguration.fullLoad(context.getConnection());
+			}
 
 			objectConfiguration.generateRelatedPojoClass(context, true);
 			persistPhysicalMetadata(context, objectConfiguration);
@@ -248,6 +280,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 			TableConfiguration tabConf = (TableConfiguration) objectConfiguration;
 
 			if (tabConf.hasParentRefInfo() && tabConf.autoGenerateDataModelForParents()) {
+
 				for (ParentTable p : tabConf.getParentRefInfo()) {
 					generate(context, p);
 				}
@@ -257,18 +290,24 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 
 	private void persistPhysicalMetadata(DatabaseModelGenerationContext context,
 			EtlDatabaseObjectConfiguration tableConfiguration) {
-		if (!(tableConfiguration instanceof AbstractTableConfiguration))
+
+		if (!(tableConfiguration instanceof AbstractTableConfiguration)) {
 			return;
+		}
 
 		AbstractTableConfiguration table = (AbstractTableConfiguration) tableConfiguration;
-		if (table.getPhysicalTableConfiguration() == null)
+
+		if (table.getPhysicalTableConfiguration() == null) {
 			return;
+		}
 
 		try {
-			PhysicalTableKey key = PhysicalTableKeyFactory.create(table,
-					context.getDataModelId(), context.getConnection());
-			if (!physicalMetadataVisitTracker.begin(key))
+			PhysicalTableKey key = PhysicalTableKeyFactory.create(table, context.getDataModelId(),
+					context.getConnection());
+
+			if (!physicalMetadataVisitTracker.begin(key)) {
 				return;
+			}
 
 			try {
 				table.synchronizePhysicalTableConfiguration();

@@ -164,7 +164,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		}
 
 		if (parentObject == null) {
-			throw new EtlExceptionImpl("The joinable srcConf requires the parent object!");
+			throw new EtlExceptionImpl("The joinable primary data source requires the parent object!");
 		}
 
 		String extraCondition = jdbcSource.generateConditionsFields(parentObject, jdbcSource.getJoinFields(),
@@ -211,10 +211,6 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	}
 
 	@Deprecated
-	public void setSrcConf(JdbcTablePrimaryDataSourceConfiguration srcConf) {
-		this.primaryDataSource = srcConf;
-	}
-
 	/**
 	 * @return
 	 */

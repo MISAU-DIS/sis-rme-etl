@@ -3,14 +3,14 @@ package org.openmrs.module.epts.etl.conf;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 
 /**
- * Represent a field involved in ETL process for a srcConf.
+ * Represents a field involved in the ETL process for a primary data source.
  */
 public class EtlField extends Field {
 	
@@ -100,12 +100,12 @@ public class EtlField extends Field {
 		return fields;
 	}
 	
-	public void fullLoad(JdbcTablePrimaryDataSourceConfiguration srcConf) {
+	public void fullLoad(PrimaryDataSourceConfiguration primaryDataSource) {
 		if (this.getSrcDataSource() == null) {
-			List<EtlDataSource> avaliableDs = utilities.parseToList(srcConf);
+			List<EtlDataSource> avaliableDs = utilities.parseToList(primaryDataSource);
 			
-			if (srcConf.hasExtraDataSource()) {
-				avaliableDs.addAll(srcConf.getAvaliableExtraDataSource());
+			if (primaryDataSource.getParentSource() != null) {
+				avaliableDs.addAll(primaryDataSource.getParentSource().getAvailableAdditionalDataSources());
 			}
 			
 			if (utilities.stringHasValue(this.getDataSource())) {
@@ -121,7 +121,7 @@ public class EtlField extends Field {
 				if (this.getSrcDataSource() == null) {
 					throw new ForbiddenOperationException("The dataSource " + this.getDataSource()
 					        + " cannot be found on the dataSource list on the item configuration "
-					        + ((EtlItemConfiguration) srcConf.getParentConf()).getConfigCode() + "!!!");
+					        + primaryDataSource.getParentItemConfiguration().getConfigCode() + "!!!");
 				}
 			} else {
 				//Discovery the Ds
@@ -134,9 +134,11 @@ public class EtlField extends Field {
 					}
 				}
 				
-				throw new ForbiddenOperationException("The etlField " + this.getName()
-				        + " cannot be found on any dataSource listed on the item configuration "
-				        + ((EtlItemConfiguration) srcConf.getParentConf()) + "!!!");
+				if (this.getSrcDataSource() == null) {
+					throw new ForbiddenOperationException("The etlField " + this.getName()
+					        + " cannot be found on any dataSource listed on the item configuration "
+					        + primaryDataSource.getParentItemConfiguration() + "!!!");
+				}
 			}
 		} else {
 			this.setDataSource(this.getSrcDataSource().getAlias());

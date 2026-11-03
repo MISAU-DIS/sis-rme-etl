@@ -468,18 +468,16 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return this.getOnDemandCreateParentItemConf().getDstConf().get(0);
 	}
 
-	@SuppressWarnings("deprecation")
 	JdbcTablePrimaryDataSourceConfiguration loadSrcConfForNonExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
 
-		return this.getOnDemandCreateParentItemConf().getSrcConf();
+		return this.getOnDemandCreateParentItemConf().requireJdbcPrimaryDataSource();
 	}
 
-	@SuppressWarnings("deprecation")
 	JdbcTablePrimaryDataSourceConfiguration loadSrcConfForExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForExistingSrcParentInitialized(srcConn, dstConn);
 
-		return this.getExistingParentItemConf().getSrcConf();
+		return this.getExistingParentItemConf().requireJdbcPrimaryDataSource();
 	}
 
 	protected void ensureEtlTransformTargetForNonExistingSrcParentInitialized(boolean skipFullLoad, Connection srcConn,
@@ -706,7 +704,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		if (template != null) {
 			template.setParameters(this.getTemplateParams());
-			conf.setSrcConf(null);
+			conf.setSource(null);
 			conf.setTemplate(template);
 
 			conf.getRelatedEtlConf().trace("Template within transformer loaded!");

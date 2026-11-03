@@ -13,14 +13,14 @@ public class TableConfigurationUtils {
 
 	public static List<EtlDataSource> retrieveAvaliableDataSourcesWithTable(TableConfiguration tab, Connection conn) {
 
-		JdbcTablePrimaryDataSourceConfiguration srcConf = null;
+		JdbcTablePrimaryDataSourceConfiguration jdbcPrimary = null;
 
 		if (tab instanceof JdbcTablePrimaryDataSourceConfiguration) {
-			srcConf = (JdbcTablePrimaryDataSourceConfiguration) tab;
+			jdbcPrimary = (JdbcTablePrimaryDataSourceConfiguration) tab;
 		} else if (tab instanceof DstConf) {
-			srcConf = ((DstConf) tab).getPrimaryDataSource().requireJdbc();
+			jdbcPrimary = ((DstConf) tab).getPrimaryDataSource().requireJdbc();
 		} else if (tab instanceof TableDataSourceConfig) {
-			srcConf = ((TableDataSourceConfig) tab).getRelatedSrcConf();
+			jdbcPrimary = ((TableDataSourceConfig) tab).getRelatedSrcConf();
 		} else if (tab instanceof JoinableEntity) {
 			return retrieveAvaliableDataSourcesWithTable(((JoinableEntity) tab).getMainExtractTable(), conn);
 		} else if (tab instanceof RelatedTable) {
@@ -28,17 +28,18 @@ public class TableConfigurationUtils {
 		}
 
 		else if (tab.getParentConf() instanceof JdbcTablePrimaryDataSourceConfiguration) {
-			srcConf = (JdbcTablePrimaryDataSourceConfiguration) tab.getParentConf();
+			jdbcPrimary = (JdbcTablePrimaryDataSourceConfiguration) tab.getParentConf();
 		}
 
-		if (srcConf != null) {
-			return collectAllAvaliableDataSources(srcConf, conn);
+		if (jdbcPrimary != null) {
+			return collectAllAvaliableDataSources(jdbcPrimary, conn);
 		}
 
 		return null;
 	}
 
-	private static List<EtlDataSource> collectAllAvaliableDataSources(JdbcTablePrimaryDataSourceConfiguration srcConf, Connection conn) {
-		return srcConf.getParentConf().collectAllAvaliableDataSources(conn);
+	private static List<EtlDataSource> collectAllAvaliableDataSources(
+			JdbcTablePrimaryDataSourceConfiguration jdbcPrimary, Connection conn) {
+		return jdbcPrimary.getParentConf().collectAllAvaliableDataSources(conn);
 	}
 }

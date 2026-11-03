@@ -285,12 +285,12 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 			if (isLoadedDataSourceInfo())
 				return;
 
-			this.addToAvaliableDataSource(this.getParentItemConf().getSrcConf());
-
-			this.addAllToAvaliableDataSource(this.getParentItemConf().getSrcConf().getAvaliableExtraDataSource());
+			this.addToAvaliableDataSource(this.getParentItemConf().getPrimaryDataSource());
 
 			this.addAllToAvaliableDataSource(
-					this.getSrcConf().getParentItemConf().collectAllAvaliableDataSources(conn));
+					this.getParentItemConf().getSource().getAvailableAdditionalDataSources());
+
+			this.addAllToAvaliableDataSource(this.getParentItemConf().collectAllAvaliableDataSources(conn));
 
 			this.setAllNotPrefferredDataSource(this.getAllAvaliableDataSource());
 
@@ -305,13 +305,13 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	public static EtlChildItemConfiguration fastCreate(AbstractTableConfiguration tableConfig,
-			boolean useMainEtlTableAsSrcConfIfNotExists, Connection conn) throws DBException {
+			boolean useMainEtlTableAsPrimarySourceIfNotExists, Connection conn) throws DBException {
 
 		EtlChildItemConfiguration etl = new EtlChildItemConfiguration();
 
 		JdbcTablePrimaryDataSourceConfiguration src = JdbcTablePrimaryDataSourceConfiguration.fastCreate(tableConfig, etl, conn);
 
-		etl.setSrcConf(src);
+		etl.setSource(sourceWithJdbcPrimary(src));
 
 		etl.setRelatedEtlConfig(tableConfig.getRelatedEtlConf());
 

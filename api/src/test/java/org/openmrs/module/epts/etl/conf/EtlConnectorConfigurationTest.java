@@ -31,17 +31,19 @@ class EtlConnectorConfigurationTest {
 	@Test
 	void shouldDeserializeResourcesEmbeddedInSourceAndDestinationConfigurations() throws Exception {
 		String json = "{\"etlItemConfiguration\":[{"
-				+ "\"srcConf\":{\"tableName\":\"patient\",\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}},"
+				+ "\"source\":{\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"},"
+				+ "\"tableDataSource\":{\"tableName\":\"patient\"}},"
 				+ "\"dstConf\":[{\"tableName\":\"patient_export\",\"resource\":{\"connector\":\"jsonl-output\","
 				+ "\"name\":\"patients.jsonl\",\"properties\":{\"partition\":\"daily\"}}}]}]}";
 
 		EtlConfiguration configuration = new ObjectMapperProvider().getContext(EtlConfiguration.class)
 				.readValue(json, EtlConfiguration.class);
-		JdbcTablePrimaryDataSourceConfiguration source = configuration.getEtlItemConfiguration().get(0).getSrcConf();
+		EtlItemConfiguration item = configuration.getEtlItemConfiguration().get(0);
+		JdbcTablePrimaryDataSourceConfiguration source = item.getSource().getTableDataSource();
 		DstConf destination = configuration.getEtlItemConfiguration().get(0).getDstConf().get(0);
 
-		assertEquals("source-db", source.getResource().getConnector());
-		assertEquals("patient", source.getResource().getName());
+		assertEquals("source-db", item.getSource().getResource().getConnector());
+		assertEquals("patient", item.getSource().getResource().getName());
 		assertEquals("jsonl-output", destination.getResource().getConnector());
 		assertEquals("patients.jsonl", destination.getResource().getName());
 		assertEquals("daily", destination.getResource().getProperties().get("partition"));
@@ -106,7 +108,7 @@ class EtlConnectorConfigurationTest {
 		item.setRelatedEtlConf(configuration);
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
-		item.setSrcConf(source);
+		setJdbcSource(item, source);
 		DstConf destination = new DstConf("patient_copy");
 		item.setDstConf(java.util.Collections.singletonList(destination));
 
@@ -144,7 +146,7 @@ class EtlConnectorConfigurationTest {
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
 		source.setResource(resource("source-db", "patient"));
-		item.setSrcConf(source);
+		setJdbcSource(item, source);
 		DstConf databaseDestination = new DstConf("patient_copy");
 		databaseDestination.setResource(resource("destination-db", "patient_copy"));
 		DstConf fileDestination = new DstConf("patient_export");
@@ -191,11 +193,11 @@ class EtlConnectorConfigurationTest {
 		item.setRelatedEtlConf(configuration);
 		JdbcTablePrimaryDataSourceConfiguration sourceConfiguration = new JdbcTablePrimaryDataSourceConfiguration();
 		sourceConfiguration.setTableName("patient");
+		sourceConfiguration.setResource(resource("source-db", "patient"));
 		DstConf destinationConfiguration = new DstConf();
 		destinationConfiguration.setTableName("patient_archive");
-		item.setSrcConf(sourceConfiguration);
+		setJdbcSource(item, sourceConfiguration);
 		item.setDstConf(java.util.Collections.singletonList(destinationConfiguration));
-		sourceConfiguration.setResource(resource("source-db", "patient"));
 		destinationConfiguration.setResource(resource("archive-db", "patient_archive"));
 		initializeConnectors(configuration);
 		initializeResources(item);
@@ -219,7 +221,7 @@ class EtlConnectorConfigurationTest {
 		item.setRelatedEtlConf(configuration);
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
-		item.setSrcConf(source);
+		setJdbcSource(item, source);
 		DstConf first = new DstConf("patient_first");
 		first.setResource(resource("first-db", "patient_first"));
 		DstConf second = new DstConf("patient_second");
@@ -249,7 +251,7 @@ class EtlConnectorConfigurationTest {
 		item.setRelatedEtlConf(configuration);
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
-		item.setSrcConf(source);
+		setJdbcSource(item, source);
 		DstConf jdbcDestination = new DstConf("patient_copy");
 		jdbcDestination.setResource(resource("destination-db", "patient_copy"));
 		DstConf fileDestination = new DstConf("patient_export");
@@ -285,7 +287,7 @@ class EtlConnectorConfigurationTest {
 		item.setRelatedEtlConf(configuration);
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
-		item.setSrcConf(source);
+		setJdbcSource(item, source);
 
 		initializeConnectors(configuration);
 		Method prepare = EtlItemConfiguration.class
@@ -312,7 +314,7 @@ class EtlConnectorConfigurationTest {
 		JdbcTablePrimaryDataSourceConfiguration sourceConfiguration = new JdbcTablePrimaryDataSourceConfiguration();
 		sourceConfiguration.setTableName("patient");
 		sourceConfiguration.setResource(resource(null, "patient"));
-		item.setSrcConf(sourceConfiguration);
+		setJdbcSource(item, sourceConfiguration);
 		initializeConnectors(configuration);
 
 		initializeResources(item);
@@ -336,7 +338,7 @@ class EtlConnectorConfigurationTest {
 		primary.setFields(java.util.Collections.singletonList(Field.fastCreateField("patient_id")));
 		EtlItemConfiguration item = new EtlItemConfiguration();
 		item.setRelatedEtlConf(configuration);
-		item.setSrcConf(primary);
+		setJdbcSource(item, primary);
 		item.prepareSourceConfiguration();
 
 		JdbcTablePrimaryDataSourceConfiguration etlDatabaseSource = item.getEtlDatabaseDataSource();
@@ -422,7 +424,7 @@ class EtlConnectorConfigurationTest {
 	void shouldDeserializeLogicalRecordSchemaForNonJdbcResource() throws Exception {
 		String json = "{\"srcConnInfo\":{\"connectionURI\":\"jdbc:mysql://state/etl\"},"
 				+ "\"connectors\":[{\"id\":\"jsonl-output\",\"type\":\"FILE\",\"uri\":\"data/output\"}],"
-				+ "\"etlItemConfiguration\":[{\"srcConf\":{\"tableName\":\"patient\"},\"dstConf\":[{"
+				+ "\"etlItemConfiguration\":[{\"source\":{\"tableDataSource\":{\"tableName\":\"patient\"}},\"dstConf\":[{"
 				+ "\"tableName\":\"patient-export\",\"resource\":{\"connector\":\"jsonl-output\","
 				+ "\"name\":\"patients.jsonl\"},\"recordSchema\":{\"fields\":["
 				+ "{\"name\":\"uuid\",\"dataType\":\"java.lang.String\",\"allowNull\":false},"
@@ -450,7 +452,7 @@ class EtlConnectorConfigurationTest {
 		item.setRelatedEtlConf(configuration);
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
-		item.setSrcConf(source);
+		setJdbcSource(item, source);
 		DstConf destination = new DstConf("patient-export");
 		destination.setResource(resource("jsonl-output", "patients.jsonl"));
 		item.setDstConf(java.util.Collections.singletonList(destination));
@@ -502,6 +504,24 @@ class EtlConnectorConfigurationTest {
 		resource.setConnector(connectorId);
 		resource.setName(name);
 		return resource;
+	}
+
+	private void setJdbcSource(EtlItemConfiguration item,
+			JdbcTablePrimaryDataSourceConfiguration primaryDataSource) {
+		SourceConfiguration source = new SourceConfiguration();
+		ConnectorResourceConfiguration configuredResource = primaryDataSource.getResource();
+
+		if (configuredResource != null) {
+			SourceResourceConfiguration sourceResource = new SourceResourceConfiguration();
+			sourceResource.setConnector(configuredResource.getConnector());
+			sourceResource.setName(configuredResource.getName());
+			sourceResource.setProperties(configuredResource.getProperties());
+			source.setResource(sourceResource);
+			primaryDataSource.setResource(null);
+		}
+
+		source.setTableDataSource(primaryDataSource);
+		item.setSource(source);
 	}
 
 	private void initializeConnectors(EtlConfiguration configuration) throws Exception {

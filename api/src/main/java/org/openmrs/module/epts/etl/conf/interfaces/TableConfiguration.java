@@ -2343,11 +2343,13 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf);
 
 			if (found == null && srcConf.hasParentItemConf()) {
-				found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf.getParentSrcConf());
+				found = retrieveConfiguredParentWithinTheSameSrcConf(table,
+						srcConf.getParentJdbcPrimaryDataSource());
 			}
 		} else if (this instanceof JdbcTablePrimaryDataSourceConfiguration) {
 			if (((JdbcTablePrimaryDataSourceConfiguration) this).hasParentItemConf()) {
-				found = retrieveConfiguredParentWithinTheSameSrcConf(table, ((JdbcTablePrimaryDataSourceConfiguration) this).getParentSrcConf());
+				found = retrieveConfiguredParentWithinTheSameSrcConf(table,
+						((JdbcTablePrimaryDataSourceConfiguration) this).getParentJdbcPrimaryDataSource());
 			}
 		}
 

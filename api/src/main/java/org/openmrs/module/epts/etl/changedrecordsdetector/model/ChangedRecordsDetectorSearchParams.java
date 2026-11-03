@@ -38,7 +38,7 @@ public class ChangedRecordsDetectorSearchParams extends EtlDatabaseObjectSearchP
 	        Connection dstConn) throws DBException {
 		SearchClauses<EtlDatabaseObject> searchClauses = new SearchClauses<EtlDatabaseObject>(this);
 		
-		AbstractTableConfiguration tableInfo = getConfig().getSrcConf();
+		AbstractTableConfiguration tableInfo = getConfig().requireJdbcPrimaryDataSource();
 		
 		searchClauses.addToClauseFrom(tableInfo.generateSelectFromClauseContent());
 		
@@ -107,7 +107,7 @@ public class ChangedRecordsDetectorSearchParams extends EtlDatabaseObjectSearchP
 	}
 	
 	public DatabaseObjectLoaderHelper getLoaderHealper() {
-		return this.getConfig().getSrcConf().getLoadHealper();
+		return this.getConfig().requireJdbcPrimaryDataSource().getLoadHealper();
 	}
 	
 	@Override

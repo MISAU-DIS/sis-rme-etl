@@ -38,10 +38,10 @@ public class ChangedRecordsDetectorProcessor extends org.openmrs.module.epts.etl
 		 * processedRecords = new ArrayList<ChangedRecord>(records.size());
 		 * 
 		 * this.getEngine() .logInfo("PERFORMING CHANGE DETECTED ACTION '" +
-		 * records.size() + "' " + getSrcConf().getTableName());
+		 * records.size() + "' " + getJdbcPrimaryDataSource().getTableName());
 		 * 
 		 * for (EtlDatabaseObject obj : syncRecordsAsOpenMRSObjects) { try {
-		 * ((GenericDatabaseObject) obj).setRelatedConfiguration(getSrcConf());
+		 * ((GenericDatabaseObject) obj).setRelatedConfiguration(getJdbcPrimaryDataSource());
 		 * 
 		 * processedRecords.add(DetectedRecordInfo.generate(obj,
 		 * getEngine().getJdbcPrimaryDataSource().getOriginAppLocationCode()));
@@ -50,7 +50,7 @@ public class ChangedRecordsDetectorProcessor extends org.openmrs.module.epts.etl
 		 * isSinglePerformingMode()) {
 		 * DetectedRecordService.getInstance().performeAction(
 		 * getRelatedOperationController().getActionPerformeApp().getApplicationCode(),
-		 * processedRecords.get(processedRecords.size() - 1), getSrcConf()); }
+		 * processedRecords.get(processedRecords.size() - 1), getJdbcPrimaryDataSource()); }
 		 * 
 		 * } catch (Exception e) { e.printStackTrace();
 		 * 
@@ -63,14 +63,14 @@ public class ChangedRecordsDetectorProcessor extends org.openmrs.module.epts.etl
 		 * (getRelatedOperationController().getActionPerformeApp().isBatchPerformingMode
 		 * ()) { DetectedRecordService.getInstance().performeAction(
 		 * getRelatedOperationController().getActionPerformeApp().getApplicationCode(),
-		 * processedRecords, getSrcConf()); }
+		 * processedRecords, getJdbcPrimaryDataSource()); }
 		 * 
 		 * getTaskResultInfo().addAllToRecordsWithNoError(EtlOperationItemResult
 		 * .parseFromEtlDatabaseObject(utilities.parseList(processedRecords,
 		 * EtlDatabaseObject.class)));
 		 * 
 		 * this.getEngine().logInfo( "ACTION PERFORMED FOR CHANGED RECORDS '" +
-		 * records.size() + "' " + getSrcConf().getTableName() + "!");
+		 * records.size() + "' " + getJdbcPrimaryDataSource().getTableName() + "!");
 		 */
 	}
 	

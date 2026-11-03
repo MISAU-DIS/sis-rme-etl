@@ -62,7 +62,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	private ConditionClauseScope joinExtraConditionScope;
 
 	/**
-	 * The fields involved in ETL process for this srcConf. Note that when the
+	 * The fields involved in the ETL process for this JDBC primary data source. Note that when the
 	 * dstConf is not configured on related {@link EtlItemConfiguration}, then this
 	 * fields will automatically mapped to target table
 	 */
@@ -175,7 +175,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 			return;
 		if (utilities.listHasElement(configured))
 			throw new org.openmrs.module.epts.etl.exceptions.EtlConfException(
-					property + " cannot be configured both in source and legacy srcConf/tableDataSource");
+					property + " cannot be configured both in source and tableDataSource");
 		setter.accept(legacy);
 	}
 
@@ -290,7 +290,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 
 		if (getExpansionQueryDataSource() != null && getExpansionTableDataSource() != null) {
 			throw new EtlConfException(
-					"Invalid srcConf configuration. Only one expansion data source may be configured. "
+					"Invalid tableDataSource configuration. Only one expansion data source may be configured. "
 							+ "Choose either 'expansionQueryDataSource' or 'expansionTableDataSource', "
 							+ "but not both.");
 		}
@@ -453,10 +453,11 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		try {
 			JoinableEntity.super.loadJoinElements(schemaInfo, dsSide, conn);
 		} catch (MissingJoiningElementsException e) {
-			if (this.hasParentItemConf() && this.getPrimaryKey().equals(this.getParentSrcConf().getPrimaryKey())) {
+			if (this.hasParentItemConf()
+					&& this.getPrimaryKey().equals(this.getParentJdbcPrimaryDataSource().getPrimaryKey())) {
 				this.setJoinFields(new ArrayList<>());
 
-				String srcField = this.getParentSrcConf().getTableAlias() + "."
+				String srcField = this.getParentJdbcPrimaryDataSource().getTableAlias() + "."
 						+ this.getPrimaryKey().asSimpleKey().getName();
 
 				EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(this.getRelatedEtlConf(), null, conn);
@@ -466,10 +467,10 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		}
 	}
 
-	@SuppressWarnings("deprecation")
-	public JdbcTablePrimaryDataSourceConfiguration getParentSrcConf() {
+	public JdbcTablePrimaryDataSourceConfiguration getParentJdbcPrimaryDataSource() {
 		if (hasParentItemConf()) {
-			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
+			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf()
+					.requireJdbcPrimaryDataSource();
 		}
 
 		return null;
@@ -548,7 +549,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 			return parentSource.getAvailableAdditionalDataSources();
 
 		if (!this.isInitialized())
-			throw new EtlExceptionImpl("The SrcConf is not yet initialized!! ");
+			throw new EtlExceptionImpl("The JDBC primary data source is not yet initialized!! ");
 
 		List<EtlAdditionalDataSource> ds = new ArrayList<>();
 
@@ -582,7 +583,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		}
 
 		if (hasParentItemConf()) {
-			List<EtlAdditionalDataSource> allP = this.getParentSrcConf().getAvaliableExtraDataSource();
+			List<EtlAdditionalDataSource> allP = this.getParentJdbcPrimaryDataSource().getAvaliableExtraDataSource();
 
 			if (allP != null) {
 				ds.addAll(allP);
@@ -593,7 +594,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	}
 
 	/**
-	 * Generate all avaliable fields on this srcConf, this fields will include all
+	 * Generate all available fields on this JDBC primary data source, including all
 	 * field from {@link #getFields()} and the fields from all
 	 * {@link #extraTableDataSource} Note that the duplicated fields will only be
 	 * included once
@@ -864,10 +865,12 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	@Override
 	public TableConfiguration getJoiningEntity() {
 		if (!isJoinable()) {
-			throw new ForbiddenOperationException("Only a srcConf with a child EtlItemConf can have a joining entity");
+			throw new ForbiddenOperationException(
+					"Only a JDBC primary data source belonging to a child ETL item can have a joining entity");
 		}
 
-		return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
+		return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf()
+				.requireJdbcPrimaryDataSource();
 	}
 
 	@Override
@@ -918,15 +921,15 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		return this;
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public MainJoiningEntity getMainExtractTable() {
 		if (!isJoinable()) {
 			throw new ForbiddenOperationException(
-					"Only a srcConf with a child EtlItemConf can have a mainExtractTable");
+					"Only a JDBC primary data source belonging to a child ETL item can have a mainExtractTable");
 		}
 
-		return getParentConf().getSrcConf();
+		return ((EtlChildItemConfiguration) getParentConf()).getParentItemConf()
+				.requireJdbcPrimaryDataSource();
 	}
 
 	@Override

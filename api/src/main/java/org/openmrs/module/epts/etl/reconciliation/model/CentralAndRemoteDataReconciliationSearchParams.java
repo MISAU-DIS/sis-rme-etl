@@ -117,8 +117,8 @@ public class CentralAndRemoteDataReconciliationSearchParams extends AbstractEtlS
 		 * searchClauses.addToParameters(this.getLimits().getCurrentFirstRecordId());
 		 * searchClauses.addToParameters(this.getLimits().getCurrentLastRecordId()); }
 		 * 
-		 * if (this.getConfig().getSrcConf().getExtraConditionForExtract() != null) {
-		 * searchClauses.addToClauses(this.getConfig().getSrcConf().
+		 * if (this.getConfig().requireJdbcPrimaryDataSource().getExtraConditionForExtract() != null) {
+		 * searchClauses.addToClauses(this.getConfig().requireJdbcPrimaryDataSource().
 		 * getExtraConditionForExtract()); } }
 		 * 
 		 * return searchClauses;

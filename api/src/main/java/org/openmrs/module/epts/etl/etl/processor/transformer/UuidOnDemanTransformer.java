@@ -282,7 +282,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					this.defaultSrcConf = JdbcTablePrimaryDataSourceConfiguration.fastCreate(defaultTable, itemConf, srcConn);
 
 					this.defaultSrcConf.setTableAlias(defaultTable.getTableName() + "_for_on_demand_uuid_within_"
-							+ itemConf.getSrcConf().getTableAlias());
+							+ itemConf.requireJdbcPrimaryDataSource().getTableAlias());
 
 					this.defaultSrcConf.setDoNotLoadJoiningFields(true);
 

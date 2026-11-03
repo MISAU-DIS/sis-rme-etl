@@ -316,10 +316,12 @@ public class SyncImportInfoDAO extends BaseDAO {
 		String sql = "";
 		
 		sql += " SELECT * \n";
-		sql += " FROM  	" + searchParams.getConfig().getSrcConf().generateFullSrcStageTableName() + "\n";
+		sql += " FROM  	" + searchParams.getConfig().requireJdbcPrimaryDataSource().generateFullSrcStageTableName()
+				+ "\n";
 		sql += " WHERE 	id = \n";
 		sql += " 			 (	SELECT " + function + "(id)\n";
-		sql += "				FROM   " + searchParams.getConfig().getSrcConf().generateFullSrcStageTableName();
+		sql += "				FROM   "
+				+ searchParams.getConfig().requireJdbcPrimaryDataSource().generateFullSrcStageTableName();
 		sql += "				WHERE " + extraCondition + ")";
 		
 		return find(EtlStageRecordVO.class, sql, params, conn);
