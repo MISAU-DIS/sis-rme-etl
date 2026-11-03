@@ -17,7 +17,10 @@ import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** Converts one raw JSON record into the main ETL object and its auxiliary objects. */
+/**
+ * Converts one raw JSON record into the main ETL object and its auxiliary
+ * objects.
+ */
 public final class JsonRecordParser {
 
 	private final JsonPrimaryDataSourceConfiguration primaryConfiguration;
@@ -34,13 +37,15 @@ public final class JsonRecordParser {
 	}
 
 	public EtlDatabaseObject parse(JsonNode recordNode, String recordDescription) {
+
 		if (recordNode == null || !recordNode.isObject()) {
 			throw new EtlConfException("Expected one JSON object at " + recordDescription);
 		}
 
 		Set<String> structuralFields = new HashSet<>();
-		
+
 		if (!extraDataSources.isEmpty()) {
+
 			for (JsonRecordDataSourceConfiguration extra : extraDataSources) {
 				structuralFields.add(firstPathSegment(extra.getPath()));
 			}
@@ -48,23 +53,26 @@ public final class JsonRecordParser {
 
 		GenericDatabaseObject primary = parseObject(recordNode, primaryConfiguration.getFields(), structuralFields,
 				primaryConfiguration, recordDescription);
-		
+
 		List<EtlDatabaseObject> auxiliary = new ArrayList<>();
-		
+
 		if (!extraDataSources.isEmpty()) {
+
 			for (JsonRecordDataSourceConfiguration extra : extraDataSources) {
 				parseExtra(recordNode, extra, auxiliary, recordDescription);
 			}
 		}
 		primary.setAuxLoadObject(auxiliary);
-		
+
 		return primary;
 	}
 
 	private void parseExtra(JsonNode recordNode, JsonRecordDataSourceConfiguration configuration,
 			List<EtlDatabaseObject> target, String recordDescription) {
 		JsonNode selected = select(recordNode, configuration.getPath());
+
 		if (selected == null || selected.isMissingNode() || selected.isNull()) {
+
 			if (configuration.isRequired()) {
 				throw new EtlConfException("Required JSON data source '" + configuration.getName()
 						+ "' was not found at path '" + configuration.getPath() + "' in " + recordDescription);
@@ -73,21 +81,23 @@ public final class JsonRecordParser {
 		}
 
 		if (configuration.getCardinality() == JsonRecordCardinality.MANY) {
+
 			if (!selected.isArray()) {
 				throw new EtlConfException("JSON data source '" + configuration.getName()
 						+ "' expects an array at path '" + configuration.getPath() + "'");
 			}
 			int index = 0;
+
 			for (JsonNode child : selected) {
-				target.add(parseObject(child, configuration.getFields(), java.util.Collections.emptySet(), configuration,
-						recordDescription + configuration.getPath() + "[" + index++ + "]"));
+				target.add(parseObject(child, configuration.getFields(), java.util.Collections.emptySet(),
+						configuration, recordDescription + configuration.getPath() + "[" + index++ + "]"));
 			}
 			return;
 		}
 
 		if (!selected.isObject()) {
-			throw new EtlConfException("JSON data source '" + configuration.getName()
-					+ "' expects an object at path '" + configuration.getPath() + "'");
+			throw new EtlConfException("JSON data source '" + configuration.getName() + "' expects an object at path '"
+					+ configuration.getPath() + "'");
 		}
 		target.add(parseObject(selected, configuration.getFields(), java.util.Collections.emptySet(), configuration,
 				recordDescription + configuration.getPath()));
@@ -96,26 +106,34 @@ public final class JsonRecordParser {
 	private GenericDatabaseObject parseObject(JsonNode node, List<Field> fields, Set<String> ignoredStructuralFields,
 			org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration configuration,
 			String description) {
+
 		if (node == null || !node.isObject()) {
 			throw new EtlConfException("Expected JSON object at " + description);
 		}
+
 		Set<String> knownFields = new HashSet<>();
+
 		for (Field field : fields) {
 			knownFields.add(field.getName());
 		}
 		Iterator<String> names = node.fieldNames();
+
 		while (names.hasNext()) {
 			String name = names.next();
+
 			if (!knownFields.contains(name) && !ignoredStructuralFields.contains(name)) {
 				throw new EtlConfException("Unknown JSON field '" + name + "' at " + description);
 			}
 		}
 
 		GenericDatabaseObject object = new GenericDatabaseObject(configuration);
+
 		for (Field field : fields) {
 			JsonNode value = node.get(field.getName());
+
 			if ((value == null || value.isNull()) && !field.allowNull()) {
-				throw new EtlConfException("Required JSON field '" + field.getName() + "' is missing at " + description);
+				throw new EtlConfException(
+						"Required JSON field '" + field.getName() + "' is missing at " + description);
 			}
 			Object converted = value == null || value.isNull() ? null
 					: field.getTypeClass() == null ? mapper.convertValue(value, Object.class)
@@ -126,10 +144,12 @@ public final class JsonRecordParser {
 	}
 
 	public static JsonNode select(JsonNode root, String pointer) {
+
 		if (root == null || pointer == null || pointer.trim().isEmpty() || "/".equals(pointer.trim())) {
 			return root;
 		}
 		String normalized = pointer.trim();
+
 		if (!normalized.startsWith("/")) {
 			throw new EtlConfException("JSON path must use JSON Pointer syntax and start with '/': " + pointer);
 		}
@@ -137,12 +157,12 @@ public final class JsonRecordParser {
 	}
 
 	private String firstPathSegment(String pointer) {
+
 		if (pointer == null || pointer.trim().isEmpty() || "/".equals(pointer.trim())) {
 			throw new EtlConfException("An extraJsonRecordDataSource path must identify a child node");
 		}
 		String normalized = pointer.startsWith("/") ? pointer.substring(1) : pointer;
 		int separator = normalized.indexOf('/');
-		return (separator < 0 ? normalized : normalized.substring(0, separator)).replace("~1", "/")
-				.replace("~0", "~");
+		return (separator < 0 ? normalized : normalized.substring(0, separator)).replace("~1", "/").replace("~0", "~");
 	}
 }

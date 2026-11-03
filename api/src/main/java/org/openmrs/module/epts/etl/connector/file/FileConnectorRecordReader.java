@@ -55,8 +55,10 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 	}
 
 	private JsonRecordParser createJsonRecordParser(PrimaryDataSourceConfiguration configuration) {
-		if (!(configuration instanceof JsonPrimaryDataSourceConfiguration))
+
+		if (!(configuration instanceof JsonPrimaryDataSourceConfiguration)) {
 			return null;
+		}
 		List<JsonRecordDataSourceConfiguration> extras = configuration.getParentSource() == null
 				? java.util.Collections.emptyList()
 				: configuration.getParentSource().getExtraJsonRecordDataSource();
@@ -77,32 +79,40 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 
 		if (resourceConfiguration.jsonLayout() != JsonRecordLayout.JSON_LINES) {
 			return readJsonDocument(request);
-		}
+		} else {
+			IntervalExtremeRecord interval = request.getInterval();
 
-		IntervalExtremeRecord interval = request.getInterval();
-		long firstLine = interval == null ? 1 : Math.max(1, interval.getMinRecordId());
-		long lastLine = interval == null ? Long.MAX_VALUE : interval.getMaxRecordId();
-		List<T> records = new ArrayList<>();
+			long firstLine = interval == null ? 1 : Math.max(1, interval.getMinRecordId());
+			long lastLine = interval == null ? Long.MAX_VALUE : interval.getMaxRecordId();
 
-		try (BufferedReader input = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-			String line;
-			long lineNumber = 0;
+			List<T> records = new ArrayList<>();
 
-			while ((line = input.readLine()) != null) {
-				lineNumber++;
-				if (lineNumber < firstLine)
-					continue;
-				if (lineNumber > lastLine)
-					break;
-				if (line.trim().isEmpty())
-					throw new EtlConfException("Empty JSON record at line " + lineNumber + " of " + path);
-				JsonNode recordNode = JsonRecordParser.select(mapper.readTree(line),
-						resourceConfiguration.normalizedRecordPath());
-				records.add(parse(recordNode, "line " + lineNumber));
+			try (BufferedReader input = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+				String line;
+				long lineNumber = 0;
+
+				while ((line = input.readLine()) != null) {
+					lineNumber++;
+
+					if (lineNumber < firstLine) {
+						continue;
+					}
+
+					if (lineNumber > lastLine) {
+						break;
+					}
+
+					if (line.trim().isEmpty()) {
+						throw new EtlConfException("Empty JSON record at line " + lineNumber + " of " + path);
+					}
+					JsonNode recordNode = JsonRecordParser.select(mapper.readTree(line),
+							resourceConfiguration.normalizedRecordPath());
+					records.add(parse(recordNode, "line " + lineNumber));
+				}
+				return records;
+			} catch (IOException e) {
+				throw new FileConnectorReadException("Unable to read source resource " + path, e);
 			}
-			return records;
-		} catch (IOException e) {
-			throw new FileConnectorReadException("Unable to read source resource " + path, e);
 		}
 	}
 
@@ -149,7 +159,7 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 		if (jsonRecordParser == null) {
 			throw new EtlConfException("FILE JSON reading requires source.jsonDataSource");
 		}
-		
+
 		return (T) jsonRecordParser.parse(document, recordDescription + " of " + path);
 	}
 
@@ -164,10 +174,14 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 				JsonNode selected = JsonRecordParser.select(
 						mapper.readTree(Files.readString(path, StandardCharsets.UTF_8)),
 						sourceResource.normalizedRecordPath());
-				if (selected == null || selected.isMissingNode())
+
+				if (selected == null || selected.isMissingNode()) {
 					return 0;
-				if (sourceResource.jsonLayout() == JsonRecordLayout.ARRAY)
+				}
+
+				if (sourceResource.jsonLayout() == JsonRecordLayout.ARRAY) {
 					return selected.isArray() ? selected.size() : 0;
+				}
 				return selected.isObject() ? 1 : 0;
 			} catch (IOException e) {
 				throw new FileConnectorReadException("Unable to count source records in " + path, e);
@@ -194,10 +208,14 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 
 	@Override
 	public <N> N unwrap(Class<N> nativeType) {
-		if (nativeType != null && nativeType.isInstance(path))
+
+		if (nativeType != null && nativeType.isInstance(path)) {
 			return nativeType.cast(path);
-		if (nativeType != null && nativeType.isInstance(supportingConnection))
+		}
+
+		if (nativeType != null && nativeType.isInstance(supportingConnection)) {
 			return nativeType.cast(supportingConnection);
+		}
 		throw new IllegalArgumentException(
 				"FILE reader cannot be unwrapped as " + (nativeType == null ? "null" : nativeType.getName()));
 	}
