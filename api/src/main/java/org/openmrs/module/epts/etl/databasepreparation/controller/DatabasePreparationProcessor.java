@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.databasepreparation.model.DatabasePreparationRecord;
@@ -27,7 +27,7 @@ public class DatabasePreparationProcessor extends org.openmrs.module.epts.etl.pr
 	private boolean done;
 
 	/** JDBC datasource representing the current item on the ETL database. */
-	public JdbcDataSource getEtlDatabaseDataSource() {
+	public JdbcTablePrimaryDataSourceConfiguration getEtlDatabaseDataSource() {
 		return getEtlItemConfiguration().getEtlDatabaseDataSource();
 	}
 

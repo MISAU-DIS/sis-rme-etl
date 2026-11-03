@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
@@ -24,7 +24,7 @@ class EtlItemSourceCompatibilityTest {
 				"\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"}," +
 				"\"limitToOneResult\":true,\"trackProcessingState\":true," +
 				"\"extraTableDataSource\":[{\"tableName\":\"person\"}]}}" );
-		JdbcDataSource legacySource = item.getSrcConf();
+		JdbcTablePrimaryDataSourceConfiguration legacySource = item.getSrcConf();
 
 		item.prepareSourceConfiguration();
 

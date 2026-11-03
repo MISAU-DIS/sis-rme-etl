@@ -16,7 +16,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
@@ -258,7 +258,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return getProgressMeter().getMaxRecordId();
 	}
 
-	public JdbcDataSource getJdbcPrimaryDataSource() {
+	public JdbcTablePrimaryDataSourceConfiguration getJdbcPrimaryDataSource() {
 		return this.getEtlItemConfiguration().requireJdbcPrimaryDataSource();
 	}
 

@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
@@ -40,7 +40,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
 			Connection dstConn) throws DBException {
 
-		JdbcDataSource srcConfig = this.getJdbcPrimaryDataSource();
+		JdbcTablePrimaryDataSourceConfiguration srcConfig = this.getJdbcPrimaryDataSource();
 
 		AuxQueryInfo auxQueryInfo = new AuxQueryInfo(new SearchClauses<EtlDatabaseObject>(this));
 
@@ -103,7 +103,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 			List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
 			throws ForbiddenOperationException, DBException {
 
-		JdbcDataSource srcConfig = this.getJdbcPrimaryDataSource();
+		JdbcTablePrimaryDataSourceConfiguration srcConfig = this.getJdbcPrimaryDataSource();
 
 		SearchClauses<EtlDatabaseObject> searchClauses = queryInfo.getSearchClauses();
 		String clauseFrom = queryInfo.getClauseFrom();

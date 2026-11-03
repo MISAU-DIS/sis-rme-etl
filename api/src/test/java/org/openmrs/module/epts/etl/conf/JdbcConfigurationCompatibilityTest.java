@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
@@ -45,7 +45,7 @@ class JdbcConfigurationCompatibilityTest {
 
 	@Test
 	void shouldKeepTableNameAsTheConfiguredJdbcResourceName() throws Exception {
-		JdbcDataSource source = mapper.readValue("{\"tableName\":\"patient\"}", JdbcDataSource.class);
+		JdbcTablePrimaryDataSourceConfiguration source = mapper.readValue("{\"tableName\":\"patient\"}", JdbcTablePrimaryDataSourceConfiguration.class);
 		DstConf destination = mapper.readValue("{\"tableName\":\"patient_stage\"}", DstConf.class);
 
 		assertEquals("patient", source.getTableName());

@@ -15,7 +15,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
@@ -60,8 +60,8 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		this.searchSourceType = SearchSourceType.SOURCE;
 		this.primaryDataSource = primaryDataSource;
 
-		if (primaryDataSource instanceof JdbcDataSource) {
-			this.setQueryOrderingInfo(((JdbcDataSource) primaryDataSource).getQueryOrderingInfo());
+		if (primaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			this.setQueryOrderingInfo(((JdbcTablePrimaryDataSourceConfiguration) primaryDataSource).getQueryOrderingInfo());
 		}
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
@@ -157,7 +157,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	public void tryToAddExtraJoinExtraConditions(SearchClauses<T> searchClauses, T parentObject,
 			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
 
-		JdbcDataSource jdbcSource = getJdbcPrimaryDataSource();
+		JdbcTablePrimaryDataSourceConfiguration jdbcSource = getJdbcPrimaryDataSource();
 
 		if (!jdbcSource.isJoinable()) {
 			return;
@@ -206,12 +206,12 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		return primaryDataSource;
 	}
 
-	public JdbcDataSource getJdbcPrimaryDataSource() {
+	public JdbcTablePrimaryDataSourceConfiguration getJdbcPrimaryDataSource() {
 		return getPrimaryDataSource().requireJdbc();
 	}
 
 	@Deprecated
-	public void setSrcConf(JdbcDataSource srcConf) {
+	public void setSrcConf(JdbcTablePrimaryDataSourceConfiguration srcConf) {
 		this.primaryDataSource = srcConf;
 	}
 

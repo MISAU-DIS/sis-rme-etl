@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -50,7 +50,7 @@ public class DetectMissingRecordsSearchParams extends EtlDatabaseObjectSearchPar
 			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
 			Connection dstConn) throws DBException {
 
-		JdbcDataSource srcConfig = this.getJdbcPrimaryDataSource();
+		JdbcTablePrimaryDataSourceConfiguration srcConfig = this.getJdbcPrimaryDataSource();
 
 		SearchClauses<EtlDatabaseObject> searchClauses = new SearchClauses<EtlDatabaseObject>(this);
 

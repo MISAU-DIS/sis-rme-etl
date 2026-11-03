@@ -12,11 +12,11 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * This class represent a table which can act as source of {@link JdbcDataSource} or
+ * This class represent a table which can act as source of {@link JdbcTablePrimaryDataSourceConfiguration} or
  * {@link DstConf}. This allow the dynamic configuration of
  * {@link EtlItemConfiguration}
  */
-public class EtlItemSrcConf extends JdbcDataSource {
+public class EtlItemSrcConf extends JdbcTablePrimaryDataSourceConfiguration {
 
 	private List<AuxExtractTable> auxExtractTable;
 

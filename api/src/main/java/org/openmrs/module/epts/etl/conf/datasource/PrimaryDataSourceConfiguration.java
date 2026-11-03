@@ -89,15 +89,15 @@ public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcCon
 	}
 
 	default boolean isJdbc() {
-		return this instanceof JdbcDataSource;
+		return this instanceof JdbcTablePrimaryDataSourceConfiguration;
 	}
 
-	default JdbcDataSource requireJdbc() throws RequireJdbcException {
+	default JdbcTablePrimaryDataSourceConfiguration requireJdbc() throws RequireJdbcException {
 
-		if (!(this instanceof JdbcDataSource)) {
+		if (!(this instanceof JdbcTablePrimaryDataSourceConfiguration)) {
 			throw new RequireJdbcException("Primary data source '" + getObjectName() + "' is not JDBC-backed");
 		}
 
-		return (JdbcDataSource) this;
+		return (JdbcTablePrimaryDataSourceConfiguration) this;
 	}
 }

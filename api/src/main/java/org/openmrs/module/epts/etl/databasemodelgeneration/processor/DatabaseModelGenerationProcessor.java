@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -109,7 +109,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 	}
 
 	/** JDBC datasource representing the current item on the ETL database. */
-	public JdbcDataSource getEtlDatabaseDataSource() {
+	public JdbcTablePrimaryDataSourceConfiguration getEtlDatabaseDataSource() {
 		return getEtlItemConfiguration().getEtlDatabaseDataSource();
 	}
 
@@ -159,7 +159,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 					getRelatedEtlConfiguration().getDataModel(), srcConn);
 
 			PrimaryDataSourceConfiguration primarySource = item.getPrimaryDataSource();
-			if (!(primarySource instanceof JdbcDataSource) || !((JdbcDataSource) primarySource).doNotUseAsDatasource()) {
+			if (!(primarySource instanceof JdbcTablePrimaryDataSourceConfiguration) || !((JdbcTablePrimaryDataSourceConfiguration) primarySource).doNotUseAsDatasource()) {
 				generate(sourceContext, primarySource);
 
 				for (EtlAdditionalDataSource dataSource : item.getSource().getAvailableAdditionalDataSources()) {

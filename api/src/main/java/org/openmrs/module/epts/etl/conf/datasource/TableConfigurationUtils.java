@@ -13,10 +13,10 @@ public class TableConfigurationUtils {
 
 	public static List<EtlDataSource> retrieveAvaliableDataSourcesWithTable(TableConfiguration tab, Connection conn) {
 
-		JdbcDataSource srcConf = null;
+		JdbcTablePrimaryDataSourceConfiguration srcConf = null;
 
-		if (tab instanceof JdbcDataSource) {
-			srcConf = (JdbcDataSource) tab;
+		if (tab instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			srcConf = (JdbcTablePrimaryDataSourceConfiguration) tab;
 		} else if (tab instanceof DstConf) {
 			srcConf = ((DstConf) tab).getPrimaryDataSource().requireJdbc();
 		} else if (tab instanceof TableDataSourceConfig) {
@@ -27,8 +27,8 @@ public class TableConfigurationUtils {
 			return retrieveAvaliableDataSourcesWithTable(((RelatedTable) tab).getRelatedTabConf(), conn);
 		}
 
-		else if (tab.getParentConf() instanceof JdbcDataSource) {
-			srcConf = (JdbcDataSource) tab.getParentConf();
+		else if (tab.getParentConf() instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			srcConf = (JdbcTablePrimaryDataSourceConfiguration) tab.getParentConf();
 		}
 
 		if (srcConf != null) {
@@ -38,7 +38,7 @@ public class TableConfigurationUtils {
 		return null;
 	}
 
-	private static List<EtlDataSource> collectAllAvaliableDataSources(JdbcDataSource srcConf, Connection conn) {
+	private static List<EtlDataSource> collectAllAvaliableDataSources(JdbcTablePrimaryDataSourceConfiguration srcConf, Connection conn) {
 		return srcConf.getParentConf().collectAllAvaliableDataSources(conn);
 	}
 }

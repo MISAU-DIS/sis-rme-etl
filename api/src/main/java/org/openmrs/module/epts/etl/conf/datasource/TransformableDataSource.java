@@ -402,12 +402,12 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public JdbcDataSource getRelatedSrcConf() {
+	public JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf() {
 		return this.relatedPrimaryDataSource.requireJdbc();
 	}
 
 	@Override
-	public void setRelatedSrcConf(JdbcDataSource relatedSrcConf) {
+	public void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
 		this.relatedPrimaryDataSource = relatedSrcConf;
 	}
 
@@ -524,7 +524,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	public static List<TransformableDataSource> cloneAll(List<TransformableDataSource> allToCloneFrom,
-			JdbcDataSource relatedSrcConf, Connection conn) throws DBException {
+			JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, Connection conn) throws DBException {
 
 		List<TransformableDataSource> allCloned = null;
 
@@ -542,7 +542,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		return allCloned;
 	}
 
-	public void clone(TransformableDataSource toCloneFrom, JdbcDataSource relatedSrcConf, Connection conn) throws DBException {
+	public void clone(TransformableDataSource toCloneFrom, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, Connection conn) throws DBException {
 		this.setName(toCloneFrom.getName());
 		this.setRelatedSrcConf(relatedSrcConf);
 		this.setRequired(toCloneFrom.isRequired());

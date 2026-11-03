@@ -47,6 +47,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				dstConf, transformationType, srcConn);
 
 		try {
+
 			if (srcObjects == null || srcObjects.isEmpty()) {
 				return null;
 			}
@@ -162,8 +163,6 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs, Connection srcConn,
 			Connection dstConn) throws EtlTransformationException, DBException {
 
-		dstConf.stepIntoBreakpoint(null, dstConf.getTableName().contains("orders"));
-
 		if (!dstConf.useSharedPKKey()) {
 			return resolveNonSharedPrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
 					availableSrcObjs, srcConn, dstConn);
@@ -276,6 +275,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				}
 
 			} catch (FieldsMappingException e) {
+
 				try {
 					fkMapping = FieldsMapping.fastCreate(dstConf, fkField.getName(),
 							migratedDstParent.getRelatedConfiguration().getAlias(),
@@ -327,7 +327,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
 
 		for (FieldsMapping fieldsMapping : dstConf.getAllMapping()) {
+
 			if (!fieldsMapping.getDstField().equals(dstConf.getPrimaryKey().asSimpleKey().getName())) {
+
 				if (fieldsMapping.shouldBeProcessed(srcObject, srcObjects, srcConn, dstConn)) {
 					dstConf.getRelatedEtlConf().trace("Transforming field " + fieldsMapping);
 
@@ -343,6 +345,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private void collectToSrcObjects(EtlDatabaseObject toCollectFrom, Set<EtlDatabaseObject> srcObjects) {
+
 		if (toCollectFrom != null && toCollectFrom.collactable()) {
 			Set<EtlDatabaseObject> avaliable = toCollectFrom.collectAllAvaliableSrcObjects();
 
@@ -361,6 +364,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					.getRelatedConfiguration();
 
 			if (!srcConf.doNotUseAsDatasource()) {
+
 				for (EtlAdditionalDataSource ds : srcConf.getParentSource().getAvailableAdditionalDataSources()) {
 
 					List<EtlDatabaseObject> avaliableObjects = srcObjects.stream()

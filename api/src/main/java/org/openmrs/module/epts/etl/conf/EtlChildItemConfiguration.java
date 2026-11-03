@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -309,7 +309,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 		EtlChildItemConfiguration etl = new EtlChildItemConfiguration();
 
-		JdbcDataSource src = JdbcDataSource.fastCreate(tableConfig, etl, conn);
+		JdbcTablePrimaryDataSourceConfiguration src = JdbcTablePrimaryDataSourceConfiguration.fastCreate(tableConfig, etl, conn);
 
 		etl.setSrcConf(src);
 

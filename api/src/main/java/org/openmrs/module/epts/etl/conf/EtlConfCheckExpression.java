@@ -1,6 +1,6 @@
 package org.openmrs.module.epts.etl.conf;
 
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -115,7 +115,7 @@ public class EtlConfCheckExpression {
 	}
 
 	private EtlDataSource tryToLocateDsWithinSrcConf(EtlDataSource ds) {
-		JdbcDataSource srcConf = null;
+		JdbcTablePrimaryDataSourceConfiguration srcConf = null;
 
 		if (ds instanceof DstConf) {
 			EtlDataSource ds1 = ((DstConf) ds).findDataSource(this.confName);
@@ -127,8 +127,8 @@ public class EtlConfCheckExpression {
 
 		if (ds instanceof EtlAdditionalDataSource) {
 			srcConf = ((EtlAdditionalDataSource) ds).getRelatedSrcConf();
-		} else if (ds instanceof JdbcDataSource) {
-			srcConf = (JdbcDataSource) ds;
+		} else if (ds instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			srcConf = (JdbcTablePrimaryDataSourceConfiguration) ds;
 		} else if (ds instanceof DstConf) {
 			srcConf = ((DstConf) ds).getPrimaryDataSource().requireJdbc();
 		}

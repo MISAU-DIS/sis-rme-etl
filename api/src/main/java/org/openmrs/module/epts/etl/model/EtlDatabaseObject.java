@@ -15,7 +15,7 @@ import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
@@ -598,7 +598,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	default EtlDatabaseObject retrieveParentInSrcUsingDstParentInfo(ParentTable refInfo,
 			PrimaryDataSourceConfiguration primarySource,
 			Connection srcConn) throws DBException {
-		JdbcDataSource src = primarySource.requireJdbc();
+		JdbcTablePrimaryDataSourceConfiguration src = primarySource.requireJdbc();
 
 		Oid prentOid = refInfo.generateParentOidFromChild(this);
 
@@ -1081,7 +1081,7 @@ public interface EtlDatabaseObject extends EtlObject {
 			throws EtlConfException, DBException {
 		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) processedRec
 		        .getRelatedEtlObject().getRelatedConfiguration();
-		JdbcDataSource srcConf = primarySource.requireJdbc();
+		JdbcTablePrimaryDataSourceConfiguration srcConf = primarySource.requireJdbc();
 
 		if (!srcConf.isTrackabled()) {
 			throw new EtlConfException("The table " + this + " is not trackable!!");
@@ -1100,7 +1100,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		if (!primarySource.isJdbc())
 			return false;
 
-		JdbcDataSource srcConf = primarySource.requireJdbc();
+		JdbcTablePrimaryDataSourceConfiguration srcConf = primarySource.requireJdbc();
 
 		return srcConf.isTrackabled();
 	}
@@ -1115,7 +1115,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) this.getRelatedConfiguration();
-		JdbcDataSource srcConf = primarySource.requireJdbc();
+		JdbcTablePrimaryDataSourceConfiguration srcConf = primarySource.requireJdbc();
 
 		srcConf.changeObjectStatus(this, status, srcConn);
 

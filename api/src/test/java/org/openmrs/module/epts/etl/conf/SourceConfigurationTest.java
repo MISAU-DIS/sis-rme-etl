@@ -49,7 +49,7 @@ class SourceConfigurationTest {
 
 		source.initialize(new EtlItemConfiguration());
 
-		assertTrue(source.getPrimaryDataSource() instanceof org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource);
+		assertTrue(source.getPrimaryDataSource() instanceof org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration);
 		assertSame(source, source.getPrimaryDataSource().getParentSource());
 		assertEquals("source-db", source.getConnector());
 		assertEquals("patient", source.getPrimaryDataSource().getResourceName());

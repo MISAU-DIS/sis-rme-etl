@@ -1,0 +1,8 @@
+{
+  "formatVersion" : 2,
+  "entries" : [ {
+    "metadataKey" : "testing_etl_dst|||.person_data",
+    "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_dst.PersonDataVO",
+    "metadataFingerprint" : "501ebcec1ac6f75cf60220f5e15cb4d6ef906bd4af1a6386e521e5f98b078e68"
+  } ]
+}

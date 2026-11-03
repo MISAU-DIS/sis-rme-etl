@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -33,7 +33,7 @@ public class SearchParamsDAO extends BaseDAO {
 		int bkpQtyRecsPerSelect = searchClauses.getSearchParameters().getQtdRecordPerSelected();
 		searchClauses.getSearchParameters().setQtdRecordPerSelected(0);
 
-		JdbcDataSource tabConf = parametros.getJdbcPrimaryDataSource();
+		JdbcTablePrimaryDataSourceConfiguration tabConf = parametros.getJdbcPrimaryDataSource();
 
 		String bkpColumnsToSelect = searchClauses.getColumnsToSelect();
 		EtlQueryOrderingInfo bkpOrderBy = parametros.getQueryOrderingInfo();

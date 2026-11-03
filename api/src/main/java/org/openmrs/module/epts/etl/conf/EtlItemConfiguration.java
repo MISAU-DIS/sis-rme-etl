@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceProcessingPolicy;
@@ -62,7 +62,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private EtlItemSrcConf etlItemSrcConf;
 
-	private JdbcDataSource srcConf;
+	private JdbcTablePrimaryDataSourceConfiguration srcConf;
 
 	private SourceConfiguration source;
 
@@ -72,7 +72,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	 * created from {@link EtlConfiguration#getSrcConnInfo()}.
 	 */
 	@JsonIgnore
-	private transient JdbcDataSource etlDatabaseDataSource;
+	private transient JdbcTablePrimaryDataSourceConfiguration etlDatabaseDataSource;
 
 	private List<DstConf> dstConf;
 
@@ -225,11 +225,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	@Deprecated
-	public JdbcDataSource getSrcConf() {
+	public JdbcTablePrimaryDataSourceConfiguration getSrcConf() {
 		return srcConf;
 	}
 
-	public void setSrcConf(JdbcDataSource srcConf) {
+	public void setSrcConf(JdbcTablePrimaryDataSourceConfiguration srcConf) {
 		this.srcConf = srcConf;
 	}
 
@@ -291,8 +291,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		this.source.initialize(this);
 
-		if (source.getPrimaryDataSource() instanceof JdbcDataSource) {
-			this.srcConf = (JdbcDataSource) source.getPrimaryDataSource();
+		if (source.getPrimaryDataSource() instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			this.srcConf = (JdbcTablePrimaryDataSourceConfiguration) source.getPrimaryDataSource();
 
 			synchronizeLegacyJdbcSourceView();
 		} else {
@@ -335,7 +335,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	 * datasource, which may be JSON, CSV or use another JDBC connector.
 	 */
 	@JsonIgnore
-	public synchronized JdbcDataSource getEtlDatabaseDataSource() {
+	public synchronized JdbcTablePrimaryDataSourceConfiguration getEtlDatabaseDataSource() {
 
 		if (etlDatabaseDataSource == null) {
 			etlDatabaseDataSource = createEtlDatabaseDataSource();
@@ -343,7 +343,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return etlDatabaseDataSource;
 	}
 
-	private JdbcDataSource createEtlDatabaseDataSource() {
+	private JdbcTablePrimaryDataSourceConfiguration createEtlDatabaseDataSource() {
 
 		prepareSourceConfiguration();
 
@@ -354,13 +354,13 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		PrimaryDataSourceConfiguration primary = getPrimaryDataSource();
 
-		if (primary instanceof JdbcDataSource && primary.getParentConf() == null) {
+		if (primary instanceof JdbcTablePrimaryDataSourceConfiguration && primary.getParentConf() == null) {
 			primary.setParentConf(this);
 		}
 
-		JdbcDataSource jdbc = new JdbcDataSource();
+		JdbcTablePrimaryDataSourceConfiguration jdbc = new JdbcTablePrimaryDataSourceConfiguration();
 
-		String tableName = primary instanceof JdbcDataSource ? ((JdbcDataSource) primary).getTableName()
+		String tableName = primary instanceof JdbcTablePrimaryDataSourceConfiguration ? ((JdbcTablePrimaryDataSourceConfiguration) primary).getTableName()
 				: primary.getName();
 
 		if (!utilities.stringHasValue(tableName)) {
@@ -381,8 +381,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		jdbc.setParentConf(this);
 		jdbc.setParentSource(source);
 
-		if (primary instanceof JdbcDataSource) {
-			JdbcDataSource configuredJdbc = (JdbcDataSource) primary;
+		if (primary instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			JdbcTablePrimaryDataSourceConfiguration configuredJdbc = (JdbcTablePrimaryDataSourceConfiguration) primary;
 			jdbc.setDoNotUseAsDatasource(configuredJdbc.getDoNotUseAsDatasource());
 			jdbc.setEtlFields(configuredJdbc.getEtlFields());
 		}
@@ -431,7 +431,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	public JdbcDataSource requireJdbcPrimaryDataSource() {
+	public JdbcTablePrimaryDataSourceConfiguration requireJdbcPrimaryDataSource() {
 		return getPrimaryDataSource().requireJdbc();
 	}
 
@@ -582,7 +582,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	/** Creates the writer scope used by processors that persist on the ETL database. */
 	public ConnectorRecordWriters createEtlDatabaseWriters(BaseConfiguration openedFrom) throws DBException {
-		JdbcDataSource dataSource = getEtlDatabaseDataSource();
+		JdbcTablePrimaryDataSourceConfiguration dataSource = getEtlDatabaseDataSource();
 		ConnectorEndpoint endpoint = dataSource.getResolvedResource().getEndpoint();
 		ConnectorResource resource = ConnectorConfigurationResolver.resolveResource(null, dataSource,
 				ConnectorDirection.DESTINATION, endpoint);
@@ -672,7 +672,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		ConnectorEndpoint endpoint = selectConnector(registry, source.getConnector(), ConnectorDirection.SOURCE,
-				source.getConnector() == null && primary instanceof JdbcDataSource);
+				source.getConnector() == null && primary instanceof JdbcTablePrimaryDataSourceConfiguration);
 
 		TableConfiguration legacyTable = primary instanceof TableConfiguration ? (TableConfiguration) primary : null;
 
@@ -759,10 +759,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		EtlItemConfiguration etl = new EtlItemConfiguration();
 
-		if (tableConfig instanceof JdbcDataSource) {
-			etl.setSrcConf((JdbcDataSource) tableConfig);
+		if (tableConfig instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			etl.setSrcConf((JdbcTablePrimaryDataSourceConfiguration) tableConfig);
 		} else {
-			JdbcDataSource src = JdbcDataSource.fastCreate(tableConfig, etl, conn);
+			JdbcTablePrimaryDataSourceConfiguration src = JdbcTablePrimaryDataSourceConfiguration.fastCreate(tableConfig, etl, conn);
 
 			etl.setSrcConf(src);
 		}
@@ -1003,8 +1003,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
 
-		JdbcDataSource jdbcSource = getPrimaryDataSource() instanceof JdbcDataSource
-				? (JdbcDataSource) getPrimaryDataSource()
+		JdbcTablePrimaryDataSourceConfiguration jdbcSource = getPrimaryDataSource() instanceof JdbcTablePrimaryDataSourceConfiguration
+				? (JdbcTablePrimaryDataSourceConfiguration) getPrimaryDataSource()
 				: null;
 
 		if (jdbcSource != null && !jdbcSource.hasDstType()) {
@@ -1290,7 +1290,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			item.setConfigCode(this.configCode);
 		}
 
-		item.setSrcConf(new JdbcDataSource());
+		item.setSrcConf(new JdbcTablePrimaryDataSourceConfiguration());
 		item.getSrcConf().copyFromOther(this.getSrcConf(), schemaInfoSrc, item, conn);
 
 		if (this.hasDstConf()) {
@@ -1312,7 +1312,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	public void copyFromOther(EtlItemConfiguration toCopyFrom, EtlConfiguration relatedEtlConf,
 			Boolean ignoreMissingParamsOnElements, Connection conn) throws DBException {
 
-		this.setSrcConf(new JdbcDataSource());
+		this.setSrcConf(new JdbcTablePrimaryDataSourceConfiguration());
 		this.setRelatedEtlConfig(relatedEtlConf);
 
 		this.getSrcConf().setIgnoreMissingParameters(ignoreMissingParamsOnElements);
@@ -1401,7 +1401,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		this.fullLoad(operationConfig, srcConn, destinationConnections);
 
-		JdbcDataSource etlDatabaseSource = this.getEtlDatabaseDataSource();
+		JdbcTablePrimaryDataSourceConfiguration etlDatabaseSource = this.getEtlDatabaseDataSource();
 
 		if (!etlDatabaseSource.doNotUseAsDatasource()) {
 			etlDatabaseSource.ensureEtlStageTableExists(counter, srcConn, null);
@@ -1431,17 +1431,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		PrimaryDataSourceConfiguration primary = this.getPrimaryDataSource();
 
 		if (primary instanceof EtlDataSource
-				&& (!(primary instanceof JdbcDataSource) || !((JdbcDataSource) primary).doNotUseAsDatasource())) {
+				&& (!(primary instanceof JdbcTablePrimaryDataSourceConfiguration) || !((JdbcTablePrimaryDataSourceConfiguration) primary).doNotUseAsDatasource())) {
 			ds.add(primary);
 			ds.addAll(this.getSource().getAvailableAdditionalDataSources());
 		}
 
-		if (primary instanceof JdbcDataSource && ((JdbcDataSource) primary).hasExpansionDs()) {
-			ds.add(((JdbcDataSource) primary).getExpansionDataSource());
+		if (primary instanceof JdbcTablePrimaryDataSourceConfiguration && ((JdbcTablePrimaryDataSourceConfiguration) primary).hasExpansionDs()) {
+			ds.add(((JdbcTablePrimaryDataSourceConfiguration) primary).getExpansionDataSource());
 		}
 
-		if (primary instanceof JdbcDataSource && ((JdbcDataSource) primary).hasAuxExtractTable()) {
-			ds.addAll(((JdbcDataSource) primary).getAuxExtractTable());
+		if (primary instanceof JdbcTablePrimaryDataSourceConfiguration && ((JdbcTablePrimaryDataSourceConfiguration) primary).hasAuxExtractTable()) {
+			ds.addAll(((JdbcTablePrimaryDataSourceConfiguration) primary).getAuxExtractTable());
 		}
 
 		return ds;

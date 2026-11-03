@@ -25,7 +25,7 @@ import org.openmrs.module.epts.etl.conf.SchemaMetadataLoadSource;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TableConfigurationUtils;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -2338,16 +2338,16 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		TableConfiguration found = null;
 
 		if (this instanceof TableDataSourceConfig) {
-			JdbcDataSource srcConf = ((TableDataSourceConfig) this).getRelatedSrcConf();
+			JdbcTablePrimaryDataSourceConfiguration srcConf = ((TableDataSourceConfig) this).getRelatedSrcConf();
 
 			found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf);
 
 			if (found == null && srcConf.hasParentItemConf()) {
 				found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf.getParentSrcConf());
 			}
-		} else if (this instanceof JdbcDataSource) {
-			if (((JdbcDataSource) this).hasParentItemConf()) {
-				found = retrieveConfiguredParentWithinTheSameSrcConf(table, ((JdbcDataSource) this).getParentSrcConf());
+		} else if (this instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			if (((JdbcTablePrimaryDataSourceConfiguration) this).hasParentItemConf()) {
+				found = retrieveConfiguredParentWithinTheSameSrcConf(table, ((JdbcTablePrimaryDataSourceConfiguration) this).getParentSrcConf());
 			}
 		}
 
@@ -2356,7 +2356,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	public static TableConfiguration retrieveConfiguredParentWithinTheSameSrcConf(TableConfiguration table,
-			JdbcDataSource srcConf) {
+			JdbcTablePrimaryDataSourceConfiguration srcConf) {
 
 		if (srcConf != null) {
 			if (srcConf.getTableName().equals(table.getTableName())) {
@@ -3217,10 +3217,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default long getExtremeRecord(Engine<? extends EtlDatabaseObject> engine, SqlFunctionType function, Connection conn)
 			throws DBException {
 
-		JdbcDataSource srcConf = null;
+		JdbcTablePrimaryDataSourceConfiguration srcConf = null;
 
-		if (this instanceof JdbcDataSource) {
-			srcConf = (JdbcDataSource) this;
+		if (this instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			srcConf = (JdbcTablePrimaryDataSourceConfiguration) this;
 		} else {
 			srcConf = this.cloneToSrcConf(engine.getEtlItemConfiguration(), conn);
 		}
@@ -3231,8 +3231,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	}
 
-	default JdbcDataSource cloneToSrcConf(EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
-		JdbcDataSource srcConf = new JdbcDataSource();
+	default JdbcTablePrimaryDataSourceConfiguration cloneToSrcConf(EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
+		JdbcTablePrimaryDataSourceConfiguration srcConf = new JdbcTablePrimaryDataSourceConfiguration();
 
 		srcConf.copyFromOther(this, null, relatedItemConf, conn);
 

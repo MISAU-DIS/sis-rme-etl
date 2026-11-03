@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -36,9 +36,9 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 	 * Gets the main source configuration associated with this additional data
 	 * source.
 	 *
-	 * @return the related {@link JdbcDataSource}
+	 * @return the related {@link JdbcTablePrimaryDataSourceConfiguration}
 	 */
-	JdbcDataSource getRelatedSrcConf();
+	JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf();
 
 	/**
 	 * Sets the main source configuration associated with this additional data
@@ -46,7 +46,7 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 	 *
 	 * @param relatedSrcConf the source configuration to associate
 	 */
-	void setRelatedSrcConf(JdbcDataSource relatedSrcConf);
+	void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf);
 
 	default PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
 		return getRelatedSrcConf();
