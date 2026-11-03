@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.connector.file;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.StandardCharsets;
@@ -27,6 +28,7 @@ import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.model.pojo.test_file.PatientVO;
 
 class FileConnectorRecordReaderTest {
 
@@ -63,6 +65,24 @@ class FileConnectorRecordReaderTest {
 				() -> reader.read(new ConnectorReadRequest<>(null, null, null, false)));
 
 		assertEquals(true, error.getMessage().contains("Unknown JSON field 'unexpected'"));
+	}
+
+	@Test
+	void shouldUseJacksonForPrecompiledRecordClass() throws Exception {
+		Files.write(directory.resolve("patients.jsonl"),
+				java.util.Collections.singletonList("{\"patient_id\":7,\"name\":\"Alice\"}"),
+				StandardCharsets.UTF_8);
+		PrimaryDataSourceConfiguration source = sourceConfiguration();
+		source.setEtlRecordClass(PatientVO.class);
+		FileConnectorRecordReader<EtlDatabaseObject> reader = new FileConnectorRecordReader<>(
+				resource("patients.jsonl"), source, null);
+
+		EtlDatabaseObject record = reader.read(new ConnectorReadRequest<>(null, null, null, false)).get(0);
+
+		assertEquals(PatientVO.class, record.getClass());
+		assertEquals(7, ((PatientVO) record).getPatientId());
+		assertEquals("Alice", ((PatientVO) record).getName());
+		assertSame(source, record.getRelatedConfiguration());
 	}
 
 	@Test

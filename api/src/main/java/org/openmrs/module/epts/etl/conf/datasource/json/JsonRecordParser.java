@@ -16,6 +16,8 @@ import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Converts one raw JSON record into the main ETL object and its auxiliary
@@ -27,6 +29,8 @@ public final class JsonRecordParser {
 
 	private final ObjectMapper mapper;
 
+	private final ObjectMapper nativePojoMapper;
+
 	private final List<JsonRecordDataSourceConfiguration> extraDataSources;
 
 	public JsonRecordParser(JsonPrimaryDataSourceConfiguration primaryConfiguration,
@@ -34,6 +38,7 @@ public final class JsonRecordParser {
 		this.primaryConfiguration = primaryConfiguration;
 		this.extraDataSources = extraDataSources == null ? java.util.Collections.emptyList() : extraDataSources;
 		this.mapper = mapper;
+		this.nativePojoMapper = mapper.copy().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
 	}
 
 	public EtlDatabaseObject parse(JsonNode recordNode, String recordDescription) {
@@ -51,7 +56,7 @@ public final class JsonRecordParser {
 			}
 		}
 
-		GenericDatabaseObject primary = parseObject(recordNode, primaryConfiguration.getFields(), structuralFields,
+		EtlDatabaseObject primary = parseObject(recordNode, primaryConfiguration.getFields(), structuralFields,
 				primaryConfiguration, recordDescription);
 
 		List<EtlDatabaseObject> auxiliary = new ArrayList<>();
@@ -103,7 +108,7 @@ public final class JsonRecordParser {
 				recordDescription + configuration.getPath()));
 	}
 
-	private GenericDatabaseObject parseObject(JsonNode node, List<Field> fields, Set<String> ignoredStructuralFields,
+	private EtlDatabaseObject parseObject(JsonNode node, List<Field> fields, Set<String> ignoredStructuralFields,
 			org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration configuration,
 			String description) {
 
@@ -116,6 +121,7 @@ public final class JsonRecordParser {
 		for (Field field : fields) {
 			knownFields.add(field.getName());
 		}
+
 		Iterator<String> names = node.fieldNames();
 
 		while (names.hasNext()) {
@@ -126,7 +132,33 @@ public final class JsonRecordParser {
 			}
 		}
 
+		validateRequiredFields(node, fields, description);
+
+		Class<? extends EtlDatabaseObject> recordClass = configuration.getEtlRecordClass();
+
+		if (recordClass == null) {
+			throw new EtlConfException("No ETL record class is available for " + configuration.getObjectName());
+		}
+
+		if (recordClass != GenericDatabaseObject.class) {
+			return parseNativePojo(node, ignoredStructuralFields, configuration, recordClass, description);
+		}
+
 		GenericDatabaseObject object = new GenericDatabaseObject(configuration);
+
+		for (Field field : fields) {
+			JsonNode value = node.get(field.getName());
+
+			Object converted = value == null || value.isNull() ? null
+					: field.getTypeClass() == null ? mapper.convertValue(value, Object.class)
+							: mapper.convertValue(value, field.getTypeClass());
+			object.setFieldValue(field.getName(), converted);
+		}
+
+		return object;
+	}
+
+	private void validateRequiredFields(JsonNode node, List<Field> fields, String description) {
 
 		for (Field field : fields) {
 			JsonNode value = node.get(field.getName());
@@ -135,12 +167,24 @@ public final class JsonRecordParser {
 				throw new EtlConfException(
 						"Required JSON field '" + field.getName() + "' is missing at " + description);
 			}
-			Object converted = value == null || value.isNull() ? null
-					: field.getTypeClass() == null ? mapper.convertValue(value, Object.class)
-							: mapper.convertValue(value, field.getTypeClass());
-			object.setFieldValue(field.getName(), converted);
 		}
-		return object;
+	}
+
+	private EtlDatabaseObject parseNativePojo(JsonNode node, Set<String> ignoredStructuralFields,
+			org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration configuration,
+			Class<? extends EtlDatabaseObject> recordClass, String description) {
+		ObjectNode pojoNode = ((ObjectNode) node).deepCopy();
+		ignoredStructuralFields.forEach(pojoNode::remove);
+
+		try {
+			EtlDatabaseObject object = nativePojoMapper.treeToValue(pojoNode, recordClass);
+			object.setRelatedConfiguration(configuration);
+			return object;
+		} catch (Exception exception) {
+			throw new EtlConfException(
+					"Could not deserialize " + recordClass.getName() + " from JSON object at " + description,
+					exception);
+		}
 	}
 
 	public static JsonNode select(JsonNode root, String pointer) {
