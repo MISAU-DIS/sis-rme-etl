@@ -18,6 +18,9 @@ import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
@@ -344,6 +347,41 @@ class EtlConnectorConfigurationTest {
 		initializeConnectors(configuration);
 
 		assertSame(stateConnection, configuration.getSrcConnInfo());
+	}
+
+	@Test
+	void shouldCreateEtlDatabaseDataSourceFromSrcConnInfoWithoutReplacingJsonPrimary() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		DBConnectionInfo stateConnection = new DBConnectionInfo();
+		stateConnection.setConnectionURI("jdbc:mysql://state/etl_state");
+		configuration.setSrcConnInfo(stateConnection);
+		initializeConnectors(configuration);
+
+		JsonPrimaryDataSourceConfiguration jsonPrimary = new JsonPrimaryDataSourceConfiguration();
+		jsonPrimary.setName("patient_event");
+		jsonPrimary.setFields(java.util.Collections
+				.singletonList(Field.fastCreateWithType("uuid", "java.lang.String")));
+		SourceResourceConfiguration resource = new SourceResourceConfiguration();
+		resource.setName("patients.json");
+		SourceConfiguration source = new SourceConfiguration();
+		source.setResource(resource);
+		source.setJsonDataSource(jsonPrimary);
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		item.setSource(source);
+		item.prepareSourceConfiguration();
+
+		JdbcDataSource etlDatabaseSource = item.getEtlDatabaseDataSource();
+
+		assertSame(jsonPrimary, item.getPrimaryDataSource());
+		assertNotSame(jsonPrimary, etlDatabaseSource);
+		assertEquals("patient_event", etlDatabaseSource.getTableName());
+		assertEquals("etl_state", etlDatabaseSource.getSchema());
+		assertEquals(ConnectorType.JDBC, etlDatabaseSource.getResolvedResource().getEndpoint().getType());
+		assertSame(stateConnection,
+				etlDatabaseSource.getResolvedResource().getEndpoint().unwrap(DBConnectionInfo.class));
+		assertEquals(1, etlDatabaseSource.getFields().size());
 	}
 
 	@Test

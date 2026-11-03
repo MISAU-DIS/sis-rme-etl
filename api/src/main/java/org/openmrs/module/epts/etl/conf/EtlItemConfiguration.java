@@ -11,11 +11,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceProcessingPolicy;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
@@ -44,6 +44,7 @@ import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -64,6 +65,14 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	private JdbcDataSource srcConf;
 
 	private SourceConfiguration source;
+
+	/**
+	 * JDBC view of this item's record model on the ETL database. Unlike the primary
+	 * data source, this datasource is always bound to the legacy source connector
+	 * created from {@link EtlConfiguration#getSrcConnInfo()}.
+	 */
+	@JsonIgnore
+	private transient JdbcDataSource etlDatabaseDataSource;
 
 	private List<DstConf> dstConf;
 
@@ -320,6 +329,87 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return source.getPrimaryDataSource();
 	}
 
+	/**
+	 * Returns the JDBC datasource used by processors that operate on the ETL
+	 * database itself. It deliberately does not replace the configured primary
+	 * datasource, which may be JSON, CSV or use another JDBC connector.
+	 */
+	@JsonIgnore
+	public synchronized JdbcDataSource getEtlDatabaseDataSource() {
+
+		if (etlDatabaseDataSource == null) {
+			etlDatabaseDataSource = createEtlDatabaseDataSource();
+		}
+		return etlDatabaseDataSource;
+	}
+
+	private JdbcDataSource createEtlDatabaseDataSource() {
+
+		prepareSourceConfiguration();
+
+		if (getRelatedEtlConf() == null || getRelatedEtlConf().getSrcConnInfo() == null) {
+			throw new IllegalStateException(
+					"srcConnInfo is required to create the ETL database datasource for item '" + getConfigCode() + "'");
+		}
+
+		PrimaryDataSourceConfiguration primary = getPrimaryDataSource();
+		JdbcDataSource jdbc = new JdbcDataSource();
+
+		String tableName = primary instanceof JdbcDataSource ? ((JdbcDataSource) primary).getTableName()
+				: primary.getName();
+
+		if (!utilities.stringHasValue(tableName)) {
+			throw new EtlConfException(
+					"Unable to determine the ETL database table name for item '" + getConfigCode() + "'");
+		}
+
+		jdbc.setTableName(tableName);
+		jdbc.setTableAlias(primary.getAlias());
+		jdbc.setSchema(getRelatedEtlConf().getSrcConnInfo().determineSchema());
+
+		if (primary.getPrimaryKey() instanceof PrimaryKey) {
+			jdbc.setPrimaryKey((PrimaryKey) primary.getPrimaryKey());
+		}
+
+		jdbc.setFields(copyFields(primary.getFields()));
+		jdbc.setFullLoaded(true);
+		jdbc.setParentConf(this);
+		jdbc.setParentSource(source);
+
+		if (primary instanceof JdbcDataSource) {
+			JdbcDataSource configuredJdbc = (JdbcDataSource) primary;
+			jdbc.setDoNotUseAsDatasource(configuredJdbc.getDoNotUseAsDatasource());
+			jdbc.setEtlFields(configuredJdbc.getEtlFields());
+		}
+
+		ConnectorEndpoint endpoint = getRelatedEtlConf().getInitializedConnectorRegistry()
+				.get(ConnectorRegistry.LEGACY_SOURCE_CONNECTOR_ID);
+
+		jdbc.setResolvedResource(
+				ConnectorConfigurationResolver.resolveResource(null, jdbc, ConnectorDirection.SOURCE, endpoint));
+
+		return jdbc;
+	}
+
+	private List<Field> copyFields(List<Field> fields) {
+
+		if (fields == null) {
+			return new ArrayList<>();
+		}
+
+		List<Field> copies = new ArrayList<>(fields.size());
+
+		for (Field field : fields) {
+
+			if (field != null) {
+				Field copy = new Field();
+				copy.copyFrom(field);
+				copies.add(copy);
+			}
+		}
+		return copies;
+	}
+
 	@JsonIgnore
 	public JdbcDataSource requireJdbcPrimaryDataSource() {
 		return getPrimaryDataSource().requireJdbc();
@@ -445,6 +535,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public ConnectorRecordWriters createDestinationWriters(BaseConfiguration openedFrom) throws DBException {
+
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
 		Map<String, Connection> connections = new HashMap<>();
@@ -857,7 +948,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			setManualMapPrimaryKeyOnField(getRelatedEtlConf().getManualMapPrimaryKeyOnField());
 		}
 
-		JdbcDataSource jdbcSource = getPrimaryDataSource() instanceof JdbcDataSource ? (JdbcDataSource) getPrimaryDataSource() : null;
+		JdbcDataSource jdbcSource = getPrimaryDataSource() instanceof JdbcDataSource
+				? (JdbcDataSource) getPrimaryDataSource()
+				: null;
 
 		if (jdbcSource != null && !jdbcSource.hasDstType()) {
 			jdbcSource.setDstType(operationConfig.getDstType());
@@ -1253,8 +1346,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		this.fullLoad(operationConfig, srcConn, destinationConnections);
 
-		if (!this.getSrcConf().doNotUseAsDatasource()) {
-			this.getSrcConf().ensureEtlStageTableExists(counter, srcConn, null);
+		JdbcDataSource etlDatabaseSource = this.getEtlDatabaseDataSource();
+
+		if (!etlDatabaseSource.doNotUseAsDatasource()) {
+			etlDatabaseSource.ensureEtlStageTableExists(counter, srcConn, null);
 		}
 
 		if (hasDstConf()) {

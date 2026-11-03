@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -20,16 +19,10 @@ public class DatabasePreparationSearchParams extends AbstractEtlSearchParams<Dat
 
 	public DatabasePreparationSearchParams(Engine<DatabasePreparationRecord> engine,
 			ThreadRecordIntervalsManager<DatabasePreparationRecord> intervalsMgt) {
-		super(null, intervalsMgt);
+
+		super(engine.getEtlItemConfiguration().getEtlDatabaseDataSource(), intervalsMgt);
 
 		this.engine = engine;
-
-		if (this.engine.getEtlItemConfiguration().getPrimaryDataSource() instanceof JdbcDataSource) {
-
-		}
-
-		// Object o = this.engine.getRelatedEtlConf().getSrcConnInfo();
-
 	}
 
 	@Override

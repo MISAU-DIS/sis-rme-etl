@@ -108,6 +108,11 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 		return (DatabaseModelGenerationSearchParams) super.getSearchParams();
 	}
 
+	/** JDBC datasource representing the current item on the ETL database. */
+	public JdbcDataSource getEtlDatabaseDataSource() {
+		return getEtlItemConfiguration().getEtlDatabaseDataSource();
+	}
+
 	@Override
 	public void extractTransformAndLoad(boolean useMultiThreadSearch,
 			ConnectorRecordReader<DatabaseModelGenerationRecord> reader, ConnectorRecordWriters writers)
@@ -137,6 +142,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 
 		try (DestinationConnectorConnections destinationConnections = item.createDestinationConnections(this)) {
 			item.fullLoad(operationConfig, srcConn, destinationConnections);
+			item.getEtlDatabaseDataSource();
 
 			DatabaseModelGenerationContext sourceContext = DatabaseModelGenerationContext.source(
 					getRelatedEtlConfiguration().getDataModel(), srcConn);
