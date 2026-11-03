@@ -24,195 +24,196 @@ import org.openmrs.module.epts.etl.model.base.VOLoaderHelper;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class LoadSyncDataSearchParams extends AbstractEtlSearchParams<EtlDatabaseObject> implements FilenameFilter {
-	
+
 	private File currJSONSourceFile;
-	
+
 	/*
 	 * The current json info which is being processed
 	 */
 	private SyncJSONInfo currJSONInfo;
-	
+
 	private String firstFileName;
-	
+
 	private String lastFileName;
-	
+
 	private String fileNamePathern;
-	
+
 	private Engine<EtlDatabaseObject> relatedEngine;
-	
+
 	public LoadSyncDataSearchParams(Engine<EtlDatabaseObject> engine,
-	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
+			ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
 		super(engine.getJdbcPrimaryDataSource(), limits);
-		
+
 		if (limits != null) {
-			this.firstFileName = getSrcConf().getTableName() + "_"
-			        + utilities.garantirXCaracterOnNumber(limits.getCurrentFirstRecordId(), 10) + ".json";
-			this.lastFileName = getSrcConf().getTableName() + "_"
-			        + utilities.garantirXCaracterOnNumber(limits.getCurrentLastRecordId(), 10) + ".json";
+			this.firstFileName = this.getJdbcPrimaryDataSource().getTableName() + "_"
+					+ utilities.garantirXCaracterOnNumber(limits.getCurrentFirstRecordId(), 10) + ".json";
+			this.lastFileName = this.getJdbcPrimaryDataSource().getTableName() + "_"
+					+ utilities.garantirXCaracterOnNumber(limits.getCurrentLastRecordId(), 10) + ".json";
 		}
-		
+
 		this.relatedEngine = engine;
 	}
-	
+
 	public DataLoadController getRelatedController() {
 		return (DataLoadController) relatedEngine.getController();
 	}
-	
+
 	private File getNextJSONFileToLoad() {
 		File[] files = getSyncDirectory().listFiles(this);
-		
+
 		if (files != null && files.length > 0) {
 			return files[0];
 		}
-		
+
 		return null;
 	}
-	
+
 	@Override
 	public List<EtlDatabaseObject> search(IntervalExtremeRecord intervalExtremeRecord, EtlDatabaseObject parentObject,
-	        List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn, Connection dstCOnn) throws DBException {
-		
+			List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn, Connection dstCOnn) throws DBException {
+
 		this.currJSONSourceFile = getNextJSONFileToLoad();
-		
+
 		if (this.currJSONSourceFile == null)
 			return null;
-		
+
 		getRelatedController().logInfo("Loading content on JSON File " + this.currJSONSourceFile.getAbsolutePath());
-		
+
 		try {
 			String json = new String(Files.readAllBytes(Paths.get(currJSONSourceFile.getAbsolutePath())));
-			
+
 			this.currJSONInfo = SyncJSONInfo.loadFromJSON(json);
 			this.currJSONInfo.setFileName(currJSONSourceFile.getAbsolutePath());
-			
+
 			return utilities.parseList(this.currJSONInfo.getSyncInfo(), EtlDatabaseObject.class);
-			
-		}
-		catch (Exception e) {
+
+		} catch (Exception e) {
 			getRelatedController().logInfo("Error performing " + this.currJSONSourceFile.getAbsolutePath());
-			
+
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public SyncJSONInfo getCurrJSONInfo() {
 		return currJSONInfo;
 	}
-	
+
 	public File getCurrJSONSourceFile() {
 		return currJSONSourceFile;
 	}
-	
+
 	public void setFileNamePathern(String fileNamePathern) {
 		this.fileNamePathern = fileNamePathern;
 	}
-	
+
 	public String getFileNamePathern() {
 		return fileNamePathern;
 	}
-	
+
 	@Override
 	public SearchClauses<EtlDatabaseObject> generateSearchClauses(IntervalExtremeRecord recordLimits,
-	        EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
-	        Connection dstConn) throws DBException {
+			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public boolean accept(File dir, String name) {
-		
+
 		boolean isJSON = name.toLowerCase().endsWith("json");
 		boolean isNotMinimal = !name.toLowerCase().contains("minimal");
-		
+
 		boolean isInInterval = true;
-		
+
 		if (hasLimits()) {
 			isInInterval = isInInterval && name.compareTo(this.firstFileName) >= 0;
 			isInInterval = isInInterval && name.compareTo(this.lastFileName) <= 0;
 		}
-		
+
 		boolean pathernOk = true;
-		
+
 		if (utilities.stringHasValue(this.fileNamePathern)) {
 			pathernOk = name.contains(this.fileNamePathern);
 		}
-		
+
 		return isJSON && isNotMinimal && isInInterval && pathernOk;
 	}
-	
+
 	@Override
 	public int countAllRecords(OperationController<EtlDatabaseObject> controller, Connection conn) throws DBException {
-		
+
 		throw new ForbiddenException();
-		
+
 		/*
-		DataBaseMergeFromJSONSearchParams syncSearchParams = new DataBaseMergeFromJSONSearchParams(getRelatedEngine(), null,
-		        getRelatedController().getAppOriginLocationCode());
-		
-		int processed = syncSearchParams.countAllRecords(conn);
-		int notProcessed = countNotProcessedRecords(conn);
-		
-		return processed + notProcessed;
-		*/
+		 * DataBaseMergeFromJSONSearchParams syncSearchParams = new
+		 * DataBaseMergeFromJSONSearchParams(getRelatedEngine(), null,
+		 * getRelatedController().getAppOriginLocationCode());
+		 * 
+		 * int processed = syncSearchParams.countAllRecords(conn); int notProcessed =
+		 * countNotProcessedRecords(conn);
+		 * 
+		 * return processed + notProcessed;
+		 */
 	}
-	
+
 	@Override
 	public int countNotProcessedRecords(OperationController<EtlDatabaseObject> controller, Connection conn)
-	        throws DBException {
+			throws DBException {
+
 		try {
 			File[] files = getSyncDirectory().listFiles(new FilenameFilter() {
-				
+
 				@Override
 				public boolean accept(File dir, String name) {
 					boolean isJSON = name.toLowerCase().endsWith("json");
 					boolean isMinimal = name.toLowerCase().contains("minimal");
-					
+
 					return isJSON && isMinimal;
 				}
 			});
-			
+
 			int notYetProcessed = 0;
-			
+
 			if (files == null)
 				return 0;
-			
+
 			for (File file : files) {
+
 				try {
 					String json = new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
-					
+
 					notYetProcessed += SyncJSONInfo.loadFromJSON(json).getQtyRecords();
+				} catch (NoSuchFileException e) {
 				}
-				catch (NoSuchFileException e) {}
 			}
-			
+
 			return notYetProcessed;
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	private File getSyncDirectory() {
-		return this.getRelatedController().getSyncDirectory(getSrcConf());
+		return this.getRelatedController().getSyncDirectory(this.getJdbcPrimaryDataSource());
 	}
-	
+
 	@Override
 	protected VOLoaderHelper getLoaderHealper() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> cloneMe() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public String generateDestinationExclusionClause(Connection srcConn, Connection dstConn) throws DBException {
 		// TODO Auto-generated method stub

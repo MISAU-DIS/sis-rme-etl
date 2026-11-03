@@ -18,132 +18,132 @@ import org.openmrs.module.epts.etl.transport.controller.TransportController;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class TransportSyncSearchParams extends AbstractEtlSearchParams<TransportRecord> implements FilenameFilter {
-	
+
 	private String firstFileName;
-	
+
 	private String lastFileName;
-	
+
 	private String fileNamePathern;
-	
+
 	private Engine<TransportRecord> relatedEngine;
-	
-	public TransportSyncSearchParams(Engine<TransportRecord> engine, ThreadRecordIntervalsManager<TransportRecord> limits) {
+
+	public TransportSyncSearchParams(Engine<TransportRecord> engine,
+			ThreadRecordIntervalsManager<TransportRecord> limits) {
 		super(engine.getJdbcPrimaryDataSource(), limits);
-		
+
 		if (limits != null) {
-			this.firstFileName = getSrcConf().getTableName() + "_"
-			        + utilities.garantirXCaracterOnNumber(limits.getCurrentFirstRecordId(), 10) + "_"
-			        + utilities.garantirXCaracterOnNumber(limits.getCurrentFirstRecordId(), 10) + ".json";
-			this.lastFileName = getSrcConf().getTableName() + "_"
-			        + utilities.garantirXCaracterOnNumber(limits.getCurrentLastRecordId(), 10) + "_"
-			        + utilities.garantirXCaracterOnNumber(limits.getCurrentLastRecordId(), 10) + ".json";
+			this.firstFileName = this.getJdbcPrimaryDataSource().getTableName() + "_"
+					+ utilities.garantirXCaracterOnNumber(limits.getCurrentFirstRecordId(), 10) + "_"
+					+ utilities.garantirXCaracterOnNumber(limits.getCurrentFirstRecordId(), 10) + ".json";
+			this.lastFileName = this.getJdbcPrimaryDataSource().getTableName() + "_"
+					+ utilities.garantirXCaracterOnNumber(limits.getCurrentLastRecordId(), 10) + "_"
+					+ utilities.garantirXCaracterOnNumber(limits.getCurrentLastRecordId(), 10) + ".json";
 		}
-		
+
 		this.relatedEngine = engine;
 	}
-	
+
 	@Override
 	public List<TransportRecord> search(IntervalExtremeRecord intervalExtremeRecord, TransportRecord parentObject,
-	        List<TransportRecord> auxDataSourceObjects, Connection srcConn, Connection dstCOnn) throws DBException {
-		
+			List<TransportRecord> auxDataSourceObjects, Connection srcConn, Connection dstCOnn) throws DBException {
+
 		try {
 			File[] files = getSyncDirectory().listFiles(this);
-			
+
 			List<TransportRecord> etlObjects = new ArrayList<>();
-			
+
 			if (files != null && files.length > 0) {
 				etlObjects.add(new TransportRecord(files[0], getSyncDestinationDirectory(), getSyncBkpDirectory()));
 			}
-			
+
 			return etlObjects;
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	private File getSyncBkpDirectory() throws IOException {
-		return getRelatedController().getSyncBkpDirectory(getSrcConf());
+		return getRelatedController().getSyncBkpDirectory(this.getJdbcPrimaryDataSource());
 	}
-	
+
 	private File getSyncDestinationDirectory() throws IOException {
-		return getRelatedController().getSyncDestinationDirectory(getSrcConf());
+		return getRelatedController().getSyncDestinationDirectory(this.getJdbcPrimaryDataSource());
 	}
-	
+
 	public String getFileNamePathern() {
 		return fileNamePathern;
 	}
-	
+
 	public void setFileNamePathern(String fileNamePathern) {
 		this.fileNamePathern = fileNamePathern;
 	}
-	
+
 	@Override
 	public SearchClauses<TransportRecord> generateSearchClauses(IntervalExtremeRecord recordLimits,
-	        TransportRecord parentObject, List<TransportRecord> auxDataSourceObjects, Connection srcConn, Connection dstConn)
-	        throws DBException {
+			TransportRecord parentObject, List<TransportRecord> auxDataSourceObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
 		return null;
 	}
-	
+
 	@Override
 	public boolean accept(File dir, String name) {
 		boolean isJSON = name.toLowerCase().endsWith("json");
 		boolean isNotMinimal = !name.toLowerCase().contains("minimal");
-		
+
 		boolean isInInterval = true;
-		
+
 		if (hasLimits()) {
 			isInInterval = isInInterval && name.compareTo(this.firstFileName) >= 0;
 			isInInterval = isInInterval && name.compareTo(this.lastFileName) <= 0;
 		}
-		
+
 		boolean pathernOk = true;
-		
+
 		if (utilities.stringHasValue(this.fileNamePathern)) {
 			pathernOk = name.contains(this.fileNamePathern);
 		}
-		
+
 		return isJSON && isNotMinimal && isInInterval && pathernOk;
 	}
-	
+
 	@Override
 	public int countAllRecords(OperationController<TransportRecord> controller, Connection conn) throws DBException {
 		return countNotProcessedRecords(controller, conn);
 	}
-	
+
 	@Override
 	public int countNotProcessedRecords(OperationController<TransportRecord> controller, Connection conn)
-	        throws DBException {
+			throws DBException {
 		File[] files = getSyncDirectory().listFiles(this);
-		
+
 		if (files != null)
 			return files.length;
-		
+
 		return 0;
 	}
-	
+
 	public TransportController getRelatedController() {
 		return (TransportController) relatedEngine.getController();
 	}
-	
+
 	private File getSyncDirectory() {
-		return getRelatedController().getSyncDirectory(getSrcConf());
+		return getRelatedController().getSyncDirectory(this.getJdbcPrimaryDataSource());
 	}
-	
+
 	@Override
 	protected VOLoaderHelper getLoaderHealper() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<TransportRecord> cloneMe() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public String generateDestinationExclusionClause(Connection srcConn, Connection dstConn) throws DBException {
 		// TODO Auto-generated method stub

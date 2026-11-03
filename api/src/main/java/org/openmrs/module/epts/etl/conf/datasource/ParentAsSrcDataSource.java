@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditionalDataSource, EtlSrcConf {
 
-	private SrcConf relatedSrcConf;
+	private JdbcDataSource relatedSrcConf;
 
 	public ParentAsSrcDataSource() {
 	}
@@ -25,12 +25,12 @@ public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditio
 	}
 
 	@Override
-	public SrcConf getRelatedSrcConf() {
+	public JdbcDataSource getRelatedSrcConf() {
 		return this.relatedSrcConf;
 	}
 
 	@Override
-	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
+	public void setRelatedSrcConf(JdbcDataSource relatedSrcConf) {
 		this.relatedSrcConf = relatedSrcConf;
 	}
 
@@ -55,7 +55,7 @@ public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditio
 		return true_();
 	}
 
-	public static ParentAsSrcDataSource generateFromSrcConfSharedPkParent(SrcConf mainSrcConf, ParentTable parent,
+	public static ParentAsSrcDataSource generateFromSrcConfSharedPkParent(JdbcDataSource mainSrcConf, ParentTable parent,
 			Connection conn) throws ForbiddenOperationException, DBException {
 		ParentAsSrcDataSource ds = new ParentAsSrcDataSource();
 

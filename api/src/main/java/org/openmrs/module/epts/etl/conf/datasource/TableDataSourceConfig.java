@@ -142,12 +142,12 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	@Override
-	public SrcConf getRelatedSrcConf() {
-		return (SrcConf) this.getParentConf();
+	public JdbcDataSource getRelatedSrcConf() {
+		return (JdbcDataSource) this.getParentConf();
 	}
 
 	@Override
-	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
+	public void setRelatedSrcConf(JdbcDataSource relatedSrcConf) {
 		setParentConf(relatedSrcConf);
 	}
 
@@ -262,7 +262,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	public static List<TableDataSourceConfig> cloneAll(List<TableDataSourceConfig> allToCloneFrom,
-			SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+			JdbcDataSource relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
 
 		List<TableDataSourceConfig> allCloned = null;
 
@@ -280,7 +280,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 		return allCloned;
 	}
 
-	public void clone(TableDataSourceConfig toCloneFrom, SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc,
+	public void clone(TableDataSourceConfig toCloneFrom, JdbcDataSource relatedSrcConf, EtlDatabaseObject schemaInfoSrc,
 			Connection conn) throws DBException {
 		super.clone(toCloneFrom, relatedSrcConf, schemaInfoSrc, conn);
 
@@ -329,8 +329,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	@Override
-	public SrcConf getParentConf() {
-		return (SrcConf) super.getParentConf();
+	public JdbcDataSource getParentConf() {
+		return (JdbcDataSource) super.getParentConf();
 	}
 
 	@Override

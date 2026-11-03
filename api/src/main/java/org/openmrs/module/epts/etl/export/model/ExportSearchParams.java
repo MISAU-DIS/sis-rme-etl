@@ -38,7 +38,7 @@ public class ExportSearchParams extends AbstractEtlSearchParams<EtlDatabaseObjec
 	        Connection dstConn) throws DBException {
 		SearchClauses<EtlDatabaseObject> searchClauses = new SearchClauses<EtlDatabaseObject>(this);
 		
-		AbstractTableConfiguration tableInfo = getSrcConf();
+		AbstractTableConfiguration tableInfo = this.getJdbcPrimaryDataSource();
 		
 		searchClauses.addColumnToSelect(tableInfo.generateFullAliasedSelectColumns());
 		searchClauses.addToClauseFrom(tableInfo.generateSelectFromClauseContent());

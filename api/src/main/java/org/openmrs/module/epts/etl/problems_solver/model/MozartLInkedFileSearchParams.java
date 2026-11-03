@@ -15,66 +15,66 @@ import org.openmrs.module.epts.etl.problems_solver.controller.GenericOperationCo
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class MozartLInkedFileSearchParams extends EtlDatabaseObjectSearchParams {
-	
+
 	Engine<EtlDatabaseObject> relatedEngine;
-	
+
 	public MozartLInkedFileSearchParams(Engine<EtlDatabaseObject> engine,
-	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
+			ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
 		super(engine.getJdbcPrimaryDataSource(), limits);
-		
+
 		this.relatedEngine = engine;
 	}
-	
+
 	@Override
 	public List<EtlDatabaseObject> searchNextRecordsInMultiThreads(IntervalExtremeRecord interval,
-	        EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
-	        Connection dstConn) throws DBException {
+			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
 		return search(interval, parentObject, auxDataSourceObjects, srcConn, dstConn);
 	}
-	
+
 	public Engine<EtlDatabaseObject> getRelatedEngine() {
 		return relatedEngine;
 	}
-	
+
 	public GenericOperationController getRelatedController() {
 		return (GenericOperationController) getRelatedEngine().getRelatedOperationController();
 	}
-	
+
 	@Override
 	public List<EtlDatabaseObject> search(IntervalExtremeRecord intervalExtremeRecord, EtlDatabaseObject parentObject,
-	        List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn, Connection dstCOnn) throws DBException {
-		
+			List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn, Connection dstCOnn) throws DBException {
+
 		if (getRelatedController().isDone()) {
 			return null;
 		}
-		
-		return utilities.parseToList(getSrcConf().createRecordInstance());
+
+		return utilities.parseToList(this.getJdbcPrimaryDataSource().createRecordInstance());
 	}
-	
+
 	@Override
 	public SearchClauses<EtlDatabaseObject> generateSearchClauses(IntervalExtremeRecord recordLimits,
-	        EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
-	        Connection dstConn) throws DBException {
+			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
 		return null;
 	}
-	
+
 	@Override
 	public int countAllRecords(OperationController<EtlDatabaseObject> controller, Connection conn) throws DBException {
 		return 1;
 	}
-	
+
 	@Override
 	public synchronized int countNotProcessedRecords(OperationController<EtlDatabaseObject> controller, Connection conn)
-	        throws DBException {
+			throws DBException {
 		return getRelatedController().isDone() ? 0 : 1;
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> cloneMe() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public String generateDestinationExclusionClause(Connection srcConn, Connection dstConn) throws DBException {
 		// TODO Auto-generated method stub

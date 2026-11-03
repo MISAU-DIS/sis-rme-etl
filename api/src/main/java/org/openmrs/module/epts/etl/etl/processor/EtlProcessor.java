@@ -11,7 +11,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
@@ -143,8 +143,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 					 * srcRecord.changeStatusToProcessing(srcConn); }
 					 */
 
-					if (primarySource instanceof TableConfiguration && (!(primarySource instanceof SrcConf)
-							|| !((SrcConf) primarySource).doNotUseAsDatasource())) {
+					if (primarySource instanceof TableConfiguration && (!(primarySource instanceof JdbcDataSource)
+							|| !((JdbcDataSource) primarySource).doNotUseAsDatasource())) {
 						srcRecord.loadObjectIdData((TableConfiguration) primarySource);
 					}
 
@@ -162,7 +162,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 						Connection dstConn = destinationConnection(writers, dstConf);
 						List<EtlDatabaseObject> expansion = null;
 
-						SrcConf srcConf = primarySource instanceof SrcConf ? (SrcConf) primarySource : null;
+						JdbcDataSource srcConf = primarySource instanceof JdbcDataSource ? (JdbcDataSource) primarySource : null;
 
 						if (srcConf != null && srcConf.hasExpansionDs()) {
 							logTrace("Starting expation of record {} within the dstConf {}", srcRecord, dstConf);
@@ -584,7 +584,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private void trackFailedProcessingIfConfigured(EtlDatabaseObject sourceRecord, EtlStageAreaObject stageRecord,
 			Connection srcConn) throws DBException {
 
-		SrcConf srcConf = (SrcConf) sourceRecord.getRelatedConfiguration();
+		JdbcDataSource srcConf = (JdbcDataSource) sourceRecord.getRelatedConfiguration();
 
 		if (srcConf.trackProcessingState()) {
 			sourceRecord.trackProcessingState(stageRecord, srcConn);

@@ -15,7 +15,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * {@link EtlConfiguration}. This allow the dynamic configuration of
  * {@link EtlConfiguration}
  */
-public class EtlConfigurationSrcConf extends SrcConf {
+public class EtlConfigurationSrcConf extends JdbcDataSource {
 
 	@Override
 	public Boolean isGeneric() {

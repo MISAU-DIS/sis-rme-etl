@@ -25,7 +25,7 @@ import org.openmrs.module.epts.etl.conf.SchemaMetadataLoadSource;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.EtlQueryOrderingInfo;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.TableConfigurationUtils;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -2338,16 +2338,16 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		TableConfiguration found = null;
 
 		if (this instanceof TableDataSourceConfig) {
-			SrcConf srcConf = ((TableDataSourceConfig) this).getRelatedSrcConf();
+			JdbcDataSource srcConf = ((TableDataSourceConfig) this).getRelatedSrcConf();
 
 			found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf);
 
 			if (found == null && srcConf.hasParentItemConf()) {
 				found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf.getParentSrcConf());
 			}
-		} else if (this instanceof SrcConf) {
-			if (((SrcConf) this).hasParentItemConf()) {
-				found = retrieveConfiguredParentWithinTheSameSrcConf(table, ((SrcConf) this).getParentSrcConf());
+		} else if (this instanceof JdbcDataSource) {
+			if (((JdbcDataSource) this).hasParentItemConf()) {
+				found = retrieveConfiguredParentWithinTheSameSrcConf(table, ((JdbcDataSource) this).getParentSrcConf());
 			}
 		}
 
@@ -2356,7 +2356,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	public static TableConfiguration retrieveConfiguredParentWithinTheSameSrcConf(TableConfiguration table,
-			SrcConf srcConf) {
+			JdbcDataSource srcConf) {
 
 		if (srcConf != null) {
 			if (srcConf.getTableName().equals(table.getTableName())) {
@@ -3217,10 +3217,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default long getExtremeRecord(Engine<? extends EtlDatabaseObject> engine, SqlFunctionType function, Connection conn)
 			throws DBException {
 
-		SrcConf srcConf = null;
+		JdbcDataSource srcConf = null;
 
-		if (this instanceof SrcConf) {
-			srcConf = (SrcConf) this;
+		if (this instanceof JdbcDataSource) {
+			srcConf = (JdbcDataSource) this;
 		} else {
 			srcConf = this.cloneToSrcConf(engine.getEtlItemConfiguration(), conn);
 		}
@@ -3231,8 +3231,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	}
 
-	default SrcConf cloneToSrcConf(EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
-		SrcConf srcConf = new SrcConf();
+	default JdbcDataSource cloneToSrcConf(EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
+		JdbcDataSource srcConf = new JdbcDataSource();
 
 		srcConf.copyFromOther(this, null, relatedItemConf, conn);
 

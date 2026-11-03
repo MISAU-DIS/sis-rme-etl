@@ -17,67 +17,68 @@ import org.openmrs.module.epts.etl.model.SearchParamsDAO;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class DetectGapesSearchParams extends EtlDatabaseObjectSearchParams {
-	
+
 	private int savedCount;
-	
+
 	private Engine<EtlDatabaseObject> engine;
-	
+
 	public DetectGapesSearchParams(Engine<EtlDatabaseObject> engine,
-	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
+			ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
 		super(engine.getJdbcPrimaryDataSource(), limits);
-		
+
 		this.engine = engine;
 	}
-	
+
 	public DetectGapesController getRelatedController() {
 		return (DetectGapesController) engine.getController();
 	}
-	
+
 	@Override
 	public SearchClauses<EtlDatabaseObject> generateSearchClauses(IntervalExtremeRecord limits,
-	        EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
-	        Connection dstCOnn) throws DBException {
-		AbstractTableConfiguration tableInfo = getSrcConf();
-		
+			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
+			Connection dstCOnn) throws DBException {
+
+		AbstractTableConfiguration tableInfo = this.getJdbcPrimaryDataSource();
+
 		SearchClauses<EtlDatabaseObject> searchClauses = new SearchClauses<EtlDatabaseObject>(this);
-		
+
 		searchClauses.addToClauseFrom(tableInfo.generateFullTableNameWithAlias(srcConn));
 		searchClauses.addColumnToSelect(tableInfo.generateFullAliasedSelectColumns());
-		
+
 		tryToAddLimits(limits, searchClauses);
-		
+
 		tryToAddExtraConditionForExport(searchClauses, parentObject, auxDataSourceObjects,
-		    DbmsType.determineFromConnection(srcConn));
-		
+				DbmsType.determineFromConnection(srcConn));
+
 		if (utilities.stringHasValue(getExtraCondition())) {
 			searchClauses.addToClauses(getExtraCondition());
 		}
-		
+
 		return searchClauses;
-		
+
 	}
-	
+
 	@Override
 	public int countAllRecords(OperationController<EtlDatabaseObject> controller, Connection conn) throws DBException {
 		if (this.savedCount > 0)
 			return this.savedCount;
-		
+
 		ThreadRecordIntervalsManager<EtlDatabaseObject> bkpLimits = this.getThreadRecordIntervalsManager();
-		
+
 		this.removeLimits();
-		
+
 		int count = SearchParamsDAO.countAll(this, null, conn);
-		
+
 		this.setThreadRecordIntervalsManager(bkpLimits);
-		
+
 		this.savedCount = count;
-		
+
 		return count;
 	}
-	
+
 	@Override
 	public synchronized int countNotProcessedRecords(OperationController<EtlDatabaseObject> controller, Connection conn)
-	        throws DBException {
+			throws DBException {
 		return countAllRecords(controller, conn);
 	}
 }

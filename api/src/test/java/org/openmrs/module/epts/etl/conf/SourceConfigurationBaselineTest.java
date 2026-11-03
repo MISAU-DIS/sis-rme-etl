@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
 /**
@@ -23,7 +23,7 @@ class SourceConfigurationBaselineTest {
 				"\"extraJsonDataSource\":[{\"name\":\"demographics\",\"payload\":\"{}\"}]" +
 				"}";
 
-		SrcConf source = new ObjectMapperProvider().getContext(SrcConf.class).readValue(json, SrcConf.class);
+		JdbcDataSource source = new ObjectMapperProvider().getContext(JdbcDataSource.class).readValue(json, JdbcDataSource.class);
 
 		assertEquals("patient", source.getTableName());
 		assertEquals(1, source.getExtraTableDataSource().size());
@@ -45,7 +45,7 @@ class SourceConfigurationBaselineTest {
 				"{\"name\":\"uuid\",\"dataType\":\"java.lang.String\",\"allowNull\":false}" +
 				"]}}";
 
-		SrcConf source = new ObjectMapperProvider().getContext(SrcConf.class).readValue(json, SrcConf.class);
+		JdbcDataSource source = new ObjectMapperProvider().getContext(JdbcDataSource.class).readValue(json, JdbcDataSource.class);
 
 		assertEquals("events-file", source.getResource().getConnector());
 		assertEquals("patients.jsonl", source.getResource().getName());

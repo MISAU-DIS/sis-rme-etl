@@ -47,7 +47,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class SrcConf extends AbstractTableConfiguration implements MainJoiningEntity, JoinableEntity, EtlSrcConf,
+public class JdbcDataSource extends AbstractTableConfiguration implements MainJoiningEntity, JoinableEntity, EtlSrcConf,
 		EtlItemConfigurationComponent, PrimaryDataSourceConfiguration {
 
 	private static final String[] TRACKING_FIELDS = { "processing_status", "processing_date", "processing_error",
@@ -129,7 +129,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	@JsonIgnore
 	private transient SourceConfiguration detachedLegacySource;
 
-	public SrcConf() {
+	public JdbcDataSource() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
 	}
@@ -467,7 +467,7 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 	}
 
 	@SuppressWarnings("deprecation")
-	public SrcConf getParentSrcConf() {
+	public JdbcDataSource getParentSrcConf() {
 		if (hasParentItemConf()) {
 			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
 		}
@@ -515,9 +515,9 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 		}
 	}
 
-	public static SrcConf fastCreate(AbstractTableConfiguration tableConfig, EtlItemConfiguration itemConf,
+	public static JdbcDataSource fastCreate(AbstractTableConfiguration tableConfig, EtlItemConfiguration itemConf,
 			Connection conn) throws DBException {
-		SrcConf src = new SrcConf();
+		JdbcDataSource src = new JdbcDataSource();
 
 		src.copyFromOther(tableConfig, null, itemConf, conn);
 
@@ -741,8 +741,8 @@ public class SrcConf extends AbstractTableConfiguration implements MainJoiningEn
 
 		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
 
-		if (toClone instanceof SrcConf) {
-			SrcConf toCloneFrom = (SrcConf) toClone;
+		if (toClone instanceof JdbcDataSource) {
+			JdbcDataSource toCloneFrom = (JdbcDataSource) toClone;
 			if (utilities.listHasElement(toCloneFrom.getAuxExtractTable())) {
 				this.setAuxExtractTable(
 						AuxExtractTable.cloneAll(toCloneFrom.getAuxExtractTable(), this, schemaInfoSrc, conn));

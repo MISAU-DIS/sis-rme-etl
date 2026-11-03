@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -142,7 +142,7 @@ public class DatabaseModelGenerationProcessor extends org.openmrs.module.epts.et
 					getRelatedEtlConfiguration().getDataModel(), srcConn);
 
 			PrimaryDataSourceConfiguration primarySource = item.getPrimaryDataSource();
-			if (!(primarySource instanceof SrcConf) || !((SrcConf) primarySource).doNotUseAsDatasource()) {
+			if (!(primarySource instanceof JdbcDataSource) || !((JdbcDataSource) primarySource).doNotUseAsDatasource()) {
 				generate(sourceContext, primarySource);
 
 				for (EtlAdditionalDataSource dataSource : item.getSource().getAvailableAdditionalDataSources()) {

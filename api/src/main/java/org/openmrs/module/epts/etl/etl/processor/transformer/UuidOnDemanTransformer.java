@@ -13,7 +13,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
@@ -107,7 +107,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 	private TableConfiguration tableConf;
 
-	private SrcConf defaultSrcConf;
+	private JdbcDataSource defaultSrcConf;
 
 	private Map<String, Object> placeholdersSrc;
 
@@ -251,7 +251,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		return tableName;
 	}
 
-	public SrcConf getDefaultSrcConf() {
+	public JdbcDataSource getDefaultSrcConf() {
 		return defaultSrcConf;
 	}
 
@@ -279,7 +279,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 					EtlItemConfiguration itemConf = this.getRelatedEtlTransformTarget().getParentConf();
 
-					this.defaultSrcConf = SrcConf.fastCreate(defaultTable, itemConf, srcConn);
+					this.defaultSrcConf = JdbcDataSource.fastCreate(defaultTable, itemConf, srcConn);
 
 					this.defaultSrcConf.setTableAlias(defaultTable.getTableName() + "_for_on_demand_uuid_within_"
 							+ itemConf.getSrcConf().getTableAlias());

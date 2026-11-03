@@ -8,7 +8,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
@@ -151,7 +151,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return getPrimaryDataSource().getObjectName();
 	}
 
-	public SrcConf getJdbcPrimaryDataSource() {
+	public JdbcDataSource getJdbcPrimaryDataSource() {
 		return monitor.getJdbcPrimaryDataSource();
 	}
 

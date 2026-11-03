@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
@@ -277,7 +277,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					transformedRecord, additionalSrcObjects, getParentSourceIdMapping(), srcConn, dstConn);
 
 			if (fieldInfo != null && fieldInfo.getTransformedValue() != null) {
-				SrcConf srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn, dstConn);
+				JdbcDataSource srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn, dstConn);
 
 				srcParent = DatabaseObjectDAO.getByOid(srcConf,
 						Oid.fastCreate(srcConf, fieldInfo.getTransformedValue()), srcConn);
@@ -327,7 +327,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		TransformationType transformationType = TransformationType.PRINCIPAL;
 
 		if (usesTemplate()) {
-			SrcConf srcConf = null;
+			JdbcDataSource srcConf = null;
 
 			if (srcParent == null) {
 				srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
@@ -406,7 +406,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		PreparedQueryInfo p = prepareOnDemandParentLookup(allObjs, dstConn);
 
-		SrcConf srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+		JdbcDataSource srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
 
 		return dstConf.find(p.getPreparedQuery(),
 				resolveDstValues(srcObject, p.getParameters(), srcConf, dstConf, srcConn, dstConn), dstConn);
@@ -432,7 +432,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		if (utilities.stringHasValue(getOnDemandCheckCondition())) {
 			ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
 
-			SrcConf srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+			JdbcDataSource srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
 			DstConf dstConf = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
 
 			List<EtlDatabaseObject> allObjects = additionalSrcObjects != null ? additionalSrcObjects
@@ -469,14 +469,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	@SuppressWarnings("deprecation")
-	SrcConf loadSrcConfForNonExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
+	JdbcDataSource loadSrcConfForNonExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
 
 		return this.getOnDemandCreateParentItemConf().getSrcConf();
 	}
 
 	@SuppressWarnings("deprecation")
-	SrcConf loadSrcConfForExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
+	JdbcDataSource loadSrcConfForExistingSrcParentIfNeeded(Connection srcConn, Connection dstConn) throws DBException {
 		ensureEtlItemConfForExistingSrcParentInitialized(srcConn, dstConn);
 
 		return this.getExistingParentItemConf().getSrcConf();

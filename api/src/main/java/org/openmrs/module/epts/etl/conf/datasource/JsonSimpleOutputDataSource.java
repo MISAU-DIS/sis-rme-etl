@@ -262,12 +262,12 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public SrcConf getRelatedSrcConf() {
+	public JdbcDataSource getRelatedSrcConf() {
 		return this.parent.requireJdbc();
 	}
 
 	@Override
-	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
+	public void setRelatedSrcConf(JdbcDataSource relatedSrcConf) {
 		this.parent = relatedSrcConf;
 	}
 

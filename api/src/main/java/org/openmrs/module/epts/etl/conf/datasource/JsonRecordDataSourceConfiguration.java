@@ -101,12 +101,12 @@ public class JsonRecordDataSourceConfiguration extends AbstractRecordPrimaryData
 	}
 
 	@Override
-	public SrcConf getRelatedSrcConf() {
-		return relatedPrimaryDataSource instanceof SrcConf ? (SrcConf) relatedPrimaryDataSource : null;
+	public JdbcDataSource getRelatedSrcConf() {
+		return relatedPrimaryDataSource instanceof JdbcDataSource ? (JdbcDataSource) relatedPrimaryDataSource : null;
 	}
 
 	@Override
-	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
+	public void setRelatedSrcConf(JdbcDataSource relatedSrcConf) {
 		setRelatedPrimaryDataSource(relatedSrcConf);
 	}
 

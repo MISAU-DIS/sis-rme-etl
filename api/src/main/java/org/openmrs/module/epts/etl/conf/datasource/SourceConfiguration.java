@@ -34,7 +34,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private SourceResourceConfiguration resource;
 
-	private SrcConf tableDataSource;
+	private JdbcDataSource tableDataSource;
 
 	private JsonPrimaryDataSourceConfiguration jsonDataSource;
 
@@ -97,11 +97,11 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		this.resource = resource;
 	}
 
-	public SrcConf getTableDataSource() {
+	public JdbcDataSource getTableDataSource() {
 		return tableDataSource;
 	}
 
-	public void setTableDataSource(SrcConf tableDataSource) {
+	public void setTableDataSource(JdbcDataSource tableDataSource) {
 		this.tableDataSource = tableDataSource;
 	}
 
@@ -214,8 +214,8 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 			throw new IllegalStateException("SourceConfiguration must be structurally initialized first");
 		}
 
-		if (this.primaryDataSource instanceof SrcConf) {
-			SrcConf jdbcSource = (SrcConf) this.primaryDataSource;
+		if (this.primaryDataSource instanceof JdbcDataSource) {
+			JdbcDataSource jdbcSource = (JdbcDataSource) this.primaryDataSource;
 
 			if (!jdbcSource.doNotUseAsDatasource()) {
 				jdbcSource.init(this.parentItem, srcConn, dstConn);
@@ -238,7 +238,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 			additional.setRelatedPrimaryDataSource(primaryDataSource);
 			additional.init(primaryDataSource, parentItem.getRelatedEtlSchemaObject(), srcConn, dstConn);
 		} else {
-			SrcConf jdbcSource = this.requireJdbcPrimaryForAdditionalSources();
+			JdbcDataSource jdbcSource = this.requireJdbcPrimaryForAdditionalSources();
 			additional.init(jdbcSource, parentItem.getRelatedEtlSchemaObject(), srcConn, dstConn);
 			additional.setRelatedSrcConf(jdbcSource);
 		}
@@ -275,8 +275,8 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 
 		loadAdditionalDataSources(null, srcConn);
 
-		if (primaryDataSource instanceof SrcConf) {
-			loadEtlFields((SrcConf) primaryDataSource);
+		if (primaryDataSource instanceof JdbcDataSource) {
+			loadEtlFields((JdbcDataSource) primaryDataSource);
 		}
 
 		fullLoaded = true;
@@ -288,7 +288,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 			return;
 		}
 
-		SrcConf jdbcSource = primaryDataSource instanceof SrcConf ? (SrcConf) primaryDataSource : null;
+		JdbcDataSource jdbcSource = primaryDataSource instanceof JdbcDataSource ? (JdbcDataSource) primaryDataSource : null;
 
 		if (hasExtraTableDataSourceConfig()) {
 
@@ -375,7 +375,7 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
-	private void loadEtlFields(SrcConf jdbcSource) {
+	private void loadEtlFields(JdbcDataSource jdbcSource) {
 		jdbcSource.setEtlFields(new ArrayList<>());
 
 		boolean preserveOriginalNames = !hasAdditionalDataSource() && !jdbcSource.hasAuxExtractTable();
@@ -390,21 +390,21 @@ public class SourceConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
-	private SrcConf requireJdbcPrimaryForAdditionalSources() {
+	private JdbcDataSource requireJdbcPrimaryForAdditionalSources() {
 
-		if (!(primaryDataSource instanceof SrcConf)) {
+		if (!(primaryDataSource instanceof JdbcDataSource)) {
 			throw new EtlConfException("extraTableDataSource and extraQueryDataSource require source.tableDataSource");
 		}
 
-		return (SrcConf) primaryDataSource;
+		return (JdbcDataSource) primaryDataSource;
 	}
 
 	@JsonIgnore
 	public List<EtlAdditionalDataSource> getAvailableAdditionalDataSources() {
 		List<EtlAdditionalDataSource> dataSources = new ArrayList<>();
 
-		if (primaryDataSource instanceof SrcConf) {
-			SrcConf jdbcSource = (SrcConf) primaryDataSource;
+		if (primaryDataSource instanceof JdbcDataSource) {
+			JdbcDataSource jdbcSource = (JdbcDataSource) primaryDataSource;
 
 			if (jdbcSource.useSharedPKKey() && jdbcSource.isFullLoaded()) {
 				dataSources.add((EtlAdditionalDataSource) jdbcSource.getSharedKeyRefInfo(null));

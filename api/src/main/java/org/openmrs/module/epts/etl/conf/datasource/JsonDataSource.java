@@ -395,12 +395,12 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public SrcConf getRelatedSrcConf() {
+	public JdbcDataSource getRelatedSrcConf() {
 		return this.relatedPrimaryDataSource.requireJdbc();
 	}
 
 	@Override
-	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
+	public void setRelatedSrcConf(JdbcDataSource relatedSrcConf) {
 		this.relatedPrimaryDataSource = relatedSrcConf;
 	}
 

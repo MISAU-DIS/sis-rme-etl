@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -97,7 +97,7 @@ public class DefaultEtlValidator extends AbstractEtlDataConfiguration implements
 
 			if (getValue().getParent() == null) {
 
-				SrcConf srcConf = new SrcConf();
+				JdbcDataSource srcConf = new JdbcDataSource();
 
 				srcConf.setParentConf(etlConf.getDefaultEtlItemConf());
 

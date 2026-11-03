@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -100,7 +100,7 @@ public class EtlField extends Field {
 		return fields;
 	}
 	
-	public void fullLoad(SrcConf srcConf) {
+	public void fullLoad(JdbcDataSource srcConf) {
 		if (this.getSrcDataSource() == null) {
 			List<EtlDataSource> avaliableDs = utilities.parseToList(srcConf);
 			
