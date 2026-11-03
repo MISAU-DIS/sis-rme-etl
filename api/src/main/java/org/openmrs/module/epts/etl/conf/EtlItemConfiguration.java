@@ -353,6 +353,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		PrimaryDataSourceConfiguration primary = getPrimaryDataSource();
+
+		if (primary instanceof JdbcDataSource && primary.getParentConf() == null) {
+			primary.setParentConf(this);
+		}
+
 		JdbcDataSource jdbc = new JdbcDataSource();
 
 		String tableName = primary instanceof JdbcDataSource ? ((JdbcDataSource) primary).getTableName()
@@ -367,7 +372,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		jdbc.setTableAlias(primary.getAlias());
 		jdbc.setSchema(getRelatedEtlConf().getSrcConnInfo().determineSchema());
 
-		if (primary.getPrimaryKey() instanceof PrimaryKey) {
+		if (Boolean.TRUE.equals(primary.hasPK()) && primary.getPrimaryKey() instanceof PrimaryKey) {
 			jdbc.setPrimaryKey((PrimaryKey) primary.getPrimaryKey());
 		}
 
@@ -382,13 +387,28 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			jdbc.setEtlFields(configuredJdbc.getEtlFields());
 		}
 
-		ConnectorEndpoint endpoint = getRelatedEtlConf().getInitializedConnectorRegistry()
-				.get(ConnectorRegistry.LEGACY_SOURCE_CONNECTOR_ID);
+		ConnectorEndpoint endpoint = resolveEtlDatabaseConnector();
 
 		jdbc.setResolvedResource(
 				ConnectorConfigurationResolver.resolveResource(null, jdbc, ConnectorDirection.SOURCE, endpoint));
 
 		return jdbc;
+	}
+
+	private ConnectorEndpoint resolveEtlDatabaseConnector() {
+		ConnectorRegistry registry = getRelatedEtlConf().getInitializedConnectorRegistry();
+		ConnectorEndpoint endpoint = registry.getEndpoints().get(ConnectorRegistry.LEGACY_SOURCE_CONNECTOR_ID);
+
+		if (endpoint == null && utilities.stringHasValue(getRelatedEtlConf().getDefaultSourceConnector())) {
+			endpoint = registry.get(getRelatedEtlConf().getDefaultSourceConnector());
+		}
+
+		if (endpoint == null || endpoint.getType() != ConnectorType.JDBC) {
+			throw new EtlConfException("No JDBC connector is available for the ETL database datasource of item '"
+					+ getConfigCode() + "'; configure srcConnInfo or a JDBC defaultSourceConnector");
+		}
+
+		return endpoint;
 	}
 
 	private List<Field> copyFields(List<Field> fields) {

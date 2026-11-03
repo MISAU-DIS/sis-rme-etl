@@ -330,6 +330,19 @@ class EtlConnectorConfigurationTest {
 		initializeConnectors(configuration);
 
 		assertEquals("jdbc:mysql://source/openmrs", configuration.getSrcConnInfo().getConnectionURI());
+
+		JdbcDataSource primary = new JdbcDataSource();
+		primary.setTableName("patient");
+		primary.setFields(java.util.Collections.singletonList(Field.fastCreateField("patient_id")));
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		item.setSrcConf(primary);
+		item.prepareSourceConfiguration();
+
+		JdbcDataSource etlDatabaseSource = item.getEtlDatabaseDataSource();
+		assertEquals("jdbc:mysql://source/openmrs",
+				etlDatabaseSource.getResolvedResource().getEndpoint().getUri());
+		assertEquals(ConnectorType.JDBC, etlDatabaseSource.getResolvedResource().getEndpoint().getType());
 	}
 
 	@Test
