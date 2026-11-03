@@ -292,4 +292,11 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 			name = utilities.tryToReplacePlaceholders(name, schemaInfoSrc);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + " [sourceType=" + getSourceTypeName() + ", name=" + name + ", fields="
+				+ getFields() + ", primaryKey=" + primaryKey + ", excludedFieldsFromObjectDesc="
+				+ excludedFieldsFromObjectDesc + ", fullLoaded=" + isFullLoaded() + "]";
+	}
 }
