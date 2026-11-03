@@ -2283,7 +2283,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 			for (String path : getClassPath()) {
 				if (utilities.stringHasValue(path))
-					files.add(new File(path));
+					files.add(new File(path).toPath().normalize().toFile());
 			}
 		}
 		return files;

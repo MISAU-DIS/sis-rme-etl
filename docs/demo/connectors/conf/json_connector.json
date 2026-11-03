@@ -60,8 +60,8 @@
 		"srcDataModelId": "testing_etl_src",
 		"dstDataModelId": "testing_etl_dst",
 		"classPath": [
-			"${etl_root_dir}/app/sisrme-etl-api-1.0.jar",
-			"${etl_root_dir}/${binPojoDirectory}"
+		    "${etl_root_dir}/../../../api/target/classes",
+		    "${etl_root_dir}/${binPojoDirectory}"
 		]
 	},
 	"ignoreAllStartupScripts": "${ignoreAllStartupScripts}",

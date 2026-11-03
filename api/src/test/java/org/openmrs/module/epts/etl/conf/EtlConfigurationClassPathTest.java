@@ -40,4 +40,14 @@ public class EtlConfigurationClassPathTest {
 
 		assertEquals(Arrays.asList("lib/api.jar"), configuration.getClassPath());
 	}
+
+	@Test
+	public void shouldNormalizeParentSegmentsInClassPath() {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setClassPath(Arrays.asList("docs/demo/connectors/../../../api/target/classes"));
+
+		File expected = new File("api/target/classes");
+
+		assertEquals(Arrays.asList(expected), configuration.getClassPathAsFiles());
+	}
 }
