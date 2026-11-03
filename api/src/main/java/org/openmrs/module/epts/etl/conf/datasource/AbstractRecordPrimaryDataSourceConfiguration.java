@@ -17,9 +17,11 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
@@ -43,7 +45,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	@JsonIgnore
 	private transient Boolean fullLoaded;
 	@JsonIgnore
-	private transient Class<? extends EtlDatabaseObject> etlRecordClass = GenericDatabaseObject.class;
+	private transient Class<? extends EtlDatabaseObject> etlRecordClass;
 	@JsonIgnore
 	private transient DatabaseObjectLoaderHelper loadHelper = new DatabaseObjectLoaderHelper(this);
 	@JsonIgnore
@@ -108,7 +110,15 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
 		validateFields();
-		this.etlRecordClass = GenericDatabaseObject.class;
+
+		try {
+			this.etlRecordClass = generateEtlRecordClass((DBConnectionInfo) null);
+		} catch (PojoNotFoundException exception) {
+			// The POJO may legitimately not exist yet while DATABASE_MODEL_GENERATION is
+			// creating it. Strict PRECOMPILED_POJO mode will fail later if no class is
+			// generated or made available before records are instantiated.
+			this.etlRecordClass = null;
+		}
 		this.fullLoaded = true;
 	}
 
@@ -206,7 +216,20 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	@Override
 	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo) {
-		return etlRecordClass;
+		if (getRelatedEtlConf() == null) {
+			setEtlRecordClass(GenericDatabaseObject.class);
+			return getEtlRecordClass();
+		}
+
+		return generateEtlRecordClass(getSourceModelContext());
+	}
+
+	private DatabaseModelGenerationContext getSourceModelContext() {
+		if (getRelatedEtlConf() == null) {
+			throw new EtlConfException("The record primary data source is not attached to an ETL configuration");
+		}
+
+		return DatabaseModelGenerationContext.source(getRelatedEtlConf().getDataModel(), null);
 	}
 
 	@Override

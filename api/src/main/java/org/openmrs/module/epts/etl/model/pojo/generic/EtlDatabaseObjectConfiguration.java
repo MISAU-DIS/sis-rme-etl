@@ -202,36 +202,41 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
 			throws PojoNotFoundException {
+		return resolveEtlRecordClass(generateFullClassName(connInfo));
+	}
 
-		Class<? extends EtlDatabaseObject> syncRecordClass = null;
+	@JsonIgnore
+	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DatabaseModelGenerationContext context)
+			throws PojoNotFoundException {
+		return resolveEtlRecordClass(generateFullClassName(context));
+	}
 
-		if (getRelatedEtlConf().usesPrecompiledPojoObjects()
-				|| getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
-			syncRecordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(this.generateFullClassName(connInfo),
-					this.getRelatedEtlConf());
+	private Class<? extends EtlDatabaseObject> resolveEtlRecordClass(String fullClassName) {
+		Class<? extends EtlDatabaseObject> recordClass;
+		EtlConfiguration etlConfiguration = getRelatedEtlConf();
 
-			if (syncRecordClass == null) {
-				this.getRelatedEtlConf().warn("POJO NOT FOUND FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
-						getRelatedEtlConf().getDatabaseObjectInstantiationMode());
+		if (etlConfiguration.usesPrecompiledPojoObjects()
+				|| etlConfiguration.usesPrecompiledPojoObjectsWithFallBack()) {
+			recordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(fullClassName, etlConfiguration);
 
-				if (getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
-					this.getRelatedEtlConf().warn(
-							"USING GENERIC POJO FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
-							getRelatedEtlConf().getDatabaseObjectInstantiationMode());
+			if (recordClass == null) {
+				etlConfiguration.warn("POJO NOT FOUND FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
+						etlConfiguration.getDatabaseObjectInstantiationMode());
 
-					syncRecordClass = GenericDatabaseObject.class;
+				if (etlConfiguration.usesPrecompiledPojoObjectsWithFallBack()) {
+					etlConfiguration.warn("USING GENERIC POJO FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
+							etlConfiguration.getDatabaseObjectInstantiationMode());
+					recordClass = GenericDatabaseObject.class;
 				} else {
 					throw new PojoNotFoundException(this);
 				}
 			}
-
 		} else {
-			syncRecordClass = GenericDatabaseObject.class;
+			recordClass = GenericDatabaseObject.class;
 		}
 
-		this.setEtlRecordClass(syncRecordClass);
-
-		return syncRecordClass;
+		setEtlRecordClass(recordClass);
+		return recordClass;
 	}
 
 	default List<String> getParentRefInfoAsString() {

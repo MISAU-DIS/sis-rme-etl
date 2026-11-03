@@ -1,5 +1,6 @@
 package org.openmrs.module.epts.etl.conf;
 
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.util.Collections;
 
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.openmrs.module.epts.etl.conf.datasource.CsvPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
@@ -23,6 +25,8 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
+import org.openmrs.module.epts.etl.model.pojo.test_file.AddressVO;
+import org.openmrs.module.epts.etl.model.pojo.test_file.PatientVO;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -205,6 +209,30 @@ class SourceConfigurationTest {
 				source.getExtraJsonRecordDataSource().get(0).getRelatedPrimaryDataSource());
 		assertTrue(source.getExtraJsonRecordDataSource().get(0).isFullLoaded());
 		assertTrue(source.getAvailableAdditionalDataSources().contains(source.getExtraJsonRecordDataSource().get(0)));
+	}
+
+	@Test
+	void shouldResolvePrecompiledClassesForFileRecordSources(@TempDir Path temporaryDirectory) throws Exception {
+		EtlConfiguration etl = new EtlConfiguration();
+		etl.setEtlRootDirectory(temporaryDirectory.toString());
+		etl.getDataModel().setDatabaseObjectInstantiationMode(DatabaseObjectInstantiationMode.PRECOMPILED_POJO);
+		etl.getDataModel().setSrcPojoPackageName("test_file");
+		etl.getDataModel().init(etl);
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(etl);
+		SourceConfiguration source = read("{"
+				+ "\"connector\":\"input-files\","
+				+ "\"resource\":{\"name\":\"persons.json\"},"
+				+ "\"jsonDataSource\":{\"name\":\"patient\",\"fields\":[{\"name\":\"id\"}]},"
+				+ "\"extraJsonRecordDataSource\":[{\"name\":\"address\",\"path\":\"/address\","
+				+ "\"fields\":[{\"name\":\"id\"}]}]}");
+
+		source.initialize(item);
+		source.fullLoad(null);
+
+		assertSame(PatientVO.class, source.getPrimaryDataSource().getEtlRecordClass());
+		assertSame(AddressVO.class, source.getExtraJsonRecordDataSource().get(0).getEtlRecordClass());
 	}
 
 	private static class TrackingTransformableDataSource extends TransformableDataSource {
