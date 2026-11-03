@@ -26,6 +26,7 @@ import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
@@ -98,6 +99,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	private Map<String, List<EtlDatabaseObject>> recordsToDisplay;
 
 	private int currentIteration;
+
+	private boolean fileBatchPolicyLogged;
 
 	private final EnginePersistenceCoordinator persistenceCoordinator;
 
@@ -868,11 +871,21 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public ParallelProcessingStrategyType getParallelProcessingStrategy() {
+		ParallelProcessingStrategyType configured;
+
 		if (getEtlItemConfiguration().hasParallelProcessingStrategyType()) {
-			return getEtlItemConfiguration().getParallelProcessingStrategyType();
+			configured = getEtlItemConfiguration().getParallelProcessingStrategyType();
+		} else {
+			configured = getRelatedEtlOperationConfig().getParallelProcessingStrategy();
 		}
 
-		return getRelatedEtlOperationConfig().getParallelProcessingStrategy();
+		if (usesFileSource() && configured.isRangePartitioning()) {
+			logFileBatchPolicy("RANGE_PARTITIONING is not applicable to FILE sources; using RESULT_PARTITIONING to "
+					+ "read the file once and process its records in parallel");
+			return ParallelProcessingStrategyType.RESULT_PARTITIONING;
+		}
+
+		return configured;
 	}
 
 	TaskProcessor<T> initConcurrentTaskProcessor(IntervalExtremeRecord interval, int index) {
@@ -1405,7 +1418,31 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public int getMaxRecordsPerProcessing() {
+		if (usesFileSource()) {
+			long recordCount = getMaxRecordId() >= getMinRecordId()
+					? getMaxRecordId() - getMinRecordId() + 1
+					: 0;
+
+			if (recordCount > 0) {
+				logFileBatchPolicy("processingBatch is ignored for FILE sources; all " + recordCount
+						+ " records will be read in one pass");
+				return (int) Math.min(Integer.MAX_VALUE, recordCount);
+			}
+		}
+
 		return getController().getOperationConfig().getProcessingBatch();
+	}
+
+	private boolean usesFileSource() {
+		return getEtlItemConfiguration() != null && getEtlItemConfiguration().getResolvedSrcResource() != null
+				&& getEtlItemConfiguration().getResolvedSrcResource().getEndpoint().getType() == ConnectorType.FILE;
+	}
+
+	private void logFileBatchPolicy(String message) {
+		if (!fileBatchPolicyLogged) {
+			logInfo(message);
+			fileBatchPolicyLogged = true;
+		}
 	}
 
 	public int getMaxSupportedProcessors() {
