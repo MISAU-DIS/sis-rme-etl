@@ -13,7 +13,7 @@ import java.util.Set;
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceProcessingPolicy;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -62,7 +62,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private EtlItemSrcConf etlItemSrcConf;
 
-	private SourceConfiguration source;
+	private EtlSourceConfiguration source;
 
 	/**
 	 * JDBC view of this item's record model on the ETL database. Unlike the primary
@@ -222,11 +222,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.manualMapPrimaryKeyOnField = manualMapPrimaryKeyOnField;
 	}
 
-	public SourceConfiguration getSource() {
+	public EtlSourceConfiguration getSource() {
 		return source;
 	}
 
-	public void setSource(SourceConfiguration source) {
+	public void setSource(EtlSourceConfiguration source) {
 		this.source = source;
 	}
 
@@ -717,9 +717,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	}
 
-	protected static SourceConfiguration sourceWithJdbcPrimary(
+	protected static EtlSourceConfiguration sourceWithJdbcPrimary(
 			JdbcTablePrimaryDataSourceConfiguration primaryDataSource) {
-		SourceConfiguration source = new SourceConfiguration();
+		EtlSourceConfiguration source = new EtlSourceConfiguration();
 		source.setTableDataSource(primaryDataSource);
 		return source;
 	}

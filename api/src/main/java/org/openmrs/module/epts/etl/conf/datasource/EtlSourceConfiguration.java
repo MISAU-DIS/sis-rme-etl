@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Connector-neutral aggregate for one ETL item's source. Its primary source is
  * inferred from exactly one configured variant.
  */
-public class SourceConfiguration extends AbstractEtlDataConfiguration {
+public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 
 	private String connector;
 

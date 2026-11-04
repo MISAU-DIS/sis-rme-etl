@@ -567,7 +567,7 @@ public class DstConf extends AbstractTableConfiguration
 
 			for (Field field : myFields) {
 
-				if (isIgnorableField(field)) {
+				if (this.isIgnorableField(field)) {
 					continue;
 				}
 

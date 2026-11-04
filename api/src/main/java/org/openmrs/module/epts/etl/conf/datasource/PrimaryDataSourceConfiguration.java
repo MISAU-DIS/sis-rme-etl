@@ -16,9 +16,9 @@ import org.openmrs.module.epts.etl.exceptions.RequireJdbcException;
  */
 public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcConf {
 
-	SourceConfiguration getParentSource();
+	EtlSourceConfiguration getParentSource();
 
-	void setParentSource(SourceConfiguration parentSource);
+	void setParentSource(EtlSourceConfiguration parentSource);
 
 	default Boolean doNotUseAsDatasource() {
 		return Boolean.FALSE;

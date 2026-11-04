@@ -41,7 +41,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	private List<String> excludedFieldsFromObjectDesc;
 
 	@JsonIgnore
-	private transient SourceConfiguration parentSource;
+	private transient EtlSourceConfiguration parentSource;
 	@JsonIgnore
 	private transient Boolean fullLoaded;
 	@JsonIgnore
@@ -88,12 +88,12 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	}
 
 	@Override
-	public SourceConfiguration getParentSource() {
+	public EtlSourceConfiguration getParentSource() {
 		return parentSource;
 	}
 
 	@Override
-	public void setParentSource(SourceConfiguration parentSource) {
+	public void setParentSource(EtlSourceConfiguration parentSource) {
 		this.parentSource = parentSource;
 	}
 
@@ -296,10 +296,10 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
 
-		if (!(relatedParent instanceof SourceConfiguration)) {
+		if (!(relatedParent instanceof EtlSourceConfiguration)) {
 			throw new EtlConfException("A record primary source must belong to SourceConfiguration");
 		}
-		this.parentSource = (SourceConfiguration) relatedParent;
+		this.parentSource = (EtlSourceConfiguration) relatedParent;
 	}
 
 	@Override

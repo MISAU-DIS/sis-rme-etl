@@ -125,10 +125,10 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	private Boolean joinFieldsAlredyLoaded;
 
 	@JsonIgnore
-	private transient SourceConfiguration parentSource;
+	private transient EtlSourceConfiguration parentSource;
 
 	@JsonIgnore
-	private transient SourceConfiguration detachedLegacySource;
+	private transient EtlSourceConfiguration detachedLegacySource;
 
 	public JdbcTablePrimaryDataSourceConfiguration() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
@@ -136,12 +136,12 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	}
 
 	@Override
-	public SourceConfiguration getParentSource() {
+	public EtlSourceConfiguration getParentSource() {
 		return parentSource;
 	}
 
 	@Override
-	public void setParentSource(SourceConfiguration parentSource) {
+	public void setParentSource(EtlSourceConfiguration parentSource) {
 
 		if (parentSource != null && detachedLegacySource != null) {
 			transferLegacyAdditionalDataSources(parentSource);
@@ -150,15 +150,15 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		this.detachedLegacySource = null;
 	}
 
-	private SourceConfiguration additionalDataSourcesOwner() {
+	private EtlSourceConfiguration additionalDataSourcesOwner() {
 		if (parentSource != null)
 			return parentSource;
 		if (detachedLegacySource == null)
-			detachedLegacySource = new SourceConfiguration();
+			detachedLegacySource = new EtlSourceConfiguration();
 		return detachedLegacySource;
 	}
 
-	private void transferLegacyAdditionalDataSources(SourceConfiguration target) {
+	private void transferLegacyAdditionalDataSources(EtlSourceConfiguration target) {
 		mergeLegacy("extraTableDataSource", detachedLegacySource.getExtraTableDataSource(),
 				target.getExtraTableDataSource(), target::setExtraTableDataSource);
 		mergeLegacy("extraQueryDataSource", detachedLegacySource.getExtraQueryDataSource(),

@@ -19,7 +19,7 @@ import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
@@ -381,7 +381,7 @@ class EtlConnectorConfigurationTest {
 		jsonPrimary.setPrimaryKey(primaryKey);
 		SourceResourceConfiguration resource = new SourceResourceConfiguration();
 		resource.setName("patients.json");
-		SourceConfiguration source = new SourceConfiguration();
+		EtlSourceConfiguration source = new EtlSourceConfiguration();
 		source.setResource(resource);
 		source.setJsonDataSource(jsonPrimary);
 
@@ -514,7 +514,7 @@ class EtlConnectorConfigurationTest {
 
 	private void setJdbcSource(EtlItemConfiguration item,
 			JdbcTablePrimaryDataSourceConfiguration primaryDataSource) {
-		SourceConfiguration source = new SourceConfiguration();
+		EtlSourceConfiguration source = new EtlSourceConfiguration();
 		ConnectorResourceConfiguration configuredResource = primaryDataSource.getResource();
 
 		if (configuredResource != null) {

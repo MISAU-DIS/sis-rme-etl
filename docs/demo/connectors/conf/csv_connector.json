@@ -2,7 +2,7 @@
   "originAppLocationCode": "${location_name}",
   "etlRootDirectory": "${etl_root_dir}",
   "syncStageSchema": "connectors_test_stage_area",
-  "templatesDir": "${etl_root_dir}/../templates/*.csv",
+  "templatesDir": "${etl_root_dir}/../templates/*.json",
   "connectors": [
     {
       "id": "src-connector",
@@ -155,18 +155,13 @@
             {
               "srcField": "person.creation_date",
               "dstField": "person_creation_date"
-            },
-            {
-              "srcField": "address.uuid",
-              "dstField": "address_uuid"
-            },
-            {
-              "srcField": "address.creation_date",
-              "dstField": "address_creation_date"
             }
           ],
           "ignorableFields": [
-            "creation_date"
+            "creation_date",
+            "full_address",
+            "address_creation_date",
+            "address_uuid"
           ]
         }
       ]
@@ -177,33 +172,38 @@
         "resource": {
           "name": "address_data.csv"
         },
-        "csvDataSource": [
-          {
-            "name": "address",
+        "csvDataSource": {
+          "name": "address",
+          "primaryKey": {
             "fields": [
               {
-                "name": "id",
-                "dataType": "integer"
-              },
-              {
-                "name": "person_id",
-                "dataType": "integer"
-              },
-              {
-                "name": "full_address",
-                "dataType": "string"
-              },
-              {
-                "name": "creation_date",
-                "dataType": "date"
-              },
-              {
-                "name": "uuid",
-                "dataType": "string"
+                "name": "id"
               }
             ]
-          }
-        ]
+          },
+          "fields": [
+            {
+              "name": "id",
+              "dataType": "integer"
+            },
+            {
+              "name": "person_uuid",
+              "dataType": "string"
+            },
+            {
+              "name": "full_address",
+              "dataType": "string"
+            },
+            {
+              "name": "creation_date",
+              "dataType": "date"
+            },
+            {
+              "name": "uuid",
+              "dataType": "string"
+            }
+          ]
+        }
       },
       "dstConf": [
         {
@@ -212,8 +212,11 @@
             "connector": "dst-connector",
             "name": "person_data"
           },
-          "onConflict":"PATCH_UPDATE",
-          "patchFields":"address_uuid,address_creation_date",
+          "onConflict": "PATCH_EXISTING",
+          "patchFields": [
+            "address_uuid",
+            "address_creation_date"
+          ],
           "mapping": [
             {
               "srcField": "person_uuid",
@@ -229,10 +232,12 @@
             }
           ],
           "ignorableFields": [
-            "creation_date"
+            "creation_date",
+            "full_name",
+            "person_creation_date"
           ]
         }
-      ]      
+      ]
     }
   ]
 }
