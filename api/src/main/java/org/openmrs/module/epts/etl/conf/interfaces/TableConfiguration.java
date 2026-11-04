@@ -47,7 +47,6 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
@@ -58,7 +57,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlDataSource {
+public interface TableConfiguration extends EtlDataSource {
 
 	public static final String STAGE_TABLE_DST_UNIQUE_KEYS = "_dst_unique_keys";
 
@@ -257,6 +256,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default void createTable(Connection conn) throws DBException {
 
 		synchronized (lock) {
+
 			if (!DBUtilities.isTableExists(this.getSyncStageSchema(), this.getTableName(), conn)) {
 
 				if (!this.hasFields()) {
@@ -355,6 +355,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		String sourceFoldersAsString = "";
 
 		if (utilities.listHasElement(this.getParents())) {
+
 			for (int i = 0; i < this.getParents().size() - 1; i++) {
 				sourceFoldersAsString += this.getParents().get(i).getTableName() + ",";
 			}
@@ -402,6 +403,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		try {
 			this.tryToLoadSchemaInfo(schemaInfoSrc, conn);
 		} catch (DatabaseResourceDoesNotExists e) {
+
 			if (toCloneFrom instanceof EtlItemConfigurationComponent) {
 				EtlItemConfiguration item = ((EtlItemConfigurationComponent) toCloneFrom).getParentEtlItemConf();
 
@@ -534,6 +536,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				}
 
 				if (primaryKey == null && this.hasManualMapPrimaryKeyOnField()) {
+
 					if (this.containsField(this.getManualMapPrimaryKeyOnField())) {
 						primaryKey = new PrimaryKey();
 
@@ -584,6 +587,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					try {
 						defaultObject.save(dst, dstConn);
 					} catch (DBException e) {
+
 						if (!e.isDuplicatePrimaryOrUniqueKeyException()) {
 							throw e;
 						}
@@ -700,6 +704,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		if (this.getUniqueKeys() == null) {
 			this.loadUniqueKeys(this, conn);
 		} else {
+
 			for (UniqueKeyInfo uk : this.getUniqueKeys()) {
 				uk.setTabConf(this);
 			}
@@ -710,7 +715,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default void loadUniqueKeys(TableConfiguration tableConfiguration, Connection conn) {
+
 		if (tableConfiguration.getUniqueKeys() == null) {
+
 			try {
 				this.setUniqueKeys(UniqueKeyInfo.loadUniqueKeysInfo(this, conn));
 			} catch (SQLException e) {
@@ -721,6 +728,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default Boolean checkIfisIgnorableParentByClassAttName(String parentAttName, Connection conn) {
+
 		for (ParentTable parent : this.getParentRefInfo()) {
 			RefMapping map = parent.getRefMappingByChildClassAttName(parentAttName);
 
@@ -737,9 +745,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		ResultSet foreignKeyRS = conn.getMetaData().getExportedKeys(this.getCatalog(conn), this.getSchema(), tableName);
 
 		try {
+
 			if (DBUtilities.isMySQLDB(conn)) {
 				foreignKeyRS.last();
 			} else {
+
 				while (foreignKeyRS.next()) {
 				}
 			}
@@ -820,9 +830,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				this.getTableName());
 
 		try {
+
 			if (DBUtilities.isMySQLDB(conn)) {
 				foreignKeyRS.last();
 			} else {
+
 				while (foreignKeyRS.next()) {
 				}
 			}
@@ -834,9 +846,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void loadParents(Connection conn) throws DBException {
+
 		if (!getRelatedEtlConf().doNotResolveRelationship()) {
 
 			synchronized (this) {
+
 				try {
 					if (this.isParentsLoaded())
 						return;
@@ -850,6 +864,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					// First load all necessary info on configured parents
 
 					if (utilities.listHasElement(this.getParents())) {
+
 						for (ParentTable p : this.getParents()) {
 
 							p.setChildTableConf(this);
@@ -885,6 +900,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 								String refCode = foreignKeyRS.getString("FK_NAME");
 
 								String childFieldName = foreignKeyRS.getString("FKCOLUMN_NAME");
+
 								if (!utilities.containsAll(this.getIgnorableFields(), childFieldName)) {
 									String parentFieldName = foreignKeyRS.getString("PKCOLUMN_NAME");
 									String parentTableName = foreignKeyRS.getString("PKTABLE_NAME");
@@ -936,6 +952,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 													.equals(manualConfiguredRefInfo.getTableName())) {
 
 												if (!manualConfiguredRefInfo.hasMapping()) {
+
 													if (autoLoadedRefInfo.isCompositeMapping()) {
 														throw new ForbiddenOperationException(
 																"You must manual configure the ref info for parent "
@@ -1012,7 +1029,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 							if (utilities.listHasElement(this.getParents())) {
 
 								for (ParentTable configuredParent : this.getParents()) {
+
 									if (configuredParent.hasMapping()) {
+
 										if (!this.getParentRefInfo().contains(configuredParent)) {
 											configuredParent.setManualyConfigured(true);
 
@@ -1028,6 +1047,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 								List<ParentTable> cleanList = new ArrayList<>();
 
 								for (ParentTable ref : this.getParentRefInfo()) {
+
 									if (!cleanList.contains(ref)) {
 										cleanList.add(ref);
 									}
@@ -1040,6 +1060,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						} finally
 
 						{
+
 							if (foreignKeyRS != null) {
 								foreignKeyRS.close();
 							}
@@ -1114,6 +1135,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 					this.logDebug("LOADED CHILDREN FOR TABLE '" + this.getTableName() + "'");
 				} finally {
+
 					if (foreignKeyRS != null) {
 						foreignKeyRS.close();
 					}
@@ -1201,6 +1223,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 
 		try {
+
 			if (ref != null) {
 				ref.addMapping(map);
 			}
@@ -1222,6 +1245,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
+
 		try {
 			return this.generateEtlRecordClass(connInfo) != null;
 		} catch (ForbiddenOperationException e) {
@@ -1231,7 +1255,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+
 		try {
+
 			if (fullClass) {
 				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));
 			} else {
@@ -1253,6 +1279,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void generateSkeletonRecordClass(DBConnectionInfo application) {
+
 		try {
 			this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, application));
 		} catch (ClassNotFoundException e) {
@@ -1345,6 +1372,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default String generateFullTableNameWithAlias(Connection conn) throws DBException, ForbiddenOperationException {
+
 		if (!this.hasAlias()) {
 			throw new ForbiddenOperationException("No alias is defined for table " + this.getTableName());
 		}
@@ -1353,9 +1381,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default String generateFullTableNameWithAlias() {
+
 		if (!this.hasAlias()) {
 			throw new ForbiddenOperationException("No alias is defined for table " + this.getTableName());
 		}
+
 		if (!this.hasSchema()) {
 			throw new ForbiddenOperationException("No schema is defined for table" + this.getTableName());
 		}
@@ -1364,6 +1394,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default String generateTableNameWithAlias() {
+
 		if (!this.hasAlias()) {
 			throw new ForbiddenOperationException("No alias is defined for table " + this.getTableName());
 		}
@@ -1418,6 +1449,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default Boolean isConfigured() {
+
 		if (this.getRelatedEtlConf() == null) {
 			throw new EtlConfException("The relatedEtlConf was not set!");
 		}
@@ -1443,6 +1475,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		synchronized (this) {
 
 			try {
+
 				if (this.isFullLoaded()) {
 					return;
 				}
@@ -1563,6 +1596,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void addParent(ParentTable p) {
+
 		if (!hasParents()) {
 			this.setParents(new ArrayList<>());
 		}
@@ -1589,6 +1623,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		Object paramValue = null;
 
 		if (schemaInfoSrc != null) {
+
 			try {
 				paramValue = schemaInfoSrc.getFieldValue(paramName);
 			} catch (ForbiddenOperationException e) {
@@ -1681,6 +1716,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		this.setFields(new ArrayList<>());
 
 		for (Field f : flds) {
+
 			if (!this.isIgnorableField(f)) {
 				this.getFields().add(f);
 			}
@@ -1707,6 +1743,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@Override
 	default void fullLoad() throws DBException {
+
 		synchronized (this) {
 			OpenConnection mainConn = this.getRelatedEtlConf().openSrcConn(this);
 
@@ -1723,6 +1760,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default ParentTable getSharedTableConf(Connection conn) {
+
 		if (this.getSharedKeyRefInfo(conn) != null) {
 			return this.getSharedKeyRefInfo(conn);
 		}
@@ -1731,6 +1769,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default ParentTable getSharedKeyRefInfo(Connection conn) {
+
 		if (this.getSharePkWith() == null) {
 			return null;
 		} else if (this.hasParentRefInfo()) {
@@ -1744,6 +1783,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 						OpenConnection localConn = null;
 
 						try {
+
 							if (conn == null) {
 								localConn = this.getRelatedEtlConf().openSrcConn(this);
 
@@ -1776,7 +1816,9 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default TableConfiguration findParentOnChildRefInfo(String parentTableName) {
+
 		for (ChildTable ref : this.getChildRefInfo()) {
+
 			if (parentTableName.equals(ref.getParentTableConf().getTableName())) {
 				return ref.getParentTableConf();
 			}
@@ -1794,8 +1836,11 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default ParentTable findParentRefInfoByField(String fieldName) {
+
 		for (ParentTable ref : this.getParentRefInfo()) {
+
 			try {
+
 				if (ref.getChildColumnOnSimpleMapping().equals(fieldName)) {
 					return ref;
 				}
@@ -1819,6 +1864,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default List<ParentTable> findAllRefToParent(String parentTableName) {
+
 		if (!hasParentRefInfo()) {
 			return null;
 		}
@@ -1826,6 +1872,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		List<ParentTable> references = new ArrayList<>();
 
 		for (ParentTable parent : this.getParentRefInfo()) {
+
 			if (parentTableName.equals(parent.getTableName())) {
 				references.add(parent);
 			}
@@ -1835,6 +1882,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default List<ParentTable> findAllRefToParent(String parentTableName, String schema) {
+
 		if (!hasParentRefInfo()) {
 			return null;
 		}
@@ -1842,6 +1890,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		List<ParentTable> references = new ArrayList<>();
 
 		for (ParentTable parent : this.getParentRefInfo()) {
+
 			if (parentTableName.equals(parent.getTableName()) && schema.equals(parent.getSchema())) {
 				references.add(parent);
 			}
@@ -1978,6 +2027,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			conditionalParents = new ArrayList<>();
 
 			for (ParentTable p : this.getParents()) {
+
 				if (p.hasConditionalFields()) {
 					conditionalParents.add(p);
 				}
@@ -1996,6 +2046,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	void setUpdateSql(java.lang.String generateUpdateSQL);
 
 	default String generateFullFilledUpdateSql(EtlDatabaseObject obj) {
+
 		if (this.getPrimaryKey() == null) {
 
 			if (this.getUniqueKeys() == null) {
@@ -2102,6 +2153,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	@JsonIgnore
 	default String generateUpdateSQL() {
+
 		if (this.getPrimaryKey() == null) {
 
 			if (this.getUniqueKeys() == null) {
@@ -2271,6 +2323,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 
 		if (utilities.listHasElement(pInfo)) {
+
 			if (utilities.listHasExactlyOneElement(pInfo)) {
 				ref = pInfo.get(0);
 			} else {
@@ -2305,6 +2358,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		case THIS_IS_DATA_SOURCE:
 			dsName = this.getTableAlias();
 			break;
+
 		case OTHER_IS_DATA_SOURCE:
 			dsName = relatedTabConf.getTableAlias();
 			break;
@@ -2343,10 +2397,10 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf);
 
 			if (found == null && srcConf.hasParentItemConf()) {
-				found = retrieveConfiguredParentWithinTheSameSrcConf(table,
-						srcConf.getParentJdbcPrimaryDataSource());
+				found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf.getParentJdbcPrimaryDataSource());
 			}
 		} else if (this instanceof JdbcTablePrimaryDataSourceConfiguration) {
+
 			if (((JdbcTablePrimaryDataSourceConfiguration) this).hasParentItemConf()) {
 				found = retrieveConfiguredParentWithinTheSameSrcConf(table,
 						((JdbcTablePrimaryDataSourceConfiguration) this).getParentJdbcPrimaryDataSource());
@@ -2361,11 +2415,15 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			JdbcTablePrimaryDataSourceConfiguration srcConf) {
 
 		if (srcConf != null) {
+
 			if (srcConf.getTableName().equals(table.getTableName())) {
 				return srcConf;
 			} else {
+
 				if (srcConf.hasAuxExtractTable()) {
+
 					for (AuxExtractTable aux : srcConf.getAuxExtractTable()) {
+
 						if (aux.getTableName().equals(table.getTableName())) {
 							return aux;
 						}
@@ -2384,6 +2442,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		if (utilities.listHasElement(joinFields)) {
 
 			for (int i = 0; i < joinFields.size(); i++) {
+
 				if (i > 0) {
 					conditionFields += " AND ";
 				}
@@ -2425,6 +2484,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 					Object value = dataSourceFieldName;
 
 					try {
+
 						if (dataSourceName != null
 								&& !dataSourceName.equals(parentObject.getRelatedConfiguration().getAlias())) {
 							throw new EtlExceptionImpl(
@@ -2514,6 +2574,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		alreadyCheckedObjects.add(identity);
 
 		if (this.hasParentRefInfo()) {
+
 			for (ParentTable p : this.getParentRefInfo()) {
 				TableConfiguration fullLoadedTable = p.findFullConfiguredConfInAllRelatedTable(fullTableName,
 						alreadyCheckedObjects);
@@ -2525,6 +2586,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 
 		if (this.hasChildRefInfo()) {
+
 			for (ChildTable p : this.getChildRefInfo()) {
 				TableConfiguration fullLoadedTable = p.findFullConfiguredConfInAllRelatedTable(fullTableName,
 						alreadyCheckedObjects);
@@ -2543,6 +2605,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default String getCatalog(Connection conn) throws DBException {
 
 		try {
+
 			if (DBUtilities.isMySQLDB(conn)) {
 				return getSchema();
 			} else {
@@ -2555,11 +2618,13 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	default void fullLoadAllRelatedTables(TableAliasesGenerator aliasGenerator, TableConfiguration related,
 			Connection conn) throws DBException {
+
 		if (this.isAllRelatedTablesFullLoaded()) {
 			return;
 		}
 
 		if (this.hasParentRefInfo()) {
+
 			for (ParentTable ref : this.getParentRefInfo()) {
 
 				TableConfiguration existingConf = null;
@@ -2593,6 +2658,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			return false;
 
 		for (Field f : this.getFields()) {
+
 			if (f.getName().equals(fieldName) || f.generateAliasedColumn(this).equals(fieldName)) {
 				return true;
 			}
@@ -2606,6 +2672,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			return false;
 
 		for (String ignorable : this.getIgnorableFields()) {
+
 			if (field.getName().equals(ignorable)) {
 				return true;
 			}
@@ -2642,6 +2709,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			return false;
 
 		for (ParentTable p : this.getParentRefInfo()) {
+
 			if (p.checkIfContainsRefMappingByChildName(field.getName())) {
 				return true;
 			}
@@ -2656,6 +2724,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			return null;
 
 		for (ParentTable p : this.getParentRefInfo()) {
+
 			if (p.checkIfContainsRefMappingByChildName(field.getName())) {
 				return p;
 			}
@@ -2668,6 +2737,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		List<ParentTable> parents = findAllRefToParent(parentTable);
 
 		if (utilities.listHasElement(parents)) {
+
 			if (utilities.listHasExactlyOneElement(parents)) {
 				return parents.get(0);
 			}
@@ -2680,6 +2750,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void tryToGenerateTableAlias(TableAliasesGenerator aliasGenerator) {
+
 		synchronized (this) {
 			if (this.hasAlias())
 				return;
@@ -2690,27 +2761,15 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		}
 	}
 
+	@Override
 	default EtlDatabaseObject createRecordInstance() {
-		try {
+		EtlDatabaseObject record = EtlDataSource.super.createRecordInstance();
 
-			if (this.getEtlRecordClass() == null) {
-				this.setEtlRecordClass(generateEtlRecordClass(getRelatedConnInfo()));
-			}
-
-			@SuppressWarnings("deprecation")
-			EtlDatabaseObject rec = this.getEtlRecordClass().newInstance();
-
-			rec.setRelatedConfiguration(this);
-
-			if (this.useSharedPKKey()) {
-				rec.getSharedPkObj().setRelatedConfiguration(this.getSharedTableConf(null));
-			}
-
-			return rec;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		if (this.useSharedPKKey()) {
+			record.getSharedPkObj().setRelatedConfiguration(this.getSharedTableConf(null));
 		}
 
+		return record;
 	}
 
 	default Boolean hasObservationDateFields() {
@@ -2718,6 +2777,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default void addUniqueKey(UniqueKeyInfo uk) {
+
 		if (!this.hasUniqueKeys()) {
 			this.setUniqueKeys(new ArrayList<>());
 		}
@@ -2754,6 +2814,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 		List<ParentTable> parents = new ArrayList<>();
 
 		for (ParentTable parentToCloneFrom : this.getParents()) {
+
 			if (DBUtilities.isTableExists(tableToCloneTo.getSchema(), parentToCloneFrom.getTableName(), conn)) {
 				ParentTable clonedParent = new ParentTableImpl();
 
@@ -2767,6 +2828,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				clonedParent.setSetNullDueInconsistency(parentToCloneFrom.isSetNullDueInconsistency());
 
 				if (clonedParent.containsAllFields(parentToCloneFrom.parseMappingToParentFields())) {
+
 					for (RefMapping map : parentToCloneFrom.getRefMapping()) {
 						RefMapping clonedMap = map.clone();
 						clonedMap.setParentTabConf((ParentTableImpl) clonedParent);
@@ -2798,6 +2860,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			return true;
 
 		for (UniqueKeyInfo keyInfo : this.getUniqueKeys()) {
+
 			if (containsAllFields(utilities.parseList(keyInfo.getFields(), Field.class))) {
 				return true;
 			}
@@ -2870,6 +2933,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default EtlConfigurationTableConf generateRelatedSrcStageTableConf(Connection conn) throws DBException {
+
 		if (!existRelatedExportStageTable(conn)) {
 			throw new ForbiddenOperationException("The table " + this.generateRelatedSrcStageTableName()
 					+ " does not exists! Ensure that the DB_PREPARATION operation was executed!");
@@ -2880,6 +2944,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default EtlConfigurationTableConf generateRelatedProcessedRecordStageTableConf(Connection conn) throws DBException {
+
 		if (!existRelatedProcessedRecordStageTable(conn)) {
 			throw new ForbiddenOperationException("The table " + this.generateRelatedProcessedRecordStageTableName()
 					+ " does not exists! Ensure that the DB_PREPARATION operation was full executed!");
@@ -2890,6 +2955,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default EtlConfigurationTableConf generateRelatedDstStageTableConf(Connection conn) throws DBException {
+
 		if (!existRelatedDstStageTable(conn)) {
 			throw new ForbiddenOperationException("The table " + this.generateRelatedDstStageTableName()
 					+ " does not exists! Ensure that the DB_PREPARATION operation was full executed!");
@@ -2900,6 +2966,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default EtlConfigurationTableConf generateRelatedStageDstUniqueKeysTableConf(Connection conn) throws DBException {
+
 		if (!existRelatedStageDstUniqueKeysTable(conn)) {
 			throw new ForbiddenOperationException("The table " + this.generateRelatedStageDstUniqueKeysTableName()
 					+ " does not exists! Ensure that the DB_PREPARATION operation was executed!");
@@ -2911,6 +2978,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	}
 
 	default EtlConfigurationTableConf generateRelatedStageSrcUniqueKeysTableConf(Connection conn) throws DBException {
+
 		if (!existRelatedStageSrcUniqueKeysTable(conn)) {
 			throw new ForbiddenOperationException("The table " + this.generateRelatedStageSrcUniqueKeysTableName()
 					+ " does not exists! Ensure that the DB_PREPARATION operation was executed!");
@@ -2945,6 +3013,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default void createRelatedDstSyncStage(Connection conn) throws DBException {
 
 		synchronized (lock) {
+
 			if (!DBUtilities.isTableExists(this.getSyncStageSchema(), this.generateRelatedDstStageTableName(), conn)) {
 
 				String sql = "";
@@ -3009,6 +3078,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				try {
 					BaseDAO.executeBatch(conn, sql, idxDefinition1, idxDefinition2);
 				} catch (DBException e) {
+
 					if (!e.getLocalizedMessage().contains("Duplicate key name")) {
 						throw e;
 					}
@@ -3032,6 +3102,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 			throws DBException {
 
 		synchronized (lock) {
+
 			if (!DBUtilities.isTableExists(this.getSyncStageSchema(), tableName, conn)) {
 
 				String sql = "";
@@ -3066,6 +3137,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				try {
 					BaseDAO.executeBatch(conn, sql, idxDefinition);
 				} catch (DBException e) {
+
 					if (!e.getLocalizedMessage().contains("Duplicate key name")) {
 						throw e;
 					}
@@ -3077,6 +3149,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default void createRelatedProcessedRecordStageAreaTable(Connection conn) throws DBException {
 
 		synchronized (lock) {
+
 			if (DBUtilities.isMySQLDB(conn)) {
 				String stageTableName = this.generateRelatedProcessedRecordStageTableName();
 
@@ -3103,13 +3176,16 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 				if (!this.containsField("processing_error")) {
 					sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN processing_error TEXT NULL");
 				}
+
 				if (!this.containsField("retry_count")) {
 					sql.add("ALTER TABLE " + fullStageTableName + " ADD COLUMN retry_count INT NOT NULL DEFAULT 0");
 				}
+
 				if (!this.containsField("processing_status")) {
 					sql.add("CREATE INDEX idx_" + stageTableName + "_processing_status " + "ON " + fullStageTableName
 							+ "(processing_status)");
 				}
+
 				if (!this.containsField("retry_count")) {
 					sql.add("CREATE INDEX idx_" + stageTableName + "_retry_count " + "ON " + fullStageTableName
 							+ "(retry_count)");
@@ -3125,6 +3201,7 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 	default void createRelatedSrcStageAreaTable(Connection conn) throws DBException {
 
 		synchronized (lock) {
+
 			if (!DBUtilities.isTableExists(this.getSyncStageSchema(), this.generateRelatedSrcStageTableName(), conn)) {
 
 				String tableName = this.generateRelatedSrcStageTableName();
@@ -3233,7 +3310,8 @@ public interface TableConfiguration extends EtlDatabaseObjectConfiguration, EtlD
 
 	}
 
-	default JdbcTablePrimaryDataSourceConfiguration cloneToSrcConf(EtlItemConfiguration relatedItemConf, Connection conn) throws DBException {
+	default JdbcTablePrimaryDataSourceConfiguration cloneToSrcConf(EtlItemConfiguration relatedItemConf,
+			Connection conn) throws DBException {
 		JdbcTablePrimaryDataSourceConfiguration srcConf = new JdbcTablePrimaryDataSourceConfiguration();
 
 		srcConf.copyFromOther(this, null, relatedItemConf, conn);

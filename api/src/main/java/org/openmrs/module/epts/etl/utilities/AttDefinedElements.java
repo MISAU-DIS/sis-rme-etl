@@ -214,7 +214,7 @@ public class AttDefinedElements {
 		}
 
 		this.attDefinition = usesFieldWrapper ? defineAtt(attName, dbAttName, dbAttType) : defineAtt(attName, attType);
-		this.setterDefinition = usesFieldWrapper ? defineSetterMethod(attName, attType, dbAttName)
+		this.setterDefinition = usesFieldWrapper ? defineSetterMethod(attName, attType)
 				: defineLegacySetterMethod(attName, attType);
 		this.getterDefinition = usesFieldWrapper ? defineGetterMethod(attName)
 				: defineLegacyGetterMethod(attName, attType);
@@ -384,17 +384,15 @@ public class AttDefinedElements {
 	public static String defineGetterMethod(String attName) {
 		String cAttName = attName.toUpperCase().charAt(0) + attName.substring(1);
 
-		return "	@JsonIgnore\n	public Field get" + cAttName + "(){ \n" + "		return this." + attName + ";\n"
-				+ "	}";
+		return "	public Field get" + cAttName + "(){ \n" + "		return this." + attName + ";\n" + "	}";
 
 	}
 
-	public static String defineSetterMethod(String attName, String attType, String jsonFieldName) {
+	public static String defineSetterMethod(String attName, String attType) {
 		String cAttName = attName.toUpperCase().charAt(0) + attName.substring(1);
 
-		return "	@JsonIgnore\n	public void set" + cAttName + "(Field " + attName + "){ \n" + "	 	this."
-				+ attName + " = " + attName + ";\n" + "	}\n\n" + "	@JsonProperty(\""
-				+ removeStrangeCharactersOnString(jsonFieldName) + "\")\n	public void set" + cAttName + "Value(" + attType
+		return "	public void set" + cAttName + "(Field " + attName + "){ \n" + "	 	this." + attName + " = "
+				+ attName + ";\n" + "	}\n\n" + "	public void set" + cAttName + "Value(" + attType
 				+ " value){ \n		this." + attName + ".setValue(value);\n	}";
 	}
 

@@ -150,7 +150,9 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass);
 
 	default void generateRelatedPojoClass(DatabaseModelGenerationContext context, Boolean fullClass) {
+
 		try {
+
 			if (fullClass) {
 				setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, context));
 			} else {
@@ -186,7 +188,9 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	default Boolean hasDateFields() {
+
 		for (Field t : this.getFields()) {
+
 			if (t.isDateField()) {
 				return true;
 			}
@@ -197,6 +201,28 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	default Class<? extends EtlDatabaseObject> getEtlRecordClass() throws ForbiddenOperationException {
 		throw new ForbiddenOperationException("Forbiden method! Please implement your own method!");
+	}
+
+	/**
+	 * Creates a record using the class selected by the configured data-model mode
+	 * and associates this configuration with the new object.
+	 */
+	default EtlDatabaseObject createRecordInstance() {
+		Class<? extends EtlDatabaseObject> recordClass = getEtlRecordClass();
+
+		if (recordClass == null) {
+			recordClass = generateEtlRecordClass(getRelatedConnInfo());
+		}
+
+		try {
+			EtlDatabaseObject record = recordClass.getDeclaredConstructor().newInstance();
+			record.setRelatedConfiguration(this);
+			return record;
+		} catch (ReflectiveOperationException exception) {
+			throw new PojoNotFoundException(
+					"Could not instantiate ETL record class " + recordClass.getName() + " for " + getObjectName(),
+					exception);
+		}
 	}
 
 	@JsonIgnore
@@ -243,6 +269,7 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		List<String> parents = new ArrayList<>();
 
 		if (hasParentRefInfo()) {
+
 			for (ParentTable p : this.getParentRefInfo()) {
 				parents.add(p.getTableName());
 			}
@@ -262,8 +289,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	Boolean isMustLoadChildrenInfo();
 
 	default Boolean containsField(String fieldName) {
+
 		if (this.hasFields()) {
+
 			for (Field f : this.getFields()) {
+
 				if (f.getName().equals(fieldName)) {
 					return true;
 				}
@@ -273,8 +303,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	default Field getField(String fieldName) {
+
 		if (this.hasFields()) {
+
 			for (Field f : this.getFields()) {
+
 				if (f.getName().equals(fieldName)) {
 					return f;
 				}

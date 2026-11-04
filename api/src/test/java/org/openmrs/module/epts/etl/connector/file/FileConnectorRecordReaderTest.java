@@ -68,7 +68,7 @@ class FileConnectorRecordReaderTest {
 	}
 
 	@Test
-	void shouldUseJacksonForPrecompiledRecordClass() throws Exception {
+	void shouldInstantiatePrecompiledClassAndLoadItsFieldWrappers() throws Exception {
 		Files.write(directory.resolve("patients.jsonl"),
 				java.util.Collections.singletonList("{\"patient_id\":7,\"name\":\"Alice\"}"),
 				StandardCharsets.UTF_8);
@@ -80,8 +80,8 @@ class FileConnectorRecordReaderTest {
 		EtlDatabaseObject record = reader.read(new ConnectorReadRequest<>(null, null, null, false)).get(0);
 
 		assertEquals(PatientVO.class, record.getClass());
-		assertEquals(7, ((PatientVO) record).getPatientId());
-		assertEquals("Alice", ((PatientVO) record).getName());
+		assertEquals(7, record.getFieldValue("patient_id"));
+		assertEquals("Alice", record.getFieldValue("name"));
 		assertSame(source, record.getRelatedConfiguration());
 	}
 

@@ -117,20 +117,8 @@ public interface EtlDataSource extends EtlDatabaseObjectConfiguration {
 	 */
 	String getQuery();
 
-	@SuppressWarnings("deprecation")
 	default EtlDatabaseObject newInstance() throws PojoNotFoundException {
-		try {
-			if (getEtlRecordClass() == null) {
-				throw new PojoNotFoundException(this);
-			}
-
-			EtlDatabaseObject obj = getEtlRecordClass().newInstance();
-			obj.setRelatedConfiguration(this);
-
-			return obj;
-		} catch (InstantiationException | IllegalAccessException | ForbiddenOperationException e) {
-			throw new PojoNotFoundException(e);
-		}
+		return createRecordInstance();
 	}
 
 	default void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,

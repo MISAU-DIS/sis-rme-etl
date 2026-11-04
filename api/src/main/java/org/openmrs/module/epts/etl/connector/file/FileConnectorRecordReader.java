@@ -136,8 +136,10 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 			}
 
 			IntervalExtremeRecord interval = request.getInterval();
+
 			long first = interval == null ? 1 : Math.max(1, interval.getMinRecordId());
 			long last = interval == null ? Long.MAX_VALUE : interval.getMaxRecordId();
+
 			List<T> records = new ArrayList<>();
 
 			for (int index = 0; index < recordNodes.size(); index++) {
@@ -147,6 +149,7 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 					records.add(parse(recordNodes.get(index), "record " + recordNumber));
 				}
 			}
+
 			return records;
 		} catch (IOException e) {
 			throw new FileConnectorReadException("Unable to read source resource " + path, e);

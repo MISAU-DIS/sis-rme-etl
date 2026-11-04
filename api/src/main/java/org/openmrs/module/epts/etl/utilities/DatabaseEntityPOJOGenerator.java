@@ -415,7 +415,6 @@ public class DatabaseEntityPOJOGenerator {
 		classDefinition += "import java.sql.Connection; \n \n";
 		classDefinition += "import org.openmrs.module.epts.etl.utilities.db.conn.DBException; \n \n";
 		classDefinition += "import com.fasterxml.jackson.annotation.JsonIgnore; \n \n";
-		classDefinition += "import com.fasterxml.jackson.annotation.JsonProperty; \n \n";
 
 		classDefinition += "public class " + className + " extends AbstractGeneratedDatabaseObject{ \n";
 		classDefinition += attsDefinition + "\n \n";
