@@ -47,7 +47,7 @@ public class DataBasesMergeFromSourceProcessor extends org.openmrs.module.epts.e
 			
 			logDebug(startingStrLog + ": Merging Record: [" + record + "]");
 			
-			MergingRecord data = new MergingRecord((EtlStageRecordVO) record, getSrcConf(),
+			MergingRecord data = new MergingRecord((EtlStageRecordVO) record, getJdbcPrimaryDataSource(),
 			        getRelatedOperationController().getSrcConnInfo(), getRelatedOperationController().getDstConnInfo());
 			
 			try {

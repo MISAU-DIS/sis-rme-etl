@@ -17,14 +17,14 @@ public abstract class SyncImportInfoSearchParams extends AbstractEtlSearchParams
 	
 	public SyncImportInfoSearchParams(Engine<EtlStageRecordVO> engine,
 	    ThreadRecordIntervalsManager<EtlStageRecordVO> limits) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.relatedEngine = engine;
 	}
 	
 	public SyncImportInfoSearchParams(Engine<EtlStageRecordVO> engine, ThreadRecordIntervalsManager<EtlStageRecordVO> limits,
 	    String appOriginLocationCode) {
-		super(engine.getSrcConf(), limits);
+		super(engine.getJdbcPrimaryDataSource(), limits);
 		
 		this.appOriginLocationCode = appOriginLocationCode;
 	}

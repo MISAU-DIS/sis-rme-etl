@@ -6,7 +6,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -109,7 +109,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 	public void fullLoad(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn)
 			throws DBException, ForbiddenOperationException {
 
-		SrcConf relatedSrcConf = relatedItemConf.getSrcConf();
+		TableConfiguration relatedSource = relatedItemConf.getPrimaryDataSource().requireJdbc();
 
 		if (!relatedItemConf.isFullLoaded()) {
 			throw new ForbiddenOperationException("The relatedItemConf must be full loaded!!!");
@@ -117,13 +117,13 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 
 		DstConf dstConf = relatedItemConf.findDstTable_(null, this.getDstTableName());
 
-		this.parentRefInfo = relatedSrcConf.getFieldIsRelatedParent(Field.fastCreateField(this.getParentField()));
+		this.parentRefInfo = relatedSource.getFieldIsRelatedParent(Field.fastCreateField(this.getParentField()));
 
 		// The srcObject and dstRelatedObject should be the same for multiple default
 		// parents for same record
 		if (this.getSrcRelatedObject() == null) {
-			this.setSrcRelatedObject(DatabaseObjectDAO.getByOid(relatedSrcConf,
-					Oid.fastCreate(relatedSrcConf.getPrimaryKey().asSimpleKey().getName(), this.getSrcRecId()),
+			this.setSrcRelatedObject(DatabaseObjectDAO.getByOid(relatedSource,
+					Oid.fastCreate(relatedSource.getPrimaryKey().asSimpleKey().getName(), this.getSrcRecId()),
 					srcConn));
 		}
 
@@ -133,7 +133,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		}
 
 		if (this.srcRelatedObject == null) {
-			throw new RecordNotFoundException(relatedSrcConf, this.getSrcRecId());
+			throw new RecordNotFoundException(relatedSource, this.getSrcRecId());
 		}
 
 		if (this.dstRelatedObject == null) {
@@ -161,9 +161,11 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		this.dstRelatedObject = relatedDstObject;
 	}
 
-	public static List<RecordWithDefaultParentInfo> getAllOfSrcRecord(SrcConf srcTable, Long srcRecId,
+	public static List<RecordWithDefaultParentInfo> getAllOfSrcRecord(PrimaryDataSourceConfiguration primarySource,
+			Long srcRecId,
 			Connection srcConn) throws DBException {
-		TableConfiguration tabConf = srcTable.getRelatedEtlConf().getRecordWithDefaultParentsInfoTabConf();
+		TableConfiguration srcTable = primarySource.requireJdbc();
+		TableConfiguration tabConf = primarySource.getRelatedEtlConf().getRecordWithDefaultParentsInfoTabConf();
 
 		if (!tabConf.isFieldsLoaded()) {
 			tabConf.fullLoad(srcConn);
@@ -190,12 +192,14 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		this.update((TableConfiguration) this.getRelatedConfiguration(), conn);
 	}
 
-	public static void deleteAllSuccessifulyProcessed(SrcConf srcConf, OpenConnection srcConn) throws DBException {
-		EtlConfigurationTableConf skippedRecordTabConf = srcConf.getRelatedEtlConf()
+	public static void deleteAllSuccessifulyProcessed(PrimaryDataSourceConfiguration primarySource,
+			OpenConnection srcConn) throws DBException {
+		TableConfiguration srcTable = primarySource.requireJdbc();
+		EtlConfigurationTableConf skippedRecordTabConf = primarySource.getRelatedEtlConf()
 				.getRecordWithDefaultParentsInfoTabConf();
 
 		DatabaseObjectDAO.removeAll(skippedRecordTabConf,
-				"src_table_name = '" + srcConf.getTableName() + "' and inconsistent_parent = -1", srcConn);
+				"src_table_name = '" + srcTable.getTableName() + "' and inconsistent_parent = -1", srcConn);
 	}
 
 }

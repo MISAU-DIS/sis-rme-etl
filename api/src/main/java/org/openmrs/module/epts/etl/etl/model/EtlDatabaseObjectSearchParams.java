@@ -8,8 +8,9 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
@@ -24,13 +25,14 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDatabaseObject> {
 
-	public EtlDatabaseObjectSearchParams(SrcConf srcConf, ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
-		super(srcConf, limits);
+	public EtlDatabaseObjectSearchParams(PrimaryDataSourceConfiguration primaryDataSource,
+			ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
+		super(primaryDataSource, limits);
 	}
 
 	@Override
@@ -38,7 +40,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
 			Connection dstConn) throws DBException {
 
-  		SrcConf srcConfig = getSrcConf();
+		JdbcTablePrimaryDataSourceConfiguration srcConfig = this.getJdbcPrimaryDataSource();
 
 		AuxQueryInfo auxQueryInfo = new AuxQueryInfo(new SearchClauses<EtlDatabaseObject>(this));
 
@@ -47,6 +49,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		auxQueryInfo.setClauseFrom(srcConfig.generateSelectFromClauseContent());
 
 		if (utilities.listHasElement(srcConfig.getAuxExtractTable())) {
+
 			for (AuxExtractTable aux : srcConfig.getAuxExtractTable()) {
 				loadAllAuxExtractTable(auxQueryInfo, aux, parentObject, auxDataSourceObjects, srcConn);
 			}
@@ -89,6 +92,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		loadAuxExtractTable(queryInfo, aux.parseToJoinable(), parentObject, auxDataSourceObjects, srcConn);
 
 		if (aux.hasAuxExtractTable()) {
+
 			for (JoinableEntity jEntity : aux.getJoiningTable()) {
 				loadAuxExtractTable(queryInfo, jEntity, parentObject, auxDataSourceObjects, srcConn);
 			}
@@ -98,7 +102,8 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 	private void loadAuxExtractTable(AuxQueryInfo queryInfo, JoinableEntity aux, EtlDatabaseObject parentObject,
 			List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
 			throws ForbiddenOperationException, DBException {
-		SrcConf srcConfig = getSrcConf();
+
+		JdbcTablePrimaryDataSourceConfiguration srcConfig = this.getJdbcPrimaryDataSource();
 
 		SearchClauses<EtlDatabaseObject> searchClauses = queryInfo.getSearchClauses();
 		String clauseFrom = queryInfo.getClauseFrom();
@@ -112,7 +117,8 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		}
 
 		if (utilities.stringHasValue(extraJoinQuery)) {
-			PreparedQuery pQ = PreparedQuery.prepare(QueryDataSourceConfig.fastCreate(extraJoinQuery, getSrcConf()),
+			PreparedQuery pQ = PreparedQuery.prepare(
+					QueryDataSourceConfig.fastCreate(extraJoinQuery, this.getJdbcPrimaryDataSource()),
 					getConfig().getRelatedEtlConf(),
 					EtlDataSource
 							.extractDataSourceFromObjects(collectDataSourceObjects(parentObject, auxDataSourceObjects)),
@@ -142,6 +148,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		}
 
 		if (aux.getMainExtractTable().getJoiningTable().size() > 1 && aux.getJoinType().isLeftJoin()) {
+
 			if (aux.getPrimaryKey() == null) {
 				throw new ForbiddenOperationException("The aux table " + aux.getTableName() + " in relation "
 						+ srcConfig.getTableName() + " does not have primary key");
@@ -170,12 +177,12 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 	}
 
 	public DatabaseObjectLoaderHelper getLoaderHealper() {
-		return this.getSrcConf().getLoadHealper();
+		return this.getJdbcPrimaryDataSource().getLoadHealper();
 	}
 
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> cloneMe() {
-		EtlDatabaseObjectSearchParams cloned = new EtlDatabaseObjectSearchParams(getSrcConf(), null);
+		EtlDatabaseObjectSearchParams cloned = new EtlDatabaseObjectSearchParams(this.getJdbcPrimaryDataSource(), null);
 
 		return cloned;
 	}
@@ -192,7 +199,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 		for (DstConf dst : getConfig().getDstConf()) {
 
-			if (!dst.hasJoinFields() || getConfig().getSrcConf().hasRequiredExtraDataSource()) {
+			if (!dst.hasJoinFields() || getConfig().requireJdbcPrimaryDataSource().hasRequiredExtraDataSource()) {
 				continue;
 			}
 
@@ -238,7 +245,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 	private String generateDestinationJoinSubquery(DstConf dstConf, Connection dstConn) throws DBException {
 
-		AbstractTableConfiguration srcTabConf = getSrcConf();
+		AbstractTableConfiguration srcTabConf = this.getJdbcPrimaryDataSource();
 
 		String fromClause = dstConf.generateSelectFromClauseContent();
 

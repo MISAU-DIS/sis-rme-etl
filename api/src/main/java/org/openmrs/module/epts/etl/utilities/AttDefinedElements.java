@@ -8,7 +8,7 @@ import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 
 /**
  * Utilities class which help to define att elements for class like Att
@@ -55,14 +55,14 @@ public class AttDefinedElements {
 	private boolean isLast;
 	private boolean usesFieldWrapper;
 
-	private EtlDatabaseObjectConfiguration pojoble;
+	private EtlObjectConfiguration pojoble;
 
 	public static String aspasAbrir = "\"";
 
 	public static String aspasFechar = "\"";
 
 	private AttDefinedElements(String dbAttName, String dbAttType, boolean isLast,
-			EtlDatabaseObjectConfiguration pojoble, boolean usesFieldWrapper) {
+			EtlObjectConfiguration pojoble, boolean usesFieldWrapper) {
 		this.dbAttName = dbAttName;
 		this.dbAttType = dbAttType;
 		this.isLast = isLast;
@@ -358,12 +358,12 @@ public class AttDefinedElements {
 	}
 
 	public static AttDefinedElements define(String dbAttName, String dbAttType, boolean isLast,
-			EtlDatabaseObjectConfiguration pojoble) {
+			EtlObjectConfiguration pojoble) {
 		return define(dbAttName, dbAttType, isLast, pojoble, true);
 	}
 
 	public static AttDefinedElements define(String dbAttName, String dbAttType, boolean isLast,
-			EtlDatabaseObjectConfiguration pojoble, boolean usesFieldWrapper) {
+			EtlObjectConfiguration pojoble, boolean usesFieldWrapper) {
 
 		AttDefinedElements elements = new AttDefinedElements(dbAttName, dbAttType, isLast, pojoble, usesFieldWrapper);
 		elements.generateElemets(!(pojoble instanceof QueryDataSourceConfig));

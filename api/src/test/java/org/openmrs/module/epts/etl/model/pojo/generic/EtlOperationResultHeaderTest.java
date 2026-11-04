@@ -16,7 +16,7 @@ public class EtlOperationResultHeaderTest {
 		return new EtlOperationResultHeader<>((IntervalExtremeRecord) null);
 	}
 
-	private EtlDatabaseObject record(Oid oid, EtlDatabaseObjectConfiguration scope) {
+	private EtlDatabaseObject record(Oid oid, EtlObjectConfiguration scope) {
 		return (EtlDatabaseObject) Proxy.newProxyInstance(getClass().getClassLoader(),
 				new Class<?>[] {EtlDatabaseObject.class}, (proxy, method, args) -> {
 					switch (method.getName()) {
@@ -96,8 +96,8 @@ public class EtlOperationResultHeaderTest {
 	@Test public void configurationScopesDoNotCollide() {
 		EtlOperationResultHeader<EtlDatabaseObject> result = header();
 		for (int i = 0; i < 2; i++) {
-			EtlDatabaseObjectConfiguration scope = (EtlDatabaseObjectConfiguration) Proxy.newProxyInstance(
-					getClass().getClassLoader(), new Class<?>[] {EtlDatabaseObjectConfiguration.class},
+			EtlObjectConfiguration scope = (EtlObjectConfiguration) Proxy.newProxyInstance(
+					getClass().getClassLoader(), new Class<?>[] {EtlObjectConfiguration.class},
 					(proxy, method, args) -> null);
 			result.addToRecordsWithNoError(record(Oid.fastCreate("id", 1), scope));
 		}

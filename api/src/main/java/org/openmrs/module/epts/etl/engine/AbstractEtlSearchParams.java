@@ -14,8 +14,10 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.OperationController;
@@ -48,17 +50,18 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	protected int savedCount;
 
-	protected SrcConf srcConf;
+	private PrimaryDataSourceConfiguration primaryDataSource;
 
 	private MigrationFinalCheckStatus finalCheckStatus;
 
-	public AbstractEtlSearchParams(SrcConf srcConf, ThreadRecordIntervalsManager<T> limits) {
+	public AbstractEtlSearchParams(PrimaryDataSourceConfiguration primaryDataSource,
+			ThreadRecordIntervalsManager<T> limits) {
 		this.threadRecordIntervalsManager = limits;
 		this.searchSourceType = SearchSourceType.SOURCE;
-		this.srcConf = srcConf;
+		this.primaryDataSource = primaryDataSource;
 
-		if (this.srcConf != null) {
-			this.setQueryOrderingInfo(srcConf.getQueryOrderingInfo());
+		if (primaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			this.setQueryOrderingInfo(((JdbcTablePrimaryDataSourceConfiguration) primaryDataSource).getQueryOrderingInfo());
 		}
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
@@ -81,7 +84,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	}
 
 	public EtlItemConfiguration getConfig() {
-		return getSrcConf().getParentConf();
+		return getPrimaryDataSource().getParentItemConfiguration();
 	}
 
 	public ThreadRecordIntervalsManager<T> getThreadRecordIntervalsManager() {
@@ -124,7 +127,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 			try {
 				pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
-						utilities.parseToList(this.getSrcConf().getAlias()), ds, getRelatedEtlConf(), null);
+						utilities.parseToList(this.getPrimaryDataSource().getAlias()), ds, getRelatedEtlConf(), null);
 			} catch (Exception e) {
 				throw e;
 			}
@@ -147,29 +150,31 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	public void tryToAddExtraConditionForExport(SearchClauses<T> searchClauses, T parentObject,
 			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
 
-		tryToAddExtraCondition(this.srcConf.getExtraConditionForExtract(), searchClauses, parentObject,
-				dataSourceObjects, dbmsType);
+		tryToAddExtraCondition(this.getJdbcPrimaryDataSource().getExtraConditionForExtract(), searchClauses,
+				parentObject, dataSourceObjects, dbmsType);
 	}
 
 	public void tryToAddExtraJoinExtraConditions(SearchClauses<T> searchClauses, T parentObject,
 			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
 
-		if (!srcConf.isJoinable()) {
+		JdbcTablePrimaryDataSourceConfiguration jdbcSource = getJdbcPrimaryDataSource();
+
+		if (!jdbcSource.isJoinable()) {
 			return;
 		}
 
 		if (parentObject == null) {
-			throw new EtlExceptionImpl("The joinable srcConf requires the parent object!");
+			throw new EtlExceptionImpl("The joinable primary data source requires the parent object!");
 		}
 
-		String extraCondition = srcConf.generateConditionsFields(parentObject, srcConf.getJoinFields(),
-				srcConf.getJoinExtraCondition());
+		String extraCondition = jdbcSource.generateConditionsFields(parentObject, jdbcSource.getJoinFields(),
+				jdbcSource.getJoinExtraCondition());
 
 		tryToAddExtraCondition(extraCondition, searchClauses, parentObject, dataSourceObjects, dbmsType);
 	}
 
 	public EtlConfiguration getRelatedEtlConf() {
-		return srcConf.getRelatedEtlConf();
+		return getPrimaryDataSource().getRelatedEtlConf();
 	}
 
 	/**
@@ -178,10 +183,12 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	 */
 	public void tryToAddLimits(IntervalExtremeRecord intervalExtremeRecord,
 			SearchClauses<EtlDatabaseObject> searchClauses) {
+
 		if (intervalExtremeRecord != null) {
-			if (getSrcConf().getPrimaryKey().isSimpleNumericKey()) {
-				searchClauses.addToClauses(getSrcConf().getTableAlias() + "."
-						+ getSrcConf().getPrimaryKey().retrieveSimpleKeyColumnName() + " between ? and ?");
+
+			if (!getPrimaryDataSource().getPrimaryKey().isCompositeKey()) {
+				searchClauses.addToClauses(getPrimaryDataSource().getAlias() + "."
+						+ getPrimaryDataSource().getPrimaryKey().retrieveSimpleKeyColumnName() + " between ? and ?");
 				searchClauses.addToParameters(intervalExtremeRecord.getMinRecordId());
 				searchClauses.addToParameters(intervalExtremeRecord.getMaxRecordId());
 			} else {
@@ -192,29 +199,39 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	@SuppressWarnings("unchecked")
 	public Class<T> getRecordClass() {
-		return (Class<T>) getSrcConf().generateEtlRecordClass(getSrcConf().getSrcConnInfo());
+		return (Class<T>) getPrimaryDataSource().generateEtlRecordClass(getPrimaryDataSource().getSrcConnInfo());
 	}
 
-	public SrcConf getSrcConf() {
-		return this.srcConf;
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return primaryDataSource;
 	}
 
-	public void setSrcConf(SrcConf srcConf) {
-		this.srcConf = srcConf;
+	public JdbcTablePrimaryDataSourceConfiguration getJdbcPrimaryDataSource() {
+		return getPrimaryDataSource().requireJdbc();
 	}
 
+	@Deprecated
 	/**
 	 * @return
 	 */
 	public List<TableDataSourceConfig> getExtraTableDataSource() {
-		return getSrcConf().getExtraTableDataSource();
+		List<TableDataSourceConfig> extra = new ArrayList<>();
+
+		for (EtlAdditionalDataSource a : getPrimaryDataSource().getParentSource().getAvailableAdditionalDataSources()) {
+
+			if (a instanceof TableDataSourceConfig) {
+				extra.add((TableDataSourceConfig) a);
+			}
+		}
+
+		return extra;
 	}
 
 	/**
 	 * @return
 	 */
 	public AbstractTableConfiguration getDstLastTableConfiguration() {
-		return utilities.getLastRecordOnArray(srcConf.getParentConf().getDstConf());
+		return utilities.getLastRecordOnArray(getJdbcPrimaryDataSource().getParentConf().getDstConf());
 	}
 
 	public int countAllRecords(OperationController<T> controller, Connection conn) throws DBException {
@@ -259,6 +276,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 		for (IntervalExtremeRecord limits : currIntervas.getInternalIntervals()) {
 			tasks.add(CompletableFuture.supplyAsync(() -> {
+
 				try {
 					return SearchParamsDAO.countAll(this.cloneMe(), limits, conn);
 				} catch (DBException e) {
@@ -298,7 +316,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 		String sql = searchClauses.generateSQL(srcConn);
 
-		if (getSrcConf().limitToOneResult()) {
+		if (getJdbcPrimaryDataSource().limitToOneResult()) {
 			sql = sql + "\n limit 1";
 		}
 
@@ -324,6 +342,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	public List<T> searchNextRecordsInMultiThreads(IntervalExtremeRecord interval, T parentObject,
 			List<T> auxDataSourceObjects, Connection srcConn, Connection dstConn) throws DBException {
+
 		if (interval == null) {
 			throw new ForbiddenOperationException(
 					"For multithreading search you must specify the IntervalExtremeRecord");
@@ -337,6 +356,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		for (IntervalExtremeRecord limits : currIntervals.getInternalIntervals()) {
 
 			tasks.add(CompletableFuture.supplyAsync(() -> {
+
 				try {
 					return this.search(limits, parentObject, auxDataSourceObjects, srcConn, dstConn);
 				} catch (DBException e) {
@@ -349,6 +369,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 		CompletableFuture<List<T>> allSearchedRecords = allOf.thenApply(
 				v -> tasks.stream().map(CompletableFuture::join).flatMap(List::stream).collect(Collectors.toList()));
+
 		try {
 			return allSearchedRecords.get();
 		} catch (InterruptedException e) {

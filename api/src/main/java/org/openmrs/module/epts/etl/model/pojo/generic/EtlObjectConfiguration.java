@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.model.pojo.generic;
 import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.ChildTable;
@@ -13,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
@@ -23,10 +25,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents a data base which can be represented by a Pojo. The
- * {@link EtlDatabaseObjectConfiguration} can be a database table or a query
+ * {@link EtlObjectConfiguration} can be a database table or a query
  * result
  */
-public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
+public interface EtlObjectConfiguration extends EtlDataConfiguration {
 
 	Boolean isFullLoaded();
 
@@ -63,6 +65,12 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
+	default String generateFullPackageName(DatabaseModelGenerationContext context) {
+		return utilities.concatStringsWithSeparator("org.openmrs.module.epts.etl.model.pojo",
+				context.getPojoPackageName(), ".");
+	}
+
+	@JsonIgnore
 	default String getOriginAppLocationCode() {
 		return getRelatedEtlConf().getOriginAppLocationCode();
 	}
@@ -70,6 +78,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	@JsonIgnore
 	default String getClassPackage(DBConnectionInfo connInfo) {
 		return getRelatedEtlConf().getPojoPackage(connInfo);
+	}
+
+	@JsonIgnore
+	default String getClassPackage(DatabaseModelGenerationContext context) {
+		return context.getPojoPackageName();
 	}
 
 	default String getClassPackageForForder(DBConnectionInfo connInfo) {
@@ -86,6 +99,10 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		return pF;
 	}
 
+	default String getClassPackageForForder(DatabaseModelGenerationContext context) {
+		return getClassPackage(context).replace('.', File.separatorChar);
+	}
+
 	@JsonIgnore
 	default String generateFullClassName(DBConnectionInfo connInfo) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
@@ -95,6 +112,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
 		return utilities.concatStringsWithSeparator(fullPackageName, generateClassName(), ".");
+	}
+
+	@JsonIgnore
+	default String generateFullClassName(DatabaseModelGenerationContext context) {
+		return utilities.concatStringsWithSeparator(generateFullPackageName(context), generateClassName(), ".");
 	}
 
 	@JsonIgnore
@@ -112,6 +134,17 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 
 	UniqueKeyInfo getPrimaryKey();
 
+	/**
+	 * Returns the logical unique keys exposed by this record model.
+	 * <p>
+	 * Non-JDBC record models are not required to define additional unique keys;
+	 * their configured primary key is still available through
+	 * {@link #getPrimaryKey()}.
+	 */
+	default List<UniqueKeyInfo> getUniqueKeys() {
+		return Collections.emptyList();
+	}
+
 	String getSharePkWith();
 
 	Boolean hasPK();
@@ -127,6 +160,23 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	Boolean isDestinationInstallationType();
 
 	void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass);
+
+	default void generateRelatedPojoClass(DatabaseModelGenerationContext context, Boolean fullClass) {
+
+		try {
+
+			if (fullClass) {
+				setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, context));
+			} else {
+				throw new ForbiddenOperationException(
+						"Skeleton generation is only supported by the legacy DBConnectionInfo contract");
+			}
+		} catch (ClassNotFoundException exception) {
+			throw new RuntimeException(exception);
+		} catch (java.io.IOException | java.sql.SQLException exception) {
+			throw new RuntimeException(exception);
+		}
+	}
 
 	List<ParentTable> getParentRefInfo();
 
@@ -150,7 +200,9 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	default Boolean hasDateFields() {
+
 		for (Field t : this.getFields()) {
+
 			if (t.isDateField()) {
 				return true;
 			}
@@ -163,45 +215,73 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 		throw new ForbiddenOperationException("Forbiden method! Please implement your own method!");
 	}
 
+	/**
+	 * Creates a record using the class selected by the configured data-model mode
+	 * and associates this configuration with the new object.
+	 */
+	default EtlDatabaseObject createRecordInstance() {
+		Class<? extends EtlDatabaseObject> recordClass = getEtlRecordClass();
+
+		if (recordClass == null) {
+			recordClass = generateEtlRecordClass(getRelatedConnInfo());
+		}
+
+		try {
+			EtlDatabaseObject record = recordClass.getDeclaredConstructor().newInstance();
+			record.setRelatedConfiguration(this);
+			return record;
+		} catch (ReflectiveOperationException exception) {
+			throw new PojoNotFoundException(
+					"Could not instantiate ETL record class " + recordClass.getName() + " for " + getObjectName(),
+					exception);
+		}
+	}
+
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
 			throws PojoNotFoundException {
+		return resolveEtlRecordClass(generateFullClassName(connInfo));
+	}
 
-		Class<? extends EtlDatabaseObject> syncRecordClass = null;
+	@JsonIgnore
+	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DatabaseModelGenerationContext context)
+			throws PojoNotFoundException {
+		return resolveEtlRecordClass(generateFullClassName(context));
+	}
 
-		if (getRelatedEtlConf().usesPrecompiledPojoObjects()
-				|| getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
-			syncRecordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(this.generateFullClassName(connInfo),
-					this.getRelatedEtlConf());
+	private Class<? extends EtlDatabaseObject> resolveEtlRecordClass(String fullClassName) {
+		Class<? extends EtlDatabaseObject> recordClass;
+		EtlConfiguration etlConfiguration = getRelatedEtlConf();
 
-			if (syncRecordClass == null) {
-				this.getRelatedEtlConf().warn("POJO NOT FOUND FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
-						getRelatedEtlConf().getDatabaseObjectInstantiationMode());
+		if (etlConfiguration.usesPrecompiledPojoObjects()
+				|| etlConfiguration.usesPrecompiledPojoObjectsWithFallBack()) {
+			recordClass = DatabaseEntityPOJOGenerator.tryToGetExistingCLass(fullClassName, etlConfiguration);
 
-				if (getRelatedEtlConf().usesPrecompiledPojoObjectsWithFallBack()) {
-					this.getRelatedEtlConf().warn(
-							"USING GENERIC POJO FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
-							getRelatedEtlConf().getDatabaseObjectInstantiationMode());
+			if (recordClass == null) {
+				etlConfiguration.warn("POJO NOT FOUND FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
+						etlConfiguration.getDatabaseObjectInstantiationMode());
 
-					syncRecordClass = GenericDatabaseObject.class;
+				if (etlConfiguration.usesPrecompiledPojoObjectsWithFallBack()) {
+					etlConfiguration.warn("USING GENERIC POJO FOR {}\nUsing DatabaseObjectInstantiationMode: {}", this,
+							etlConfiguration.getDatabaseObjectInstantiationMode());
+					recordClass = GenericDatabaseObject.class;
 				} else {
 					throw new PojoNotFoundException(this);
 				}
 			}
-
 		} else {
-			syncRecordClass = GenericDatabaseObject.class;
+			recordClass = GenericDatabaseObject.class;
 		}
 
-		this.setEtlRecordClass(syncRecordClass);
-
-		return syncRecordClass;
+		setEtlRecordClass(recordClass);
+		return recordClass;
 	}
 
 	default List<String> getParentRefInfoAsString() {
 		List<String> parents = new ArrayList<>();
 
 		if (hasParentRefInfo()) {
+
 			for (ParentTable p : this.getParentRefInfo()) {
 				parents.add(p.getTableName());
 			}
@@ -221,8 +301,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	Boolean isMustLoadChildrenInfo();
 
 	default Boolean containsField(String fieldName) {
+
 		if (this.hasFields()) {
+
 			for (Field f : this.getFields()) {
+
 				if (f.getName().equals(fieldName)) {
 					return true;
 				}
@@ -232,8 +315,11 @@ public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	default Field getField(String fieldName) {
+
 		if (this.hasFields()) {
+
 			for (Field f : this.getFields()) {
+
 				if (f.getName().equals(fieldName)) {
 					return f;
 				}

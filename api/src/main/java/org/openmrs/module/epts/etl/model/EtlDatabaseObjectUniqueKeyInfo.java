@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 
 public class EtlDatabaseObjectUniqueKeyInfo extends UniqueKeyInfo {
 
@@ -14,7 +14,7 @@ public class EtlDatabaseObjectUniqueKeyInfo extends UniqueKeyInfo {
 		this.loadValuesToFields(etlObject);
 	}
 
-	public static List<EtlDatabaseObjectUniqueKeyInfo> generate(TableConfiguration tabConf,
+	public static List<EtlDatabaseObjectUniqueKeyInfo> generate(EtlObjectConfiguration configuration,
 			EtlDatabaseObject etlDatabaseObject) {
 
 		/*
@@ -27,11 +27,11 @@ public class EtlDatabaseObjectUniqueKeyInfo extends UniqueKeyInfo {
 		 * etlDatabaseObject.getSharedPkObj()); }
 		 */
 
-		if (tabConf.hasUniqueKeys()) {
-			List<EtlDatabaseObjectUniqueKeyInfo> list = new ArrayList<>(tabConf.getUniqueKeys().size());
+		if (configuration.getUniqueKeys() != null && !configuration.getUniqueKeys().isEmpty()) {
+			List<EtlDatabaseObjectUniqueKeyInfo> list = new ArrayList<>(configuration.getUniqueKeys().size());
 
 			try {
-				for (UniqueKeyInfo uk : tabConf.getUniqueKeys()) {
+				for (UniqueKeyInfo uk : configuration.getUniqueKeys()) {
 					list.add(new EtlDatabaseObjectUniqueKeyInfo(uk, etlDatabaseObject));
 				}
 			} catch (Exception e) {

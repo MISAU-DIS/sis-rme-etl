@@ -29,8 +29,6 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
@@ -43,47 +41,47 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
-import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class SrcConf extends AbstractTableConfiguration
-		implements MainJoiningEntity, JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent {
+public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfiguration implements MainJoiningEntity,
+		JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent, PrimaryDataSourceConfiguration {
 
 	private static final String[] TRACKING_FIELDS = { "processing_status", "processing_date", "processing_error",
 			"retry_count" };
 
 	private List<AuxExtractTable> auxExtractTable;
 
-	private List<TableDataSourceConfig> extraTableDataSource;
-
-	private List<QueryDataSourceConfig> extraQueryDataSource;
-
-	private List<TransformableDataSource> extraObjectDataSource;
-
-	private List<JsonDataSource> extraJsonDataSource;
-
 	private EtlDstType dstType;
-
-	private ConnectorResourceConfiguration resource;
-
-	private transient ConnectorResource resolvedResource;
 
 	private List<FieldsMapping> joinFields;
 
 	private ConditionClauseScope joinExtraConditionScope;
 
 	/**
-	 * The fields involved in ETL process for this srcConf. Note that when the
-	 * dstConf is not configured on related {@link EtlItemConfiguration}, then this
-	 * fields will automatically mapped to target table
+	 * The fields involved in the ETL process for this JDBC primary data source.
+	 * Note that when the dstConf is not configured on related
+	 * {@link EtlItemConfiguration}, then this fields will automatically mapped to
+	 * target table
 	 */
 	private List<EtlField> etlFields;
 
+	private Map<String, Object> resourceProperties;
+
 	private String joinExtraCondition;
+
+	@Override
+	public Map<String, Object> getResourceProperties() {
+		return resourceProperties == null ? java.util.Collections.emptyMap()
+				: java.util.Collections.unmodifiableMap(resourceProperties);
+	}
+
+	public void setResourceProperties(Map<String, Object> resourceProperties) {
+		this.resourceProperties = resourceProperties == null ? null : new HashMap<>(resourceProperties);
+	}
 
 	private Boolean limitToOneResult;
 
@@ -124,9 +122,63 @@ public class SrcConf extends AbstractTableConfiguration
 
 	private Boolean doNotLoadJoiningFields;
 
-	public SrcConf() {
+	private Boolean joinFieldsAlredyLoaded;
+
+	@JsonIgnore
+	private transient SourceConfiguration parentSource;
+
+	@JsonIgnore
+	private transient SourceConfiguration detachedLegacySource;
+
+	public JdbcTablePrimaryDataSourceConfiguration() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
+	}
+
+	@Override
+	public SourceConfiguration getParentSource() {
+		return parentSource;
+	}
+
+	@Override
+	public void setParentSource(SourceConfiguration parentSource) {
+
+		if (parentSource != null && detachedLegacySource != null) {
+			transferLegacyAdditionalDataSources(parentSource);
+		}
+		this.parentSource = parentSource;
+		this.detachedLegacySource = null;
+	}
+
+	private SourceConfiguration additionalDataSourcesOwner() {
+		if (parentSource != null)
+			return parentSource;
+		if (detachedLegacySource == null)
+			detachedLegacySource = new SourceConfiguration();
+		return detachedLegacySource;
+	}
+
+	private void transferLegacyAdditionalDataSources(SourceConfiguration target) {
+		mergeLegacy("extraTableDataSource", detachedLegacySource.getExtraTableDataSource(),
+				target.getExtraTableDataSource(), target::setExtraTableDataSource);
+		mergeLegacy("extraQueryDataSource", detachedLegacySource.getExtraQueryDataSource(),
+				target.getExtraQueryDataSource(), target::setExtraQueryDataSource);
+		mergeLegacy("extraObjectDataSource", detachedLegacySource.getExtraObjectDataSource(),
+				target.getExtraObjectDataSource(), target::setExtraObjectDataSource);
+		mergeLegacy("extraJsonDataSource", detachedLegacySource.getExtraJsonDataSource(),
+				target.getExtraJsonDataSource(), target::setExtraJsonDataSource);
+	}
+
+	private <E> void mergeLegacy(String property, List<E> legacy, List<E> configured,
+			java.util.function.Consumer<List<E>> setter) {
+		if (!utilities.listHasElement(legacy))
+			return;
+		if (legacy == configured)
+			return;
+		if (utilities.listHasElement(configured))
+			throw new org.openmrs.module.epts.etl.exceptions.EtlConfException(
+					property + " cannot be configured both in source and tableDataSource");
+		setter.accept(legacy);
 	}
 
 	public Boolean getDoNotLoadJoiningFields() {
@@ -211,6 +263,7 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public void init(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn) throws DBException {
+
 		if (isInitialized()) {
 			return;
 		}
@@ -240,12 +293,10 @@ public class SrcConf extends AbstractTableConfiguration
 
 		if (getExpansionQueryDataSource() != null && getExpansionTableDataSource() != null) {
 			throw new EtlConfException(
-					"Invalid srcConf configuration. Only one expansion data source may be configured. "
+					"Invalid tableDataSource configuration. Only one expansion data source may be configured. "
 							+ "Choose either 'expansionQueryDataSource' or 'expansionTableDataSource', "
 							+ "but not both.");
 		}
-
-		this.initAllAvaliableExtraDataSource(srcConn, dstConn);
 
 		this.setInitialized(true);
 	}
@@ -256,19 +307,19 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public List<JsonDataSource> getExtraJsonDataSource() {
-		return extraJsonDataSource;
+		return additionalDataSourcesOwner().getExtraJsonDataSource();
 	}
 
 	public void setExtraJsonDataSource(List<JsonDataSource> extraJsonDataSOurce) {
-		this.extraJsonDataSource = extraJsonDataSOurce;
+		additionalDataSourcesOwner().setExtraJsonDataSource(extraJsonDataSOurce);
 	}
 
 	public List<TransformableDataSource> getExtraObjectDataSource() {
-		return extraObjectDataSource;
+		return additionalDataSourcesOwner().getExtraObjectDataSource();
 	}
 
 	public void setExtraObjectDataSource(List<TransformableDataSource> extraObjectDataSource) {
-		this.extraObjectDataSource = extraObjectDataSource;
+		additionalDataSourcesOwner().setExtraObjectDataSource(extraObjectDataSource);
 	}
 
 	public List<EtlField> getEtlFields() {
@@ -285,24 +336,6 @@ public class SrcConf extends AbstractTableConfiguration
 
 	public void setDstType(EtlDstType dstType) {
 		this.dstType = dstType;
-	}
-
-	public ConnectorResourceConfiguration getResource() {
-		return resource;
-	}
-
-	public void setResource(ConnectorResourceConfiguration resource) {
-		this.resource = resource;
-	}
-
-	@JsonIgnore
-	public ConnectorResource getResolvedResource() {
-		return resolvedResource;
-	}
-
-	@JsonIgnore
-	public void setResolvedResource(ConnectorResource resolvedResource) {
-		this.resolvedResource = resolvedResource;
 	}
 
 	public List<AuxExtractTable> getAuxExtractTable() {
@@ -325,19 +358,19 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public List<QueryDataSourceConfig> getExtraQueryDataSource() {
-		return extraQueryDataSource;
+		return additionalDataSourcesOwner().getExtraQueryDataSource();
 	}
 
 	public void setExtraQueryDataSource(List<QueryDataSourceConfig> extraQueryDataSource) {
-		this.extraQueryDataSource = extraQueryDataSource;
+		additionalDataSourcesOwner().setExtraQueryDataSource(extraQueryDataSource);
 	}
 
 	public List<TableDataSourceConfig> getExtraTableDataSource() {
-		return extraTableDataSource;
+		return additionalDataSourcesOwner().getExtraTableDataSource();
 	}
 
 	public void setExtraTableDataSource(List<TableDataSourceConfig> extraTableDataSource) {
-		this.extraTableDataSource = extraTableDataSource;
+		additionalDataSourcesOwner().setExtraTableDataSource(extraTableDataSource);
 	}
 
 	@Override
@@ -399,10 +432,6 @@ public class SrcConf extends AbstractTableConfiguration
 
 		this.tryToLoadAuxExtraJoinTable(schemaInfo, conn);
 
-		this.tryToLoadExtraDatasource(schemaInfo, conn);
-
-		this.loadEtlFields();
-
 		this.setFullLoaded(true);
 
 		if (isJoinable() && !doNotLoadJoiningFields()) {
@@ -423,13 +452,16 @@ public class SrcConf extends AbstractTableConfiguration
 	@Override
 	public void loadJoinElements(EtlDatabaseObject schemaInfo, DataSourceSide dsSide, Connection conn)
 			throws DBException {
+
 		try {
 			JoinableEntity.super.loadJoinElements(schemaInfo, dsSide, conn);
 		} catch (MissingJoiningElementsException e) {
-			if (this.hasParentItemConf() && this.getPrimaryKey().equals(this.getParentSrcConf().getPrimaryKey())) {
+
+			if (this.hasParentItemConf()
+					&& this.getPrimaryKey().equals(this.getParentJdbcPrimaryDataSource().getPrimaryKey())) {
 				this.setJoinFields(new ArrayList<>());
 
-				String srcField = this.getParentSrcConf().getTableAlias() + "."
+				String srcField = this.getParentJdbcPrimaryDataSource().getTableAlias() + "."
 						+ this.getPrimaryKey().asSimpleKey().getName();
 
 				EtlTransformTarget target = FastEtlTransformingTarget.fastCreate(this.getRelatedEtlConf(), null, conn);
@@ -439,9 +471,11 @@ public class SrcConf extends AbstractTableConfiguration
 		}
 	}
 
-	public SrcConf getParentSrcConf() {
+	public JdbcTablePrimaryDataSourceConfiguration getParentJdbcPrimaryDataSource() {
+
 		if (hasParentItemConf()) {
-			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
+			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf()
+					.requireJdbcPrimaryDataSource();
 		}
 
 		return null;
@@ -451,111 +485,14 @@ public class SrcConf extends AbstractTableConfiguration
 		return this.getParentConf() instanceof EtlChildItemConfiguration;
 	}
 
-	private void loadEtlFields() {
-		if (this.hasExtraDataSource() || this.hasAuxExtractTable()) {
-			this.setEtlFields(new ArrayList<>());
-
-			this.loadOwnFieldsToEtlFields(this.getEtlFields(), false);
-
-			for (EtlDataSource ds : this.getAvaliableExtraDataSource()) {
-				ds.loadOwnFieldsToEtlFields(this.getEtlFields(), false);
-			}
-		} else {
-			this.setEtlFields(new ArrayList<>());
-
-			// Preserve the original names if there is only the main ds
-			this.loadOwnFieldsToEtlFields(this.getEtlFields(), true);
-		}
-	}
-
-	/**
-	 * @param conn
-	 * @param srcConn
-	 * @throws DBException
-	 */
-	private void tryToLoadExtraDatasource(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
-		OpenConnection srcConn = this.getRelatedConnInfo().openConnection(this);
-
-		try {
-
-			if (this.hasExpansionDs()) {
-				this.getExpansionDataSource().fullLoad(srcConn);
-			}
-
-			if (hasExtraTableDataSourceConfig()) {
-				for (TableDataSourceConfig t : this.getExtraTableDataSource()) {
-
-					TableConfiguration fullLoadedTab = findFullConfiguredConfInAllRelatedTable(t.getFullTableName(),
-							new ArrayList<>());
-
-					t.tryToGenerateTableAlias(getRelatedEtlConf());
-
-					if (fullLoadedTab != null) {
-						t.clone(fullLoadedTab, this, null, conn);
-					} else {
-						t.fullLoad(srcConn);
-					}
-
-					t.setRelatedSrcConf(this);
-
-					if (t.useSharedPKKey()) {
-						t.getSharedKeyRefInfo(conn).tryToGenerateTableAlias(getRelatedEtlConf());
-
-						fullLoadedTab = findFullConfiguredConfInAllRelatedTable(
-								t.getSharedKeyRefInfo(conn).getFullTableName(), new ArrayList<>());
-
-						if (fullLoadedTab != null) {
-							t.getSharedKeyRefInfo(conn).clone(fullLoadedTab, this, null, conn);
-						} else {
-							t.getSharedKeyRefInfo(conn).fullLoad();
-						}
-					}
-				}
-			}
-
-			if (hasExtraQueryDataSourceConfig()) {
-				for (QueryDataSourceConfig query : this.getExtraQueryDataSource()) {
-					query.setRelatedSrcConf(this);
-					query.fullLoad(srcConn);
-				}
-			}
-
-			if (hasExtraObjectDataSourceConfig()) {
-				for (TransformableDataSource ds : this.getExtraObjectDataSource()) {
-					ds.setRelatedSrcConf(this);
-
-					if (ds.hasObjectFields()) {
-						for (DataSourceField f : ds.getObjectFields()) {
-							f.setName(SQLUtilities.tryToReplaceParamsInQuery(f.getName().toString(), schemaInfo));
-
-							if (f.hasValue() && schemaInfo != null) {
-								f.setValue(SQLUtilities.tryToReplaceParamsInQuery(f.getValue().toString(), schemaInfo));
-							}
-						}
-					}
-
-					ds.fullLoad(srcConn);
-				}
-			}
-
-			if (hasExtraJsonSourceConfig()) {
-				for (JsonDataSource jDs : this.getExtraJsonDataSource()) {
-					jDs.setRelatedSrcConf(this);
-					jDs.fullLoad(srcConn);
-				}
-			}
-
-		} finally {
-			srcConn.finalizeConnection(this);
-		}
-	}
-
 	/**
 	 * @param conn
 	 * @throws DBException
 	 */
 	private void tryToLoadParentRefInfo(Connection conn) throws DBException {
+
 		if (this.hasParentRefInfo()) {
+
 			for (ParentTable ref : this.getParentRefInfo()) {
 				TableConfiguration fullLoadedTab = findFullConfiguredConfInAllRelatedTable(ref.getFullTableName(),
 						new ArrayList<>());
@@ -575,6 +512,7 @@ public class SrcConf extends AbstractTableConfiguration
 					if (!ref.getSharedKeyRefInfo(conn).hasAlias()) {
 						ref.getSharedKeyRefInfo(conn).tryToGenerateTableAlias(getRelatedEtlConf());
 					}
+
 					if (fullLoadedTab != null) {
 						ref.getSharedKeyRefInfo(conn).clone(fullLoadedTab, this, null, conn);
 					} else {
@@ -586,9 +524,9 @@ public class SrcConf extends AbstractTableConfiguration
 		}
 	}
 
-	public static SrcConf fastCreate(AbstractTableConfiguration tableConfig, EtlItemConfiguration itemConf,
-			Connection conn) throws DBException {
-		SrcConf src = new SrcConf();
+	public static JdbcTablePrimaryDataSourceConfiguration fastCreate(AbstractTableConfiguration tableConfig,
+			EtlItemConfiguration itemConf, Connection conn) throws DBException {
+		JdbcTablePrimaryDataSourceConfiguration src = new JdbcTablePrimaryDataSourceConfiguration();
 
 		src.copyFromOther(tableConfig, null, itemConf, conn);
 
@@ -615,9 +553,11 @@ public class SrcConf extends AbstractTableConfiguration
 
 		if (this.doNotUseAsDatasource())
 			return null;
+		if (parentSource != null)
+			return parentSource.getAvailableAdditionalDataSources();
 
 		if (!this.isInitialized())
-			throw new EtlExceptionImpl("The SrcConf is not yet initialized!! ");
+			throw new EtlExceptionImpl("The JDBC primary data source is not yet initialized!! ");
 
 		List<EtlAdditionalDataSource> ds = new ArrayList<>();
 
@@ -651,7 +591,7 @@ public class SrcConf extends AbstractTableConfiguration
 		}
 
 		if (hasParentItemConf()) {
-			List<EtlAdditionalDataSource> allP = this.getParentSrcConf().getAvaliableExtraDataSource();
+			List<EtlAdditionalDataSource> allP = this.getParentJdbcPrimaryDataSource().getAvaliableExtraDataSource();
 
 			if (allP != null) {
 				ds.addAll(allP);
@@ -661,55 +601,8 @@ public class SrcConf extends AbstractTableConfiguration
 		return ds;
 	}
 
-	private void initAdditionalDataSource(EtlAdditionalDataSource t, Connection srcConn, Connection dstConn)
-			throws DBException {
-		t.init(this, getParentConf().getRelatedEtlSchemaObject(), srcConn, dstConn);
-
-		if (t instanceof AbstractTableConfiguration) {
-			TableConfiguration tAsTabConf = (TableConfiguration) t;
-
-			if (tAsTabConf.hasAlias()) {
-				tAsTabConf.setUsingManualDefinedAlias(true);
-				getRelatedEtlConf().tryToAddToBusyTableAliasName(tAsTabConf.getTableAlias());
-			} else {
-				tAsTabConf.tryToGenerateTableAlias(getRelatedEtlConf());
-			}
-
-			getRelatedEtlConf().addConfiguredTable((AbstractTableConfiguration) t);
-		}
-	}
-
-	private void initAdditionalAllDataSource(List<EtlAdditionalDataSource> ds, Connection srcConn, Connection dstConn)
-			throws DBException {
-
-		if (ds == null)
-			return;
-
-		for (EtlAdditionalDataSource t : ds) {
-			initAdditionalDataSource(t, srcConn, dstConn);
-		}
-	}
-
-	private void initAllAvaliableExtraDataSource(Connection srcConn, Connection dstConn) throws DBException {
-		if (useSharedPKKey() && isFullLoaded()) {
-			initAdditionalDataSource((EtlAdditionalDataSource) getSharedKeyRefInfo(null), srcConn, dstConn);
-		}
-
-		initAdditionalAllDataSource(utilities.parseList(this.getExtraTableDataSource(), EtlAdditionalDataSource.class),
-				srcConn, dstConn);
-
-		initAdditionalAllDataSource(utilities.parseList(this.getExtraQueryDataSource(), EtlAdditionalDataSource.class),
-				srcConn, dstConn);
-
-		initAdditionalAllDataSource(utilities.parseList(this.getExtraObjectDataSource(), EtlAdditionalDataSource.class),
-				srcConn, dstConn);
-
-		initAdditionalAllDataSource(utilities.parseList(this.getExtraJsonDataSource(), EtlAdditionalDataSource.class),
-				srcConn, dstConn);
-	}
-
 	/**
-	 * Generate all avaliable fields on this srcConf, this fields will include all
+	 * Generate all available fields on this JDBC primary data source, including all
 	 * field from {@link #getFields()} and the fields from all
 	 * {@link #extraTableDataSource} Note that the duplicated fields will only be
 	 * included once
@@ -717,6 +610,8 @@ public class SrcConf extends AbstractTableConfiguration
 	 * @return
 	 */
 	public List<Field> generateAllAvaliableFields() {
+		if (parentSource != null)
+			return parentSource.generateAllAvailableFields();
 		List<Field> fields = new ArrayList<>();
 
 		for (Field f : this.getFields()) {
@@ -726,6 +621,7 @@ public class SrcConf extends AbstractTableConfiguration
 		if (hasExtraTableDataSourceConfig()) {
 
 			for (EtlAdditionalDataSource ds : this.getExtraTableDataSource()) {
+
 				for (Field f : ds.getFields()) {
 
 					if (!fields.contains(f)) {
@@ -757,10 +653,13 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public Boolean hasRequiredExtraDataSource() {
+
 		if (hasExtraDataSource()) {
 			return false;
 		} else {
+
 			for (EtlAdditionalDataSource ds : getAvaliableExtraDataSource()) {
+
 				if (ds.isRequired()) {
 					return true;
 				}
@@ -775,7 +674,9 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public EtlField getEtlField(String fieldName, List<EtlDataSource> preferredDataSource, Boolean deepCheck) {
+
 		if (utilities.listHasElement(preferredDataSource)) {
+
 			for (EtlDataSource ds : preferredDataSource) {
 				EtlField f = getEtlField(fieldName, deepCheck, ds);
 
@@ -795,6 +696,7 @@ public class SrcConf extends AbstractTableConfiguration
 		EtlField found = null;
 
 		if (this.hasEtlFields()) {
+
 			for (EtlField f : this.getEtlFields()) {
 
 				if (f.getName().equals(fieldName)) {
@@ -802,6 +704,7 @@ public class SrcConf extends AbstractTableConfiguration
 				}
 
 				if (f.hasSrcField()) {
+
 					if (f.getSrcField().getName().equals(fieldName)) {
 						found = f;
 					}
@@ -824,6 +727,7 @@ public class SrcConf extends AbstractTableConfiguration
 			}
 
 			if (this.hasExtraDataSource()) {
+
 				for (EtlDataSource ds : allDs) {
 					EtlField f = this.getEtlField(EtlField.fastCreate(fieldName, ds, false).getName(), false,
 							preferredDataSource);
@@ -855,8 +759,9 @@ public class SrcConf extends AbstractTableConfiguration
 
 		super.clone(toClone, relatedItemConf, schemaInfoSrc, conn);
 
-		if (toClone instanceof SrcConf) {
-			SrcConf toCloneFrom = (SrcConf) toClone;
+		if (toClone instanceof JdbcTablePrimaryDataSourceConfiguration) {
+			JdbcTablePrimaryDataSourceConfiguration toCloneFrom = (JdbcTablePrimaryDataSourceConfiguration) toClone;
+
 			if (utilities.listHasElement(toCloneFrom.getAuxExtractTable())) {
 				this.setAuxExtractTable(
 						AuxExtractTable.cloneAll(toCloneFrom.getAuxExtractTable(), this, schemaInfoSrc, conn));
@@ -879,6 +784,7 @@ public class SrcConf extends AbstractTableConfiguration
 					} else {
 
 						if (schemaInfoSrc != null) {
+
 							for (FieldsMapping joiningField : aux.getJoinFields()) {
 								joiningField.setSrcField(SQLUtilities
 										.tryToReplaceParamsInQuery(joiningField.getSrcField(), schemaInfoSrc));
@@ -905,11 +811,14 @@ public class SrcConf extends AbstractTableConfiguration
 						TransformableDataSource.cloneAll(toCloneFrom.getExtraObjectDataSource(), this, conn));
 
 				if (hasExtraObjectDataSourceConfig()) {
+
 					for (TransformableDataSource query : this.getExtraObjectDataSource()) {
 						query.setRelatedSrcConf(this);
 
 						if (query.hasObjectFields() && schemaInfoSrc != null) {
+
 							for (DataSourceField f : query.getObjectFields()) {
+
 								try {
 									f.setName(SQLUtilities.tryToReplaceParamsInQuery(f.getName().toString(),
 											schemaInfoSrc));
@@ -917,6 +826,7 @@ public class SrcConf extends AbstractTableConfiguration
 								}
 
 								if (f.hasValue()) {
+
 									try {
 										f.setValue(SQLUtilities.tryToReplaceParamsInQuery(f.getValue().toString(),
 												schemaInfoSrc));
@@ -932,12 +842,12 @@ public class SrcConf extends AbstractTableConfiguration
 			}
 
 			this.setDstType(toCloneFrom.getDstType());
-			this.setResource(toCloneFrom.getResource() == null ? null : toCloneFrom.getResource().copy());
 		}
 	}
 
 	@Override
 	public void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc) {
+
 		if (hasAuxExtractTable()) {
 			AuxExtractTable.tryToReplacePlaceholders(this.getAuxExtractTable(), schemaInfoSrc);
 		}
@@ -977,11 +887,13 @@ public class SrcConf extends AbstractTableConfiguration
 
 	@Override
 	public TableConfiguration getJoiningEntity() {
+
 		if (!isJoinable()) {
-			throw new ForbiddenOperationException("Only a srcConf with a child EtlItemConf can have a joining entity");
+			throw new ForbiddenOperationException(
+					"Only a JDBC primary data source belonging to a child ETL item can have a joining entity");
 		}
 
-		return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().getSrcConf();
+		return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf().requireJdbcPrimaryDataSource();
 	}
 
 	@Override
@@ -1034,12 +946,13 @@ public class SrcConf extends AbstractTableConfiguration
 
 	@Override
 	public MainJoiningEntity getMainExtractTable() {
+
 		if (!isJoinable()) {
 			throw new ForbiddenOperationException(
-					"Only a srcConf with a child EtlItemConf can have a mainExtractTable");
+					"Only a JDBC primary data source belonging to a child ETL item can have a mainExtractTable");
 		}
 
-		return getParentConf().getSrcConf();
+		return ((EtlChildItemConfiguration) getParentConf()).getParentItemConf().requireJdbcPrimaryDataSource();
 	}
 
 	@Override
@@ -1050,12 +963,15 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public EtlDataSource findDataSourceOnAllAvaliabeDatasources(String dsName) throws DatabaseResourceDoesNotExists {
+
 		if (dsName.equals(this.getName()) || dsName.equals(this.getTableAlias())) {
 			return this;
 		}
 
 		if (this.hasAuxExtractTable()) {
+
 			for (JoinableEntity auxExtractTable : this.getJoiningTable()) {
+
 				if (auxExtractTable.doNotUseAsDatasource()) {
 					continue;
 				}
@@ -1065,7 +981,9 @@ public class SrcConf extends AbstractTableConfiguration
 				}
 
 				if (auxExtractTable.isMainJoiningEntity() && auxExtractTable.parseToJoining().hasAuxExtractTable()) {
+
 					for (JoinableEntity innerAuxExtractTable : auxExtractTable.parseToJoining().getJoiningTable()) {
+
 						if (innerAuxExtractTable.doNotUseAsDatasource()) {
 							continue;
 						}
@@ -1083,7 +1001,9 @@ public class SrcConf extends AbstractTableConfiguration
 		List<EtlAdditionalDataSource> avaliableDataSources = getAvaliableExtraDataSource();
 
 		if (utilities.listHasElement(avaliableDataSources)) {
+
 			for (EtlAdditionalDataSource ds : avaliableDataSources) {
+
 				if (ds.getAlias().equals(dsName)) {
 					return ds;
 				}
@@ -1117,6 +1037,7 @@ public class SrcConf extends AbstractTableConfiguration
 	}
 
 	public EtlItemConfiguration getParentItemConf() {
+
 		if (this.hasParentItemConf()) {
 			return ((EtlChildItemConfiguration) this.getParentConf()).getParentItemConf();
 		}
@@ -1162,6 +1083,7 @@ public class SrcConf extends AbstractTableConfiguration
 		}
 
 		for (String trackingName : TRACKING_FIELDS) {
+
 			if (trackingName.equals("retry_count")) {
 				toTrack.setFieldValue(trackingName, ((int) toTrack.getFieldValue(trackingName)) + 1);
 			} else {
@@ -1175,5 +1097,15 @@ public class SrcConf extends AbstractTableConfiguration
 			throw new ForbiddenOperationException("The table " + this + " is not trackable!");
 
 		obj.setFieldValue("processing_status", status.toString());
+	}
+
+	@Override
+	public boolean joinFieldsAlredyLoaded() {
+		return isTrue(this.joinFieldsAlredyLoaded);
+	}
+
+	@Override
+	public void markJoinFieldAsLoaded() {
+		this.joinFieldsAlredyLoaded = true;
 	}
 }

@@ -51,7 +51,7 @@ public class TransportController extends SiteOperationController<TransportRecord
 	@SuppressWarnings("unchecked")
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
-		File[] files = getSyncDirectory(engine.getSrcConf())
+		File[] files = getSyncDirectory(engine.getJdbcPrimaryDataSource())
 		        .listFiles(new TransportSyncSearchParams((Engine<TransportRecord>) engine, null));
 		
 		if (files == null || files.length == 0)
@@ -71,7 +71,7 @@ public class TransportController extends SiteOperationController<TransportRecord
 	@SuppressWarnings("unchecked")
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
-		File[] files = getSyncDirectory(engine.getSrcConf())
+		File[] files = getSyncDirectory(engine.getJdbcPrimaryDataSource())
 		        .listFiles(new TransportSyncSearchParams((Engine<TransportRecord>) engine, null));
 		
 		if (files == null || files.length == 0)

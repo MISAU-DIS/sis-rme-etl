@@ -13,9 +13,11 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
+import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -34,9 +36,10 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
 import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
+import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -46,13 +49,12 @@ import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
 /**
  * This interface represent any Database Entity class subject of synchronization
  * records.
- * 
+ *
  * @author jpboane
  */
 public interface EtlDatabaseObject extends EtlObject {
 
 	public static final int CONSISTENCE_STATUS = 1;
-
 	public static final int INCONSISTENCE_STATUS = -1;
 
 	void refreshLastSyncDateOnOrigin(TableConfiguration tableConfiguration, String recordOriginLocationCode,
@@ -74,13 +76,18 @@ public interface EtlDatabaseObject extends EtlObject {
 	EtlStageObjectInfo getEtlStageObjectInfo();
 
 	default EtlException getEtlDefaultEtlException() {
+
 		if (this.isInEtlProcess()) {
+
 			if (this.getEtlInfo().hasExceptionOnEtl()) {
 				return this.getEtlInfo().getExceptionOnEtl();
 			}
 		} else if (hasDestinationRecordsRecursively()) {
+
 			for (EtlDatabaseObject dst : this.getDestinationObjectsRecursively()) {
+
 				if (dst.isInEtlProcess()) {
+
 					if (dst.getEtlInfo().hasExceptionOnEtl()) {
 						return dst.getEtlInfo().getExceptionOnEtl();
 					}
@@ -112,7 +119,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	/**
 	 * Load the destination parents id to this object
-	 * 
+	 *
 	 * @param conn
 	 * @throws DBException
 	 */
@@ -157,6 +164,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	Object getParentValue(String parentFieldName);
 
+	@Override
 	String generateTableName();
 
 	String generateFullFilledUpdateSql();
@@ -177,7 +185,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	 * <p>
 	 * Because the consolidation process would be in cascade mode, each
 	 * consolidation is imediatily commited to t@Override he dadabase
-	 * 
+	 *
 	 * @param tableInfo
 	 * @param conn
 	 * @throws InconsistentStateException
@@ -191,7 +199,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	 * The resolution consists on checking if all parent of this records are present
 	 * in data base. If not then this dstRecord will be moved to staging area and
 	 * all its children will be moved in cascade
-	 * 
+	 *
 	 * @param tableInfo
 	 * @param conn
 	 * @throws InconsistentStateException
@@ -242,7 +250,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	/**
 	 * Check if this dstRecord has exactily the same values in all fields with a
 	 * given object
-	 * 
+	 *
 	 * @param srcObj
 	 * @return true if this dstRecord has exactily the same values in all fields
 	 *         with the given object
@@ -260,7 +268,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	/**
 	 * Checks if there are recursive relashioship between the
 	 * {@link #getRelatedConfiguration()} and the one passed by parameter
-	 * 
+	 *
 	 * @param otherTabConf the related configuration against what the recursive
 	 *                     relationship will be checked
 	 * @param conn
@@ -290,7 +298,9 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		if (utils.listHasElement(thisTabConf.getParentRefInfo())) {
+
 			for (ParentTable ref : thisTabConf.getParentRefInfo()) {
+
 				// Recursive relashionship
 				if (ref.getTableName().equals(otherTabConf.getTableName())) {
 					return false;
@@ -311,49 +321,64 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		sql += " WHERE " + pk.parseToParametrizedStringConditionWithAlias();
 
-		return DatabaseObjectDAO.find(tabConf.getLoadHealper(), tabConf.getEtlRecordClass(), sql,
+		return BaseDAO.find(tabConf.getLoadHealper(), tabConf.getEtlRecordClass(), sql,
 				pk.parseValuesToArray(), conn);
 	}
 
 	/**
 	 * Load the objectId info
-	 * 
+	 *
 	 * @param tabConf the table configuration
 	 */
-	default void loadObjectIdData(TableConfiguration tabConf) {
-		if (tabConf.getPrimaryKey() != null) {
+	default void loadObjectIdData(EtlObjectConfiguration configuration) {
 
-			tabConf.getPrimaryKey().setTabConf(tabConf);
+		if (configuration.getPrimaryKey() != null) {
+			if (!(configuration.getPrimaryKey() instanceof PrimaryKey)) {
+				throw new ForbiddenOperationException(
+						"The primary key of '" + configuration.getObjectName() + "' is not a PrimaryKey");
+			}
 
-			this.setObjectId(tabConf.getPrimaryKey().generateOid(this));
+			this.setObjectId(((PrimaryKey) configuration.getPrimaryKey()).generateOid(this));
 
 			this.getObjectId().setFullLoaded(true);
 		}
 	}
 
-	default void loadObjectIdData(TableConfiguration tabConf, Object keyValue) {
-		if (tabConf.useSimplePk()) {
-			this.loadObjectIdData(tabConf);
+	default void loadObjectIdData(TableConfiguration tabConf) {
+		loadObjectIdData((EtlObjectConfiguration) tabConf);
+	}
+
+	default void loadObjectIdData(EtlObjectConfiguration configuration, Object keyValue) {
+
+		if (configuration.getPrimaryKey() instanceof PrimaryKey
+				&& ((PrimaryKey) configuration.getPrimaryKey()).isSimpleKey()) {
+			this.loadObjectIdData(configuration);
 
 			this.getObjectId().asSimpleKey().setValue(keyValue);
 			this.tryToReplaceFieldValueWithKeyValue(this.getObjectId().asSimpleKey());
 
-		} else
+		} else {
 			throw new ForbiddenOperationException("Method not allowed for complex PK!");
+		}
+	}
+
+	default void loadObjectIdData(TableConfiguration tabConf, Object keyValue) {
+		loadObjectIdData((EtlObjectConfiguration) tabConf, keyValue);
 	}
 
 	default void loadObjectIdData() throws ForbiddenOperationException {
-		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
+		EtlObjectConfiguration configuration = this.getRelatedConfiguration();
 
-		if (tabConf == null)
-			throw new ForbiddenOperationException("The related tabConf is not specified!");
+		if (configuration == null) {
+			throw new ForbiddenOperationException("The related object configuration is not specified!");
+		}
 
-		this.loadObjectIdData(tabConf);
+		this.loadObjectIdData(configuration);
 	}
 
 	/**
 	 * Check if all fields from a given parent has value or not
-	 * 
+	 *
 	 * @param refInfo the parent info to check
 	 * @return true if all the field from a given parent are not empty or false in
 	 *         there is at least one empty field
@@ -361,6 +386,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	default boolean hasAllPerentFieldsFilled(ParentTable refInfo) {
 
 		for (RefMapping map : refInfo.getRefMapping()) {
+
 			if (this.getFieldValue(map.getChildFieldName()) == null) {
 				return false;
 			}
@@ -375,25 +401,28 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	/**
 	 * Check this dstRecord has at least one uniqueKey with all fields filled
-	 * 
+	 *
 	 * @param refInfo the parent info to check
 	 * @return true if has at least one uniqueKey with all fields filled or false in
 	 *         all the unikeKeys has at least one empty field
 	 */
 	default boolean hasAtLeastOnUniqueKeyWIthAllFieldsFilled() {
-		if (!hasRelatedConfiguration())
+		if (!hasRelatedConfiguration()) {
 			throw new ForbiddenOperationException("The related configuration is not defined!");
+		}
 
 		TableConfiguration tabConf = (TableConfiguration) getRelatedConfiguration();
 
-		if (!tabConf.hasUniqueKeys())
+		if (!tabConf.hasUniqueKeys()) {
 			throw new ForbiddenOperationException(
 					"The related configuration " + tabConf.getTableName() + " has no uniqueKey");
+		}
 
 		for (UniqueKeyInfo uk : tabConf.getUniqueKeys()) {
 			boolean allFiled = true;
 
 			for (Key key : uk.getFields()) {
+
 				if (this.getFieldValue(key.getName()) == null) {
 					allFiled = false;
 
@@ -401,8 +430,9 @@ public interface EtlDatabaseObject extends EtlObject {
 				}
 			}
 
-			if (allFiled)
+			if (allFiled) {
 				return true;
+			}
 		}
 
 		return false;
@@ -414,8 +444,9 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		for (EtlDatabaseObject o : objs) {
 
-			if (!o.hasSrcRelatedObject())
+			if (!o.hasSrcRelatedObject()) {
 				throw new ForbiddenOperationException("The object " + o + " is not in an etl process");
+			}
 
 			list.add((T) o.getEtlInfo().getRelatedSrcObject());
 		}
@@ -433,7 +464,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	 * Retrive values for all {@link TableConfiguration#getUniqueKeys()} fields. The
 	 * values follow the very same sequence defined with
 	 * {@link TableConfiguration#getUniqueKeys()}
-	 * 
+	 *
 	 * @param tableConfiguration the {@link TableConfiguration} from where the
 	 *                           {@link TableConfiguration#getUniqueKeys()} will be
 	 *                           retrieved from
@@ -443,7 +474,9 @@ public interface EtlDatabaseObject extends EtlObject {
 	 */
 	default Object[] getUniqueKeysFieldValues(TableConfiguration tableConfiguration)
 			throws ForbiddenOperationException {
+
 		if (!tableConfiguration.isFullLoaded()) {
+
 			try {
 				tableConfiguration.fullLoad();
 			} catch (DBException e) {
@@ -454,7 +487,7 @@ public interface EtlDatabaseObject extends EtlObject {
 			}
 		}
 
-		List<Object> values = new ArrayList<Object>();
+		List<Object> values = new ArrayList<>();
 
 		for (UniqueKeyInfo uniqueKey : tableConfiguration.getUniqueKeys()) {
 			Object[] fieldValues = new Object[uniqueKey.getFields().size()];
@@ -488,8 +521,11 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default UniqueKeyInfo getUniqueKeyInfo(UniqueKeyInfo keyToFind) {
+
 		if (hasUniqueKeys()) {
+
 			for (UniqueKeyInfo key : this.getUniqueKeysInfo()) {
+
 				if (keyToFind.equals(key)) {
 					return key;
 				}
@@ -503,10 +539,10 @@ public interface EtlDatabaseObject extends EtlObject {
 		return utils.listHasElement(getUniqueKeysInfo());
 	}
 
-	default void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
+	default void setRelatedConfiguration(EtlObjectConfiguration config) {
 	}
 
-	default EtlDatabaseObjectConfiguration getRelatedConfiguration() {
+	default EtlObjectConfiguration getRelatedConfiguration() {
 		return null;
 	}
 
@@ -516,7 +552,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	/**
 	 * Retrive values for all fields in any unique key.
-	 * 
+	 *
 	 * @param uniqueKeyFields the list of fields in a unique key
 	 * @return values for all fields in a unique key.
 	 * @throws ForbiddenOperationException if one or more fields in any key have
@@ -546,20 +582,25 @@ public interface EtlDatabaseObject extends EtlObject {
 		return fieldValues;
 	}
 
+	default void loadUniqueKeyValues(EtlObjectConfiguration configuration) {
+		this.setUniqueKeysInfo(EtlDatabaseObjectUniqueKeyInfo.generate(configuration, this));
+	}
+
 	default void loadUniqueKeyValues(TableConfiguration tabConf) {
-		this.setUniqueKeysInfo(EtlDatabaseObjectUniqueKeyInfo.generate(tabConf, this));
+		loadUniqueKeyValues((EtlObjectConfiguration) tabConf);
 	}
 
 	default void loadUniqueKeyValues() {
-		this.loadUniqueKeyValues((TableConfiguration) getRelatedConfiguration());
+		this.loadUniqueKeyValues(getRelatedConfiguration());
 	}
 
 	default void loadSharedKeyParentRelatedObject(Connection conn) throws DBException {
 		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
 
-		if (!tabConf.useSharedPKKey())
+		if (!tabConf.useSharedPKKey()) {
 			throw new ForbiddenOperationException(
 					"The table '" + tabConf.getFullTableDescription() + " does not use shared key");
+		}
 
 		ParentTable sharedKeyConf = tabConf.getSharedKeyRefInfo(conn);
 
@@ -574,9 +615,10 @@ public interface EtlDatabaseObject extends EtlObject {
 			throws DBException {
 		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
 
-		if (!childTabConf.useSharedPKKey())
+		if (!childTabConf.useSharedPKKey()) {
 			throw new ForbiddenOperationException(
 					"The table '" + childTabConf.getFullTableDescription() + " does not use shared key");
+		}
 
 		if (!childTabConf.getSharedKeyRefInfo(conn).equals(tabConf)) {
 			throw new ForbiddenOperationException("The table '" + childTabConf.getFullTableDescription()
@@ -594,8 +636,9 @@ public interface EtlDatabaseObject extends EtlObject {
 		return child;
 	}
 
-	default EtlDatabaseObject retrieveParentInSrcUsingDstParentInfo(ParentTable refInfo, SrcConf src,
-			Connection srcConn) throws DBException {
+	default EtlDatabaseObject retrieveParentInSrcUsingDstParentInfo(ParentTable refInfo,
+			PrimaryDataSourceConfiguration primarySource, Connection srcConn) throws DBException {
+		JdbcTablePrimaryDataSourceConfiguration src = primarySource.requireJdbc();
 
 		Oid prentOid = refInfo.generateParentOidFromChild(this);
 
@@ -654,8 +697,9 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean hasResolvedConflict() {
-		if (isInEtlProcess())
+		if (isInEtlProcess()) {
 			throw new ForbiddenOperationException("The object " + this + " is not in an etl process");
+		}
 
 		return this.getEtlInfo().getConflictResolutionType() != null;
 	}
@@ -696,17 +740,20 @@ public interface EtlDatabaseObject extends EtlObject {
 		} else if (onConflict.isReject()) {
 			throw new ConflictWithRecordAlreadyLoadedRecordException(this, recordOnDB, exception);
 		} else {
+
 			if (recordOnDB == null) {
 				throw new ConflictWithRecordNotYetAvaliableException(this, exception);
 			} else if (onConflict.updateExisting()) {
 				existingRecordIsOutdated = true;
 			} else if (onConflict.patchExisting()) {
 
-				if (!tableConfiguration.hasPatchFields())
+				if (!tableConfiguration.hasPatchFields()) {
 					throw new EtlExceptionImpl(
 							"Conflict resolution is set to PATCH_EXISTING but no patchFields is empty!");
+				}
 
 				for (Field field : tableConfiguration.getFields()) {
+
 					if (!tableConfiguration.getPatchFields().contains(field.getName())) {
 						this.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()));
 					}
@@ -715,6 +762,7 @@ public interface EtlDatabaseObject extends EtlObject {
 				existingRecordIsOutdated = true;
 
 			} else if (utils.listHasElement(tableConfiguration.getWinningRecordFieldsInfo())) {
+
 				for (List<org.openmrs.module.epts.etl.model.Field> fields : tableConfiguration
 						.getWinningRecordFieldsInfo()) {
 
@@ -747,6 +795,7 @@ public interface EtlDatabaseObject extends EtlObject {
 					}
 				}
 			} else if (tableConfiguration.hasObservationDateFields()) {
+
 				for (String dateField : tableConfiguration.getObservationDateFields()) {
 
 					Date thisRecordDate;
@@ -769,6 +818,7 @@ public interface EtlDatabaseObject extends EtlObject {
 					}
 
 					if (thisRecordDate != null) {
+
 						if (recordOnDBDate == null) {
 							existingRecordIsOutdated = true;
 
@@ -783,6 +833,7 @@ public interface EtlDatabaseObject extends EtlObject {
 			}
 
 			if (existingRecordIsOutdated) {
+
 				if (this.getEtlInfo() != null) {
 					this.getEtlInfo().setConflictResolutionType(
 							onConflict.patchExisting() ? ConflictResolutionType.PATCHED_EXISTING
@@ -792,6 +843,7 @@ public interface EtlDatabaseObject extends EtlObject {
 				this.setObjectId(recordOnDB.getObjectId());
 				this.update(tableConfiguration, conn);
 			} else {
+
 				if (this.getEtlInfo() != null) {
 					this.getEtlInfo().setConflictResolutionType(ConflictResolutionType.KEPT_EXISTING);
 				}
@@ -802,7 +854,9 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default Field getField(String fieldName) {
+
 		for (Field field : this.getFields()) {
+
 			if (utils.equalsFieldsName(field.getName().trim(), fieldName.trim())) {
 				return field;
 			}
@@ -812,6 +866,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean contaisField(String fieldName) {
+
 		try {
 			return getField(fieldName) != null;
 		} catch (MissingFieldException e) {
@@ -838,7 +893,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	 * If this {@link EtlDatabaseObject} uses the dynamic fields based on map or
 	 * list of {@link Field}, then this method should replace the correspondent
 	 * field with the given key
-	 * 
+	 *
 	 * @param key the correspondent key to replace the field
 	 */
 	void tryToReplaceFieldValueWithKeyValue(Key k);
@@ -848,6 +903,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default void addDestinationRecord(EtlDatabaseObject dstObject) {
+
 		if (this.getDestinationObjects() == null) {
 			setDestinationObjects(new ArrayList<>());
 		}
@@ -856,8 +912,11 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default EtlDatabaseObject retriveDestinationRecord(DstConf dstConf) {
+
 		if (hasDestinationRecords()) {
+
 			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
+
 				if (obj.getRelatedConfiguration() == dstConf) {
 					return obj;
 				}
@@ -876,12 +935,15 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean hasDestinationRecordsRecursively() {
+
 		if (hasDestinationRecords()) {
 			return true;
 		}
 
 		if (hasChildObjects()) {
+
 			for (EtlDatabaseObject obj : this.getChildObjects()) {
+
 				if (obj.hasDestinationRecordsRecursively()) {
 					return true;
 				}
@@ -895,12 +957,14 @@ public interface EtlDatabaseObject extends EtlObject {
 		List<EtlDatabaseObject> destinationRecords = new ArrayList<>();
 
 		if (hasDestinationRecords()) {
+
 			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
 				destinationRecords.add(obj);
 			}
 		}
 
 		if (hasChildObjects()) {
+
 			for (EtlDatabaseObject obj : this.getChildObjects()) {
 				List<EtlDatabaseObject> childs = obj.getDestinationObjectsRecursively();
 
@@ -918,6 +982,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default EtlLoadStatus getLoadStatus() {
+
 		if (!hasDestinationRecordsRecursively()) {
 			throw new EtlExceptionImpl("No destination found for this object " + this);
 		}
@@ -942,13 +1007,16 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default List<EtlDatabaseObject> filterDestinationRecords(EtlStatus status) {
 
-		if (!hasDestinationRecordsRecursively())
+		if (!hasDestinationRecordsRecursively()) {
 			throw new EtlExceptionImpl("No destination found for this object " + this);
+		}
 
 		List<EtlDatabaseObject> dstOfStatus = new ArrayList<>();
 
 		if (hasDestinationRecords()) {
+
 			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
+
 				if (obj.getEtlInfo().getStatus().equals(status)) {
 					dstOfStatus.add(obj);
 				}
@@ -956,6 +1024,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		if (hasChildObjects()) {
+
 			for (EtlDatabaseObject obj : this.getChildObjects()) {
 				List<EtlDatabaseObject> childs = obj.filterDestinationRecords(status);
 
@@ -971,6 +1040,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	default void loadValuesToUniqueKeyFields(EtlDatabaseObject srcRecord) {
 
 		for (EtlDatabaseObjectUniqueKeyInfo o : srcRecord.getUniqueKeysInfo()) {
+
 			try {
 				UniqueKeyInfo uk = this.getUniqueKeyInfo(o);
 
@@ -1015,15 +1085,17 @@ public interface EtlDatabaseObject extends EtlObject {
 		} else if (this.isSrcObject()
 				|| (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource())) {
 
-			EtlDatabaseObjectConfiguration conf = this.getRelatedConfiguration();
+			EtlObjectConfiguration conf = this.getRelatedConfiguration();
 
-			if (conf instanceof SrcConf && ((SrcConf) conf).doNotUseAsDatasource()) {
+			if (conf instanceof PrimaryDataSourceConfiguration
+					&& ((PrimaryDataSourceConfiguration) conf).doNotUseAsDatasource()) {
 			} else {
 				avaliableSrcOjects.add(this);
 			}
 		}
 
 		if (this.hasDestinationRecords()) {
+
 			for (EtlDatabaseObject obj : this.getDestinationObjects()) {
 
 				if (utils.setHasElement(obj.collectAllAvaliableSrcObjects())) {
@@ -1033,6 +1105,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		if (hasAuxLoadObject()) {
+
 			for (EtlDatabaseObject a : this.getAuxLoadObject()) {
 
 				if (this == a) {
@@ -1060,6 +1133,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default void addChildObject(EtlDatabaseObject obj) {
+
 		if (this.getChildObjects() == null) {
 			this.setChildObjects(new ArrayList<>());
 		}
@@ -1075,7 +1149,9 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default void trackProcessingState(EtlStageAreaObject processedRec, Connection srcConn)
 			throws EtlConfException, DBException {
-		SrcConf srcConf = (SrcConf) processedRec.getRelatedEtlObject().getRelatedConfiguration();
+		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) processedRec
+				.getRelatedEtlObject().getRelatedConfiguration();
+		JdbcTablePrimaryDataSourceConfiguration srcConf = primarySource.requireJdbc();
 
 		if (!srcConf.isTrackabled()) {
 			throw new EtlConfException("The table " + this + " is not trackable!!");
@@ -1087,10 +1163,16 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean isTrackable() {
-		if (!(this.getRelatedConfiguration() instanceof SrcConf))
+		if (!(this.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration)) {
 			return false;
+		}
 
-		SrcConf srcConf = (SrcConf) this.getRelatedConfiguration();
+		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) this.getRelatedConfiguration();
+		if (!primarySource.isJdbc()) {
+			return false;
+		}
+
+		JdbcTablePrimaryDataSourceConfiguration srcConf = primarySource.requireJdbc();
 
 		return srcConf.isTrackabled();
 	}
@@ -1100,11 +1182,13 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default void changeStatus(EtlLoadStatus status, Connection srcConn) throws DBException {
+
 		if (!isTrackable()) {
 			throw new ForbiddenOperationException("Attempt to track not trackable object " + this);
 		}
 
-		SrcConf srcConf = (SrcConf) this.getRelatedConfiguration();
+		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) this.getRelatedConfiguration();
+		JdbcTablePrimaryDataSourceConfiguration srcConf = primarySource.requireJdbc();
 
 		srcConf.changeObjectStatus(this, status, srcConn);
 

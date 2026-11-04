@@ -7,5 +7,7 @@ public enum SchemaMetadataLoadSource {
 
 	STATIC_DATA,
 
-	JDBC
+	JDBC,
+
+	CONFIGURED_RECORD_SCHEMA
 }

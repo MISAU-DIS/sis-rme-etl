@@ -1,1434 +1,1419 @@
 <%@ include file="/WEB-INF/template/include.jsp" %>
 
-<%@ page contentType="text/html; charset=UTF-8" %>
+	<%@ page contentType="text/html; charset=UTF-8" %>
 
-<%
-    pageContext.setAttribute("moduleName", "epts-etl");
-%>
+		<% pageContext.setAttribute("moduleName", "epts-etl" ); %>
 
-<%@ include file="/WEB-INF/template/header.jsp" %>
+			<%@ include file="/WEB-INF/template/header.jsp" %>
 
-    <style>
+				<style>
+					#etl-monitor,
+					#etl-monitor * {
+						box-sizing: border-box;
+					}
 
-        #etl-monitor, #etl-monitor * {
-            box-sizing: border-box;
-        }
+					#etl-monitor {
+						margin: 0;
+						padding: 0;
+						font-family: Arial, Helvetica, sans-serif;
+						background: #f4f6f8;
+						color: #444;
+						font-size: 13px;
+					}
 
-        #etl-monitor {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f6f8;
-            color: #444;
-            font-size: 13px;
-        }
+					#etl-monitor.page {
+						min-height: 600px;
+					}
 
-        #etl-monitor.page {
-            min-height: 600px;
-        }
-
-        /* =========================================================
+					/* =========================================================
            HEADER
            ========================================================= */
 
-        #etl-monitor .header {
-            height: 48px;
-            background: #5b9bd5;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            font-size: 17px;
-            font-weight: bold;
-        }
+					#etl-monitor .header {
+						height: 48px;
+						background: #5b9bd5;
+						color: #ffffff;
+						display: flex;
+						align-items: center;
+						padding: 0 20px;
+						font-size: 17px;
+						font-weight: bold;
+					}
 
-        #etl-monitor .header-title {
-            letter-spacing: 0.2px;
-        }
+					#etl-monitor .header-title {
+						letter-spacing: 0.2px;
+					}
 
-        /* =========================================================
+					/* =========================================================
            CONTENT
            ========================================================= */
 
-        #etl-monitor .content {
-            display: flex;
-            padding: 14px;
-            gap: 14px;
-        }
+					#etl-monitor .content {
+						display: flex;
+						padding: 14px;
+						gap: 14px;
+					}
 
-        /* =========================================================
+					/* =========================================================
            SIDEBAR
            ========================================================= */
 
-        #etl-monitor .sidebar {
-            width: 180px;
-            min-width: 180px;
-        }
+					#etl-monitor .sidebar {
+						width: 180px;
+						min-width: 180px;
+					}
 
-        #etl-monitor .status-panel {
-            background: #ffffff;
-            border: 1px solid #e1e1e1;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 14px;
-        }
+					#etl-monitor .status-panel {
+						background: #ffffff;
+						border: 1px solid #e1e1e1;
+						border-radius: 6px;
+						padding: 12px;
+						margin-bottom: 14px;
+					}
 
-        #etl-monitor .status-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #555;
-        }
+					#etl-monitor .status-title {
+						font-weight: bold;
+						margin-bottom: 10px;
+						color: #555;
+					}
 
-        #etl-monitor .status-indicator {
-            display: flex;
-            align-items: center;
-            margin-bottom: 12px;
-            font-size: 13px;
-        }
+					#etl-monitor .status-indicator {
+						display: flex;
+						align-items: center;
+						margin-bottom: 12px;
+						font-size: 13px;
+					}
 
-        #etl-monitor .status-dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: #999999;
-            margin-right: 7px;
-        }
+					#etl-monitor .status-dot {
+						width: 9px;
+						height: 9px;
+						border-radius: 50%;
+						background: #999999;
+						margin-right: 7px;
+					}
 
-        #etl-monitor .status-dot.running {
-            background: #5b9bd5;
-        }
+					#etl-monitor .status-dot.running {
+						background: #5b9bd5;
+					}
 
-        #etl-monitor .status-dot.completed {
-            background: #70ad47;
-        }
+					#etl-monitor .status-dot.completed {
+						background: #70ad47;
+					}
 
-        #etl-monitor .status-dot.error {
-            background: #d9534f;
-        }
+					#etl-monitor .status-dot.error {
+						background: #d9534f;
+					}
 
-        #etl-monitor .status-dot.rejected {
-            background: #f0ad4e;
-        }
+					#etl-monitor .status-dot.rejected {
+						background: #f0ad4e;
+					}
 
-        #etl-monitor .status-dot.idle {
-            background: #999999;
-        }
+					#etl-monitor .status-dot.idle {
+						background: #999999;
+					}
 
-        #etl-monitor .status-text {
-            font-weight: bold;
-        }
+					#etl-monitor .status-text {
+						font-weight: bold;
+					}
 
-        /* =========================================================
+					/* =========================================================
            CONTROL BUTTONS
            ========================================================= */
 
-        #etl-monitor .control-button {
-            width: 100%;
-            height: 32px;
-            margin-bottom: 7px;
-            border: 1px solid #d5d5d5;
-            border-radius: 4px;
-            background: #f8f8f8;
-            color: #666;
-            text-align: left;
-            padding: 0 10px;
-            cursor: pointer;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-        }
+					#etl-monitor .control-button {
+						width: 100%;
+						height: 32px;
+						margin-bottom: 7px;
+						border: 1px solid #d5d5d5;
+						border-radius: 4px;
+						background: #f8f8f8;
+						color: #666;
+						text-align: left;
+						padding: 0 10px;
+						cursor: pointer;
+						font-size: 12px;
+						display: flex;
+						align-items: center;
+					}
 
-        #etl-monitor .control-button:hover {
-            background: #eeeeee;
-        }
+					#etl-monitor .control-button:hover {
+						background: #eeeeee;
+					}
 
-        #etl-monitor .control-button:disabled {
-            cursor: not-allowed;
-            opacity: 0.55;
-        }
+					#etl-monitor .control-button:disabled {
+						cursor: not-allowed;
+						opacity: 0.55;
+					}
 
-        #etl-monitor .button-icon {
-            width: 20px;
-            min-width: 20px;
-            margin-right: 7px;
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-        }
+					#etl-monitor .button-icon {
+						width: 20px;
+						min-width: 20px;
+						margin-right: 7px;
+						text-align: center;
+						font-size: 14px;
+						font-weight: bold;
+					}
 
-        /* =========================================================
+					/* =========================================================
            MAIN
            ========================================================= */
 
-        #etl-monitor .main {
-            flex: 1;
-            min-width: 0;
-        }
+					#etl-monitor .main {
+						flex: 1;
+						min-width: 0;
+					}
 
-        /* =========================================================
+					/* =========================================================
            SUMMARY
            ========================================================= */
 
-        #etl-monitor .summary {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 12px;
-        }
+					#etl-monitor .summary {
+						display: grid;
+						grid-template-columns: repeat(4, 1fr);
+						gap: 10px;
+						margin-bottom: 12px;
+					}
 
-        #etl-monitor .summary-card {
-            background: #ffffff;
-            border: 1px solid #e1e1e1;
-            border-radius: 5px;
-            min-height: 82px;
-            padding: 12px;
-        }
+					#etl-monitor .summary-card {
+						background: #ffffff;
+						border: 1px solid #e1e1e1;
+						border-radius: 5px;
+						min-height: 82px;
+						padding: 12px;
+					}
 
-        #etl-monitor .summary-card.pending {
-            background: #fffdf3;
-        }
+					#etl-monitor .summary-card.pending {
+						background: #fffdf3;
+					}
 
-        #etl-monitor .summary-card.success {
-            background: #f0f8ed;
-        }
+					#etl-monitor .summary-card.success {
+						background: #f0f8ed;
+					}
 
-        #etl-monitor .summary-card.error {
-            background: #fff0f2;
-        }
+					#etl-monitor .summary-card.error {
+						background: #fff0f2;
+					}
 
-        #etl-monitor .summary-card.info {
-            background: #f7f9fb;
-        }
+					#etl-monitor .summary-card.info {
+						background: #f7f9fb;
+					}
 
-        #etl-monitor .summary-label {
-            font-size: 11px;
-            color: #777;
-            margin-bottom: 8px;
-        }
+					#etl-monitor .summary-label {
+						font-size: 11px;
+						color: #777;
+						margin-bottom: 8px;
+					}
 
-        #etl-monitor .summary-value {
-            font-size: 22px;
-            font-weight: bold;
-            color: #555;
-        }
+					#etl-monitor .summary-value {
+						font-size: 22px;
+						font-weight: bold;
+						color: #555;
+					}
 
-        #etl-monitor .summary-description {
-            margin-top: 4px;
-            font-size: 10px;
-            color: #999;
-        }
+					#etl-monitor .summary-description {
+						margin-top: 4px;
+						font-size: 10px;
+						color: #999;
+					}
 
-        #etl-monitor .summary-icon {
-            display: inline-block;
-            margin-right: 5px;
-            font-size: 14px;
-            font-weight: bold;
-        }
+					#etl-monitor .summary-icon {
+						display: inline-block;
+						margin-right: 5px;
+						font-size: 14px;
+						font-weight: bold;
+					}
 
-        #etl-monitor .icon-success {
-            color: #70ad47;
-        }
+					#etl-monitor .icon-success {
+						color: #70ad47;
+					}
 
-        #etl-monitor .icon-error {
-            color: #d9534f;
-        }
+					#etl-monitor .icon-error {
+						color: #d9534f;
+					}
 
-        #etl-monitor .icon-rejected {
-            color: #f0ad4e;
-        }
+					#etl-monitor .icon-rejected {
+						color: #f0ad4e;
+					}
 
-        #etl-monitor .icon-info {
-            color: #5b9bd5;
-        }
+					#etl-monitor .icon-info {
+						color: #5b9bd5;
+					}
 
-        /* =========================================================
+					/* =========================================================
            OPERATION PANEL
            ========================================================= */
 
-        #etl-monitor .operation-panel {
-            background: #ffffff;
-            border: 1px solid #e1e1e1;
-            border-radius: 5px;
-            padding: 14px;
-            margin-bottom: 12px;
-        }
+					#etl-monitor .operation-panel {
+						background: #ffffff;
+						border: 1px solid #e1e1e1;
+						border-radius: 5px;
+						padding: 14px;
+						margin-bottom: 12px;
+					}
 
-        #etl-monitor .operation-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
+					#etl-monitor .operation-header {
+						display: flex;
+						justify-content: space-between;
+						align-items: center;
+						margin-bottom: 8px;
+					}
 
-        #etl-monitor .operation-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #555;
-        }
+					#etl-monitor .operation-title {
+						font-size: 14px;
+						font-weight: bold;
+						color: #555;
+					}
 
-        #etl-monitor .operation-status {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            background: #eeeeee;
-            color: #666666;
-        }
+					#etl-monitor .operation-status {
+						display: inline-flex;
+						align-items: center;
+						padding: 4px 10px;
+						border-radius: 12px;
+						font-size: 11px;
+						font-weight: bold;
+						background: #eeeeee;
+						color: #666666;
+					}
 
-        #etl-monitor .operation-status.running {
-            background: #d9edf7;
-            color: #31708f;
-        }
+					#etl-monitor .operation-status.running {
+						background: #d9edf7;
+						color: #31708f;
+					}
 
-        #etl-monitor .operation-status.completed {
-            background: #dff0d8;
-            color: #3c763d;
-        }
+					#etl-monitor .operation-status.completed {
+						background: #dff0d8;
+						color: #3c763d;
+					}
 
-        #etl-monitor .operation-status.error {
-            background: #f2dede;
-            color: #a94442;
-        }
+					#etl-monitor .operation-status.error {
+						background: #f2dede;
+						color: #a94442;
+					}
 
-        #etl-monitor .operation-status.rejected {
-            background: #fcf8e3;
-            color: #8a6d3b;
-        }
+					#etl-monitor .operation-status.rejected {
+						background: #fcf8e3;
+						color: #8a6d3b;
+					}
 
-        #etl-monitor .status-icon {
-            margin-right: 5px;
-            font-size: 13px;
-            font-weight: bold;
-        }
+					#etl-monitor .status-icon {
+						margin-right: 5px;
+						font-size: 13px;
+						font-weight: bold;
+					}
 
-        #etl-monitor .operation-id {
-            color: #888;
-            font-size: 11px;
-            margin-bottom: 10px;
-            word-break: break-all;
-        }
+					#etl-monitor .operation-id {
+						color: #888;
+						font-size: 11px;
+						margin-bottom: 10px;
+						word-break: break-all;
+					}
 
-        #etl-monitor .progress-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 11px;
-            color: #777;
-        }
+					#etl-monitor .progress-label {
+						display: flex;
+						justify-content: space-between;
+						margin-bottom: 5px;
+						font-size: 11px;
+						color: #777;
+					}
 
-        #etl-monitor .progress-container {
-            width: 100%;
-            height: 22px;
-            background: #eeeeee;
-            border-radius: 3px;
-            overflow: hidden;
-        }
+					#etl-monitor .progress-container {
+						width: 100%;
+						height: 22px;
+						background: #eeeeee;
+						border-radius: 3px;
+						overflow: hidden;
+					}
 
-        #etl-monitor .progress-bar {
-            width: 0%;
-            height: 100%;
-            background: #5b9bd5;
-            transition: width 0.4s ease;
-            color: #ffffff;
-            text-align: center;
-            line-height: 22px;
-            font-size: 11px;
-            font-weight: bold;
-        }
+					#etl-monitor .progress-bar {
+						width: 0%;
+						height: 100%;
+						background: #5b9bd5;
+						transition: width 0.4s ease;
+						color: #ffffff;
+						text-align: center;
+						line-height: 22px;
+						font-size: 11px;
+						font-weight: bold;
+					}
 
-        #etl-monitor .message {
-            display: none;
-            margin-top: 10px;
-            padding: 9px;
-            border-radius: 4px;
-            background: #fff0f0;
-            color: #a94442;
-            border: 1px solid #f0cccc;
-        }
+					#etl-monitor .message {
+						display: none;
+						margin-top: 10px;
+						padding: 9px;
+						border-radius: 4px;
+						background: #fff0f0;
+						color: #a94442;
+						border: 1px solid #f0cccc;
+					}
 
-        #etl-monitor .message.visible {
-            display: block;
-        }
+					#etl-monitor .message.visible {
+						display: block;
+					}
 
-        /* =========================================================
+					/* =========================================================
            REFRESH CARD
            ========================================================= */
 
-        #etl-monitor .refresh-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #5b9bd5;
-        }
+					#etl-monitor .refresh-value {
+						font-size: 20px;
+						font-weight: bold;
+						color: #5b9bd5;
+					}
 
-        #etl-monitor .refresh-last {
-            margin-top: 5px;
-            font-size: 10px;
-            color: #999;
-        }
+					#etl-monitor .refresh-last {
+						margin-top: 5px;
+						font-size: 10px;
+						color: #999;
+					}
 
-        /* =========================================================
+					/* =========================================================
            RESPONSIVE
            ========================================================= */
 
-        @media (max-width: 900px) {
+					@media (max-width: 900px) {
 
-            #etl-monitor .summary {
-                grid-template-columns: repeat(2, 1fr);
-            }
+						#etl-monitor .summary {
+							grid-template-columns: repeat(2, 1fr);
+						}
 
-            #etl-monitor .sidebar {
-                width: 150px;
-                min-width: 150px;
-            }
-        }
+						#etl-monitor .sidebar {
+							width: 150px;
+							min-width: 150px;
+						}
+					}
 
-        @media (max-width: 650px) {
+					@media (max-width: 650px) {
 
-            #etl-monitor .content {
-                display: block;
-            }
+						#etl-monitor .content {
+							display: block;
+						}
 
-            #etl-monitor .sidebar {
-                width: 100%;
-                margin-bottom: 12px;
-            }
+						#etl-monitor .sidebar {
+							width: 100%;
+							margin-bottom: 12px;
+						}
 
-            #etl-monitor .summary {
-                grid-template-columns: 1fr;
-            }
-        }
+						#etl-monitor .summary {
+							grid-template-columns: 1fr;
+						}
+					}
+				</style>
 
-    </style>
+				<div id="etl-monitor" class="page">
 
-<div id="etl-monitor" class="page">
-
-    <!-- =========================================================
+					<!-- =========================================================
          HEADER
          ========================================================= -->
 
-    <div class="header">
+					<div class="header">
 
-        <div class="header-title">
-            SIS-RME: Consola de Sincronização de Dados
-        </div>
+						<div class="header-title">
+							SIS-RME: Consola de Sincronização de Dados
+						</div>
 
-    </div>
+					</div>
 
 
-    <!-- =========================================================
+					<!-- =========================================================
          CONTENT
          ========================================================= -->
 
-    <div class="content">
+					<div class="content">
 
-        <!-- =====================================================
+						<!-- =====================================================
              SIDEBAR
              ===================================================== -->
 
-        <div class="sidebar">
+						<div class="sidebar">
 
-            <div class="status-panel">
+							<div class="status-panel">
 
-                <div class="status-title">
-                    Estado
-                </div>
+								<div class="status-title">
+									Estado
+								</div>
 
-                <div class="status-indicator">
+								<div class="status-indicator">
 
-                    <span id="statusDot"
-                          class="status-dot idle">
-                    </span>
+									<span id="statusDot" class="status-dot idle">
+									</span>
 
-                    <span id="statusText"
-                          class="status-text">
-                        Inativo
-                    </span>
+									<span id="statusText" class="status-text">
+										Inativo
+									</span>
 
-                </div>
+								</div>
 
 
-                <!-- =================================================
+								<!-- =================================================
                      START
                      ================================================= -->
 
-                <button id="startButton"
-                        class="control-button"
-                        type="button"
-                        onclick="startEtl(); return false;">
+								<button id="startButton" class="control-button" type="button"
+									onclick="startEtl(); return false;">
 
-                    <span class="button-icon">▶</span>
+									<span class="button-icon">▶</span>
 
-                    <span>
-                        Iniciar
-                    </span>
+									<span>
+										Iniciar
+									</span>
 
-                </button>
+								</button>
 
 
-                <!-- =================================================
+								<!-- =================================================
                      STOP
                      ================================================= -->
 
-                <button id="stopButton"
-                        class="control-button"
-                        type="button"
-                        onclick="stopEtl(); return false;">
+								<button id="stopButton" class="control-button" type="button"
+									onclick="stopEtl(); return false;">
 
-                    <span class="button-icon">■</span>
+									<span class="button-icon">■</span>
 
-                    <span>
-                        Parar
-                    </span>
+									<span>
+										Parar
+									</span>
 
-                </button>
+								</button>
 
-            </div>
+							</div>
 
-        </div>
+						</div>
 
 
-        <!-- =====================================================
+						<!-- =====================================================
              MAIN
              ===================================================== -->
 
-        <div class="main">
+						<div class="main">
 
-            <!-- =================================================
+							<!-- =================================================
                  SUMMARY
                  ================================================= -->
 
-            <div class="summary">
+							<div class="summary">
 
-                <div class="summary-card pending">
+								<div class="summary-card pending">
 
-                    <div class="summary-label">
-                        Mensagens pendentes
-                    </div>
+									<div class="summary-label">
+										Mensagens pendentes
+									</div>
 
-                    <div id="pending"
-                         class="summary-value">
-                        0
-                    </div>
+									<div id="pending" class="summary-value">
+										0
+									</div>
 
-                    <div class="summary-description">
-                        Aguardando sincronização
-                    </div>
+									<div class="summary-description">
+										Aguardando sincronização
+									</div>
 
-                </div>
-
-
-                <div class="summary-card success">
-
-                    <div class="summary-label">
-
-                        <span class="summary-icon icon-success">
-                            ✓
-                        </span>
-
-                        Mensagens sincronizadas
-
-                    </div>
-
-                    <div id="processed"
-                         class="summary-value">
-                        0
-                    </div>
-
-                    <div class="summary-description">
-                        Processadas com sucesso
-                    </div>
-
-                </div>
+								</div>
 
 
-                <div class="summary-card error">
+								<div class="summary-card success">
 
-                    <div class="summary-label">
+									<div class="summary-label">
 
-                        <span class="summary-icon icon-error">
-                            ✕
-                        </span>
+										<span class="summary-icon icon-success">
+											✓
+										</span>
 
-                        Mensagens com erros
+										Mensagens sincronizadas
 
-                    </div>
+									</div>
 
-                    <div id="errors"
-                         class="summary-value">
-                        0
-                    </div>
+									<div id="processed" class="summary-value">
+										0
+									</div>
 
-                    <div class="summary-description">
-                        Erros reportados pelo ETL
-                    </div>
+									<div class="summary-description">
+										Processadas com sucesso
+									</div>
 
-                </div>
-
-
-                <div class="summary-card info">
-
-                    <div class="summary-label">
-
-                        <span class="summary-icon icon-info">
-                            ↻
-                        </span>
-
-                        Actualização automática
-
-                    </div>
-
-                    <div class="refresh-value">
-                        2 segundos
-                    </div>
-
-                    <div class="refresh-last">
-
-                        Última actualização:
-
-                        <span id="lastRefresh">
-                            -
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
+								</div>
 
 
-            <!-- =================================================
+								<div class="summary-card error">
+
+									<div class="summary-label">
+
+										<span class="summary-icon icon-error">
+											✕
+										</span>
+
+										Mensagens com erros
+
+									</div>
+
+									<div id="errors" class="summary-value">
+										0
+									</div>
+
+									<div class="summary-description">
+										Erros reportados pelo ETL
+									</div>
+
+								</div>
+
+
+								<div class="summary-card info">
+
+									<div class="summary-label">
+
+										<span class="summary-icon icon-info">
+											↻
+										</span>
+
+										Actualização automática
+
+									</div>
+
+									<div class="refresh-value">
+										2 segundos
+									</div>
+
+									<div class="refresh-last">
+
+										Última actualização:
+
+										<span id="lastRefresh">
+											-
+										</span>
+
+									</div>
+
+								</div>
+
+							</div>
+
+
+							<!-- =================================================
                  OPERATION
                  ================================================= -->
 
-            <div class="operation-panel">
+							<div class="operation-panel">
 
-                <div class="operation-header">
+								<div class="operation-header">
 
-                    <div class="operation-title">
-                        Sincronização actual
-                    </div>
+									<div class="operation-title">
+										Sincronização actual
+									</div>
 
-                    <div id="operationStatus"
-                         class="operation-status">
+									<div id="operationStatus" class="operation-status">
 
-                        <span class="status-icon">
-                            ●
-                        </span>
+										<span class="status-icon">
+											●
+										</span>
 
-                        <span id="operationStatusText">
-                            IDLE
-                        </span>
+										<span id="operationStatusText">
+											IDLE
+										</span>
 
-                    </div>
+									</div>
 
-                </div>
+								</div>
 
 
-                <div class="operation-id">
+								<div class="operation-id">
 
-                    Operação:
+									Operação:
 
-                    <span id="operationId">
-                        -
-                    </span>
+									<span id="operationId">
+										-
+									</span>
 
-                </div>
+								</div>
 
 
-                <div class="progress-label">
+								<div class="progress-label">
 
-                    <span>
-                        Progresso
-                    </span>
+									<span>
+										Progresso
+									</span>
 
-                    <span id="progressText">
-                        0%
-                    </span>
+									<span id="progressText">
+										0%
+									</span>
 
-                </div>
+								</div>
 
 
-                <div class="progress-container">
+								<div class="progress-container">
 
-                    <div id="progressBar"
-                         class="progress-bar">
-                        0%
-                    </div>
+									<div id="progressBar" class="progress-bar">
+										0%
+									</div>
 
-                </div>
+								</div>
 
 
-                <div id="message"
-                     class="message">
-                </div>
+								<div id="message" class="message">
+								</div>
 
-            </div>
+							</div>
 
-        </div>
+						</div>
 
-    </div>
+					</div>
 
-</div>
+				</div>
 
 
-<script>
+				<script>
 
-    var monitorTimer = null;
+					var monitorTimer = null;
 
 
-    /* =========================================================
-       STATUS CLASS
-       ========================================================= */
+					/* =========================================================
+					   STATUS CLASS
+					   ========================================================= */
 
-    function getStatusClass(status) {
+					function getStatusClass(status) {
 
-        if (!status) {
-            return "idle";
-        }
+						if (!status) {
+							return "idle";
+						}
 
-        status = String(status).toUpperCase();
+						status = String(status).toUpperCase();
 
-        if (status === "RUNNING") {
-            return "running";
-        }
+						if (status === "RUNNING") {
+							return "running";
+						}
 
-        if (status === "COMPLETED" ||
-            status === "SUCCESS" ||
-            status === "FINISHED") {
+						if (status === "COMPLETED" ||
+							status === "SUCCESS" ||
+							status === "FINISHED") {
 
-            return "completed";
-        }
+							return "completed";
+						}
 
-        if (status === "ERROR" ||
-            status === "FAILED") {
+						if (status === "ERROR" ||
+							status === "FAILED") {
 
-            return "error";
-        }
+							return "error";
+						}
 
-        if (status === "REJECTED" ||
-            status === "REJECT") {
+						if (status === "REJECTED" ||
+							status === "REJECT") {
 
-            return "rejected";
-        }
+							return "rejected";
+						}
 
-        return "idle";
-    }
+						return "idle";
+					}
 
 
-    /* =========================================================
-       STATUS LABEL
-       ========================================================= */
+					/* =========================================================
+					   STATUS LABEL
+					   ========================================================= */
 
-    function getStatusLabel(status) {
+					function getStatusLabel(status) {
 
-        if (!status) {
-            return "Inativo";
-        }
+						if (!status) {
+							return "Inativo";
+						}
 
-        status = String(status).toUpperCase();
+						status = String(status).toUpperCase();
 
-        if (status === "RUNNING") {
-            return "Activo";
-        }
+						if (status === "RUNNING") {
+							return "Activo";
+						}
 
-        if (status === "COMPLETED" ||
-            status === "SUCCESS" ||
-            status === "FINISHED") {
+						if (status === "COMPLETED" ||
+							status === "SUCCESS" ||
+							status === "FINISHED") {
 
-            return "Sucesso";
-        }
+							return "Sucesso";
+						}
 
-        if (status === "ERROR" ||
-            status === "FAILED") {
+						if (status === "ERROR" ||
+							status === "FAILED") {
 
-            return "Falhou";
-        }
+							return "Falhou";
+						}
 
-        if (status === "REJECTED" ||
-            status === "REJECT") {
+						if (status === "REJECTED" ||
+							status === "REJECT") {
 
-            return "Rejeitado";
-        }
+							return "Rejeitado";
+						}
 
-        if (status === "IDLE") {
-            return "Inativo";
-        }
+						if (status === "IDLE") {
+							return "Inativo";
+						}
 
-        if (status === "INITIALIZED") {
-            return "Inicializado";
-        }
+						if (status === "INITIALIZED") {
+							return "Inicializado";
+						}
 
-        if (status === "NOT_INITIALIZED") {
-            return "Não inicializado";
-        }
+						if (status === "NOT_INITIALIZED") {
+							return "Não inicializado";
+						}
 
-        if (status === "DISABLED") {
-            return "Desactivado";
-        }
+						if (status === "DISABLED") {
+							return "Desactivado";
+						}
 
-        if (status === "STOPPED") {
-            return "Parado";
-        }
+						if (status === "STOPPED") {
+							return "Parado";
+						}
 
-        return status;
-    }
+						return status;
+					}
 
 
-    /* =========================================================
-       STATUS ICON
-       ========================================================= */
+					/* =========================================================
+					   STATUS ICON
+					   ========================================================= */
 
-    function getStatusIcon(status) {
+					function getStatusIcon(status) {
 
-        if (!status) {
-            return "●";
-        }
+						if (!status) {
+							return "●";
+						}
 
-        status = String(status).toUpperCase();
+						status = String(status).toUpperCase();
 
-        if (status === "RUNNING") {
-            return "●";
-        }
+						if (status === "RUNNING") {
+							return "●";
+						}
 
-        if (status === "COMPLETED" ||
-            status === "SUCCESS" ||
-            status === "FINISHED") {
+						if (status === "COMPLETED" ||
+							status === "SUCCESS" ||
+							status === "FINISHED") {
 
-            return "✓";
-        }
+							return "✓";
+						}
 
-        if (status === "ERROR" ||
-            status === "FAILED") {
+						if (status === "ERROR" ||
+							status === "FAILED") {
 
-            return "✕";
-        }
+							return "✕";
+						}
 
-        if (status === "REJECTED" ||
-            status === "REJECT") {
+						if (status === "REJECTED" ||
+							status === "REJECT") {
 
-            return "⊘";
-        }
+							return "⊘";
+						}
 
-        return "●";
-    }
+						return "●";
+					}
 
 
-    /* =========================================================
-       CONTROL BUTTONS
-       ========================================================= */
+					/* =========================================================
+					   CONTROL BUTTONS
+					   ========================================================= */
 
-    function updateControlButtons(status) {
+					function updateControlButtons(status) {
 
-        status = status
-            ? String(status).toUpperCase()
-            : "IDLE";
+						status = status
+							? String(status).toUpperCase()
+							: "IDLE";
 
-        var startButton =
-            document.getElementById("startButton");
+						var startButton =
+							document.getElementById("startButton");
 
-        var stopButton =
-            document.getElementById("stopButton");
+						var stopButton =
+							document.getElementById("stopButton");
 
 
-        if (!startButton || !stopButton) {
-            return;
-        }
+						if (!startButton || !stopButton) {
+							return;
+						}
 
 
-        /*
-         * ETL está activo/inicializado.
-         *
-         * START fica indisponível.
-         * STOP fica disponível.
-         */
-        if (status === "RUNNING" ||
-            status === "INITIALIZED") {
+						/*
+						 * ETL está activo/inicializado.
+						 *
+						 * START fica indisponível.
+						 * STOP fica disponível.
+						 */
+						if (status === "RUNNING" ||
+							status === "INITIALIZED") {
 
-            startButton.disabled = true;
-            stopButton.disabled = false;
+							startButton.disabled = true;
+							stopButton.disabled = false;
 
-            return;
-        }
+							return;
+						}
 
 
-        /*
-         * ETL está parado/terminado/inactivo.
-         *
-         * START fica disponível.
-         * STOP fica indisponível.
-         */
-        if (status === "STOPPED" ||
-            status === "FINISHED" ||
-            status === "COMPLETED" ||
-            status === "SUCCESS" ||
-            status === "NOT_INITIALIZED" ||
-            status === "IDLE" ||
-            status === "DISABLED") {
+						/*
+						 * ETL está parado/terminado/inactivo.
+						 *
+						 * START fica disponível.
+						 * STOP fica indisponível.
+						 */
+						if (status === "STOPPED" ||
+							status === "FINISHED" ||
+							status === "COMPLETED" ||
+							status === "SUCCESS" ||
+							status === "NOT_INITIALIZED" ||
+							status === "IDLE" ||
+							status === "DISABLED") {
 
-            startButton.disabled = false;
-            stopButton.disabled = true;
+							startButton.disabled = false;
+							stopButton.disabled = true;
 
-            return;
-        }
+							return;
+						}
 
 
-        /*
-         * Em caso de estado desconhecido,
-         * mantemos apenas START disponível.
-         */
-        startButton.disabled = false;
-        stopButton.disabled = true;
-    }
+						/*
+						 * Em caso de estado desconhecido,
+						 * mantemos apenas START disponível.
+						 */
+						startButton.disabled = false;
+						stopButton.disabled = true;
+					}
 
 
-    /* =========================================================
-       NUMBER
-       ========================================================= */
+					/* =========================================================
+					   NUMBER
+					   ========================================================= */
 
-    function formatNumber(value) {
+					function formatNumber(value) {
 
-        if (value === null ||
-            value === undefined ||
-            isNaN(Number(value))) {
+						if (value === null ||
+							value === undefined ||
+							isNaN(Number(value))) {
 
-            return "0";
-        }
+							return "0";
+						}
 
-        return Number(value).toLocaleString();
-    }
+						return Number(value).toLocaleString();
+					}
 
 
-    /* =========================================================
-       MAIN UPDATE
-       ========================================================= */
+					/* =========================================================
+					   MAIN UPDATE
+					   ========================================================= */
 
-    function updateMonitor(data) {
+					function updateMonitor(data) {
 
-        if (!data) {
-            return;
-        }
+						if (!data) {
+							return;
+						}
 
-        var status =
-            data.status || "IDLE";
+						var status =
+							data.status || "IDLE";
 
 
-        /*
-         * Atualiza os botões de controlo de acordo
-         * com o estado real recebido do backend.
-         */
-        updateControlButtons(status);
+						/*
+						 * Atualiza os botões de controlo de acordo
+						 * com o estado real recebido do backend.
+						 */
+						updateControlButtons(status);
 
 
-        var statusClass =
-            getStatusClass(status);
+						var statusClass =
+							getStatusClass(status);
 
 
-        /* -----------------------------------------------------
-           SIDEBAR STATUS
-           ----------------------------------------------------- */
+						/* -----------------------------------------------------
+						   SIDEBAR STATUS
+						   ----------------------------------------------------- */
 
-        var statusDot =
-            document.getElementById("statusDot");
+						var statusDot =
+							document.getElementById("statusDot");
 
-        statusDot.className =
-            "status-dot " + statusClass;
+						statusDot.className =
+							"status-dot " + statusClass;
 
 
-        document.getElementById("statusText").innerText =
-            getStatusLabel(status);
+						document.getElementById("statusText").innerText =
+							getStatusLabel(status);
 
 
-        /* -----------------------------------------------------
-           OPERATION
-           ----------------------------------------------------- */
+						/* -----------------------------------------------------
+						   OPERATION
+						   ----------------------------------------------------- */
 
-        document.getElementById("operationId").innerText =
-            data.operationIdentifier || "-";
+						document.getElementById("operationId").innerText =
+							data.operationIdentifier || "-";
 
 
-        var operationStatus =
-            document.getElementById("operationStatus");
+						var operationStatus =
+							document.getElementById("operationStatus");
 
 
-        operationStatus.className =
-            "operation-status " + statusClass;
+						operationStatus.className =
+							"operation-status " + statusClass;
 
 
-        document.getElementById("operationStatusText").innerText =
-            getStatusLabel(status);
+						document.getElementById("operationStatusText").innerText =
+							getStatusLabel(status);
 
 
-        var statusIcon =
-            operationStatus.querySelector(".status-icon");
+						var statusIcon =
+							operationStatus.querySelector(".status-icon");
 
 
-        if (statusIcon) {
+						if (statusIcon) {
 
-            statusIcon.innerText =
-                getStatusIcon(status);
+							statusIcon.innerText =
+								getStatusIcon(status);
 
-        }
+						}
 
 
-        /* -----------------------------------------------------
-           PROCESSED
-           ----------------------------------------------------- */
+						/* -----------------------------------------------------
+						   PROCESSED
+						   ----------------------------------------------------- */
 
-        var processed =
-            Number(data.processed || 0);
+						var processed =
+							Number(data.processed || 0);
 
 
-        var total =
-            Number(data.total || 0);
+						var total =
+							Number(data.total || 0);
 
 
-        document.getElementById("processed").innerText =
-            formatNumber(processed);
+						document.getElementById("processed").innerText =
+							formatNumber(processed);
 
 
-        /* -----------------------------------------------------
-           PENDING
-           ----------------------------------------------------- */
+						/* -----------------------------------------------------
+						   PENDING
+						   ----------------------------------------------------- */
 
-        var pending =
-            Math.max(
-                0,
-                total - processed
-            );
+						var pending =
+							Math.max(
+								0,
+								total - processed
+							);
 
 
-        document.getElementById("pending").innerText =
-            formatNumber(pending);
+						document.getElementById("pending").innerText =
+							formatNumber(pending);
 
 
-        /* -----------------------------------------------------
-           PROGRESS
-           ----------------------------------------------------- */
+						/* -----------------------------------------------------
+						   PROGRESS
+						   ----------------------------------------------------- */
 
-        var progress =
-            Number(data.progress || 0);
+						var progress =
+							Number(data.progress || 0);
 
 
-        progress =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    progress
-                )
-            );
+						progress =
+							Math.max(
+								0,
+								Math.min(
+									100,
+									progress
+								)
+							);
 
 
-        var progressBar =
-            document.getElementById("progressBar");
+						var progressBar =
+							document.getElementById("progressBar");
 
 
-        progressBar.style.width =
-            progress + "%";
+						progressBar.style.width =
+							progress + "%";
 
 
-        progressBar.innerText =
-            Math.round(progress) + "%";
+						progressBar.innerText =
+							Math.round(progress) + "%";
 
 
-        document.getElementById("progressText").innerText =
-            progress.toFixed(2) + "%";
+						document.getElementById("progressText").innerText =
+							progress.toFixed(2) + "%";
 
 
-        /* -----------------------------------------------------
-           ERRORS
+						/* -----------------------------------------------------
+						   ERRORS
+				
+						   Nesta release mantemos apenas o contador.
+						   A visualização detalhada será implementada
+						   numa release futura.
+						   ----------------------------------------------------- */
 
-           Nesta release mantemos apenas o contador.
-           A visualização detalhada será implementada
-           numa release futura.
-           ----------------------------------------------------- */
+						var errorCount =
+							0;
 
-        var errorCount =
-            0;
 
+						if (data.tasks &&
+							data.tasks.length) {
 
-        if (data.tasks &&
-            data.tasks.length) {
+							for (var i = 0;
+								i < data.tasks.length;
+								i++) {
 
-            for (var i = 0;
-                 i < data.tasks.length;
-                 i++) {
+								var task =
+									data.tasks[i];
 
-                var task =
-                    data.tasks[i];
 
+								if (task &&
+									task.status &&
+									(
+										String(task.status).toUpperCase() === "ERROR" ||
+										String(task.status).toUpperCase() === "FAILED"
+									)) {
 
-                if (task &&
-                    task.status &&
-                    (
-                        String(task.status).toUpperCase() === "ERROR" ||
-                        String(task.status).toUpperCase() === "FAILED"
-                    )) {
+									errorCount++;
 
-                    errorCount++;
+								}
 
-                }
+							}
 
-            }
+						}
 
-        }
 
+						document.getElementById("errors").innerText =
+							formatNumber(errorCount);
 
-        document.getElementById("errors").innerText =
-            formatNumber(errorCount);
 
+						/* -----------------------------------------------------
+						   MESSAGE
+						   ----------------------------------------------------- */
 
-        /* -----------------------------------------------------
-           MESSAGE
-           ----------------------------------------------------- */
+						var messageElement =
+							document.getElementById("message");
 
-        var messageElement =
-            document.getElementById("message");
 
+						if (data.message) {
 
-        if (data.message) {
+							messageElement.innerText =
+								data.message;
 
-            messageElement.innerText =
-                data.message;
+							messageElement.className =
+								"message visible";
 
-            messageElement.className =
-                "message visible";
+						} else {
 
-        } else {
+							messageElement.innerText =
+								"";
 
-            messageElement.innerText =
-                "";
+							messageElement.className =
+								"message";
 
-            messageElement.className =
-                "message";
+						}
 
-        }
 
+						/* -----------------------------------------------------
+						   REFRESH TIME
+						   ----------------------------------------------------- */
 
-        /* -----------------------------------------------------
-           REFRESH TIME
-           ----------------------------------------------------- */
+						document.getElementById("lastRefresh").innerText =
+							new Date().toLocaleTimeString();
 
-        document.getElementById("lastRefresh").innerText =
-            new Date().toLocaleTimeString();
+					}
 
-    }
 
+					/* =========================================================
+					   INICIAR ETL
+					   ========================================================= */
 
-    /* =========================================================
-       INICIAR ETL
-       ========================================================= */
+					function startEtl() {
 
-    function startEtl() {
+						var button =
+							document.getElementById("startButton");
 
-        var button =
-            document.getElementById("startButton");
 
+						if (button) {
+							button.disabled = true;
+						}
 
-        if (button) {
-            button.disabled = true;
-        }
 
+						fetch(
+							"${pageContext.request.contextPath}/module/epts/etl/start.form",
+							{
+								method: "POST",
+								headers: {
+									"Accept": "application/json"
+								},
+								cache: "no-cache"
+							}
+						)
+							.then(function (response) {
 
-        fetch(
-            "${pageContext.request.contextPath}/module/epts/etl/start.form",
-            {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json"
-                },
-                cache: "no-cache"
-            }
-        )
-            .then(function(response) {
+								if (!response.ok) {
 
-                if (!response.ok) {
+									throw new Error(
+										"HTTP " + response.status
+									);
 
-                    throw new Error(
-                        "HTTP " + response.status
-                    );
+								}
 
-                }
+								return response.json();
 
-                return response.json();
+							})
+							.then(function (data) {
 
-            })
-            .then(function(data) {
+								console.log(
+									"[ETL-START]",
+									data
+								);
 
-                console.log(
-                    "[ETL-START]",
-                    data
-                );
 
+								if (data.message) {
 
-                if (data.message) {
+									var messageElement =
+										document.getElementById("message");
 
-                    var messageElement =
-                        document.getElementById("message");
 
+									messageElement.innerText =
+										data.message;
 
-                    messageElement.innerText =
-                        data.message;
 
+									messageElement.className =
+										"message visible";
+								}
 
-                    messageElement.className =
-                        "message visible";
-                }
 
+								loadMonitor();
 
-                loadMonitor();
+							})
+							.catch(function (error) {
 
-            })
-            .catch(function(error) {
+								console.error(
+									"[ETL-START] Error:",
+									error
+								);
 
-                console.error(
-                    "[ETL-START] Error:",
-                    error
-                );
 
+								var messageElement =
+									document.getElementById("message");
 
-                var messageElement =
-                    document.getElementById("message");
 
+								messageElement.innerText =
+									"Não foi possível iniciar o ETL: " +
+									error.message;
 
-                messageElement.innerText =
-                    "Não foi possível iniciar o ETL: " +
-                    error.message;
 
+								messageElement.className =
+									"message visible";
 
-                messageElement.className =
-                    "message visible";
 
+								loadMonitor();
 
-                loadMonitor();
+							});
 
-            });
+					}
 
-    }
 
+					/* =========================================================
+					   PARAR ETL
+					   ========================================================= */
 
-    /* =========================================================
-       PARAR ETL
-       ========================================================= */
+					function stopEtl() {
 
-    function stopEtl() {
+						var button =
+							document.getElementById("stopButton");
 
-        var button =
-            document.getElementById("stopButton");
 
+						if (button) {
+							button.disabled = true;
+						}
 
-        if (button) {
-            button.disabled = true;
-        }
 
+						fetch(
+							"${pageContext.request.contextPath}/module/epts/etl/stop.form",
+							{
+								method: "POST",
+								headers: {
+									"Accept": "application/json"
+								},
+								cache: "no-cache"
+							}
+						)
+							.then(function (response) {
 
-        fetch(
-            "${pageContext.request.contextPath}/module/epts/etl/stop.form",
-            {
-                method: "POST",
-                headers: {
-                    "Accept": "application/json"
-                },
-                cache: "no-cache"
-            }
-        )
-            .then(function(response) {
+								if (!response.ok) {
 
-                if (!response.ok) {
+									throw new Error(
+										"HTTP " + response.status
+									);
 
-                    throw new Error(
-                        "HTTP " + response.status
-                    );
+								}
 
-                }
+								return response.json();
 
-                return response.json();
+							})
+							.then(function (data) {
 
-            })
-            .then(function(data) {
+								console.log(
+									"[ETL-STOP]",
+									data
+								);
 
-                console.log(
-                    "[ETL-STOP]",
-                    data
-                );
 
+								if (data.message) {
 
-                if (data.message) {
+									var messageElement =
+										document.getElementById("message");
 
-                    var messageElement =
-                        document.getElementById("message");
 
+									messageElement.innerText =
+										data.message;
 
-                    messageElement.innerText =
-                        data.message;
 
+									messageElement.className =
+										"message visible";
+								}
 
-                    messageElement.className =
-                        "message visible";
-                }
 
+								loadMonitor();
 
-                loadMonitor();
+							})
+							.catch(function (error) {
 
-            })
-            .catch(function(error) {
+								console.error(
+									"[ETL-STOP] Error:",
+									error
+								);
 
-                console.error(
-                    "[ETL-STOP] Error:",
-                    error
-                );
 
+								var messageElement =
+									document.getElementById("message");
 
-                var messageElement =
-                    document.getElementById("message");
 
+								messageElement.innerText =
+									"Não foi possível parar o ETL: " +
+									error.message;
 
-                messageElement.innerText =
-                    "Não foi possível parar o ETL: " +
-                    error.message;
 
+								messageElement.className =
+									"message visible";
 
-                messageElement.className =
-                    "message visible";
 
+								loadMonitor();
 
-                loadMonitor();
+							});
 
-            });
+					}
 
-    }
 
+					/* =========================================================
+					   MONITOR API
+					   ========================================================= */
 
-    /* =========================================================
-       MONITOR API
-       ========================================================= */
+					function loadMonitor() {
 
-    function loadMonitor() {
+						var operationIdentifier =
+							new URLSearchParams(window.location.search)
+								.get("operationIdentifier");
 
-        var operationIdentifier =
-            new URLSearchParams(window.location.search)
-                .get("operationIdentifier");
+						var monitorUrl =
+							"${pageContext.request.contextPath}/module/epts/etl/monitorData.json";
 
-        var monitorUrl =
-            "${pageContext.request.contextPath}/module/epts/etl/monitorData.json";
+						if (operationIdentifier) {
+							monitorUrl += "?operationIdentifier=" +
+								encodeURIComponent(operationIdentifier);
+						}
 
-        if (operationIdentifier) {
-            monitorUrl += "?operationIdentifier=" +
-                encodeURIComponent(operationIdentifier);
-        }
+						fetch(
+							monitorUrl,
+							{
+								method: "GET",
+								headers: {
+									"Accept": "application/json"
+								},
+								cache: "no-cache"
+							}
+						)
+							.then(function (response) {
 
-        fetch(
-            monitorUrl,
-            {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json"
-                },
-                cache: "no-cache"
-            }
-        )
-            .then(function(response) {
+								if (!response.ok) {
 
-                if (!response.ok) {
+									throw new Error(
+										"HTTP " + response.status
+									);
 
-                    throw new Error(
-                        "HTTP " + response.status
-                    );
+								}
 
-                }
+								return response.json();
 
-                return response.json();
+							})
+							.then(function (data) {
 
-            })
-            .then(function(data) {
+								console.log(
+									"[ETL-MONITOR] Data received:",
+									data
+								);
 
-                console.log(
-                    "[ETL-MONITOR] Data received:",
-                    data
-                );
 
+								updateMonitor(data);
 
-                updateMonitor(data);
+							})
+							.catch(function (error) {
 
-            })
-            .catch(function(error) {
+								console.error(
+									"[ETL-MONITOR] Error:",
+									error
+								);
 
-                console.error(
-                    "[ETL-MONITOR] Error:",
-                    error
-                );
 
+								var messageElement =
+									document.getElementById("message");
 
-                var messageElement =
-                    document.getElementById("message");
 
+								messageElement.innerText =
+									"Não foi possível obter informações do monitor: "
+									+ error.message;
 
-                messageElement.innerText =
-                    "Não foi possível obter informações do monitor: "
-                    + error.message;
 
+								messageElement.className =
+									"message visible";
 
-                messageElement.className =
-                    "message visible";
 
+								document.getElementById(
+									"statusText"
+								).innerText =
+									"Erro";
 
-                document.getElementById(
-                    "statusText"
-                ).innerText =
-                    "Erro";
 
+								document.getElementById(
+									"statusDot"
+								).className =
+									"status-dot error";
 
-                document.getElementById(
-                    "statusDot"
-                ).className =
-                    "status-dot error";
 
+								document.getElementById(
+									"operationStatus"
+								).className =
+									"operation-status error";
 
-                document.getElementById(
-                    "operationStatus"
-                ).className =
-                    "operation-status error";
 
+								document.getElementById(
+									"operationStatusText"
+								).innerText =
+									"Falhou";
 
-                document.getElementById(
-                    "operationStatusText"
-                ).innerText =
-                    "Falhou";
 
+								var statusIcon =
+									document.querySelector(
+										"#operationStatus .status-icon"
+									);
 
-                var statusIcon =
-                    document.querySelector(
-                        "#operationStatus .status-icon"
-                    );
 
+								if (statusIcon) {
 
-                if (statusIcon) {
+									statusIcon.innerText =
+										"✕";
 
-                    statusIcon.innerText =
-                        "✕";
+								}
 
-                }
+							});
 
-            });
+					}
 
-    }
 
+					/* =========================================================
+					   INITIAL LOAD
+					   ========================================================= */
 
-    /* =========================================================
-       INITIAL LOAD
-       ========================================================= */
+					loadMonitor();
 
-    loadMonitor();
 
+					monitorTimer =
+						setInterval(
+							loadMonitor,
+							2000
+						);
 
-    monitorTimer =
-        setInterval(
-            loadMonitor,
-            2000
-        );
+				</script>
 
-</script>
-
-<%@ include file="/WEB-INF/template/footer.jsp" %>
+				<%@ include file="/WEB-INF/template/footer.jsp" %>

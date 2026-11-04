@@ -14,83 +14,88 @@ import org.openmrs.module.epts.etl.model.base.VOLoaderHelper;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class DataBaseMergeFromSourceDBSearchParams extends AbstractEtlSearchParams<EtlStageRecordVO> {
-	
+
 	private boolean selectAllRecords;
-	
+
 	public DataBaseMergeFromSourceDBSearchParams(Engine<EtlStageRecordVO> engine,
-	    ThreadRecordIntervalsManager<EtlStageRecordVO> limits) {
-		super(engine.getSrcConf(), limits);
+			ThreadRecordIntervalsManager<EtlStageRecordVO> limits) {
+		super(engine.getJdbcPrimaryDataSource(), limits);
 	}
-	
+
 	@Override
-	public SearchClauses<EtlStageRecordVO> generateSearchClauses(IntervalExtremeRecord limits, EtlStageRecordVO parentObject,
-	        List<EtlStageRecordVO> auxDataSourceObjects, Connection srcConn, Connection dstConn) throws DBException {
+	public SearchClauses<EtlStageRecordVO> generateSearchClauses(IntervalExtremeRecord limits,
+			EtlStageRecordVO parentObject, List<EtlStageRecordVO> auxDataSourceObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
 		SearchClauses<EtlStageRecordVO> searchClauses = new SearchClauses<EtlStageRecordVO>(this);
-		
+
 		searchClauses.addColumnToSelect("*");
-		searchClauses.addToClauseFrom(getSrcConf().generateFullSrcStageTableName());
+		searchClauses.addToClauseFrom(this.getJdbcPrimaryDataSource().generateFullSrcStageTableName());
 		searchClauses.addToClauses("consistent = 1");
-		
+
 		if (!this.selectAllRecords) {
+
 			if (this.getThreadRecordIntervalsManager() != null) {
 				searchClauses.addToClauses("id between ? and ?");
-				
+
 				searchClauses.addToParameters(this.getThreadRecordIntervalsManager().getCurrentFirstRecordId());
 				searchClauses.addToParameters(this.getThreadRecordIntervalsManager().getCurrentLastRecordId());
 			}
-			
-			if (this.getConfig().getSrcConf().getExtraConditionForExtract() != null) {
-				searchClauses.addToClauses(this.getConfig().getSrcConf().getExtraConditionForExtract());
+
+			if (this.getConfig().requireJdbcPrimaryDataSource().getExtraConditionForExtract() != null) {
+				searchClauses
+						.addToClauses(this.getConfig().requireJdbcPrimaryDataSource().getExtraConditionForExtract());
 			}
 		}
-		
+
 		return searchClauses;
 	}
-	
+
 	@Override
 	public Class<EtlStageRecordVO> getRecordClass() {
 		return EtlStageRecordVO.class;
 	}
-	
+
 	@Override
 	public int countAllRecords(OperationController<EtlStageRecordVO> controller, Connection conn) throws DBException {
 		throw new RuntimeException("Rever esta mensagem");
-		
+
 		/*
-		DataBaseMergeFromSourceDBSearchParams auxSearchParams = new DataBaseMergeFromSourceDBSearchParams(this.getConfig(),
-		        this.getThreadRecordIntervalsManager(), conn, getRelatedController());
-		auxSearchParams.selectAllRecords = true;
-		
-		return SearchParamsDAO.countAll(auxSearchParams, conn);*/
+		 * DataBaseMergeFromSourceDBSearchParams auxSearchParams = new
+		 * DataBaseMergeFromSourceDBSearchParams(this.getConfig(),
+		 * this.getThreadRecordIntervalsManager(), conn, getRelatedController());
+		 * auxSearchParams.selectAllRecords = true;
+		 * 
+		 * return SearchParamsDAO.countAll(auxSearchParams, conn);
+		 */
 	}
-	
+
 	@Override
 	public synchronized int countNotProcessedRecords(OperationController<EtlStageRecordVO> controller, Connection conn)
-	        throws DBException {
+			throws DBException {
 		throw new RuntimeException("Rever esta mensagem");
-		
+
 		/*
-		EtlDatabaseObjectSearchParams migratedRecordsSearchParams = new EtlDatabaseObjectSearchParams(getConfig(), null,
-		        getRelatedEngine());
-		
-		int processed = SearchParamsDAO.countAll(migratedRecordsSearchParams, conn);
-		int allRecords = countAllRecords(conn);
-		
-		return allRecords - processed;
-		*/
+		 * EtlDatabaseObjectSearchParams migratedRecordsSearchParams = new
+		 * EtlDatabaseObjectSearchParams(getConfig(), null, getRelatedEngine());
+		 * 
+		 * int processed = SearchParamsDAO.countAll(migratedRecordsSearchParams, conn);
+		 * int allRecords = countAllRecords(conn);
+		 * 
+		 * return allRecords - processed;
+		 */
 	}
-	
+
 	@Override
 	protected VOLoaderHelper getLoaderHealper() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlStageRecordVO> cloneMe() {
 		return null;
 	}
-	
+
 	@Override
 	public String generateDestinationExclusionClause(Connection srcConn, Connection dstConn) throws DBException {
 		// TODO Auto-generated method stub

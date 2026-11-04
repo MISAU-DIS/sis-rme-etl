@@ -8,8 +8,10 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
@@ -20,6 +22,8 @@ import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.OperationController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
+import org.openmrs.module.epts.etl.databasepreparation.controller.DatabasePreparationProcessor;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -144,15 +148,29 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	public String getMainSrcTableName() {
-		return getSrcConf().getTableName();
+		return getPrimaryDataSource().getObjectName();
 	}
 
-	public SrcConf getSrcConf() {
-		return monitor.getSrcConf();
+	public JdbcTablePrimaryDataSourceConfiguration getJdbcPrimaryDataSource() {
+		return monitor.getJdbcPrimaryDataSource();
+	}
+
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
+		return monitor.getPrimaryDataSource();
 	}
 
 	public AbstractEtlSearchParams<T> getSearchParams() {
 		return getEngine().getSearchParams();
+	}
+
+	/** Creates the writer scope appropriate for this processor. */
+	public ConnectorRecordWriters createRecordWriters() throws DBException {
+		return getEtlItemConfiguration().createDestinationWriters(getEngine());
+	}
+
+	/** Creates the reader appropriate for this processor. */
+	public ConnectorRecordReader<T> createRecordReader(ConnectorRecordWriters writers) throws DBException {
+		return getEtlItemConfiguration().createSourceReader(getSearchParams(), getEngine(), writers);
 	}
 
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReader<T> reader,
@@ -172,12 +190,17 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		} else {
 			logInfo("SERCHING NEXT RECORDS " + threads);
 		}
+		List<T> records = null;
 
-		List<T> records = reader.read(new ConnectorReadRequest<>(getLimits(), null, null, useMultiThreadSearch));
+		if (this instanceof DatabasePreparationProcessor || this instanceof DatabaseModelGenerationProcessor) {
+			records = this.getSearchParams().search(getLimits(), null, null, reader.unwrap(Connection.class), null);
+		} else {
+			records = reader.read(new ConnectorReadRequest<>(this.getLimits(), null, null, useMultiThreadSearch));
+		}
 
 		logDebug("SERCH NEXT MIGRATION RECORDS FOR ETL '" + this.getEtlItemConfiguration().getConfigCode()
-				+ "' ON TABLE '" + getSrcConf().getTableName() + "' FINISHED. FOUND: '" + utilities.arraySize(records)
-				+ "' RECORDS.");
+				+ "' ON SOURCE '" + getPrimaryDataSource().getObjectName() + "' FINISHED. FOUND: '"
+				+ utilities.arraySize(records) + "' RECORDS.");
 
 		if (utilities.listHasElement(records)) {
 			transformAndLoadExtractedRecords(records, reader, writers);
@@ -197,7 +220,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		prepareExtractedRecords(records, writers);
 
 		logWarn("PERFORMING " + getRelatedOperationController().getOperationType().name().toLowerCase() + " OF '"
-				+ records.size() + "' RECORDS OF TABLE '" + this.getSrcConf().getAlias() + "'");
+				+ records.size() + "' RECORDS OF SOURCE '" + this.getPrimaryDataSource().getAlias() + "'");
 
 		if (getActionType().isDelete()) {
 			performeDelete(records, writers);
@@ -207,7 +230,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 		logWarn("TASK {} ON {} RECORDS OF TABLE {} DONE ",
 				getRelatedOperationController().getOperationType().name().toLowerCase(), " OF '" + records.size(),
-				this.getSrcConf().getTableAlias());
+				this.getPrimaryDataSource().getAlias());
 
 	}
 
@@ -259,15 +282,17 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	private void performeDelete(List<T> records, ConnectorRecordWriters writers) throws DBException {
-		logDebug("Starting the deletion of " + records.size() + " " + getSrcConf().getTableName() + " on db...");
+		logDebug("Starting the deletion of " + records.size() + " " + getJdbcPrimaryDataSource().getTableName()
+				+ " on db...");
 
 		this.loadAndAddResult(TaskProcessorConnectorSupport.delete(this, records, writers));
 
-		logDebug(records.size() + " " + getSrcConf().getTableName() + "  deleted on db!");
+		logDebug(records.size() + " " + getJdbcPrimaryDataSource().getTableName() + "  deleted on db!");
 
 	}
 
 	void loadAndAddResult(EtlOperationResultHeader<T> result) {
+
 		if (result != null) {
 			this.getTaskResultInfo().addAllFromOtherResult(result);
 		}
@@ -279,6 +304,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	public EtlDstType determineDstType(DstConf dstConf) {
 		ConnectorResource resource = dstConf.getResolvedResource();
+
 		if (resource == null) {
 			throw new IllegalStateException("Destination resource has not been initialized for " + dstConf);
 		}
@@ -289,8 +315,8 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		}
 
 		if (connectorType != ConnectorType.JDBC) {
-			throw new ForbiddenOperationException("Connector type '" + connectorType
-					+ "' does not use the legacy EtlDstType classification");
+			throw new ForbiddenOperationException(
+					"Connector type '" + connectorType + "' does not use the legacy EtlDstType classification");
 		}
 
 		if (!getEtlItemConfiguration().usesLegacyDestinationResource(dstConf)) {
@@ -304,7 +330,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		EtlDstType dstType = dstConf.getDstType();
 
 		if (dstType == null) {
-			dstType = dstConf.getSrcConf().getDstType();
+			dstType = dstConf.getParentConf().requireJdbcPrimaryDataSource().getDstType();
 		}
 
 		if (dstType == null) {
@@ -315,9 +341,13 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	private void beforeSync(List<T> records) {
+		if (!(getPrimaryDataSource() instanceof TableConfiguration))
+			return;
+
 		for (EtlObject rec : records) {
+
 			if (rec instanceof EtlDatabaseObject) {
-				((EtlDatabaseObject) rec).loadObjectIdData(getSrcConf());
+				((EtlDatabaseObject) rec).loadObjectIdData((TableConfiguration) getPrimaryDataSource());
 			}
 		}
 	}
@@ -403,6 +433,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equals(Object obj) {
+
 		if (obj == null || !(obj instanceof TaskProcessor)) {
 			return false;
 		}

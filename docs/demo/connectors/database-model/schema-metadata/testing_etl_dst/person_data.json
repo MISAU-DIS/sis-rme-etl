@@ -1,0 +1,96 @@
+{
+  "formatVersion" : 2,
+  "key" : {
+    "logicalDatabaseId" : "testing_etl_dst",
+    "databaseDialect" : "",
+    "catalog" : "",
+    "schema" : "",
+    "tableName" : "person_data"
+  },
+  "columns" : [ {
+    "name" : "creation_date",
+    "dataType" : "DATETIME",
+    "length" : 19,
+    "decimalDigits" : 0,
+    "nullable" : true,
+    "autoIncrement" : false,
+    "timestamp" : false
+  }, {
+    "name" : "id",
+    "dataType" : "INT",
+    "length" : 10,
+    "decimalDigits" : 0,
+    "nullable" : false,
+    "autoIncrement" : true,
+    "timestamp" : false
+  }, {
+    "name" : "full_name",
+    "dataType" : "VARCHAR",
+    "length" : 250,
+    "decimalDigits" : 0,
+    "nullable" : false,
+    "autoIncrement" : false,
+    "timestamp" : false
+  }, {
+    "name" : "full_address",
+    "dataType" : "VARCHAR",
+    "length" : 500,
+    "decimalDigits" : 0,
+    "nullable" : false,
+    "autoIncrement" : false,
+    "timestamp" : false
+  }, {
+    "name" : "person_creation_date",
+    "dataType" : "DATETIME",
+    "length" : 19,
+    "decimalDigits" : 0,
+    "nullable" : true,
+    "autoIncrement" : false,
+    "timestamp" : false
+  }, {
+    "name" : "address_creation_date",
+    "dataType" : "DATETIME",
+    "length" : 19,
+    "decimalDigits" : 0,
+    "nullable" : true,
+    "autoIncrement" : false,
+    "timestamp" : false
+  }, {
+    "name" : "person_uuid",
+    "dataType" : "CHAR",
+    "length" : 38,
+    "decimalDigits" : 0,
+    "nullable" : false,
+    "autoIncrement" : false,
+    "timestamp" : false
+  }, {
+    "name" : "address_uuid",
+    "dataType" : "CHAR",
+    "length" : 38,
+    "decimalDigits" : 0,
+    "nullable" : false,
+    "autoIncrement" : false,
+    "timestamp" : false
+  } ],
+  "primaryKey" : {
+    "name" : "pk",
+    "columns" : [ {
+      "name" : "id",
+      "dataType" : "INT"
+    } ],
+    "manuallyConfigured" : true
+  },
+  "uniqueKeys" : [ {
+    "name" : "person_data_uk_1",
+    "columns" : [ {
+      "name" : "person_uuid",
+      "dataType" : "CHAR"
+    }, {
+      "name" : "address_uuid",
+      "dataType" : "CHAR"
+    } ],
+    "manuallyConfigured" : false
+  } ],
+  "importedForeignKeys" : [ ],
+  "exportedForeignKeys" : [ ]
+}

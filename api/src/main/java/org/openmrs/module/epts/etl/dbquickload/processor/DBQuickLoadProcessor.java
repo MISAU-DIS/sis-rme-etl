@@ -37,7 +37,7 @@ public class DBQuickLoadProcessor extends org.openmrs.module.epts.etl.etl.proces
 		
 		this.logInfo("WRITING  '" + etlObjects.size() + "' " + getMainSrcTableName() + " TO STAGING TABLE");
 		
-		SyncImportInfoDAO.insertAll(migrationRecordAsSyncInfo, getSrcConf(), srcConn);
+		SyncImportInfoDAO.insertAll(migrationRecordAsSyncInfo, getJdbcPrimaryDataSource(), srcConn);
 		
 		this.logInfo("'" + etlObjects.size() + "' " + getMainSrcTableName() + " WROTE TO STAGING TABLE");
 		
@@ -83,7 +83,7 @@ public class DBQuickLoadProcessor extends org.openmrs.module.epts.etl.etl.proces
 	}
 	
 	private File getSyncBkpDirectory() throws IOException {
-		String baseDirectory = getRelatedOperationController().getSyncBkpDirectory(getSrcConf()).getAbsolutePath();
+		String baseDirectory = getRelatedOperationController().getSyncBkpDirectory(getJdbcPrimaryDataSource()).getAbsolutePath();
 		
 		return new File(baseDirectory);
 	}

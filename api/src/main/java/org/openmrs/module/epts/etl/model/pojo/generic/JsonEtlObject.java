@@ -157,7 +157,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
+	public void setRelatedConfiguration(EtlObjectConfiguration config) {
 		if (!(config instanceof JsonSimpleOutputDataSource)) {
 			throw new ForbiddenOperationException("The config must be a JsonOutputDataSource");
 		}

@@ -2,54 +2,54 @@
 
 <configuration>
 
-    <property name="ETL_LOG_LEVEL" value="${log.level:-INFO}" />
-    <property name="ETL_CONFIGURATION_LOG_LEVEL" value="${log.level.configuration:-${ETL_LOG_LEVEL}}" />
-    <property name="ETL_CONTROLLER_LOG_LEVEL" value="${log.level.etl-controller:-${ETL_LOG_LEVEL}}" />
-    <property name="ENGINE_LOG_LEVEL" value="${log.level.engine:-${ETL_LOG_LEVEL}}" />
-    <property name="TASK_PROCESSOR_LOG_LEVEL" value="${log.level.task-processor:-${ETL_LOG_LEVEL}}" />
-    <property name="DB_CONNECTION_LOG_LEVEL" value="${log.level.db-connection:-${ETL_LOG_LEVEL}}" />
-    <property name="LOGS_PATTERN" value="%-5level %date [%thread] %logger{8}:%line %msg%n" />
+	<property name="ETL_LOG_LEVEL" value="${log.level:-INFO}" />
+	<property name="ETL_CONFIGURATION_LOG_LEVEL"
+		value="${log.level.configuration:-${ETL_LOG_LEVEL}}" />
+	<property name="ETL_CONTROLLER_LOG_LEVEL"
+		value="${log.level.etl-controller:-${ETL_LOG_LEVEL}}" />
+	<property name="ENGINE_LOG_LEVEL"
+		value="${log.level.engine:-${ETL_LOG_LEVEL}}" />
+	<property name="TASK_PROCESSOR_LOG_LEVEL"
+		value="${log.level.task-processor:-${ETL_LOG_LEVEL}}" />
+	<property name="DB_CONNECTION_LOG_LEVEL"
+		value="${log.level.db-connection:-${ETL_LOG_LEVEL}}" />
+	<property name="LOGS_PATTERN"
+		value="%-5level %date [%thread] %logger{8}:%line %msg%n" />
 
-    <appender name="CONSOLE"
-        class="ch.qos.logback.core.ConsoleAppender">
+	<appender name="CONSOLE"
+		class="ch.qos.logback.core.ConsoleAppender">
 
-        <encoder>
-          <pattern>${LOGS_PATTERN}</pattern>
-        </encoder>
-    </appender>
+		<encoder>
+			<pattern>${LOGS_PATTERN}</pattern>
+		</encoder>
+	</appender>
 
-    <logger
-        name="org.openmrs.module.epts.etl"
-        level="${ETL_LOG_LEVEL}"
-        additivity="true" />
-
-    <logger
-        name="org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration"
-        level="${ETL_CONFIGURATION_LOG_LEVEL}"
-        additivity="true" />
-
-    <logger
-        name="org.openmrs.module.epts.etl.etl.controller.EtlController"
-        level="${ETL_CONTROLLER_LOG_LEVEL}"
-        additivity="true" />
-
-    <logger
-        name="org.openmrs.module.epts.etl.engine.Engine"
-        level="${ENGINE_LOG_LEVEL}"
-        additivity="true" />
-
-    <logger
-        name="org.openmrs.module.epts.etl.processor.TaskProcessor"
-        level="${TASK_PROCESSOR_LOG_LEVEL}"
-        additivity="true" />
-
-    <logger
-        name="org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo"
-        level="${DB_CONNECTION_LOG_LEVEL}"
-        additivity="true" />
-
-    <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-    </root>
+	<logger
+		name="org.openmrs.module.epts.etl"
+		level="${ETL_LOG_LEVEL}"
+		additivity="true" />
+	<logger
+		name="org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration"
+		level="${ETL_CONFIGURATION_LOG_LEVEL}"
+		additivity="true" />
+	<logger
+		name="org.openmrs.module.epts.etl.etl.controller.EtlController"
+		level="${ETL_CONTROLLER_LOG_LEVEL}"
+		additivity="true" />
+	<logger
+		name="org.openmrs.module.epts.etl.engine.Engine"
+		level="${ENGINE_LOG_LEVEL}"
+		additivity="true" />
+	<logger
+		name="org.openmrs.module.epts.etl.processor.TaskProcessor"
+		level="${TASK_PROCESSOR_LOG_LEVEL}"
+		additivity="true" />
+	<logger
+		name="org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo"
+		level="${DB_CONNECTION_LOG_LEVEL}"
+		additivity="true" />
+	<root level="INFO">
+		<appender-ref ref="CONSOLE" />
+	</root>
 
 </configuration>

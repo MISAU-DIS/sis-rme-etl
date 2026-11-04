@@ -47,6 +47,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	private ConditionClauseScope joinExtraConditionScope;
 
+	private Boolean joinFieldsAlredyLoaded;
+
 	public TableDataSourceConfig() {
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.joinType = JoinType.LEFT;
@@ -55,6 +57,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	@Override
 	public void init(EtlDataConfiguration relatedParent, EtlDatabaseObject etlSchemaObject, Connection srcConn,
 			Connection dstConn) throws DBException {
+
 		super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 
 		if (this.auxExtractTable != null) {
@@ -139,12 +142,12 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	@Override
-	public SrcConf getRelatedSrcConf() {
-		return (SrcConf) this.getParentConf();
+	public JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf() {
+		return (JdbcTablePrimaryDataSourceConfiguration) this.getParentConf();
 	}
 
 	@Override
-	public void setRelatedSrcConf(SrcConf relatedSrcConf) {
+	public void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
 		setParentConf(relatedSrcConf);
 	}
 
@@ -259,7 +262,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	public static List<TableDataSourceConfig> cloneAll(List<TableDataSourceConfig> allToCloneFrom,
-			SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+			JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
 
 		List<TableDataSourceConfig> allCloned = null;
 
@@ -277,7 +280,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 		return allCloned;
 	}
 
-	public void clone(TableDataSourceConfig toCloneFrom, SrcConf relatedSrcConf, EtlDatabaseObject schemaInfoSrc,
+	public void clone(TableDataSourceConfig toCloneFrom, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, EtlDatabaseObject schemaInfoSrc,
 			Connection conn) throws DBException {
 		super.clone(toCloneFrom, relatedSrcConf, schemaInfoSrc, conn);
 
@@ -326,8 +329,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	@Override
-	public SrcConf getParentConf() {
-		return (SrcConf) super.getParentConf();
+	public JdbcTablePrimaryDataSourceConfiguration getParentConf() {
+		return (JdbcTablePrimaryDataSourceConfiguration) super.getParentConf();
 	}
 
 	@Override
@@ -337,7 +340,16 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public String getCondition() {
-		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public boolean joinFieldsAlredyLoaded() {
+		return isTrue(this.joinFieldsAlredyLoaded);
+	}
+
+	@Override
+	public void markJoinFieldAsLoaded() {
+		this.joinFieldsAlredyLoaded = true;
 	}
 }

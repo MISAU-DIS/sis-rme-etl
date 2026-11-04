@@ -1,5 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -20,7 +21,8 @@
 			<groupId>${project.parent.groupId}</groupId>
 			<artifactId>sisrme-etl-api</artifactId>
 			<version>${project.parent.version}</version>
-			<!-- Use the lightweight API artifact; the main artifact is the standalone fat JAR. -->
+			<!-- Use the lightweight API artifact; the main artifact is the
+			standalone fat JAR. -->
 			<classifier>omod</classifier>
 		</dependency>
 
@@ -217,7 +219,8 @@
 								Only expand the OpenMRS resources that must live at the OMOD root;
 								unpacking **/* duplicated the complete API and all shaded classes.
 							-->
-							<includes>**/moduleApplicationContext.xml,**/messages*.properties</includes>
+							<includes>
+								**/moduleApplicationContext.xml,**/messages*.properties</includes>
 							<outputDirectory>${project.build.directory}/classes</outputDirectory>
 						</configuration>
 					</execution>

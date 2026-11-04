@@ -21,7 +21,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 import org.openmrs.util.OpenmrsClassLoader;
@@ -219,15 +219,19 @@ public class ClassPathUtilities {
 		}
 	}
 	
-	public static void addClassToClassPath(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo) {
-		String pojoPackageDir = pojoble.getRelatedEtlConf().getPojoPackageAsDirectory(connInfo).getAbsolutePath();
+	public static void addClassToClassPath(EtlObjectConfiguration pojoble, DBConnectionInfo connInfo) {
+		addClassToClassPath(pojoble, pojoble.getRelatedEtlConf().getPojoPackage(connInfo));
+	}
+
+	public static void addClassToClassPath(EtlObjectConfiguration pojoble, String pojoPackageName) {
+		String pojoPackageDir = pojoble.getRelatedEtlConf().getPojoPackageAsDirectory(pojoPackageName).getAbsolutePath();
 		
 		File clazzFile = new File(
 		        pojoPackageDir + FileUtilities.getPathSeparator() + pojoble.generateClassName() + ".class");
 		
 		if (clazzFile.exists()) {
 			addClassToClassPath(utilities.parseObjectToArray(clazzFile),
-			    pojoble.getRelatedEtlConf().getPojoPackageRelativePath(connInfo),
+			    pojoble.getRelatedEtlConf().getPojoPackageRelativePath(pojoPackageName),
 			    pojoble.getRelatedEtlConf());
 		}
 	}
@@ -271,7 +275,7 @@ public class ClassPathUtilities {
 			List<File> clazzListFiless = new ArrayList<File>();
 			
 			for (EtlItemConfiguration config : etlConfiguration.getEtlItemConfiguration()) {
-				AbstractTableConfiguration tableConfiguration = config.getSrcConf();
+				AbstractTableConfiguration tableConfiguration = config.requireJdbcPrimaryDataSource();
 				
 				tryToCopyPOJOToClassPath(tableConfiguration, clazzListFiless, connInfo);
 				

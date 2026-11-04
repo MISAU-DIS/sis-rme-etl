@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
@@ -80,14 +80,14 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 
 		try {
 
-			SrcConf mainSrc = getRelatedEtlItemConfiguration().getSrcConf();
+			PrimaryDataSourceConfiguration primarySource = getRelatedEtlItemConfiguration().getPrimaryDataSource();
 
-			if (!mainSrc.isFullLoaded()) {
-				mainSrc.fullLoad(srcConn);
+			if (!primarySource.isFullLoaded()) {
+				primarySource.fullLoad(srcConn);
 			}
 
 			for (EtlDatabaseObject etlObj : etlObjects) {
-				EtlDatabaseObject dstObject = reloadDefaultsParents(mainSrc, etlObj, srcConn, dstConn);
+				EtlDatabaseObject dstObject = reloadDefaultsParents(primarySource, etlObj, srcConn, dstConn);
 
 				if (dstObject != null) {
 					dstObject.update((TableConfiguration) dstObject.getRelatedConfiguration(), dstConn);
@@ -102,9 +102,11 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 
 	}
 
-	private EtlDatabaseObject reloadDefaultsParents(SrcConf mainSrc, EtlDatabaseObject etlObj, Connection srcConn,
-			Connection dstConn) throws DBException, ForbiddenOperationException {
-		List<RecordWithDefaultParentInfo> rcs = RecordWithDefaultParentInfo.getAllOfSrcRecord(mainSrc,
+	private EtlDatabaseObject reloadDefaultsParents(PrimaryDataSourceConfiguration primarySource,
+			EtlDatabaseObject etlObj, Connection srcConn, Connection dstConn)
+			throws DBException, ForbiddenOperationException {
+
+		List<RecordWithDefaultParentInfo> rcs = RecordWithDefaultParentInfo.getAllOfSrcRecord(primarySource,
 				etlObj.getObjectId().asSimpleNumericValue(), srcConn);
 
 		EtlDatabaseObject srcObject = null;
@@ -138,10 +140,10 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 
 			ParentTable parentRefInfo = recWithDefaultParentInfo.getParentRefInfo();
 
-			List<SrcConf> avaliableSrcForCurrParent = parentRefInfo
-					.findRelatedSrcConfWhichAsAtLeastOnematchingDst(getRelatedEtlOperationConfig());
+			List<PrimaryDataSourceConfiguration> availableSourcesForCurrentParent = parentRefInfo
+					.findRelatedPrimaryDataSourcesWithMatchingDestination(getRelatedEtlOperationConfig());
 
-			if (utilities.listHasNoElement(avaliableSrcForCurrParent)) {
+			if (utilities.listHasNoElement(availableSourcesForCurrentParent)) {
 				throw new ForbiddenOperationException(
 						"There are relashioship which cannot auto resolved as there is no configured etl for "
 								+ parentRefInfo.getTableName() + " as source and destination!");
@@ -150,12 +152,12 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 			EtlDatabaseObject dstParent = null;
 			EtlDatabaseObject parentAsSrc = null;
 
-			for (SrcConf src : avaliableSrcForCurrParent) {
-				DstConf dst = ((EtlItemConfiguration) src.getParentConf()).findDstTable_(getRelatedEtlOperationConfig(),
+			for (PrimaryDataSourceConfiguration source : availableSourcesForCurrentParent) {
+				DstConf dst = source.getParentItemConfiguration().findDstTable_(getRelatedEtlOperationConfig(),
 						parentRefInfo.getTableName());
 
-				parentAsSrc = src.createRecordInstance();
-				parentAsSrc.setRelatedConfiguration(src);
+				parentAsSrc = source.newInstance();
+				parentAsSrc.setRelatedConfiguration(source);
 
 				parentAsSrc.copyFrom(recWithDefaultParentInfo.getParentRecordInOrigin());
 
@@ -190,9 +192,9 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 							logDebug(msg);
 
 							InconsistenceInfo incInfo = InconsistenceInfo.generate(dstObject, parentRefInfo,
-									mainSrc.getOriginAppLocationCode());
+									primarySource.getParentItemConfiguration().getOriginAppLocationCode());
 
-							incInfo.save(mainSrc, srcConn);
+							incInfo.save(primarySource.requireJdbc(), srcConn);
 
 							recWithDefaultParentInfo.setAsInconsistent(srcConn);
 						}

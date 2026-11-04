@@ -96,7 +96,7 @@ public class DBQuickExportProcessor extends org.openmrs.module.epts.etl.processo
 	}
 	
 	private File generateJSONTempFile(SyncJSONInfo jsonInfo, Integer startRecord, Integer lastRecord) throws IOException {
-		return getRelatedOperationController().generateJSONTempFile(jsonInfo, getSrcConf(), startRecord, lastRecord);
+		return getRelatedOperationController().generateJSONTempFile(jsonInfo, getJdbcPrimaryDataSource(), startRecord, lastRecord);
 	}
 	
 	@Override

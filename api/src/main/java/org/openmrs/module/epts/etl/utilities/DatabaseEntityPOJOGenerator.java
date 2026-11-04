@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import javax.tools.JavaCompiler;
@@ -25,10 +26,12 @@ import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext.Side;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
@@ -44,11 +47,26 @@ public class DatabaseEntityPOJOGenerator {
 		// Utility class.
 	}
 
-	public static Class<EtlDatabaseObject> generate(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo)
+	public static Class<EtlDatabaseObject> generate(EtlObjectConfiguration pojoble, DBConnectionInfo connInfo)
 			throws IOException, SQLException, ClassNotFoundException {
 
-		if (!pojoble.isFullLoaded())
+		if (!pojoble.isFullLoaded()) {
 			pojoble.fullLoad();
+		}
+
+		EtlConfiguration etl = pojoble.getRelatedEtlConf();
+		Side side = connInfo == etl.getDstConnInfo() || connInfo.isDstConn() ? Side.DST : Side.SRC;
+
+		return generate(pojoble, DatabaseModelGenerationContext.legacy(side, etl.getDataModelId(connInfo),
+				etl.getPojoPackage(connInfo), null));
+	}
+
+	public static Class<EtlDatabaseObject> generate(EtlObjectConfiguration pojoble,
+			DatabaseModelGenerationContext context) throws IOException, SQLException, ClassNotFoundException {
+
+		if (!pojoble.isFullLoaded()) {
+			pojoble.fullLoad(context.getConnection());
+		}
 
 		String className = pojoble.generateClassName();
 
@@ -57,9 +75,9 @@ public class DatabaseEntityPOJOGenerator {
 		pojoRootFolder += "/org/openmrs/module/epts/etl/model/pojo/";
 
 		File sourceFile = new File(
-				pojoRootFolder + pojoble.getClassPackageForForder(connInfo) + "/" + className + ".java");
+				pojoRootFolder + pojoble.getClassPackageForForder(context) + "/" + className + ".java");
 
-		String fullClassName = pojoble.generateFullClassName(connInfo);
+		String fullClassName = pojoble.generateFullClassName(context);
 
 		Class<EtlDatabaseObject> existingCLass = shouldOverrideExistingDataModelElement(pojoble) ? null
 				: tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
@@ -68,7 +86,7 @@ public class DatabaseEntityPOJOGenerator {
 			return existingCLass;
 		}
 
-		generateCompileTimeDependencies(pojoble, connInfo, fullClassName);
+		generateCompileTimeDependencies(pojoble, context, fullClassName);
 
 		String attsDefinition = "";
 
@@ -95,12 +113,14 @@ public class DatabaseEntityPOJOGenerator {
 		List<Field> pojoFields = resolvePojoFields(pojoble);
 
 		for (Field pojoField : pojoFields) {
-			if (isIgnorableField(pojoField.getName()) || containsField(pojoble.getFields(), pojoField.getName())) continue;
+			if (isIgnorableField(pojoField.getName()) || containsField(pojoble.getFields(), pojoField.getName())) {
+				continue;
+			}
 
-			AttDefinedElements additionalElements = AttDefinedElements.define(pojoField.getName(), pojoField.getDataType(),
-					false, pojoble, true);
-			attsDefinition = utilities.concatStringsWithSeparator(attsDefinition,
-					additionalElements.getAttDefinition(), "\n");
+			AttDefinedElements additionalElements = AttDefinedElements.define(pojoField.getName(),
+					pojoField.getDataType(), false, pojoble, true);
+			attsDefinition = utilities.concatStringsWithSeparator(attsDefinition, additionalElements.getAttDefinition(),
+					"\n");
 			gettersAndSetterDefinition = utilities.concatStrings(gettersAndSetterDefinition,
 					additionalElements.getSetterDefinition()) + "\n \n";
 			gettersAndSetterDefinition = utilities.concatStrings(gettersAndSetterDefinition,
@@ -336,6 +356,7 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	public boolean hasParents() {\n";
 
 		if (utilities.listHasElement(pojoble.getParentRefInfo())) {
+
 			for (ParentTable refInfo : pojoble.getParentRefInfo()) {
 
 				for (RefMapping map : refInfo.getRefMapping()) {
@@ -354,6 +375,7 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "	public Object getParentValue(String parentAttName) {";
 
 		if (utilities.listHasElement(pojoble.getParentRefInfo())) {
+
 			for (ParentTable refInfo : pojoble.getParentRefInfo()) {
 				methodFromSuperClass += "		\n		if (parentAttName.equals(\""
 						+ refInfo.getChildColumnAsClassAttOnSimpleMapping() + "\")) return this."
@@ -372,7 +394,7 @@ public class DatabaseEntityPOJOGenerator {
 		methodFromSuperClass += "		return " + utilities.quote(pojoble.getObjectName()) + ";\n";
 		methodFromSuperClass += "	}\n\n";
 
-		String classDefinition = "package " + pojoble.generateFullPackageName(connInfo) + ";\n\n";
+		String classDefinition = "package " + pojoble.generateFullPackageName(context) + ";\n\n";
 
 		classDefinition += "import org.openmrs.module.epts.etl.model.pojo.generic.*; \n \n";
 		classDefinition += "import org.openmrs.module.epts.etl.model.EtlDatabaseObject; \n \n";
@@ -396,7 +418,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		classDefinition += "public class " + className + " extends AbstractGeneratedDatabaseObject{ \n";
 		classDefinition += attsDefinition + "\n \n";
-		classDefinition += generateCommonMethods(pojoble, connInfo, pojoFields) + "\n";
+		classDefinition += generateCommonMethods(pojoble, context, pojoFields) + "\n";
 		classDefinition += gettersAndSetterDefinition + "\n \n";
 		classDefinition += methodFromSuperClass + "\n";
 
@@ -404,7 +426,8 @@ public class DatabaseEntityPOJOGenerator {
 
 		writeSourceFile(sourceFile, classDefinition, pojoble.getRelatedEtlConf());
 
-		compile(sourceFile, pojoble, connInfo);
+		compile(sourceFile, pojoble, context);
+
 		pojoble.getRelatedEtlConf().refreshDataModelClassLoader();
 
 		existingCLass = tryToGetExistingCLass(fullClassName, pojoble.getRelatedEtlConf());
@@ -419,30 +442,36 @@ public class DatabaseEntityPOJOGenerator {
 		return existingCLass;
 	}
 
-	private static String generateCommonMethods(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo,
-			List<Field> pojoFields) {
+	private static String generateCommonMethods(EtlObjectConfiguration pojoble,
+			DatabaseModelGenerationContext context, List<Field> pojoFields) {
 		String className = pojoble.generateClassName();
 
 		String commonMethods = "";
 
 		commonMethods += "	public " + className + "() { \n";
 		commonMethods += "		this.metadata = " + pojoble.isMetadata() + ";\n";
+
 		for (Field field : pojoFields) {
+
 			if (!isIgnorableField(field.getName())) {
 				commonMethods += "		this.fields.add(this." + field.getNameAsClassAtt() + ");\n";
 			}
 		}
+
 		if (usesSharedPk(pojoble)) {
 			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
-			commonMethods += "\t\tsetSharedPkObj(new " + shared.generateFullClassName(connInfo) + "());\n";
+			commonMethods += "\t\tsetSharedPkObj(new " + shared.generateFullClassName(context) + "());\n";
 		}
 		commonMethods += "	} \n \n";
 
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void tryToReplaceFieldValueWithKeyValue(Key k) {\n";
+
 		if (pojoble.getPrimaryKey() != null) {
+
 			for (Key key : pojoble.getPrimaryKey().getFields()) {
 				commonMethods += "		if (utilities.equalsFieldsName(k.getName(), \"" + key.getName() + "\")) {\n";
+
 				if (isIgnorableField(key.getName())) {
 					commonMethods += generateInheritedKeyAssignment(key);
 				} else {
@@ -455,7 +484,9 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonMethods += "	@Override\n";
 		commonMethods += "	public Object getFieldValue(String fieldName) {\n";
+
 		for (Field field : pojoFields) {
+
 			if (!isIgnorableField(field.getName())) {
 				commonMethods += "		if (utilities.equalsFieldsName(fieldName, \"" + field.getName() + "\")) {\n";
 				commonMethods += "			return this." + field.getNameAsClassAtt() + ".getValue();\n";
@@ -467,7 +498,9 @@ public class DatabaseEntityPOJOGenerator {
 
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void setFieldValue(String fieldName, Object value) {\n";
+
 		for (Field field : pojoFields) {
+
 			if (!isIgnorableField(field.getName())) {
 				commonMethods += "		if (utilities.equalsFieldsName(fieldName, \"" + field.getName() + "\")) {\n";
 				commonMethods += "			this." + field.getNameAsClassAtt()
@@ -482,7 +515,7 @@ public class DatabaseEntityPOJOGenerator {
 
 		if (usesSharedPk(pojoble)) {
 			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
-			String sharedClass = shared.generateFullClassName(connInfo);
+			String sharedClass = shared.generateFullClassName(context);
 			commonMethods += "\t@JsonIgnore\n";
 			commonMethods += "\t@Override\n";
 			commonMethods += "\tpublic " + sharedClass + " getSharedPkObj() {\n";
@@ -511,7 +544,9 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	@Override\n";
 		commonMethods += "	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {\n";
 		commonMethods += "		super.loadWithDefaultValues(srcConn, dstConn);\n";
+
 		for (Field field : pojoFields) {
+
 			if (!isIgnorableField(field.getName())) {
 				commonMethods += "		loadGeneratedFieldWithDefaultValue(this." + field.getNameAsClassAtt()
 						+ ", srcConn, dstConn);\n";
@@ -523,11 +558,12 @@ public class DatabaseEntityPOJOGenerator {
 
 	}
 
-	private static List<Field> resolvePojoFields(EtlDatabaseObjectConfiguration configuration) {
+	private static List<Field> resolvePojoFields(EtlObjectConfiguration configuration) {
+
 		if (configuration instanceof AbstractTableConfiguration) {
 			AbstractTableConfiguration table = (AbstractTableConfiguration) configuration;
-			if (table.getPhysicalTableConfiguration() != null
-					&& table.getPhysicalTableConfiguration().hasFields()) {
+
+			if (table.getPhysicalTableConfiguration() != null && table.getPhysicalTableConfiguration().hasFields()) {
 				return table.getPhysicalTableConfiguration().copyFields();
 			}
 		}
@@ -535,54 +571,69 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	private static boolean containsField(List<? extends Field> fields, String fieldName) {
-		if (fields == null) return false;
+		if (fields == null) {
+			return false;
+		}
+
 		for (Field field : fields) {
-			if (utilities.equalsFieldsName(field.getName(), fieldName)) return true;
+			if (utilities.equalsFieldsName(field.getName(), fieldName)) {
+				return true;
+			}
 		}
 		return false;
 	}
 
 	private static String generateInheritedKeyAssignment(Key key) {
+
 		if (utilities.equalsFieldsName(key.getName(), "uuid")) {
 			return "			this.uuid = k.getValue() == null ? null : k.getValue().toString();\n";
 		}
 		return "			this." + key.getNameAsClassAtt() + " = (java.util.Date) k.getValue();\n";
 	}
 
-	private static boolean usesSharedPk(EtlDatabaseObjectConfiguration configuration) {
+	private static boolean usesSharedPk(EtlObjectConfiguration configuration) {
 		return configuration instanceof TableConfiguration && ((TableConfiguration) configuration).useSharedPKKey();
 	}
 
-	private static void generateCompileTimeDependencies(EtlDatabaseObjectConfiguration configuration,
-			DBConnectionInfo connInfo, String currentClassName)
+	private static void generateCompileTimeDependencies(EtlObjectConfiguration configuration,
+			DatabaseModelGenerationContext context, String currentClassName)
 			throws IOException, SQLException, ClassNotFoundException {
 		Set<String> resolving = DEPENDENCIES_BEING_GENERATED.get();
+
 		if (!resolving.add(currentClassName)) {
 			throw new EtlExceptionImpl("Cyclic generated POJO dependency detected at " + currentClassName);
 		}
+
 		try {
+
 			if (usesSharedPk(configuration)) {
-				generate(resolveSharedPkConfiguration((TableConfiguration) configuration), connInfo);
+				generate(resolveSharedPkConfiguration((TableConfiguration) configuration), context);
 			}
+
 			if (configuration instanceof MainJoiningEntity) {
 				MainJoiningEntity joining = (MainJoiningEntity) configuration;
+
 				if (joining.hasAuxExtractTable()) {
+
 					for (JoinableEntity auxiliary : joining.getJoiningTable()) {
-						if (!auxiliary.doNotUseAsDatasource())
-							generate(auxiliary, connInfo);
+						if (!auxiliary.doNotUseAsDatasource()) {
+							generate(auxiliary, context);
+						}
 					}
 				}
 			}
 		} finally {
 			resolving.remove(currentClassName);
-			if (resolving.isEmpty())
+			if (resolving.isEmpty()) {
 				DEPENDENCIES_BEING_GENERATED.remove();
+			}
 		}
 	}
 
-	static String generateSharedPkLoad(EtlDatabaseObjectConfiguration configuration) {
-		if (!usesSharedPk(configuration))
+	static String generateSharedPkLoad(EtlObjectConfiguration configuration) {
+		if (!usesSharedPk(configuration)) {
 			return "";
+		}
 		String code = "\t\tif (!hasRelatedConfiguration()) throw new "
 				+ "org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException("
 				+ "\"The relatedConfiguration is not set\");\n";
@@ -590,9 +641,10 @@ public class DatabaseEntityPOJOGenerator {
 		return code;
 	}
 
-	static String generateSharedPkPostLoad(EtlDatabaseObjectConfiguration configuration) {
-		if (!usesSharedPk(configuration))
+	static String generateSharedPkPostLoad(EtlObjectConfiguration configuration) {
+		if (!usesSharedPk(configuration)) {
 			return "";
+		}
 		String code = "\n\t\torg.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = "
 				+ "(org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();\n";
 		code += "\t\tif (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null "
@@ -604,10 +656,13 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	private static ParentTable resolveSharedPkConfiguration(TableConfiguration configuration) {
+
 		if (configuration.hasParentRefInfo()) {
+
 			for (ParentTable parent : configuration.getParentRefInfo()) {
-				if (parent.getTableName().equalsIgnoreCase(configuration.getSharePkWith()))
+				if (parent.getTableName().equalsIgnoreCase(configuration.getSharePkWith())) {
 					return parent;
+				}
 			}
 		}
 		throw new EtlExceptionImpl("The shared PK table " + configuration.getSharePkWith() + " of "
@@ -617,6 +672,7 @@ public class DatabaseEntityPOJOGenerator {
 	private static boolean isIgnorableField(String columnName) {
 
 		for (String field : IGNORABLE_FIELDS) {
+
 			if (field.equals(columnName)) {
 				return true;
 			}
@@ -625,15 +681,16 @@ public class DatabaseEntityPOJOGenerator {
 		return false;
 	}
 
-	private static boolean shouldOverrideExistingDataModelElement(EtlDatabaseObjectConfiguration configuration) {
+	private static boolean shouldOverrideExistingDataModelElement(EtlObjectConfiguration configuration) {
 		return configuration.getRelatedEtlConf() != null
 				&& configuration.getRelatedEtlConf().shouldOverrideExistingDataModelElement();
 	}
 
-	public static Class<EtlDatabaseObject> generateSkeleton(EtlDatabaseObjectConfiguration pojoable,
+	public static Class<EtlDatabaseObject> generateSkeleton(EtlObjectConfiguration pojoable,
 			DBConnectionInfo connInfo) throws IOException, SQLException, ClassNotFoundException {
-		if (!pojoable.isFullLoaded())
+		if (!pojoable.isFullLoaded()) {
 			pojoable.fullLoad();
+		}
 
 		String pojoRootPackage = pojoable.getPOJOSourceFilesDirectory().getAbsolutePath();
 
@@ -653,8 +710,9 @@ public class DatabaseEntityPOJOGenerator {
 		Class<EtlDatabaseObject> existingCLass = shouldOverrideExistingDataModelElement(pojoable) ? null
 				: tryToGetExistingCLass(fullClassName, pojoable.getRelatedEtlConf());
 
-		if (existingCLass != null && !shouldOverrideExistingDataModelElement(pojoable))
+		if (existingCLass != null && !shouldOverrideExistingDataModelElement(pojoable)) {
 			return existingCLass;
+		}
 
 		String classDefinition = "package org.openmrs.module.epts.etl.model.pojo.";
 
@@ -688,12 +746,14 @@ public class DatabaseEntityPOJOGenerator {
 
 	private static File resolveFormatterProfile(EtlConfiguration etlConfiguration) {
 		if (etlConfiguration == null
-				|| !utilities.stringHasValue(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile()))
+				|| !utilities.stringHasValue(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile())) {
 			return null;
+		}
 
 		File configuredFile = new File(etlConfiguration.getDataModel().getJavaFormatterConfigurationFile());
-		if (configuredFile.isAbsolute())
+		if (configuredFile.isAbsolute()) {
 			return configuredFile;
+		}
 
 		return new File(etlConfiguration.getEtlRootDirectory(), configuredFile.getPath());
 	}
@@ -701,8 +761,10 @@ public class DatabaseEntityPOJOGenerator {
 	@SuppressWarnings("unchecked")
 	public static Class<EtlDatabaseObject> tryToGetExistingCLass(String fullClassName,
 			EtlConfiguration etlConfiguration) {
-		if (etlConfiguration == null)
+		if (etlConfiguration == null) {
 			return tryToLoadFromOpenMRSClassLoader(fullClassName);
+		}
+
 		try {
 			return (Class<EtlDatabaseObject>) etlConfiguration.loadDataModelClass(fullClassName);
 		} catch (ClassNotFoundException exception) {
@@ -716,6 +778,7 @@ public class DatabaseEntityPOJOGenerator {
 
 	@SuppressWarnings({ "unchecked" })
 	private static Class<EtlDatabaseObject> tryToLoadFromOpenMRSClassLoader(String fullClassName) {
+
 		try {
 			return (Class<EtlDatabaseObject>) EtlDatabaseObject.class.getClassLoader().loadClass(fullClassName);
 		} catch (ClassNotFoundException e) {
@@ -723,21 +786,95 @@ public class DatabaseEntityPOJOGenerator {
 		}
 	}
 
-	private static void addAllToClassPath(List<File> classPath, File file) {
-		classPath.add(file);
+	static void addAllToClassPath(List<File> classPath, File file) {
+		if (file == null) {
+			return;
+		}
 
-		if (file.isDirectory()) {
-			File[] children = file.listFiles();
-			if (children != null) {
-				for (File child : children) {
-					addAllToClassPath(classPath, child);
+		File normalizedFile = file.toPath().toAbsolutePath().normalize().toFile();
+
+		addClassPathEntry(classPath, normalizedFile);
+
+		if (normalizedFile.isDirectory()) {
+			addArchivesToClassPath(classPath, normalizedFile);
+		}
+	}
+
+	private static void addClassPathEntry(List<File> classPath, File file) {
+		if (file == null) {
+			return;
+		}
+
+		File normalizedFile = file.toPath().toAbsolutePath().normalize().toFile();
+
+		if (!classPath.contains(normalizedFile)) {
+			classPath.add(normalizedFile);
+		}
+	}
+
+	private static void addArchivesToClassPath(List<File> classPath, File directory) {
+		File[] children = directory.listFiles();
+
+		if (children != null) {
+
+			for (File child : children) {
+
+				if (child.isDirectory()) {
+					addArchivesToClassPath(classPath, child);
+				} else if (isArchive(child)) {
+					File normalizedArchive = child.toPath().toAbsolutePath().normalize().toFile();
+
+					if (!classPath.contains(normalizedArchive)) {
+						classPath.add(normalizedArchive);
+					}
 				}
 			}
 		}
 	}
 
-	public static void compile(File sourceFile, EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo)
+	private static boolean isArchive(File file) {
+		String name = file.getName().toLowerCase(Locale.ROOT);
+		return name.endsWith(".jar") || name.endsWith(".zip");
+	}
+
+	static List<File> resolveCompilationClassPath(StandardJavaFileManager fileManager, File destinationFile,
+			List<File> configuredClassPath) {
+		List<File> classPath = new ArrayList<>();
+
+		addClassPathEntry(classPath, destinationFile);
+
+		if (configuredClassPath != null) {
+			for (File entry : configuredClassPath) {
+				addAllToClassPath(classPath, entry);
+			}
+		}
+
+		Iterable<? extends File> runtimeClassPath = fileManager.getLocation(StandardLocation.CLASS_PATH);
+
+		if (runtimeClassPath != null) {
+			for (File entry : runtimeClassPath) {
+				addClassPathEntry(classPath, entry);
+			}
+		}
+
+		return classPath;
+	}
+
+	public static void compile(File sourceFile, EtlObjectConfiguration pojoble, DBConnectionInfo connInfo)
 			throws IOException {
+		compileInternal(sourceFile, pojoble);
+		ClassPathUtilities.addClassToClassPath(pojoble, connInfo);
+	}
+
+	public static void compile(File sourceFile, EtlObjectConfiguration pojoble,
+			DatabaseModelGenerationContext context) throws IOException {
+
+		compileInternal(sourceFile, pojoble);
+
+		ClassPathUtilities.addClassToClassPath(pojoble, context.getPojoPackageName());
+	}
+
+	private static void compileInternal(File sourceFile, EtlObjectConfiguration pojoble) throws IOException {
 		File destinationFile = pojoble.getPOJOCopiledFilesDirectory();
 
 		if (!destinationFile.exists()) {
@@ -745,6 +882,7 @@ public class DatabaseEntityPOJOGenerator {
 		}
 
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
 		if (compiler == null) {
 			throw new IOException("A JDK is required to compile generated POJO classes.");
 		}
@@ -752,23 +890,19 @@ public class DatabaseEntityPOJOGenerator {
 		try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
 			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Arrays.asList(destinationFile));
 
-			List<File> classPathFiles = new ArrayList<File>();
-
-			classPathFiles.add(destinationFile);
-
-			for (File entry : pojoble.getClassPath())
-				addAllToClassPath(classPathFiles, entry);
+			List<File> classPathFiles = resolveCompilationClassPath(fileManager, destinationFile,
+					pojoble.getClassPath());
 
 			fileManager.setLocation(StandardLocation.CLASS_PATH, classPathFiles);
 
 			Boolean compiled = compiler.getTask(null, fileManager, null, null, null,
 					fileManager.getJavaFileObjectsFromFiles(Arrays.asList(sourceFile))).call();
+
 			if (!Boolean.TRUE.equals(compiled)) {
 				throw new IOException("Could not compile generated POJO source: " + sourceFile.getAbsolutePath());
 			}
 		}
 
-		ClassPathUtilities.addClassToClassPath(pojoble, connInfo);
 	}
 
 }

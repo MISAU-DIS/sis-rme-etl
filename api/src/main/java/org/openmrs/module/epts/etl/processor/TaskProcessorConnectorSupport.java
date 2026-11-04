@@ -39,6 +39,6 @@ final class TaskProcessorConnectorSupport {
 		Connection connection = writers.unwrapShared(Connection.class);
 
 		return (EtlOperationResultHeader<T>) DatabaseObjectDAO.deleteAll((List<EtlDatabaseObject>) records,
-				processor.getSrcConf(), connection);
+				processor.getJdbcPrimaryDataSource(), connection);
 	}
 }

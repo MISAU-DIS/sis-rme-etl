@@ -49,7 +49,7 @@ public class DBQuickExportController extends OperationController<EtlDatabaseObje
 		try {
 			conn = openSrcConnection(this);
 			
-			return DatabaseObjectDAO.getFirstRecord(engine.getSrcConf(), conn);
+			return DatabaseObjectDAO.getFirstRecord(engine.getJdbcPrimaryDataSource(), conn);
 		}
 		catch (DBException e) {
 			e.printStackTrace();
@@ -68,7 +68,7 @@ public class DBQuickExportController extends OperationController<EtlDatabaseObje
 		try {
 			conn = openSrcConnection(this);
 			
-			return DatabaseObjectDAO.getLastRecord(engine.getSrcConf(), conn);
+			return DatabaseObjectDAO.getLastRecord(engine.getJdbcPrimaryDataSource(), conn);
 		}
 		catch (DBException e) {
 			e.printStackTrace();

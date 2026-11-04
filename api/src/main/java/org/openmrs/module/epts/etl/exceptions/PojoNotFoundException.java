@@ -2,16 +2,16 @@ package org.openmrs.module.epts.etl.exceptions;
 
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 
 public class PojoNotFoundException extends EtlConfException {
 
 	private static final long serialVersionUID = 1414389901658588032L;
 
 	private Object currentObject;
-	private EtlDatabaseObjectConfiguration conf;
+	private EtlObjectConfiguration conf;
 
-	public PojoNotFoundException(EtlDatabaseObjectConfiguration conf) {
+	public PojoNotFoundException(EtlObjectConfiguration conf) {
 		super("The related POJO class for table " + conf
 				+ " cannot be found. Make sure you have run the DATABASE_MODEL_GENERATION operation.");
 
@@ -36,11 +36,11 @@ public class PojoNotFoundException extends EtlConfException {
 		super(exception);
 	}
 
-	public EtlDatabaseObjectConfiguration getConf() {
+	public EtlObjectConfiguration getConf() {
 		return conf;
 	}
 
-	public void setConf(EtlDatabaseObjectConfiguration conf) {
+	public void setConf(EtlObjectConfiguration conf) {
 		this.conf = conf;
 	}
 

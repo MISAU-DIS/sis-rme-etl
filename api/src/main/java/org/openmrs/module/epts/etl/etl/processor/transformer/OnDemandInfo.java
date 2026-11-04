@@ -129,7 +129,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 							String srcField = this.parentSourceField;
 							String dstField1 = field.getDstField();
-							String dataSourceName = relatedEtlTransformTarget.getSrcConf().getTableAlias();
+							String dataSourceName = relatedEtlTransformTarget.getPrimaryDataSource().getAlias();
 
 							this.parentSourceIdMapping = FieldsMapping.fastCreate(relatedEtlTransformTarget, srcField,
 									dataSourceName, dstField1, conn);

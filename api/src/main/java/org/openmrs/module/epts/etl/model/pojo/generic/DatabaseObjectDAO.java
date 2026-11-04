@@ -788,7 +788,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 				null);
 
 		searchClauses
-				.setColumnsToSelect(function + "(" + searchParams.getConfig().getSrcConf().getPrimaryKey() + ") value");
+				.setColumnsToSelect(function + "("
+						+ searchParams.getConfig().requireJdbcPrimaryDataSource().getPrimaryKey() + ") value");
 
 		Object[] params = {};
 

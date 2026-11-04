@@ -38,7 +38,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 		ConnectorRecordReader<T> sharedReader = engine.getEtlItemConfiguration().createSourceReader(
 				engine.getSearchParams(), engine, sharedWriters);
 		OpenConnection sharedSrcConn = sharedReader.unwrap(OpenConnection.class);
-		OpenConnection sharedDstConn = sharedWriters.unwrapShared(OpenConnection.class);
+		List<OpenConnection> sharedDstConnections = engine.destinationConnections(sharedWriters);
 
 		try {
 
@@ -63,9 +63,9 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			persistPendingData(engine, sharedConnections, sharedReader, sharedWriters);
 
 			if (!engine.getRelatedEtlConf().hasTestingItem() && sharedConnections) {
-				OpenConnection.markAllAsSuccessifullyTerminected(sharedSrcConn, sharedDstConn);
+				engine.markConnectionsAsSuccessfullyTerminated(sharedSrcConn, sharedDstConnections);
 			}
-			OpenConnection.finalizeAllConnections(engine, sharedDstConn, sharedSrcConn);
+			engine.finalizeConnections(sharedSrcConn, sharedDstConnections);
 
 			// Workers and auxiliary persistence have all committed before publishing completion.
 			for (IntervalExtremeRecord interval : intervals) {
@@ -80,7 +80,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			}
 		} finally {
 			try {
-				OpenConnection.finalizeAllConnections(engine, sharedDstConn, sharedSrcConn);
+				engine.finalizeConnections(sharedSrcConn, sharedDstConnections);
 			} finally {
 				engine.shutdownExecutor(executor);
 			}
@@ -102,7 +102,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			engine.discardPendingPersistence();
 		} else if (sharedConnections) {
 			engine.flushPendingPersistence(reader.unwrap(OpenConnection.class),
-					writers.unwrapShared(OpenConnection.class));
+					engine.firstDestinationConnection(engine.destinationConnections(writers)));
 		} else {
 			engine.flushPendingPersistenceUsingDedicatedConnection();
 		}

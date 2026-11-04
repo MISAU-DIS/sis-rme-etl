@@ -17,6 +17,7 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 			throws Exception {
 
 		for (IntervalExtremeRecord interval : intervals) {
+
 			if (engine.stopRequested() || engine.isStopped()) {
 				engine.logWarn("Aborting engine as stop requested!", 10, true);
 				return;
@@ -26,11 +27,12 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 
 			boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-			ConnectorRecordWriters writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
-			ConnectorRecordReader<T> reader = engine.getEtlItemConfiguration().createSourceReader(
-					engine.getSearchParams(), engine, writers);
+			ConnectorRecordWriters writers = processor.createRecordWriters();
+			ConnectorRecordReader<T> reader = processor.createRecordReader(writers);
+
 			OpenConnection srcConn = reader.unwrap(OpenConnection.class);
-			OpenConnection dstConn = writers.unwrapShared(OpenConnection.class);
+
+			List<OpenConnection> dstConnections = engine.destinationConnections(writers);
 
 			try {
 				engine.performExtractTransformationAndLoading(processor, true, persistWork, reader, writers);
@@ -39,7 +41,7 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 					engine.stopOperationDueError(processor.getTaskResultInfo().getFatalException());
 				}
 			} finally {
-				OpenConnection.finalizeAllConnections(engine, srcConn, dstConn);
+				engine.finalizeConnections(srcConn, dstConnections);
 			}
 		}
 	}

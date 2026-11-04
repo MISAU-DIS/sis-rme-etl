@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -47,6 +47,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				dstConf, transformationType, srcConn);
 
 		try {
+
 			if (srcObjects == null || srcObjects.isEmpty()) {
 				return null;
 			}
@@ -162,8 +163,6 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs, Connection srcConn,
 			Connection dstConn) throws EtlTransformationException, DBException {
 
-		dstConf.stepIntoBreakpoint(null, dstConf.getTableName().contains("orders"));
-
 		if (!dstConf.useSharedPKKey()) {
 			return resolveNonSharedPrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
 					availableSrcObjs, srcConn, dstConn);
@@ -276,6 +275,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				}
 
 			} catch (FieldsMappingException e) {
+
 				try {
 					fkMapping = FieldsMapping.fastCreate(dstConf, fkField.getName(),
 							migratedDstParent.getRelatedConfiguration().getAlias(),
@@ -327,7 +327,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
 
 		for (FieldsMapping fieldsMapping : dstConf.getAllMapping()) {
+
 			if (!fieldsMapping.getDstField().equals(dstConf.getPrimaryKey().asSimpleKey().getName())) {
+
 				if (fieldsMapping.shouldBeProcessed(srcObject, srcObjects, srcConn, dstConn)) {
 					dstConf.getRelatedEtlConf().trace("Transforming field " + fieldsMapping);
 
@@ -343,6 +345,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private void collectToSrcObjects(EtlDatabaseObject toCollectFrom, Set<EtlDatabaseObject> srcObjects) {
+
 		if (toCollectFrom != null && toCollectFrom.collactable()) {
 			Set<EtlDatabaseObject> avaliable = toCollectFrom.collectAllAvaliableSrcObjects();
 
@@ -356,11 +359,13 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, TransformationType transformationType,
 			Connection srcConn) throws DBException {
 
-		if (srcObject.getRelatedConfiguration() instanceof SrcConf) {
-			SrcConf srcConf = (SrcConf) srcObject.getRelatedConfiguration();
+		if (srcObject.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration) {
+			PrimaryDataSourceConfiguration srcConf = (PrimaryDataSourceConfiguration) srcObject
+					.getRelatedConfiguration();
 
 			if (!srcConf.doNotUseAsDatasource()) {
-				for (EtlAdditionalDataSource ds : srcConf.getAvaliableExtraDataSource()) {
+
+				for (EtlAdditionalDataSource ds : srcConf.getParentSource().getAvailableAdditionalDataSources()) {
 
 					List<EtlDatabaseObject> avaliableObjects = srcObjects.stream()
 							.collect(java.util.stream.Collectors.toList());
@@ -380,7 +385,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 						 */
 						if (ds.isRequired() && transformationType.isPrincipal()) {
 							throw new MissingRequiredTransformationObject(srcObject, ds,
-									srcConf.getMissingRequiredObjectBehavior());
+									srcConf.getParentSource().getMissingRequiredObjectBehavior());
 						} else if (!transformationType.isPrincipal()) {
 							relatedSrcObject = ds.newInstance();
 							relatedSrcObject.setRelatedConfiguration(ds);

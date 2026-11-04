@@ -18,165 +18,169 @@ import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class CentralAndRemoteDataReconciliationSearchParams extends AbstractEtlSearchParams<EtlDatabaseObject> {
-	
+
 	@SuppressWarnings("unused")
 	private boolean selectAllRecords;
-	
+
 	private EtlOperationType type;
-	
+
 	private Engine<EtlDatabaseObject> relatedEngine;
-	
+
 	public CentralAndRemoteDataReconciliationSearchParams(Engine<EtlDatabaseObject> engine,
-	    ThreadRecordIntervalsManager<EtlDatabaseObject> limits, EtlOperationType type) {
-		super(engine.getSrcConf(), limits);
-		
+			ThreadRecordIntervalsManager<EtlDatabaseObject> limits, EtlOperationType type) {
+		super(engine.getJdbcPrimaryDataSource(), limits);
+
 		this.type = type;
 		this.relatedEngine = engine;
 	}
-	
+
 	public Engine<EtlDatabaseObject> getRelatedEngine() {
 		return relatedEngine;
 	}
-	
+
 	@Override
 	public SearchClauses<EtlDatabaseObject> generateSearchClauses(IntervalExtremeRecord recordLimits,
-	        EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
-	        Connection dstConn) throws DBException {
-		
+			EtlDatabaseObject parentObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn,
+			Connection dstConn) throws DBException {
+
 		utilities.throwReviewMethodException();
-		
+
 		/*
-		SearchClauses<EtlDatabaseObject> searchClauses = new SearchClauses<EtlDatabaseObject>(this);
-		
-		AbstractTableConfiguration tableInfo = this.getSrcTableConf();
-		
-		if (this.type.isMissingRecordsDetector()) {
-			searchClauses.addColumnToSelect(
-			    "src_.record_origin_id, src_.record_uuid uuid, src_.record_uuid,  src_.record_origin_location_code");
-			
-			searchClauses.addToClauseFrom(tableInfo.generateFullStageTableName() + " src_ ");
-			
-			if (tableInfo.isFromOpenMRSModel() && tableInfo.getTableName().equalsIgnoreCase("patient")) {
-				searchClauses.addToClauses(
-				    "not exists (select * from person dest_ inner join patient on patient_id = person_id where dest_.uuid = src_.record_uuid)");
-			} else {
-				searchClauses.addToClauses(
-				    "not exists (select * from " + tableInfo.getTableName() + " dest_ where dest_.uuid = src_.record_uuid)");
-			}
-			
-			searchClauses.addToClauses("src_.consistent = 1");
-		} else if (this.type.isOutdatedRecordsDetector()) {
-			searchClauses.addColumnToSelect("dest_.*");
-			
-			searchClauses.addColumnToSelect("src_.record_origin_id, src_.record_uuid, src_.record_origin_location_code");
-			
-			if (tableInfo.isFromOpenMRSModel() && tableInfo.getTableName().equalsIgnoreCase("patient")) {
-				searchClauses.addToClauseFrom("person inner join patient dest_ on patient_id = person_id");
-				searchClauses.addColumnToSelect("person.uuid");
-				searchClauses.addToClauseFrom(
-				    "inner join " + tableInfo.generateFullStageTableName() + " src_ on person.uuid = src_.record_uuid");
-			} else {
-				searchClauses.addToClauseFrom(tableInfo.getTableName() + " dest_");
-				searchClauses.addToClauseFrom(
-				    "inner join " + tableInfo.generateFullStageTableName() + " src_ on dest_.uuid = src_.record_uuid");
-			}
-			
-			searchClauses.addToClauses("src_.consistent = 1");
-		} else if (this.type.isPhantomRecordsDetector()) {
-			searchClauses.addColumnToSelect("dest_.*");
-			
-			if (tableInfo.isFromOpenMRSModel() && tableInfo.getTableName().equalsIgnoreCase("patient")) {
-				searchClauses.addToClauseFrom("person inner join patient dest_ on patient_id = person_id");
-				searchClauses.addToClauseFrom(
-				    "left join " + tableInfo.generateFullStageTableName() + " src_ on person.uuid = src_.record_uuid");
-				
-				searchClauses.addColumnToSelect("person.uuid");
-			} else {
-				searchClauses.addToClauseFrom(tableInfo.getTableName() + " dest_");
-				searchClauses.addToClauseFrom(
-				    "left join " + tableInfo.generateFullStageTableName() + " src_ on dest_.uuid = src_.record_uuid");
-			}
-			
-			searchClauses.addToClauses("id is null");
-		} else {
-			throw new ForbiddenOperationException("Operation " + this.type + " not supported!");
-		}
-		
-		if (!this.selectAllRecords) {
-			
-			if (this.getLimits() != null) {
-				
-				if (type.isOutdatedRecordsDetector() || type.isPhantomRecordsDetector()) {
-					searchClauses.addToClauses(tableInfo.getPrimaryKey() + " between ? and ?");
-				} else if (type.isMissingRecordsDetector()) {
-					searchClauses.addToClauses("id between ? and ?");
-				}
-				
-				searchClauses.addToParameters(this.getLimits().getCurrentFirstRecordId());
-				searchClauses.addToParameters(this.getLimits().getCurrentLastRecordId());
-			}
-			
-			if (this.getConfig().getSrcConf().getExtraConditionForExtract() != null) {
-				searchClauses.addToClauses(this.getConfig().getSrcConf().getExtraConditionForExtract());
-			}
-		}
-		
-		return searchClauses;*/
-		
+		 * SearchClauses<EtlDatabaseObject> searchClauses = new
+		 * SearchClauses<EtlDatabaseObject>(this);
+		 * 
+		 * AbstractTableConfiguration tableInfo = this.getSrcTableConf();
+		 * 
+		 * if (this.type.isMissingRecordsDetector()) { searchClauses.addColumnToSelect(
+		 * "src_.record_origin_id, src_.record_uuid uuid, src_.record_uuid,  src_.record_origin_location_code"
+		 * );
+		 * 
+		 * searchClauses.addToClauseFrom(tableInfo.generateFullStageTableName() +
+		 * " src_ ");
+		 * 
+		 * if (tableInfo.isFromOpenMRSModel() &&
+		 * tableInfo.getTableName().equalsIgnoreCase("patient")) {
+		 * searchClauses.addToClauses(
+		 * "not exists (select * from person dest_ inner join patient on patient_id = person_id where dest_.uuid = src_.record_uuid)"
+		 * ); } else { searchClauses.addToClauses( "not exists (select * from " +
+		 * tableInfo.getTableName() + " dest_ where dest_.uuid = src_.record_uuid)"); }
+		 * 
+		 * searchClauses.addToClauses("src_.consistent = 1"); } else if
+		 * (this.type.isOutdatedRecordsDetector()) {
+		 * searchClauses.addColumnToSelect("dest_.*");
+		 * 
+		 * searchClauses.
+		 * addColumnToSelect("src_.record_origin_id, src_.record_uuid, src_.record_origin_location_code"
+		 * );
+		 * 
+		 * if (tableInfo.isFromOpenMRSModel() &&
+		 * tableInfo.getTableName().equalsIgnoreCase("patient")) { searchClauses.
+		 * addToClauseFrom("person inner join patient dest_ on patient_id = person_id");
+		 * searchClauses.addColumnToSelect("person.uuid");
+		 * searchClauses.addToClauseFrom( "inner join " +
+		 * tableInfo.generateFullStageTableName() +
+		 * " src_ on person.uuid = src_.record_uuid"); } else {
+		 * searchClauses.addToClauseFrom(tableInfo.getTableName() + " dest_");
+		 * searchClauses.addToClauseFrom( "inner join " +
+		 * tableInfo.generateFullStageTableName() +
+		 * " src_ on dest_.uuid = src_.record_uuid"); }
+		 * 
+		 * searchClauses.addToClauses("src_.consistent = 1"); } else if
+		 * (this.type.isPhantomRecordsDetector()) {
+		 * searchClauses.addColumnToSelect("dest_.*");
+		 * 
+		 * if (tableInfo.isFromOpenMRSModel() &&
+		 * tableInfo.getTableName().equalsIgnoreCase("patient")) { searchClauses.
+		 * addToClauseFrom("person inner join patient dest_ on patient_id = person_id");
+		 * searchClauses.addToClauseFrom( "left join " +
+		 * tableInfo.generateFullStageTableName() +
+		 * " src_ on person.uuid = src_.record_uuid");
+		 * 
+		 * searchClauses.addColumnToSelect("person.uuid"); } else {
+		 * searchClauses.addToClauseFrom(tableInfo.getTableName() + " dest_");
+		 * searchClauses.addToClauseFrom( "left join " +
+		 * tableInfo.generateFullStageTableName() +
+		 * " src_ on dest_.uuid = src_.record_uuid"); }
+		 * 
+		 * searchClauses.addToClauses("id is null"); } else { throw new
+		 * ForbiddenOperationException("Operation " + this.type + " not supported!"); }
+		 * 
+		 * if (!this.selectAllRecords) {
+		 * 
+		 * if (this.getLimits() != null) {
+		 * 
+		 * if (type.isOutdatedRecordsDetector() || type.isPhantomRecordsDetector()) {
+		 * searchClauses.addToClauses(tableInfo.getPrimaryKey() + " between ? and ?"); }
+		 * else if (type.isMissingRecordsDetector()) {
+		 * searchClauses.addToClauses("id between ? and ?"); }
+		 * 
+		 * searchClauses.addToParameters(this.getLimits().getCurrentFirstRecordId());
+		 * searchClauses.addToParameters(this.getLimits().getCurrentLastRecordId()); }
+		 * 
+		 * if (this.getConfig().requireJdbcPrimaryDataSource().getExtraConditionForExtract() != null) {
+		 * searchClauses.addToClauses(this.getConfig().requireJdbcPrimaryDataSource().
+		 * getExtraConditionForExtract()); } }
+		 * 
+		 * return searchClauses;
+		 */
+
 		return null;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public Class<EtlDatabaseObject> getRecordClass() {
+
 		if (type.isMissingRecordsDetector()) {
 			return DatabaseEntityPOJOGenerator
-			        .tryToGetExistingCLass("org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject");
+					.tryToGetExistingCLass("org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject");
 		} else if (type.isOutdatedRecordsDetector()) {
-			return (Class<EtlDatabaseObject>) getSrcConf().generateEtlRecordClass(this.getConfig().getSrcConnInfo());
-			
+			return (Class<EtlDatabaseObject>) this.getJdbcPrimaryDataSource()
+					.generateEtlRecordClass(this.getConfig().getSrcConnInfo());
+
 		} else if (type.isPhantomRecordsDetector()) {
-			return (Class<EtlDatabaseObject>) this.getSrcConf().generateEtlRecordClass(this.getConfig().getSrcConnInfo());
+			return (Class<EtlDatabaseObject>) this.getJdbcPrimaryDataSource()
+					.generateEtlRecordClass(this.getConfig().getSrcConnInfo());
 		}
-		
+
 		throw new ForbiddenOperationException("Unsupported operation type '" + type + "'");
 	}
-	
+
 	@Override
 	public int countAllRecords(OperationController<EtlDatabaseObject> controller, Connection conn) throws DBException {
 		CentralAndRemoteDataReconciliationSearchParams auxSearchParams = new CentralAndRemoteDataReconciliationSearchParams(
-		        this.getRelatedEngine(), this.getThreadRecordIntervalsManager(), this.type);
+				this.getRelatedEngine(), this.getThreadRecordIntervalsManager(), this.type);
 		auxSearchParams.selectAllRecords = true;
-		
+
 		return SearchParamsDAO.countAll(auxSearchParams, null, conn);
 	}
-	
+
 	@Override
 	public synchronized int countNotProcessedRecords(OperationController<EtlDatabaseObject> controller, Connection conn)
-	        throws DBException {
+			throws DBException {
 		ThreadRecordIntervalsManager<EtlDatabaseObject> bkpLimits = this.getThreadRecordIntervalsManager();
-		
+
 		this.removeLimits();
-		
+
 		int count = SearchParamsDAO.countAll(this, null, conn);
-		
+
 		this.setThreadRecordIntervalsManager(bkpLimits);
-		
+
 		return count;
 	}
-	
+
 	@Override
 	protected VOLoaderHelper getLoaderHealper() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> cloneMe() {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	public String generateDestinationExclusionClause(Connection srcConn, Connection dstConn) throws DBException {
 		// TODO Auto-generated method stub

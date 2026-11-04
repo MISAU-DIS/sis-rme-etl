@@ -55,7 +55,7 @@ public class DBExportController extends OperationController<EtlDatabaseObject> {
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		
-		if (!engine.getSrcConf().getPrimaryKey().isSimpleNumericKey()) {
+		if (!engine.getJdbcPrimaryDataSource().getPrimaryKey().isSimpleNumericKey()) {
 			throw new ForbiddenOperationException("Not supported composite primary key");
 		}
 		
@@ -64,7 +64,7 @@ public class DBExportController extends OperationController<EtlDatabaseObject> {
 		try {
 			conn = openSrcConnection(this);
 			
-			EtlDatabaseObject obj = DatabaseObjectDAO.getFirstConsistentRecordInOrigin(engine.getSrcConf(), conn);
+			EtlDatabaseObject obj = DatabaseObjectDAO.getFirstConsistentRecordInOrigin(engine.getJdbcPrimaryDataSource(), conn);
 			
 			if (obj != null)
 				return obj.getObjectId().getSimpleValueAsInt();
@@ -83,7 +83,7 @@ public class DBExportController extends OperationController<EtlDatabaseObject> {
 	
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
-		if (!engine.getSrcConf().getPrimaryKey().isSimpleNumericKey()) {
+		if (!engine.getJdbcPrimaryDataSource().getPrimaryKey().isSimpleNumericKey()) {
 			throw new ForbiddenOperationException("Not supported composite primary key");
 		}
 		
@@ -92,7 +92,7 @@ public class DBExportController extends OperationController<EtlDatabaseObject> {
 		try {
 			conn = openSrcConnection(this);
 			
-			EtlDatabaseObject obj = DatabaseObjectDAO.getLastConsistentRecordOnOrigin(engine.getSrcConf(), conn);
+			EtlDatabaseObject obj = DatabaseObjectDAO.getLastConsistentRecordOnOrigin(engine.getJdbcPrimaryDataSource(), conn);
 			
 			if (obj != null)
 				return obj.getObjectId().getSimpleValueAsInt();

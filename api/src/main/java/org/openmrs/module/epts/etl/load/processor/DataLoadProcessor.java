@@ -32,7 +32,7 @@ public class DataLoadProcessor extends org.openmrs.module.epts.etl.processor.Jdb
 		
 		logInfo("WRITING  '" + records.size() + "' " + getMainSrcTableName() + " TO STAGING TABLE");
 		
-		SyncImportInfoDAO.insertAll(migrationRecordAsSyncInfo, getSrcConf(), srcConn);
+		SyncImportInfoDAO.insertAll(migrationRecordAsSyncInfo, getJdbcPrimaryDataSource(), srcConn);
 		
 		logInfo("'" + records.size() + "' " + getMainSrcTableName() + " WROTE TO STAGING TABLE");
 		
@@ -87,7 +87,7 @@ public class DataLoadProcessor extends org.openmrs.module.epts.etl.processor.Jdb
 	}
 	
 	private File getSyncBkpDirectory() throws IOException {
-		String baseDirectory = getRelatedOperationController().getSyncBkpDirectory(getSrcConf()).getAbsolutePath();
+		String baseDirectory = getRelatedOperationController().getSyncBkpDirectory(getJdbcPrimaryDataSource()).getAbsolutePath();
 		
 		return new File(baseDirectory);
 	}

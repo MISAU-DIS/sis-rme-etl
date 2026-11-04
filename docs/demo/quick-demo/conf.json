@@ -1,36 +1,36 @@
 {
-   "originAppLocationCode":"testing_easy_etl",
-   "etlRootDirectory":"/path/to/any/directory",
-   "syncStageSchema":"etl_demo_stage_area",
-   "srcConnInfo":{
-      "dataBaseUserName":"",
-      "dataBaseUserPassword":"",
-      "connectionURI":"jdbc:mysql://localhost:3306/etl_demo_src_db?autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true",
-      "driveClassName":"com.mysql.cj.jdbc.Driver"
-   },
-   "dstConnInfo":{
-      "dataBaseUserName":"",
-      "dataBaseUserPassword":"",
-      "connectionURI":"jdbc:mysql://localhost:3306/etl_demo_dst_db?autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true",
-      "driveClassName":"com.mysql.cj.jdbc.Driver"
-   },
-   "operations":[
-      {
-         "operationType":"ETL",
-         "processingBatch":1000,
-         "dstType":"db"
-      }
-   ],
-   "etlItemConfiguration":[
-      {
-         "srcConf":{
-            "tableName":"person"
-         }
-      },
-      {
-         "srcConf":{
-            "tableName":"address"
-         }
-      }	  
-   ]
+	"originAppLocationCode": "testing_easy_etl",
+	"etlRootDirectory": "/path/to/any/directory",
+	"syncStageSchema": "etl_demo_stage_area",
+	"srcConnInfo": {
+		"dataBaseUserName": "",
+		"dataBaseUserPassword": "",
+		"connectionURI": "jdbc:mysql://localhost:3306/etl_demo_src_db?autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true",
+		"driveClassName": "com.mysql.cj.jdbc.Driver"
+	},
+	"dstConnInfo": {
+		"dataBaseUserName": "",
+		"dataBaseUserPassword": "",
+		"connectionURI": "jdbc:mysql://localhost:3306/etl_demo_dst_db?autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true",
+		"driveClassName": "com.mysql.cj.jdbc.Driver"
+	},
+	"operations": [
+		{
+			"operationType": "ETL",
+			"processingBatch": 1000,
+			"dstType": "db"
+		}
+	],
+	"etlItemConfiguration": [
+		{
+			"srcConf": {
+				"tableName": "person"
+			}
+		},
+		{
+			"srcConf": {
+				"tableName": "address"
+			}
+		}
+	]
 }

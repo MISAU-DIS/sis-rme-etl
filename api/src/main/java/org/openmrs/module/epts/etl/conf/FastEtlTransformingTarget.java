@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.conf.datasource.SrcConf;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
@@ -297,7 +297,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	}
 
 	@Override
-	public SrcConf getSrcConf() {
+	public PrimaryDataSourceConfiguration getPrimaryDataSource() {
 		return null;
 	}
 

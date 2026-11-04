@@ -46,7 +46,7 @@ public class DatabaseIntegrityConsolidationController extends OperationControlle
 		try {
 			conn = openSrcConnection(this);
 			
-			return DatabaseObjectDAO.getFirstRecord(engine.getSrcConf(), conn);
+			return DatabaseObjectDAO.getFirstRecord(engine.getJdbcPrimaryDataSource(), conn);
 		}
 		catch (DBException e) {
 			e.printStackTrace();
@@ -65,7 +65,7 @@ public class DatabaseIntegrityConsolidationController extends OperationControlle
 		try {
 			conn = openSrcConnection(this);
 			
-			return DatabaseObjectDAO.getLastRecord(engine.getSrcConf(), conn);
+			return DatabaseObjectDAO.getLastRecord(engine.getJdbcPrimaryDataSource(), conn);
 		}
 		catch (DBException e) {
 			e.printStackTrace();
