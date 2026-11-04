@@ -352,7 +352,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				for (EtlDatabaseObject record : records) {
 					EtlStageAreaObject r = record.generateSrcStageRecord(srcConn, dstConn);
 					r.setFieldValue("last_sync_try_err", utilities.garantirXCaracteres(e.getLocalizedMessage(), 499));
-					r.save(r.getRelatedEtlTableConf(), srcConn);
+					r.save(r.getStageTableConfiguration(), srcConn);
 				}
 			} else {
 				throw e;

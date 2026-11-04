@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
+import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
@@ -329,22 +330,29 @@ public interface EtlDatabaseObject extends EtlObject {
 	 *
 	 * @param tabConf the table configuration
 	 */
-	default void loadObjectIdData(TableConfiguration tabConf) {
+	default void loadObjectIdData(EtlObjectConfiguration configuration) {
 
-		if (tabConf.getPrimaryKey() != null) {
+		if (configuration.getPrimaryKey() != null) {
+			if (!(configuration.getPrimaryKey() instanceof PrimaryKey)) {
+				throw new ForbiddenOperationException(
+						"The primary key of '" + configuration.getObjectName() + "' is not a PrimaryKey");
+			}
 
-			tabConf.getPrimaryKey().setTabConf(tabConf);
-
-			this.setObjectId(tabConf.getPrimaryKey().generateOid(this));
+			this.setObjectId(((PrimaryKey) configuration.getPrimaryKey()).generateOid(this));
 
 			this.getObjectId().setFullLoaded(true);
 		}
 	}
 
-	default void loadObjectIdData(TableConfiguration tabConf, Object keyValue) {
+	default void loadObjectIdData(TableConfiguration tabConf) {
+		loadObjectIdData((EtlObjectConfiguration) tabConf);
+	}
 
-		if (tabConf.useSimplePk()) {
-			this.loadObjectIdData(tabConf);
+	default void loadObjectIdData(EtlObjectConfiguration configuration, Object keyValue) {
+
+		if (configuration.getPrimaryKey() instanceof PrimaryKey
+				&& ((PrimaryKey) configuration.getPrimaryKey()).isSimpleKey()) {
+			this.loadObjectIdData(configuration);
 
 			this.getObjectId().asSimpleKey().setValue(keyValue);
 			this.tryToReplaceFieldValueWithKeyValue(this.getObjectId().asSimpleKey());
@@ -354,14 +362,18 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 	}
 
-	default void loadObjectIdData() throws ForbiddenOperationException {
-		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
+	default void loadObjectIdData(TableConfiguration tabConf, Object keyValue) {
+		loadObjectIdData((EtlObjectConfiguration) tabConf, keyValue);
+	}
 
-		if (tabConf == null) {
-			throw new ForbiddenOperationException("The related tabConf is not specified!");
+	default void loadObjectIdData() throws ForbiddenOperationException {
+		EtlObjectConfiguration configuration = this.getRelatedConfiguration();
+
+		if (configuration == null) {
+			throw new ForbiddenOperationException("The related object configuration is not specified!");
 		}
 
-		this.loadObjectIdData(tabConf);
+		this.loadObjectIdData(configuration);
 	}
 
 	/**
@@ -570,12 +582,16 @@ public interface EtlDatabaseObject extends EtlObject {
 		return fieldValues;
 	}
 
+	default void loadUniqueKeyValues(EtlObjectConfiguration configuration) {
+		this.setUniqueKeysInfo(EtlDatabaseObjectUniqueKeyInfo.generate(configuration, this));
+	}
+
 	default void loadUniqueKeyValues(TableConfiguration tabConf) {
-		this.setUniqueKeysInfo(EtlDatabaseObjectUniqueKeyInfo.generate(tabConf, this));
+		loadUniqueKeyValues((EtlObjectConfiguration) tabConf);
 	}
 
 	default void loadUniqueKeyValues() {
-		this.loadUniqueKeyValues((TableConfiguration) getRelatedConfiguration());
+		this.loadUniqueKeyValues(getRelatedConfiguration());
 	}
 
 	default void loadSharedKeyParentRelatedObject(Connection conn) throws DBException {

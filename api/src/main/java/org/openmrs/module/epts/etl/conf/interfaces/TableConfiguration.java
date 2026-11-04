@@ -269,60 +269,49 @@ public interface TableConfiguration extends EtlDataSource {
 
 				String notNullConstraint = "NOT NULL";
 				String nullConstraint = "NULL";
-				String endLineMarker = ",\n";
-
-				String sql = "CREATE TABLE" + getFullTableName() + "(";
+				List<String> definitions = new ArrayList<>();
 
 				for (Field f : this.getFields()) {
 					String constraint = f.allowNull() ? nullConstraint : notNullConstraint;
 
 					if (f.isClob()) {
-						sql += DBUtilities.generateTableClobField(f.getName(), constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableClobField(f.getName(), constraint, conn));
 					} else if (f.isTextField()) {
-						sql += DBUtilities.generateTableTextField(f.getName(), constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableTextField(f.getName(), constraint, conn));
 					} else if (f.isString()) {
-						sql += DBUtilities.generateTableVarcharField(f.getName(), f.getPrecision().getLength(),
-								constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableVarcharField(f.getName(),
+								f.getPrecision().getLength(), constraint, conn));
 					} else if (f.isLongField()) {
-						sql += DBUtilities.generateTableBigIntField(f.getName(), constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableBigIntField(f.getName(), constraint, conn));
 					} else if (f.isIntegerField() || f.isSmallIntType()) {
-						sql += DBUtilities.generateTableIntegerField(f.getName(), f.getPrecision().getLength(),
-								constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableIntegerField(f.getName(),
+								f.getPrecision().getLength(), constraint, conn));
 					} else if (f.isDateField()) {
-						sql += DBUtilities.generateTableDateTimeField(f.getName(), constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableDateTimeField(f.getName(), constraint, conn));
 					} else if (f.isDecimalField()) {
-						sql += DBUtilities.generateTableDecimalField(f.getName(), f.getPrecision().getLength(),
-								f.getPrecision().getDecimalDigits(), constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableDecimalField(f.getName(),
+								f.getPrecision().getLength(), f.getPrecision().getDecimalDigits(), constraint, conn));
 
 					} else {
-						sql += DBUtilities.generateTableVarcharField(f.getName(), f.getPrecision().getLength(),
-								constraint, conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableVarcharField(f.getName(),
+								f.getPrecision().getLength(), constraint, conn));
 					}
 				}
 
-				// Remove the last #endLineMarker
-				sql = utilities.removeLastChar(sql);
-
 				if (this.hasPK()) {
-					sql += endLineMarker;
-
-					sql += DBUtilities.generateTablePrimaryKeyDefinition(
-							getPrimaryKey().parseFieldNamesToCommaSeparatedString(), this.getTableName() + "_pk", conn);
+					definitions.add(DBUtilities.generateTablePrimaryKeyDefinition(
+							getPrimaryKey().parseFieldNamesToCommaSeparatedString(), this.getTableName() + "_pk", conn));
 				}
 
 				if (this.hasUniqueKeys()) {
-					sql += endLineMarker;
-
 					for (UniqueKeyInfo uk : this.getUniqueKeys()) {
-						sql += DBUtilities.generateTableUniqueKeyDefinition(uk.getKeyName(),
-								uk.parseFieldNamesToCommaSeparatedString(), conn) + endLineMarker;
+						definitions.add(DBUtilities.generateTableUniqueKeyDefinition(uk.getKeyName(),
+								uk.parseFieldNamesToCommaSeparatedString(), conn));
 					}
 				}
 
-				// Remove the last #endLineMarker
-				sql = utilities.removeLastChar(sql);
-
-				sql += ")";
+				String sql = "CREATE TABLE " + getFullTableName() + "(\n"
+						+ String.join(",\n", definitions) + "\n)";
 
 				BaseDAO.executeBatch(conn, sql);
 			}

@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.model.pojo.generic;
 import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.ChildTable;
@@ -132,6 +133,17 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	<T extends Field> List<T> getFields();
 
 	UniqueKeyInfo getPrimaryKey();
+
+	/**
+	 * Returns the logical unique keys exposed by this record model.
+	 * <p>
+	 * Non-JDBC record models are not required to define additional unique keys;
+	 * their configured primary key is still available through
+	 * {@link #getPrimaryKey()}.
+	 */
+	default List<UniqueKeyInfo> getUniqueKeys() {
+		return Collections.emptyList();
+	}
 
 	String getSharePkWith();
 

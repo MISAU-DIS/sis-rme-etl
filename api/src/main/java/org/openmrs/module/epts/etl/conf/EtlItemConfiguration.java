@@ -38,6 +38,7 @@ import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDynamicItemSearchParams;
+import org.openmrs.module.epts.etl.etl.model.stage.StageAreaStorageManager;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -1353,10 +1354,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		this.fullLoad(operationConfig, srcConn, destinationConnections);
 
-		JdbcTablePrimaryDataSourceConfiguration etlDatabaseSource = this.getEtlDatabaseDataSource();
+		PrimaryDataSourceConfiguration primaryDataSource = getPrimaryDataSource();
 
-		if (!etlDatabaseSource.doNotUseAsDatasource()) {
-			etlDatabaseSource.ensureEtlStageTableExists(counter, srcConn, null);
+		if (!(primaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration)
+				|| !((JdbcTablePrimaryDataSourceConfiguration) primaryDataSource).doNotUseAsDatasource()) {
+			StageAreaStorageManager.ensureSourceStageTables(primaryDataSource, srcConn);
 		}
 
 		if (hasDstConf()) {
