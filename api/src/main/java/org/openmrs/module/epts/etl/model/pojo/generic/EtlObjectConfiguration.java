@@ -24,10 +24,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents a data base which can be represented by a Pojo. The
- * {@link EtlDatabaseObjectConfiguration} can be a database table or a query
+ * {@link EtlObjectConfiguration} can be a database table or a query
  * result
  */
-public interface EtlDatabaseObjectConfiguration extends EtlDataConfiguration {
+public interface EtlObjectConfiguration extends EtlDataConfiguration {
 
 	Boolean isFullLoaded();
 

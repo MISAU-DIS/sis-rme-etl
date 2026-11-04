@@ -37,7 +37,7 @@ import org.openmrs.module.epts.etl.exceptions.ParentNotYetMigratedException;
 import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
 import org.openmrs.module.epts.etl.model.base.EtlObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
@@ -504,10 +504,10 @@ public interface EtlDatabaseObject extends EtlObject {
 		return utils.listHasElement(getUniqueKeysInfo());
 	}
 
-	default void setRelatedConfiguration(EtlDatabaseObjectConfiguration config) {
+	default void setRelatedConfiguration(EtlObjectConfiguration config) {
 	}
 
-	default EtlDatabaseObjectConfiguration getRelatedConfiguration() {
+	default EtlObjectConfiguration getRelatedConfiguration() {
 		return null;
 	}
 
@@ -1018,7 +1018,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		} else if (this.isSrcObject()
 				|| (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource())) {
 
-			EtlDatabaseObjectConfiguration conf = this.getRelatedConfiguration();
+			EtlObjectConfiguration conf = this.getRelatedConfiguration();
 
 			if (conf instanceof PrimaryDataSourceConfiguration
 			        && ((PrimaryDataSourceConfiguration) conf).doNotUseAsDatasource()) {

@@ -23,7 +23,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.test_file.AddressVO;
 import org.openmrs.module.epts.etl.model.pojo.test_file.PatientVO;
@@ -77,7 +77,7 @@ class SourceConfigurationTest {
 		csv.initialize(new EtlItemConfiguration());
 
 		assertTrue(json.getPrimaryDataSource() instanceof JsonPrimaryDataSourceConfiguration);
-		assertTrue(json.getPrimaryDataSource() instanceof EtlDatabaseObjectConfiguration);
+		assertTrue(json.getPrimaryDataSource() instanceof EtlObjectConfiguration);
 		assertEquals("/results", json.getResource().getRecordPath());
 		json.fullLoad(null);
 		assertTrue(json.isFullLoaded());
@@ -85,7 +85,7 @@ class SourceConfigurationTest {
 		assertEquals(GenericDatabaseObject.class, json.getPrimaryDataSource().getEtlRecordClass());
 		assertSame(json.getPrimaryDataSource(), json.getPrimaryDataSource().getLoadHealper().getTableConf());
 		assertTrue(csv.getPrimaryDataSource() instanceof CsvPrimaryDataSourceConfiguration);
-		assertTrue(csv.getPrimaryDataSource() instanceof EtlDatabaseObjectConfiguration);
+		assertTrue(csv.getPrimaryDataSource() instanceof EtlObjectConfiguration);
 		assertEquals(";", csv.getCsvDataSource().getDelimiter());
 	}
 

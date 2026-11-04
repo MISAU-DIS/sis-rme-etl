@@ -20,20 +20,20 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObjectUniqueKeyInfo;
 import org.openmrs.module.epts.etl.model.EtlInfo;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
 
 public class DatabaseModelGenerationRecord implements EtlDatabaseObject {
 
-	private EtlDatabaseObjectConfiguration tableConfiguration;
+	private EtlObjectConfiguration tableConfiguration;
 
-	public DatabaseModelGenerationRecord(EtlDatabaseObjectConfiguration tableConfiguration) {
+	public DatabaseModelGenerationRecord(EtlObjectConfiguration tableConfiguration) {
 		this.tableConfiguration = tableConfiguration;
 	}
 
-	public EtlDatabaseObjectConfiguration getTableConfiguration() {
+	public EtlObjectConfiguration getTableConfiguration() {
 		return tableConfiguration;
 	}
 

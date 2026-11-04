@@ -38,7 +38,7 @@ import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
@@ -53,7 +53,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * source and destination table
  */
 public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
-		implements EtlDatabaseObjectConfiguration, EtlAdditionalDataSource, EtlSrcConf, ConditionalEtlElement {
+		implements EtlObjectConfiguration, EtlAdditionalDataSource, EtlSrcConf, ConditionalEtlElement {
 
 	private final String stringLock = new String("LOCK_STRING");
 

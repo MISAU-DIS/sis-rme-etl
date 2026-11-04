@@ -103,7 +103,7 @@ public final class JsonRecordParser {
 	}
 
 	private EtlDatabaseObject parseObject(JsonNode node, List<Field> fields, Set<String> ignoredStructuralFields,
-			org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration configuration,
+			org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration configuration,
 			String description) {
 
 		if (node == null || !node.isObject()) {

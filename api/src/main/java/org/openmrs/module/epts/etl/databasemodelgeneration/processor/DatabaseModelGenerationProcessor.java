@@ -38,7 +38,7 @@ import org.openmrs.module.epts.etl.etl.model.LoadingType;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ParentOnDemandLoadTransformer;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -246,7 +246,7 @@ public class DatabaseModelGenerationProcessor
 		}
 	}
 
-	private void generate(DatabaseModelGenerationContext context, EtlDatabaseObjectConfiguration objectConfiguration) {
+	private void generate(DatabaseModelGenerationContext context, EtlObjectConfiguration objectConfiguration) {
 
 		if (!utilities.stringHasValue(context.getPojoPackageName())) {
 			throw new ForbiddenOperationException("No POJO package is configured for " + context.getSide());
@@ -289,7 +289,7 @@ public class DatabaseModelGenerationProcessor
 	}
 
 	private void persistPhysicalMetadata(DatabaseModelGenerationContext context,
-			EtlDatabaseObjectConfiguration tableConfiguration) {
+			EtlObjectConfiguration tableConfiguration) {
 
 		if (!(tableConfiguration instanceof AbstractTableConfiguration)) {
 			return;

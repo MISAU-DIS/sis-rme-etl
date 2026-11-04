@@ -282,7 +282,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 			}
 		}
 
-		EtlDatabaseObjectConfiguration configuration = getRelatedConfiguration();
+		EtlObjectConfiguration configuration = getRelatedConfiguration();
 
 		if (configuration != null && configuration.getFields() != null) {
 			for (Field configured : configuration.getFields()) {
@@ -319,7 +319,7 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 	/**
 	 * Enriches generated field wrappers with the complete runtime table metadata.
 	 */
-	protected void enrichGeneratedFields(EtlDatabaseObjectConfiguration configuration) {
+	protected void enrichGeneratedFields(EtlObjectConfiguration configuration) {
 		if (configuration == null || configuration.getFields() == null)
 			return;
 		for (Field configured : configuration.getFields()) {

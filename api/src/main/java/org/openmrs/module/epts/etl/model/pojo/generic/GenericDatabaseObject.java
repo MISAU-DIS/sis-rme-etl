@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class GenericDatabaseObject extends AbstractDatabaseObject {
 
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
+	private EtlObjectConfiguration relatedConfiguration;
 
 	private List<Field> fields;
 
@@ -53,7 +53,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		return super.getUuid();
 	}
 
-	public GenericDatabaseObject(EtlDatabaseObjectConfiguration relatedConfiguration) {
+	public GenericDatabaseObject(EtlObjectConfiguration relatedConfiguration) {
 		setRelatedConfiguration(relatedConfiguration);
 	}
 
@@ -208,7 +208,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	}
 
 	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration tableConfiguration) {
+	public void setRelatedConfiguration(EtlObjectConfiguration tableConfiguration) {
 		this.relatedConfiguration = tableConfiguration;
 
 		this.fields = this.getRelatedConfiguration().cloneFields(this);
@@ -225,7 +225,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 	@Override
 	@JsonIgnore
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
+	public EtlObjectConfiguration getRelatedConfiguration() {
 		return this.relatedConfiguration;
 	}
 

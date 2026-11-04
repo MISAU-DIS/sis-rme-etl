@@ -20,10 +20,10 @@ import org.openmrs.module.epts.etl.exceptions.InvalidAtomicConditionException;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
-public interface EtlTransformTarget extends EtlDatabaseObjectConfiguration, ConditionalEtlElement {
+public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalEtlElement {
 
 	void loadDataSourceInfo(Connection conn) throws DBException;
 

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * from the data model.
  */
 public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseObject {
-	private EtlDatabaseObjectConfiguration relatedConfiguration;
+	private EtlObjectConfiguration relatedConfiguration;
 
 	/**
 	 * Stable collection containing the Field instances exposed by this generated
@@ -52,12 +52,12 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 	@Override
 	@JsonIgnore
-	public EtlDatabaseObjectConfiguration getRelatedConfiguration() {
+	public EtlObjectConfiguration getRelatedConfiguration() {
 		return relatedConfiguration;
 	}
 
 	@Override
-	public void setRelatedConfiguration(EtlDatabaseObjectConfiguration configuration) {
+	public void setRelatedConfiguration(EtlObjectConfiguration configuration) {
 		this.relatedConfiguration = configuration;
 
 		attachMissingPhysicalFields(configuration);
@@ -99,7 +99,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		return super.getFieldValue(fieldName);
 	}
 
-	private void attachMissingPhysicalFields(EtlDatabaseObjectConfiguration configuration) {
+	private void attachMissingPhysicalFields(EtlObjectConfiguration configuration) {
 		if (!(configuration instanceof AbstractTableConfiguration))
 			return;
 
@@ -178,7 +178,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		uuidField.setValue(this.uuid);
 	}
 
-	private void enrichInheritedFields(EtlDatabaseObjectConfiguration configuration) {
+	private void enrichInheritedFields(EtlObjectConfiguration configuration) {
 		if (configuration == null || configuration.getFields() == null)
 			return;
 
@@ -220,7 +220,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 	@Override
 	public void loadWithDefaultValues(Connection srcConn, Connection dstConn) throws DBException {
-		EtlDatabaseObjectConfiguration configuration = requireRelatedConfiguration();
+		EtlObjectConfiguration configuration = requireRelatedConfiguration();
 
 		this.loadInheritedFieldWithDefaultValue(configuration, dateCreatedField, srcConn, dstConn);
 		this.loadInheritedFieldWithDefaultValue(configuration, dateChangedField, srcConn, dstConn);
@@ -237,7 +237,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	protected final void loadGeneratedFieldWithDefaultValue(Field field, Connection srcConn, Connection dstConn)
 			throws DBException {
 
-		EtlDatabaseObjectConfiguration configuration = requireRelatedConfiguration();
+		EtlObjectConfiguration configuration = requireRelatedConfiguration();
 
 		if (configuration instanceof TableConfiguration) {
 			TableConfiguration tableConfiguration = (TableConfiguration) configuration;
@@ -255,14 +255,14 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		field.loadWithDefaultValue();
 	}
 
-	private EtlDatabaseObjectConfiguration requireRelatedConfiguration() {
+	private EtlObjectConfiguration requireRelatedConfiguration() {
 		if (this.relatedConfiguration == null) {
 			throw new ForbiddenOperationException("The relatedConfiguration is not set");
 		}
 		return this.relatedConfiguration;
 	}
 
-	private void loadInheritedFieldWithDefaultValue(EtlDatabaseObjectConfiguration configuration, Field field,
+	private void loadInheritedFieldWithDefaultValue(EtlObjectConfiguration configuration, Field field,
 			Connection srcConn, Connection dstConn) throws DBException {
 
 		if (configuration.getField(field.getName()) != null) {

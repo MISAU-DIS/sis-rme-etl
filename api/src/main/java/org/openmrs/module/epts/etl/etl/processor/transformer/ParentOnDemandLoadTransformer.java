@@ -30,7 +30,7 @@ import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSource
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -299,7 +299,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		if (srcParent != null) {
 			ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
 
-			EtlDatabaseObjectConfiguration bkp = srcParent.getRelatedConfiguration();
+			EtlObjectConfiguration bkp = srcParent.getRelatedConfiguration();
 
 			srcParent.setRelatedConfiguration(getEtlTransformTargetForExistingSrcParent(srcConn, dstConn));
 

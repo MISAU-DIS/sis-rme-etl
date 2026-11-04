@@ -31,7 +31,7 @@ import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGe
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.EtlDatabaseObjectConfiguration;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.io.FileUtilities;
 
@@ -47,7 +47,7 @@ public class DatabaseEntityPOJOGenerator {
 		// Utility class.
 	}
 
-	public static Class<EtlDatabaseObject> generate(EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo)
+	public static Class<EtlDatabaseObject> generate(EtlObjectConfiguration pojoble, DBConnectionInfo connInfo)
 			throws IOException, SQLException, ClassNotFoundException {
 
 		if (!pojoble.isFullLoaded()) {
@@ -61,7 +61,7 @@ public class DatabaseEntityPOJOGenerator {
 				etl.getPojoPackage(connInfo), null));
 	}
 
-	public static Class<EtlDatabaseObject> generate(EtlDatabaseObjectConfiguration pojoble,
+	public static Class<EtlDatabaseObject> generate(EtlObjectConfiguration pojoble,
 			DatabaseModelGenerationContext context) throws IOException, SQLException, ClassNotFoundException {
 
 		if (!pojoble.isFullLoaded()) {
@@ -442,7 +442,7 @@ public class DatabaseEntityPOJOGenerator {
 		return existingCLass;
 	}
 
-	private static String generateCommonMethods(EtlDatabaseObjectConfiguration pojoble,
+	private static String generateCommonMethods(EtlObjectConfiguration pojoble,
 			DatabaseModelGenerationContext context, List<Field> pojoFields) {
 		String className = pojoble.generateClassName();
 
@@ -558,7 +558,7 @@ public class DatabaseEntityPOJOGenerator {
 
 	}
 
-	private static List<Field> resolvePojoFields(EtlDatabaseObjectConfiguration configuration) {
+	private static List<Field> resolvePojoFields(EtlObjectConfiguration configuration) {
 
 		if (configuration instanceof AbstractTableConfiguration) {
 			AbstractTableConfiguration table = (AbstractTableConfiguration) configuration;
@@ -591,11 +591,11 @@ public class DatabaseEntityPOJOGenerator {
 		return "			this." + key.getNameAsClassAtt() + " = (java.util.Date) k.getValue();\n";
 	}
 
-	private static boolean usesSharedPk(EtlDatabaseObjectConfiguration configuration) {
+	private static boolean usesSharedPk(EtlObjectConfiguration configuration) {
 		return configuration instanceof TableConfiguration && ((TableConfiguration) configuration).useSharedPKKey();
 	}
 
-	private static void generateCompileTimeDependencies(EtlDatabaseObjectConfiguration configuration,
+	private static void generateCompileTimeDependencies(EtlObjectConfiguration configuration,
 			DatabaseModelGenerationContext context, String currentClassName)
 			throws IOException, SQLException, ClassNotFoundException {
 		Set<String> resolving = DEPENDENCIES_BEING_GENERATED.get();
@@ -630,7 +630,7 @@ public class DatabaseEntityPOJOGenerator {
 		}
 	}
 
-	static String generateSharedPkLoad(EtlDatabaseObjectConfiguration configuration) {
+	static String generateSharedPkLoad(EtlObjectConfiguration configuration) {
 		if (!usesSharedPk(configuration)) {
 			return "";
 		}
@@ -641,7 +641,7 @@ public class DatabaseEntityPOJOGenerator {
 		return code;
 	}
 
-	static String generateSharedPkPostLoad(EtlDatabaseObjectConfiguration configuration) {
+	static String generateSharedPkPostLoad(EtlObjectConfiguration configuration) {
 		if (!usesSharedPk(configuration)) {
 			return "";
 		}
@@ -681,12 +681,12 @@ public class DatabaseEntityPOJOGenerator {
 		return false;
 	}
 
-	private static boolean shouldOverrideExistingDataModelElement(EtlDatabaseObjectConfiguration configuration) {
+	private static boolean shouldOverrideExistingDataModelElement(EtlObjectConfiguration configuration) {
 		return configuration.getRelatedEtlConf() != null
 				&& configuration.getRelatedEtlConf().shouldOverrideExistingDataModelElement();
 	}
 
-	public static Class<EtlDatabaseObject> generateSkeleton(EtlDatabaseObjectConfiguration pojoable,
+	public static Class<EtlDatabaseObject> generateSkeleton(EtlObjectConfiguration pojoable,
 			DBConnectionInfo connInfo) throws IOException, SQLException, ClassNotFoundException {
 		if (!pojoable.isFullLoaded()) {
 			pojoable.fullLoad();
@@ -860,13 +860,13 @@ public class DatabaseEntityPOJOGenerator {
 		return classPath;
 	}
 
-	public static void compile(File sourceFile, EtlDatabaseObjectConfiguration pojoble, DBConnectionInfo connInfo)
+	public static void compile(File sourceFile, EtlObjectConfiguration pojoble, DBConnectionInfo connInfo)
 			throws IOException {
 		compileInternal(sourceFile, pojoble);
 		ClassPathUtilities.addClassToClassPath(pojoble, connInfo);
 	}
 
-	public static void compile(File sourceFile, EtlDatabaseObjectConfiguration pojoble,
+	public static void compile(File sourceFile, EtlObjectConfiguration pojoble,
 			DatabaseModelGenerationContext context) throws IOException {
 
 		compileInternal(sourceFile, pojoble);
@@ -874,7 +874,7 @@ public class DatabaseEntityPOJOGenerator {
 		ClassPathUtilities.addClassToClassPath(pojoble, context.getPojoPackageName());
 	}
 
-	private static void compileInternal(File sourceFile, EtlDatabaseObjectConfiguration pojoble) throws IOException {
+	private static void compileInternal(File sourceFile, EtlObjectConfiguration pojoble) throws IOException {
 		File destinationFile = pojoble.getPOJOCopiledFilesDirectory();
 
 		if (!destinationFile.exists()) {
