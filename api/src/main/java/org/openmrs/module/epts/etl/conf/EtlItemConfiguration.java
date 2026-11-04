@@ -312,15 +312,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		jdbc.setTableName(tableName);
 		jdbc.setTableAlias(primary.getAlias());
 		jdbc.setSchema(getRelatedEtlConf().getSrcConnInfo().determineSchema());
-
-		if (Boolean.TRUE.equals(primary.hasPK()) && primary.getPrimaryKey() instanceof PrimaryKey) {
-			jdbc.setPrimaryKey((PrimaryKey) primary.getPrimaryKey());
-		}
-
-		jdbc.setFields(copyFields(primary.getFields()));
-		jdbc.setFullLoaded(true);
 		jdbc.setParentConf(this);
 		jdbc.setParentSource(source);
+		jdbc.setFields(copyFields(primary.getFields()));
+
+		if (Boolean.TRUE.equals(primary.hasPK()) && primary.getPrimaryKey() instanceof PrimaryKey) {
+			PrimaryKey primaryKey = new PrimaryKey();
+			primaryKey.copy(primary.getPrimaryKey());
+			jdbc.setPrimaryKeyInfoLoaded(true);
+			jdbc.setPrimaryKey(primaryKey);
+		}
+
+		jdbc.setFullLoaded(true);
 
 		if (primary instanceof JdbcTablePrimaryDataSourceConfiguration) {
 			JdbcTablePrimaryDataSourceConfiguration configuredJdbc = (JdbcTablePrimaryDataSourceConfiguration) primary;

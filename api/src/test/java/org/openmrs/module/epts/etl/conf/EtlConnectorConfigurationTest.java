@@ -376,6 +376,9 @@ class EtlConnectorConfigurationTest {
 		jsonPrimary.setName("patient_event");
 		jsonPrimary.setFields(java.util.Collections
 				.singletonList(Field.fastCreateWithType("uuid", "java.lang.String")));
+		PrimaryKey primaryKey = new PrimaryKey();
+		primaryKey.addKey(Key.fastCreateKey("uuid"));
+		jsonPrimary.setPrimaryKey(primaryKey);
 		SourceResourceConfiguration resource = new SourceResourceConfiguration();
 		resource.setName("patients.json");
 		SourceConfiguration source = new SourceConfiguration();
@@ -397,6 +400,9 @@ class EtlConnectorConfigurationTest {
 		assertSame(stateConnection,
 				etlDatabaseSource.getResolvedResource().getEndpoint().unwrap(DBConnectionInfo.class));
 		assertEquals(1, etlDatabaseSource.getFields().size());
+		assertTrue(etlDatabaseSource.hasPK());
+		assertNotSame(primaryKey, etlDatabaseSource.getPrimaryKey());
+		assertEquals("uuid", etlDatabaseSource.getPrimaryKey().asSimpleKey().getName());
 	}
 
 	@Test
