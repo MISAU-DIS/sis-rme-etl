@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -101,8 +102,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			this.setRelatedConfiguration(dstStageTable);
 
 			EtlConfigurationTableConf srcStageTable = this.getRelatedEtlObject().getEtlInfo().getPrimaryDataSource()
-					.requireJdbc()
-					.generateRelatedSrcStageTableConf(srcConn);
+					.requireJdbc().generateRelatedSrcStageTableConf(srcConn);
 
 			keyInfoTabConf = etlTable.generateRelatedStageDstUniqueKeysTableConf(srcConn);
 
@@ -173,6 +173,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			}
 
 			for (Field f : obj.getFields()) {
+
 				try {
 					this.setFieldValue(f.getName(), f.getValue());
 				} catch (MissingFieldException e) {
@@ -260,7 +261,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	public static EtlStageAreaObject generateSrc(EtlDatabaseObject relatedEtlObject, Connection srcConn,
 			Connection dstConn) throws DBException {
 
-		TableConfiguration tabConf = (TableConfiguration) relatedEtlObject.getRelatedConfiguration();
+		EtlObjectConfiguration tabConf = relatedEtlObject.getRelatedConfiguration();
 
 		if (tabConf.hasPK()) {
 			return generate(null, relatedEtlObject, EtlStageTableType.SRC, srcConn, dstConn);
@@ -326,6 +327,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	}
 
 	private void addKeyInfo(EtlDatabaseObject uniqueKeyInfoRecord) {
+
 		if (getKeyInfo() == null) {
 			setKeyInfo(new ArrayList<>());
 		}
@@ -417,6 +419,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 			List<EtlDatabaseObject> collected = new ArrayList<>(stageInfo.size());
 
 			for (EtlStageAreaObject sti : stageInfo) {
+
 				if (sti.getKeyInfo() != null && sti.hasParentKey()) {
 					collected.addAll(sti.getKeyInfo());
 				}
@@ -437,6 +440,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	}
 
 	public static void loadParentIdToChild(List<EtlStageAreaObject> stageAreaObjects) {
+
 		for (EtlStageAreaObject stageObject : stageAreaObjects) {
 			stageObject.loadIdToChilds();
 		}

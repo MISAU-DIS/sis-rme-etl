@@ -130,7 +130,14 @@
 							"name": "uuid",
 							"dataType": "string"
 						}
-					]
+					],
+					"primaryKey":{
+						"fields":[
+							{
+								"name":"id"
+							}
+						]
+					}
 				},
 				"extraJsonRecordDataSource": [
 					{

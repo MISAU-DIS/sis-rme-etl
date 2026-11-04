@@ -61,6 +61,7 @@ public final class JsonRecordParser {
 				parseExtra(recordNode, extra, auxiliary, recordDescription);
 			}
 		}
+
 		primary.setAuxLoadObject(auxiliary);
 
 		return primary;
@@ -103,8 +104,7 @@ public final class JsonRecordParser {
 	}
 
 	private EtlDatabaseObject parseObject(JsonNode node, List<Field> fields, Set<String> ignoredStructuralFields,
-			org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration configuration,
-			String description) {
+			org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration configuration, String description) {
 
 		if (node == null || !node.isObject()) {
 			throw new EtlConfException("Expected JSON object at " + description);
