@@ -781,6 +781,18 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		ThreadRecordIntervalsManager<T> iManager = this.getThreadRecordIntervalsManager();
 
 		if (!getRelatedEtlOperationConfig().doNotProcessSkippedRecords()) {
+			PrimaryDataSourceConfiguration primaryDataSource = getPrimaryDataSource();
+
+			if (!primaryDataSource.isJdbc()) {
+				logDebug("Skipping JDBC-specific default-parent record reload for non-JDBC primary data source '{}'",
+						primaryDataSource.getObjectName());
+				iManager.getCurrentLimits().markSkippedRecordsAsProcessed();
+				iManager.save();
+				return;
+			}
+
+			JdbcTablePrimaryDataSourceConfiguration jdbcPrimaryDataSource = primaryDataSource.requireJdbc();
+
 			// The reload query reads this auxiliary table, so it must only start after
 			// every successful worker registration is durable.
 			flushDefaultParentsUsingDedicatedConnection();
@@ -793,13 +805,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			if (taskProcessor != null) {
 				String originalExtraCondition = getSearchParams().getExtraCondition();
-				String originalExtraConditionForExtract = getJdbcPrimaryDataSource().getExtraConditionForExtract();
+				String originalExtraConditionForExtract = jdbcPrimaryDataSource.getExtraConditionForExtract();
 
 				try {
-					getJdbcPrimaryDataSource().setExtraConditionForExtract(null);
+					jdbcPrimaryDataSource.setExtraConditionForExtract(null);
 
 					getSearchParams()
-							.setExtraCondition(getJdbcPrimaryDataSource().generateSkippedRecordInclusionClause());
+							.setExtraCondition(jdbcPrimaryDataSource.generateSkippedRecordInclusionClause());
 
 					taskProcessor.setProcessorId(this.getEngineId());
 
@@ -812,7 +824,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork, reader,
 							writers);
 
-					getJdbcPrimaryDataSource().setExtraConditionForExtract(originalExtraConditionForExtract);
+					jdbcPrimaryDataSource.setExtraConditionForExtract(originalExtraConditionForExtract);
 					getSearchParams().setExtraCondition(originalExtraCondition);
 
 					if (taskProcessor.getTaskResultInfo().hasFatalError()) {
@@ -821,7 +833,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 						OpenConnection cleanupSrcConn = getRelatedEtlConf().openSrcConn(this);
 
 						try {
-							RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(getJdbcPrimaryDataSource(),
+							RecordWithDefaultParentInfo.deleteAllSuccessifulyProcessed(jdbcPrimaryDataSource,
 									cleanupSrcConn);
 
 							cleanupSrcConn.markAsSuccessifullyTerminated();
@@ -833,7 +845,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 						iManager.save();
 					}
 				} finally {
-					getJdbcPrimaryDataSource().setExtraConditionForExtract(originalExtraConditionForExtract);
+					jdbcPrimaryDataSource.setExtraConditionForExtract(originalExtraConditionForExtract);
 					getSearchParams().setExtraCondition(originalExtraCondition);
 				}
 			} else {
