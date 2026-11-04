@@ -227,6 +227,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
 		return INSTANCES.computeIfAbsent(key, k -> {
+
 			try {
 				return new ParentOnDemandLoadTransformer(
 						OnDemandInfo.create(parameters, (DstConf) relatedEtlTransformTarget, field, conn), conn);
@@ -234,6 +235,11 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				throw new EtlExceptionImpl(e);
 			}
 		});
+	}
+
+	@Override
+	public List<String> getSkipRelationshipResolutionForFields() {
+		return onDemandInfo.getSkipRelationshipResolutionForFields();
 	}
 
 	@Override
@@ -248,6 +254,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					additionalSrcObjects, field, srcConn, dstConn);
 
 			if (dstParent == null) {
+
 				if (field.nullValueBehavior().abortProcess()) {
 					throw new EtlTransformationException(
 							"Error on transforming the parentDstRecord on " + getTransformerDsc(), srcObject,
@@ -500,6 +507,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				etlTransformTarget
 						.addAllToPreferredDataSource(this.relatedEtlTransformTarget.getAllPrefferredDataSource());
 			} else if (!etlTransformTarget.isFullLoaded()) {
+
 				if (!etlTransformTarget.isFullLoaded()) {
 
 					if (!usesTemplate()) {
@@ -604,6 +612,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 	void ensureEtlTransformTargetForExistingSrcParentInitialized(Connection srcConf, Connection dstConn)
 			throws DBException {
+
 		if (!sourceParentMayExists()) {
 			throw new EtlExceptionImpl(
 					"Error On " + this + "\nExisting SrcParent not applicable as no parentSourceIdMapping is defined!");
@@ -614,7 +623,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		DstConf etlTransformTarget = getEtlTransformTargetForExistingSrcParent(srcConf, dstConn);
 
 		if (!etlTransformTarget.isFullLoaded()) {
+
 			synchronized (lock) {
+
 				if (!etlTransformTarget.isFullLoaded()) {
 
 					List<EtlDataSource> avaliableDataSource = null;
@@ -627,12 +638,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						avaliableDataSource = new ArrayList<>();
 
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllAvaliableDataSource()) {
+
 							if (p != this.relatedEtlTransformTarget.getSrcConf().getSharedKeyRefInfo(dstConn)) {
 								avaliableDataSource.add(p);
 							}
 						}
 
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllPrefferredDataSource()) {
+
 							if (p != this.relatedEtlTransformTarget.getSrcConf().getSharedKeyRefInfo(dstConn)) {
 								preferredDataSource.add(p);
 							}
@@ -663,7 +676,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			throws DBException {
 
 		if (this.getOnDemandCreateParentItemConf() == null) {
+
 			synchronized (lock) {
+
 				if (getOnDemandCreateParentItemConf() == null) {
 
 					EtlItemConfiguration conf = this.generateEtlItemConf(srcConn, dstConn);
@@ -738,12 +753,15 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	void ensureEtlItemConfForExistingSrcParentInitialized(Connection srcConn, Connection dstConn) throws DBException {
+
 		if (this.getParentSourceIdMapping() == null) {
 			throw new EtlExceptionImpl("Existing SrcParent not applicable as no parentSourceIdMapping is defined!");
 		}
 
 		if (this.getExistingParentItemConf() == null) {
+
 			synchronized (lock) {
+
 				if (getExistingParentItemConf() == null) {
 
 					EtlItemConfiguration conf = generateEtlItemConf(srcConn, dstConn);
@@ -756,6 +774,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 	@Override
 	public void init(Connection srcConn, Connection dstConn) throws DBException {
+
 		if (sourceParentMayExists()) {
 			ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
 		}

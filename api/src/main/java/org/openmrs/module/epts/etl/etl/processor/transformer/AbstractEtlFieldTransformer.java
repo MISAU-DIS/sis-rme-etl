@@ -103,6 +103,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				}
 
 				if (paramName.equals("input")) {
+
 					if (isTransformerExpression(paramValue)) {
 						this.input = FieldsMapping.fastCreateWithTransformer(this.getRelatedEtlTransformTarget(),
 								field.getDstField(), paramValue, conn);
@@ -113,6 +114,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 					this.inputExpression = paramValue;
 				} else if (paramName.equals("skip_relationship_resolution_for_fields")) {
+
 					if (!utilities.stringHasValue(paramValue)) {
 						throw new ForbiddenOperationException("The lookup_condition has no value");
 					}

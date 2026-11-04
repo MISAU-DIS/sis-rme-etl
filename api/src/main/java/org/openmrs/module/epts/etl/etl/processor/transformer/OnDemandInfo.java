@@ -70,6 +70,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 	private String tableAlias;
 
+	private List<String> skipRelationshipResolutionForFields;
+
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget,
 			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
@@ -80,6 +82,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		return o;
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes", "null" })
 	public void init(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
@@ -96,29 +99,37 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		this.dynamicElements = new HashMap<>();
 		this.parentTableName = parameters.get(0).toString();
 
-		this.rawParameterDefinitions = parameters.size() > 1
-				? parameters.subList(1, parameters.size()).stream().map(Object::toString)
-						.collect(java.util.stream.Collectors.toList())
-				: null;
+		this.rawParameterDefinitions = parameters.size() > 1 ? parameters.subList(1, parameters.size()).stream()
+				.map(Object::toString).collect(java.util.stream.Collectors.toList()) : null;
 
 		if (utilities.listHasElement(this.rawParameterDefinitions)) {
-			String prev = null;
+			String previousParam = null;
+			Object previousValue = null;
 
 			for (String fieldData : this.rawParameterDefinitions) {
 				String[] mapping = fieldData.split(":", 2);
 
 				if (mapping.length != 2) {
-					if (isOverrideField(prev)) {
+
+					if (isListOfStringsParam(previousParam)) {
+						// Use case: skip_relationship_resolution_for_fields:value_coded,concept_id
+
+						((List) previousValue).add(mapping[0]);
+
+						continue;
+					} else if (isOverrideField(previousParam)) {
 						this.overrideFieldsStr += "," + mapping[0];
-					} else
+					} else {
 						throw new EtlExceptionImpl(
 								"Wrong format for newObjectData(" + fieldData + ") within the " + getTransformerDsc()
 										+ "\n" + "Each object param must be specified as filedName:srcFieldOrValue");
+					}
 				} else {
 					String dstField = mapping[0];
 					String srcFieldOrValue = mapping[1];
 
 					if (dstField.equals("parent_field_in_datasource_object")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The parent_field_in_datasource_object has no value");
 						}
@@ -138,24 +149,28 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 
 					} else if (dstField.equals("on_demand_check_condition")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The on_demand_check_condition has no value");
 						}
 
 						this.onDemandCheckCondition = srcFieldOrValue;
 					} else if (dstField.equals("template")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The template has no value");
 						}
 
 						this.templateName = srcFieldOrValue;
 					} else if (dstField.equals("unmapped_field_behavior")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The unmapped_field_behavior has no value");
 						}
 
 						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("on_multiple_data_source_for_same_mapping")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException(
 									"The on_multiple_data_source_for_same_mapping has no value");
@@ -164,6 +179,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue
 								.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("mapping_resolution_strategy")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The mapping_resolution_strategy has no value");
 						}
@@ -186,7 +202,14 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 								.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("table_alias")) {
 						this.tableAlias = srcFieldOrValue;
+
+					} else if (dstField.equals("skip_relationship_resolution_for_fields")) {
+						this.skipRelationshipResolutionForFields = utilities
+								.parseArrayToList(srcFieldOrValue.split(","));
+
+						previousValue = this.skipRelationshipResolutionForFields;
 					} else {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)
 								|| srcFieldOrValue.toLowerCase().equals("null")) {
 							srcFieldOrValue = null;
@@ -216,6 +239,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 							this.onDemandParentFieldMappings.add(fm);
 						} catch (FieldAvaliableInMultipleDataSources e) {
+
 							if (this.onMultipleDataSourceForSameMapping != null
 									&& this.onMultipleDataSourceForSameMapping.ignore()) {
 
@@ -225,7 +249,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					}
 				}
 
-				prev = fieldData;
+				previousParam = fieldData;
 			}
 		}
 
@@ -249,12 +273,14 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		}
 
 		if (params != null && !params.isEmpty()) {
+
 			for (Entry<String, Object> p : params.entrySet()) {
 				this.dynamicElements.put(p.getKey(), p.getValue());
 			}
 		}
 
 		if (this.templateParams != null && !this.templateParams.isEmpty()) {
+
 			for (Entry<String, Object> p : this.templateParams.entrySet()) {
 				this.dynamicElements.put(p.getKey(), p.getValue());
 			}
@@ -262,6 +288,18 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", dynamicElements, conn);
 
+	}
+
+	private boolean isListOfStringsParam(String previusParam) {
+		return utilities.isStringIn(previusParam, "skip_relationship_resolution_for_fields");
+	}
+
+	public List<String> getSkipRelationshipResolutionForFields() {
+		return skipRelationshipResolutionForFields;
+	}
+
+	public void setSkipRelationshipResolutionForFields(List<String> skipRelationshipResolutionForFields) {
+		this.skipRelationshipResolutionForFields = skipRelationshipResolutionForFields;
 	}
 
 	public AutoIncrementHandlingType getAutoIncrementHandlingType() {

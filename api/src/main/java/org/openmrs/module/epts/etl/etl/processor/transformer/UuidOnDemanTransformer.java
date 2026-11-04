@@ -119,6 +119,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		init(conn);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void init(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (parameters == null || parameters.size() < 2) {
@@ -129,50 +130,71 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 		this.placeholdersSrc = new HashMap<>();
 
+		String previousParam = null;
+		Object previousValue = null;
+
 		for (Object fieldData : this.getParameters()) {
 			String[] mapping = fieldData.toString().split(":", 2);
 
 			if (mapping.length != 2) {
-				throw new EtlExceptionImpl(
-						"Wrong format for Param (" + fieldData + ") within the " + getTransformerDsc() + "\n"
-								+ "Each object param must be specified as filedName:srcFieldOrValue");
+
+				if (isListOfStringParam(previousParam)) {
+					// Use case: skip_relationship_resolution_for_fields:value_coded,concept_id
+
+					((List) previousValue).add(mapping[0]);
+
+					continue;
+				} else {
+					throw new EtlExceptionImpl(
+							"Wrong format for Param (" + fieldData + ") within the " + getTransformerDsc() + "\n"
+									+ "Each object param must be specified as filedName:srcFieldOrValue");
+				}
 			} else {
 				String dstField = mapping[0];
 				String srcFieldOrValue = mapping[1];
 
 				if (dstField.equals("table_name")) {
+
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The table_name field has no value");
 					}
 
 					this.tableName = srcFieldOrValue;
 				} else if (dstField.equals("table_alias")) {
+
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The table_alias field has no value");
 					}
 
 					this.tableAlias = srcFieldOrValue;
 				} else if (dstField.equals("lookup_condition")) {
+
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The lookup_condition has no value");
 					}
 
 					this.onDemandCheckCondition = srcFieldOrValue;
 				} else if (dstField.equals("skip_relationship_resolution_for_fields")) {
+
 					if (!utilities.stringHasValue(srcFieldOrValue)) {
 						throw new ForbiddenOperationException("The lookup_condition has no value");
 					}
 
 					this.skipRelationshipResolutionForFields = utilities.parseArrayToList(srcFieldOrValue.split(","));
-				}
 
-				else {
+					previousValue = this.skipRelationshipResolutionForFields;
+				} else {
+
 					if (!utilities.stringHasValue(srcFieldOrValue) || srcFieldOrValue.toLowerCase().equals("null")) {
 						srcFieldOrValue = null;
 					}
 
 					this.placeholdersSrc.put(dstField, srcFieldOrValue);
+
+					previousValue = this.placeholdersSrc;
 				}
+
+				previousParam = dstField;
 			}
 		}
 
@@ -188,12 +210,17 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		Map<String, Object> params = relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters();
 
 		if (params != null && !params.isEmpty()) {
+
 			for (Entry<String, Object> p : params.entrySet()) {
 				this.placeholdersSrc.put(p.getKey(), p.getValue());
 			}
 		}
 
 		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.placeholdersSrc, conn);
+	}
+
+	private boolean isListOfStringParam(String previusParam) {
+		return utilities.isStringIn(previusParam, "skip_relationship_resolution_for_fields");
 	}
 
 	@Override
@@ -207,6 +234,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
 		return INSTANCES.computeIfAbsent(key, k -> {
+
 			try {
 				return new UuidOnDemanTransformer(parameters, (DstConf) relatedEtlTransformTarget, field, conn);
 			} catch (DBException e) {
@@ -258,7 +286,9 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 	void ensureTableInitialized(Connection srcConn, Connection dstConn) throws DBException {
 
 		if (this.getTableConf() == null) {
+
 			synchronized (lock) {
+
 				if (this.getTableConf() == null) {
 
 					AbstractTableConfiguration defaultTable = new GenericTableConfiguration(this.getTable());
@@ -266,6 +296,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 					try {
 						defaultTable.tryToLoadSchemaInfo(null, srcConn);
 					} catch (DatabaseResourceDoesNotExists e) {
+
 						if (this.getRelatedEtlTransformTarget().getRelatedEtlConf().hasDefaultEtlTable()) {
 							defaultTable = new GenericTableConfiguration(
 									this.getRelatedEtlTransformTarget().getRelatedEtlConf().getDefaultSourceTable());
@@ -319,7 +350,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
 				this.getOnDemandCheckCondition(), utilities.parseToList(this.getTableConf().getAlias()), allObjs,
 				getRelatedEtlConf(), dstConn);
- 
+
 		EtlDatabaseObject obj;
 
 		obj = getTableConf().find(p.getPreparedQuery(),

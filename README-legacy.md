@@ -1112,7 +1112,7 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
 
       The destination field must be allowed to receive null values. If the field is not configured to accept null, the ETL engine will apply the configured null-handling behavior.
 
-    - **PARENT_ON_DEMAND_TRANSFORMER(parentTable,parent_field_oin_datasource_object:srcField,on_demand_check_condition:conditionOrSqlFile,template:templateName,template_param_paramName:srcFieldOrValue,...,dstField₁:srcFieldOrValue₁,...,dstFieldₙ:srcFieldOrValueₙ, override_fields:field1,field2,...)**: Ensures that a related parent record exists in the destination table and returns its primary key as the transformed value. The transformer may resolve the parent from the source database, reuse an already existing parent previously created on demand in the destination database, or create the parent on demand when necessary.
+    - **PARENT_ON_DEMAND_TRANSFORMER(parentTable,parent_field_oin_datasource_object:srcField,on_demand_check_condition:conditionOrSqlFile,template:templateName,template_param_paramName:srcFieldOrValue,...,dstField₁:srcFieldOrValue₁,...,dstFieldₙ:srcFieldOrValueₙ, override_fields:field1,field2,...,skip_relationship_resolution_for_fields:field1,field2,...)**: Ensures that a related parent record exists in the destination table and returns its primary key as the transformed value. The transformer may resolve the parent from the source database, reuse an already existing parent previously created on demand in the destination database, or create the parent on demand when necessary.
       The transformer requires the parent table name and at least one of the following special parameters:
       - *parent_field_oin_datasource_object:srcField* – identifies the source field used to resolve the parent record from the source database
       - *on_demand_check_condition:conditionOrSqlFile* – defines how the ETL engine should search for an already existing parent record previously created on demand in the destination database.  
@@ -1174,6 +1174,14 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
   				- Only the listed fields are updated; all other fields remain unchanged
   				- The same transformation rules apply as for parent creation
 
+      **Skip relationship resolution for selected fields**
+
+      - *skip_relationship_resolution_for_fields:field1,field2,...* – Optional comma-separated list of field names for which automatic relationship resolution is skipped in `AbstractEtlFieldTransformer.resolveDstValues`.
+        The listed fields retain their already transformed values instead of being resolved to the corresponding destination record identifiers. Use this parameter when those values are already suitable for the destination lookup or condition.
+        If omitted, the normal relationship resolution rules apply.
+
+        Example: `skip_relationship_resolution_for_fields:value_coded,concept_id`
+
 		  **Example**
 		
 		  ```
@@ -1230,17 +1238,23 @@ Parameters may represent fixed values, dynamic parameters, or fields from availa
       For full parameter details, refer to **PARENT_ON_DEMAND_TRANSFORMER**.
 
 
-	   - **UUID_ON_DEMAND_TRANSFORMER(table_name:tableName,lookup_condition:condition)**: Retrieves the UUID of an existing destination record or generates a new UUID when no matching record is found.
+	   - **UUID_ON_DEMAND_TRANSFORMER(table_name:tableName,lookup_condition:condition,skip_relationship_resolution_for_fields:field1,field2,...)**: Retrieves the UUID of an existing destination record or generates a new UUID when no matching record is found.
 
 		The transformer searches the specified **destination table** using the configured *lookup_condition*. If a matching record exists, the UUID of that record is returned. Otherwise, a new UUID is generated and returned.
 
-		Because the lookup is always performed against the **destination database**, every value used in the *lookup_condition* must represent the corresponding value in the destination database. However, the ETL engine automatically attempts to resolve values originating from source data sources into their corresponding destination values before executing the lookup. If any referenced value cannot be resolved, the transformer throws an exception.
+		Because the lookup is always performed against the **destination database**, every value used in the *lookup_condition* must represent the corresponding value in the destination database. However, the ETL engine automatically attempts to resolve values originating from source data sources into their corresponding destination values before executing the lookup. If a referenced value requires relationship resolution and cannot be resolved, the transformer throws an exception. Fields listed in *skip_relationship_resolution_for_fields* bypass this resolution and retain their already transformed values.
 
 		**Required parameters:**
 			- *table_name:tableName* – Destination table where the lookup should be performed.
 			- *lookup_condition:condition* – Condition used to search for an existing destination record. The condition may be provided either as an inline expression or as the name of a SQL script located under **dump-scripts**.
 
 	  			When a SQL script is used, dynamic placeholders may be declared using the syntax `${parameter_name}`. Their values are supplied through additional transformer parameters.
+
+        **Optional parameters:**
+
+        - *skip_relationship_resolution_for_fields:field1,field2,...* – Comma-separated list of field names to exclude from automatic relationship resolution in `AbstractEtlFieldTransformer.resolveDstValues` before the lookup. The listed fields retain their already transformed values, which must be suitable for the destination lookup. If omitted, the normal relationship resolution rules apply.
+
+          Example: `skip_relationship_resolution_for_fields:value_coded,concept_id`
 
 		**Inline example:**
 
