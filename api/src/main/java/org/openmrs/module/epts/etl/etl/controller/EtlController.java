@@ -58,7 +58,8 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		if (engine.getEtlItemConfiguration().getResolvedSrcResource().getEndpoint().getType() == ConnectorType.FILE) {
 			return FileConnectorRecordReader
-					.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource()) > 0 ? 1 : 0;
+					.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource(),
+							engine.getPrimaryDataSource()) > 0 ? 1 : 0;
 		}
 
 		OpenConnection conn = null;
@@ -79,7 +80,8 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		if (engine.getEtlItemConfiguration().getResolvedSrcResource().getEndpoint().getType() == ConnectorType.FILE) {
-			return FileConnectorRecordReader.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource());
+			return FileConnectorRecordReader.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource(),
+					engine.getPrimaryDataSource());
 		}
 
 		OpenConnection conn = null;

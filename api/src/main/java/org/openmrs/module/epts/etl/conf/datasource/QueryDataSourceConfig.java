@@ -210,6 +210,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public String getQuery() {
+
 		if (!utilities.stringHasValue(this.query) && utilities.stringHasValue(this.getScript())) {
 			loadQueryFromFile();
 		}
@@ -269,6 +270,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
 		PreparedQuery query;
+
 		try {
 
 			this.debug("Initializing full loading of QueryDataSourceConfig [" + this.getDesc() + "]");
@@ -305,6 +307,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public void prepare(List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
+
 		if (isPrepared()) {
 			return;
 		}
@@ -312,6 +315,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		this.trace("Starting Preparation of QueryDataSourceConfig: " + this.getDesc());
 
 		synchronized (stringLock) {
+
 			if (isPrepared()) {
 				return;
 			}
@@ -359,6 +363,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@JsonIgnore
 	public Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
+
 		try {
 			return generateEtlRecordClass(connInfo) != null;
 		} catch (ForbiddenOperationException e) {
@@ -396,6 +401,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		try {
 			return EtlAdditionalDataSource.super.generateEtlRecordClass(connInfo);
 		} catch (PojoNotFoundException e) {
+
 			if (this.name != null) {
 				throw e;
 			}
@@ -418,7 +424,9 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+
 		try {
+
 			if (fullClass) {
 				this.etlRecordClass = DatabaseEntityPOJOGenerator.generate(this, connInfo);
 			} else {
@@ -440,6 +448,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public void generateSkeletonRecordClass(DBConnectionInfo connInfo) {
+
 		try {
 			this.etlRecordClass = DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo);
 		} catch (ClassNotFoundException e) {
@@ -533,6 +542,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		this.trace("Loading related Src Objects for Query DataSource: " + this.getDesc());
 
 		if (avaliableSrcObjects != null) {
+
 			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), srcConn, srcConn)) {
 				return null;
 			}
@@ -568,6 +578,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		EtlDatabaseObject result = this.onMultipleSrcObjectsFound().useLast() ? list.get(list.size() - 1) : list.get(0);
 
 		if (relationshipResolutionStrategy.skip()) {
+
 			for (Field f : result.getFields()) {
 				FieldsMapping tf = FieldsMapping.fastCreate((EtlTransformTarget) dstObject.getRelatedConfiguration(),
 						f.getName(), f.getName(), true, srcConn);
@@ -596,7 +607,9 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public Boolean hasDateFields() {
+
 		for (Field t : this.fields) {
+
 			if (t.hasDataType() && t.isDateField()) {
 				return true;
 			}
@@ -610,6 +623,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		List<Field> clonedFields = new ArrayList<>();
 
 		if (utilities.listHasElement(this.fields)) {
+
 			for (Field field : this.fields) {
 				clonedFields.add(field.createACopy());
 			}
@@ -643,7 +657,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		return false_();
 	}
 
-	public static QueryDataSourceConfig fastCreate(String query, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
+	public static QueryDataSourceConfig fastCreate(String query,
+			JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
 		QueryDataSourceConfig q = new QueryDataSourceConfig(query, relatedSrcConf);
 
 		q.setDynamicElements(relatedSrcConf.getDynamicElements());
@@ -684,7 +699,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		return allCloned;
 	}
 
-	public void clone(QueryDataSourceConfig toCloneFrom, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, Connection conn) throws DBException {
+	public void clone(QueryDataSourceConfig toCloneFrom, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf,
+			Connection conn) throws DBException {
 		this.setName(toCloneFrom.getName());
 		this.setQuery(toCloneFrom.getQuery());
 		this.setScript(toCloneFrom.getScript());
@@ -700,6 +716,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			EtlDatabaseObject schemaInfoSrc) {
 
 		if (utilities.listHasElement(extraQueryDataSource)) {
+
 			for (QueryDataSourceConfig a : extraQueryDataSource) {
 				a.tryToReplacePlaceholders(schemaInfoSrc);
 			}

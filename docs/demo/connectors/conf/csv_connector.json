@@ -173,7 +173,7 @@
           "name": "address_data.csv"
         },
         "csvDataSource": {
-          "name": "address",
+          "name": "remote_address",
           "primaryKey": {
             "fields": [
               {
@@ -208,6 +208,7 @@
       "dstConf": [
         {
           "tableName": "person_data",
+          "identifiedRecordAction": "UPDATE",
           "resource": {
             "connector": "dst-connector",
             "name": "person_data"
@@ -219,6 +220,10 @@
           ],
           "mapping": [
             {
+              "dstField": "id",
+              "transformer": "FAST_SQL_TRANSFORMER(query:select id from ${dst_db}.person_data p where p.person_uuid =  remote_address.person_uuid,onNullTransformedValue:SET_TO_NULL)"
+            },
+            {
               "srcField": "person_uuid",
               "dstField": "person_uuid"
             },
@@ -227,7 +232,7 @@
               "dstField": "address_uuid"
             },
             {
-              "srcField": "address.creation_date",
+              "srcField": "creation_date",
               "dstField": "address_creation_date"
             }
           ],

@@ -12,6 +12,7 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.CsvPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordCardinality;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordLayout;
@@ -117,6 +118,42 @@ class FileConnectorRecordReaderTest {
 		assertEquals(1, FileConnectorRecordReader.countRecords(resource));
 	}
 
+	@Test
+	void shouldReadCsvUsingConfiguredSchemaAndRequestedInterval() throws Exception {
+		Files.writeString(directory.resolve("people.csv"),
+				"\"id\",\"full_name\",\"creation_date\",\"notes\"\n"
+						+ "1,\"Ana, Maria\",\"2026-10-27 22:08:14\",\"first line\nsecond line\"\n"
+						+ "2,Bento,\"2026-10-28 10:00:00\",plain\n",
+				StandardCharsets.UTF_8);
+		CsvPrimaryDataSourceConfiguration source = csvSourceConfiguration();
+		ConnectorResource resource = resource("people.csv");
+		FileConnectorRecordReader<EtlDatabaseObject> reader = new FileConnectorRecordReader<>(resource, source, null);
+
+		java.util.List<EtlDatabaseObject> records = reader
+				.read(new ConnectorReadRequest<>(new IntervalExtremeRecord(1, 1), null, null, false));
+
+		assertEquals(1, records.size());
+		assertEquals(1, records.get(0).getFieldValue("id"));
+		assertEquals("Ana, Maria", records.get(0).getFieldValue("full_name"));
+		assertEquals(true, records.get(0).getFieldValue("creation_date") instanceof java.util.Date);
+		assertEquals("first line\nsecond line", records.get(0).getFieldValue("notes"));
+		assertSame(source, records.get(0).getRelatedConfiguration());
+		assertEquals(2, FileConnectorRecordReader.countRecords(resource, source));
+	}
+
+	@Test
+	void shouldRejectUnknownCsvColumns() throws Exception {
+		Files.writeString(directory.resolve("people.csv"), "id,unexpected\n1,value\n", StandardCharsets.UTF_8);
+		CsvPrimaryDataSourceConfiguration source = csvSourceConfiguration();
+		FileConnectorRecordReader<EtlDatabaseObject> reader = new FileConnectorRecordReader<>(resource("people.csv"),
+				source, null);
+
+		Exception error = assertThrows(Exception.class,
+				() -> reader.read(new ConnectorReadRequest<>(null, null, null, false)));
+
+		assertEquals(true, error.getMessage().contains("Unknown CSV column 'unexpected'"));
+	}
+
 	private PrimaryDataSourceConfiguration sourceConfiguration() throws Exception {
 		JsonPrimaryDataSourceConfiguration source = new JsonPrimaryDataSourceConfiguration();
 		Field id = Field.fastCreateWithType("patient_id", "java.lang.Integer");
@@ -163,6 +200,22 @@ class FileConnectorRecordReaderTest {
 		parent.setExtraJsonRecordDataSource(Arrays.asList(address, identifiers));
 		parent.initialize(new org.openmrs.module.epts.etl.conf.EtlItemConfiguration());
 		parent.fullLoad(null);
+		return source;
+	}
+
+	private CsvPrimaryDataSourceConfiguration csvSourceConfiguration() throws Exception {
+		CsvPrimaryDataSourceConfiguration source = new CsvPrimaryDataSourceConfiguration();
+		source.setName("person");
+		Field id = Field.fastCreateWithType("id", "integer");
+		id.setAllowNull(false);
+		Field name = Field.fastCreateWithType("full_name", "string");
+		name.setAllowNull(false);
+		Field creationDate = Field.fastCreateWithType("creation_date", "date");
+		creationDate.setAllowNull(false);
+		Field notes = Field.fastCreateWithType("notes", "string");
+		notes.setAllowNull(true);
+		source.setFields(Arrays.asList(id, name, creationDate, notes));
+		source.fullLoad(null);
 		return source;
 	}
 
