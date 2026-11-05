@@ -32,11 +32,13 @@ import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaderFactory;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriterFactory;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.ResourceBoundConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
@@ -502,6 +504,76 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			throw e;
 		}
+	}
+
+	/** Creates the primary and additional reader scope for one ETL worker. */
+	public <T extends EtlDatabaseObject> ConnectorRecordReaders createSourceReaders(
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWriters writers)
+			throws DBException {
+		Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers = new IdentityHashMap<>();
+		Map<EtlDataSource, ConnectorResource> resources = new IdentityHashMap<>();
+		Map<String, OpenConnection> jdbcConnections = new HashMap<>();
+		List<OpenConnection> openedConnections = new ArrayList<>();
+
+		try {
+			ConnectorRecordReader<T> primaryReader = createSourceReader(searchParams, openedFrom, writers);
+			PrimaryDataSourceConfiguration primary = getPrimaryDataSource();
+			ConnectorResource primaryResource = getResolvedSrcResource();
+			readers.put(primaryResource, primaryReader);
+			resources.put(primary, primaryResource);
+
+			try {
+				OpenConnection primaryConnection = primaryReader.unwrap(OpenConnection.class);
+				openedConnections.add(primaryConnection);
+			} catch (IllegalArgumentException ignored) {
+				// A connector reader is not required to expose a JDBC supporting connection.
+			}
+
+			if (primaryResource.getEndpoint().getType() == ConnectorType.JDBC) {
+				OpenConnection primaryConnection = primaryReader.unwrap(OpenConnection.class);
+				jdbcConnections.put(connectorEndpointKey(primaryResource), primaryConnection);
+			}
+
+			Set<EtlAdditionalDataSource> additionalSources = Collections
+					.newSetFromMap(new IdentityHashMap<>());
+			additionalSources.addAll(source.getConfiguredAdditionalDataSources());
+			additionalSources.addAll(source.getAvailableAdditionalDataSources());
+
+			for (EtlAdditionalDataSource additional : additionalSources) {
+				ConnectorResource resource = additional.getResolvedResource();
+				if (resource == null) {
+					throw new IllegalStateException("No resolved resource for additional data source " + additional);
+				}
+
+				ConnectorRecordReader<? extends EtlDatabaseObject> reader = readers.get(resource);
+				if (reader == null) {
+					Object nativeState = null;
+					if (resource.getEndpoint().getType() == ConnectorType.JDBC) {
+						String endpointKey = connectorEndpointKey(resource);
+						OpenConnection connection = jdbcConnections.get(endpointKey);
+						if (connection == null) {
+							connection = getRelatedEtlConf().openSourceConnectorConnection(resource, openedFrom);
+							jdbcConnections.put(endpointKey, connection);
+							openedConnections.add(connection);
+						}
+						nativeState = connection;
+					}
+					reader = new ResourceBoundConnectorRecordReader<>(resource, nativeState);
+					readers.put(resource, reader);
+				}
+				resources.put(additional, resource);
+			}
+
+			return new ConnectorRecordReaders(readers, resources);
+		} catch (DBException | RuntimeException exception) {
+			OpenConnection.finalizeAllConnections(openedConnections, openedFrom);
+			throw exception;
+		}
+	}
+
+	private String connectorEndpointKey(ConnectorResource resource) {
+		ConnectorEndpoint endpoint = resource.getEndpoint();
+		return endpoint.getType() + "|" + endpoint.getUri() + "|" + endpoint.getUserName();
 	}
 
 	public ConnectorRecordWriters createDestinationWriters(BaseConfiguration openedFrom) throws DBException {
