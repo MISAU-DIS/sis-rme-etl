@@ -402,16 +402,6 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf() {
-		return this.relatedPrimaryDataSource.requireJdbc();
-	}
-
-	@Override
-	public void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
-		this.relatedPrimaryDataSource = relatedSrcConf;
-	}
-
-	@Override
 	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
 		return relatedPrimaryDataSource;
 	}
@@ -524,7 +514,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	public static List<TransformableDataSource> cloneAll(List<TransformableDataSource> allToCloneFrom,
-			JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, Connection conn) throws DBException {
+			PrimaryDataSourceConfiguration relatedPrimaryDataSource, Connection conn) throws DBException {
 
 		List<TransformableDataSource> allCloned = null;
 
@@ -533,7 +523,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 			for (TransformableDataSource aux : allToCloneFrom) {
 				TransformableDataSource cloned = new TransformableDataSource();
-				cloned.clone(aux, relatedSrcConf, conn);
+				cloned.clone(aux, relatedPrimaryDataSource, conn);
 
 				allCloned.add(cloned);
 			}
@@ -542,15 +532,15 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		return allCloned;
 	}
 
-	public void clone(TransformableDataSource toCloneFrom, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, Connection conn) throws DBException {
+	public void clone(TransformableDataSource toCloneFrom, PrimaryDataSourceConfiguration relatedPrimaryDataSource, Connection conn) throws DBException {
 		this.setName(toCloneFrom.getName());
-		this.setRelatedSrcConf(relatedSrcConf);
+		this.setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 		this.setRequired(toCloneFrom.isRequired());
 
 		this.setObjectLanguage(toCloneFrom.getObjectLanguage());
 
 		this.setObjectFields(TransformableDataSourceField.cloneAll_(toCloneFrom.getObjectFields(), this));
-		this.setRelatedSrcConf(relatedSrcConf);
+		this.setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 		this.setRequired(toCloneFrom.isRequired());
 		this.setFieldsValuesGenerator(toCloneFrom.getFieldsValuesGenerator());
 		this.setFieldsValuesGeneratorInstance(toCloneFrom.getFieldsValuesGeneratorInstance());

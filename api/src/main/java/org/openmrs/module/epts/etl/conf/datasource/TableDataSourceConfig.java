@@ -142,13 +142,13 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	@Override
-	public JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf() {
-		return (JdbcTablePrimaryDataSourceConfiguration) this.getParentConf();
+	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
+		return (PrimaryDataSourceConfiguration) super.getParentConf();
 	}
 
 	@Override
-	public void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
-		setParentConf(relatedSrcConf);
+	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
+		setParentConf(primaryDataSource);
 	}
 
 	@Override
@@ -198,7 +198,8 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	public String generateJoinCondition() {
-		return super.generateJoinCondition(this.getRelatedSrcConf(), this.joinFields, this.joinExtraCondition);
+		return super.generateJoinCondition(this.getRelatedPrimaryDataSource().requireJdbc(), this.joinFields,
+				this.joinExtraCondition);
 	}
 
 	@Override
@@ -208,7 +209,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		return this.getRelatedSrcConf().getRelatedConnInfo();
+		return this.getRelatedPrimaryDataSource().getRelatedConnInfo();
 	}
 
 	@Override
@@ -228,7 +229,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public TableConfiguration getJoiningEntity() {
-		return getRelatedSrcConf();
+		return getRelatedPrimaryDataSource().requireJdbc();
 	}
 
 	@Override
@@ -238,7 +239,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 	@Override
 	public MainJoiningEntity getMainExtractTable() {
-		return this.getRelatedSrcConf();
+		return this.getRelatedPrimaryDataSource().requireJdbc();
 	}
 
 	@Override
@@ -262,7 +263,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 	}
 
 	public static List<TableDataSourceConfig> cloneAll(List<TableDataSourceConfig> allToCloneFrom,
-			JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+			PrimaryDataSourceConfiguration relatedPrimaryDataSource, EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
 
 		List<TableDataSourceConfig> allCloned = null;
 
@@ -271,7 +272,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 			for (TableDataSourceConfig aux : allToCloneFrom) {
 				TableDataSourceConfig cloned = new TableDataSourceConfig();
-				cloned.clone(aux, relatedSrcConf, schemaInfoSrc, conn);
+				cloned.clone(aux, relatedPrimaryDataSource, schemaInfoSrc, conn);
 
 				allCloned.add(cloned);
 			}
@@ -280,13 +281,13 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 		return allCloned;
 	}
 
-	public void clone(TableDataSourceConfig toCloneFrom, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, EtlDatabaseObject schemaInfoSrc,
+	public void clone(TableDataSourceConfig toCloneFrom, PrimaryDataSourceConfiguration relatedPrimaryDataSource, EtlDatabaseObject schemaInfoSrc,
 			Connection conn) throws DBException {
-		super.clone(toCloneFrom, relatedSrcConf, schemaInfoSrc, conn);
+		super.clone(toCloneFrom, relatedPrimaryDataSource, schemaInfoSrc, conn);
 
 		this.setJoinFields(toCloneFrom.getJoinFields());
 		this.setJoinExtraCondition(this.getJoinExtraCondition());
-		this.setRelatedSrcConf(relatedSrcConf);
+		this.setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 		this.setJoinExtraConditionScope(toCloneFrom.getJoinExtraConditionScope());
 
 		if (toCloneFrom.hasAuxExtractTable()) {
@@ -326,11 +327,6 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 
 		AuxExtractTable.tryToReplacePlaceholders(this.getAuxExtractTable(), schemaInfoSrc);
 
-	}
-
-	@Override
-	public JdbcTablePrimaryDataSourceConfiguration getParentConf() {
-		return (JdbcTablePrimaryDataSourceConfiguration) super.getParentConf();
 	}
 
 	@Override

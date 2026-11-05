@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -17,11 +16,13 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * Represents an additional data source used in the ETL process.
  * <p>
  * An additional data source is any data source configuration associated with
- * the main ETL source. It can represent:
+ * the primary ETL source, regardless of the connector technology. It can
+ * represent:
  * <ul>
  * <li>A related table</li>
  * <li>A join with another dataset</li>
  * <li>A custom SQL query</li>
+ * <li>A nested JSON record or another non-JDBC source</li>
  * </ul>
  * This interface defines how related data is fetched and linked to the main ETL
  * flow.
@@ -32,29 +33,9 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 		return ActionOnEtlIssue.ABORT_PROCESS;
 	}
 
-	/**
-	 * Gets the main source configuration associated with this additional data
-	 * source.
-	 *
-	 * @return the related {@link JdbcTablePrimaryDataSourceConfiguration}
-	 */
-	JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf();
+	PrimaryDataSourceConfiguration getRelatedPrimaryDataSource();
 
-	/**
-	 * Sets the main source configuration associated with this additional data
-	 * source.
-	 *
-	 * @param relatedSrcConf the source configuration to associate
-	 */
-	void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf);
-
-	default PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
-		return getRelatedSrcConf();
-	}
-
-	default void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
-		setRelatedSrcConf(primaryDataSource.requireJdbc());
-	}
+	void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource);
 
 	/**
 	 * Loads related source object based on the current data source configuration.

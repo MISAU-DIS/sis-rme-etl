@@ -101,16 +101,6 @@ public class JsonRecordDataSourceConfiguration extends AbstractRecordPrimaryData
 	}
 
 	@Override
-	public JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf() {
-		return relatedPrimaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration ? (JdbcTablePrimaryDataSourceConfiguration) relatedPrimaryDataSource : null;
-	}
-
-	@Override
-	public void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
-		setRelatedPrimaryDataSource(relatedSrcConf);
-	}
-
-	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
 			throws DBException {

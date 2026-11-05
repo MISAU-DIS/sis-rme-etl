@@ -1,6 +1,7 @@
 package org.openmrs.module.epts.etl.conf;
 
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -8,9 +9,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
-import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
-import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.MissingEtlConfException;
 
 public class EtlConfCheckExpression {
@@ -115,7 +114,7 @@ public class EtlConfCheckExpression {
 	}
 
 	private EtlDataSource tryToLocateDsWithinSrcConf(EtlDataSource ds) {
-		JdbcTablePrimaryDataSourceConfiguration srcConf = null;
+		PrimaryDataSourceConfiguration primaryDataSource = null;
 
 		if (ds instanceof DstConf) {
 			EtlDataSource ds1 = ((DstConf) ds).findDataSource(this.confName);
@@ -126,23 +125,26 @@ public class EtlConfCheckExpression {
 		}
 
 		if (ds instanceof EtlAdditionalDataSource) {
-			srcConf = ((EtlAdditionalDataSource) ds).getRelatedSrcConf();
+			primaryDataSource = ((EtlAdditionalDataSource) ds).getRelatedPrimaryDataSource();
 		} else if (ds instanceof JdbcTablePrimaryDataSourceConfiguration) {
-			srcConf = (JdbcTablePrimaryDataSourceConfiguration) ds;
+			primaryDataSource = (JdbcTablePrimaryDataSourceConfiguration) ds;
 		} else if (ds instanceof DstConf) {
-			srcConf = ((DstConf) ds).getPrimaryDataSource().requireJdbc();
+			primaryDataSource = ((DstConf) ds).getPrimaryDataSource();
 		}
 
-		try {
-			if (srcConf != null) {
-				EtlDataSource ds1 = srcConf.findDataSourceOnAllAvaliabeDatasources(this.confName);
+		if (primaryDataSource != null) {
+			if (primaryDataSource.hasAlias() && primaryDataSource.getAlias().equals(this.confName)) {
+				return primaryDataSource;
+			}
 
-				if (ds1 != null) {
-					return ds1;
+			if (primaryDataSource.getParentSource() != null) {
+				for (EtlAdditionalDataSource additional : primaryDataSource.getParentSource()
+						.getAvailableAdditionalDataSources()) {
+					if (additional.hasAlias() && additional.getAlias().equals(this.confName)) {
+						return additional;
+					}
 				}
 			}
-		} catch (DatabaseResourceDoesNotExists e) {
-		} catch (EtlExceptionImpl e) {
 		}
 
 		return null;

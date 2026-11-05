@@ -813,7 +813,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 				if (hasExtraObjectDataSourceConfig()) {
 
 					for (TransformableDataSource query : this.getExtraObjectDataSource()) {
-						query.setRelatedSrcConf(this);
+						query.setRelatedPrimaryDataSource(this);
 
 						if (query.hasObjectFields() && schemaInfoSrc != null) {
 

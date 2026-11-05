@@ -2381,7 +2381,8 @@ public interface TableConfiguration extends EtlDataSource {
 		TableConfiguration found = null;
 
 		if (this instanceof TableDataSourceConfig) {
-			JdbcTablePrimaryDataSourceConfiguration srcConf = ((TableDataSourceConfig) this).getRelatedSrcConf();
+			JdbcTablePrimaryDataSourceConfiguration srcConf = ((TableDataSourceConfig) this)
+					.getRelatedPrimaryDataSource().requireJdbc();
 
 			found = retrieveConfiguredParentWithinTheSameSrcConf(table, srcConf);
 

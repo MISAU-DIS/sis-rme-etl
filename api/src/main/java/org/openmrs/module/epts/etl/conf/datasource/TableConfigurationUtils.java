@@ -20,7 +20,7 @@ public class TableConfigurationUtils {
 		} else if (tab instanceof DstConf) {
 			jdbcPrimary = ((DstConf) tab).getPrimaryDataSource().requireJdbc();
 		} else if (tab instanceof TableDataSourceConfig) {
-			jdbcPrimary = ((TableDataSourceConfig) tab).getRelatedSrcConf();
+			jdbcPrimary = ((TableDataSourceConfig) tab).getRelatedPrimaryDataSource().requireJdbc();
 		} else if (tab instanceof JoinableEntity) {
 			return retrieveAvaliableDataSourcesWithTable(((JoinableEntity) tab).getMainExtractTable(), conn);
 		} else if (tab instanceof RelatedTable) {

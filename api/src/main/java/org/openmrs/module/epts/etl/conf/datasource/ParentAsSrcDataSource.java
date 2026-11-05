@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditionalDataSource, EtlSrcConf {
 
-	private JdbcTablePrimaryDataSourceConfiguration relatedSrcConf;
+	private PrimaryDataSourceConfiguration relatedPrimaryDataSource;
 
 	public ParentAsSrcDataSource() {
 	}
@@ -25,13 +25,13 @@ public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditio
 	}
 
 	@Override
-	public JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf() {
-		return this.relatedSrcConf;
+	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
+		return this.relatedPrimaryDataSource;
 	}
 
 	@Override
-	public void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
-		this.relatedSrcConf = relatedSrcConf;
+	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
+		this.relatedPrimaryDataSource = primaryDataSource;
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditio
 
 		ds.clone(parent, null, null, conn);
 
-		ds.relatedSrcConf = mainSrcConf;
+		ds.relatedPrimaryDataSource = mainSrcConf;
 
 		ds.setRefCode(parent.getRefCode());
 		ds.setRefMapping(parent.getRefMapping());

@@ -67,7 +67,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	private Boolean fullLoaded;
 
-	private JdbcTablePrimaryDataSourceConfiguration relatedSrcConf;
+	private PrimaryDataSourceConfiguration relatedPrimaryDataSource;
 
 	private Class<? extends EtlDatabaseObject> etlRecordClass;
 
@@ -96,10 +96,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		this.relationshipResolutionStrategy = RelationshipResolutionStrategy.RESOLVE;
 	}
 
-	public QueryDataSourceConfig(String query, JdbcTablePrimaryDataSourceConfiguration relatedSrcVonf) {
+	public QueryDataSourceConfig(String query, PrimaryDataSourceConfiguration relatedPrimaryDataSource) {
 		this();
 
-		setRelatedSrcConf(relatedSrcVonf);
+		setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 
 		setQuery(query);
 	}
@@ -176,13 +176,13 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public JdbcTablePrimaryDataSourceConfiguration getRelatedSrcConf() {
-		return relatedSrcConf;
+	public PrimaryDataSourceConfiguration getRelatedPrimaryDataSource() {
+		return relatedPrimaryDataSource;
 	}
 
 	@Override
-	public void setRelatedSrcConf(JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
-		this.relatedSrcConf = relatedSrcConf;
+	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
+		this.relatedPrimaryDataSource = primaryDataSource;
 	}
 
 	public String getScript() {
@@ -250,7 +250,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad() throws DBException {
-		OpenConnection conn = this.relatedSrcConf.getRelatedConnInfo().openConnection(this);
+		OpenConnection conn = this.relatedPrimaryDataSource.getRelatedConnInfo().openConnection(this);
 
 		try {
 			fullLoad(conn);
@@ -358,7 +358,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	public EtlConfiguration getRelatedEtlConf() {
 		return this.relatedEtlConfiguration != null ? this.relatedEtlConfiguration
-				: this.relatedSrcConf != null ? this.relatedSrcConf.getRelatedEtlConf() : null;
+				: this.relatedPrimaryDataSource != null ? this.relatedPrimaryDataSource.getRelatedEtlConf() : null;
 	}
 
 	@JsonIgnore
@@ -485,8 +485,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public AbstractEtlDataConfiguration getParentConf() {
-		return this.relatedSrcConf;
+	public EtlDataConfiguration getParentConf() {
+		return this.relatedPrimaryDataSource;
 	}
 
 	@Override
@@ -644,7 +644,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		return getRelatedSrcConf().getSrcConnInfo();
+		return getRelatedPrimaryDataSource().getSrcConnInfo();
 	}
 
 	@Override
@@ -658,10 +658,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public static QueryDataSourceConfig fastCreate(String query,
-			JdbcTablePrimaryDataSourceConfiguration relatedSrcConf) {
-		QueryDataSourceConfig q = new QueryDataSourceConfig(query, relatedSrcConf);
+			PrimaryDataSourceConfiguration relatedPrimaryDataSource) {
+		QueryDataSourceConfig q = new QueryDataSourceConfig(query, relatedPrimaryDataSource);
 
-		q.setDynamicElements(relatedSrcConf.getDynamicElements());
+		q.setDynamicElements(relatedPrimaryDataSource.getDynamicElements());
 
 		return q;
 	}
@@ -681,7 +681,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	public static List<QueryDataSourceConfig> cloneAll(List<QueryDataSourceConfig> allToCloneFrom,
-			JdbcTablePrimaryDataSourceConfiguration relatedSrcConf, Connection conn) throws DBException {
+			PrimaryDataSourceConfiguration relatedPrimaryDataSource, Connection conn) throws DBException {
 
 		List<QueryDataSourceConfig> allCloned = null;
 
@@ -690,7 +690,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 			for (QueryDataSourceConfig aux : allToCloneFrom) {
 				QueryDataSourceConfig cloned = new QueryDataSourceConfig();
-				cloned.clone(aux, relatedSrcConf, conn);
+				cloned.clone(aux, relatedPrimaryDataSource, conn);
 
 				allCloned.add(cloned);
 			}
@@ -699,12 +699,12 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		return allCloned;
 	}
 
-	public void clone(QueryDataSourceConfig toCloneFrom, JdbcTablePrimaryDataSourceConfiguration relatedSrcConf,
+	public void clone(QueryDataSourceConfig toCloneFrom, PrimaryDataSourceConfiguration relatedPrimaryDataSource,
 			Connection conn) throws DBException {
 		this.setName(toCloneFrom.getName());
 		this.setQuery(toCloneFrom.getQuery());
 		this.setScript(toCloneFrom.getScript());
-		this.setRelatedSrcConf(relatedSrcConf);
+		this.setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 		this.setRequired(toCloneFrom.isRequired());
 	}
 
@@ -733,7 +733,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public ActionOnEtlIssue getGeneralBehaviourOnEtlException() {
-		return relatedSrcConf.getGeneralBehaviourOnEtlException();
+		return relatedPrimaryDataSource.getGeneralBehaviourOnEtlException();
 	}
 
 	@Override
@@ -743,7 +743,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
-		this.relatedSrcConf = (JdbcTablePrimaryDataSourceConfiguration) relatedParent;
+		if (!(relatedParent instanceof PrimaryDataSourceConfiguration)) {
+			throw new ForbiddenOperationException("QueryDataSourceConfig parent must be a primary data source");
+		}
+		this.relatedPrimaryDataSource = (PrimaryDataSourceConfiguration) relatedParent;
 	}
 
 	@Override
