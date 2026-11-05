@@ -536,7 +536,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		super.setObjectId(objectId);
 
 		for (Key key : objectId.getFields()) {
-			setFieldValue(key.getName(), key.getValue());
+			this.setFieldValue(key.getName(), key.getValue());
 		}
 
 	}

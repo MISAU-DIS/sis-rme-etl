@@ -184,6 +184,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			if (info.getTransformedValue() != null) {
 				transformedRec.setFieldValue(pkField.getName(), info.getTransformedValue());
 				pkField.setTransformingInfo(info);
+
+				transformedRec.loadObjectIdData();
+
 				return true;
 			}
 		}
@@ -193,6 +196,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 			transformedRec.getObjectId().asSimpleKey().setValue(nextId);
 			transformedRec.setFieldValue(pkField.getName(), nextId);
+
+			transformedRec.loadObjectIdData();
 
 			return true;
 		}

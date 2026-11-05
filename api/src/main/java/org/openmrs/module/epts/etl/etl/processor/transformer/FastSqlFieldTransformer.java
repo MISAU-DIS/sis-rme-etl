@@ -102,6 +102,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	private void retrieveSqlQueryFromParameters(List<Object> parameters) {
+
 		if (parameters == null || parameters.isEmpty()) {
 			throw new EtlExceptionImpl("A FastSqlFieldTransformer needs a sqlQuery as parameter.\n"
 					+ "ex: org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer(select uuid())");
@@ -134,6 +135,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			} else if (paramName.equalsIgnoreCase("name")) {
 				this.name = paramValue;
 			} else if (paramName.equalsIgnoreCase("onMultipleSrcObjectsFound")) {
+
 				try {
 					this.onMultipleSrcObjectsFound = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
@@ -142,6 +144,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 				}
 
 			} else if (paramName.equalsIgnoreCase("onNullTransformedValue")) {
+
 				try {
 					this.onNullTransformedValue = ActionOnEtlIssue.valueOf(paramValue);
 				} catch (Exception e) {
@@ -163,7 +166,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		traceTransformationInitialization(field);
 
 		if (this.dataSourceConfig == null) {
+
 			synchronized (LOCK) {
+
 				if (this.dataSourceConfig == null) {
 
 					EtlConfiguration relatedEtlConfiguration = field.getTransformationTargetObject()
@@ -172,7 +177,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 									: field.getTransformationTargetObject().getRelatedEtlConf();
 
 					QueryDataSourceConfig conf = new QueryDataSourceConfig(this.sqlQuery,
-							field.getTransformationTargetObject().getPrimaryDataSource().requireJdbc());
+							field.getTransformationTargetObject().getPrimaryDataSource());
 
 					conf.setRelatedEtlConf(relatedEtlConfiguration);
 
@@ -204,6 +209,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			}
 
 			if (field.getDefaultValue() == null) {
+
 				if (this.getOnNullTransformedValue() != null && this.getOnNullTransformedValue().setToNull()) {
 					return new FieldTransformingInfo(field, null, null);
 				}

@@ -208,7 +208,7 @@
       "dstConf": [
         {
           "tableName": "person_data",
-          "identifiedRecordAction": "UPDATE",
+          "identifiedRecordAction": "PATCH_UPDATE",
           "resource": {
             "connector": "dst-connector",
             "name": "person_data"
@@ -216,7 +216,8 @@
           "onConflict": "PATCH_EXISTING",
           "patchFields": [
             "address_uuid",
-            "address_creation_date"
+            "address_creation_date",
+            "full_address"
           ],
           "mapping": [
             {
@@ -224,8 +225,8 @@
               "transformer": "FAST_SQL_TRANSFORMER(query:select id from ${dst_db}.person_data p where p.person_uuid =  remote_address.person_uuid,onNullTransformedValue:SET_TO_NULL)"
             },
             {
-              "srcField": "person_uuid",
-              "dstField": "person_uuid"
+              "srcField": "full_address",
+              "dstField": "full_address"
             },
             {
               "srcField": "uuid",
@@ -239,7 +240,8 @@
           "ignorableFields": [
             "creation_date",
             "full_name",
-            "person_creation_date"
+            "person_creation_date",
+            "person_uuid"
           ]
         }
       ]
