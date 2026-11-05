@@ -517,6 +517,16 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		try {
 			ConnectorRecordReader<T> primaryReader = createSourceReader(searchParams, openedFrom, writers);
+
+			if (source == null) {
+				try {
+					OpenConnection primaryConnection = primaryReader.unwrap(OpenConnection.class);
+					openedConnections.add(primaryConnection);
+				} catch (IllegalArgumentException ignored) {
+				}
+				return new ConnectorRecordReaders(primaryReader, readers, resources);
+			}
+
 			PrimaryDataSourceConfiguration primary = getPrimaryDataSource();
 			ConnectorResource primaryResource = getResolvedSrcResource();
 			readers.put(primaryResource, primaryReader);
@@ -564,7 +574,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				resources.put(additional, resource);
 			}
 
-			return new ConnectorRecordReaders(readers, resources);
+			return new ConnectorRecordReaders(primaryReader, readers, resources);
 		} catch (DBException | RuntimeException exception) {
 			OpenConnection.finalizeAllConnections(openedConnections, openedFrom);
 			throw exception;

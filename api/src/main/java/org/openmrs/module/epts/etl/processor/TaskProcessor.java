@@ -11,6 +11,7 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
@@ -18,6 +19,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -63,6 +65,8 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	protected boolean runningInConcurrency;
 
 	protected EtlOperationResultHeader<T> taskResultInfo;
+
+	private transient ConnectorRecordReaders recordReaders;
 
 	protected EtlOperationStatus operationStatus;
 
@@ -171,6 +175,30 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	/** Creates the reader appropriate for this processor. */
 	public ConnectorRecordReader<T> createRecordReader(ConnectorRecordWriters writers) throws DBException {
 		return getEtlItemConfiguration().createSourceReader(getSearchParams(), getEngine(), writers);
+	}
+
+	/** Creates and attaches the complete reader scope for this processor. */
+	public ConnectorRecordReaders createRecordReaders(ConnectorRecordWriters writers) throws DBException {
+		ConnectorRecordReaders readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(), getEngine(),
+				writers);
+		setRecordReaders(readers);
+		return readers;
+	}
+
+	public ConnectorRecordReaders getRecordReaders() {
+		return recordReaders;
+	}
+
+	public void setRecordReaders(ConnectorRecordReaders recordReaders) {
+		this.recordReaders = recordReaders;
+	}
+
+	/** Resolves the reader associated with a source visible to this processor. */
+	public ConnectorRecordReader<? extends EtlDatabaseObject> getRecordReader(EtlDataSource dataSource) {
+		if (recordReaders == null) {
+			throw new IllegalStateException("Connector reader scope has not been initialized for this processor");
+		}
+		return recordReaders.get(dataSource);
 	}
 
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReader<T> reader,

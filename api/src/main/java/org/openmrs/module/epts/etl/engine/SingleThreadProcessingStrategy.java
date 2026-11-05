@@ -4,10 +4,10 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Executes extraction, transformation and loading sequentially. */
 public class SingleThreadProcessingStrategy implements EngineProcessingStrategy {
@@ -28,11 +28,8 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 			boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
 			ConnectorRecordWriters writers = processor.createRecordWriters();
-			ConnectorRecordReader<T> reader = processor.createRecordReader(writers);
-
-			OpenConnection srcConn = reader.unwrap(OpenConnection.class);
-
-			List<OpenConnection> dstConnections = engine.destinationConnections(writers);
+			ConnectorRecordReaders readers = processor.createRecordReaders(writers);
+			ConnectorRecordReader<T> reader = engine.primaryReader(readers);
 
 			try {
 				engine.performExtractTransformationAndLoading(processor, true, persistWork, reader, writers);
@@ -41,7 +38,7 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 					engine.stopOperationDueError(processor.getTaskResultInfo().getFatalException());
 				}
 			} finally {
-				engine.finalizeConnections(srcConn, dstConnections);
+				engine.finalizeConnections(readers, writers);
 			}
 		}
 	}

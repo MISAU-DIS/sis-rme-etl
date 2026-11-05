@@ -14,13 +14,29 @@ public final class ConnectorRecordReaders {
 
 	private final Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers;
 	private final Map<EtlDataSource, ConnectorResource> resourcesByConfiguration;
+	private final ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader;
 
 	public ConnectorRecordReaders(
 			Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers,
 			Map<EtlDataSource, ConnectorResource> resourcesByConfiguration) {
+		this(null, readers, resourcesByConfiguration);
+	}
+
+	public ConnectorRecordReaders(ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader,
+			Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers,
+			Map<EtlDataSource, ConnectorResource> resourcesByConfiguration) {
+		this.primaryReader = primaryReader;
 		this.readers = Collections.unmodifiableMap(new IdentityHashMap<>(readers));
 		this.resourcesByConfiguration = Collections
 				.unmodifiableMap(new IdentityHashMap<>(resourcesByConfiguration));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> getPrimary() {
+		if (primaryReader == null) {
+			throw new IllegalStateException("No primary reader was registered");
+		}
+		return (ConnectorRecordReader<T>) primaryReader;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -45,12 +61,16 @@ public final class ConnectorRecordReaders {
 	}
 
 	public List<ConnectorRecordReader<? extends EtlDatabaseObject>> getAll() {
-		return Collections.unmodifiableList(new ArrayList<>(readers.values()));
+		List<ConnectorRecordReader<? extends EtlDatabaseObject>> all = new ArrayList<>(readers.values());
+		if (primaryReader != null && !containsIdentity(all, primaryReader)) {
+			all.add(primaryReader);
+		}
+		return Collections.unmodifiableList(all);
 	}
 
 	public <N> List<N> unwrapAll(Class<N> nativeType) {
 		List<N> values = new ArrayList<>();
-		for (ConnectorRecordReader<?> reader : readers.values()) {
+		for (ConnectorRecordReader<?> reader : getAll()) {
 			N value;
 			try {
 				value = reader.unwrap(nativeType);

@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
@@ -35,18 +36,19 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 		List<CompletableFuture<Void>> tasks = new ArrayList<>(intervals.size());
 
 		ConnectorRecordWriters sharedWriters = engine.getEtlItemConfiguration().createDestinationWriters(engine);
-		ConnectorRecordReader<T> sharedReader = engine.getEtlItemConfiguration().createSourceReader(
+		ConnectorRecordReaders sharedReaders = engine.getEtlItemConfiguration().createSourceReaders(
 				engine.getSearchParams(), engine, sharedWriters);
-		OpenConnection sharedSrcConn = sharedReader.unwrap(OpenConnection.class);
-		List<OpenConnection> sharedDstConnections = engine.destinationConnections(sharedWriters);
+		ConnectorRecordReader<T> sharedReader = engine.primaryReader(sharedReaders);
 
 		try {
 
 			for (int i = 0; i < intervals.size(); i++) {
 				TaskProcessor<T> processor = engine.initConcurrentTaskProcessor(intervals.get(i), i);
+				processor.setRecordReaders(sharedReaders);
 				engine.getCurrentTaskProcessor().add(processor);
 				tasks.add(CompletableFuture.runAsync(
-						() -> engine.processRangePartition(processor, sharedConnections, sharedReader, sharedWriters),
+						() -> engine.processRangePartition(processor, sharedConnections, sharedReaders, sharedReader,
+								sharedWriters),
 						executor));
 			}
 
@@ -63,9 +65,9 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			persistPendingData(engine, sharedConnections, sharedReader, sharedWriters);
 
 			if (!engine.getRelatedEtlConf().hasTestingItem() && sharedConnections) {
-				engine.markConnectionsAsSuccessfullyTerminated(sharedSrcConn, sharedDstConnections);
+				engine.markConnectionsAsSuccessfullyTerminated(sharedReaders, sharedWriters);
 			}
-			engine.finalizeConnections(sharedSrcConn, sharedDstConnections);
+			engine.finalizeConnections(sharedReaders, sharedWriters);
 
 			// Workers and auxiliary persistence have all committed before publishing completion.
 			for (IntervalExtremeRecord interval : intervals) {
@@ -80,7 +82,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			}
 		} finally {
 			try {
-				engine.finalizeConnections(sharedSrcConn, sharedDstConnections);
+				engine.finalizeConnections(sharedReaders, sharedWriters);
 			} finally {
 				engine.shutdownExecutor(executor);
 			}

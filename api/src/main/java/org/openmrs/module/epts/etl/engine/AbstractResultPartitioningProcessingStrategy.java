@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -18,7 +19,8 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 	protected abstract <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> extractedRecords, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			ConnectorRecordReader<T> reader, ConnectorRecordWriters writers) throws Exception;
+			ConnectorRecordReaders readers, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers)
+			throws Exception;
 
 	@Override
 	public <T extends EtlDatabaseObject> void process(Engine<T> engine, List<IntervalExtremeRecord> intervals)
@@ -42,8 +44,9 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 		boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
 		ConnectorRecordWriters writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
-		ConnectorRecordReader<T> reader = engine.getEtlItemConfiguration().createSourceReader(engine.getSearchParams(),
+		ConnectorRecordReaders readers = engine.getEtlItemConfiguration().createSourceReaders(engine.getSearchParams(),
 				engine, writers);
+		ConnectorRecordReader<T> reader = engine.primaryReader(readers);
 		OpenConnection srcConn = reader.unwrap(OpenConnection.class);
 		List<OpenConnection> dstConnections = engine.destinationConnections(writers);
 		OpenConnection dstConn = engine.firstDestinationConnection(dstConnections);
@@ -52,7 +55,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 			List<T> records = engine.extract(interval, reader);
 
 			if (!UTILITIES.listHasElement(records)) {
-				persistCompletedInterval(engine, interval, srcConn, dstConnections, persistWork);
+				persistCompletedInterval(engine, interval, srcConn, dstConnections, readers, writers, persistWork);
 				return;
 			}
 
@@ -60,26 +63,27 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 			Queue<T> queue = new ConcurrentLinkedQueue<>(records);
 
-			processQueue(engine, interval, records, queue, processorCount, threadFactory, reader, writers);
+			processQueue(engine, interval, records, queue, processorCount, threadFactory, readers, reader, writers);
 
-			persistCompletedInterval(engine, interval, srcConn, dstConnections, persistWork);
+			persistCompletedInterval(engine, interval, srcConn, dstConnections, readers, writers, persistWork);
 		} catch (Exception e) {
 			engine.stopOperationDueError(e);
 
 			throw e;
 		} finally {
-			engine.finalizeConnections(srcConn, dstConnections);
+			engine.finalizeConnections(readers, writers);
 		}
 	}
 
 	private void persistCompletedInterval(Engine<?> engine, IntervalExtremeRecord interval, OpenConnection srcConn,
-			List<OpenConnection> dstConnections, boolean persistWork) throws Exception {
+			List<OpenConnection> dstConnections, ConnectorRecordReaders readers, ConnectorRecordWriters writers,
+			boolean persistWork) throws Exception {
 
 		if (persistWork) {
 			OpenConnection dstConn = engine.firstDestinationConnection(dstConnections);
 			engine.flushPendingPersistence(srcConn, dstConn);
-			engine.markConnectionsAsSuccessfullyTerminated(srcConn, dstConnections);
-			engine.finalizeConnections(srcConn, dstConnections);
+			engine.markConnectionsAsSuccessfullyTerminated(readers, writers);
+			engine.finalizeConnections(readers, writers);
 			interval.markAsProcessed();
 			engine.getThreadRecordIntervalsManager().save();
 		} else {
