@@ -12,12 +12,17 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonMainOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonSimpleOutputDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceProcessingPolicy;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
@@ -438,6 +443,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		List<ConnectorResource> destinations = Collections.unmodifiableList(resolveDstResources(registry));
 
 		this.source.setResolvedResource(source);
+		resolveAdditionalSourceResources(registry, source, true);
 
 		if (this.source.getPrimaryDataSource() instanceof JdbcTablePrimaryDataSourceConfiguration) {
 			((JdbcTablePrimaryDataSourceConfiguration) this.source.getPrimaryDataSource()).setResolvedResource(source);
@@ -624,6 +630,80 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				endpoint);
 	}
 
+	private List<ConnectorResource> resolveAdditionalSourceResources(ConnectorRegistry registry,
+			ConnectorResource primaryResource, boolean assign) {
+		List<ConnectorResource> resolved = new ArrayList<>();
+
+		for (EtlAdditionalDataSource additional : source.getConfiguredAdditionalDataSources()) {
+			ConnectorResource resource = resolveAdditionalSourceResource(registry, primaryResource, additional);
+			resolved.add(resource);
+			if (assign) {
+				additional.setResolvedResource(resource);
+			}
+
+			if (additional instanceof JsonDataSource) {
+				resolveJsonOutputResources(registry, (JsonDataSource) additional, resource, assign, resolved);
+			}
+		}
+
+		return resolved;
+	}
+
+	private void resolveJsonOutputResources(ConnectorRegistry registry, JsonDataSource jsonDataSource,
+			ConnectorResource parentResource, boolean assign, List<ConnectorResource> resolved) {
+		JsonMainOutputDataSource output = jsonDataSource.getOutputDataSource();
+		if (output == null) {
+			return;
+		}
+
+		ConnectorResource outputResource = resolveAdditionalSourceResource(registry, parentResource, output);
+		resolved.add(outputResource);
+		if (assign) {
+			output.setResolvedResource(outputResource);
+		}
+
+		if (output.hasParents()) {
+			for (JsonSimpleOutputDataSource parent : output.getParentOutputDataSource()) {
+				ConnectorResource parentOutputResource = resolveAdditionalSourceResource(registry, outputResource, parent);
+				resolved.add(parentOutputResource);
+				if (assign) {
+					parent.setResolvedResource(parentOutputResource);
+				}
+			}
+		}
+	}
+
+	private ConnectorResource resolveAdditionalSourceResource(ConnectorRegistry registry,
+			ConnectorResource primaryResource, EtlAdditionalDataSource additional) {
+		ConnectorResourceConfiguration configured = additional.getResource();
+
+		if (configured == null && !(additional instanceof TableConfiguration)
+				&& !(additional instanceof QueryDataSourceConfig)) {
+			return primaryResource;
+		}
+
+		ConnectorResourceConfiguration effective = configured == null
+				? new ConnectorResourceConfiguration() : configured.copy();
+		if (!utilities.stringHasValue(effective.getName())) {
+			effective.setName(additional.getName());
+		}
+
+		ConnectorEndpoint endpoint = utilities.stringHasValue(effective.getConnector())
+				? selectConnector(registry, effective.getConnector(), ConnectorDirection.SOURCE, false)
+				: primaryResource.getEndpoint();
+
+		if ((additional instanceof TableConfiguration || additional instanceof QueryDataSourceConfig)
+				&& endpoint.getType() != ConnectorType.JDBC) {
+			throw new EtlConfException("Additional data source '" + additional.getName()
+					+ "' requires a JDBC connector");
+		}
+
+		TableConfiguration legacyTable = additional instanceof TableConfiguration
+				? (TableConfiguration) additional : null;
+		return ConnectorConfigurationResolver.resolveResource(effective, legacyTable, ConnectorDirection.SOURCE,
+				endpoint);
+	}
+
 	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {
 
 		List<ConnectorResource> resolved = new ArrayList<>();
@@ -654,6 +734,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			if (source != null) {
 				ConnectorResource source = resolveSrcResource(registry);
+				resolveAdditionalSourceResources(registry, source, false);
 
 				if (getPrimaryDataSource() instanceof AbstractTableConfiguration) {
 					validateRecordSchema((AbstractTableConfiguration) getPrimaryDataSource(), source);

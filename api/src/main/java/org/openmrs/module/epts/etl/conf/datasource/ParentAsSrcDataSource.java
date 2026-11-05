@@ -64,6 +64,9 @@ public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditio
 		ds.clone(parent, null, null, conn);
 
 		ds.relatedPrimaryDataSource = mainSrcConf;
+		if (mainSrcConf.getParentSource() != null) {
+			ds.setResolvedResource(mainSrcConf.getParentSource().getResolvedResource());
+		}
 
 		ds.setRefCode(parent.getRefCode());
 		ds.setRefMapping(parent.getRefMapping());

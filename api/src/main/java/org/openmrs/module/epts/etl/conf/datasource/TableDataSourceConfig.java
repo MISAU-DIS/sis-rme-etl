@@ -289,6 +289,7 @@ public class TableDataSourceConfig extends AbstractTableConfiguration
 		this.setJoinExtraCondition(this.getJoinExtraCondition());
 		this.setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 		this.setJoinExtraConditionScope(toCloneFrom.getJoinExtraConditionScope());
+		this.setResource(toCloneFrom.getResource() == null ? null : toCloneFrom.getResource().copy());
 
 		if (toCloneFrom.hasAuxExtractTable()) {
 			this.setAuxExtractTable(

@@ -19,14 +19,111 @@ import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonMainOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonSimpleOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
+import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
 class EtlConnectorConfigurationTest {
+
+	@Test
+	void shouldDeserializeResourceOnAdditionalDataSource() throws Exception {
+		String json = "{\"resource\":{\"connector\":\"source-db\",\"name\":\"patient\"},"
+				+ "\"tableDataSource\":{\"tableName\":\"patient\"},"
+				+ "\"extraTableDataSource\":[{\"tableName\":\"person\",\"resource\":{"
+				+ "\"connector\":\"demographics-db\",\"name\":\"person\"}}]}";
+
+		EtlSourceConfiguration source = new ObjectMapperProvider().getContext(EtlSourceConfiguration.class)
+				.readValue(json, EtlSourceConfiguration.class);
+
+		assertEquals("demographics-db", source.getExtraTableDataSource().get(0).getResource().getConnector());
+		assertEquals("person", source.getExtraTableDataSource().get(0).getResource().getName());
+	}
+
+	@Test
+	void shouldDeserializeResourcesOnNonTableAdditionalDataSources() throws Exception {
+		String json = "{\"resource\":{\"connector\":\"source-file\",\"name\":\"patients.json\"},"
+				+ "\"jsonDataSource\":{\"name\":\"patient\",\"fields\":[{\"name\":\"uuid\"}]},"
+				+ "\"extraQueryDataSource\":[{\"name\":\"visits\",\"query\":\"select 1\","
+				+ "\"resource\":{\"connector\":\"clinical-db\",\"name\":\"visits\"}}],"
+				+ "\"extraObjectDataSource\":[{\"name\":\"calculated\",\"resource\":{"
+				+ "\"connector\":\"rules\",\"name\":\"calculate\"}}],"
+				+ "\"extraJsonRecordDataSource\":[{\"name\":\"address\",\"path\":\"/address\","
+				+ "\"fields\":[{\"name\":\"uuid\"}],\"resource\":{"
+				+ "\"connector\":\"address-file\",\"name\":\"addresses.json\"}}]}";
+
+		EtlSourceConfiguration source = new ObjectMapperProvider().getContext(EtlSourceConfiguration.class)
+				.readValue(json, EtlSourceConfiguration.class);
+
+		assertEquals("clinical-db", source.getExtraQueryDataSource().get(0).getResource().getConnector());
+		assertEquals("rules", source.getExtraObjectDataSource().get(0).getResource().getConnector());
+		assertEquals("address-file", source.getExtraJsonRecordDataSource().get(0).getResource().getConnector());
+	}
+
+	@Test
+	void shouldResolveOwnAndInheritedResourcesForAdditionalDataSources() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(new DBConnectionInfo());
+		configuration.setConnectors(java.util.Arrays.asList(
+				jdbcConnector("source-db", "jdbc:mysql://source/openmrs"),
+				jdbcConnector("demographics-db", "jdbc:mysql://demographics/openmrs"),
+				jdbcConnector("json-db", "jdbc:mysql://json/openmrs"),
+				jdbcConnector("json-parent-db", "jdbc:mysql://json-parent/openmrs")));
+
+		JdbcTablePrimaryDataSourceConfiguration primary = new JdbcTablePrimaryDataSourceConfiguration();
+		primary.setTableName("patient");
+		TableDataSourceConfig table = new TableDataSourceConfig();
+		table.setTableName("person");
+		table.setResource(resource("demographics-db", "person"));
+		TransformableDataSource calculated = new TransformableDataSource();
+		calculated.setName("calculated");
+		QueryDataSourceConfig visits = new QueryDataSourceConfig();
+		visits.setName("visits");
+		visits.setQuery("select 1");
+		JsonDataSource json = new JsonDataSource();
+		json.setName("jsonDetails");
+		json.setResource(resource("json-db", "json-details"));
+		JsonMainOutputDataSource jsonOutput = new JsonMainOutputDataSource();
+		jsonOutput.setName("jsonOutput");
+		JsonSimpleOutputDataSource jsonParent = new JsonSimpleOutputDataSource();
+		jsonParent.setName("jsonParent");
+		jsonParent.setResource(resource("json-parent-db", "json-parent"));
+		jsonOutput.setParentOutputDataSource(java.util.Collections.singletonList(jsonParent));
+		json.setOutputDataSource(jsonOutput);
+
+		EtlSourceConfiguration source = new EtlSourceConfiguration();
+		SourceResourceConfiguration primaryResource = new SourceResourceConfiguration();
+		primaryResource.setConnector("source-db");
+		primaryResource.setName("patient");
+		source.setResource(primaryResource);
+		source.setTableDataSource(primary);
+		source.setExtraTableDataSource(java.util.Collections.singletonList(table));
+		source.setExtraObjectDataSource(java.util.Collections.singletonList(calculated));
+		source.setExtraQueryDataSource(java.util.Collections.singletonList(visits));
+		source.setExtraJsonDataSource(java.util.Collections.singletonList(json));
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		item.setSource(source);
+		initializeConnectors(configuration);
+		initializeResources(item);
+
+		assertEquals("jdbc:mysql://demographics/openmrs", table.getResolvedResource().getEndpoint().getUri());
+		assertSame(item.getResolvedSrcResource(), calculated.getResolvedResource());
+		assertEquals("visits", visits.getResolvedResource().getName());
+		assertEquals("jdbc:mysql://source/openmrs", visits.getResolvedResource().getEndpoint().getUri());
+		assertEquals("jdbc:mysql://json/openmrs", json.getResolvedResource().getEndpoint().getUri());
+		assertSame(json.getResolvedResource(), jsonOutput.getResolvedResource());
+		assertEquals("jdbc:mysql://json-parent/openmrs", jsonParent.getResolvedResource().getEndpoint().getUri());
+	}
 
 	@Test
 	void shouldDeserializeResourcesEmbeddedInSourceAndDestinationConfigurations() throws Exception {

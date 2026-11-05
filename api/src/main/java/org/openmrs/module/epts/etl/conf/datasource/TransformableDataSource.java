@@ -24,6 +24,8 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.conf.types.ObjectLanguageType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
@@ -40,8 +42,36 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class TransformableDataSource extends AbstractEtlDataConfiguration
 		implements EtlAdditionalDataSource, EtlSrcConf, EtlTransformTarget {
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
+
+	@Override
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	@Override
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@Override
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
+	}
 
 	private String name;
 
@@ -544,6 +574,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		this.setRequired(toCloneFrom.isRequired());
 		this.setFieldsValuesGenerator(toCloneFrom.getFieldsValuesGenerator());
 		this.setFieldsValuesGeneratorInstance(toCloneFrom.getFieldsValuesGeneratorInstance());
+		this.setResource(toCloneFrom.getResource() == null ? null : toCloneFrom.getResource().copy());
 	}
 
 	public static void tryToReplacePlaceholders(List<TransformableDataSource> extraObjectDataSource,

@@ -28,6 +28,8 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -54,6 +56,32 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		implements EtlObjectConfiguration, EtlAdditionalDataSource, EtlSrcConf, ConditionalEtlElement {
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
+
+	@Override
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	@Override
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@Override
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
+	}
 
 	private final String stringLock = new String("LOCK_STRING");
 
@@ -706,6 +734,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		this.setScript(toCloneFrom.getScript());
 		this.setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 		this.setRequired(toCloneFrom.isRequired());
+		this.setResource(toCloneFrom.getResource() == null ? null : toCloneFrom.getResource().copy());
 	}
 
 	public void tryToFillParams(EtlDatabaseObject schemaInfoSrc) {

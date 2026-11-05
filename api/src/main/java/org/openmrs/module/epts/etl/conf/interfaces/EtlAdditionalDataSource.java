@@ -7,10 +7,14 @@ import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents an additional data source used in the ETL process.
@@ -28,6 +32,16 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * flow.
  */
 public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlElement {
+
+	ConnectorResourceConfiguration getResource();
+
+	void setResource(ConnectorResourceConfiguration resource);
+
+	@JsonIgnore
+	ConnectorResource getResolvedResource();
+
+	@JsonIgnore
+	void setResolvedResource(ConnectorResource resource);
 
 	default ActionOnEtlIssue onMultipleSrcObjectsFound() {
 		return ActionOnEtlIssue.ABORT_PROCESS;

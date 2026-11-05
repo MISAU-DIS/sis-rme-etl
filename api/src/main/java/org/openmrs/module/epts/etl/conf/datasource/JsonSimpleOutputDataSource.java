@@ -14,6 +14,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -23,8 +25,36 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 		implements EtlAdditionalDataSource, EtlSrcConf {
+
+	private ConnectorResourceConfiguration resource;
+
+	private transient ConnectorResource resolvedResource;
+
+	@Override
+	public ConnectorResourceConfiguration getResource() {
+		return resource;
+	}
+
+	@Override
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@Override
+	@JsonIgnore
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setResolvedResource(ConnectorResource resolvedResource) {
+		this.resolvedResource = resolvedResource;
+	}
 
 	private final Object LOCK = new Object();
 
