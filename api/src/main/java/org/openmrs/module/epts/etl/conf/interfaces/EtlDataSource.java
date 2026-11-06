@@ -8,6 +8,7 @@ import java.util.Set;
 import org.openmrs.module.epts.etl.conf.EtlField;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -68,8 +69,10 @@ public interface EtlDataSource extends EtlObjectConfiguration {
 	}
 
 	default List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
-			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
+			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects,
+			ConnectorRecordReader<?> reader)
 			throws DBException {
+		Connection srcConn = reader.unwrap(Connection.class);
 
 		List<EtlDatabaseObject> avaliableSrcObjects = parentSrcObject != null ? utilities.parseToList(parentSrcObject)
 				: null;

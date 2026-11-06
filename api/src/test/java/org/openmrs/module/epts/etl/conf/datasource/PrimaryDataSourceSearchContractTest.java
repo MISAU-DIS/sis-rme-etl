@@ -1,45 +1,35 @@
 package org.openmrs.module.epts.etl.conf.datasource;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.lang.reflect.Method;
+import java.sql.Connection;
+import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 
 class PrimaryDataSourceSearchContractTest {
 
 	@Test
-	void shouldDelegateJdbcSearchToConnectorReader() throws Exception {
-		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
-		EtlDatabaseObject parent = new GenericDatabaseObject();
-		List<EtlDatabaseObject> auxiliary = Collections.singletonList(new GenericDatabaseObject());
-		List<EtlDatabaseObject> expected = Collections.singletonList(new GenericDatabaseObject());
-		AtomicReference<ConnectorReadRequest<EtlDatabaseObject>> received = new AtomicReference<>();
+	void shouldExposeOnlyReaderBasedSearchContracts() {
+		assertReaderContract(EtlDataSource.class);
+		assertReaderContract(PrimaryDataSourceConfiguration.class);
+		assertReaderContract(JdbcTablePrimaryDataSourceConfiguration.class);
+	}
 
-		ConnectorRecordReader<EtlDatabaseObject> reader = new ConnectorRecordReader<EtlDatabaseObject>() {
-			@Override public ConnectorResource getResource() { return null; }
-			@Override public List<EtlDatabaseObject> read(ConnectorReadRequest<EtlDatabaseObject> request) {
-				received.set(request);
-				return expected;
-			}
-			@Override public <N> N unwrap(Class<N> nativeType) {
-				throw new AssertionError("The primary datasource must search through reader.read()");
-			}
-		};
+	private void assertReaderContract(Class<?> type) {
+		Method[] searchMethods = Arrays.stream(type.getMethods())
+				.filter(method -> method.getName().equals("searchRecords"))
+				.toArray(Method[]::new);
 
-		List<EtlDatabaseObject> actual = source.searchRecords(null, parent, auxiliary, reader);
-
-		assertSame(expected, actual);
-		assertSame(parent, received.get().getParentObject());
-		assertSame(auxiliary, received.get().getAuxiliarySourceObjects());
-		assertFalse(received.get().isParallel());
+		assertTrue(searchMethods.length > 0);
+		for (Method method : searchMethods) {
+			Class<?> lastParameter = method.getParameterTypes()[method.getParameterCount() - 1];
+			assertFalse(Connection.class.isAssignableFrom(lastParameter));
+			assertTrue(ConnectorRecordReader.class.isAssignableFrom(lastParameter));
+		}
 	}
 }

@@ -20,6 +20,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -349,7 +350,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				List<EtlDatabaseObject> recs;
 				logTrace("Searching recs on demand for: " + this);
 
-				recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects, srcConn);
+				recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects,
+						JdbcConnectorRuntimeAdapters.reader(srcConn));
 
 				logTrace("OnDemand Searching recs finalized: " + this);
 

@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
@@ -202,7 +203,8 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 						throw e;
 					}
 
-					List<EtlDatabaseObject> rows = this.tableConfig.searchRecords(null, null, null, srcConn);
+					List<EtlDatabaseObject> rows = this.tableConfig.searchRecords(null, null, null,
+							JdbcConnectorRuntimeAdapters.reader(srcConn));
 
 					Map<String, Object> cache = new HashMap<>();
 

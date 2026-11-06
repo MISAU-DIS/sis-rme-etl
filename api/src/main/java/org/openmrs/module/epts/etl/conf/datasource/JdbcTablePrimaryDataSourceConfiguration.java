@@ -29,9 +29,8 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -156,10 +155,14 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	}
 
 	private EtlSourceConfiguration additionalDataSourcesOwner() {
-		if (parentSource != null)
+
+		if (parentSource != null) {
 			return parentSource;
-		if (detachedLegacySource == null)
+		}
+
+		if (detachedLegacySource == null) {
 			detachedLegacySource = new EtlSourceConfiguration();
+		}
 		return detachedLegacySource;
 	}
 
@@ -176,13 +179,15 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 
 	private <E> void mergeLegacy(String property, List<E> legacy, List<E> configured,
 			java.util.function.Consumer<List<E>> setter) {
-		if (!utilities.listHasElement(legacy))
+
+		if (!utilities.listHasElement(legacy) || (legacy == configured)) {
 			return;
-		if (legacy == configured)
-			return;
-		if (utilities.listHasElement(configured))
+		}
+
+		if (utilities.listHasElement(configured)) {
 			throw new org.openmrs.module.epts.etl.exceptions.EtlConfException(
 					property + " cannot be configured both in source and tableDataSource");
+		}
 		setter.accept(legacy);
 	}
 
@@ -327,6 +332,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		additionalDataSourcesOwner().setExtraObjectDataSource(extraObjectDataSource);
 	}
 
+	@Override
 	public List<EtlField> getEtlFields() {
 		return etlFields;
 	}
@@ -348,7 +354,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	}
 
 	public void setAuxExtractTable(List<AuxExtractTable> auxExtractTable) {
-		this.auxExtractTable = (List<AuxExtractTable>) auxExtractTable;
+		this.auxExtractTable = auxExtractTable;
 	}
 
 	@Override
@@ -553,9 +559,9 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		ConnectorResource resource = getResolvedResource();
 
 		if (resource != null && resource.getEndpoint() != null) {
+
 			if (resource.getEndpoint().getType() != ConnectorType.JDBC) {
-				throw new RequireJdbcException(
-						"Primary data source '" + getObjectName() + "' is not JDBC-backed");
+				throw new RequireJdbcException("Primary data source '" + getObjectName() + "' is not JDBC-backed");
 			}
 
 			return resource.getEndpoint().unwrap(DBConnectionInfo.class);
@@ -567,13 +573,17 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	@JsonIgnore
 	public List<EtlAdditionalDataSource> getAvaliableExtraDataSource() {
 
-		if (this.doNotUseAsDatasource())
+		if (this.doNotUseAsDatasource()) {
 			return null;
-		if (parentSource != null)
-			return parentSource.getAvailableAdditionalDataSources();
+		}
 
-		if (!this.isInitialized())
+		if (parentSource != null) {
+			return parentSource.getAvailableAdditionalDataSources();
+		}
+
+		if (!this.isInitialized()) {
 			throw new EtlExceptionImpl("The JDBC primary data source is not yet initialized!! ");
+		}
 
 		List<EtlAdditionalDataSource> ds = new ArrayList<>();
 
@@ -622,12 +632,14 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	 * field from {@link #getFields()} and the fields from all
 	 * {@link #extraTableDataSource} Note that the duplicated fields will only be
 	 * included once
-	 * 
+	 *
 	 * @return
 	 */
 	public List<Field> generateAllAvaliableFields() {
-		if (parentSource != null)
+
+		if (parentSource != null) {
 			return parentSource.generateAllAvailableFields();
+		}
 		List<Field> fields = new ArrayList<>();
 
 		for (Field f : this.getFields()) {
@@ -689,6 +701,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 		return utilities.listHasElement(this.getEtlFields());
 	}
 
+	@Override
 	public EtlField getEtlField(String fieldName, List<EtlDataSource> preferredDataSource, Boolean deepCheck) {
 
 		if (utilities.listHasElement(preferredDataSource)) {
@@ -748,8 +761,9 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 					EtlField f = this.getEtlField(EtlField.fastCreate(fieldName, ds, false).getName(), false,
 							preferredDataSource);
 
-					if (f != null)
+					if (f != null) {
 						found = f;
+					}
 
 					if (found != null
 							&& (preferredDataSource == null || found.checkIfUsesSameDataSouce(preferredDataSource))) {
@@ -1033,25 +1047,12 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	public List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
 			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects,
 			ConnectorRecordReader<?> reader) throws DBException {
+
 		if (reader == null) {
 			throw new IllegalArgumentException("reader cannot be null");
 		}
 
-		@SuppressWarnings("unchecked")
-		ConnectorRecordReader<EtlDatabaseObject> jdbcReader = (ConnectorRecordReader<EtlDatabaseObject>) reader;
-		return jdbcReader.read(new ConnectorReadRequest<>(null, parentSrcObject, auxDataSourceObjects, false));
-	}
-
-	@Override
-	public List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
-			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
-			throws DBException {
-		return searchJdbcRecords(engine, parentSrcObject, auxDataSourceObjects, srcConn);
-	}
-
-	private List<EtlDatabaseObject> searchJdbcRecords(Engine<? extends EtlDatabaseObject> engine,
-			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
-			throws DBException {
+		Connection srcConn = reader.unwrap(Connection.class);
 
 		EtlDatabaseObjectSearchParams searchParams = new EtlDatabaseObjectSearchParams(this, null);
 
@@ -1110,8 +1111,9 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 
 	public void fillTrackingFields(EtlDatabaseObject toTrack, EtlStageAreaObject processedRec, Connection srcConn) {
 
-		if (!isTrackabled())
+		if (!isTrackabled()) {
 			throw new ForbiddenOperationException("The table " + this + " is not trackable!");
+		}
 
 		if (!processedRec.getType().isProcessedRecord()) {
 			throw new ForbiddenOperationException("The EtlStageAreaObject processedRec must be of 'PROCESSED_RECORD'");
@@ -1128,8 +1130,10 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	}
 
 	public void changeObjectStatus(EtlDatabaseObject obj, EtlLoadStatus status, Connection srcConn) {
-		if (!isTrackabled())
+
+		if (!isTrackabled()) {
 			throw new ForbiddenOperationException("The table " + this + " is not trackable!");
+		}
 
 		obj.setFieldValue("processing_status", status.toString());
 	}
