@@ -35,6 +35,7 @@ import org.openmrs.module.epts.etl.model.pojo.generic.Oid;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.InconsistentStateException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
  * Transformer responsible for resolving, reusing, or creating a parent record
@@ -785,22 +786,28 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	@Override
 	public void init() throws DBException {
 		EtlItemConfiguration item = getRelatedEtlTransformTarget().getParentEtlItemConf();
-		org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection srcConn = null;
-		org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection dstConn = null;
+		OpenConnection srcConn = null;
+		OpenConnection dstConn = null;
+
 		try {
 			srcConn = item.getRelatedEtlConf().openSrcConn(item);
 			dstConn = getRelatedEtlTransformTarget().getRelatedConnInfo()
 					.openConnection(getRelatedEtlTransformTarget());
+
 			if (sourceParentMayExists()) {
 				ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
 			}
+
 			ensureEtlTransformTargetForNonExistingSrcParentInitialized(true, srcConn, dstConn);
+
 			srcConn.markAsSuccessifullyTerminated();
 			dstConn.markAsSuccessifullyTerminated();
 		} finally {
+
 			if (srcConn != null) {
 				srcConn.finalizeConnection(item);
 			}
+
 			if (dstConn != null) {
 				dstConn.finalizeConnection(getRelatedEtlTransformTarget());
 			}
