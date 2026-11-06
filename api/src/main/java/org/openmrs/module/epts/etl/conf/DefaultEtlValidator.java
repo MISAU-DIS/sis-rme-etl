@@ -93,7 +93,7 @@ public class DefaultEtlValidator extends AbstractEtlDataConfiguration implements
 					: relatedEtlConfig.getRelatedEtlConf();
 
 			getValue().tryToLoadTransformer(FastEtlTransformingTarget.fastCreate(etlConf,
-					GenericDatabaseObject.createDefaultObjectListUsingConfParams(etlConf), conn), conn);
+					GenericDatabaseObject.createDefaultObjectListUsingConfParams(etlConf), conn));
 
 			if (getValue().getParent() == null) {
 

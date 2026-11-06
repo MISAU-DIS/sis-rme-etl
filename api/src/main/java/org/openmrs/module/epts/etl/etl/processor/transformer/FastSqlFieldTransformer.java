@@ -72,7 +72,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	private volatile QueryDataSourceConfig dataSourceConfig;
 
 	public FastSqlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
-			TransformableField field, Connection conn) {
+			TransformableField field) {
 
 		super(parameters, relatedEtlTransformTarget, field);
 
@@ -83,7 +83,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 					relatedEtlTransformTarget != null
 							? relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters()
 							: null,
-					conn);
+					null);
 		} catch (DBException e) {
 			throw new EtlConfException(e);
 		}
@@ -94,12 +94,12 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static FastSqlFieldTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
 		return INSTANCES.computeIfAbsent(key,
-				k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field, conn));
+				k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field));
 	}
 
 	private void retrieveSqlQueryFromParameters(List<Object> parameters) {

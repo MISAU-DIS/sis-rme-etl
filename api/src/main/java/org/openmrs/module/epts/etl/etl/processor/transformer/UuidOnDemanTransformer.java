@@ -111,15 +111,15 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 	private Map<String, Object> placeholdersSrc;
 
-	public UuidOnDemanTransformer(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public UuidOnDemanTransformer(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		super(parameters, relatedEtlTransformTarget, field);
 
-		init(conn);
+		init();
 	}
 
-	public void init(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public void init() throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (parameters == null || parameters.size() < 2) {
 			throw new ForbiddenOperationException("Error initializing transformer: " + this
@@ -193,7 +193,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 			}
 		}
 
-		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.placeholdersSrc, conn);
+		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", this.placeholdersSrc, null);
 	}
 
 	@Override
@@ -202,13 +202,13 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static UuidOnDemanTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
 		return INSTANCES.computeIfAbsent(key, k -> {
 			try {
-				return new UuidOnDemanTransformer(parameters, (DstConf) relatedEtlTransformTarget, field, conn);
+				return new UuidOnDemanTransformer(parameters, (DstConf) relatedEtlTransformTarget, field);
 			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}
@@ -333,8 +333,4 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		return obj != null ? obj.getFieldValue("uuid").toString() : null;
 	}
 
-	@Override
-	public void init(Connection srcConn, Connection dstConn) throws DBException {
-
-	}
 }

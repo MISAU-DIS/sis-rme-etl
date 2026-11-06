@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -43,7 +42,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 	private List<String> rawParameterDefinitions;
 
 	public DateFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
-			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			TransformableField field) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		super(parameters, relatedEtlTargedConf, field);
 
@@ -75,9 +74,9 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 				if (paramName.equals("input")) {
 					if (isTransformerExpression(paramValue)) {
 						this.input = FieldsMapping.fastCreateWithTransformer(relatedEtlTargedConf, field.getDstField(),
-								paramValue, conn);
+								paramValue);
 					} else {
-						this.input = FieldsMapping.fastCreate(relatedEtlTargedConf, paramValue, paramValue, conn);
+						this.input = FieldsMapping.fastCreate(relatedEtlTargedConf, paramValue, paramValue);
 					}
 				} else if (paramName.equals("operation")) {
 					this.operation = DateTransformOperation.valueOf(paramValue.toUpperCase());
@@ -132,7 +131,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static DateFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
-			TransformableField field, Connection conn) {
+			TransformableField field) {
 
 		String key = buildCacheKey(relatedEtlTargedConf, field, parameters);
 
@@ -144,7 +143,7 @@ public class DateFieldTransformer extends AbstractEtlFieldTransformer {
 
 		DateFieldTransformer transformer;
 		try {
-			transformer = new DateFieldTransformer(parameters, relatedEtlTargedConf, field, conn);
+			transformer = new DateFieldTransformer(parameters, relatedEtlTargedConf, field);
 		} catch (FieldAvaliableInMultipleDataSources | DBException e) {
 			throw new EtlConfException(e);
 		}

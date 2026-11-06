@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,7 +65,7 @@ public class ArithmeticFieldTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static ArithmeticFieldTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTargedConf, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTargedConf, TransformableField field) {
 
 		String key = buildCacheKey(relatedEtlTargedConf, field, parameters);
 

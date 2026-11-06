@@ -71,17 +71,17 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	private String tableAlias;
 
 	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget,
-			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			TransformableField field) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		OnDemandInfo o = new OnDemandInfo();
 
-		o.init(parameters, relatedEtlTransformTarget, field, conn);
+		o.init(parameters, relatedEtlTransformTarget, field);
 
 		return o;
 	}
 
-	public void init(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public void init(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		this.relatedEtlTransformTarget = relatedEtlTransformTarget;
 		this.field = field;
@@ -132,7 +132,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 							String dataSourceName = relatedEtlTransformTarget.getPrimaryDataSource().getAlias();
 
 							this.parentSourceIdMapping = FieldsMapping.fastCreate(relatedEtlTransformTarget, srcField,
-									dataSourceName, dstField1, conn);
+									dataSourceName, dstField1);
 						} else {
 							this.parentSourceIdMapping = null;
 						}
@@ -200,14 +200,14 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 							if (isTransformerExpression(relatedEtlTransformTarget.getRelatedEtlConf(),
 									srcFieldOrValue)) {
 								fm = FieldsMapping.fastCreateWithTransformer(relatedEtlTransformTarget, dstField,
-										srcFieldOrValue, conn);
+										srcFieldOrValue);
 							} else {
-								fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget, conn);
+								fm = fastCreateFieldMap(srcFieldOrValue, dstField, relatedEtlTransformTarget);
 							}
 
 							if (srcFieldOrValue == null) {
 								fm.resetAndLoadTransformer(relatedEtlTransformTarget,
-										FieldTransformerType.NULL_VALUE_TRANSFORMER, conn);
+										FieldTransformerType.NULL_VALUE_TRANSFORMER);
 							}
 
 							if (onDemandParentFieldMappings == null) {
@@ -260,7 +260,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 			}
 		}
 
-		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", dynamicElements, conn);
+		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", dynamicElements, null);
 
 	}
 
@@ -286,9 +286,9 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		return "override_fields".equals(map[0]);
 	}
 
-	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField, DstConf transformTarget,
-			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
-		FieldsMapping fieldMap = FieldsMapping.fastCreate(transformTarget, parentFieldName, dstField, conn);
+	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField, DstConf transformTarget)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+		FieldsMapping fieldMap = FieldsMapping.fastCreate(transformTarget, parentFieldName, dstField);
 
 		if (!fieldMap.hasDataSourceName() && !fieldMap.isMapToNullValue()) {
 

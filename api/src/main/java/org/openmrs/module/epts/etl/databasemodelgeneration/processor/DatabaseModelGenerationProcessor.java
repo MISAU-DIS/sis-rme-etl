@@ -238,8 +238,8 @@ public class DatabaseModelGenerationProcessor
 			if (!mapping.hasTransformer()) {
 				continue;
 			}
-			mapping.tryToLoadTransformer(destination, srcConn);
-			mapping.getTransformerInstance().init(srcConn, dstConn);
+			mapping.tryToLoadTransformer(destination);
+			mapping.getTransformerInstance().init();
 			mapping.getTransformerInstance().determineTransformerType();
 
 			if (!mapping.getTransformerType().isParentOnDemand()
@@ -248,7 +248,6 @@ public class DatabaseModelGenerationProcessor
 			}
 
 			ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) mapping.getTransformerInstance();
-			onDemand.init(srcConn, dstConn);
 			generateConfigurationTree(onDemand.getExistingParentItemConf(), operationConfig, srcConn, dstConn);
 			generateConfigurationTree(onDemand.getOnDemandCreateParentItemConf(), operationConfig, srcConn, dstConn);
 		}

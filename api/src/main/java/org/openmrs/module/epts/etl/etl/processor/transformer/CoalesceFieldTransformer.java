@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +71,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 	private final List<FieldsMapping> coalesceFields;
 
 	public CoalesceFieldTransformer(List<Object> parameters, EtlTransformTarget transformTarget,
-			TransformableField field, Connection conn)
+			TransformableField field)
 			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 
 		super(parameters, transformTarget, field);
@@ -83,8 +82,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 			FieldsMapping fm;
 
 			if (isTransformerExpression(obj.toString())) {
-				fm = FieldsMapping.fastCreateWithTransformer(transformTarget, field.getDstField(), obj.toString(),
-						conn);
+				fm = FieldsMapping.fastCreateWithTransformer(transformTarget, field.getDstField(), obj.toString());
 			} else {
 
 				String[] fieldParts = obj.toString().split("\\.");
@@ -99,7 +97,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 					srcFieldName = fieldParts[0];
 				}
 
-				fm = FieldsMapping.fastCreate(transformTarget, srcFieldName, dataSourceName, field.getDstField(), conn);
+				fm = FieldsMapping.fastCreate(transformTarget, srcFieldName, dataSourceName, field.getDstField());
 
 				if (!fm.hasDataSourceName()) {
 					fm.setSrcValue(obj);
@@ -117,7 +115,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static CoalesceFieldTransformer getInstance(List<Object> parameters, EtlTransformTarget EtlTransformTarget,
-			TransformableField field, Connection conn) {
+			TransformableField field) {
 
 		if (parameters == null || parameters.size() < 2) {
 			throw new ForbiddenOperationException("A CoalesceFieldTransformer needs at least 2 parameters.\n"
@@ -128,7 +126,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 
 		return INSTANCES.computeIfAbsent(key, k -> {
 			try {
-				return new CoalesceFieldTransformer(parameters, EtlTransformTarget, field, conn);
+				return new CoalesceFieldTransformer(parameters, EtlTransformTarget, field);
 			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}

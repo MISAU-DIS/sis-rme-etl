@@ -38,14 +38,14 @@ public class ParentOnDemandLoadWithDefaultsTransformer extends ParentOnDemandLoa
 
 	protected static final Map<String, ParentOnDemandLoadWithDefaultsTransformer> INSTANCES = new ConcurrentHashMap<>();
 
-	public ParentOnDemandLoadWithDefaultsTransformer(OnDemandInfo onDemandInfo, Connection conn)
+	public ParentOnDemandLoadWithDefaultsTransformer(OnDemandInfo onDemandInfo)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
-		super(onDemandInfo, conn);
+		super(onDemandInfo);
 	}
 
 	public static ParentOnDemandLoadWithDefaultsTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		List<Object> effectiveParameters = new ArrayList<>();
 
@@ -70,7 +70,7 @@ public class ParentOnDemandLoadWithDefaultsTransformer extends ParentOnDemandLoa
 
 		try {
 			ParentOnDemandLoadWithDefaultsTransformer created = new ParentOnDemandLoadWithDefaultsTransformer(
-					OnDemandInfo.create(effectiveParameters, (DstConf) relatedEtlTransformTarget, field, conn), conn);
+					OnDemandInfo.create(effectiveParameters, (DstConf) relatedEtlTransformTarget, field));
 
 			ParentOnDemandLoadWithDefaultsTransformer previous = INSTANCES.putIfAbsent(key, created);
 

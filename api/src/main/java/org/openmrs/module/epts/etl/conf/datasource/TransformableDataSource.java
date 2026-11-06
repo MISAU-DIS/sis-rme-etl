@@ -284,10 +284,10 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 					field.setAuxFieldMapping(auxFieldMapping);
 
 					field.setTransformer(SimpleValueTransformer.class.getCanonicalName());
-					field.setTransformerInstance(SimpleValueTransformer.getInstance(null, this, field, conn));
+				field.setTransformerInstance(SimpleValueTransformer.getInstance(null, this, field));
 				}
 
-				field.loadType(this, this, conn);
+				field.loadType(this, this);
 			}
 		} else {
 			throw new ForbiddenOperationException(

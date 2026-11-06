@@ -1,7 +1,6 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
 import java.lang.reflect.Method;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,22 +58,22 @@ public class StringTranformerElements {
 		return this.relatedTransformer.getNullOperandBehavior();
 	}
 
-	private synchronized void fullLoad(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	private synchronized void fullLoad() throws FieldAvaliableInMultipleDataSources, DBException {
 		if (!fullLoaded) {
 			if (this.valueToTransform != null) {
 				try {
 					this.auxMapping = FieldsMapping.fastCreate(this.relatedTransformer.getRelatedEtlTransformTarget(),
-							this.valueToTransform.toString(), "anknown_field", conn);
+							this.valueToTransform.toString(), "anknown_field");
 				} catch (FieldNotAvaliableInAnyDataSource e) {
 					this.auxMapping = FieldsMapping.createSimpleFieldsMapping(
 							this.relatedTransformer.getRelatedEtlTransformTarget(), "anknown_field",
-							this.valueToTransform, conn);
+							this.valueToTransform);
 				}
 
 				if (!this.auxMapping.hasDataSourceName()) {
 					this.auxMapping = FieldsMapping.createSimpleFieldsMapping(
 							this.relatedTransformer.getRelatedEtlTransformTarget(), "anknown_field",
-							this.valueToTransform, conn);
+							this.valueToTransform);
 				}
 
 				fullLoaded = true;
@@ -127,7 +126,7 @@ public class StringTranformerElements {
 		}
 	}
 
-	public void init(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	public void init() throws FieldAvaliableInMultipleDataSources, DBException {
 		resolveBestMethod();
 	}
 
@@ -244,13 +243,13 @@ public class StringTranformerElements {
 	}
 
 	public static StringTranformerElements buildChain(Object value, String remaining,
-			StringTranformer relatedTransformer, Connection conn)
+			StringTranformer relatedTransformer)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		StringTranformerElements element = new StringTranformerElements(relatedTransformer);
 
 		element.setValueToTransform(value);
-		element.fullLoad(conn);
+		element.fullLoad();
 
 		if (remaining == null || remaining.isBlank()) {
 			return element;
@@ -292,15 +291,15 @@ public class StringTranformerElements {
 
 		if (!argsStr.isBlank()) {
 			for (String arg : splitArguments(argsStr)) {
-				params.add(parseArgument(arg.trim(), relatedTransformer.getRelatedEtlTransformTarget(), conn));
+				params.add(parseArgument(arg.trim(), relatedTransformer.getRelatedEtlTransformTarget()));
 			}
 		}
 
 		element.setParams(params);
-		element.init(conn);
+		element.init();
 
 		if (!next.isBlank()) {
-			element.setNextElements(buildChain(null, next, relatedTransformer, conn));
+			element.setNextElements(buildChain(null, next, relatedTransformer));
 		}
 
 		return element;
@@ -436,11 +435,11 @@ public class StringTranformerElements {
 		return arguments.toArray(new String[0]);
 	}
 
-	private static FieldsMapping parseArgument(String arg, EtlTransformTarget dstConf, Connection conn)
+	private static FieldsMapping parseArgument(String arg, EtlTransformTarget dstConf)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (FieldsMapping.isTransformerExpression(dstConf.getRelatedEtlConf(), arg)) {
-			return FieldsMapping.fastCreateWithTransformer(dstConf, "anknown_field", arg, conn);
+			return FieldsMapping.fastCreateWithTransformer(dstConf, "anknown_field", arg);
 		}
 
 		arg = arg.trim();
@@ -466,7 +465,7 @@ public class StringTranformerElements {
 
 		if (argInstance instanceof String) {
 			try {
-				map = FieldsMapping.fastCreate(dstConf, arg, conn);
+				map = FieldsMapping.fastCreate(dstConf, arg);
 
 				if (!map.hasDataSourceName()) {
 					map = null;
@@ -476,7 +475,7 @@ public class StringTranformerElements {
 		}
 
 		if (map == null) {
-			map = FieldsMapping.createSimpleFieldsMapping(dstConf, "anknown_field", argInstance, conn);
+			map = FieldsMapping.createSimpleFieldsMapping(dstConf, "anknown_field", argInstance);
 		}
 
 		return map;

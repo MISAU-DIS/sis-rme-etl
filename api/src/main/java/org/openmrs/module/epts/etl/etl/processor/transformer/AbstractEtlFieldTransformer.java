@@ -71,16 +71,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		this.skipRelationshipResolutionForFields = skipRelationshipResolutionForFields;
 	}
 
-	public AbstractEtlFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTargedConf,
-			TransformableField field, Connection conn)
-			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
-
-		this(parameters, relatedEtlTargedConf, field);
-
-		loadParameters(conn);
-	}
-
-	protected void loadParameters(Connection conn)
+	protected void loadParameters()
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
 		if (utilities.listHasElement(this.parameters)) {
@@ -105,10 +96,10 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				if (paramName.equals("input")) {
 					if (isTransformerExpression(paramValue)) {
 						this.input = FieldsMapping.fastCreateWithTransformer(this.getRelatedEtlTransformTarget(),
-								field.getDstField(), paramValue, conn);
+								field.getDstField(), paramValue);
 					} else {
 						this.input = FieldsMapping.fastCreate(this.getRelatedEtlTransformTarget(), paramValue,
-								paramValue, conn);
+								paramValue);
 					}
 
 					this.inputExpression = paramValue;

@@ -103,14 +103,14 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	}
 
 	private FieldsMapping(EtlTransformTarget target, String srcFieldFullName, String providedDataSourceName,
-			String dstField, String providedTransformer, Connection conn)
+			String dstField, String providedTransformer)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
-		this(target, srcFieldFullName, providedDataSourceName, dstField, providedTransformer, false, conn);
+		this(target, srcFieldFullName, providedDataSourceName, dstField, providedTransformer, false);
 	}
 
 	private FieldsMapping(EtlTransformTarget target, String srcFieldFullName, String providedDataSourceName,
-			String dstField, String providedTransformer, boolean ignoreDataSourceIssues, Connection conn)
+			String dstField, String providedTransformer, boolean ignoreDataSourceIssues)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
 		this();
@@ -141,7 +141,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		if (tryToLoadDataSourceAndTransformer) {
 			try {
-				this.tryToLoadDataSourceAndTransformer(conn);
+				this.tryToLoadDataSourceAndTransformer();
 			} catch (FieldsMappingException | MissingFieldException e) {
 
 				if (!ignoreDataSourceIssues) {
@@ -155,7 +155,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		}
 	}
 
-	private void tryToLoadDataSourceAndTransformer(Connection conn)
+	private void tryToLoadDataSourceAndTransformer()
 			throws FieldAvaliableInMultipleDataSources, InvalidDataSourceOnFieldDefifitionException, DBException {
 
 		EtlTransformTarget target = this.getTransformationTargetObject();
@@ -176,7 +176,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			}
 		} else {
 			try {
-				target.tryToLoadDataSourceToFieldMapping(this, conn);
+				target.tryToLoadDataSourceToFieldMapping(this);
 			} catch (FieldNotAvaliableInAnyDataSource e) {
 
 				// If is not likely to be a table column then we have 70% of certainty that it
@@ -192,7 +192,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		}
 
-		this.tryToLoadTransformer(target, conn);
+		this.tryToLoadTransformer(target);
 	}
 
 	public ActionOnEtlIssue getIncompleteMappingBehavior() {
@@ -318,14 +318,41 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 	public static FieldsMapping createSimpleFieldsMapping(EtlTransformTarget target, String fieldName, Object value,
 			Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		FieldsMapping map = new FieldsMapping(target, fieldName, null, fieldName, null, true, conn);
+		FieldsMapping map = new FieldsMapping(target, fieldName, null, fieldName, null, true);
 
 		map.setSrcField(null);
 		map.setSrcValue(value);
 		map.setTransformer(SimpleValueTransformer.class.getCanonicalName());
-		map.tryToLoadTransformer(target, conn);
+		map.tryToLoadTransformer(target);
 
 		return map;
+	}
+
+	public static FieldsMapping createSimpleFieldsMapping(EtlTransformTarget target, String fieldName, Object value)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+		return createSimpleFieldsMapping(target, fieldName, value, (Connection) null);
+	}
+
+	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+		return fastCreate(transformTarget, srcField, (Connection) null);
+	}
+
+	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField, String destField)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+		return fastCreate(transformTarget, srcField, destField, (Connection) null);
+	}
+
+	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField,
+			String providedDataSourceName, String destField)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+		return fastCreate(transformTarget, srcField, providedDataSourceName, destField, null);
+	}
+
+	public static FieldsMapping fastCreateWithTransformer(EtlTransformTarget transformTarget, String dstField,
+			String transformer)
+			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
+		return fastCreateWithTransformer(transformTarget, dstField, transformer, null);
 	}
 
 	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField, Connection conn)
@@ -334,7 +361,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		String dstField = null;
 		String dataSourceName = null;
 
-		return new FieldsMapping(transformTarget, srcField, dataSourceName, dstField, transformer, conn);
+		return new FieldsMapping(transformTarget, srcField, dataSourceName, dstField, transformer);
 	}
 
 	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField, String destField,
@@ -343,7 +370,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		String providedDataSourceName = null;
 
-		return new FieldsMapping(transformTarget, srcField, providedDataSourceName, destField, null, conn);
+		return new FieldsMapping(transformTarget, srcField, providedDataSourceName, destField, null);
 	}
 
 	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField, String destField,
@@ -353,21 +380,21 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		String providedDataSourceName = null;
 
 		return new FieldsMapping(transformTarget, srcField, providedDataSourceName, destField, null,
-				ignoreDataSourceIssues, conn);
+				ignoreDataSourceIssues);
 	}
 
 	public static FieldsMapping fastCreateWithTransformer(EtlTransformTarget transformTarget, String dstField,
 			String transformer, Connection conn)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
-		return new FieldsMapping(transformTarget, null, null, dstField, transformer, conn);
+		return new FieldsMapping(transformTarget, null, null, dstField, transformer);
 	}
 
 	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, String srcField,
 			String providedDataSourceName, String destField, Connection conn)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
-		return new FieldsMapping(transformTarget, srcField, providedDataSourceName, destField, null, conn);
+		return new FieldsMapping(transformTarget, srcField, providedDataSourceName, destField, null);
 	}
 
 	public static FieldsMapping fastCreate(EtlTransformTarget transformTarget, TransformableDataSourceField dsF,
@@ -385,7 +412,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 					String srcField = null;
 					String dataSourceName = null;
 
-					f = new FieldsMapping(target, srcField, dataSourceName, dstField, transformer, conn);
+					f = new FieldsMapping(target, srcField, dataSourceName, dstField, transformer);
 				} else {
 					throw new ForbiddenOperationException("Only a targed parent is accepted!!");
 				}
@@ -396,7 +423,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 				String transformer = null;
 				String dataSourceName = null;
 
-				f = new FieldsMapping(target, srcField, dataSourceName, dstField, transformer, conn);
+				f = new FieldsMapping(target, srcField, dataSourceName, dstField, transformer);
 			}
 		}
 
@@ -590,7 +617,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 			} else {
 				// If there is no srcField then there must be a transformer
 
-				fm.loadType(target, null, conn);
+				fm.loadType(target, null);
 
 				dstField = Field.fastCreateField(fm.getDstField());
 
@@ -660,7 +687,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		fm.setSrcField(field.getSrcField().getName());
 		fm.setDataSourceName(field.getSrcDataSource().getName());
 		fm.setDstField(field.getName());
-		fm.tryToLoadTransformer(target, conn);
+		fm.tryToLoadTransformer(target);
 
 		return fm;
 	}
@@ -821,7 +848,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 
 		for (FieldsMapping f : toClone) {
 			FieldsMapping clonedF = new FieldsMapping(f.getTransformationTargetObject(), f.getSrcField(),
-					f.getDataSourceName(), f.getDstField(), f.getTransformer(), conn);
+					f.getDataSourceName(), f.getDstField(), f.getTransformer());
 
 			clonedF.setSrcValue(f.getSrcValue());
 			clonedF.setDstValue(f.getDstValue());
@@ -907,8 +934,7 @@ public class FieldsMapping extends Field implements TransformableField, Conditio
 		fm.setDstField(token);
 		fm.setSrcValue(paramsAsDataSource.getParamValue(token));
 
-		fm.tryToLoadTransformer(FastEtlTransformingTarget.fastCreate(paramsAsDataSource.getRelatedEtlConf(), null),
-				conn);
+		fm.tryToLoadTransformer(FastEtlTransformingTarget.fastCreate(paramsAsDataSource.getRelatedEtlConf(), null));
 
 		return fm;
 	}

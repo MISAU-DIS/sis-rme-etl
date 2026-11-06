@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.conf.interfaces;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -168,8 +167,8 @@ public interface TransformableField {
 		return utilities.stringHasValue(this.getDataType());
 	}
 
-	default void loadType(EtlTransformTarget dstConf, EtlDataSource dataSource, Connection conn) {
-		tryToLoadTransformer(dstConf, conn);
+	default void loadType(EtlTransformTarget dstConf, EtlDataSource dataSource) {
+		tryToLoadTransformer(dstConf);
 
 		if (this.hasDataType()) {
 			if (!utilities.isStringIn(this.getDataType().toLowerCase(), "int", "double", "string", "date", "long",
@@ -228,23 +227,22 @@ public interface TransformableField {
 		return utilities.stringHasValue(getTransformer());
 	}
 
-	default void tryToLoadTransformer(EtlTransformTarget dstConf, Connection conn) {
+	default void tryToLoadTransformer(EtlTransformTarget dstConf) {
 		this.init(dstConf);
 
-		FieldTransformerType.tryToLoadTransformerToField(this, dstConf, conn);
+		FieldTransformerType.tryToLoadTransformerToField(this, dstConf);
 	}
 
-	default void resetAndLoadTransformer(EtlTransformTarget dstConf, FieldTransformerType newTransformer,
-			Connection conn) {
+	default void resetAndLoadTransformer(EtlTransformTarget dstConf, FieldTransformerType newTransformer) {
 		this.setTransformer(newTransformer.getClassName());
 		this.setTransformerInstance(null);
-		this.tryToLoadTransformer(dstConf, conn);
+		this.tryToLoadTransformer(dstConf);
 	}
 
-	default void resetAndLoadTransformer(EtlTransformTarget dstConf, String newTransformer, Connection conn) {
+	default void resetAndLoadTransformer(EtlTransformTarget dstConf, String newTransformer) {
 		this.setTransformer(newTransformer);
 		this.setTransformerInstance(null);
-		this.tryToLoadTransformer(dstConf, conn);
+		this.tryToLoadTransformer(dstConf);
 	}
 
 	default Boolean useDefaultTransformer() {

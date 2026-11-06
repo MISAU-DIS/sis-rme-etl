@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AtomicCondition;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -22,6 +23,7 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalEtlElement {
 
@@ -215,7 +217,33 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 		return null;
 	}
 
-	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
+	default void tryToLoadDataSourceToFieldMapping(FieldsMapping fm)
+			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
+		OpenConnection localConnection = null;
+		Connection conn = null;
+		EtlItemConfiguration item = this instanceof EtlItemConfigurationComponent
+				? ((EtlItemConfigurationComponent) this).getParentEtlItemConf()
+				: null;
+		boolean needsJdbc = !this.isLoadedDataSourceInfo()
+				|| (this.hasMappingResolutionStrategy() && this.mappingResolutionStrategy().allowDefault())
+				|| (this.hasUnmappedFieldBehavior() && this.unmappedFieldBehavior().useDefaultOnMissingMapping());
+		try {
+			if (needsJdbc && item != null) {
+				localConnection = item.getRelatedEtlConf().openSrcConn(item);
+				conn = localConnection;
+			}
+			tryToLoadDataSourceToFieldMapping(fm, conn);
+			if (localConnection != null) {
+				localConnection.markAsSuccessifullyTerminated();
+			}
+		} finally {
+			if (localConnection != null) {
+				localConnection.finalizeConnection(item);
+			}
+		}
+	}
+
+	private void tryToLoadDataSourceToFieldMapping(FieldsMapping fm, Connection conn)
 			throws FieldNotAvaliableInAnyDataSource, FieldAvaliableInMultipleDataSources, DBException {
 
 		getRelatedEtlConf().trace(
@@ -223,7 +251,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 				fm.getTransformer(), this);
 
 		if (fm.hasTransformer()) {
-			fm.tryToLoadTransformer(this, conn);
+			fm.tryToLoadTransformer(this);
 
 			if (!fm.useDefaultTransformer()) {
 				if (fm.useSimpleValueTransformer() && (fm.hasValue() || fm.getTransformerInstance().hasInput())) {
@@ -269,7 +297,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 
 						throw e;
 					}
-					fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER, conn);
+					fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER);
 				} else {
 					throw new ForbiddenOperationException("The default object was not generated...!");
 				}
@@ -284,7 +312,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 					fm.setDataSourceName(pref.getAlias());
 					fm.setDataSource(pref);
 
-					fm.loadType(this, pref, conn);
+					fm.loadType(this, pref);
 
 					if (fm.getDefaultValue() == null) {
 
@@ -319,7 +347,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 					} else {
 						fm.setDataSourceName(notPref.getAlias());
 						fm.setDataSource(notPref);
-						fm.loadType(this, notPref, conn);
+						fm.loadType(this, notPref);
 					}
 				}
 			}
@@ -339,7 +367,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 					fm.setSrcField(parentRelatedDs.getPrimaryKey().asSimpleKey().getName());
 					fm.setDataSourceName(parentRelatedDs.getAlias());
 					fm.setDataSource(parentRelatedDs);
-					fm.loadType(this, parentRelatedDs, conn);
+					fm.loadType(this, parentRelatedDs);
 				}
 			}
 
@@ -359,7 +387,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 					} else {
 						fm.setDataSourceName(ds.getAlias());
 						fm.setDataSource((EtlDataSource) ds);
-						fm.loadType(this, (EtlDataSource) ds, conn);
+						fm.loadType(this, (EtlDataSource) ds);
 					}
 				}
 			}
@@ -368,7 +396,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 		Boolean hasTransformer = fm.hasTransformer() && !fm.useDefaultTransformer();
 
 		if (hasTransformer) {
-			fm.loadType(this, null, conn);
+			fm.loadType(this, null);
 
 			if (fm.getDataSource() == null) {
 				fm.setDataSource(this.getPrimaryDataSource());
@@ -382,7 +410,7 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 
 					if (defaultObject != null) {
 						fm.setSrcValue(defaultObject.getFieldValue(fm.getDstField()));
-						fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER, conn);
+						fm.resetAndLoadTransformer(this, FieldTransformerType.SIMPLE_VALUE_TRANSFORMER);
 					}
 				} else if (!unmappedFieldBehavior().ignore()) {
 					throw new FieldNotAvaliableInAnyDataSource(fm.getSrcField());

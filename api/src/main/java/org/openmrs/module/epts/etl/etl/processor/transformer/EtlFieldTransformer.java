@@ -211,7 +211,7 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 		return FieldTransformerType.CUSTOM_TRANSFORMER;
 	}
 
-	default void init(Connection srcConn, Connection dstConn) throws DBException {
+	default void init() throws DBException {
 
 	}
 

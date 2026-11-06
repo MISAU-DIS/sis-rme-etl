@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -133,11 +132,12 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 	private StringTranformerElements transformerElements;
 
 	public StringTranformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
-			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			TransformableField field) throws FieldAvaliableInMultipleDataSources, DBException {
 
-		super(parameters, relatedEtlTransformTarget, field, conn);
+		super(parameters, relatedEtlTransformTarget, field);
 
-		loadTransformerElements(conn);
+		loadParameters();
+		loadTransformerElements();
 	}
 
 	public ActionOnEtlIssue getNullOperandBehavior() {
@@ -145,7 +145,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 	}
 
 	@Override
-	protected void loadParameters(Connection conn)
+	protected void loadParameters()
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
 		if (utilities.listHasElement(this.parameters)) {
@@ -191,7 +191,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		}
 	}
 
-	private void loadTransformerElements(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+	private void loadTransformerElements() throws FieldAvaliableInMultipleDataSources, DBException {
 
 		String expr = this.getInputExpression();
 
@@ -209,7 +209,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 
 		String remaining = expr.substring(firstClose + 1).trim();
 
-		this.transformerElements = StringTranformerElements.buildChain(initialValue, remaining, this, conn);
+		this.transformerElements = StringTranformerElements.buildChain(initialValue, remaining, this);
 
 		if (this.getNullOperandBehavior() == null) {
 			setOnNullTransformedValue(this.getGeneralBehaviourOnEtlException());
@@ -223,12 +223,12 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static StringTranformer getInstance(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
-			TransformableField field, Connection conn) {
+			TransformableField field) {
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
 		return INSTANCES.computeIfAbsent(key, k -> {
 			try {
-				return new StringTranformer(parameters, relatedEtlTransformTarget, field, conn);
+				return new StringTranformer(parameters, relatedEtlTransformTarget, field);
 			} catch (FieldAvaliableInMultipleDataSources | DBException e) {
 				throw new EtlExceptionImpl(e);
 			}

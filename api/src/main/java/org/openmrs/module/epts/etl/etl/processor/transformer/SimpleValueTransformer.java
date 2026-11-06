@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,20 +46,21 @@ public class SimpleValueTransformer extends AbstractEtlFieldTransformer {
 	protected static final Map<String, SimpleValueTransformer> INSTANCES = new ConcurrentHashMap<>();
 
 	private SimpleValueTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
-			TransformableField field, Connection conn)
+			TransformableField field)
 			throws InvalidDataSourceOnFieldDefifitionException, FieldAvaliableInMultipleDataSources, DBException {
 
-		super(parameters, relatedEtlTransformTarget, field, conn);
+		super(parameters, relatedEtlTransformTarget, field);
+		loadParameters();
 	}
 
 	public static SimpleValueTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
 		return INSTANCES.computeIfAbsent(key, k -> {
 			try {
-				return new SimpleValueTransformer(parameters, relatedEtlTransformTarget, field, conn);
+				return new SimpleValueTransformer(parameters, relatedEtlTransformTarget, field);
 			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}

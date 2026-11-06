@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +49,7 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static DefaultFieldTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		if (INSTANCE == null) {
 			INSTANCE = new DefaultFieldTransformer(parameters, relatedEtlTransformTarget, field);

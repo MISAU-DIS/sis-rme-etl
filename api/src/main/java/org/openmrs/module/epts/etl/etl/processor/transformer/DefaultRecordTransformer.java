@@ -128,7 +128,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		} catch (FieldsMappingException e) {
 			pkMapping = FieldsMapping.fastCreate(dstConf, pkField.getName(), dstConn);
 
-			pkMapping.tryToLoadTransformer(dstConf, dstConn);
+			pkMapping.tryToLoadTransformer(dstConf);
 		}
 
 		List<EtlDatabaseObject> availableSrcList = availableSrcObjs != null ? new ArrayList<>(availableSrcObjs)

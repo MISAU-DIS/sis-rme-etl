@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +57,7 @@ public class NullValueTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static NullValueTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		if (utilities.listHasElement(parameters)) {
 			throw new EtlConfException("No parameters are allowed for " + NullValueTransformer.class.getName());

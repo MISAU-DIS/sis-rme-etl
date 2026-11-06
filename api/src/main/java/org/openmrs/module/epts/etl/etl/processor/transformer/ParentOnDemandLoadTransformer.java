@@ -199,7 +199,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 	private final OnDemandParentService parentService = OnDemandParentService.getInstance();
 
-	public ParentOnDemandLoadTransformer(OnDemandInfo onDemandInfo, Connection conn)
+	public ParentOnDemandLoadTransformer(OnDemandInfo onDemandInfo)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		super(onDemandInfo.getOriginalParameters(), onDemandInfo.getRelatedEtlTransformTarget(),
@@ -222,7 +222,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static ParentOnDemandLoadTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
@@ -230,7 +230,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 			try {
 				return new ParentOnDemandLoadTransformer(
-						OnDemandInfo.create(parameters, (DstConf) relatedEtlTransformTarget, field, conn), conn);
+						OnDemandInfo.create(parameters, (DstConf) relatedEtlTransformTarget, field));
 			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}
@@ -783,13 +783,28 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	@Override
-	public void init(Connection srcConn, Connection dstConn) throws DBException {
-
-		if (sourceParentMayExists()) {
-			ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
+	public void init() throws DBException {
+		EtlItemConfiguration item = getRelatedEtlTransformTarget().getParentEtlItemConf();
+		org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection srcConn = null;
+		org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection dstConn = null;
+		try {
+			srcConn = item.getRelatedEtlConf().openSrcConn(item);
+			dstConn = getRelatedEtlTransformTarget().getRelatedConnInfo()
+					.openConnection(getRelatedEtlTransformTarget());
+			if (sourceParentMayExists()) {
+				ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
+			}
+			ensureEtlTransformTargetForNonExistingSrcParentInitialized(true, srcConn, dstConn);
+			srcConn.markAsSuccessifullyTerminated();
+			dstConn.markAsSuccessifullyTerminated();
+		} finally {
+			if (srcConn != null) {
+				srcConn.finalizeConnection(item);
+			}
+			if (dstConn != null) {
+				dstConn.finalizeConnection(getRelatedEtlTransformTarget());
+			}
 		}
-
-		ensureEtlTransformTargetForNonExistingSrcParentInitialized(true, srcConn, dstConn);
 	}
 
 	public EtlItemConfiguration getExistingParentItemConf() {

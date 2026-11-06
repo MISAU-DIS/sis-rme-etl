@@ -488,7 +488,7 @@ public class DstConf extends AbstractTableConfiguration
 
 				fm.tryToLoadDataSourceInfoFromSrcField(this);
 
-				fm.tryToLoadTransformer(this, conn);
+				fm.tryToLoadTransformer(this);
 
 				if (fm.hasTransformer() && fm.isSetToNullValue()) {
 					fm.setSrcValue(null);
@@ -497,7 +497,7 @@ public class DstConf extends AbstractTableConfiguration
 				if (!fm.hasDataSourceName()) {
 
 					try {
-						tryToLoadDataSourceToFieldMapping(fm, conn);
+						tryToLoadDataSourceToFieldMapping(fm);
 					} catch (FieldNotAvaliableInAnyDataSource e) {
 						Field f = getField(fm.getDstField());
 
@@ -595,9 +595,9 @@ public class DstConf extends AbstractTableConfiguration
 						if (this.hasMapping() && this.getMapping().contains(fm)) {
 							fm = utilities.findOnList(this.getMapping(), fm);
 						} else {
-							fm.tryToLoadTransformer(this, conn);
+							fm.tryToLoadTransformer(this);
 
-							tryToLoadDataSourceToFieldMapping(fm, conn);
+							tryToLoadDataSourceToFieldMapping(fm);
 						}
 
 						addMapping(fm);
@@ -1399,15 +1399,14 @@ public class DstConf extends AbstractTableConfiguration
 				if (!map.hasTransformer()) {
 					continue;
 				}
-				map.tryToLoadTransformer(this, srcConn);
-				map.getTransformerInstance().init(srcConn, dstConn);
+				map.tryToLoadTransformer(this);
+				map.getTransformerInstance().init();
 				map.getTransformerInstance().determineTransformerType();
 
 				if (map.getTransformerType().isParentOnDemand()
 						|| map.getTransformerType().isParentOnDemandWithDefaults()) {
 					ParentOnDemandLoadTransformer onDemand = (ParentOnDemandLoadTransformer) map
 							.getTransformerInstance();
-					onDemand.init(srcConn, dstConn);
 
 					if (onDemand.getExistingParentItemConf() != null) {
 						onDemand.getExistingParentItemConf().ensureEtlStageTableExists(counter,

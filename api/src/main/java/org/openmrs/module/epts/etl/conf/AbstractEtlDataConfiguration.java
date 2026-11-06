@@ -80,7 +80,7 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 			return false;
 
 		FieldsMapping map = FieldsMapping.fastCreate(FastEtlTransformingTarget.fastCreate(etlConfiguration, null, null),
-				"tmp", null);
+				"tmp");
 
 		map.setTransformer(transformer);
 

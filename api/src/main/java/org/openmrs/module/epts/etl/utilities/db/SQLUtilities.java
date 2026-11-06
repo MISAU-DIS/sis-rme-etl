@@ -2360,7 +2360,7 @@ public class SQLUtilities {
 			return false;
 
 		FieldsMapping map = FieldsMapping.fastCreate(FastEtlTransformingTarget.fastCreate(etlConfiguration, null, null),
-				"tmp", null);
+				"tmp");
 
 		map.setTransformer(transformer);
 
@@ -2984,9 +2984,9 @@ public class SQLUtilities {
 		} else {
 			map = FieldsMapping.fastCreate(transformingTarget, "tmp_field", conn);
 		}
-		map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement, conn);
+		map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement);
 
-		map.tryToLoadTransformer(map.getTransformationTargetObject(), conn);
+		map.tryToLoadTransformer(map.getTransformationTargetObject());
 
 		if (map.getTransformerInstance() instanceof FastSqlFieldTransformer) {
 			map.getTransformerInstance().setOnNullTransformedValue(ActionOnEtlIssue.SET_TO_NULL);

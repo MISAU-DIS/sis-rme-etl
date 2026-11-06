@@ -119,7 +119,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 	private List<String> rawParameterDefinitions;
 
 	public MappingFieldTransformer(List<Object> parameters, EtlTransformTarget relatedEtlTransformTarget,
-			TransformableField field, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			TransformableField field) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		super(parameters, relatedEtlTransformTarget, field);
 
@@ -157,9 +157,9 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 				if (paramName.equals("input")) {
 					if (isTransformerExpression(paramValue)) {
 						this.input = FieldsMapping.fastCreateWithTransformer(relatedEtlTransformTarget,
-								field.getDstField(), paramValue, conn);
+								field.getDstField(), paramValue);
 					} else {
-						this.input = FieldsMapping.fastCreate(relatedEtlTransformTarget, paramValue, conn);
+						this.input = FieldsMapping.fastCreate(relatedEtlTransformTarget, paramValue);
 					}
 				} else if (paramName.equals("extra_condition")) {
 					this.extraCondition = paramValue;
@@ -228,13 +228,13 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	public static MappingFieldTransformer getInstance(List<Object> parameters,
-			EtlTransformTarget relatedEtlTransformTarget, TransformableField field, Connection conn) {
+			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
 		String key = buildCacheKey(relatedEtlTransformTarget, field, parameters);
 
 		return INSTANCES.computeIfAbsent(key, k -> {
 			try {
-				return new MappingFieldTransformer(parameters, relatedEtlTransformTarget, field, conn);
+				return new MappingFieldTransformer(parameters, relatedEtlTransformTarget, field);
 			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}

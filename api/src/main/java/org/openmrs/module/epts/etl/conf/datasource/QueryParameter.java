@@ -249,7 +249,7 @@ public class QueryParameter extends Field {
 						+ " cannot be transformed as it does not occure in any datasource");
 			}
 
-			map.tryToLoadTransformer(target, conn);
+			map.tryToLoadTransformer(target);
 
 		} else {
 			map = FieldsMapping.fastCreate(target, "@" + this.getName(), this.getName(), conn);
