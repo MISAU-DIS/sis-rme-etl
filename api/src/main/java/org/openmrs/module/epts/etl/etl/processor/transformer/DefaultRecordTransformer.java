@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
@@ -371,16 +372,19 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			if (!srcConf.doNotUseAsDatasource()) {
 
 				for (EtlAdditionalDataSource ds : srcConf.getParentSource().getAvailableAdditionalDataSources()) {
+					ConnectorRecordReader<?> reader = processor.getRecordReader(ds);
+					Connection dataSourceConnection = unwrapConnection(reader);
 
 					List<EtlDatabaseObject> avaliableObjects = srcObjects.stream()
 							.collect(java.util.stream.Collectors.toList());
 
-					if (!ds.shouldBeProcessed(srcObject, srcObjects, srcConn, srcConn)) {
+					if (!ds.shouldBeProcessed(srcObject, srcObjects, dataSourceConnection,
+							dataSourceConnection)) {
 						continue;
 					}
 
 					EtlDatabaseObject relatedSrcObject = ds.loadRelatedSrcObject(processor, srcObject, dstObject,
-							avaliableObjects, srcConn);
+							avaliableObjects, reader);
 
 					if (relatedSrcObject == null) {
 
@@ -400,6 +404,14 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					collectToSrcObjects(relatedSrcObject, srcObjects);
 				}
 			}
+		}
+	}
+
+	private Connection unwrapConnection(ConnectorRecordReader<?> reader) {
+		try {
+			return reader.unwrap(Connection.class);
+		} catch (IllegalArgumentException e) {
+			return null;
 		}
 	}
 }

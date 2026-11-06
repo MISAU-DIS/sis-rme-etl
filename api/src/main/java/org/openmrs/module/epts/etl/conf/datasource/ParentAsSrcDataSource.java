@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -37,7 +38,7 @@ public class ParentAsSrcDataSource extends ParentTableImpl implements EtlAdditio
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject dstObject,
-			List<EtlDatabaseObject> avaliableSrcObjects, Connection srcConn)
+			List<EtlDatabaseObject> avaliableSrcObjects, ConnectorRecordReader<?> reader)
 			throws DBException {
 
 

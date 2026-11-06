@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -37,12 +38,12 @@ public class JsonMainOutputDataSource extends JsonSimpleOutputDataSource {
 	
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
+	        EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, ConnectorRecordReader<?> reader) throws DBException {
 		
 		if (getParent() == null)
 			throw new EtlExceptionImpl("The related JsonDataSource was not set!");
 		
-		return this.parent.loadRelatedSrcObject(processor, srcObject, dstObject, avaliableSrcObjects, conn);
+		return this.parent.loadRelatedSrcObject(processor, srcObject, dstObject, avaliableSrcObjects, reader);
 	}
 	
 	@Override

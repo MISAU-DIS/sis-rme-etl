@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.conf.interfaces;
 
-import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +7,7 @@ import java.util.Map;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -59,12 +59,12 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 	 *
 	 * @param avaliableSrcObjects list of already loaded source objects that may be
 	 *                            used as context
-	 * @param conn                the database connection to use
+	 * @param reader              reader resolved for this data source resource
 	 * @return the related {@link EtlDatabaseObject} instance
 	 * @throws DBException if a database error occurs during execution
 	 */
 	EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, ConnectorRecordReader<?> reader)
 			throws DBException;
 
 	/**

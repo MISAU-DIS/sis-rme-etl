@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.Extension;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
@@ -456,8 +457,9 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, ConnectorRecordReader<?> reader)
 			throws DBException {
+		Connection conn = reader.unwrap(Connection.class);
 
 		if (avaliableSrcObjects != null) {
 			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), conn, conn)) {

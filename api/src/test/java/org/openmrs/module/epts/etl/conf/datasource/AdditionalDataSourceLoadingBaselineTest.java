@@ -9,14 +9,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
- * Characterizes the legacy additional-source loading boundary before it is
- * migrated from {@link Connection} to connector readers.
+ * Verifies that JDBC additional sources use the connection exposed by their
+ * own connector reader.
  */
 class AdditionalDataSourceLoadingBaselineTest {
 
@@ -29,7 +30,7 @@ class AdditionalDataSourceLoadingBaselineTest {
 		dataSource.setDefaultPreparedQuery(query);
 
 		EtlDatabaseObject loaded = dataSource.loadRelatedSrcObject(null, null, null,
-				Collections.emptyList(), connection);
+				Collections.emptyList(), JdbcConnectorRuntimeAdapters.reader(connection));
 
 		assertSame(connection, query.connection);
 		assertSame(expected, loaded);
@@ -44,7 +45,8 @@ class AdditionalDataSourceLoadingBaselineTest {
 		dataSource.setQuery("select 1");
 		dataSource.setDefaultPreparedQuery(query);
 
-		EtlDatabaseObject loaded = dataSource.loadRelatedSrcObject(null, null, null, null, connection);
+		EtlDatabaseObject loaded = dataSource.loadRelatedSrcObject(null, null, null, null,
+				JdbcConnectorRuntimeAdapters.reader(connection));
 
 		assertSame(connection, query.connection);
 		assertSame(expected, loaded);
