@@ -548,15 +548,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				jdbcConnections.put(connectorEndpointKey(primaryResource), primaryConnection);
 			}
 
-			Set<EtlAdditionalDataSource> additionalSources = Collections.newSetFromMap(new IdentityHashMap<>());
-			additionalSources.addAll(source.getConfiguredAdditionalDataSources());
-			additionalSources.addAll(source.getAvailableAdditionalDataSources());
+			Map<EtlDataSource, ConnectorResource> sourceResources = collectSourceConfigurations();
 
-			for (EtlAdditionalDataSource additional : additionalSources) {
-				ConnectorResource resource = additional.getResolvedResource();
+			for (Map.Entry<EtlDataSource, ConnectorResource> entry : sourceResources.entrySet()) {
+				EtlDataSource dataSource = entry.getKey();
+				ConnectorResource resource = entry.getValue();
+
+				if (dataSource == primary) {
+					continue;
+				}
 
 				if (resource == null) {
-					throw new IllegalStateException("No resolved resource for additional data source " + additional);
+					throw new IllegalStateException("No resolved resource for data source " + dataSource);
 				}
 
 				ConnectorRecordReader<? extends EtlDatabaseObject> reader = readers.get(resource);
@@ -578,13 +581,46 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					reader = new ResourceBoundConnectorRecordReader<>(resource, nativeState);
 					readers.put(resource, reader);
 				}
-				resources.put(additional, resource);
+				resources.put(dataSource, resource);
 			}
 
 			return new ConnectorRecordReaders(primaryReader, readers, resources);
 		} catch (DBException | RuntimeException exception) {
 			OpenConnection.finalizeAllConnections(openedConnections, openedFrom);
 			throw exception;
+		}
+	}
+
+	private Map<EtlDataSource, ConnectorResource> collectSourceConfigurations() {
+		Map<EtlDataSource, ConnectorResource> sourceResources = new IdentityHashMap<>();
+		Set<EtlItemConfiguration> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+		collectSourceConfigurations(this, sourceResources, visited);
+		return sourceResources;
+	}
+
+	private void collectSourceConfigurations(EtlItemConfiguration item,
+			Map<EtlDataSource, ConnectorResource> sourceResources, Set<EtlItemConfiguration> visited) {
+		if (item == null || !visited.add(item) || item.getSource() == null) {
+			return;
+		}
+
+		PrimaryDataSourceConfiguration itemPrimary = item.getPrimaryDataSource();
+		if (itemPrimary != null) {
+			sourceResources.put(itemPrimary, item.getResolvedSrcResource());
+		}
+
+		Set<EtlAdditionalDataSource> additionalSources = Collections.newSetFromMap(new IdentityHashMap<>());
+		additionalSources.addAll(item.getSource().getConfiguredAdditionalDataSources());
+		additionalSources.addAll(item.getSource().getAvailableAdditionalDataSources());
+
+		for (EtlAdditionalDataSource additional : additionalSources) {
+			sourceResources.put(additional, additional.getResolvedResource());
+		}
+
+		if (item.getChildItemConf() != null) {
+			for (EtlChildItemConfiguration child : item.getChildItemConf()) {
+				collectSourceConfigurations(child, sourceResources, visited);
+			}
 		}
 	}
 
