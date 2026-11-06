@@ -786,6 +786,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	@Override
 	public void init() throws DBException {
 		EtlItemConfiguration item = getRelatedEtlTransformTarget().getParentEtlItemConf();
+
 		OpenConnection srcConn = null;
 		OpenConnection dstConn = null;
 

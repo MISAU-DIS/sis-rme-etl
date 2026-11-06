@@ -159,6 +159,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	protected void loadConfiguredRecordSchema() throws DBException {
+
 		if (recordSchema == null) {
 			throw new EtlConfException("recordSchema is required for non-JDBC resource " + getResourceDescription());
 		}
@@ -177,6 +178,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	private String getResourceDescription() {
+
 		if (resolvedResource == null) {
 			return String.valueOf(this);
 		}
@@ -327,9 +329,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
+
 		if (usesNonJdbcResource()) {
 			if (this.isFullLoaded())
 				return;
+
 			synchronized (this) {
 				if (this.isFullLoaded())
 					return;
@@ -392,6 +396,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		TableConfiguration.super.init(relatedParent, etlSchemaObject, srcConn, dstConn);
 
 		if (hasParents()) {
+
 			for (ParentTable p : this.getParents()) {
 				p.setParentConf(this.getParentConf());
 			}
@@ -425,6 +430,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private PhysicalTableMetadata resolvePhysicalTableMetadata(Connection conn)
 			throws java.io.IOException, SQLException {
+
 		if (this.getRelatedEtlConf().isDatabaseModelRegenerationMode()) {
 			this.physicalMetadataLoadedFromStaticData = false;
 			return null;
@@ -440,7 +446,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 					? files.find(dataModelId, this.getTableName())
 					: files.find(this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), this.getSchema(),
 							this.getTableName());
+
 			if (stored.isPresent()) {
+
 				try {
 					validateManifestAssociation(stored.get());
 					this.physicalMetadataLoadedFromStaticData = true;
@@ -453,6 +461,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 							this.getTableName(), exception.getMessage());
 				}
 			}
+
 			if (!mode.allowsJdbcFallback()) {
 				String modelDescription = utilities.stringHasValue(dataModelId) ? "data model " + dataModelId
 						: "schema " + this.getSchema();
@@ -481,6 +490,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				continue;
 
 			classesForKey.add(entry.getGeneratedClassName());
+
 			if (expectedClass.equals(entry.getGeneratedClassName())) {
 				matchingClass = entry;
 				if (expectedFingerprint.equals(entry.getMetadataFingerprint()))
@@ -519,12 +529,14 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadFields(Connection conn) throws DBException {
+
 		if (this.physicalTableConfiguration == null) {
 			this.tryToLoadSchemaInfo(null, conn);
 			this.attachPhysicalTableConfiguration(conn);
 		}
 
 		synchronized (this.physicalTableConfiguration) {
+
 			if (this.physicalTableConfiguration.hasFields()) {
 				this.fields = filterIgnorableFields(this.physicalTableConfiguration.copyFields());
 				this.setFieldsLoaded(true);
@@ -541,7 +553,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	private List<Field> filterIgnorableFields(List<Field> physicalFields) {
 		List<Field> contextualFields = new ArrayList<>();
+
 		for (Field field : physicalFields) {
+
 			if (!this.isIgnorableField(field)) {
 				contextualFields.add(field);
 			}
@@ -567,6 +581,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		synchronized (this.physicalTableConfiguration) {
+
 			if (this.physicalTableConfiguration.isPrimaryKeyLoaded()) {
 				this.primaryKey = this.physicalTableConfiguration.copyPrimaryKey(this);
 				this.setPrimaryKeyInfoLoaded(true);
@@ -585,6 +600,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 		if (usesResolvedStaticSchemaMetadata()) {
 			this.uniqueKeys = this.physicalTableConfiguration.copyUniqueKeys(this);
+
 			if (this.uniqueKeys != null && utilities.listHasElement(this.ignorableFields)) {
 				this.uniqueKeys.removeIf(key -> key.getFields().stream().anyMatch(this::isIgnorableField));
 			}
@@ -600,6 +616,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		if (this.physicalTableConfiguration == null) {
+
 			try {
 				this.tryToLoadSchemaInfo(null, conn);
 				this.attachPhysicalTableConfiguration(conn);
@@ -609,6 +626,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		synchronized (this.physicalTableConfiguration) {
+
 			if (this.physicalTableConfiguration.areUniqueKeysLoaded()) {
 				this.uniqueKeys = this.physicalTableConfiguration.copyUniqueKeys(this);
 				this.setUniqueKeyInfoLoaded(true);
@@ -622,6 +640,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadParents(Connection conn) throws DBException {
+
 		if (!usesResolvedStaticSchemaMetadata()) {
 			TableConfiguration.super.loadParents(conn);
 
@@ -643,12 +662,14 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 					resolveReferencedSchema(foreignKey.getReferencedSchema(), foreignKey.getReferencedCatalog()));
 			parent.setParentConf(this.getParentConf());
 			List<RefMapping> mappings = new ArrayList<>();
+
 			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
 				if (utilities.containsAll(this.getIgnorableFields(), physicalMapping.getChildColumn()))
 					continue;
 				RefMapping mapping = RefMapping.fastCreate(physicalMapping.getChildColumn(),
 						physicalMapping.getParentColumn());
 				Field childField = this.getField(physicalMapping.getChildColumn());
+
 				if (childField != null) {
 					mapping.getChildField().setDataType(childField.getDataType());
 					mapping.getParentField().setDataType(childField.getDataType());
@@ -658,6 +679,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 				mappings.add(mapping);
 			}
 			parent.setRefMapping(mappings);
+
 			if (!mappings.isEmpty()) {
 				applyConfiguredParentContext(parent);
 				resolved.add(parent);
@@ -672,8 +694,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadChildren(Connection conn) throws SQLException {
+
 		if (!usesResolvedStaticSchemaMetadata()) {
 			TableConfiguration.super.loadChildren(conn);
+
 			if (this.isMustLoadChildrenInfo()) {
 				this.physicalTableConfiguration.initializeExportedForeignKeys(toPhysicalExportedForeignKeys());
 			}
@@ -682,15 +706,18 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (!this.isMustLoadChildrenInfo())
 			return;
 		List<ChildTable> children = new ArrayList<>();
+
 		for (PhysicalExportedForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getExportedForeignKeys()) {
 			ChildTable child = ChildTable.init(foreignKey.getChildTable(), foreignKey.getName(), this);
 			child.setSchema(resolveReferencedSchema(foreignKey.getChildSchema(), foreignKey.getChildCatalog()));
 			child.setParentConf(this.getParentConf());
 			List<RefMapping> mappings = new ArrayList<>();
+
 			for (PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping physicalMapping : foreignKey.getMappings()) {
 				RefMapping mapping = RefMapping.fastCreate(physicalMapping.getChildColumn(),
 						physicalMapping.getParentColumn());
 				Field parentField = this.getField(physicalMapping.getParentColumn());
+
 				if (parentField != null) {
 					mapping.getChildField().setDataType(parentField.getDataType());
 					mapping.getParentField().setDataType(parentField.getDataType());
@@ -713,6 +740,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			if (Boolean.TRUE.equals(parent.isManualyConfigured()) || !parent.hasMapping())
 				continue;
 			List<PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping> mappings = new ArrayList<>();
+
 			for (RefMapping mapping : parent.getRefMapping()) {
 				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
 						mapping.getParentFieldName()));
@@ -733,6 +761,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			if (Boolean.TRUE.equals(child.isManualyConfigured()) || !child.hasMapping())
 				continue;
 			List<PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping> mappings = new ArrayList<>();
+
 			for (RefMapping mapping : child.getRefMapping()) {
 				mappings.add(new PhysicalForeignKeyMetadata.PhysicalForeignKeyMapping(mapping.getChildFieldName(),
 						mapping.getParentFieldName()));
@@ -775,10 +804,12 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	 * already full-loaded before the physical registry entry was attached.
 	 */
 	public void synchronizePhysicalTableConfiguration() {
+
 		if (this.physicalTableConfiguration == null) {
 			throw new IllegalStateException(
 					"No physical table configuration attached to " + this.getFullTableDescription());
 		}
+
 		if (!this.isFullLoaded()) {
 			throw new IllegalStateException(
 					"Cannot synchronize a table that is not full-loaded: " + this.getFullTableDescription());
@@ -790,6 +821,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private void applyConfiguredParentContext(ParentTableImpl discovered) {
 		if (!utilities.listHasElement(this.getParents()))
 			return;
+
 		for (ParentTable configured : this.getParents()) {
 			boolean sameReference = utilities.stringHasValue(configured.getRefCode())
 					&& configured.getRefCode().equals(discovered.getRefCode());
@@ -799,10 +831,13 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			discovered.setDefaultValueDueInconsistency(configured.getDefaultValueDueInconsistency());
 			discovered.setSetNullDueInconsistency(configured.isSetNullDueInconsistency());
 			discovered.setIgnorableFields(configured.getIgnorableFields());
+
 			if (configured.hasMapping()) {
+
 				for (RefMapping mapping : discovered.getRefMapping()) {
 					RefMapping configuredMapping = configured.findRefMapping(mapping.getChildFieldName(),
 							mapping.getParentFieldName());
+
 					if (configuredMapping == null) {
 						throw new ForbiddenOperationException("Configured parent mapping " + mapping
 								+ " does not match physical foreign key " + discovered.getRefCode());
@@ -819,12 +854,14 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	private void addManualOnlyParents(List<ParentTable> resolved) {
 		if (!utilities.listHasElement(this.getParents()))
 			return;
+
 		for (ParentTable configured : this.getParents()) {
 			boolean alreadyResolved = false;
 
 			configured.setRelatedTabConf(this);
 
 			for (ParentTable parent : resolved) {
+
 				if ((utilities.stringHasValue(configured.getRefCode())
 						&& configured.getRefCode().equals(parent.getRefCode()))
 						|| (configured.hasMapping() && configured.equals(parent))) {
@@ -832,6 +869,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 					break;
 				}
 			}
+
 			if (!alreadyResolved && configured.hasMapping()) {
 				configured.setChildTableConf(this);
 				configured.setManualyConfigured(true);
@@ -847,6 +885,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		List<String> childFields = new ArrayList<>();
 		for (RefMapping mapping : parent.getRefMapping())
 			childFields.add(mapping.getChildFieldName());
+
 		if (primaryKeyFields.size() == childFields.size() && childFields.containsAll(primaryKeyFields)) {
 			this.setSharePkWith(parent.getTableName());
 		}
@@ -866,6 +905,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	public void loadOwnElements(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
 
 		if (this.hasExtraConditionForExtract()) {
+
 			if (!SQLUtilities.isValidSelectSqlQuery("select * from where " + this.getExtraConditionForExtract(),
 					null)) {
 				throw new EtlConfException("Invalid extraConditionForExtract  \n" + this.getExtraConditionForExtract());
@@ -883,6 +923,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.onConflict == null) {
 			this.onConflict = ConflictResolutionType.MAKE_YOUR_DECISION;
 		} else {
+
 			if (!this.onConflict.isAllowedForConfiguration()) {
 				throw new EtlConfException("The value for onConflict " + this.onConflict
 						+ " is not allowed for table configuration [" + this.getTableAlias() + "]");
@@ -1063,9 +1104,12 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public void loadManualConfiguredPk(Connection conn) throws ForbiddenOperationException, DBException {
+
 		if (this.primaryKey != null) {
+
 			if (!isPrimaryKeyInfoLoaded()) {
 				this.primaryKey.setManualConfigured(true);
+
 				try {
 					this.primaryKey.setTabConf(this);
 				} catch (NullPointerException e) {
@@ -1096,6 +1140,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	private void tryToManualLoadConfiguredPk(Connection conn) throws DBException {
+
 		try {
 			loadManualConfiguredPk(conn);
 		} catch (ForbiddenOperationException e) {
@@ -1104,6 +1149,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public PrimaryKey getPrimaryKey() {
+
 		if (isPrimaryKeyInfoLoaded()) {
 			return primaryKey;
 		}
@@ -1185,6 +1231,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	public void setTableAlias(String tableAlias) {
+
 		if (hasAlias() && !hasDynamicAlias() && !tableAlias.equals(this.getTableAlias())) {
 			throw new ForbiddenOperationException("This table has already an alias and change is forbidden!");
 		}
@@ -1295,6 +1342,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 	@Override
 	public List<ChildTable> getChildRefInfo() {
+
 		if (!this.mustLoadChildrenInfo) {
 			throw new ForbiddenOperationException(
 					"The table configuration is set to not load Children. Please change configuration if you what to access Children ifo.");
@@ -1404,6 +1452,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		setTableAlias(utilities.tryToReplacePlaceholders(getTableAlias(), schemaInfoSrc));
 
 		if (hasParents()) {
+
 			for (ParentTable p : this.getParents()) {
 				p.tryToReplacePlaceholders(schemaInfoSrc);
 			}
@@ -1440,6 +1489,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		super.tryToLoadFromTemplate();
 
 		this.loadHealper.setTableConf(this);
+	}
+
+	public OpenConnection openConnection() {
+		return null;
 	}
 
 	public abstract void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc);

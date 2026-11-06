@@ -16,12 +16,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
-import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.ConnectorType;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfParamsAsDataSource;
 import org.openmrs.module.epts.etl.conf.datasource.EtlConfigurationSrcConf;
 import org.openmrs.module.epts.etl.conf.datasource.EtlItemSrcConf;
@@ -36,6 +30,12 @@ import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -261,7 +261,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	private Boolean ignoreAllStartupScripts;
 
 	public EtlConfiguration() {
-		this.allTables = new ArrayList<AbstractTableConfiguration>();
+		this.allTables = new ArrayList<>();
 
 		this.initialized = false;
 
@@ -304,8 +304,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public DataModelConfiguration getDataModel() {
-		if (dataModel == null)
+
+		if (dataModel == null) {
 			dataModel = new DataModelConfiguration();
+		}
 		return dataModel;
 	}
 
@@ -314,27 +316,35 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public String getSrcPojoPackageName() {
-		if (utilities.stringHasValue(getDataModel().getSrcPojoPackageName()))
+
+		if (utilities.stringHasValue(getDataModel().getSrcPojoPackageName())) {
 			return getDataModel().getSrcPojoPackageName();
+		}
 		return null;
 	}
 
 	public String getDstPojoPackageName() {
-		if (utilities.stringHasValue(getDataModel().getDstPojoPackageName()))
+
+		if (utilities.stringHasValue(getDataModel().getDstPojoPackageName())) {
 			return getDataModel().getDstPojoPackageName();
+		}
 
 		return null;
 	}
 
 	public String getSrcSchema() {
-		if (utilities.stringHasValue(getDataModel().getSrcSchema()))
+
+		if (utilities.stringHasValue(getDataModel().getSrcSchema())) {
 			return getDataModel().getSrcSchema();
+		}
 		return hasSrcConnInfo() ? getSrcConnInfo().getSchema() : null;
 	}
 
 	public String getDstSchema() {
-		if (utilities.stringHasValue(getDataModel().getDstSchema()))
+
+		if (utilities.stringHasValue(getDataModel().getDstSchema())) {
 			return getDataModel().getDstSchema();
+		}
 		return hasDstConnInfo() ? getDstConnInfo().getSchema() : null;
 	}
 
@@ -367,8 +377,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	@JsonIgnore
 	public Class<? extends EtlDatabaseObject> loadDataModelClass(String fullClassName) throws ClassNotFoundException {
 		Class<? extends EtlDatabaseObject> loaded = getDataModelClasses().get(fullClassName);
-		if (loaded != null)
+
+		if (loaded != null) {
 			return loaded;
+		}
 
 		synchronized (this) {
 			loaded = getDataModelClasses().get(fullClassName);
@@ -382,8 +394,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private Map<String, Class<? extends EtlDatabaseObject>> getDataModelClasses() {
-		if (dataModelClasses == null)
+
+		if (dataModelClasses == null) {
 			dataModelClasses = new ConcurrentHashMap<>();
+		}
 		return dataModelClasses;
 	}
 
@@ -403,8 +417,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private void closeDataModelClassLoader() {
-		if (dataModelClassLoader == null)
+
+		if (dataModelClassLoader == null) {
 			return;
+		}
 
 		try {
 			dataModelClassLoader.close();
@@ -779,39 +795,57 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@JsonIgnore
 	public String getPojoPackage(DBConnectionInfo connInfo) {
-		if (connInfo == null)
+
+		if (connInfo == null) {
 			return null;
-		if (connInfo == getDstConnInfo() || connInfo.isDstConn())
+		}
+
+		if (connInfo == getDstConnInfo() || connInfo.isDstConn()) {
 			return getDstPojoPackageName();
+		}
+
 		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
-				|| connInfo.isMainConn())
+				|| connInfo.isMainConn()) {
 			return getSrcPojoPackageName();
+		}
 
 		return null;
 	}
 
 	@JsonIgnore
 	public String getDataModelId(DBConnectionInfo connInfo) {
-		if (connInfo == null)
+
+		if (connInfo == null) {
 			return null;
-		if (connInfo == getDstConnInfo() || connInfo.isDstConn())
+		}
+
+		if (connInfo == getDstConnInfo() || connInfo.isDstConn()) {
 			return getDataModel().getDstDataModelId();
+		}
+
 		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
-				|| connInfo.isMainConn())
+				|| connInfo.isMainConn()) {
 			return getDataModel().getSrcDataModelId();
+		}
 
 		return null;
 	}
 
 	@JsonIgnore
 	public String getSchema(DBConnectionInfo connInfo) {
-		if (connInfo == null)
+
+		if (connInfo == null) {
 			return null;
-		if (connInfo == getDstConnInfo() || connInfo.isDstConn())
+		}
+
+		if (connInfo == getDstConnInfo() || connInfo.isDstConn()) {
 			return getDstSchema();
+		}
+
 		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
-				|| connInfo.isMainConn())
+				|| connInfo.isMainConn()) {
 			return getSrcSchema();
+		}
 		return utilities.stringHasValue(connInfo.getSchema()) ? connInfo.getSchema() : getSrcSchema();
 	}
 
@@ -823,6 +857,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		this.mainConnInfo = mainConnInfo;
 	}
 
+	@Override
 	public DBConnectionInfo getSrcConnInfo() {
 		return srcConnInfo;
 	}
@@ -853,7 +888,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public boolean hastDefaultSourceConnector() {
 		return utilities.stringHasValue(this.defaultSourceConnector);
 	}
-	
+
 	public String getDefaultSourceConnector() {
 		return defaultSourceConnector;
 	}
@@ -1028,7 +1063,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	/**
 	 * Loads the code for each
-	 * 
+	 *
 	 * @throws ForbiddenOperationException
 	 * @throws DBException
 	 */
@@ -1300,8 +1335,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					if (!DBException.checkIfExceptionContainsMessage(e, "Unknown database")) {
 						throw e;
 					}
-				} else
+				} else {
 					throw e;
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 
@@ -1421,8 +1457,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	synchronized String finalizeItemCodeGeneration(String code) {
-		if (this.generatedItemCodes == null)
+
+		if (this.generatedItemCodes == null) {
 			this.generatedItemCodes = new ArrayList<>();
+		}
 
 		String newCode = code + "_001";
 
@@ -1445,8 +1483,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public void fullLoad() {
-		if (this.fullLoaded)
+
+		if (this.fullLoaded) {
 			return;
+		}
 
 		try {
 
@@ -1511,12 +1551,15 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			throw new EtlExceptionImpl("This initialization is on only allowed for dynamic EtlConf!");
 		}
 
-		if (isInitialized())
+		if (isInitialized()) {
 			return;
+		}
 
 		synchronized (LOCK_READ) {
-			if (isInitialized())
+
+			if (isInitialized()) {
 				return;
+			}
 
 			this.getMainConnInfo().setRelatedEtlConf(this);
 
@@ -1572,8 +1615,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		EtlOperationConfig toFind = EtlOperationConfig.fastCreate(operationType, this);
 
 		for (EtlOperationConfig op : this.getOperations()) {
-			if (op.equals(toFind))
+
+			if (op.equals(toFind)) {
 				return op;
+			}
 
 			EtlOperationConfig child = op.getChild();
 
@@ -1613,11 +1658,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		String errorMsg = "";
 		int errNum = 0;
 
-		if (!utilities.stringHasValue(getOriginAppLocationCode()))
+		if (!utilities.stringHasValue(getOriginAppLocationCode())) {
 			errorMsg += ++errNum + ". You must specify value for 'originAppLocationCode' parameter \n";
+		}
 
-		if (!utilities.stringHasValue(getEtlRootDirectory()))
+		if (!utilities.stringHasValue(getEtlRootDirectory())) {
 			errorMsg += ++errNum + ". You must specify value for 'etlRootDirectory' parameter\n";
+		}
 
 		if (!hasOperation()) {
 			this.setOperations(utilities.parseToList(EtlOperationConfig.createDefaultOperation(this)));
@@ -1661,8 +1708,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (supportedOperations != null) {
 
 			for (EtlOperationType operationType : supportedOperations) {
-				if (!isOperationConfigured(operationType) && !operationCanBeOmitted(operationType))
+
+				if (!isOperationConfigured(operationType) && !operationCanBeOmitted(operationType)) {
 					errorMsg += ++errNum + ". The operation '" + operationType + " is not configured\n";
+				}
 			}
 		}
 
@@ -1759,8 +1808,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	private void validateDefaultConnector(ConnectorRegistry registry, String connectorId, ConnectorDirection direction,
 			List<String> issues) {
-		if (!utilities.stringHasValue(connectorId))
+
+		if (!utilities.stringHasValue(connectorId)) {
 			return;
+		}
 
 		try {
 			registry.select(connectorId, null, direction, false);
@@ -1836,16 +1887,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	private boolean containsOperation(EtlOperationType operation) {
-		if (!hasOperation())
+
+		if (!hasOperation()) {
 			return false;
+		}
 
 		for (EtlOperationConfig op : this.getOperations()) {
 
-			if (op.getOperationType() == operation) {
-				return true;
-			}
-
-			if (op.containsChild(operation)) {
+			if ((op.getOperationType() == operation) || op.containsChild(operation)) {
 				return true;
 			}
 		}
@@ -1920,14 +1969,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 		if (this.hasSrcConnInfo()) {
 			this.getSrcConnInfo().setConnType(EtlDBConnectionType.srcConnInfo);
-			if (utilities.stringHasValue(getDataModel().getSrcSchema()))
+
+			if (utilities.stringHasValue(getDataModel().getSrcSchema())) {
 				this.getSrcConnInfo().setSchema(getDataModel().getSrcSchema());
+			}
 		}
 
 		if (this.hasDstConnInfo()) {
 			this.getDstConnInfo().setConnType(EtlDBConnectionType.dstConnInfo);
-			if (utilities.stringHasValue(getDataModel().getDstSchema()))
+
+			if (utilities.stringHasValue(getDataModel().getDstSchema())) {
 				this.getDstConnInfo().setSchema(getDataModel().getDstSchema());
+			}
 		}
 
 		if (this.hasMainConnInfo()) {
@@ -1956,14 +2009,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		operation.setOperationType(operationType);
 
 		for (EtlOperationConfig op : this.getOperations()) {
-			if (operation.equals(op))
+
+			if (operation.equals(op)) {
 				return true;
+			}
 
 			EtlOperationConfig child = op.getChild();
 
 			while (child != null) {
-				if (operation.equals(child))
+
+				if (operation.equals(child)) {
 					return true;
+				}
 
 				child = child.getChild();
 			}
@@ -1979,14 +2036,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+
+		if (this == obj) {
 			return true;
+		}
 
-		if (obj == null)
+		if ((obj == null) || !(obj instanceof EtlConfiguration)) {
 			return false;
-
-		if (!(obj instanceof EtlConfiguration))
-			return false;
+		}
 
 		EtlConfiguration otherObj = (EtlConfiguration) obj;
 
@@ -2066,7 +2123,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			throw new ForbiddenOperationException("Please revier this mathod");
 		}
 
-		List<AbstractTableConfiguration> tablesConfigurations = new ArrayList<AbstractTableConfiguration>();
+		List<AbstractTableConfiguration> tablesConfigurations = new ArrayList<>();
 
 		for (AbstractTableConfiguration conf : this.allTables) {
 
@@ -2168,14 +2225,18 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public void finalizeAllApps() {
-		if (hasSrcConnInfo())
+
+		if (hasSrcConnInfo()) {
 			getSrcConnInfo().finalize();
+		}
 
-		if (hasDstConnInfo())
+		if (hasDstConnInfo()) {
 			getDstConnInfo().finalize();
+		}
 
-		if (hasMainConnInfo())
+		if (hasMainConnInfo()) {
 			getMainConnInfo().finalize();
+		}
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -2282,8 +2343,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (getClassPath() != null) {
 
 			for (String path : getClassPath()) {
-				if (utilities.stringHasValue(path))
+
+				if (utilities.stringHasValue(path)) {
 					files.add(new File(path).toPath().normalize().toFile());
+				}
 			}
 		}
 		return files;
@@ -2330,16 +2393,20 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public void addToFullLoadedTables(TableConfiguration tableConfiguration) {
 
 		synchronized (LOCK_WRITE) {
-			if (getFullLoadedTables() == null)
+
+			if (getFullLoadedTables() == null) {
 				fullLoadedTables = new ArrayList<>();
+			}
 
 			fullLoadedTables.add(tableConfiguration);
 		}
 	}
 
 	public TableConfiguration findOnFullLoadedTables(String tableName, String schema) {
-		if (getFullLoadedTables() == null)
+
+		if (getFullLoadedTables() == null) {
 			return null;
+		}
 
 		synchronized (LOCK_READ) {
 
@@ -2380,8 +2447,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@Override
 	public synchronized void generateAliasForTable(TableConfiguration tabConfig) {
-		if (tabConfig.hasAlias())
+
+		if (tabConfig.hasAlias()) {
 			return;
+		}
 
 		if (this.busyTableAliasName == null) {
 			this.busyTableAliasName = new ArrayList<>();
@@ -2452,10 +2521,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public OpenConnection openSrcConn(BaseConfiguration opendFrom) throws DBException, ForbiddenOperationException {
+		this.initializeConnectorRegistry();
 
-		initializeConnectorRegistry();
-
-		OpenConnection conn = getSrcConnInfo().openConnection(opendFrom);
+		OpenConnection conn = this.getSrcConnInfo().openConnection(opendFrom);
 
 		if (this.doNotResolveRelationship()) {
 			DBUtilities.disableForegnKeyChecks(conn);
@@ -2510,8 +2578,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public EtlConfiguration cloneDynamic(EtlDatabaseObject schemaInfoSrc) {
-		if (!isInitialized())
+
+		if (!isInitialized()) {
 			throw new ForbiddenOperationException("The main EtlConfiguration is not initialized!");
+		}
 
 		EtlConfiguration clonedEtlConf = new EtlConfiguration();
 
@@ -2669,8 +2739,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	public String generateDatabaseSchemaFullPath(DBConnectionInfo dbConnConf) {
-		if (!dbConnConf.hasDatabaseSchemaPath())
+
+		if (!dbConnConf.hasDatabaseSchemaPath()) {
 			throw new EtlExceptionImpl("No databaseSchemaPath was defined for thos dbConnConf");
+		}
 
 		return getSqlScriptsDirectory() + FileUtilities.getPathSeparator() + dbConnConf.getDatabaseSchemaPath();
 	}

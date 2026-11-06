@@ -19,6 +19,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
  * Field transformer that retrieves the destination field value by executing a
@@ -78,14 +79,21 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		this.retrieveSqlQueryFromParameters(parameters);
 
+		OpenConnection conn = null;
+
 		try {
+
+			conn = relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc().openConnection();
+
 			this.tryToLoadDumpScriptContentToFieldAndValidate("sqlQuery",
 					relatedEtlTransformTarget != null
 							? relatedEtlTransformTarget.retrieveAllAvailableTemplateParameters()
 							: null,
-					null);
+					conn);
 		} catch (DBException e) {
 			throw new EtlConfException(e);
+		} finally {
+			this.finalizeConnection(conn);
 		}
 	}
 

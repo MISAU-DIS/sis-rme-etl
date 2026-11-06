@@ -4,5 +4,9 @@
     "metadataKey" : "testing_etl_dst|||.person_data",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_dst.PersonDataVO",
     "metadataFingerprint" : "501ebcec1ac6f75cf60220f5e15cb4d6ef906bd4af1a6386e521e5f98b078e68"
+  }, {
+    "metadataKey" : "testing_etl_src|||.person",
+    "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_src.PersonVO",
+    "metadataFingerprint" : "4d403258232ed2012dad829f69172ece584a3565987d033bf0ce8999bf5cacf5"
   } ]
 }
