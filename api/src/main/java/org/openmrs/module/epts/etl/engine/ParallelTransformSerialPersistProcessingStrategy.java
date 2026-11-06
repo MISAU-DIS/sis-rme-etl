@@ -25,8 +25,9 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 	@Override
 	protected <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> records, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			ConnectorRecordReaders readers, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers)
+			ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws Exception {
+		ConnectorRecordReader<T> reader = readers.getPrimary();
 		OpenConnection dstConn = engine.firstDestinationConnection(engine.destinationConnections(writers));
 
 		boolean sharedConnections = engine.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
@@ -45,7 +46,7 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 				engine.getCurrentTaskProcessor().add(transformer);
 
 				tasks.add(CompletableFuture.runAsync(() -> engine.consumeTransformationQueue(transformer, queue,
-						sharedConnections, reader, writers), executor));
+						sharedConnections, readers, writers), executor));
 			}
 
 			CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
@@ -61,7 +62,7 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 
 		loader.changeStatusToRunning();
 
-		loader.loadTransformedRecords(records, reader, writers);
+		loader.loadTransformedRecords(records, readers, writers);
 
 		engine.completeExtractedTask(loader, reader.unwrap(OpenConnection.class), dstConn, true);
 		engine.assertNoProcessorFailed(UTILITIES.parseToList(loader));

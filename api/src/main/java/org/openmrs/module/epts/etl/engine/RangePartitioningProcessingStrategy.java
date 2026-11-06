@@ -47,8 +47,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 				processor.setRecordReaders(sharedReaders);
 				engine.getCurrentTaskProcessor().add(processor);
 				tasks.add(CompletableFuture.runAsync(
-						() -> engine.processRangePartition(processor, sharedConnections, sharedReaders, sharedReader,
-								sharedWriters),
+						() -> engine.processRangePartition(processor, sharedConnections, sharedReaders, sharedWriters),
 						executor));
 			}
 
@@ -62,7 +61,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 				return;
 			}
 
-			persistPendingData(engine, sharedConnections, sharedReader, sharedWriters);
+			persistPendingData(engine, sharedConnections, sharedReaders, sharedWriters);
 
 			if (!engine.getRelatedEtlConf().hasTestingItem() && sharedConnections) {
 				engine.markConnectionsAsSuccessfullyTerminated(sharedReaders, sharedWriters);
@@ -98,12 +97,12 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 		return results;
 	}
 
-	private void persistPendingData(Engine<?> engine, boolean sharedConnections, ConnectorRecordReader<?> reader,
+	private void persistPendingData(Engine<?> engine, boolean sharedConnections, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws Exception {
 		if (engine.getRelatedEtlConf().hasTestingItem()) {
 			engine.discardPendingPersistence();
 		} else if (sharedConnections) {
-			engine.flushPendingPersistence(reader.unwrap(OpenConnection.class),
+			engine.flushPendingPersistence(readers.getPrimary().unwrap(OpenConnection.class),
 					engine.firstDestinationConnection(engine.destinationConnections(writers)));
 		} else {
 			engine.flushPendingPersistenceUsingDedicatedConnection();

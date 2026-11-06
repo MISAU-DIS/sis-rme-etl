@@ -16,6 +16,11 @@ public final class ConnectorRecordReaders {
 	private final Map<EtlDataSource, ConnectorResource> resourcesByConfiguration;
 	private final ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader;
 
+	public static ConnectorRecordReaders ofPrimary(
+			ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader) {
+		return new ConnectorRecordReaders(primaryReader, Collections.emptyMap(), Collections.emptyMap());
+	}
+
 	public ConnectorRecordReaders(
 			Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers,
 			Map<EtlDataSource, ConnectorResource> resourcesByConfiguration) {

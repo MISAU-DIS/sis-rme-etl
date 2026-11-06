@@ -23,6 +23,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -234,11 +235,11 @@ public class CheckpointCommitOrderingTest {
 		@Override TaskProcessor<EtlDatabaseObject> initTaskProcessor(IntervalExtremeRecord interval, boolean concurrent,
 				String processorId) {
 			TaskProcessor<EtlDatabaseObject> processor = new TaskProcessor<EtlDatabaseObject>(this, interval, concurrent) {
-				@Override public void extractTransformAndLoad(boolean multi, ConnectorRecordReader<EtlDatabaseObject> reader, ConnectorRecordWriters writers) {}
-				@Override public void transformAndLoadExtractedRecords(List<EtlDatabaseObject> records, ConnectorRecordReader<EtlDatabaseObject> reader, ConnectorRecordWriters writers) {}
-				@Override public void transformExtractedRecords(List<EtlDatabaseObject> records, ConnectorRecordReader<EtlDatabaseObject> reader, ConnectorRecordWriters writers) {}
-				@Override public void loadTransformedRecords(List<EtlDatabaseObject> records, ConnectorRecordReader<EtlDatabaseObject> reader, ConnectorRecordWriters writers) {}
-				@Override public void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader, ConnectorRecordWriters writers) throws DBException {}
+				@Override public void extractTransformAndLoad(boolean multi, ConnectorRecordReaders readers, ConnectorRecordWriters writers) {}
+				@Override public void transformAndLoadExtractedRecords(List<EtlDatabaseObject> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers) {}
+				@Override public void transformExtractedRecords(List<EtlDatabaseObject> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers) {}
+				@Override public void loadTransformedRecords(List<EtlDatabaseObject> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers) {}
+				@Override public void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers) throws DBException {}
 				@Override public TaskProcessor<EtlDatabaseObject> initReloadRecordsWithDefaultParentsTaskProcessor(IntervalExtremeRecord limits) {
 					throw new UnsupportedOperationException();
 				}

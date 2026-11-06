@@ -24,6 +24,7 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
@@ -141,12 +142,19 @@ public class DatabaseModelGenerationProcessor
 	}
 
 	@Override
+	public ConnectorRecordReaders createRecordReaders(ConnectorRecordWriters writers) throws DBException {
+		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(createRecordReader(writers));
+		setRecordReaders(readers);
+		return readers;
+	}
+
+	@Override
 	public void extractTransformAndLoad(boolean useMultiThreadSearch,
-			ConnectorRecordReader<DatabaseModelGenerationRecord> reader, ConnectorRecordWriters writers)
+			ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws DBException {
 		this.getSearchParams().setProcessor(this);
 
-		super.extractTransformAndLoad(false, reader, writers);
+		super.extractTransformAndLoad(false, readers, writers);
 	}
 
 	@Override

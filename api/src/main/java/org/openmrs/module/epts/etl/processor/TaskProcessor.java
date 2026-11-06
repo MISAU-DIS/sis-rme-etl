@@ -201,8 +201,9 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return recordReaders.get(dataSource);
 	}
 
-	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReader<T> reader,
+	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
+		ConnectorRecordReader<T> reader = readers.getPrimary();
 
 		if (this.getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
 				|| this.getRelatedEtlOperationConfig().getParallelProcessingStrategy().isRangePartitioning()
@@ -231,7 +232,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 				+ utilities.arraySize(records) + "' RECORDS.");
 
 		if (utilities.listHasElement(records)) {
-			transformAndLoadExtractedRecords(records, reader, writers);
+			transformAndLoadExtractedRecords(records, readers, writers);
 		} else {
 			logDebug("NO SRC RECORD FOUND FOR ETL!");
 		}
@@ -242,7 +243,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	 * Processes records that were already extracted by the engine. This is used by
 	 * result-partitioning strategies, where extraction must happen exactly once.
 	 */
-	public void transformAndLoadExtractedRecords(List<T> records, ConnectorRecordReader<T> reader,
+	public void transformAndLoadExtractedRecords(List<T> records, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
 
 		prepareExtractedRecords(records, writers);
@@ -253,7 +254,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		if (getActionType().isDelete()) {
 			performeDelete(records, writers);
 		} else {
-			transformAndLoad(records, reader, writers);
+			transformAndLoad(records, readers, writers);
 		}
 
 		logWarn("TASK {} ON {} RECORDS OF TABLE {} DONE ",
@@ -264,35 +265,35 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	/** Prepares and transforms records already extracted by the engine. */
 	@SuppressWarnings("unchecked")
-	public void transformExtractedRecords(List<T> records, ConnectorRecordReader<T> reader,
+	public void transformExtractedRecords(List<T> records, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
 
 		prepareExtractedRecords(records, writers);
 
-		transform((List<EtlDatabaseObject>) (List<?>) records, reader, writers);
+		transform((List<EtlDatabaseObject>) (List<?>) records, readers, writers);
 	}
 
 	/** Loads records previously transformed by one or more processors. */
 	@SuppressWarnings("unchecked")
-	public void loadTransformedRecords(List<T> records, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers)
+	public void loadTransformedRecords(List<T> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws DBException {
 
 		getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) (List<?>) records);
 
-		load((List<EtlDatabaseObject>) (List<?>) records, reader, writers);
+		load((List<EtlDatabaseObject>) (List<?>) records, readers, writers);
 	}
 
-	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReader<?> reader,
+	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
 		throw new ForbiddenOperationException("This processor does not support an independent load phase");
 	}
 
-	public void transformAndLoad(List<T> records, ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
+	public void transformAndLoad(List<T> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws DBException {
 		throw new ForbiddenOperationException("This processor does not support transform and load");
 	}
 
-	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader,
+	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
 
 		throw new ForbiddenOperationException("This processor does not support an independent transform phase");

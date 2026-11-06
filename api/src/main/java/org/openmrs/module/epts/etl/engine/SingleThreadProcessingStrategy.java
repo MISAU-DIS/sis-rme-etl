@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.engine;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -29,10 +28,8 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 
 			ConnectorRecordWriters writers = processor.createRecordWriters();
 			ConnectorRecordReaders readers = processor.createRecordReaders(writers);
-			ConnectorRecordReader<T> reader = engine.primaryReader(readers);
-
 			try {
-				engine.performExtractTransformationAndLoading(processor, true, persistWork, reader, writers);
+				engine.performExtractTransformationAndLoading(processor, true, persistWork, readers, writers);
 
 				if (processor.getTaskResultInfo().hasFatalError()) {
 					engine.stopOperationDueError(processor.getTaskResultInfo().getFatalException());

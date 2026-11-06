@@ -7,6 +7,7 @@ import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.databasepreparation.model.DatabasePreparationRecord;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -40,6 +41,13 @@ public class DatabasePreparationProcessor extends org.openmrs.module.epts.etl.pr
 	public ConnectorRecordReader<DatabasePreparationRecord> createRecordReader(ConnectorRecordWriters writers)
 			throws DBException {
 		return getEtlItemConfiguration().createEtlDatabaseReader(getSearchParams(), getEngine(), writers);
+	}
+
+	@Override
+	public ConnectorRecordReaders createRecordReaders(ConnectorRecordWriters writers) throws DBException {
+		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(createRecordReader(writers));
+		setRecordReaders(readers);
+		return readers;
 	}
 	
 	public DatabasePreparationProcessor(Engine<DatabasePreparationRecord> monitr, IntervalExtremeRecord limits,

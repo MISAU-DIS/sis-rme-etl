@@ -14,7 +14,7 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -108,10 +108,10 @@ public class EtlLoadHelper {
 		return srcObjects;
 	}
 
-	public void load(ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
+	public void load(ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws ParentNotYetMigratedException, DBException {
 
-		Connection srcConn = reader.unwrap(Connection.class);
+		Connection srcConn = readers.getPrimary().unwrap(Connection.class);
 
 		if (this.hasDstConf()) {
 			for (DstConf dst : this.getDstConf()) {

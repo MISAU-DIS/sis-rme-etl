@@ -8,7 +8,7 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -72,10 +72,10 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 	}
 
 	@Override
-	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, ConnectorRecordReader<?> reader,
+	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
 
-		Connection srcConn = reader.unwrap(Connection.class);
+		Connection srcConn = readers.getPrimary().unwrap(Connection.class);
 		Connection dstConn = writers.unwrapShared(Connection.class);
 
 		try {

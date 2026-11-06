@@ -206,6 +206,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	protected boolean mustDoFinalCheck() {
+
 		if (getRelatedOperationController().getOperationConfig().skipFinalDataVerification()) {
 			return false;
 		} else {
@@ -360,6 +361,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	@Override
 	public void run() {
 		beginExecutionLifecycle();
+
 		try {
 			boolean restart;
 
@@ -556,6 +558,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void prepareAndInitializeRerun() throws DBException {
+
 		if (!mustRestartInTheEnd()) {
 			throw new ForbiddenOperationException("The operation is not set to mustRestartInTheEnd");
 		}
@@ -588,12 +591,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void processRangePartition(TaskProcessor<T> processor, boolean useSharedConnection,
-			ConnectorRecordReaders sharedReaders, ConnectorRecordReader<T> sharedReader,
-			ConnectorRecordWriters sharedWriters) {
+			ConnectorRecordReaders sharedReaders, ConnectorRecordWriters sharedWriters) {
 
 		if (useSharedConnection) {
 			processor.setRecordReaders(sharedReaders);
-			performExtractTransformationAndLoading(processor, false, false, sharedReader, sharedWriters);
+			performExtractTransformationAndLoading(processor, false, false, sharedReaders, sharedWriters);
 
 			return;
 		}
@@ -610,13 +612,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				writers = getEtlItemConfiguration().createDestinationWriters(this);
 				dstConnections = writers.unwrapAll(OpenConnection.class);
 				OpenConnection dstConn = firstDestinationConnection(dstConnections);
-				readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(), this,
-						writers);
+				readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(), this, writers);
 				ConnectorRecordReader<T> reader = primaryReader(readers);
 				processor.setRecordReaders(readers);
 				srcConn = reader.unwrap(OpenConnection.class);
 
-				performExtractTransformationAndLoading(processor, false, false, reader, writers);
+				performExtractTransformationAndLoading(processor, false, false, readers, writers);
 
 				Exception failure = processor.getTaskResultInfo().getFatalException();
 				retryTransaction = failure != null && isRetryableTransactionFailure(failure, dstConn)
@@ -630,11 +631,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			} catch (DBException e) {
 				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS
 						&& isRetryableTransactionFailure(e, firstDestinationConnection(dstConnections));
+
 				if (!retryTransaction) {
 					failRangeProcessor(processor, e, true);
 				}
 			} finally {
+
 				try {
+
 					if (readers != null) {
 						finalizeConnections(readers, writers);
 					} else {
@@ -653,6 +657,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 						+ "Attempt {} of {}", processor.getProcessorId(), processor.getLimits(), attempt + 1,
 						MAX_TRANSACTION_ATTEMPTS);
 				processor.resetForTransactionRetry();
+
 				if (!waitBeforeTransactionRetry(attempt, processor)) {
 					return;
 				}
@@ -660,6 +665,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			if (flushWorkerPersistence) {
+
 				try {
 					flushStageAreaUsingDedicatedConnection(processor);
 				} catch (Exception e) {
@@ -671,13 +677,17 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private boolean isRetryableTransactionFailure(Throwable failure, Connection conn) {
+
 		if (conn == null) {
 			return false;
 		}
 
 		Throwable current = failure;
+
 		while (current != null) {
+
 			if (current instanceof DBException) {
+
 				try {
 					return ((DBException) current).isTemporaryDBErrr(conn);
 				} catch (DBException classificationFailure) {
@@ -686,6 +696,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					return false;
 				}
 			}
+
 			if (current.getCause() == current) {
 				break;
 			}
@@ -695,6 +706,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private boolean waitBeforeTransactionRetry(int failedAttempt, TaskProcessor<T> processor) {
+
 		try {
 			TimeUnit.MILLISECONDS.sleep(500L * failedAttempt);
 			return true;
@@ -723,7 +735,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return readers.unwrapAll(OpenConnection.class);
 	}
 
-	@SuppressWarnings("unchecked")
 	ConnectorRecordReader<T> primaryReader(ConnectorRecordReaders readers) {
 		return readers.getPrimary();
 	}
@@ -745,14 +756,18 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void addConnectionsByIdentity(List<OpenConnection> target, List<OpenConnection> candidates) {
+
 		for (OpenConnection candidate : candidates) {
 			boolean found = false;
+
 			for (OpenConnection existing : target) {
+
 				if (existing == candidate) {
 					found = true;
 					break;
 				}
 			}
+
 			if (!found) {
 				target.add(candidate);
 			}
@@ -770,6 +785,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void failRangeProcessor(TaskProcessor<T> processor, Exception failure, boolean discardPersistence) {
+
 		if (discardPersistence) {
 			discardPendingPersistence(processor);
 		}
@@ -783,6 +799,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		ThreadRecordIntervalsManager<T> intervalManager = getThreadRecordIntervalsManager();
 
 		while (intervalManager.canGoNext() || !intervalManager.getCurrentLimits().isFullProcessed()) {
+
 			if (this.getCurrentIteration() > 1 && this.getRelatedEtlOperationConfig().finishAfterOneExecution()) {
 				return;
 			}
@@ -824,6 +841,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public void tryToProcessSkippedrecords() throws DBException, Exception {
+
 		if (stopRequested()) {
 			return;
 		}
@@ -860,8 +878,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				try {
 					jdbcPrimaryDataSource.setExtraConditionForExtract(null);
 
-					getSearchParams()
-							.setExtraCondition(jdbcPrimaryDataSource.generateSkippedRecordInclusionClause());
+					getSearchParams().setExtraCondition(jdbcPrimaryDataSource.generateSkippedRecordInclusionClause());
 
 					taskProcessor.setProcessorId(this.getEngineId());
 
@@ -869,11 +886,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					boolean useMultiThreadSearch = true;
 
 					ConnectorRecordWriters writers = getEtlItemConfiguration().createDestinationWriters(this);
-					ConnectorRecordReaders readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(), this,
-							writers);
-					ConnectorRecordReader<T> reader = primaryReader(readers);
+					ConnectorRecordReaders readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(),
+							this, writers);
 					taskProcessor.setRecordReaders(readers);
-					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork, reader,
+					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork, readers,
 							writers);
 
 					jdbcPrimaryDataSource.setExtraConditionForExtract(originalExtraConditionForExtract);
@@ -910,6 +926,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void moveToNextCurrentLimitsWhenCompleted(ThreadRecordIntervalsManager<T> intervalManager) {
+
 		if (!intervalManager.getCurrentLimits().isFullProcessed()) {
 			return;
 		}
@@ -920,6 +937,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private boolean shouldFinishBecauseNoRecordsRemain() {
+
 		if (getProgressMeter().getRemain() != 0) {
 			return false;
 		}
@@ -968,7 +986,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
-			boolean sharedConnections, ConnectorRecordReader<T> sharedReader, ConnectorRecordWriters sharedWriters) {
+			boolean sharedConnections, ConnectorRecordReaders sharedReaders, ConnectorRecordWriters sharedWriters) {
 
 		if (!sharedConnections) {
 			consumeTransformAndLoadQueueWithWorkerTransactionRetry(processor, transformationQueue);
@@ -976,7 +994,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			return;
 		}
 
-		OpenConnection srcConn = sharedReader.unwrap(OpenConnection.class);
+		OpenConnection srcConn = sharedReaders.getPrimary().unwrap(OpenConnection.class);
 		OpenConnection dstConn = firstDestinationConnection(destinationConnections(sharedWriters));
 
 		try {
@@ -985,7 +1003,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			T record;
 
 			while (!processor.getTaskResultInfo().hasFatalError() && (record = transformationQueue.poll()) != null) {
-				processor.transformAndLoadExtractedRecords(utilities.parseToList(record), sharedReader, sharedWriters);
+				processor.transformAndLoadExtractedRecords(utilities.parseToList(record), sharedReaders, sharedWriters);
 			}
 
 			completeExtractedTask(processor, srcConn, dstConn, true);
@@ -1005,7 +1023,6 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			OpenConnection srcConn = null;
 			List<OpenConnection> dstConnections = Collections.emptyList();
 			ConnectorRecordWriters writers = null;
-			ConnectorRecordReader<T> reader = null;
 			ConnectorRecordReaders readers = null;
 			boolean retryTransaction = false;
 
@@ -1014,27 +1031,31 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				dstConnections = writers.unwrapAll(OpenConnection.class);
 				OpenConnection dstConn = firstDestinationConnection(dstConnections);
 				readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(), this, writers);
-				reader = primaryReader(readers);
+				ConnectorRecordReader<T> reader = primaryReader(readers);
 				processor.setRecordReaders(readers);
 				srcConn = reader.unwrap(OpenConnection.class);
 				processor.changeStatusToRunning();
 
 				if (attempt == 1) {
 					T sourceRecord;
+
 					while ((sourceRecord = transformationQueue.poll()) != null) {
 						claimedRecords.add(sourceRecord);
 						T attemptRecord = (T) sourceRecord.createACopy();
-						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader,
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), readers,
 								writers);
+
 						if (processor.getTaskResultInfo().hasFatalError()) {
 							break;
 						}
 					}
 				} else {
+
 					for (T sourceRecord : claimedRecords) {
 						T attemptRecord = (T) sourceRecord.createACopy();
-						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), reader,
+						processor.transformAndLoadExtractedRecords(utilities.parseToList(attemptRecord), readers,
 								writers);
+
 						if (processor.getTaskResultInfo().hasFatalError()) {
 							break;
 						}
@@ -1054,11 +1075,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			} catch (Exception e) {
 				retryTransaction = attempt < MAX_TRANSACTION_ATTEMPTS
 						&& isRetryableTransactionFailure(e, firstDestinationConnection(dstConnections));
+
 				if (!retryTransaction) {
 					processor.changeStatusToStopped();
 					processor.getTaskResultInfo().setFatalException(e);
 				}
 			} finally {
+
 				if (readers != null) {
 					finalizeConnections(readers, writers);
 				} else {
@@ -1075,6 +1098,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					+ "database error. Attempt {} of {}", processor.getProcessorId(), attempt + 1,
 					MAX_TRANSACTION_ATTEMPTS);
 			processor.resetForTransactionRetry();
+
 			if (!waitBeforeTransactionRetry(attempt, processor)) {
 				return;
 			}
@@ -1083,22 +1107,17 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue, boolean sharedConnections,
-			ConnectorRecordReader<T> sharedReader, ConnectorRecordWriters sharedWriters) {
+			ConnectorRecordReaders sharedReaders, ConnectorRecordWriters sharedWriters) {
 
-		OpenConnection srcConn = sharedReader.unwrap(OpenConnection.class);
 		ConnectorRecordWriters writers = sharedWriters;
-		ConnectorRecordReaders readers = processor.getRecordReaders();
-		List<OpenConnection> dstConnections = destinationConnections(writers);
-		ConnectorRecordReader<T> reader = sharedReader;
+		ConnectorRecordReaders readers = sharedReaders;
 
 		try {
+
 			if (!sharedConnections) {
 				writers = getEtlItemConfiguration().createDestinationWriters(this);
-				dstConnections = destinationConnections(writers);
 				readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(), this, writers);
-				reader = primaryReader(readers);
 				processor.setRecordReaders(readers);
-				srcConn = reader.unwrap(OpenConnection.class);
 			}
 
 			processor.changeStatusToRunning();
@@ -1106,7 +1125,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			T record;
 
 			while ((record = transformationQueue.poll()) != null) {
-				processor.transformExtractedRecords(utilities.parseToList(record), reader, writers);
+				processor.transformExtractedRecords(utilities.parseToList(record), readers, writers);
 			}
 
 			processor.changeStatusToFinished();
@@ -1118,6 +1137,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			processor.changeStatusToStopped();
 			processor.getTaskResultInfo().setFatalException(e);
 		} finally {
+
 			if (!sharedConnections) {
 				finalizeConnections(readers, writers);
 			}
@@ -1126,6 +1146,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	void completeExtractedTask(TaskProcessor<T> processor, OpenConnection srcConn, OpenConnection dstConn,
 			boolean refreshProgress) throws DBException {
+
 		if (processor.getTaskResultInfo().hasFatalError()) {
 			discardPendingPersistence(processor);
 			processor.changeStatusToStopped();
@@ -1133,9 +1154,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		}
 
 		getController().afterEtl(processor.getTaskResultInfo().getAllSuccessfulyProcessedRecords(), srcConn, dstConn);
+
 		if (processor.getTaskResultInfo().hasRecordsWithErrors()) {
 			processor.getTaskResultInfo().documentErrors(srcConn, dstConn);
 		}
+
 		if (refreshProgress) {
 			refreshProgressMeter(processor, srcConn);
 		}
@@ -1144,6 +1167,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	void assertNoProcessorFailed(List<TaskProcessor<T>> processors) throws Exception {
 		List<EtlOperationResultHeader<T>> results = new ArrayList<>(processors.size());
+
 		for (TaskProcessor<T> processor : processors) {
 			results.add(processor.getTaskResultInfo());
 		}
@@ -1155,6 +1179,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	void flushStageArea(Connection srcConn, Connection dstConn) throws DBException {
 		int pending = getPersistenceCoordinator().pendingCount(PersistenceType.STAGE_AREA);
+
 		if (pending == 0) {
 			return;
 		}
@@ -1166,6 +1191,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	void flushDefaultParents(Connection srcConn, Connection dstConn) throws DBException {
 		int pending = getPersistenceCoordinator().pendingCount(PersistenceType.DEFAULT_PARENT);
+
 		if (pending == 0) {
 			return;
 		}
@@ -1177,6 +1203,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	void flushPendingPersistence(Connection srcConn, Connection dstConn) throws DBException {
 		int pending = getPersistenceCoordinator().pendingCount();
+
 		if (pending == 0) {
 			return;
 		}
@@ -1187,12 +1214,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void flushPendingPersistenceUsingDedicatedConnection() throws DBException {
+
 		if (getPersistenceCoordinator().pendingCount() == 0) {
 			return;
 		}
 
 		OpenConnection srcConn = null;
 		OpenConnection dstConn = null;
+
 		try {
 			srcConn = getRelatedEtlConf().openSrcConn(this);
 			dstConn = tryToOpenDstConn(this);
@@ -1204,12 +1233,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void flushDefaultParentsUsingDedicatedConnection() throws DBException {
+
 		if (getPersistenceCoordinator().pendingCount(PersistenceType.DEFAULT_PARENT) == 0) {
 			return;
 		}
 
 		OpenConnection srcConn = null;
 		OpenConnection dstConn = null;
+
 		try {
 			srcConn = getRelatedEtlConf().openSrcConn(this);
 			dstConn = tryToOpenDstConn(this);
@@ -1222,12 +1253,14 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	private void flushStageAreaUsingDedicatedConnection(TaskProcessor<?> owner) throws DBException {
 		int pending = getPersistenceCoordinator().pendingCount(owner, PersistenceType.STAGE_AREA);
+
 		if (pending == 0) {
 			return;
 		}
 
 		OpenConnection srcConn = null;
 		OpenConnection dstConn = null;
+
 		try {
 			srcConn = getRelatedEtlConf().openSrcConn(this);
 			dstConn = tryToOpenDstConn(this);
@@ -1249,12 +1282,15 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void shutdownExecutor(ExecutorService executor) {
+
 		if (executor == null) {
 			return;
 		}
 
 		executor.shutdown();
+
 		try {
+
 			if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
 				executor.shutdownNow();
 			}
@@ -1299,9 +1335,11 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	 * @return
 	 */
 	void performExtractTransformationAndLoading(TaskProcessor<T> taskProcessor, boolean useMultiTreadSearch,
-			boolean persistTheWork, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers) {
+			boolean persistTheWork, ConnectorRecordReaders readers, ConnectorRecordWriters writers) {
+
+		ConnectorRecordReader<T> reader = readers.getPrimary();
 		OpenConnection srcConn = reader.unwrap(OpenConnection.class);
-		ConnectorRecordReaders readers = taskProcessor.getRecordReaders();
+		taskProcessor.setRecordReaders(readers);
 		List<OpenConnection> dstConnections = destinationConnections(writers);
 		OpenConnection dstConn = firstDestinationConnection(dstConnections);
 
@@ -1310,11 +1348,12 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			logTrace("INITIALIZING TASK FOR INTERVAL " + taskProcessor.getLimits());
 
-			taskProcessor.extractTransformAndLoad(useMultiTreadSearch, reader, writers);
+			taskProcessor.extractTransformAndLoad(useMultiTreadSearch, readers, writers);
 
 			completeExtractedTask(taskProcessor, srcConn, dstConn, true);
 
 			if (!taskProcessor.getTaskResultInfo().hasFatalError()) {
+
 				if (persistTheWork) {
 					flushPendingPersistence(srcConn, dstConn);
 				} else if (getRelatedEtlConf().hasTestingItem()) {
@@ -1324,13 +1363,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 				if (persistTheWork) {
 					logTrace("PERSISTING WORK OF TASK ON INTERVAL " + taskProcessor.getLimits());
 
-					if (readers != null) {
-						markConnectionsAsSuccessfullyTerminated(readers, writers);
-						finalizeConnections(readers, writers);
-					} else {
-						markConnectionsAsSuccessfullyTerminated(srcConn, dstConnections);
-						finalizeConnections(srcConn, dstConnections);
-					}
+					markConnectionsAsSuccessfullyTerminated(readers, writers);
+					finalizeConnections(readers, writers);
 
 					// Never expose an uncommitted interval to any checkpoint writer.
 					taskProcessor.getLimits().markAsProcessed();
@@ -1356,6 +1390,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			taskProcessor.getTaskResultInfo().setFatalException(e);
 		} finally {
+
 			if (persistTheWork) {
 				OpenConnection.finalizeAllConnections(this, dstConn, srcConn);
 			}
@@ -1391,6 +1426,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			int processed = total - remaining;
 
 			if (countStrategy.isCountAlways()) {
+
 				if (total > 0) {
 					logDebug(
 							"Recorded statistic found! But the statistics will be recalculated as per configuration totalCountStrategy set to COUNT_ALWAYS");
@@ -1403,6 +1439,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 			}
 
 			if (total == 0) {
+
 				if (getEtlItemConfiguration().getResolvedSrcResource().getEndpoint()
 						.getType() != org.openmrs.module.epts.etl.connector.ConnectorType.JDBC) {
 					total = (int) this.getProgressMeter().getMaxRecordId();
@@ -1456,11 +1493,13 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@Override
 	public void requestStop() {
+
 		if (isStopped() || isFinished() || stopRequested()) {
 			return;
 		}
 
 		synchronized (LOCK) {
+
 			if (isStopped() || isFinished() || stopRequested()) {
 				return;
 			}
@@ -1498,10 +1537,9 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public int getMaxRecordsPerProcessing() {
+
 		if (usesFileSource()) {
-			long recordCount = getMaxRecordId() >= getMinRecordId()
-					? getMaxRecordId() - getMinRecordId() + 1
-					: 0;
+			long recordCount = getMaxRecordId() >= getMinRecordId() ? getMaxRecordId() - getMinRecordId() + 1 : 0;
 
 			if (recordCount > 0) {
 				logFileBatchPolicy("processingBatch is ignored for FILE sources; all " + recordCount
@@ -1519,6 +1557,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void logFileBatchPolicy(String message) {
+
 		if (!fileBatchPolicyLogged) {
 			logInfo(message);
 			fileBatchPolicyLogged = true;
@@ -1651,6 +1690,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@Override
 	public boolean isFinished() {
+
 		if (isNotInitialized()) {
 			return false;
 		}
@@ -1745,6 +1785,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	public synchronized void requestDisplayOfEtlResult(DstConf dstConf, List<EtlDatabaseObject> resultObjs) {
+
 		if (this.getRecordsToDisplay() == null) {
 			this.setRecordsToDisplay(new HashMap<>());
 		}
@@ -1775,13 +1816,17 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void performEngineFinalization() throws DBException, Exception {
+
 		if (!stopRequested()) {
+
 			if (mustDoFinalCheck()) {
 				perfomeFinalization();
 			}
 
 			if (this.getRecordsToDisplay() != null) {
+
 				for (DstConf dstConf : this.getEtlItemConfiguration().getDstConf()) {
+
 					if (dstConf.getDstType().isConsole()) {
 						displayResultInConsole(this.getRecordsToDisplay().get(dstConf.getTableName()));
 					} else if (dstConf.getDstType().isPopUp()) {
@@ -1832,6 +1877,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	private void displayResultInConsole(List<EtlDatabaseObject> objs) {
+
 		if (utilities.listHasElement(objs)) {
 			String header = utilities.generateTabDelimitedHeader(objs.get(0));
 			String separator = utilities.maskToken(header, header, '#');

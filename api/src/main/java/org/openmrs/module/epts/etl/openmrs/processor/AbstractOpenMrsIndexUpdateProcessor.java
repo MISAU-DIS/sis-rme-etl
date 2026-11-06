@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -27,7 +27,7 @@ public abstract class AbstractOpenMrsIndexUpdateProcessor extends EtlProcessor {
 	}
 
 	@Override
-	public final void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader,
+	public final void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
 		OpenMrsIndexConfiguration configuration = getIndexConfiguration();
 		logInfo("Loaded OpenMRS index configuration: {}", configuration);
@@ -36,7 +36,7 @@ public abstract class AbstractOpenMrsIndexUpdateProcessor extends EtlProcessor {
 		beforeBatch(configuration);
 		try {
 			for (EtlDatabaseObject record : records)
-				processRecord(record, configuration, reader.unwrap(Connection.class));
+				processRecord(record, configuration, readers.getPrimary().unwrap(Connection.class));
 		} finally {
 			afterBatch();
 		}

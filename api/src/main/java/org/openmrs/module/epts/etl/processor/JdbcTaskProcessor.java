@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -25,21 +25,21 @@ public abstract class JdbcTaskProcessor<T extends EtlDatabaseObject> extends Tas
 	}
 
 	@Override
-	public void transformAndLoad(List<T> records, ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
+	public void transformAndLoad(List<T> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws DBException {
-		transformAndLoad(records, reader.unwrap(Connection.class), writers.unwrapShared(Connection.class));
+		transformAndLoad(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
 	}
 
 	@Override
-	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader,
+	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
-		transform(records, reader.unwrap(Connection.class), writers.unwrapShared(Connection.class));
+		transform(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
 	}
 
 	@Override
-	public void load(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader, ConnectorRecordWriters writers)
+	public void load(List<EtlDatabaseObject> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws DBException {
-		load(records, reader.unwrap(Connection.class), writers.unwrapShared(Connection.class));
+		load(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
 	}
 
 	public abstract void transformAndLoad(List<T> records, Connection srcConn, Connection dstConn) throws DBException;

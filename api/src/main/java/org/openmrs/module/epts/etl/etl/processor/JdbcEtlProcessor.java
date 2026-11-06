@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.etl.processor;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -19,9 +19,9 @@ public abstract class JdbcEtlProcessor extends EtlProcessor {
 	}
 
 	@Override
-	public void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReader<?> reader,
+	public void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReaders readers,
 			ConnectorRecordWriters writers) throws DBException {
-		transformAndLoad(records, reader.unwrap(Connection.class), writers.unwrapShared(Connection.class));
+		transformAndLoad(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
 	}
 
 	public abstract void transformAndLoad(List<EtlDatabaseObject> records, Connection srcConn, Connection dstConn)

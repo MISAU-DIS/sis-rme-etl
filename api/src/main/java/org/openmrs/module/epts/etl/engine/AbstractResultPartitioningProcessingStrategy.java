@@ -19,7 +19,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 	protected abstract <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> extractedRecords, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			ConnectorRecordReaders readers, ConnectorRecordReader<T> reader, ConnectorRecordWriters writers)
+			ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws Exception;
 
 	@Override
@@ -63,7 +63,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 			Queue<T> queue = new ConcurrentLinkedQueue<>(records);
 
-			processQueue(engine, interval, records, queue, processorCount, threadFactory, readers, reader, writers);
+			processQueue(engine, interval, records, queue, processorCount, threadFactory, readers, writers);
 
 			persistCompletedInterval(engine, interval, srcConn, dstConnections, readers, writers, persistWork);
 		} catch (Exception e) {
