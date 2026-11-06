@@ -128,7 +128,9 @@ public class DefaultEtlValidator extends AbstractEtlDataConfiguration implements
 		boolean valid;
 		try {
 			FieldTransformingInfo value = getValue().transform(processor, srcObject, transformedRecord,
-					additionalSrcObjects, srcConn, dstConn);
+					additionalSrcObjects,
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn),
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn));
 
 			valid = this.getRule().evaluate(value.getTransformedValue());
 		} catch (EmptyTransformedValueException e) {

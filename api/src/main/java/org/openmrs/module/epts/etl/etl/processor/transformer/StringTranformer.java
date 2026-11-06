@@ -238,8 +238,9 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
-
+			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
+			throws DBException, EtlTransformationException {
 		traceTransformationInitialization(field);
 
 		if (additionalSrcObjects == null || additionalSrcObjects.isEmpty()) {
@@ -250,7 +251,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		try {
 
 			Object result = this.transformerElements.evaluate(processor, srcObject, transformedRecord,
-					additionalSrcObjects, field, srcConn, dstConn);
+					additionalSrcObjects, field, reader, writer);
 
 			FieldTransformingInfo transformingInfo = new FieldTransformingInfo(field, result, null);
 
@@ -260,7 +261,7 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 
 		} catch (Exception e) {
 
-			transform(processor, srcObject, transformedRecord, additionalSrcObjects, field, srcConn, dstConn);
+			transform(processor, srcObject, transformedRecord, additionalSrcObjects, field, reader, writer);
 
 			throw new EtlTransformationException("Failed to evaluate string expression: " + field.getValueToTransform(),
 					e, srcObject, ActionOnEtlIssue.ABORT_PROCESS);

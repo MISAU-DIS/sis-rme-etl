@@ -150,8 +150,9 @@ public class StringTranformerElements {
 	}
 
 	public Object evaluate(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
-			List<EtlDatabaseObject> additionalSrcObjects, TransformableField field, Connection srcConn,
-			Connection dstConn) throws Exception {
+			List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer) throws Exception {
 
 		StringTranformerElements element = this;
 
@@ -163,7 +164,7 @@ public class StringTranformerElements {
 
 			for (int i = 0; i < paramTypes.length; i++) {
 				FieldTransformingInfo rawValue = params.get(i).getTransformerInstance().transform(processor, srcObject,
-						transformedRecord, additionalSrcObjects, params.get(i), srcConn, dstConn);
+						transformedRecord, additionalSrcObjects, params.get(i), reader, writer);
 
 				methodParams[i] = convertToType(rawValue.getTransformedValue(), paramTypes[i]);
 			}
@@ -172,7 +173,7 @@ public class StringTranformerElements {
 
 			try {
 				valueToTransform = this.getAuxMapping().getTransformerInstance().transform(processor, srcObject,
-						transformedRecord, additionalSrcObjects, auxMapping, srcConn, dstConn).getTransformedValue();
+						transformedRecord, additionalSrcObjects, auxMapping, reader, writer).getTransformedValue();
 			} catch (EmptyTransformedValueException e) {
 				if (this.getNullOperandBehavior().useEmptyString()) {
 					valueToTransform = "";
@@ -197,10 +198,9 @@ public class StringTranformerElements {
 
 			if (element.getNextElements() != null) {
 				element.getNextElements().setValueToTransform(currentValue);
-				element.getNextElements().fullLoad(srcConn);
 
 				return element.getNextElements().evaluate(processor, srcObject, transformedRecord, additionalSrcObjects,
-						element.getNextElements().getAuxMapping(), srcConn, dstConn);
+						element.getNextElements().getAuxMapping(), reader, writer);
 			}
 
 			return currentValue;

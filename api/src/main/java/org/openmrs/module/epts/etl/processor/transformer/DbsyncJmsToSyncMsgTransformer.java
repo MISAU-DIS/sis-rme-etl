@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.dbsync.model.SyncMetadata;
 import org.openmrs.module.epts.etl.dbsync.model.SyncModel;
 import org.openmrs.module.epts.etl.dbsync.model.utils.JsonUtils;
@@ -35,7 +36,7 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 	@Override
 	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject, DstConf dstConf,
 			EtlDatabaseObject migratedDstParent, TransformationType transformationType, ConnectorRecordReader<?> reader,
-			Connection dstConn) throws DBException, EtlTransformationException {
+			ConnectorRecordWriter<?> writer) throws DBException, EtlTransformationException {
 		Connection srcConn = reader.unwrap(Connection.class);
 
 		TableConfiguration srcConf = (TableConfiguration) srcObject.getRelatedConfiguration();
@@ -114,7 +115,7 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 	@Override
 	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			Set<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
-			TransformationType transformationType, ConnectorRecordReader<?> reader, Connection dstConn)
+			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
 		// TODO Auto-generated method stub
 		return null;

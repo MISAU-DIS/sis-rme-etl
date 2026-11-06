@@ -229,7 +229,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 					recordAsSrc.copyFrom(parentInfo.getParentRecordInOrigin());
 
 					dstParent = dst.getTransformerInstance().transform(this.getProcessor(), recordAsSrc, dst, null,
-							TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn), dstConn);
+							TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn),
+							JdbcConnectorRuntimeAdapters.writer(dstConn));
 
 					if (dstParent != null) {
 						DBException exception = null;

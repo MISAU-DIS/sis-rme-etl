@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -28,7 +29,8 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 
 	FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException;
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws DBException, EtlTransformationException;
 
 	ActionOnEtlIssue getOnNullTransformedValue();
 
@@ -40,7 +42,8 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 
 	default void performFieldTransformation(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, FieldsMapping field,
-			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws DBException, EtlTransformationException {
 
 		EtlTransformationException transformationException = null;
 
@@ -57,7 +60,7 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 
 			try {
 				fieldTransformingInfo = this.transform(processor, srcObject, transformedRecord, additionalSrcObjects,
-						field, srcConn, dstConn);
+						field, reader, writer);
 			} catch (EtlTransformationException e) {
 				transformationException = e;
 			}
@@ -92,20 +95,6 @@ public interface EtlFieldTransformer extends EtlDataConfiguration {
 			throw transformationException;
 		}
 
-	}
-
-	default void performFieldTransformation(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, FieldsMapping field,
-			ConnectorRecordReader<?> reader, Connection dstConn) throws DBException, EtlTransformationException {
-		Connection srcConn = null;
-		if (reader != null) {
-			try {
-				srcConn = reader.unwrap(Connection.class);
-			} catch (IllegalArgumentException ignored) {
-			}
-		}
-		performFieldTransformation(processor, srcObject, transformedRecord, additionalSrcObjects, field, srcConn,
-				dstConn);
 	}
 
 	public static Object tryToLoadDefaultValue(TransformableField transformableField,

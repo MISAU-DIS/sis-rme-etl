@@ -13,6 +13,8 @@ import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriterFactory;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
@@ -27,6 +29,17 @@ public final class JdbcConnectorRuntimeAdapters {
 			@Override public ConnectorResource getResource() { return null; }
 			@Override public List<EtlDatabaseObject> read(ConnectorReadRequest<EtlDatabaseObject> request) {
 				throw new UnsupportedOperationException("Compatibility reader cannot extract records");
+			}
+			@Override public <N> N unwrap(Class<N> nativeType) { return nativeType.cast(connection); }
+		};
+	}
+
+	public static ConnectorRecordWriter<EtlDatabaseObject> writer(Connection connection) {
+		return new ConnectorRecordWriter<EtlDatabaseObject>() {
+			@Override public ConnectorResource getResource() { return null; }
+			@Override public EtlOperationResultHeader<EtlDatabaseObject> write(
+					ConnectorWriteRequest<EtlDatabaseObject> request) {
+				throw new UnsupportedOperationException("Compatibility writer cannot persist records");
 			}
 			@Override public <N> N unwrap(Class<N> nativeType) { return nativeType.cast(connection); }
 		};

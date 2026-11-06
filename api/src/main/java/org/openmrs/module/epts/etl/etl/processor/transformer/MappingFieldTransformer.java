@@ -252,7 +252,10 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
+			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
+			throws DBException, EtlTransformationException {
+		Connection srcConn = reader.unwrap(Connection.class);
 
 		traceTransformationInitialization(field);
 
@@ -269,7 +272,7 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 
 			if (this.hasInput()) {
 				transformingInfo = this.input.getTransformerInstance().transform(processor, srcObject,
-						transformedRecord, additionalSrcObjects, this.input, srcConn, dstConn);
+						transformedRecord, additionalSrcObjects, this.input, reader, writer);
 
 				try {
 					valueToTransform = transformingInfo.getTransformedValue();

@@ -28,6 +28,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
@@ -2963,7 +2964,8 @@ public class SQLUtilities {
 
 		EtlDatabaseObject obj = utilities.listHasElement(avaliableSrcObjects) ? avaliableSrcObjects.get(0) : null;
 
-		return map.getTransformerInstance().transform(null, obj, obj, avaliableSrcObjects, map, conn, conn);
+		return map.getTransformerInstance().transform(null, obj, obj, avaliableSrcObjects, map,
+				JdbcConnectorRuntimeAdapters.reader(conn), JdbcConnectorRuntimeAdapters.writer(conn));
 	}
 
 	private static boolean isParam(String element) {

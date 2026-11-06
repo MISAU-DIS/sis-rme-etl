@@ -138,7 +138,9 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			Connection srcConn, Connection dstConn) throws DBException, EtlTransformationException {
+			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
+			throws DBException, EtlTransformationException {
 
 		traceTransformationInitialization(field);
 
@@ -151,7 +153,7 @@ public class CoalesceFieldTransformer extends AbstractEtlFieldTransformer {
 					logTrace("Retrieving coalesce data from field {} within objects {}", map, additionalSrcObjects);
 
 					transformingInfo = map.getTransformerInstance().transform(processor, srcObject, transformedRecord,
-							additionalSrcObjects, map, srcConn, dstConn);
+							additionalSrcObjects, map, reader, writer);
 				} catch (EtlTransformationException e) {
 				}
 

@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
@@ -42,7 +43,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	@Override
 	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject, DstConf dstConf,
 			EtlDatabaseObject migratedDstParent, TransformationType transformationType, ConnectorRecordReader<?> reader,
-			Connection dstConn) throws DBException, EtlTransformationException {
+			ConnectorRecordWriter<?> writer) throws DBException, EtlTransformationException {
+		Connection dstConn = unwrapConnection(writer);
 
 		Set<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, null, migratedDstParent,
 				dstConf, transformationType, reader);
@@ -57,14 +59,15 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		}
 
 		return transform(processor, srcObject, srcObjects, dstConf, migratedDstParent, transformationType, reader,
-				dstConn);
+				writer);
 	}
 
 	@Override
 	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			Set<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
-			TransformationType transformationType, ConnectorRecordReader<?> reader, Connection dstConn)
+			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
+		Connection dstConn = unwrapConnection(writer);
 
 		if (dstConf.isDisabled()) {
 			throw new EtlExceptionImpl("Attempt to tranform to disabled dstConf");
@@ -90,10 +93,10 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 		transformedRec.getEtlInfo().setTransformationSrcObject(transformationRecords);
 
-		applyFieldTransformations(processor, srcObject, transformedRec, transformationRecords, reader, dstConn);
+		applyFieldTransformations(processor, srcObject, transformedRec, transformationRecords, reader, writer, dstConn);
 
 		resolvePrimaryKeyAndParent(processor, srcObject, transformedRec, migratedDstParent, transformationRecords,
-				reader, dstConn);
+				reader, writer, dstConn);
 
 		if (transformationType.onDemand()) {
 			transformedRec.setUuid(UUID.randomUUID().toString());
@@ -106,7 +109,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	private void resolvePrimaryKeyAndParent(EtlProcessor processor, EtlDatabaseObject srcRecord,
 			EtlDatabaseObject transformedRec, EtlDatabaseObject migratedDstParent,
-			Set<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader, Connection dstConn)
+			Set<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer,
+			Connection dstConn)
 			throws EtlTransformationException, DBException {
 
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
@@ -131,7 +135,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				: new ArrayList<>();
 
 		resolvePrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping, migratedDstParent,
-				availableSrcList, reader, dstConn);
+				availableSrcList, reader, writer, dstConn);
 
 		if (migratedDstParent != null) {
 			resolveParentForeignKey(transformedRec, dstConf, migratedDstParent, dstConn);
@@ -162,25 +166,26 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	private boolean resolvePrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
 			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
 			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader,
-			Connection dstConn) throws EtlTransformationException, DBException {
+			ConnectorRecordWriter<?> writer, Connection dstConn) throws EtlTransformationException, DBException {
 
 		if (!dstConf.useSharedPKKey()) {
 			return resolveNonSharedPrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
-					availableSrcObjs, reader, dstConn);
+					availableSrcObjs, reader, writer, dstConn);
 		}
 
 		return resolveSharedPrimaryKey(processor, srcRecord, transformedRec, dstConf, pkField, pkMapping,
-				migratedDstParent, availableSrcObjs, reader, dstConn);
+				migratedDstParent, availableSrcObjs, reader, writer, dstConn);
 	}
 
 	private boolean resolveNonSharedPrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
 			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
-			List<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader, Connection dstConn)
+			List<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer,
+			Connection dstConn)
 			throws EtlTransformationException, DBException {
 
 		if (!pkMapping.useDefaultTransformer()) {
 			FieldTransformingInfo info = pkMapping.transform(processor, srcRecord, transformedRec, availableSrcObjs,
-					reader, dstConn);
+					reader, writer);
 
 			if (info.getTransformedValue() != null) {
 				transformedRec.setFieldValue(pkField.getName(), info.getTransformedValue());
@@ -209,7 +214,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	private boolean resolveSharedPrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
 			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
 			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader,
-			Connection dstConn) throws EtlTransformationException, DBException {
+			ConnectorRecordWriter<?> writer, Connection dstConn) throws EtlTransformationException, DBException {
 
 		if (migratedDstParent != null && pkMapping.useDefaultTransformer()) {
 			return false;
@@ -230,8 +235,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					(EtlDataSource) srcRecord.getRelatedConfiguration());
 
 		} else {
-
-			info = pkMapping.transform(processor, srcRecord, transformedRec, availableSrcObjs, reader, dstConn);
+			info = pkMapping.transform(processor, srcRecord, transformedRec, availableSrcObjs, reader, writer);
 
 			transformedRec.setFieldValue(pkField.getName(), info.getTransformedValue());
 		}
@@ -328,7 +332,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	private void applyFieldTransformations(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRec, Set<EtlDatabaseObject> srcObjects, ConnectorRecordReader<?> reader,
-			Connection dstConn)
+			ConnectorRecordWriter<?> writer, Connection dstConn)
 			throws DBException {
 
 		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
@@ -341,13 +345,24 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					dstConf.getRelatedEtlConf().trace("Transforming field " + fieldsMapping);
 
 					fieldsMapping.getTransformerInstance().performFieldTransformation(processor, srcObject,
-							transformedRec, new ArrayList<>(srcObjects), fieldsMapping, reader, dstConn);
+							transformedRec, new ArrayList<>(srcObjects), fieldsMapping, reader, writer);
 
 					dstConf.getRelatedEtlConf().trace("Field " + fieldsMapping + " Transformed to: "
 							+ transformedRec.getFieldValue(fieldsMapping.getDstField()));
 				}
 
 			}
+		}
+	}
+
+	private Connection unwrapConnection(ConnectorRecordWriter<?> writer) {
+		if (writer == null) {
+			return null;
+		}
+		try {
+			return writer.unwrap(Connection.class);
+		} catch (IllegalArgumentException e) {
+			return null;
 		}
 	}
 

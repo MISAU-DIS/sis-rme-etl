@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfCheckEvaluator;
 import org.openmrs.module.epts.etl.conf.EtlConfCheckExpression;
 import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -85,17 +86,37 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 	}
 
 	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
+		return shouldBeProcessed(srcObject, avaliableSrcObjects, unwrapConnection(reader), unwrapConnection(writer));
+	}
+
+	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
 			ConnectorRecordReader<?> srcReader, ConnectorRecordReader<?> dstReader) throws DBException {
 		return shouldBeProcessed(srcObject, avaliableSrcObjects, unwrapConnection(srcReader),
 				unwrapConnection(dstReader));
 	}
 
 	default Connection unwrapConnection(ConnectorRecordReader<?> reader) {
+
 		if (reader == null) {
 			return null;
 		}
+
 		try {
 			return reader.unwrap(Connection.class);
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+	}
+
+	default Connection unwrapConnection(ConnectorRecordWriter<?> writer) {
+
+		if (writer == null) {
+			return null;
+		}
+
+		try {
+			return writer.unwrap(Connection.class);
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
@@ -228,18 +249,19 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 		// operadores de comparação
 		String operator = null;
 
-		if (condition.contains(">="))
+		if (condition.contains(">=")) {
 			operator = ">=";
-		else if (condition.contains("<="))
+		} else if (condition.contains("<=")) {
 			operator = "<=";
-		else if (condition.contains("!="))
+		} else if (condition.contains("!=")) {
 			operator = "!=";
-		else if (condition.contains(">"))
+		} else if (condition.contains(">")) {
 			operator = ">";
-		else if (condition.contains("<"))
+		} else if (condition.contains("<")) {
 			operator = "<";
-		else if (condition.contains("="))
+		} else if (condition.contains("=")) {
 			operator = "=";
+		}
 
 		if (operator == null) {
 			throw new IllegalArgumentException("Unsupported condition: " + condition);
@@ -292,10 +314,10 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 	default int compare(String a, String b) {
 
 		try {
-			Double da = Double.valueOf(a);
+			double da = Double.parseDouble(a);
 			Double db = Double.valueOf(b);
 
-			return da.compareTo(db);
+			return Double.compare(da, db);
 
 		} catch (NumberFormatException e) {
 			return a.compareTo(b);

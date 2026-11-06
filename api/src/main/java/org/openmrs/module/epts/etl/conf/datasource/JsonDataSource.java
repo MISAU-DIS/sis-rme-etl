@@ -442,7 +442,8 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 		Connection conn = reader.unwrap(Connection.class);
 
 		FieldTransformingInfo fi = payloadFieldsMap.getTransformerInstance().transform(processor, srcObject, dstObject,
-				avaliableSrcObjects, payloadFieldsMap, conn, conn);
+				avaliableSrcObjects, payloadFieldsMap, reader,
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(conn));
 
 		String json = fi.getTransformedValue().toString();
 

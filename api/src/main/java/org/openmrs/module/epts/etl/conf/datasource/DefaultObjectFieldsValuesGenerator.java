@@ -28,6 +28,10 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 			throws DBException, ForbiddenOperationException {
 
 		Map<String, FieldTransformingInfo> map = new HashMap<>();
+		org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader =
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn);
+		org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer =
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn);
 
 		Set<EtlDatabaseObject> set = avaliableSrcObjects != null ? new HashSet<>(avaliableSrcObjects) : null;
 
@@ -38,7 +42,7 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 					try {
 						field.setValue(field
 								.getAuxFieldMapping().getTransformerInstance().transform(processor, srcObject,
-										dstObject, avaliableSrcObjects, field.getAuxFieldMapping(), srcConn, dstConn)
+										dstObject, avaliableSrcObjects, field.getAuxFieldMapping(), reader, writer)
 								.getTransformedValue());
 
 						if (field.getDefaultValue() != null) {
@@ -53,7 +57,7 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 				}
 
 				FieldTransformingInfo fieldInfo = field.getTransformerInstance().transform(processor, srcObject,
-						dstObject, avaliableSrcObjects, field, srcConn, dstConn);
+						dstObject, avaliableSrcObjects, field, reader, writer);
 
 				if (dstObject.getEtlDefaultEtlException() != null) {
 					throw (EtlExceptionImpl) dstObject.getEtlDefaultEtlException();
@@ -67,12 +71,14 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 	}
 
 	public static JavaObjectFieldsValuesGenerator getInstance() {
-		if (defaultGenerator != null)
+		if (defaultGenerator != null) {
 			return defaultGenerator;
+		}
 
 		synchronized (LOCK_STRING) {
-			if (defaultGenerator != null)
+			if (defaultGenerator != null) {
 				return defaultGenerator;
+			}
 
 			defaultGenerator = new DefaultObjectFieldsValuesGenerator();
 

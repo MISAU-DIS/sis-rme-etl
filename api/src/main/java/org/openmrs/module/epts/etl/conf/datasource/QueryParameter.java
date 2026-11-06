@@ -258,7 +258,8 @@ public class QueryParameter extends Field {
 		map.setNullValueBehavior(ActionOnEtlIssue.SET_TO_NULL);
 
 		return map.getTransformerInstance().transform(null, fakeSrcObject, fakeSrcObject, avaliableSrcObjects, map,
-				conn, conn);
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(conn),
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(conn));
 
 	}
 

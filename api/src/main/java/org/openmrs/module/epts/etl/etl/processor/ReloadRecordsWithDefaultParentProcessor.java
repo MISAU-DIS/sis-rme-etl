@@ -163,7 +163,8 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				parentAsSrc.copyFrom(recWithDefaultParentInfo.getParentRecordInOrigin());
 
 				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, null, dst, null,
-						TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn), dstConn);
+						TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn),
+						JdbcConnectorRuntimeAdapters.writer(dstConn));
 
 				if (dstParent != null) {
 					DBException exception = null;

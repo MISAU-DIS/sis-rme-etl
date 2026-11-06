@@ -62,7 +62,9 @@ public class DefaultFieldTransformer extends AbstractEtlFieldTransformer {
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects,
-			final TransformableField field, Connection srcConn, Connection dstConn)
+			final TransformableField field,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
 
 		List<EtlDatabaseObject> availableObjects = new ArrayList<>();

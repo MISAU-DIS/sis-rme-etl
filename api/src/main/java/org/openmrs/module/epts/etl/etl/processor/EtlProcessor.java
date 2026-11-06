@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
@@ -159,7 +160,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							continue;
 						}
 
-						Connection dstConn = destinationConnection(writers, dstConf);
+						ConnectorRecordWriter<?> writer = writers.get(dstConf);
 						List<EtlDatabaseObject> expansion = null;
 
 						JdbcTablePrimaryDataSourceConfiguration srcConf = primarySource instanceof JdbcTablePrimaryDataSourceConfiguration
@@ -188,7 +189,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 											srcRecord, dstConf);
 								}
 
-								this.transformRecord(srcRecord, expanded, parentMigratedRec, dstConf, readers, dstConn);
+								this.transformRecord(srcRecord, expanded, parentMigratedRec, dstConf, readers, writer);
 
 								if (srcConf != null && srcConf.hasExpansionDs()) {
 									logTrace(
@@ -292,7 +293,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void transformRecord(EtlDatabaseObject srcRecord, EtlDatabaseObject srcRecordExpansion,
-			EtlDatabaseObject parentMigratedRec, DstConf dstConf, ConnectorRecordReaders readers, Connection dstConn)
+			EtlDatabaseObject parentMigratedRec, DstConf dstConf, ConnectorRecordReaders readers,
+			ConnectorRecordWriter<?> writer)
 			throws DBException {
 		ConnectorRecordReader<?> reader = readers.getPrimary();
 
@@ -318,10 +320,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			if (utilities.setHasElement(avaliableSrcObjects) || dstConf.isDoNotUseSrcConfAsDataSource()) {
 
-				if (dstConf.shouldBeProcessed(srcRecord, avaliableSrcObjects, reader, dstConn)) {
+				if (dstConf.shouldBeProcessed(srcRecord, avaliableSrcObjects, reader, writer)) {
 
 					dstObject = dstConf.getTransformerInstance().transform(this, srcRecord, avaliableSrcObjects,
-							dstConf, parentMigratedRec, TransformationType.PRINCIPAL, reader, dstConn);
+							dstConf, parentMigratedRec, TransformationType.PRINCIPAL, reader, writer);
 
 					if (dstObject != null) {
 						srcRecord.addDestinationRecord(dstObject);

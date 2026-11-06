@@ -6,6 +6,7 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.ArithmeticFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultFieldTransformer;
@@ -60,24 +61,11 @@ public interface TransformableField {
 	EtlTransformTarget getTransformationTargetObject();
 
 	default FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
-			Connection dstConn) throws DBException, EtlTransformationException {
-
-		return this.getTransformerInstance().transform(processor, srcObject, transformedRecord, additionalSrcObjects,
-				this, srcConn, dstConn);
-	}
-
-	default FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects,
-			ConnectorRecordReader<?> reader, Connection dstConn) throws DBException, EtlTransformationException {
-		Connection srcConn = null;
-		if (reader != null) {
-			try {
-				srcConn = reader.unwrap(Connection.class);
-			} catch (IllegalArgumentException ignored) {
-			}
-		}
-		return transform(processor, srcObject, transformedRecord, additionalSrcObjects, srcConn, dstConn);
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws DBException, EtlTransformationException {
+		return this.getTransformerInstance().transform(processor, srcObject, transformedRecord, additionalSrcObjects,
+				this, reader, writer);
 	}
 
 	default FieldTransformerType getTransformerType() {
