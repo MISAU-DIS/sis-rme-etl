@@ -334,6 +334,32 @@ class EtlConnectorConfigurationTest {
 	}
 
 	@Test
+	void shouldBindJdbcPrimarySourceToItsOwnConnectorConnectionInfo() throws Exception {
+		DBConnectionInfo globalSource = new DBConnectionInfo();
+		globalSource.setConnectionURI("jdbc:mysql://global/openmrs");
+
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setSrcConnInfo(globalSource);
+		configuration.setConnectors(java.util.Collections
+				.singletonList(jdbcConnector("clinical-db", "jdbc:mysql://clinical/openmrs")));
+
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(configuration);
+		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
+		source.setTableName("patient");
+		source.setResource(resource("clinical-db", "patient"));
+		setJdbcSource(item, source);
+
+		initializeConnectors(configuration);
+		initializeResources(item);
+
+		assertEquals("jdbc:mysql://clinical/openmrs", source.getRelatedConnInfo().getConnectionURI());
+		assertNotSame(globalSource, source.getRelatedConnInfo());
+		assertSame(item.getResolvedSrcResource().getEndpoint().unwrap(DBConnectionInfo.class),
+				source.getRelatedConnInfo());
+	}
+
+	@Test
 	void shouldCreateLazyDestinationConnectionAggregator() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
 		configuration.setSrcConnInfo(new DBConnectionInfo());

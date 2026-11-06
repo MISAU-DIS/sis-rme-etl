@@ -29,6 +29,8 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
@@ -39,6 +41,7 @@ import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingJoiningElementsException;
+import org.openmrs.module.epts.etl.exceptions.RequireJdbcException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
@@ -545,6 +548,17 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
+		ConnectorResource resource = getResolvedResource();
+
+		if (resource != null && resource.getEndpoint() != null) {
+			if (resource.getEndpoint().getType() != ConnectorType.JDBC) {
+				throw new RequireJdbcException(
+						"Primary data source '" + getObjectName() + "' is not JDBC-backed");
+			}
+
+			return resource.getEndpoint().unwrap(DBConnectionInfo.class);
+		}
+
 		return getSrcConnInfo();
 	}
 
