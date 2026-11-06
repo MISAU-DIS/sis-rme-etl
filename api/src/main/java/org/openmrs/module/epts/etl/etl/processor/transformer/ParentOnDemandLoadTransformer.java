@@ -791,9 +791,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		OpenConnection dstConn = null;
 
 		try {
-			srcConn = item.getRelatedEtlConf().openSrcConn(item);
-			dstConn = getRelatedEtlTransformTarget().getRelatedConnInfo()
-					.openConnection(getRelatedEtlTransformTarget());
+			srcConn = item.getPrimaryDataSource().openConnection();
+			dstConn = getRelatedEtlTransformTarget().openConnection();
 
 			if (sourceParentMayExists()) {
 				ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);

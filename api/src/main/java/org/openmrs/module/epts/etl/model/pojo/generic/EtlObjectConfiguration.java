@@ -29,8 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents a data base which can be represented by a Pojo. The
- * {@link EtlObjectConfiguration} can be a database table or a query
- * result
+ * {@link EtlObjectConfiguration} can be a database table or a query result
  */
 public interface EtlObjectConfiguration extends EtlDataConfiguration {
 
@@ -175,7 +174,7 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	 * owner.
 	 */
 	default OpenConnection openConnection() throws DBException {
-		ConnectorResource resolvedResource = getResolvedResource();
+		ConnectorResource resolvedResource = this.getResolvedResource();
 
 		if (resolvedResource != null && resolvedResource.getEndpoint() != null
 				&& resolvedResource.getEndpoint().getType() != ConnectorType.JDBC) {
