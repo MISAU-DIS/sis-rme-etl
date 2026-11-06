@@ -282,7 +282,9 @@ quoting and field metadata. Its connector must provide a compatible reader.
 ### Additional data sources
 
 Additional sources are direct children of `source` and enrich the current
-transformation context without replacing the primary record:
+transformation context without replacing the primary record. Each additional
+source may declare its own `resource`, including a `connector` from the root
+`connectors` catalog:
 
 ```jsonc
 "source": {
@@ -291,29 +293,92 @@ transformation context without replacing the primary record:
     "tableName": "patient"
   },
   "extraTableDataSource": [
-    { "tableName": "person" }
+    {
+      "tableName": "person",
+      "resource": {
+        "connector": "demographics-db",
+        "name": "person"
+      }
+    }
   ],
   "extraQueryDataSource": [
     {
       "name": "latestVisit",
-      "query": "select encounter_id, patient_id from encounter"
+      "query": "select encounter_id, patient_id from encounter",
+      "resource": {
+        "connector": "clinical-reporting-db",
+        "name": "latest-visit-query"
+      }
     }
   ],
   "extraObjectDataSource": [
-    { "name": "calculatedValues" }
+    {
+      "name": "calculatedValues",
+      "resource": {
+        "connector": "rules-source",
+        "name": "calculated-values"
+      }
+    }
   ],
   "extraJsonDataSource": [
     {
       "name": "demographics",
-      "payload": "${demographics_payload}"
+      "payload": "${demographics_payload}",
+      "resource": {
+        "connector": "event-source",
+        "name": "demographics-payload"
+      }
     }
   ]
 }
 ```
 
-`extraObjectDataSource` and `extraJsonDataSource` are connector-neutral and
-can enrich JDBC, JSON or CSV records. Table and query additional sources
-execute SQL and therefore require a JDBC primary source.
+The resource is resolved independently for each additional source:
+
+- `resource.connector` selects an endpoint from `EtlConfiguration.connectors`;
+- when `resource.connector` is omitted, the primary source connector is used;
+- when `resource.name` is omitted, the additional source `name` is used;
+- connector-neutral additional sources without `resource` inherit the complete
+  primary resource;
+- table and query additional sources without `resource` use their table/name on
+  the primary connector.
+
+For example, the following table remains on the primary connector but reads a
+different physical resource:
+
+```jsonc
+"extraTableDataSource": [
+  {
+    "tableName": "person_address",
+    "resource": {
+      "name": "person_address"
+    }
+  }
+]
+```
+
+`extraJsonRecordDataSource` normally omits `resource`: it describes a nested
+record that is parsed together with, and therefore inherits the resource of,
+the primary JSON record:
+
+```jsonc
+"extraJsonRecordDataSource": [
+  {
+    "name": "address",
+    "path": "/address",
+    "fields": [
+      { "name": "id", "dataType": "java.lang.Integer" },
+      { "name": "person_id", "dataType": "java.lang.Integer" }
+    ]
+  }
+]
+```
+
+`extraObjectDataSource`, `extraJsonDataSource` and
+`extraJsonRecordDataSource` are connector-neutral and can enrich JDBC, JSON or
+CSV records. `extraTableDataSource` and `extraQueryDataSource` execute SQL, so
+their resolved connector must be JDBC. It may be the primary connector or a
+different JDBC connector declared specifically by the additional source.
 
 ## Destination configuration
 
@@ -351,9 +416,9 @@ Validation occurs before processing. In particular:
 - `source` must define exactly one primary variant;
 - JSON and CSV sources require a non-empty, valid `fields` list;
 - JSON and CSV primary sources require `name`;
-- `source.resource` is rejected by the current configuration contract;
+- non-JDBC primary sources require `source.resource`;
 - connector IDs and primary resource names must resolve unambiguously;
-- table/query additional sources require a JDBC primary source;
+- table/query additional sources require their resolved connector to be JDBC;
 - connector-neutral additional sources accept any primary source;
 - unknown JSON configuration properties are rejected.
 

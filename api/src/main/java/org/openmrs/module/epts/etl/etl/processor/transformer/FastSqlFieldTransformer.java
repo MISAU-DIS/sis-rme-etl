@@ -10,7 +10,6 @@ import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
-import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -173,6 +172,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
 			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
+
 		Connection srcConn = reader.unwrap(Connection.class);
 
 		traceTransformationInitialization(field);
@@ -205,10 +205,8 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		try {
-			Connection queryConnection = hasOverrideConnection() ? getOverrideConnection() : srcConn;
-
 			EtlDatabaseObject srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject,
-					transformedRecord, additionalSrcObjects, JdbcConnectorRuntimeAdapters.reader(queryConnection));
+					transformedRecord, additionalSrcObjects, reader);
 
 			Object dstValue = null;
 
