@@ -79,7 +79,7 @@ class SourceConfigurationTest {
 		assertTrue(json.getPrimaryDataSource() instanceof JsonPrimaryDataSourceConfiguration);
 		assertTrue(json.getPrimaryDataSource() instanceof EtlObjectConfiguration);
 		assertEquals("/results", json.getResource().getRecordPath());
-		json.fullLoad(null);
+		json.fullLoad();
 		assertTrue(json.isFullLoaded());
 		assertTrue(json.getPrimaryDataSource().isFullLoaded());
 		assertEquals(GenericDatabaseObject.class, json.getPrimaryDataSource().getEtlRecordClass());
@@ -181,7 +181,7 @@ class SourceConfigurationTest {
 		source.setExtraJsonDataSource(Collections.singletonList(json));
 
 		source.initialize(new EtlItemConfiguration());
-		source.fullLoad(null);
+		source.fullLoad();
 
 		assertSame(primary, transformable.getRelatedPrimaryDataSource());
 		assertSame(primary, json.getRelatedPrimaryDataSource());
@@ -202,7 +202,7 @@ class SourceConfigurationTest {
 				+ "\"cardinality\":\"ONE\",\"fields\":[{\"name\":\"uuid\"}]}]}" );
 
 		source.initialize(new EtlItemConfiguration());
-		source.fullLoad(null);
+		source.fullLoad();
 
 		assertEquals(1, source.getExtraJsonRecordDataSource().size());
 		assertSame(source.getPrimaryDataSource(),
@@ -229,7 +229,7 @@ class SourceConfigurationTest {
 				+ "\"fields\":[{\"name\":\"id\"}]}]}");
 
 		source.initialize(item);
-		source.fullLoad(null);
+		source.fullLoad();
 
 		assertSame(PatientVO.class, source.getPrimaryDataSource().getEtlRecordClass());
 		assertSame(AddressVO.class, source.getExtraJsonRecordDataSource().get(0).getEtlRecordClass());

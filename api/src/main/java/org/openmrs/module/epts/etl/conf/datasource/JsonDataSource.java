@@ -171,13 +171,7 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad() throws DBException {
-		OpenConnection mainConn = getRelatedEtlConf().getSrcConnInfo().openConnection(this);
-
-		try {
-			fullLoad(mainConn);
-		} finally {
-			mainConn.finalizeConnection(this);
-		}
+		fullLoad(null);
 	}
 
 	private void ensurePayloadFieldInfoIsLoaded(Connection conn)

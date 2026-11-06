@@ -199,7 +199,7 @@ class FileConnectorRecordReaderTest {
 		parent.setJsonDataSource(source);
 		parent.setExtraJsonRecordDataSource(Arrays.asList(address, identifiers));
 		parent.initialize(new org.openmrs.module.epts.etl.conf.EtlItemConfiguration());
-		parent.fullLoad(null);
+		parent.fullLoad();
 		return source;
 	}
 

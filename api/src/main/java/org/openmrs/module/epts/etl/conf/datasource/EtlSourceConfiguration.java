@@ -154,13 +154,11 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public List<JsonRecordDataSourceConfiguration> getExtraJsonRecordDataSource() {
-		return extraJsonRecordDataSource == null
-				? java.util.Collections.<JsonRecordDataSourceConfiguration>emptyList()
+		return extraJsonRecordDataSource == null ? java.util.Collections.<JsonRecordDataSourceConfiguration>emptyList()
 				: extraJsonRecordDataSource;
 	}
 
-	public void setExtraJsonRecordDataSource(
-			List<JsonRecordDataSourceConfiguration> extraJsonRecordDataSource) {
+	public void setExtraJsonRecordDataSource(List<JsonRecordDataSourceConfiguration> extraJsonRecordDataSource) {
 		this.extraJsonRecordDataSource = extraJsonRecordDataSource;
 	}
 
@@ -204,7 +202,7 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 		markAsInitialized();
 	}
 
-	public synchronized void initializeDataSources(Connection srcConn, Connection dstConn) throws DBException {
+	public synchronized void initializeDataSources() throws DBException {
 
 		if (this.dataSourcesInitialized) {
 			return;
@@ -218,23 +216,48 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 			JdbcTablePrimaryDataSourceConfiguration jdbcSource = (JdbcTablePrimaryDataSourceConfiguration) this.primaryDataSource;
 
 			if (!jdbcSource.doNotUseAsDatasource()) {
-				jdbcSource.init(this.parentItem, srcConn, dstConn);
+				org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection connection = jdbcSource.openConnection();
+
+				try {
+					jdbcSource.init(this.parentItem, connection, null);
+					connection.markAsSuccessifullyTerminated();
+				} finally {
+					connection.finalizeConnection(jdbcSource);
+				}
 
 				this.getRelatedEtlConf().addConfiguredTable(jdbcSource);
 			}
 		}
 
 		for (EtlAdditionalDataSource additional : this.getConfiguredAdditionalDataSources()) {
-			this.initAdditionalDataSource(additional, srcConn, dstConn);
+			this.initAdditionalDataSource(additional);
 		}
 
 		this.dataSourcesInitialized = true;
 	}
 
-	private void initAdditionalDataSource(EtlAdditionalDataSource additional, Connection srcConn, Connection dstConn)
-			throws DBException {
+	private void initAdditionalDataSource(EtlAdditionalDataSource additional) throws DBException {
 		additional.setRelatedPrimaryDataSource(primaryDataSource);
-		additional.init(primaryDataSource, parentItem.getRelatedEtlSchemaObject(), srcConn, dstConn);
+		Connection connection = null;
+		org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection ownedConnection = null;
+
+		try {
+
+			if (additional instanceof AbstractTableConfiguration) {
+				ownedConnection = ((AbstractTableConfiguration) additional).openConnection();
+				connection = ownedConnection;
+			}
+			additional.init(primaryDataSource, parentItem.getRelatedEtlSchemaObject(), connection, null);
+
+			if (ownedConnection != null) {
+				ownedConnection.markAsSuccessifullyTerminated();
+			}
+		} finally {
+
+			if (ownedConnection != null) {
+				ownedConnection.finalizeConnection((AbstractTableConfiguration) additional);
+			}
+		}
 
 		if (additional instanceof AbstractTableConfiguration) {
 			TableConfiguration table = (TableConfiguration) additional;
@@ -250,17 +273,17 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
-	public synchronized void fullLoad(Connection srcConn) throws DBException {
+	public synchronized void fullLoad() throws DBException {
 
 		if (fullLoaded) {
 			return;
 		}
 
-		initializeDataSources(srcConn, null);
+		initializeDataSources();
 
-		primaryDataSource.fullLoad(srcConn);
+		primaryDataSource.fullLoad();
 
-		loadAdditionalDataSources(null, srcConn);
+		loadAdditionalDataSources(null);
 
 		if (primaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration) {
 			loadEtlFields((JdbcTablePrimaryDataSourceConfiguration) primaryDataSource);
@@ -269,40 +292,44 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 		fullLoaded = true;
 	}
 
-	private void loadAdditionalDataSources(EtlDatabaseObject schemaInfo, Connection srcConn) throws DBException {
+	private void loadAdditionalDataSources(EtlDatabaseObject schemaInfo) throws DBException {
 
 		if (!hasAdditionalDataSource()) {
 			return;
 		}
 
-		JdbcTablePrimaryDataSourceConfiguration jdbcSource = primaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration ? (JdbcTablePrimaryDataSourceConfiguration) primaryDataSource : null;
+		JdbcTablePrimaryDataSourceConfiguration jdbcSource = primaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration
+				? (JdbcTablePrimaryDataSourceConfiguration) primaryDataSource
+				: null;
 
 		if (hasExtraTableDataSourceConfig()) {
 
 			for (TableDataSourceConfig table : extraTableDataSource) {
 				TableConfiguration loaded = jdbcSource == null ? null
-						: jdbcSource.findFullConfiguredConfInAllRelatedTable(table.getFullTableName(), new ArrayList<>());
+						: jdbcSource.findFullConfiguredConfInAllRelatedTable(table.getFullTableName(),
+								new ArrayList<>());
 
 				table.tryToGenerateTableAlias(getRelatedEtlConf());
 
 				if (loaded != null) {
-					table.clone(loaded, primaryDataSource, null, srcConn);
+					table.clone(loaded, primaryDataSource, null, null);
 				} else {
-					table.fullLoad(srcConn);
+					table.fullLoad();
 				}
 
 				table.setRelatedPrimaryDataSource(primaryDataSource);
 
 				if (table.useSharedPKKey()) {
-					table.getSharedKeyRefInfo(srcConn).tryToGenerateTableAlias(getRelatedEtlConf());
+					table.getSharedKeyRefInfo(null).tryToGenerateTableAlias(getRelatedEtlConf());
 
-					loaded = jdbcSource == null ? null : jdbcSource.findFullConfiguredConfInAllRelatedTable(
-							table.getSharedKeyRefInfo(srcConn).getFullTableName(), new ArrayList<>());
+					loaded = jdbcSource == null ? null
+							: jdbcSource.findFullConfiguredConfInAllRelatedTable(
+									table.getSharedKeyRefInfo(null).getFullTableName(), new ArrayList<>());
 
 					if (loaded != null) {
-						table.getSharedKeyRefInfo(srcConn).clone(loaded, jdbcSource, null, srcConn);
+						table.getSharedKeyRefInfo(null).clone(loaded, jdbcSource, null, null);
 					} else {
-						table.getSharedKeyRefInfo(srcConn).fullLoad(srcConn);
+						table.getSharedKeyRefInfo(null).fullLoad();
 					}
 				}
 			}
@@ -312,7 +339,7 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 
 			for (QueryDataSourceConfig query : extraQueryDataSource) {
 				query.setRelatedPrimaryDataSource(primaryDataSource);
-				query.fullLoad(srcConn);
+				query.fullLoad();
 			}
 		}
 
@@ -333,7 +360,7 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 					}
 				}
 
-				dataSource.fullLoad(srcConn);
+				dataSource.fullLoad();
 			}
 		}
 
@@ -341,7 +368,7 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 
 			for (JsonDataSource dataSource : extraJsonDataSource) {
 				dataSource.setRelatedPrimaryDataSource(primaryDataSource);
-				dataSource.fullLoad(srcConn);
+				dataSource.fullLoad();
 			}
 		}
 
@@ -349,7 +376,7 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 
 			for (JsonRecordDataSourceConfiguration dataSource : getExtraJsonRecordDataSource()) {
 				dataSource.setRelatedPrimaryDataSource(primaryDataSource);
-				dataSource.fullLoad(srcConn);
+				dataSource.fullLoad();
 			}
 		}
 	}

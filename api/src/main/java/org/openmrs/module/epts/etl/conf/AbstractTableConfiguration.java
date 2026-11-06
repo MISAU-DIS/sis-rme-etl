@@ -1511,7 +1511,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 					"Table configuration '" + getObjectName() + "' is bound to a non-JDBC resource");
 		}
 
-		DBConnectionInfo connectionInfo = this.getRelatedConnInfo();
+		DBConnectionInfo connectionInfo = getResolvedResource() != null
+				&& getResolvedResource().getEndpoint() != null
+				&& getResolvedResource().getEndpoint().getType() == ConnectorType.JDBC
+						? getResolvedResource().getEndpoint().unwrap(DBConnectionInfo.class)
+						: getRelatedConnInfo();
 
 		if (connectionInfo == null) {
 			throw new EtlConfException(

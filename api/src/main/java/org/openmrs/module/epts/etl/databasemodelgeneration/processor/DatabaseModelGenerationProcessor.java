@@ -176,11 +176,10 @@ public class DatabaseModelGenerationProcessor
 		}
 
 		item.init(getRelatedEtlConf(), item.isTesting(), srcConn);
+		item.fullLoad(operationConfig);
+		item.getEtlDatabaseDataSource();
 
 		try (DestinationConnectorConnections destinationConnections = item.createDestinationConnections(this)) {
-			item.fullLoad(operationConfig, srcConn, destinationConnections);
-			item.getEtlDatabaseDataSource();
-
 			DatabaseModelGenerationContext sourceContext = DatabaseModelGenerationContext
 					.source(getRelatedEtlConfiguration().getDataModel(), srcConn);
 
@@ -231,7 +230,7 @@ public class DatabaseModelGenerationProcessor
 			return;
 		}
 
-		destination.fullLoad(dstConn);
+		destination.fullLoad();
 
 		for (FieldsMapping mapping : destination.getMapping()) {
 
@@ -268,7 +267,7 @@ public class DatabaseModelGenerationProcessor
 		try {
 
 			if (!objectConfiguration.isFullLoaded()) {
-				objectConfiguration.fullLoad(context.getConnection());
+				objectConfiguration.fullLoad();
 			}
 
 			objectConfiguration.generateRelatedPojoClass(context, true);

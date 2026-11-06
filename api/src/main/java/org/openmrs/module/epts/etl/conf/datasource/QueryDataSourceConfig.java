@@ -18,7 +18,6 @@ import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.interfaces.ConditionalEtlElement;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
@@ -28,9 +27,11 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -279,10 +280,15 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad() throws DBException {
-		OpenConnection conn = this.relatedPrimaryDataSource.getRelatedConnInfo().openConnection(this);
+		DBConnectionInfo connectionInfo = getResolvedResource() != null
+				&& getResolvedResource().getEndpoint().getType() == ConnectorType.JDBC
+						? getResolvedResource().getEndpoint().unwrap(DBConnectionInfo.class)
+						: this.relatedPrimaryDataSource.getRelatedConnInfo();
+		OpenConnection conn = connectionInfo.openConnection(this);
 
 		try {
 			fullLoad(conn);
+			conn.markAsSuccessifullyTerminated();
 		} finally {
 			conn.finalizeConnection(this);
 		}
@@ -774,6 +780,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
+
 		if (!(relatedParent instanceof PrimaryDataSourceConfiguration)) {
 			throw new ForbiddenOperationException("QueryDataSourceConfig parent must be a primary data source");
 		}

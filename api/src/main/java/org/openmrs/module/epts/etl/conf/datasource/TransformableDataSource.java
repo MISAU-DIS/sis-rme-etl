@@ -240,13 +240,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public synchronized void fullLoad() throws DBException {
-		OpenConnection mainConn = getRelatedEtlConf().getSrcConnInfo().openConnection(this);
-
-		try {
-			fullLoad(mainConn);
-		} finally {
-			mainConn.finalizeConnection(this);
-		}
+		fullLoad(null);
 	}
 
 	public Boolean hasObjectFields() {

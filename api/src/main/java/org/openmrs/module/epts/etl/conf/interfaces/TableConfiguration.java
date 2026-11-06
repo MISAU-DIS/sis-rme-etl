@@ -593,7 +593,7 @@ public interface TableConfiguration extends EtlDataSource {
 								+ "." + defaultGeneratedObjectKeyTabConf.getTableName());
 
 						defaultGeneratedObjectKeyTabConf.setTableAlias(defaultGeneratedObjectKeyTabConf.getTableName());
-						defaultGeneratedObjectKeyTabConf.fullLoad(srcConn);
+						defaultGeneratedObjectKeyTabConf.fullLoad();
 					}
 
 					for (Key key : defaultObject.getObjectId().getFields()) {
@@ -626,7 +626,7 @@ public interface TableConfiguration extends EtlDataSource {
 		EtlConfigurationTableConf skippedRecordTabConf = this.getRelatedEtlConf().getSkippedRecordTabConf();
 
 		if (!skippedRecordTabConf.isFullLoaded()) {
-			skippedRecordTabConf.fullLoad(srcConn);
+			skippedRecordTabConf.fullLoad();
 		}
 
 		try {
@@ -1734,19 +1734,18 @@ public interface TableConfiguration extends EtlDataSource {
 	default void fullLoad() throws DBException {
 
 		synchronized (this) {
-			OpenConnection mainConn = this.getRelatedEtlConf().openSrcConn(this);
-
-			OpenConnection dstConn = null;
+			OpenConnection connection = openConnection();
 
 			try {
-				this.fullLoad(mainConn);
+				this.fullLoad(connection);
+				connection.markAsSuccessifullyTerminated();
 			} finally {
-				mainConn.finalizeConnection(this);
-
-				finalizeConnection(dstConn, this);
+				connection.finalizeConnection(this);
 			}
 		}
 	}
+
+	OpenConnection openConnection() throws DBException;
 
 	default ParentTable getSharedTableConf(Connection conn) {
 
@@ -1774,9 +1773,7 @@ public interface TableConfiguration extends EtlDataSource {
 						try {
 
 							if (conn == null) {
-								localConn = this.getRelatedEtlConf().openSrcConn(this);
-
-								parent.fullLoad(localConn);
+								parent.fullLoad();
 							} else {
 								parent.fullLoad(conn);
 							}
