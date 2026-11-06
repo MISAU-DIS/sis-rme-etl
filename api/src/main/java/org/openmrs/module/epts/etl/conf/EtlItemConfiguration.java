@@ -563,8 +563,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				}
 
 				ConnectorRecordReader<? extends EtlDatabaseObject> reader = readers.get(resource);
+				boolean jdbcPrimary = dataSource instanceof PrimaryDataSourceConfiguration
+						&& resource.getEndpoint().getType() == ConnectorType.JDBC;
 
-				if (reader == null) {
+				if (reader == null || jdbcPrimary) {
 					Object nativeState = null;
 
 					if (resource.getEndpoint().getType() == ConnectorType.JDBC) {
@@ -578,7 +580,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 						}
 						nativeState = connection;
 					}
-					reader = new ResourceBoundConnectorRecordReader<>(resource, nativeState);
+
+					if (jdbcPrimary) {
+						@SuppressWarnings("unchecked")
+						PrimaryDataSourceConfiguration childPrimary = (PrimaryDataSourceConfiguration) dataSource;
+						EtlDatabaseObjectSearchParams childSearchParams = new EtlDatabaseObjectSearchParams(childPrimary,
+								null);
+						Connection jdbcConnection = (Connection) nativeState;
+						reader = ConnectorRecordReaderFactory.create(resource, childSearchParams, jdbcConnection,
+								jdbcConnection);
+					} else {
+						reader = new ResourceBoundConnectorRecordReader<>(resource, nativeState);
+					}
 					readers.put(resource, reader);
 				}
 				resources.put(dataSource, resource);

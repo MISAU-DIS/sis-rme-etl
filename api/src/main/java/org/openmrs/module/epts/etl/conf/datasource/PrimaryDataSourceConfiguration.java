@@ -9,12 +9,28 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.exceptions.RequireJdbcException;
+import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
  * A mutually exclusive primary source variant configured under {@code source}.
  */
 public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcConf {
+
+	/**
+	 * Searches records through the reader bound to this primary data source.
+	 * Connector-specific implementations adapt the reader to their native search
+	 * mechanism.
+	 */
+	default List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
+			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxiliarySourceObjects,
+			ConnectorRecordReader<?> reader) throws DBException {
+		throw new UnsupportedOperationException(
+				"Record search is not implemented for primary data source '" + getObjectName() + "'");
+	}
 
 	EtlSourceConfiguration getParentSource();
 

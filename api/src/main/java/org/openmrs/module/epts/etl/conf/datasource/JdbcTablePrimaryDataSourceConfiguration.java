@@ -30,6 +30,8 @@ import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -1029,6 +1031,25 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 
 	@Override
 	public List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
+			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects,
+			ConnectorRecordReader<?> reader) throws DBException {
+		if (reader == null) {
+			throw new IllegalArgumentException("reader cannot be null");
+		}
+
+		@SuppressWarnings("unchecked")
+		ConnectorRecordReader<EtlDatabaseObject> jdbcReader = (ConnectorRecordReader<EtlDatabaseObject>) reader;
+		return jdbcReader.read(new ConnectorReadRequest<>(null, parentSrcObject, auxDataSourceObjects, false));
+	}
+
+	@Override
+	public List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
+			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
+			throws DBException {
+		return searchJdbcRecords(engine, parentSrcObject, auxDataSourceObjects, srcConn);
+	}
+
+	private List<EtlDatabaseObject> searchJdbcRecords(Engine<? extends EtlDatabaseObject> engine,
 			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects, Connection srcConn)
 			throws DBException {
 
