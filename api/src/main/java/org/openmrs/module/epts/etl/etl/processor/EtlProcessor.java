@@ -470,7 +470,6 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			ConnectorRecordReaders readers, ConnectorRecordWriters writers) throws DBException {
 
 		ConnectorRecordReader<?> childPrimaryReader = findPrimaryReader(itemConf, readers);
-		Connection srcConn = findJdbcConnection(childPrimaryReader);
 		Connection parentDstConn = transformedParent.getRelatedConfiguration() instanceof DstConf
 				? destinationConnection(writers, (DstConf) transformedParent.getRelatedConfiguration())
 				: null;
@@ -495,8 +494,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 						: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
 
-				List<EtlDatabaseObject> etlObjects = itemConf.getPrimaryDataSource()
-						.searchRecords(this.getEngine(), srcObject, avaliableSrcObjects, childPrimaryReader);
+				List<EtlDatabaseObject> etlObjects = itemConf.getPrimaryDataSource().searchRecords(this.getEngine(),
+						srcObject, avaliableSrcObjects, childPrimaryReader);
 
 				if (!etlObjects.isEmpty()) {
 
@@ -534,6 +533,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		for (DstConf destination : itemConf.getDstConf()) {
 
 			if (!destination.isDisabled()) {
+
 				try {
 					return writers.get(destination);
 				} catch (IllegalArgumentException e) {
@@ -609,6 +609,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private Connection findJdbcConnection(ConnectorRecordReader<?> reader) {
+
 		try {
 			return reader.unwrap(Connection.class);
 		} catch (IllegalArgumentException e) {

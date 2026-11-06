@@ -61,6 +61,11 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 		if (relatedEtlTargedConf.getRelatedEtlConf() == null)
 			throw new EtlConfException("The RelatedEtlConf conf withing the target of " + this + " is null");
 
+		try {
+			loadParameters();
+		} catch (DBException e) {
+			throw new EtlConfException(e);
+		}
 	}
 
 	public List<String> getSkipRelationshipResolutionForFields() {
@@ -94,6 +99,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 				}
 
 				if (paramName.equals("input")) {
+
 					if (isTransformerExpression(paramValue)) {
 						this.input = FieldsMapping.fastCreateWithTransformer(this.getRelatedEtlTransformTarget(),
 								field.getDstField(), paramValue);
@@ -104,6 +110,7 @@ public abstract class AbstractEtlFieldTransformer extends AbstractEtlDataConfigu
 
 					this.inputExpression = paramValue;
 				} else if (paramName.equals("skip_relationship_resolution_for_fields")) {
+
 					if (!utilities.stringHasValue(paramValue)) {
 						throw new ForbiddenOperationException("The lookup_condition has no value");
 					}

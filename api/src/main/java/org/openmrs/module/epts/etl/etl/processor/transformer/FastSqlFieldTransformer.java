@@ -117,7 +117,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 					+ "ex: org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer(select uuid())");
 		}
 
-		if (parameters.size() == 1) {
+		if (parameters.size() == 1 && parameters.get(0).toString().split(":", 2).length == 1) {
 			this.sqlQuery = parameters.get(0).toString();
 
 			return;
@@ -206,6 +206,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		try {
 			Connection queryConnection = hasOverrideConnection() ? getOverrideConnection() : srcConn;
+
 			EtlDatabaseObject srcObj = this.dataSourceConfig.loadRelatedSrcObject(processor, srcObject,
 					transformedRecord, additionalSrcObjects, JdbcConnectorRuntimeAdapters.reader(queryConnection));
 
