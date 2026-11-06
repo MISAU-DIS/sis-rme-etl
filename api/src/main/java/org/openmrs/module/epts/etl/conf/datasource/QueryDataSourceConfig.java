@@ -29,7 +29,6 @@ import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -280,11 +279,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad() throws DBException {
-		DBConnectionInfo connectionInfo = getResolvedResource() != null
-				&& getResolvedResource().getEndpoint().getType() == ConnectorType.JDBC
-						? getResolvedResource().getEndpoint().unwrap(DBConnectionInfo.class)
-						: this.relatedPrimaryDataSource.getRelatedConnInfo();
-		OpenConnection conn = connectionInfo.openConnection(this);
+		OpenConnection conn = openConnection();
 
 		try {
 			fullLoad(conn);

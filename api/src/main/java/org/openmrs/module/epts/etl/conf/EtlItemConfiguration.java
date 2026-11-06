@@ -55,6 +55,7 @@ import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -1105,7 +1106,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				? (JdbcTablePrimaryDataSourceConfiguration) getPrimaryDataSource()
 				: null;
 
-		TableConfiguration sourceConnectionOwner = jdbcSource != null ? jdbcSource : this.getEtlDatabaseDataSource();
+		EtlObjectConfiguration sourceConnectionOwner = jdbcSource != null ? jdbcSource : this.getEtlDatabaseDataSource();
 		OpenConnection sourceConnection = sourceConnectionOwner.openConnection();
 
 		try {

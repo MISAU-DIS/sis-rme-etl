@@ -1745,8 +1745,6 @@ public interface TableConfiguration extends EtlDataSource {
 		}
 	}
 
-	OpenConnection openConnection() throws DBException;
-
 	default ParentTable getSharedTableConf(Connection conn) {
 
 		if (this.getSharedKeyRefInfo(conn) != null) {

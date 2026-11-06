@@ -12,14 +12,18 @@ import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
+import org.openmrs.module.epts.etl.exceptions.RequireJdbcException;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -154,6 +158,42 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	Boolean isMetadata();
 
 	DBConnectionInfo getRelatedConnInfo();
+
+	/**
+	 * Returns the connector resource resolved for this object, when available.
+	 * Legacy configurations may rely exclusively on {@link #getRelatedConnInfo()}.
+	 */
+	@JsonIgnore
+	default ConnectorResource getResolvedResource() {
+		return null;
+	}
+
+	/**
+	 * Opens the JDBC connection owned by this object configuration. The resolved
+	 * connector takes precedence over the legacy related connection information.
+	 * The returned connection must be finalized using this same configuration as
+	 * owner.
+	 */
+	default OpenConnection openConnection() throws DBException {
+		ConnectorResource resolvedResource = getResolvedResource();
+
+		if (resolvedResource != null && resolvedResource.getEndpoint() != null
+				&& resolvedResource.getEndpoint().getType() != ConnectorType.JDBC) {
+			throw new RequireJdbcException(
+					"Object configuration '" + getObjectName() + "' is bound to a non-JDBC resource");
+		}
+
+		DBConnectionInfo connectionInfo = resolvedResource != null && resolvedResource.getEndpoint() != null
+				? resolvedResource.getEndpoint().unwrap(DBConnectionInfo.class)
+				: getRelatedConnInfo();
+
+		if (connectionInfo == null) {
+			throw new RequireJdbcException(
+					"No JDBC connection information is available for object configuration '" + getObjectName() + "'");
+		}
+
+		return connectionInfo.openConnection(this);
+	}
 
 	void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
 
