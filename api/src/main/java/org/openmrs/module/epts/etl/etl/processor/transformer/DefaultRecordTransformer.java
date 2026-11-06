@@ -46,7 +46,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			ConnectorRecordWriter<?> writer) throws DBException, EtlTransformationException {
 
 		Set<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, null, migratedDstParent,
-				dstConf, transformationType, reader);
+				dstConf, transformationType, reader, writer);
 
 		try {
 
@@ -315,7 +315,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	public Set<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject srcObjectExpansion, EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent,
-			DstConf dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader)
+			DstConf dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer)
 			throws DBException {
 
 		Set<EtlDatabaseObject> result = new LinkedHashSet<>();
@@ -324,7 +325,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		collectToSrcObjects(srcObjectExpansion, result);
 		collectToSrcObjects(dstObject, result);
 		collectToSrcObjects(migratedDstParent, result);
-		collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType);
+		collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType, writer);
 
 		return result;
 
@@ -340,7 +341,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 			if (!fieldsMapping.getDstField().equals(dstConf.getPrimaryKey().asSimpleKey().getName())) {
 
-				if (fieldsMapping.shouldBeProcessed(srcObject, srcObjects, reader, dstConn)) {
+				if (fieldsMapping.shouldBeProcessed(srcObject, srcObjects, reader, writer)) {
 					dstConf.getRelatedEtlConf().trace("Transforming field " + fieldsMapping);
 
 					fieldsMapping.getTransformerInstance().performFieldTransformation(processor, srcObject,
@@ -379,7 +380,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private void collectToSrcObjectsFromExtraDataSources(EtlProcessor processor, Set<EtlDatabaseObject> srcObjects,
-			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, TransformationType transformationType)
+			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, TransformationType transformationType,
+			ConnectorRecordWriter<?> writer)
 			throws DBException {
 
 		if (srcObject.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration) {
@@ -393,7 +395,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 					List<EtlDatabaseObject> avaliableObjects = srcObjects.stream()
 							.collect(java.util.stream.Collectors.toList());
 
-					if (!ds.shouldBeProcessed(srcObject, srcObjects, reader, reader)) {
+					if (!ds.shouldBeProcessed(srcObject, srcObjects, reader, writer)) {
 						continue;
 					}
 

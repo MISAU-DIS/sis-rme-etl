@@ -36,7 +36,7 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 		Set<EtlDatabaseObject> set = avaliableSrcObjects != null ? new HashSet<>(avaliableSrcObjects) : null;
 
 		for (TransformableDataSourceField field : dataSource.getObjectFields()) {
-			if (field.shouldBeProcessed(srcObject, set, srcConn, dstConn)) {
+			if (field.shouldBeProcessed(srcObject, set, reader, writer)) {
 				if (field.hasAuxFieldMapping()) {
 
 					try {

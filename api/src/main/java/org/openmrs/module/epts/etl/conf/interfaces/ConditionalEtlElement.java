@@ -33,7 +33,9 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 	}
 
 	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
-			Connection srcConn, Connection dstConn) throws DBException {
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
+		Connection srcConn = unwrapConnection(reader);
+		Connection dstConn = unwrapConnection(writer);
 
 		if (this.hasCondition()) {
 			String condition = this.getCondition();
@@ -78,22 +80,6 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 			return true;
 		}
 
-	}
-
-	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
-			ConnectorRecordReader<?> reader, Connection dstConn) throws DBException {
-		return shouldBeProcessed(srcObject, avaliableSrcObjects, unwrapConnection(reader), dstConn);
-	}
-
-	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
-			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
-		return shouldBeProcessed(srcObject, avaliableSrcObjects, unwrapConnection(reader), unwrapConnection(writer));
-	}
-
-	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
-			ConnectorRecordReader<?> srcReader, ConnectorRecordReader<?> dstReader) throws DBException {
-		return shouldBeProcessed(srcObject, avaliableSrcObjects, unwrapConnection(srcReader),
-				unwrapConnection(dstReader));
 	}
 
 	default Connection unwrapConnection(ConnectorRecordReader<?> reader) {

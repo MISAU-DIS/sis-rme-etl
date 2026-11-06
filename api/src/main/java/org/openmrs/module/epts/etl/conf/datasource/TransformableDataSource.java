@@ -456,7 +456,8 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		Connection conn = reader.unwrap(Connection.class);
 
 		if (avaliableSrcObjects != null) {
-			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), conn, conn)) {
+			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), reader,
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(conn))) {
 				return null;
 			}
 		}

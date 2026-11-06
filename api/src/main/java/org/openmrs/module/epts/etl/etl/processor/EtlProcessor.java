@@ -308,7 +308,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 			Set<EtlDatabaseObject> avaliableSrcObjects = dstConf.getTransformerInstance().collectSourceObjects(this,
 					srcRecord, srcRecordExpansion, transitionalTransformedObject, parentMigratedRec, dstConf,
-					TransformationType.PRINCIPAL, reader);
+					TransformationType.PRINCIPAL, reader, writer);
 
 			if (transitionalTransformedObject.getEtlDefaultEtlException() != null) {
 				throw (EtlExceptionImpl) transitionalTransformedObject.getEtlDefaultEtlException();
@@ -474,7 +474,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		Connection parentDstConn = transformedParent.getRelatedConfiguration() instanceof DstConf
 				? destinationConnection(writers, (DstConf) transformedParent.getRelatedConfiguration())
 				: null;
-		Connection childDstConn = firstDestinationConnection(itemConf, writers);
+		ConnectorRecordWriter<?> childWriter = firstDestinationWriter(itemConf, writers);
 
 		try {
 			EtlDatabaseObject srcObject = transformedParent.isSrcObject() ? transformedParent
@@ -490,7 +490,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				logDebug("The existence of parent record {} on db was confirmed", transformedParent);
 			}
 
-			if (itemConf.shouldBeProcessed(srcObject, null, srcConn, childDstConn)) {
+			if (itemConf.shouldBeProcessed(srcObject, null, childPrimaryReader, childWriter)) {
 
 				List<EtlDatabaseObject> avaliableSrcObjects = transformedParent.isSrcObject() ? null
 						: new ArrayList<>(transformedParent.getEtlInfo().getAvaliableSrcObjects());
@@ -524,7 +524,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 	}
 
-	private Connection firstDestinationConnection(EtlItemConfiguration itemConf, ConnectorRecordWriters writers) {
+	private ConnectorRecordWriter<?> firstDestinationWriter(EtlItemConfiguration itemConf,
+			ConnectorRecordWriters writers) {
 
 		if (itemConf.getDstConf() == null) {
 			return null;
@@ -533,10 +534,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		for (DstConf destination : itemConf.getDstConf()) {
 
 			if (!destination.isDisabled()) {
-				Connection connection = destinationConnection(writers, destination);
-
-				if (connection != null) {
-					return connection;
+				try {
+					return writers.get(destination);
+				} catch (IllegalArgumentException e) {
+					// Try the next enabled destination.
 				}
 			}
 		}

@@ -575,7 +575,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 		if (avaliableSrcObjects != null) {
 
-			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), srcConn, srcConn)) {
+			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), reader,
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(srcConn))) {
 				return null;
 			}
 		}
