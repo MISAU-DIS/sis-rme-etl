@@ -10,6 +10,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -162,7 +163,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				parentAsSrc.copyFrom(recWithDefaultParentInfo.getParentRecordInOrigin());
 
 				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, null, dst, null,
-						TransformationType.INNER, srcConn, dstConn);
+						TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn), dstConn);
 
 				if (dstParent != null) {
 					DBException exception = null;

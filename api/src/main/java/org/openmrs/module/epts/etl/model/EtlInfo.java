@@ -20,6 +20,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.dbquickmerge.model.ParentInfo;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
@@ -228,7 +229,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 					recordAsSrc.copyFrom(parentInfo.getParentRecordInOrigin());
 
 					dstParent = dst.getTransformerInstance().transform(this.getProcessor(), recordAsSrc, dst, null,
-							TransformationType.INNER, srcConn, dstConn);
+							TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn), dstConn);
 
 					if (dstParent != null) {
 						DBException exception = null;

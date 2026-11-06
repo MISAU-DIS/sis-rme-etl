@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import org.openmrs.module.epts.etl.conf.EtlConfCheckEvaluator;
 import org.openmrs.module.epts.etl.conf.EtlConfCheckExpression;
 import org.openmrs.module.epts.etl.conf.types.EtlConfCheckType;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
@@ -76,6 +77,28 @@ public interface ConditionalEtlElement extends EtlDataConfiguration {
 			return true;
 		}
 
+	}
+
+	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
+			ConnectorRecordReader<?> reader, Connection dstConn) throws DBException {
+		return shouldBeProcessed(srcObject, avaliableSrcObjects, unwrapConnection(reader), dstConn);
+	}
+
+	default Boolean shouldBeProcessed(EtlDatabaseObject srcObject, Set<EtlDatabaseObject> avaliableSrcObjects,
+			ConnectorRecordReader<?> srcReader, ConnectorRecordReader<?> dstReader) throws DBException {
+		return shouldBeProcessed(srcObject, avaliableSrcObjects, unwrapConnection(srcReader),
+				unwrapConnection(dstReader));
+	}
+
+	default Connection unwrapConnection(ConnectorRecordReader<?> reader) {
+		if (reader == null) {
+			return null;
+		}
+		try {
+			return reader.unwrap(Connection.class);
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
 	}
 
 	default boolean isEtlConfCheckExpression(String condition) {
