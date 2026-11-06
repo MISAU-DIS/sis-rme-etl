@@ -29,11 +29,13 @@ import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
+import org.openmrs.module.epts.etl.exceptions.RequireJdbcException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
@@ -330,7 +332,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
 
-		if (usesNonJdbcResource()) {
+		if (this.usesNonJdbcResource()) {
 			if (this.isFullLoaded())
 				return;
 
@@ -1491,8 +1493,32 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		this.loadHealper.setTableConf(this);
 	}
 
-	public OpenConnection openConnection() {
-		return null;
+	/**
+	 * Opens a JDBC connection owned by this table configuration.
+	 * <p>
+	 * The returned connection must consequently be finalized by this same
+	 * configuration, normally through {@link #finalizeConnection(OpenConnection)}.
+	 * </p>
+	 *
+	 * @return the opened JDBC connection
+	 * @throws RequireJdbcException when this table is bound to a non-JDBC resource
+	 * @throws DBException          when the JDBC connection cannot be opened
+	 */
+	public OpenConnection openConnection() throws DBException {
+
+		if (usesNonJdbcResource()) {
+			throw new RequireJdbcException(
+					"Table configuration '" + getObjectName() + "' is bound to a non-JDBC resource");
+		}
+
+		DBConnectionInfo connectionInfo = this.getRelatedConnInfo();
+
+		if (connectionInfo == null) {
+			throw new EtlConfException(
+					"No JDBC connection information is available for table configuration '" + getObjectName() + "'");
+		}
+
+		return connectionInfo.openConnection(this);
 	}
 
 	public abstract void tryToReplacePlaceholdersOnOwnElements(EtlDatabaseObject schemaInfoSrc);
