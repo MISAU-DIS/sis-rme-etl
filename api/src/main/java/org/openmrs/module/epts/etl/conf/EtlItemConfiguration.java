@@ -515,7 +515,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			throws DBException {
 		Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers = new IdentityHashMap<>();
 		Map<EtlDataSource, ConnectorResource> resources = new IdentityHashMap<>();
-		Map<String, OpenConnection> jdbcConnections = new HashMap<>();
+		Map<ConnectorEndpoint, OpenConnection> jdbcConnections = new IdentityHashMap<>();
 		List<OpenConnection> openedConnections = new ArrayList<>();
 
 		try {
@@ -545,7 +545,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			if (primaryResource.getEndpoint().getType() == ConnectorType.JDBC) {
 				OpenConnection primaryConnection = primaryReader.unwrap(OpenConnection.class);
-				jdbcConnections.put(connectorEndpointKey(primaryResource), primaryConnection);
+				jdbcConnections.put(primaryResource.getEndpoint(), primaryConnection);
 			}
 
 			Map<EtlDataSource, ConnectorResource> sourceResources = collectSourceConfigurations();
@@ -568,12 +568,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					Object nativeState = null;
 
 					if (resource.getEndpoint().getType() == ConnectorType.JDBC) {
-						String endpointKey = connectorEndpointKey(resource);
-						OpenConnection connection = jdbcConnections.get(endpointKey);
+						ConnectorEndpoint endpoint = resource.getEndpoint();
+						OpenConnection connection = jdbcConnections.get(endpoint);
 
 						if (connection == null) {
 							connection = getRelatedEtlConf().openSourceConnectorConnection(resource, openedFrom);
-							jdbcConnections.put(endpointKey, connection);
+							jdbcConnections.put(endpoint, connection);
 							openedConnections.add(connection);
 						}
 						nativeState = connection;
@@ -622,11 +622,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				collectSourceConfigurations(child, sourceResources, visited);
 			}
 		}
-	}
-
-	private String connectorEndpointKey(ConnectorResource resource) {
-		ConnectorEndpoint endpoint = resource.getEndpoint();
-		return endpoint.getType() + "|" + endpoint.getUri() + "|" + endpoint.getUserName();
 	}
 
 	public ConnectorRecordWriters createDestinationWriters(BaseConfiguration openedFrom) throws DBException {

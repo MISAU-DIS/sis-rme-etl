@@ -11,7 +11,7 @@ public final class JdbcTableResource implements ConnectorResource {
 
 	private final TableConfiguration tableConfiguration;
 	private final ConnectorDirection direction;
-	private final JdbcConnectorEndpoint endpoint;
+	private final ConnectorEndpoint endpoint;
 
 	public JdbcTableResource(TableConfiguration tableConfiguration, ConnectorDirection direction) {
 		this(tableConfiguration, direction,
@@ -20,18 +20,27 @@ public final class JdbcTableResource implements ConnectorResource {
 
 	public JdbcTableResource(TableConfiguration tableConfiguration, ConnectorDirection direction,
 			DBConnectionInfo connectionInfo) {
+		this(tableConfiguration, direction,
+				connectionInfo == null ? null : new JdbcConnectorEndpoint(connectionInfo));
+	}
+
+	public JdbcTableResource(TableConfiguration tableConfiguration, ConnectorDirection direction,
+			ConnectorEndpoint endpoint) {
 		if (tableConfiguration == null) {
 			throw new IllegalArgumentException("tableConfiguration cannot be null");
 		}
 		if (direction == null) {
 			throw new IllegalArgumentException("direction cannot be null");
 		}
-		if (connectionInfo == null) {
+		if (endpoint == null) {
 			throw new IllegalArgumentException("tableConfiguration must have related connection information");
+		}
+		if (endpoint.getType() != org.openmrs.module.epts.etl.connector.ConnectorType.JDBC) {
+			throw new IllegalArgumentException("JDBC table resource requires a JDBC endpoint");
 		}
 		this.tableConfiguration = tableConfiguration;
 		this.direction = direction;
-		this.endpoint = new JdbcConnectorEndpoint(connectionInfo);
+		this.endpoint = endpoint;
 	}
 
 	@Override

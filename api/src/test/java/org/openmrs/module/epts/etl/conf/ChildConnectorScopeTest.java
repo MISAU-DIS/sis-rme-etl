@@ -23,6 +23,8 @@ import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnectionTestFactory;
 
 class ChildConnectorScopeTest {
 
@@ -39,6 +41,30 @@ class ChildConnectorScopeTest {
 
 		assertSame(parent.getResolvedSrcResource(), readers.get(parentPrimary).getResource());
 		assertSame(child.getResolvedSrcResource(), readers.get(childPrimary).getResource());
+	}
+
+	@Test
+	void shouldShareOneOpenConnectionForSourcesUsingTheSameConnector() throws Exception {
+		ConnectorEndpoint sharedConnector = endpoint(ConnectorType.JDBC, "jdbc:test:shared");
+		TestItem parent = new TestItem();
+		OpenConnection sharedConnection = OpenConnectionTestFactory.create(parent);
+		parent.setPrimaryConnection(sharedConnection);
+		parent.setRelatedEtlConf(new EtlConfiguration() {
+			@Override
+			OpenConnection openSourceConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom) {
+				throw new AssertionError("The shared connector must not open a second connection");
+			}
+		});
+
+		configureSource(parent, "parent", resource("parent", sharedConnector));
+		EtlChildItemConfiguration child = new EtlChildItemConfiguration();
+		JsonPrimaryDataSourceConfiguration childPrimary = configureSource(child, "child",
+				resource("child", sharedConnector));
+		parent.setChildItemConf(Collections.singletonList(child));
+
+		ConnectorRecordReaders readers = parent.createSourceReaders(null, parent, null);
+
+		assertSame(sharedConnection, readers.get(childPrimary).unwrap(OpenConnection.class));
 	}
 
 	private JsonPrimaryDataSourceConfiguration configureSource(EtlItemConfiguration item, String name,
@@ -59,15 +85,23 @@ class ChildConnectorScopeTest {
 	}
 
 	private ConnectorResource resource(String name) {
-		ConnectorEndpoint endpoint = new ConnectorEndpoint() {
-			@Override public ConnectorType getType() { return ConnectorType.FILE; }
-			@Override public String getUri() { return name + ".json"; }
+		return resource(name, endpoint(ConnectorType.FILE, name + ".json"));
+	}
+
+	private ConnectorEndpoint endpoint(ConnectorType type, String uri) {
+		return new ConnectorEndpoint() {
+			@Override public ConnectorType getType() { return type; }
+			@Override public String getUri() { return uri; }
 			@Override public String getUserName() { return null; }
 			@Override public String getPassword() { return null; }
-			@Override public Set<ConnectorCapability> getCapabilities() { return Collections.emptySet(); }
+			@Override public Set<ConnectorCapability> getCapabilities() {
+				return Collections.singleton(ConnectorCapability.READ);
+			}
 			@Override public <T> T unwrap(Class<T> nativeType) { throw new IllegalArgumentException(); }
 		};
+	}
 
+	private ConnectorResource resource(String name, ConnectorEndpoint endpoint) {
 		return new ConnectorResource() {
 			@Override public String getName() { return name; }
 			@Override public ConnectorDirection getDirection() { return ConnectorDirection.SOURCE; }
@@ -77,13 +111,19 @@ class ChildConnectorScopeTest {
 	}
 
 	private static class TestItem extends EtlItemConfiguration {
+		private OpenConnection primaryConnection;
+
+		void setPrimaryConnection(OpenConnection primaryConnection) {
+			this.primaryConnection = primaryConnection;
+		}
+
 		@Override
 		@SuppressWarnings("unchecked")
 		public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
 				AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
 				ConnectorRecordWriters writers) throws DBException {
 			return (ConnectorRecordReader<T>) new ResourceBoundConnectorRecordReader<EtlDatabaseObject>(
-					getResolvedSrcResource(), null);
+					getResolvedSrcResource(), primaryConnection);
 		}
 	}
 }

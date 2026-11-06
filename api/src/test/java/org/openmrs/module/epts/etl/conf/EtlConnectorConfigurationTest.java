@@ -360,6 +360,34 @@ class EtlConnectorConfigurationTest {
 	}
 
 	@Test
+	void shouldPreserveOneConnectorEndpointAcrossJdbcTableResources() throws Exception {
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setConnectors(java.util.Collections
+				.singletonList(jdbcConnector("shared-source", "jdbc:mysql://source/openmrs")));
+		configuration.setDefaultSourceConnector("shared-source");
+
+		EtlItemConfiguration parent = new EtlItemConfiguration();
+		parent.setRelatedEtlConf(configuration);
+		JdbcTablePrimaryDataSourceConfiguration parentSource = new JdbcTablePrimaryDataSourceConfiguration();
+		parentSource.setTableName("person");
+		parentSource.setResource(resource("shared-source", "person"));
+		setJdbcSource(parent, parentSource);
+
+		EtlChildItemConfiguration child = new EtlChildItemConfiguration();
+		child.setRelatedEtlConf(configuration);
+		JdbcTablePrimaryDataSourceConfiguration childSource = new JdbcTablePrimaryDataSourceConfiguration();
+		childSource.setTableName("address");
+		childSource.setResource(resource("shared-source", "address"));
+		setJdbcSource(child, childSource);
+
+		initializeConnectors(configuration);
+		initializeResources(parent);
+		initializeResources(child);
+
+		assertSame(parent.getResolvedSrcResource().getEndpoint(), child.getResolvedSrcResource().getEndpoint());
+	}
+
+	@Test
 	void shouldCreateLazyDestinationConnectionAggregator() throws Exception {
 		EtlConfiguration configuration = new EtlConfiguration();
 		configuration.setSrcConnInfo(new DBConnectionInfo());

@@ -28,6 +28,7 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 
 			ConnectorRecordWriters writers = processor.createRecordWriters();
 			ConnectorRecordReaders readers = processor.createRecordReaders(writers);
+
 			try {
 				engine.performExtractTransformationAndLoading(processor, true, persistWork, readers, writers);
 
