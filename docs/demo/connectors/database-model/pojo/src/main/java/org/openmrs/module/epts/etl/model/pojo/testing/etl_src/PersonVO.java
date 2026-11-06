@@ -24,9 +24,9 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PersonVO extends AbstractGeneratedDatabaseObject {
-	private Field id = Field.fastCreateWithType("id", "integer");
-	private Field fullName = Field.fastCreateWithType("full_name", "String");
-	private Field creationDate = Field.fastCreateWithType("creation_date", "date");
+	private Field id = Field.fastCreateWithType("id", "INT");
+	private Field fullName = Field.fastCreateWithType("full_name", "VARCHAR");
+	private Field creationDate = Field.fastCreateWithType("creation_date", "DATETIME");
 
 	public PersonVO() {
 		this.metadata = false;
@@ -37,6 +37,10 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+
+		if (utilities.equalsFieldsName(k.getName(), "id")) {
+			this.id.setValue(k.getValue());
+		}
 	}
 
 	@Override
@@ -109,7 +113,7 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 		this.id = id;
 	}
 
-	public void setIdValue(String value) {
+	public void setIdValue(Integer value) {
 		this.id.setValue(value);
 	}
 
@@ -147,30 +151,30 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 
 		String idAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "id", "_");
 
-		this.id.setValue(BaseVO.retrieveFieldValue(idAttName, "integer", rs));
+		this.id.setValue(BaseVO.retrieveFieldValue(idAttName, "INT", rs));
 
 		String fullNameAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"full_name", "_");
 
-		this.fullName.setValue(BaseVO.retrieveFieldValue(fullNameAttName, "String", rs));
+		this.fullName.setValue(BaseVO.retrieveFieldValue(fullNameAttName, "VARCHAR", rs));
 
 		String creationDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"creation_date", "_");
 
-		this.creationDate.setValue(BaseVO.retrieveFieldValue(creationDateAttName, "date", rs));
+		this.creationDate.setValue(BaseVO.retrieveFieldValue(creationDateAttName, "DATETIME", rs));
 
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
 		this.uuid = AttDefinedElements
-				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "string", rs));
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO person(`id`, `full_name`, `creation_date`, `uuid`) VALUES( ?, ?, ?, ?);";
+		return "INSERT INTO person(`full_name`, `creation_date`, `uuid`) VALUES( ?, ?, ?);";
 	}
 
 	@JsonIgnore
@@ -182,7 +186,7 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
-		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.creationDate.getValue(), this.uuid };
+		Object[] params = { this.fullName.getValue(), this.creationDate.getValue(), this.uuid };
 		return params;
 	}
 
@@ -196,7 +200,7 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?";
+		return "?, ?, ?";
 	}
 
 	@JsonIgnore
@@ -208,23 +212,21 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
-		throw new RuntimeException("Impossible auto update command! No primary key is defined for table object!");
+		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.creationDate.getValue(), this.uuid,
+				this.id.getValue() };
+		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		throw new RuntimeException("Impossible auto update command! No primary key is defined for table object!");
+		return "UPDATE person SET `id` = ?, `full_name` = ?, `creation_date` = ?, `uuid` = ? WHERE id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
 		return ""
-				+ (this.id.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.id.getValue().toString()) + "\""
-						: null)
-				+ ","
 				+ (this.fullName.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.fullName.getValue().toString()) + "\""
 						: null)
@@ -238,11 +240,7 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return ""
-				+ (this.id.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.id.getValue().toString()) + "\""
-						: null)
-				+ ","
+		return "" + (this.id.getValue()) + ","
 				+ (this.fullName.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.fullName.getValue().toString()) + "\""
 						: null)

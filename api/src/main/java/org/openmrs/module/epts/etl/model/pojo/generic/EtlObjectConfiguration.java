@@ -10,6 +10,7 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -170,10 +171,12 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	/**
 	 * Opens the JDBC connection owned by this object configuration. The resolved
 	 * connector takes precedence over the legacy related connection information.
-	 * The returned connection must be finalized using this same configuration as
-	 * owner.
+	 * The returned connection must be finalized by the same {@code openedFrom}
+	 * object supplied when it was opened.
+	 *
+	 * @param openedFrom configuration component that owns this connection lifecycle
 	 */
-	default OpenConnection openConnection() throws DBException {
+	default OpenConnection openConnection(BaseConfiguration openedFrom) throws DBException {
 		ConnectorResource resolvedResource = this.getResolvedResource();
 
 		if (resolvedResource != null && resolvedResource.getEndpoint() != null
@@ -191,7 +194,7 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 					"No JDBC connection information is available for object configuration '" + getObjectName() + "'");
 		}
 
-		return connectionInfo.openConnection(this);
+		return connectionInfo.openConnection(openedFrom);
 	}
 
 	void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);

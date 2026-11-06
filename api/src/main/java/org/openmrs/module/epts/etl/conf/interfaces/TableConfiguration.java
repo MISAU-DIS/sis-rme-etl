@@ -1734,7 +1734,7 @@ public interface TableConfiguration extends EtlDataSource {
 	default void fullLoad() throws DBException {
 
 		synchronized (this) {
-			OpenConnection connection = openConnection();
+			OpenConnection connection = openConnection(this);
 
 			try {
 				this.fullLoad(connection);

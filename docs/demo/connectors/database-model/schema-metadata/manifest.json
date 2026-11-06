@@ -3,7 +3,11 @@
   "entries" : [ {
     "metadataKey" : "testing_etl_dst|||.person_data",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_dst.PersonDataVO",
-    "metadataFingerprint" : "501ebcec1ac6f75cf60220f5e15cb4d6ef906bd4af1a6386e521e5f98b078e68"
+    "metadataFingerprint" : "00a731f056d95e0176909629080e1edfb521fd5ad5c88c781fbc3400f89c3366"
+  }, {
+    "metadataKey" : "testing_etl_src|||.address",
+    "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_src.AddressVO",
+    "metadataFingerprint" : "99ff146a838766623f37064b52dc55c92cf07df2a59b54e175a202dcb224346f"
   }, {
     "metadataKey" : "testing_etl_src|||.person",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_src.PersonVO",

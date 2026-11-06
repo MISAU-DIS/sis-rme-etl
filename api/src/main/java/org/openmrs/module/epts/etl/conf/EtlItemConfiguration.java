@@ -1107,7 +1107,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				: null;
 
 		EtlObjectConfiguration sourceConnectionOwner = jdbcSource != null ? jdbcSource : this.getEtlDatabaseDataSource();
-		OpenConnection sourceConnection = sourceConnectionOwner.openConnection();
+		OpenConnection sourceConnection = sourceConnectionOwner.openConnection(sourceConnectionOwner);
 
 		try {
 			fullLoad(operationConfig, jdbcSource, sourceConnection);
@@ -1190,7 +1190,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private void fullLoadJdbcDestination(DstConf map, JdbcTablePrimaryDataSourceConfiguration jdbcSource,
 			Connection sourceConnection) throws DBException, SQLException {
-		OpenConnection destinationConnection = map.openConnection();
+		OpenConnection destinationConnection = map.openConnection(map);
 
 		try {
 

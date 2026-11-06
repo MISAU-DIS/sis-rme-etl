@@ -83,7 +83,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		try {
 
-			conn = relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc().openConnection();
+			conn = relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc().openConnection(this);
 
 			this.tryToLoadDumpScriptContentToFieldAndValidate("sqlQuery",
 					relatedEtlTransformTarget != null

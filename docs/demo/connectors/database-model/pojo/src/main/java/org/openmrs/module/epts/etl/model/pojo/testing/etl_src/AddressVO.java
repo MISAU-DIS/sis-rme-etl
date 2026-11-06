@@ -24,10 +24,10 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class AddressVO extends AbstractGeneratedDatabaseObject {
-	private Field id = Field.fastCreateWithType("id", "integer");
-	private Field personId = Field.fastCreateWithType("person_id", "integer");
-	private Field fullAddress = Field.fastCreateWithType("full_address", "string");
-	private Field creationDate = Field.fastCreateWithType("creation_date", "date");
+	private Field id = Field.fastCreateWithType("id", "INT");
+	private Field personId = Field.fastCreateWithType("person_id", "INT");
+	private Field fullAddress = Field.fastCreateWithType("full_address", "VARCHAR");
+	private Field creationDate = Field.fastCreateWithType("creation_date", "DATETIME");
 
 	public AddressVO() {
 		this.metadata = false;
@@ -39,6 +39,10 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public void tryToReplaceFieldValueWithKeyValue(Key k) {
+
+		if (utilities.equalsFieldsName(k.getName(), "id")) {
+			this.id.setValue(k.getValue());
+		}
 	}
 
 	@Override
@@ -122,7 +126,7 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 		this.id = id;
 	}
 
-	public void setIdValue(String value) {
+	public void setIdValue(Integer value) {
 		this.id.setValue(value);
 	}
 
@@ -134,7 +138,7 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 		this.personId = personId;
 	}
 
-	public void setPersonIdValue(String value) {
+	public void setPersonIdValue(Integer value) {
 		this.personId.setValue(value);
 	}
 
@@ -172,35 +176,35 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 
 		String idAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "id", "_");
 
-		this.id.setValue(BaseVO.retrieveFieldValue(idAttName, "integer", rs));
+		this.id.setValue(BaseVO.retrieveFieldValue(idAttName, "INT", rs));
 
 		String personIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"person_id", "_");
 
-		this.personId.setValue(BaseVO.retrieveFieldValue(personIdAttName, "integer", rs));
+		this.personId.setValue(BaseVO.retrieveFieldValue(personIdAttName, "INT", rs));
 
 		String fullAddressAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"full_address", "_");
 
-		this.fullAddress.setValue(BaseVO.retrieveFieldValue(fullAddressAttName, "string", rs));
+		this.fullAddress.setValue(BaseVO.retrieveFieldValue(fullAddressAttName, "VARCHAR", rs));
 
 		String creationDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"creation_date", "_");
 
-		this.creationDate.setValue(BaseVO.retrieveFieldValue(creationDateAttName, "date", rs));
+		this.creationDate.setValue(BaseVO.retrieveFieldValue(creationDateAttName, "DATETIME", rs));
 
 		String uuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(), "uuid",
 				"_");
 
 		this.uuid = AttDefinedElements
-				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "string", rs));
+				.removeStrangeCharactersOnString((String) BaseVO.retrieveFieldValue(uuidAttName, "CHAR", rs));
 		this.loadedFromDb = true;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO address(`id`, `person_id`, `full_address`, `creation_date`, `uuid`) VALUES( ?, ?, ?, ?, ?);";
+		return "INSERT INTO address(`person_id`, `full_address`, `creation_date`, `uuid`) VALUES( ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
@@ -212,8 +216,8 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
-		Object[] params = { this.id.getValue(), this.personId.getValue(), this.fullAddress.getValue(),
-				this.creationDate.getValue(), this.uuid };
+		Object[] params = { this.personId.getValue(), this.fullAddress.getValue(), this.creationDate.getValue(),
+				this.uuid };
 		return params;
 	}
 
@@ -228,7 +232,7 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?";
+		return "?, ?, ?, ?";
 	}
 
 	@JsonIgnore
@@ -240,27 +244,21 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
-		throw new RuntimeException("Impossible auto update command! No primary key is defined for table object!");
+		Object[] params = { this.id.getValue(), this.personId.getValue(), this.fullAddress.getValue(),
+				this.creationDate.getValue(), this.uuid, this.id.getValue() };
+		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		throw new RuntimeException("Impossible auto update command! No primary key is defined for table object!");
+		return "UPDATE address SET `id` = ?, `person_id` = ?, `full_address` = ?, `creation_date` = ?, `uuid` = ? WHERE id = ? ";
 	}
 
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithoutObjectId() {
-		return ""
-				+ (this.id.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.id.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.personId.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.personId.getValue().toString()) + "\""
-						: null)
-				+ ","
+		return "" + (this.personId.getValue()) + ","
 				+ (this.fullAddress.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.fullAddress.getValue().toString()) + "\""
 						: null)
@@ -274,15 +272,7 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String generateInsertValuesWithObjectId() {
-		return ""
-				+ (this.id.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.id.getValue().toString()) + "\""
-						: null)
-				+ ","
-				+ (this.personId.getValue() != null
-						? "\"" + utilities.scapeQuotationMarks(this.personId.getValue().toString()) + "\""
-						: null)
-				+ ","
+		return "" + (this.id.getValue()) + "," + (this.personId.getValue()) + ","
 				+ (this.fullAddress.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.fullAddress.getValue().toString()) + "\""
 						: null)
@@ -308,11 +298,16 @@ public class AddressVO extends AbstractGeneratedDatabaseObject {
 
 	@Override
 	public boolean hasParents() {
+		if (this.personId.getValue() != null)
+			return true;
+
 		return false;
 	}
 
 	@Override
 	public Object getParentValue(String parentAttName) {
+		if (parentAttName.equals("personId"))
+			return this.personId.getValue();
 
 		throw new RuntimeException("No found parent for: " + parentAttName);
 	}

@@ -279,7 +279,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad() throws DBException {
-		OpenConnection conn = this.openConnection();
+		OpenConnection conn = this.openConnection(this);
 
 		try {
 			this.fullLoad(conn);

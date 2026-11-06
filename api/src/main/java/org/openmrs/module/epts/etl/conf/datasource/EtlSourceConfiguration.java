@@ -216,7 +216,8 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 			JdbcTablePrimaryDataSourceConfiguration jdbcSource = (JdbcTablePrimaryDataSourceConfiguration) this.primaryDataSource;
 
 			if (!jdbcSource.doNotUseAsDatasource()) {
-				org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection connection = jdbcSource.openConnection();
+				org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection connection = jdbcSource
+						.openConnection(jdbcSource);
 
 				try {
 					jdbcSource.init(this.parentItem, connection, null);
@@ -244,7 +245,8 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 		try {
 
 			if (additional instanceof AbstractTableConfiguration) {
-				ownedConnection = ((AbstractTableConfiguration) additional).openConnection();
+				ownedConnection = ((AbstractTableConfiguration) additional)
+						.openConnection((AbstractTableConfiguration) additional);
 				connection = ownedConnection;
 			}
 			additional.init(primaryDataSource, parentItem.getRelatedEtlSchemaObject(), connection, null);
