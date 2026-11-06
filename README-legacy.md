@@ -1088,10 +1088,21 @@ Each **extraObjectDataSource** is defined by the following properties:
 		
 		The **FUNCTION_TRANSFORMER** should be used only for small and generic utility operations. Complex operations, database lookups, date processing, string manipulation, or domain-specific logic should continue to use their corresponding specialized transformers.
 
-    - **FAST_SQL_TRANSFORMER(sqlQuery)** Retrieves the field value by executing a SQL query against the source database. The SQL query must return at least one column; only the first column of the first row 
-of the result set will be used as the destination field value. If the query returns no rows or the resulting value is null, the transformer will:
+    - **FAST_SQL_TRANSFORMER(sqlQuery)** or **FAST_SQL_TRANSFORMER(query:sqlQuery, queryConnection:SOURCE|DESTINATION)** retrieves the field value by executing a SQL query. The query must return at least one column. The transformer uses the first column of the first row as the destination field value. If the query returns no rows or the resulting value is null, the transformer will:
       - apply the destination field default value if defined, or
       - raise an ETL transformation exception otherwise.
+
+      The optional `queryConnection` parameter selects which connection executes the query.
+
+      - `SOURCE` uses the source connection. This is the default when the parameter is omitted, including when the SQL query is supplied as the only argument.
+      - `DESTINATION` uses the destination connection.
+
+      To run the query on the destination connection, use the named `query` parameter together with `queryConnection`.
+
+      ```text
+      FAST_SQL_TRANSFORMER(query:select name from location where location_id = 25, queryConnection:DESTINATION)
+      ```
+
     - **COALESCE_TRANSFORMER(fieldOrValue1, ..., fieldOrValuen)** Returns the first non-null value obtained from a sequence of candidate inputs. Each parameter is evaluated in order and transformed into a value; if the result of the first parameter is null, the transformer evaluates the second, and so on until a non-null value is found. If all evaluated parameters result in null, the final result is null.
 Parameters may represent fixed values, dynamic parameters, or fields from available data sources. When referencing a field, it can be specified using the simple form "field" or the qualified form "dataSourceName.field" when disambiguation between data sources is required.
     - **SIMPLE_VALUE_TRANSFORMER(input:inputValue)** Performs a direct assignment to the destination field. When **input** is provided, the resolved input value is assigned. Otherwise, the resolved mapping **srcValue** is used. This transformer is applied automatically when no explicit transformer is defined..

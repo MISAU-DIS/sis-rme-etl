@@ -10,6 +10,7 @@ import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -67,6 +68,8 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 	private String name;
 
+	private ConnectorDirection queryConnection;
+
 	private ActionOnEtlIssue onMultipleSrcObjectsFound;
 
 	private volatile QueryDataSourceConfig dataSourceConfig;
@@ -76,7 +79,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		super(parameters, relatedEtlTransformTarget, field);
 
-		this.retrieveSqlQueryFromParameters(parameters);
+		this.queryConnection = ConnectorDirection.SOURCE;
+
+		this.loadParameters(parameters);
 
 		OpenConnection conn = null;
 
@@ -100,6 +105,14 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		return sqlQuery;
 	}
 
+	public ConnectorDirection getQueryConnection() {
+		return queryConnection;
+	}
+
+	public void setQueryConnection(ConnectorDirection queryConnection) {
+		this.queryConnection = queryConnection;
+	}
+
 	public static FastSqlFieldTransformer getInstance(List<Object> parameters,
 			EtlTransformTarget relatedEtlTransformTarget, TransformableField field) {
 
@@ -109,7 +122,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 				k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field));
 	}
 
-	private void retrieveSqlQueryFromParameters(List<Object> parameters) {
+	private void loadParameters(List<Object> parameters) {
 
 		if (parameters == null || parameters.isEmpty()) {
 			throw new EtlExceptionImpl("A FastSqlFieldTransformer needs a sqlQuery as parameter.\n"
@@ -138,7 +151,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 						+ " has no value on transformer:  " + getTransformerDsc());
 			}
 
-			if (paramName.equalsIgnoreCase("query")) {
+			if (paramName.equalsIgnoreCase("query_connection")) {
+				this.queryConnection = ConnectorDirection.valueOf(paramValue);
+			} else if (paramName.equalsIgnoreCase("query")) {
 				this.sqlQuery = paramValue;
 			} else if (paramName.equalsIgnoreCase("name")) {
 				this.name = paramValue;
@@ -173,7 +188,13 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
 
-		Connection srcConn = reader.unwrap(Connection.class);
+		Connection conn;
+
+		if (this.queryConnection.isDestination()) {
+			conn = writer.unwrap(Connection.class);
+		} else {
+			conn = reader.unwrap(Connection.class);
+		}
 
 		traceTransformationInitialization(field);
 
@@ -197,7 +218,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 					conf.setOnMultipleSrcObjectsFound(this.onMultipleSrcObjectsFound);
 
-					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : srcConn);
+					conf.fullLoad(hasOverrideConnection() ? getOverrideConnection() : conn);
 
 					this.dataSourceConfig = conf;
 				}
