@@ -159,7 +159,7 @@
               "mapping": [
                 {
                   "dstField": "id",
-                  "transformer": "FAST_SQL_TRANSFORMER(query:select id from person_data p where p.person_uuid =  person_data_dst_ds.person_uuid,query_connection:SOURCE)"
+                  "transformer": "FAST_SQL_TRANSFORMER(query:select id from person_data p where p.person_uuid =  person_data_dst_ds.person_uuid,query_connection:DESTINATION)"
                 },
                 {
                   "srcField": "full_address",
