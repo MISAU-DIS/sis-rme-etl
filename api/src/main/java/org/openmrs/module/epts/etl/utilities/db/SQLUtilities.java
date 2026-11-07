@@ -28,6 +28,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlFieldTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FastSqlFieldTransformer;
@@ -2469,14 +2471,15 @@ public class SQLUtilities {
 
 	public static PreparedQueryInfo prepareQueryReplacingDataSourceElementsWithParams(String originalQuery,
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
-			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			EtlConfiguration relatedEtlConf, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		String preparedQuery = normalizeQuery(originalQuery);
 
 		List<FieldTransformingInfo> resolvedValues = new ArrayList<>();
 
 		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(preparedQuery,
-				knownTableAliases, avaliableSrcObjects, relatedEtlConf, conn);
+				knownTableAliases, avaliableSrcObjects, relatedEtlConf, reader, writer);
 
 		while (true) {
 			ResolvedQueryElement nextElement = findFirstResolvedElement(preparedQuery, resolvedElements);
@@ -2574,7 +2577,8 @@ public class SQLUtilities {
 				.toString();
 
 		List<ResolvedQueryElement> resolvedElements = resolveTransformableQueryElements(query, knownTableAliases,
-				avaliableSrcObjects, relatedEtlConf, conn);
+				avaliableSrcObjects, relatedEtlConf, JdbcConnectorRuntimeAdapters.reader(conn),
+				JdbcConnectorRuntimeAdapters.writer(conn));
 
 		for (ResolvedQueryElement element : resolvedElements) {
 			// String replacement = toSqlLiteral(element.getValue());
@@ -2622,7 +2626,8 @@ public class SQLUtilities {
 
 	private static List<ResolvedQueryElement> resolveTransformableQueryElements(String query,
 			List<String> knownTableAliases, List<EtlDatabaseObject> avaliableSrcObjects,
-			EtlConfiguration relatedEtlConf, Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+			EtlConfiguration relatedEtlConf, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		List<ResolvedQueryElement> resolvedElements = new ArrayList<>();
 
@@ -2638,7 +2643,7 @@ public class SQLUtilities {
 		}
 
 		FastEtlTransformingTarget transformingTarget = FastEtlTransformingTarget.fastCreate(relatedEtlConf,
-				avaliableSrcObjects, conn);
+				avaliableSrcObjects, null);
 
 		/*
 		 * Parameters are resolved independently because they are explicitly identified
@@ -2648,7 +2653,7 @@ public class SQLUtilities {
 
 			try {
 				resolveParameter(null, param, resolvedElements, alreadyResolvedElements, avaliableSrcObjects,
-						relatedEtlConf, conn);
+						relatedEtlConf, reader, writer);
 
 			} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
 
@@ -2693,13 +2698,13 @@ public class SQLUtilities {
 
 					String adjustedElement = element;
 
-					map = generateTransformerMapping(conn, transformingTarget, equalityPreviousElement,
+					map = generateTransformerMapping(transformingTarget, equalityPreviousElement,
 							adjustedElement);
 
 					if (map != null && (map.hasDataSourceName() || !map.useDefaultTransformer())) {
 
 						addResolvedElement(equalityPreviousElement, adjustedElement, map, resolvedElements,
-								alreadyResolvedElements, avaliableSrcObjects, conn);
+								alreadyResolvedElements, avaliableSrcObjects, reader, writer);
 					}
 
 					previousAdjustedElement = adjustedElement;
@@ -2746,7 +2751,7 @@ public class SQLUtilities {
 						if (isParam(candidateAdjustedElement)) {
 
 							resolveParameter(candidatePreviousElement, candidateAdjustedElement, resolvedElements,
-									alreadyResolvedElements, avaliableSrcObjects, relatedEtlConf, conn);
+									alreadyResolvedElements, avaliableSrcObjects, relatedEtlConf, reader, writer);
 
 							continue;
 						}
@@ -2755,7 +2760,7 @@ public class SQLUtilities {
 
 						if (isTransformerExpression(relatedEtlConf, candidateAdjustedElement)) {
 
-							map = generateTransformerMapping(conn, transformingTarget, candidatePreviousElement,
+							map = generateTransformerMapping(transformingTarget, candidatePreviousElement,
 									candidateAdjustedElement);
 
 						} else if (!isValidQueryColumnDefinition(candidateAdjustedElement)) {
@@ -2768,7 +2773,7 @@ public class SQLUtilities {
 							if (map == null && checkIfFieldDefinitionIncludeQualifier(candidateAdjustedElement)) {
 
 								map = generateMapping(transformingTarget, candidatePreviousElement,
-										candidateAdjustedElement, conn);
+										candidateAdjustedElement);
 
 								/*
 								 * A field belonging to a table/alias from the SQL query itself is not
@@ -2798,7 +2803,7 @@ public class SQLUtilities {
 						}
 
 						addResolvedElement(candidatePreviousElement, candidateAdjustedElement, map, resolvedElements,
-								alreadyResolvedElements, avaliableSrcObjects, conn);
+								alreadyResolvedElements, avaliableSrcObjects, reader, writer);
 
 					} catch (NoFieldWithFieldsMapping | MissingMetadataException e) {
 
@@ -2884,7 +2889,8 @@ public class SQLUtilities {
 
 	private static void addResolvedElement(String previousElement, String element, FieldsMapping map,
 			List<ResolvedQueryElement> resolvedElements, Set<ResolvedElementKey> alreadyResolvedElements,
-			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			List<EtlDatabaseObject> avaliableSrcObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		ResolvedElementKey key = new ResolvedElementKey(normalizeQueryElement(previousElement),
@@ -2894,7 +2900,7 @@ public class SQLUtilities {
 			return;
 		}
 
-		FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, conn);
+		FieldTransformingInfo valueInfo = transformMapping(map, avaliableSrcObjects, reader, writer);
 
 		resolvedElements.add(new ResolvedQueryElement(new ResolvedElementKey(previousElement, element), valueInfo));
 	}
@@ -2910,7 +2916,8 @@ public class SQLUtilities {
 
 	private static void resolveParameter(String previousElement, String param,
 			List<ResolvedQueryElement> resolvedElements, Set<ResolvedElementKey> alreadyResolvedElements,
-			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf, Connection conn)
+			List<EtlDatabaseObject> avaliableSrcObjects, EtlConfiguration relatedEtlConf,
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		if (param == null || param.isBlank()) {
@@ -2925,7 +2932,7 @@ public class SQLUtilities {
 			return;
 		}
 
-		FieldsMapping map = FieldsMapping.fastCreate(param, relatedEtlConf.getParamsAsDataSource(), conn);
+		FieldsMapping map = FieldsMapping.fastCreate(param, relatedEtlConf.getParamsAsDataSource(), null);
 
 		if (!map.hasDataSourceName() && map.useDefaultTransformer()) {
 
@@ -2933,7 +2940,7 @@ public class SQLUtilities {
 		}
 
 		addResolvedElement(previousElement, param, map, resolvedElements, alreadyResolvedElements, avaliableSrcObjects,
-				conn);
+				reader, writer);
 	}
 
 	private static List<String> extractQueryParameters(String query) {
@@ -2959,30 +2966,30 @@ public class SQLUtilities {
 	}
 
 	private static FieldTransformingInfo transformMapping(FieldsMapping map,
-			List<EtlDatabaseObject> avaliableSrcObjects, Connection conn)
+			List<EtlDatabaseObject> avaliableSrcObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		EtlDatabaseObject obj = utilities.listHasElement(avaliableSrcObjects) ? avaliableSrcObjects.get(0) : null;
 
-		return map.getTransformerInstance().transform(null, obj, obj, avaliableSrcObjects, map,
-				JdbcConnectorRuntimeAdapters.reader(conn), JdbcConnectorRuntimeAdapters.writer(conn));
+		return map.getTransformerInstance().transform(null, obj, obj, avaliableSrcObjects, map, reader, writer);
 	}
 
 	private static boolean isParam(String element) {
 		return element != null && element.startsWith("@");
 	}
 
-	private static FieldsMapping generateTransformerMapping(Connection conn,
-			FastEtlTransformingTarget transformingTarget, String prevAdjustedElement, String adjustedElement)
+	private static FieldsMapping generateTransformerMapping(FastEtlTransformingTarget transformingTarget,
+			String prevAdjustedElement, String adjustedElement)
 			throws DBException {
 		FieldsMapping map;
 
 		String dstField = tryToGenerateDstFieldForFieldsMapping(prevAdjustedElement);
 
 		if (dstField != null) {
-			map = FieldsMapping.fastCreate(transformingTarget, dstField, conn);
+			map = FieldsMapping.fastCreate(transformingTarget, dstField);
 		} else {
-			map = FieldsMapping.fastCreate(transformingTarget, "tmp_field", conn);
+			map = FieldsMapping.fastCreate(transformingTarget, "tmp_field");
 		}
 		map.resetAndLoadTransformer(map.getTransformationTargetObject(), adjustedElement);
 
@@ -2996,16 +3003,16 @@ public class SQLUtilities {
 	}
 
 	private static FieldsMapping generateMapping(FastEtlTransformingTarget transformingTarget,
-			String prevAdjustedElement, String adjustedElement, Connection conn) throws DBException {
+			String prevAdjustedElement, String adjustedElement) throws DBException {
 
 		FieldsMapping map;
 
 		String dstField = tryToGenerateDstFieldForFieldsMapping(prevAdjustedElement);
 
 		if (dstField != null) {
-			map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, dstField, conn);
+			map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, dstField);
 		} else {
-			map = FieldsMapping.fastCreate(transformingTarget, adjustedElement, conn);
+			map = FieldsMapping.fastCreate(transformingTarget, adjustedElement);
 		}
 
 		return map;

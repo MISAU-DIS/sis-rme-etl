@@ -62,10 +62,14 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		tryToAddLimits(intervalExtremeRecord, auxQueryInfo.getSearchClauses());
 
 		tryToAddExtraConditionForExport(auxQueryInfo.getSearchClauses(), parentObject, auxDataSourceObjects,
-				DbmsType.determineFromConnection(srcConn));
+				DbmsType.determineFromConnection(srcConn),
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn),
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn));
 
 		tryToAddExtraJoinExtraConditions(auxQueryInfo.getSearchClauses(), parentObject, auxDataSourceObjects,
-				DbmsType.determineFromConnection(srcConn));
+				DbmsType.determineFromConnection(srcConn),
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn),
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn));
 
 		if (getFinalCheckStatus().onGoing()) {
 

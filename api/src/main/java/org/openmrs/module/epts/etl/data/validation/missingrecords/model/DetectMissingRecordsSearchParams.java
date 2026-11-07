@@ -84,7 +84,9 @@ public class DetectMissingRecordsSearchParams extends EtlDatabaseObjectSearchPar
 		}
 
 		tryToAddExtraConditionForExport(searchClauses, parentObject, auxDataSourceObjects,
-				DbmsType.determineFromConnection(srcConn));
+				DbmsType.determineFromConnection(srcConn),
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn),
+				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn));
 
 		if (utilities.stringHasValue(getExtraCondition())) {
 			searchClauses.addToClauses(getExtraCondition());

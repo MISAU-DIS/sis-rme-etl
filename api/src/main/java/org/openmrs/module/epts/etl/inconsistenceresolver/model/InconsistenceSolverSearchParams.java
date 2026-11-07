@@ -52,7 +52,9 @@ public class InconsistenceSolverSearchParams extends AbstractEtlSearchParams<Etl
 			tryToAddLimits(recordLimits, searchClauses);
 
 			tryToAddExtraConditionForExport(searchClauses, parentObject, auxDataSourceObjects,
-					DbmsType.determineFromConnection(srcConn));
+					DbmsType.determineFromConnection(srcConn),
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn),
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn));
 		}
 
 		return searchClauses;

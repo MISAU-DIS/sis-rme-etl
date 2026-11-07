@@ -49,7 +49,9 @@ public class DatabaseIntegrityConsolidationSearchParams extends EtlDatabaseObjec
 			tryToAddLimits(limits, searchClauses);
 
 			tryToAddExtraConditionForExport(searchClauses, parentObject, auxDataSourceObjects,
-					DbmsType.determineFromConnection(srcConn));
+					DbmsType.determineFromConnection(srcConn),
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn),
+					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn));
 		}
 
 		return searchClauses;

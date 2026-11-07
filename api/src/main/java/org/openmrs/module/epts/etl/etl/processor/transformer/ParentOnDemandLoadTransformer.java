@@ -416,7 +416,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		logTrace(onDemand);
 
-		PreparedQueryInfo p = prepareOnDemandParentLookup(allObjs, dstConn);
+		PreparedQueryInfo p = prepareOnDemandParentLookup(allObjs, srcConn, dstConn);
 
 		JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
 
@@ -451,7 +451,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			List<EtlDatabaseObject> allObjects = additionalSrcObjects != null ? additionalSrcObjects
 					: (srcObject != null ? utilities.parseToList(srcObject) : null);
 
-			PreparedQueryInfo lookup = this.prepareOnDemandParentLookup(allObjects, dstConn);
+			PreparedQueryInfo lookup = this.prepareOnDemandParentLookup(allObjects, srcConn, dstConn);
 
 			Object[] values = this.resolveDstValues(srcObject, lookup.getParameters(), srcConf, dstConf, srcConn,
 					dstConn);
@@ -466,10 +466,12 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return keyPrefix;
 	}
 
-	private PreparedQueryInfo prepareOnDemandParentLookup(List<EtlDatabaseObject> sourceObjects, Connection dstConn)
+	private PreparedQueryInfo prepareOnDemandParentLookup(List<EtlDatabaseObject> sourceObjects, Connection srcConn,
+			Connection dstConn)
 			throws DBException {
 		return SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(getOnDemandCheckCondition(), null,
-				sourceObjects, getRelatedEtlConf(), dstConn);
+				sourceObjects, getRelatedEtlConf(), JdbcConnectorRuntimeAdapters.reader(srcConn),
+				JdbcConnectorRuntimeAdapters.writer(dstConn));
 	}
 
 	DstConf getEtlTransformTargetForExistingSrcParent(Connection srcConn, Connection dstConn) throws DBException {

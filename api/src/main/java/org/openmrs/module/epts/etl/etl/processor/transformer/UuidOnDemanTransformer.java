@@ -231,8 +231,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 		traceTransformationInitialization(field);
 
 		try {
-			String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, srcConn,
-					dstConn);
+			String uuid = this.retrieveExistingOnDemandUuid(processor, srcObject, additionalSrcObjects, reader, writer,
+					srcConn, dstConn);
 
 			if (uuid == null) {
 				uuid = UUID.randomUUID().toString();
@@ -312,7 +312,9 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	private String retrieveExistingOnDemandUuid(EtlProcessor processor, EtlDatabaseObject srcObject,
-			List<EtlDatabaseObject> srcObjects, Connection srcConn, Connection dstConn)
+			List<EtlDatabaseObject> srcObjects,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer, Connection srcConn, Connection dstConn)
 			throws DBException, ForbiddenOperationException {
 
 		this.ensureTableInitialized(srcConn, dstConn);
@@ -322,7 +324,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 		PreparedQueryInfo p = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(
 				this.getOnDemandCheckCondition(), utilities.parseToList(this.getTableConf().getAlias()), allObjs,
-				getRelatedEtlConf(), dstConn);
+				getRelatedEtlConf(), reader, writer);
  
 		EtlDatabaseObject obj;
 

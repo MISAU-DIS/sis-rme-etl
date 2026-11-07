@@ -21,6 +21,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.SqlFunctionType;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.OperationController;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadCurrentIntervals;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
@@ -113,7 +115,8 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	@SuppressWarnings({ "unchecked" })
 	private void tryToAddExtraCondition(String extraCondition, SearchClauses<T> searchClauses, T parentObject,
-			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
+			List<T> dataSourceObjects, DbmsType dbmsType, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws EtlTransformationException, DBException {
 
 		if (dataSourceObjects != null) {
 			this.getRelatedEtlConf().trace("Search for parentObject..." + dataSourceObjects);
@@ -127,7 +130,8 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 			try {
 				pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
-						utilities.parseToList(this.getPrimaryDataSource().getAlias()), ds, getRelatedEtlConf(), null);
+						utilities.parseToList(this.getPrimaryDataSource().getAlias()), ds, getRelatedEtlConf(),
+						reader, writer);
 			} catch (Exception e) {
 				throw e;
 			}
@@ -148,14 +152,16 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	 * @throws EtlTransformationException
 	 */
 	public void tryToAddExtraConditionForExport(SearchClauses<T> searchClauses, T parentObject,
-			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
+			List<T> dataSourceObjects, DbmsType dbmsType, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws EtlTransformationException, DBException {
 
 		tryToAddExtraCondition(this.getJdbcPrimaryDataSource().getExtraConditionForExtract(), searchClauses,
-				parentObject, dataSourceObjects, dbmsType);
+				parentObject, dataSourceObjects, dbmsType, reader, writer);
 	}
 
 	public void tryToAddExtraJoinExtraConditions(SearchClauses<T> searchClauses, T parentObject,
-			List<T> dataSourceObjects, DbmsType dbmsType) throws EtlTransformationException, DBException {
+			List<T> dataSourceObjects, DbmsType dbmsType, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws EtlTransformationException, DBException {
 
 		JdbcTablePrimaryDataSourceConfiguration jdbcSource = getJdbcPrimaryDataSource();
 
@@ -170,7 +176,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		String extraCondition = jdbcSource.generateConditionsFields(parentObject, jdbcSource.getJoinFields(),
 				jdbcSource.getJoinExtraCondition());
 
-		tryToAddExtraCondition(extraCondition, searchClauses, parentObject, dataSourceObjects, dbmsType);
+		tryToAddExtraCondition(extraCondition, searchClauses, parentObject, dataSourceObjects, dbmsType, reader, writer);
 	}
 
 	public EtlConfiguration getRelatedEtlConf() {
