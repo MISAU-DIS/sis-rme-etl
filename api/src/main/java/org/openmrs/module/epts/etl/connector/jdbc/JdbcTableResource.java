@@ -49,6 +49,11 @@ public final class JdbcTableResource implements ConnectorResource {
 	}
 
 	@Override
+	public String getAlias() {
+		return tableConfiguration.getAlias();
+	}
+
+	@Override
 	public ConnectorDirection getDirection() {
 		return direction;
 	}
@@ -69,6 +74,7 @@ public final class JdbcTableResource implements ConnectorResource {
 
 	@Override
 	public String toString() {
-		return "JdbcTableResource[name=" + getName() + ", direction=" + direction + ", endpoint=" + endpoint + "]";
+		return "JdbcTableResource[name=" + getName() + ", alias=" + getAlias() + ", direction=" + direction
+				+ ", endpoint=" + endpoint + "]";
 	}
 }

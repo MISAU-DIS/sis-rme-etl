@@ -112,6 +112,24 @@ class ConnectorConfigurationResolverTest {
 	}
 
 	@Test
+	void shouldUseResourceAliasAsJdbcTableAlias() {
+		DBConnectionInfo jdbc = new DBConnectionInfo();
+		ConnectorEndpoint endpoint = ConnectorConfigurationResolver.resolveEndpoint(null, jdbc);
+		GenericTableConfiguration table = new GenericTableConfiguration("patient");
+		ConnectorResourceConfiguration configured = new ConnectorResourceConfiguration();
+		configured.setName("patient");
+		configured.setAlias("source_patient");
+
+		ConnectorResource resource = ConnectorConfigurationResolver.resolveResource(configured, table,
+				ConnectorDirection.SOURCE, endpoint);
+
+		assertEquals("patient", resource.getName());
+		assertEquals("source_patient", resource.getAlias());
+		assertEquals("source_patient", table.getTableAlias());
+		assertEquals("source_patient", configured.copy().getAlias());
+	}
+
+	@Test
 	void shouldRejectDuplicateAndReservedConnectorIds() {
 		ConnectorEndpointConfiguration first = connector("shared");
 		ConnectorEndpointConfiguration duplicate = connector("shared");

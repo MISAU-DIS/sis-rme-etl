@@ -121,6 +121,9 @@ public final class ConnectorConfigurationResolver {
 				throw new IllegalArgumentException("Configured JDBC resource name '" + configured.getName()
 						+ "' differs from legacy tableName '" + legacyTable.getTableName() + "'");
 			}
+			if (UTILITIES.stringHasValue(configured.getAlias())) {
+				legacyTable.setTableAlias(configured.getAlias());
+			}
 			return new JdbcTableResource(legacyTable, direction, endpoint);
 		}
 

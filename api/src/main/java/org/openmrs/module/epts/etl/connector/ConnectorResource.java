@@ -9,6 +9,11 @@ public interface ConnectorResource {
 
 	String getName();
 
+	/** Logical identity; defaults to the physical resource name. */
+	default String getAlias() {
+		return getName();
+	}
+
 	ConnectorDirection getDirection();
 
 	ConnectorEndpoint getEndpoint();

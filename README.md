@@ -131,6 +131,10 @@ model.
 
 The primary data source `name` is the logical ETL data-source identity. The
 physical file, route, queue, topic or table belongs to `resource.name`.
+`resource.alias` is an optional logical identity for disambiguating resources
+that share the same physical name. When omitted, it defaults to
+`resource.name`. For JDBC resources, an explicitly configured alias becomes
+the corresponding `tableAlias`.
 
 ### JDBC table source
 
@@ -147,7 +151,8 @@ physical file, route, queue, topic or table belongs to `resource.name`.
     {
       "resource": {
         "connector": "destination-db",
-        "name": "patient"
+        "name": "patient",
+        "alias": "destination_patient"
       },
       "tableDataDestination": {}
     }
@@ -407,7 +412,10 @@ record model independently of JDBC:
 `resource.name` and `resource.connector` are canonical. Do not repeat them as
 `destination.name` or `destination.connector`; those root properties are
 rejected. `resource.properties` carries generic resource properties shared by
-all destination technologies.
+all destination technologies. `resource.alias` provides the logical identity
+used by mappings and data-source lookup while `resource.name` continues to
+identify the physical table, file, route, queue or topic. For JDBC destinations
+the alias is propagated to `tableAlias`.
 
 ### JDBC destination
 
@@ -418,6 +426,7 @@ A JDBC adapter can be inferred entirely from the resolved connector:
   "resource": {
     "connector": "destination-db",
     "name": "patient",
+    "alias": "destination_patient",
     "properties": {
       "schema": "openmrs"
     }

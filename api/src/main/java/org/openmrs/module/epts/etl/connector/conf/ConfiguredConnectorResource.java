@@ -24,6 +24,13 @@ final class ConfiguredConnectorResource implements ConnectorResource {
 	}
 
 	@Override
+	public String getAlias() {
+		return configuration.getAlias() == null || configuration.getAlias().trim().isEmpty()
+				? getName()
+				: configuration.getAlias();
+	}
+
+	@Override
 	public ConnectorDirection getDirection() {
 		return direction;
 	}
@@ -44,7 +51,7 @@ final class ConfiguredConnectorResource implements ConnectorResource {
 
 	@Override
 	public String toString() {
-		return "ConfiguredConnectorResource[name=" + getName() + ", direction=" + direction + ", endpoint=" + endpoint
-				+ "]";
+		return "ConfiguredConnectorResource[name=" + getName() + ", alias=" + getAlias() + ", direction=" + direction
+				+ ", endpoint=" + endpoint + "]";
 	}
 }

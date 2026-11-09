@@ -485,7 +485,13 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		resolveAdditionalSourceResources(registry, source, true);
 
 		if (this.source.getPrimaryDataSource() instanceof JdbcTablePrimaryDataSourceConfiguration) {
-			((JdbcTablePrimaryDataSourceConfiguration) this.source.getPrimaryDataSource()).setResolvedResource(source);
+			JdbcTablePrimaryDataSourceConfiguration jdbcSource =
+					(JdbcTablePrimaryDataSourceConfiguration) this.source.getPrimaryDataSource();
+			jdbcSource.setResolvedResource(source);
+			if (this.source.getResource() != null
+					&& utilities.stringHasValue(this.source.getResource().getAlias())) {
+				jdbcSource.setTableAlias(this.source.getResource().getAlias());
+			}
 		}
 
 		if (destinationResources != null) {

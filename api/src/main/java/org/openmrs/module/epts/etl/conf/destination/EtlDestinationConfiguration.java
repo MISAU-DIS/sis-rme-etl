@@ -1054,6 +1054,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@Override
 	public String getAlias() {
+		if (resource != null && utilities.stringHasValue(resource.getAlias())) {
+			return resource.getAlias();
+		}
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
 
 		return physical == null ? getName() : physical.getAlias();
@@ -1286,6 +1289,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 		if (resolvedResource != null) {
 			tableDataDestination.setResolvedResource(resolvedResource);
+			if (resource != null && utilities.stringHasValue(resource.getAlias())) {
+				tableDataDestination.setTableAlias(resource.getAlias());
+			}
 			if (resolvedResource.getEndpoint().getType() == ConnectorType.JDBC) {
 				tableDataDestination.setRelatedConnInfo(
 						resolvedResource.getEndpoint().unwrap(DBConnectionInfo.class));

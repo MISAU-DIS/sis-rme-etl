@@ -9,6 +9,7 @@ public class ConnectorResourceConfiguration {
 
 	private String connector;
 	private String name;
+	private String alias;
 	private Map<String, Object> properties;
 
 	public String getConnector() {
@@ -27,6 +28,14 @@ public class ConnectorResourceConfiguration {
 		this.name = name;
 	}
 
+	public String getAlias() {
+		return alias;
+	}
+
+	public void setAlias(String alias) {
+		this.alias = alias;
+	}
+
 	public Map<String, Object> getProperties() {
 		return properties == null ? Collections.emptyMap() : Collections.unmodifiableMap(properties);
 	}
@@ -39,13 +48,15 @@ public class ConnectorResourceConfiguration {
 		ConnectorResourceConfiguration copy = new ConnectorResourceConfiguration();
 		copy.setConnector(connector);
 		copy.setName(name);
+		copy.setAlias(alias);
 		copy.setProperties(properties);
 		return copy;
 	}
 
 	@Override
 	public String toString() {
-		return "ConnectorResourceConfiguration[connector=" + connector + ", name=" + name + ", properties="
+		return "ConnectorResourceConfiguration[connector=" + connector + ", name=" + name + ", alias=" + alias
+				+ ", properties="
 				+ getProperties().keySet() + "]";
 	}
 }

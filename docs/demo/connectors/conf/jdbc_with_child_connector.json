@@ -110,13 +110,12 @@
           "tableName": "person"
         }
       },
-      "dstConf": [
+      "destinations": [
         {
-          "tableName": "person_data",
-          "tableAlias": "person_data_dst_ds",
           "resource": {
             "connector": "jdbc-dst-connector",
-            "name": "person_data"
+            "name": "person_data",
+            "alias":"person_data_dst_ds"
           },
           "unmappedFieldBehavior":"IGNORE",
           "mapping": [
@@ -144,7 +143,6 @@
           },
           "dstConf": [
             {
-              "tableName": "person_data",
               "resource": {
                 "connector": "jdbc-dst-connector",
                 "name": "person_data"
