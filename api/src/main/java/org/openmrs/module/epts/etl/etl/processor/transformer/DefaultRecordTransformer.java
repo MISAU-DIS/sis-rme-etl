@@ -7,15 +7,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.EtlTransformationException;
@@ -41,9 +41,10 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	@Override
-	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject, DstConf dstConf,
-			EtlDatabaseObject migratedDstParent, TransformationType transformationType, ConnectorRecordReader<?> reader,
-			ConnectorRecordWriter<?> writer) throws DBException, EtlTransformationException {
+	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
+			EtlDestinationConfiguration dstConf, EtlDatabaseObject migratedDstParent,
+			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws DBException, EtlTransformationException {
 
 		Set<EtlDatabaseObject> srcObjects = collectSourceObjects(processor, srcObject, null, null, migratedDstParent,
 				dstConf, transformationType, reader, writer);
@@ -63,9 +64,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	@Override
 	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-			Set<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
-			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
-			throws DBException, EtlTransformationException {
+			Set<EtlDatabaseObject> collectedSrcObjects, EtlDestinationConfiguration dstConf,
+			EtlDatabaseObject migratedDstParent, TransformationType transformationType, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException, EtlTransformationException {
 		Connection dstConn = unwrapConnection(writer);
 
 		if (dstConf.isDisabled()) {
@@ -111,7 +112,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			Set<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer,
 			Connection dstConn) throws EtlTransformationException, DBException {
 
-		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
+		EtlDestinationConfiguration dstConf = (EtlDestinationConfiguration) transformedRec.getRelatedConfiguration();
 
 		transformedRec.loadObjectIdData(dstConf);
 		transformedRec.loadUniqueKeyValues();
@@ -162,8 +163,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private boolean resolvePrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
-			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
-			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs,
+			EtlDatabaseObject transformedRec, EtlDestinationConfiguration dstConf, Field pkField,
+			FieldsMapping pkMapping, EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs,
 			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer, Connection dstConn)
 			throws EtlTransformationException, DBException {
 
@@ -177,9 +178,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private boolean resolveNonSharedPrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
-			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
-			List<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer,
-			Connection dstConn) throws EtlTransformationException, DBException {
+			EtlDatabaseObject transformedRec, EtlDestinationConfiguration dstConf, Field pkField,
+			FieldsMapping pkMapping, List<EtlDatabaseObject> availableSrcObjs, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer, Connection dstConn) throws EtlTransformationException, DBException {
 
 		if (!pkMapping.useDefaultTransformer()) {
 			FieldTransformingInfo info = pkMapping.transform(processor, srcRecord, transformedRec, availableSrcObjs,
@@ -210,8 +211,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	}
 
 	private boolean resolveSharedPrimaryKey(EtlProcessor processor, EtlDatabaseObject srcRecord,
-			EtlDatabaseObject transformedRec, DstConf dstConf, Field pkField, FieldsMapping pkMapping,
-			EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs,
+			EtlDatabaseObject transformedRec, EtlDestinationConfiguration dstConf, Field pkField,
+			FieldsMapping pkMapping, EtlDatabaseObject migratedDstParent, List<EtlDatabaseObject> availableSrcObjs,
 			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer, Connection dstConn)
 			throws EtlTransformationException, DBException {
 
@@ -256,10 +257,11 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 				.equals(transformedRec.getRelatedConfiguration().getObjectName());
 	}
 
-	private void resolveParentForeignKey(EtlDatabaseObject transformedRec, DstConf dstConf,
+	private void resolveParentForeignKey(EtlDatabaseObject transformedRec, EtlDestinationConfiguration dstConf,
 			EtlDatabaseObject migratedDstParent, Connection conn) throws EtlTransformationException {
 
 		if (dstConf.hasParentRefInfo()) {
+
 			for (ParentTable refInfo : dstConf.getParentRefInfo()) {
 
 				if (!refInfo.getTableName().equals(migratedDstParent.getRelatedConfiguration().getObjectName())) {
@@ -317,7 +319,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	public Set<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject srcObjectExpansion, EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent,
-			DstConf dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader,
+			EtlDestinationConfiguration dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader,
 			ConnectorRecordWriter<?> writer) throws DBException {
 
 		Set<EtlDatabaseObject> result = new LinkedHashSet<>();
@@ -336,7 +338,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			EtlDatabaseObject transformedRec, Set<EtlDatabaseObject> srcObjects, ConnectorRecordReader<?> reader,
 			ConnectorRecordWriter<?> writer, Connection dstConn) throws DBException {
 
-		DstConf dstConf = (DstConf) transformedRec.getRelatedConfiguration();
+		EtlDestinationConfiguration dstConf = (EtlDestinationConfiguration) transformedRec.getRelatedConfiguration();
 
 		for (FieldsMapping fieldsMapping : dstConf.getAllMapping()) {
 

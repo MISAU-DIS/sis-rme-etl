@@ -9,6 +9,8 @@ import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.RecordNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -106,10 +108,13 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		return Long.parseLong(this.getFieldValue("src_parent_id").toString());
 	}
 
-	public void fullLoad(EtlItemConfiguration relatedItemConf, Connection srcConn, Connection dstConn)
-			throws DBException, ForbiddenOperationException {
+	public void fullLoad(EtlItemConfiguration relatedItemConf, ConnectorRecordReader<EtlDatabaseObject> reader,
+			ConnectorRecordWriter<EtlDatabaseObject> writer) throws DBException, ForbiddenOperationException {
 
 		TableConfiguration relatedSource = relatedItemConf.getPrimaryDataSource().requireJdbc();
+
+		Connection srcConn = reader.unwrap(Connection.class);
+		Connection dstConn = writer.unwrap(Connection.class);
 
 		if (!relatedItemConf.isFullLoaded()) {
 			throw new ForbiddenOperationException("The relatedItemConf must be full loaded!!!");
@@ -162,8 +167,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 	}
 
 	public static List<RecordWithDefaultParentInfo> getAllOfSrcRecord(PrimaryDataSourceConfiguration primarySource,
-			Long srcRecId,
-			Connection srcConn) throws DBException {
+			Long srcRecId, Connection srcConn) throws DBException {
 		TableConfiguration srcTable = primarySource.requireJdbc();
 		TableConfiguration tabConf = primarySource.getRelatedEtlConf().getRecordWithDefaultParentsInfoTabConf();
 

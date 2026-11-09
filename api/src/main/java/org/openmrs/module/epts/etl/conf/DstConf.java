@@ -662,53 +662,6 @@ public class DstConf extends AbstractTableConfiguration
 		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
 
-	public FieldsMapping getMappingUsingDstField(String dstFieldName) throws FieldsMappingException {
-		List<FieldsMapping> matchedFields = new ArrayList<FieldsMapping>();
-
-		for (FieldsMapping field : this.allMapping) {
-
-			if (field.getDstField() == null) {
-				continue;
-			}
-
-			if (field.getDstField().equals(dstFieldName)) {
-				matchedFields.add(field);
-
-				if (matchedFields.size() > 1) {
-					throw new FieldsMappingException("Cannot determine the mapping field for '" + dstFieldName
-							+ "' since it has multiple matching fields");
-				}
-			}
-		}
-
-		if (matchedFields.isEmpty()) {
-			throw new FieldsMappingException("Cannot determine the mapping field for '" + dstFieldName + "'");
-		}
-
-		return matchedFields.get(0);
-	}
-
-	public String getMappedField(String srcField) {
-		List<FieldsMapping> machedFields = new ArrayList<FieldsMapping>();
-
-		for (FieldsMapping field : this.allMapping) {
-
-			if (field.getSrcField().equals(srcField)) {
-				machedFields.add(field);
-
-				if (machedFields.size() > 1) {
-					throw new ForbiddenOperationException("Cannot determine the mapping field for '" + srcField
-							+ "' since it has multiple matching fields");
-				}
-			}
-		}
-
-		if (machedFields.isEmpty()) {
-			throw new ForbiddenOperationException("Cannot determine the mapping field for '" + srcField + "'");
-		}
-
-		return machedFields.get(0).getDstField();
-	}
 
 	public DBConnectionInfo getRelatedConnInfo() {
 		return relatedConnInfo != null ? this.relatedConnInfo : getRelatedEtlConf().getDstConnInfo();

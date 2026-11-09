@@ -3,14 +3,15 @@ package org.openmrs.module.epts.etl.etl.processor;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
-import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -88,7 +89,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 			}
 
 			for (EtlDatabaseObject etlObj : etlObjects) {
-				EtlDatabaseObject dstObject = reloadDefaultsParents(primarySource, etlObj, srcConn, dstConn);
+				EtlDatabaseObject dstObject = this.reloadDefaultsParents(primarySource, etlObj, readers, writers);
 
 				if (dstObject != null) {
 					dstObject.update((TableConfiguration) dstObject.getRelatedConfiguration(), dstConn);
@@ -104,8 +105,14 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 	}
 
 	private EtlDatabaseObject reloadDefaultsParents(PrimaryDataSourceConfiguration primarySource,
-			EtlDatabaseObject etlObj, Connection srcConn, Connection dstConn)
+			EtlDatabaseObject etlObj, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
 			throws DBException, ForbiddenOperationException {
+
+		ConnectorRecordReader<EtlDatabaseObject> reader = null;
+		ConnectorRecordWriter<EtlDatabaseObject> writer = null;
+
+		Connection srcConn = readers.getEtlSrcConn();
+		Connection dstConn = null;
 
 		List<RecordWithDefaultParentInfo> rcs = RecordWithDefaultParentInfo.getAllOfSrcRecord(primarySource,
 				etlObj.getObjectId().asSimpleNumericValue(), srcConn);
@@ -121,7 +128,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 			}
 
 			try {
-				recWithDefaultParentInfo.fullLoad(this.getRelatedEtlItemConfiguration(), srcConn, dstConn);
+				recWithDefaultParentInfo.fullLoad(this.getRelatedEtlItemConfiguration(), reader, writer);
 			} catch (RecordNotFoundException e) {
 				logWarn("A issue happened while processing record with default values: " + e.getLocalizedMessage());
 
@@ -154,17 +161,18 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 			EtlDatabaseObject parentAsSrc = null;
 
 			for (PrimaryDataSourceConfiguration source : availableSourcesForCurrentParent) {
-				DstConf dst = source.getParentItemConfiguration().findJdbcDestination(getRelatedEtlOperationConfig(),
-						parentRefInfo.getTableName());
+				EtlDestinationConfiguration dst = source.getParentItemConfiguration()
+						.findDestination(parentRefInfo.getTableName());
+
+				dstConn = writers.get(dst.getResolvedResource()).unwrap(Connection.class);
 
 				parentAsSrc = source.newInstance();
 				parentAsSrc.setRelatedConfiguration(source);
 
 				parentAsSrc.copyFrom(recWithDefaultParentInfo.getParentRecordInOrigin());
 
-				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, null, dst, null,
-						TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn),
-						JdbcConnectorRuntimeAdapters.writer(dstConn));
+				dstParent = dst.getTransformerInstance().transform(this, parentAsSrc, dst, null,
+						TransformationType.INNER, reader, writer);
 
 				if (dstParent != null) {
 					DBException exception = null;
@@ -177,6 +185,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 
 						dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);
 					} catch (DBException e) {
+
 						if (e.isDuplicatePrimaryOrUniqueKeyException()) {
 							dstParent = DatabaseObjectDAO.getByUniqueKeys(dstParent, dstConn);
 							dstObject.changeParentValue(recWithDefaultParentInfo.getParentRefInfo(), dstParent);

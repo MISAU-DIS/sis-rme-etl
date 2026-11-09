@@ -34,15 +34,16 @@ import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
+import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -123,16 +124,19 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	public static List<EtlDestinationConfiguration> copyAll(List<EtlDestinationConfiguration> destinations) {
+
 		if (destinations == null) {
 			return null;
 		}
 		List<EtlDestinationConfiguration> copies = new ArrayList<>(destinations.size());
+
 		for (EtlDestinationConfiguration destination : destinations) {
+
 			try {
 				String json = new ObjectMapperProvider().getContext(EtlDestinationConfiguration.class)
 						.writeValueAsString(destination);
-				copies.add(new ObjectMapperProvider().getContext(EtlDestinationConfiguration.class)
-						.readValue(json, EtlDestinationConfiguration.class));
+				copies.add(new ObjectMapperProvider().getContext(EtlDestinationConfiguration.class).readValue(json,
+						EtlDestinationConfiguration.class));
 			} catch (java.io.IOException exception) {
 				throw new EtlConfException("Could not copy destination configuration", exception);
 			}
@@ -162,8 +166,57 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		return tableDataDestination;
 	}
 
+	public FieldsMapping getMappingUsingDstField(String dstFieldName) throws FieldsMappingException {
+		List<FieldsMapping> matchedFields = new ArrayList<FieldsMapping>();
+
+		for (FieldsMapping field : this.allMapping) {
+
+			if (field.getDstField() == null) {
+				continue;
+			}
+
+			if (field.getDstField().equals(dstFieldName)) {
+				matchedFields.add(field);
+
+				if (matchedFields.size() > 1) {
+					throw new FieldsMappingException("Cannot determine the mapping field for '" + dstFieldName
+							+ "' since it has multiple matching fields");
+				}
+			}
+		}
+
+		if (matchedFields.isEmpty()) {
+			throw new FieldsMappingException("Cannot determine the mapping field for '" + dstFieldName + "'");
+		}
+
+		return matchedFields.get(0);
+	}
+
+	public String getMappedField(String srcField) {
+		List<FieldsMapping> machedFields = new ArrayList<FieldsMapping>();
+
+		for (FieldsMapping field : this.allMapping) {
+
+			if (field.getSrcField().equals(srcField)) {
+				machedFields.add(field);
+
+				if (machedFields.size() > 1) {
+					throw new ForbiddenOperationException("Cannot determine the mapping field for '" + srcField
+							+ "' since it has multiple matching fields");
+				}
+			}
+		}
+
+		if (machedFields.isEmpty()) {
+			throw new ForbiddenOperationException("Cannot determine the mapping field for '" + srcField + "'");
+		}
+
+		return machedFields.get(0).getDstField();
+	}
+
 	@JsonIgnore
 	public JdbcTableDestinationConfiguration requireJdbcTableDestination() {
+
 		if (tableDataDestination == null) {
 			throw new ForbiddenOperationException("Destination '" + getName() + "' is not JDBC-backed");
 		}
@@ -1069,6 +1122,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@Override
 	public String getAlias() {
+
 		if (resource != null && utilities.stringHasValue(resource.getAlias())) {
 			return resource.getAlias();
 		}
@@ -1175,8 +1229,10 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	public void setResolvedResource(ConnectorResource resolvedResource) {
 		this.resolvedResource = resolvedResource;
+
 		if (resolvedResource != null) {
 			inferAndConfigureAdapter(resolvedResource);
+
 			if (destinationDataConfiguration != tableDataDestination) {
 				validateRecordFields(destinationDataConfiguration);
 			}
@@ -1239,13 +1295,16 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	private void inferAndConfigureAdapter(ConnectorResource resolved) {
 		ConnectorType connectorType = resolved.getEndpoint().getType();
+
 		if (destinationDataConfiguration == null) {
+
 			if (connectorType == ConnectorType.JDBC) {
 				tableDataDestination = new JdbcTableDestinationConfiguration(resolved.getName());
 				destinationDataConfiguration = tableDataDestination;
 			} else if (connectorType == ConnectorType.FILE) {
 				inferFileAdapter(resource);
 				destinationDataConfiguration = jsonDataDestination != null ? jsonDataDestination : csvDataDestination;
+
 				if (destinationDataConfiguration == null) {
 					throw new EtlConfException("Cannot infer the destination format for file resource '"
 							+ resolved.getName() + "'; use a .json/.csv name, resource.properties.format, "
@@ -1268,14 +1327,17 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	private void inferFileAdapter(ConnectorResourceConfiguration configuredResource) {
+
 		if (configuredResource == null || tableDataDestination != null || jsonDataDestination != null
 				|| csvDataDestination != null) {
 			return;
 		}
 		Object configuredFormat = configuredResource.getProperties().get("format");
-		String format = configuredFormat == null ? null : String.valueOf(configuredFormat).trim().toLowerCase(Locale.ROOT);
+		String format = configuredFormat == null ? null
+				: String.valueOf(configuredFormat).trim().toLowerCase(Locale.ROOT);
 		String resourceName = configuredResource.getName();
 		String normalizedName = resourceName == null ? "" : resourceName.toLowerCase(Locale.ROOT);
+
 		if ("json".equals(format) || "jsonl".equals(format) || normalizedName.endsWith(".json")
 				|| normalizedName.endsWith(".jsonl")) {
 			jsonDataDestination = new JsonDestinationConfiguration();
@@ -1285,32 +1347,39 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	private void validateAdapterCompatibility(ConnectorType connectorType) {
+
 		if (connectorType == ConnectorType.JDBC && destinationDataConfiguration != tableDataDestination) {
 			throw new EtlConfException("A JDBC connector requires tableDataDestination");
 		}
+
 		if (connectorType == ConnectorType.FILE && destinationDataConfiguration == tableDataDestination) {
 			throw new EtlConfException("A FILE connector cannot use tableDataDestination");
 		}
 	}
 
 	private void configureJdbcAdapter() {
+
 		if (tableDataDestination == null) {
 			return;
 		}
+
 		if (parentItem != null) {
 			tableDataDestination.setParentConf(parentItem);
 		}
+
 		if (primaryKey != null) {
 			tableDataDestination.setPrimaryKey(primaryKey);
 		}
+
 		if (resolvedResource != null) {
 			tableDataDestination.setResolvedResource(resolvedResource);
+
 			if (resource != null && utilities.stringHasValue(resource.getAlias())) {
 				tableDataDestination.setTableAlias(resource.getAlias());
 			}
+
 			if (resolvedResource.getEndpoint().getType() == ConnectorType.JDBC) {
-				tableDataDestination.setRelatedConnInfo(
-						resolvedResource.getEndpoint().unwrap(DBConnectionInfo.class));
+				tableDataDestination.setRelatedConnInfo(resolvedResource.getEndpoint().unwrap(DBConnectionInfo.class));
 			}
 		}
 	}
@@ -1331,8 +1400,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 			throw new EtlConfException("destination.resource.name is required");
 		}
 
-		if ((resolved != null && resolved != tableDataDestination)
-				|| (resolved == null && resource == null)) {
+		if ((resolved != null && resolved != tableDataDestination) || (resolved == null && resource == null)) {
 			validateRecordFields(resolved);
 		}
 	}
@@ -1399,5 +1467,14 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 				+ (destinationDataConfiguration == null ? "unresolved"
 						: destinationDataConfiguration.getClass().getSimpleName())
 				+ "]";
+	}
+
+	@JsonIgnore
+	public boolean useSharedPKKey() {
+		return this.isJdbcDestination() && this.getTableDataDestination().useSharedPKKey();
+	}
+
+	public boolean isJdbcDestination() {
+		return this.getTableDataDestination() != null;
 	}
 }

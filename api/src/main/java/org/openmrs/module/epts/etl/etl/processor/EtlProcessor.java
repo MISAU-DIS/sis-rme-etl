@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
@@ -152,7 +153,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
 							: new ArrayList<>();
 
-					for (DstConf dstConf : etlItemConf.getJdbcDestinations()) {
+					for (EtlDestinationConfiguration dstConf : etlItemConf.getDestinations()) {
 
 						if (dstConf.isDisabled()) {
 							logTrace("Skiping transformation of dstConf {} as it is disabled", dstConf);
@@ -236,7 +237,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 	}
 
-	private Connection destinationConnection(ConnectorRecordWriters writers, DstConf destination) {
+	private Connection destinationConnection(ConnectorRecordWriters writers, EtlDestinationConfiguration destination) {
 
 		try {
 			return writers.get(destination).unwrap(Connection.class);
@@ -281,7 +282,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	private void quickTransformRecord(EtlDatabaseObject srcRecord) throws DBException {
 
-		EtlDatabaseObject dstObject = this.getEtlItemConfiguration().getJdbcDestinations().get(0).createRecordInstance();
+		EtlDatabaseObject dstObject = this.getEtlItemConfiguration().getDestinations().get(0).createRecordInstance();
 
 		dstObject.markAsNotCollactable();
 
@@ -293,7 +294,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void transformRecord(EtlDatabaseObject srcRecord, EtlDatabaseObject srcRecordExpansion,
-			EtlDatabaseObject parentMigratedRec, DstConf dstConf, ConnectorRecordReader<?> reader,
+			EtlDatabaseObject parentMigratedRec, EtlDestinationConfiguration dstConf, ConnectorRecordReader<?> reader,
 			ConnectorRecordWriter<?> writer) throws DBException {
 
 		try {
@@ -375,7 +376,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	}
 
-	private void tryToLogOrThrowException(EtlDatabaseObject record, DstConf mappingInfo, EtlTransformationException e) {
+	private void tryToLogOrThrowException(EtlDatabaseObject record, EtlDestinationConfiguration mappingInfo,
+			EtlTransformationException e) {
 		ActionOnEtlIssue defaultBehavior = mappingInfo.getRelatedEtlConf().getDefaultExceptionBehavior();
 		ActionOnEtlIssue exceptionBehavior = e.getAction();
 
@@ -410,7 +412,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	 * @param mappingInfo
 	 * @param e
 	 */
-	private void createDefaultFailedDstObject(EtlDatabaseObject record, DstConf mappingInfo,
+	private void createDefaultFailedDstObject(EtlDatabaseObject record, EtlDestinationConfiguration mappingInfo,
 			EtlTransformationException e) {
 
 		if (!getRelatedEtlConf().doNotWarnOnNoDstObjectFound()) {
@@ -471,7 +473,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 		ConnectorRecordReader<?> childPrimaryReader = findPrimaryReader(itemConf, readers);
 		Connection parentDstConn = transformedParent.getRelatedConfiguration() instanceof DstConf
-				? destinationConnection(writers, (DstConf) transformedParent.getRelatedConfiguration())
+				? destinationConnection(writers,
+						(EtlDestinationConfiguration) transformedParent.getRelatedConfiguration())
 				: null;
 		ConnectorRecordWriter<?> childWriter = firstDestinationWriter(itemConf, writers);
 
@@ -598,45 +601,6 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 				trackFailedProcessingIfConfigured(obj, stageRecord, srcConn);
 			}
 		}
-	}
-
-	private Connection findPrimaryJdbcConnection(ConnectorRecordReaders readers) {
-		return findPrimaryJdbcConnection(getEtlItemConfiguration(), readers);
-	}
-
-	private Connection findPrimaryJdbcConnection(EtlItemConfiguration itemConf, ConnectorRecordReaders readers) {
-		return findJdbcConnection(findPrimaryReader(itemConf, readers));
-	}
-
-	private Connection findJdbcConnection(ConnectorRecordReader<?> reader) {
-
-		try {
-			return reader.unwrap(Connection.class);
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
-	}
-
-	private ConnectorRecordReader<?> findPrimaryReader(EtlItemConfiguration itemConf, ConnectorRecordReaders readers) {
-
-		try {
-			return readers.get(itemConf.getPrimaryDataSource());
-		} catch (IllegalArgumentException e) {
-
-			if (itemConf == getEtlItemConfiguration()) {
-				return readers.getPrimary();
-			}
-			throw e;
-		}
-	}
-
-	private Connection requirePrimaryJdbcConnection(ConnectorRecordReaders readers, String operation) {
-		Connection connection = findPrimaryJdbcConnection(readers);
-
-		if (connection == null) {
-			throw new IllegalStateException("A JDBC source connection is required for " + operation);
-		}
-		return connection;
 	}
 
 	private void moveToStageArea(EtlDatabaseObject sourceRecord, EtlStageAreaObject stageRecord, Connection srcConn)

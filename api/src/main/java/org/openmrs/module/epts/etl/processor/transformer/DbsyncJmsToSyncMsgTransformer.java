@@ -7,7 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -34,7 +34,7 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 	CommonUtilities utilities = CommonUtilities.getInstance();
 
 	@Override
-	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject, DstConf dstConf,
+	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDestinationConfiguration dstConf,
 			EtlDatabaseObject migratedDstParent, TransformationType transformationType, ConnectorRecordReader<?> reader,
 			ConnectorRecordWriter<?> writer) throws DBException, EtlTransformationException {
 		Connection srcConn = reader.unwrap(Connection.class);
@@ -114,7 +114,7 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 
 	@Override
 	public EtlDatabaseObject transform(EtlProcessor processor, EtlDatabaseObject srcObject,
-			Set<EtlDatabaseObject> collectedSrcObjects, DstConf dstConf, EtlDatabaseObject migratedDstParent,
+			Set<EtlDatabaseObject> collectedSrcObjects, EtlDestinationConfiguration dstConf, EtlDatabaseObject migratedDstParent,
 			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
 		// TODO Auto-generated method stub
@@ -124,7 +124,7 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 	@Override
 	public Set<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject srcObjectExpansion, EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent,
-			DstConf dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader,
+			EtlDestinationConfiguration dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader,
 			ConnectorRecordWriter<?> writer) throws DBException {
 		// TODO Auto-generated method stub
 		return null;
