@@ -7,7 +7,6 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
-import org.openmrs.module.epts.etl.model.Field;
 
 /**
  * Connector-neutral description of the records accepted by one physical
@@ -16,8 +15,6 @@ import org.openmrs.module.epts.etl.model.Field;
 public interface DestinationDataConfiguration {
 
 	String getName();
-
-	List<? extends Field> getFields();
 
 	UniqueKeyInfo getPrimaryKey();
 

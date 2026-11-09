@@ -12,6 +12,7 @@ use `List<DstConf>` until T2 performs normalization.
 
 - `connector`;
 - `resource`;
+- destination record `fields`;
 - exactly one physical destination variant;
 - manual, generated and resolved mappings;
 - join mappings, excluded and ignorable fields;
@@ -38,8 +39,10 @@ The supported structural variants are:
 intentional compatibility bridge: all existing JDBC behaviour stays in place
 while neutral callers gain a destination-variant contract.
 
-JSON and CSV variants own their logical name and fields. CSV additionally owns
-its record-format options. Their physical key and relationship descriptions are
+JSON and CSV variants own their logical name. CSV additionally owns its
+record-format options. The fields shared by transformation and persistence are
+owned by `EtlDestinationConfiguration`, rather than repeated inside each
+physical variant. Their physical key and relationship descriptions are
 neutral and do not require JDBC metadata. They are configuration contracts only
 in T1; runtime writer integration belongs to later phases.
 
@@ -48,7 +51,6 @@ in T1; runtime writer integration belongs to later phases.
 `DestinationDataConfiguration` exposes:
 
 - logical destination name;
-- destination fields;
 - primary and unique keys;
 - parent, child and shared-primary-key relationships;
 - parent destination aggregate;
@@ -87,7 +89,7 @@ Initialization rejects:
 - missing resource for a non-JDBC destination;
 - missing logical destination name;
 - missing resource name when a resource is present;
-- missing, unnamed or duplicated JSON/CSV fields.
+- missing, unnamed or duplicated root `destination.fields` for JSON/CSV.
 
 The resource belongs to the destination aggregate, matching the established
 source ownership rule.

@@ -46,14 +46,14 @@ class EtlDestinationConfigurationTest {
 	void shouldInferJsonAndCsvWithoutDependingOnConnectorType() throws Exception {
 		EtlDestinationConfiguration json = read("{"
 				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\","
-				+ "\"fields\":[{\"name\":\"uuid\"}]}"
+				+ "\"fields\":[{\"name\":\"uuid\"}],"
+				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
 				+ "}");
 		EtlDestinationConfiguration csv = read("{"
 				+ "\"connector\":\"output\","
 				+ "\"resource\":{\"name\":\"patients.csv\"},"
-				+ "\"csvDataDestination\":{\"name\":\"patients\",\"delimiter\":\";\","
-				+ "\"fields\":[{\"name\":\"uuid\"}]}"
+				+ "\"fields\":[{\"name\":\"uuid\"}],"
+				+ "\"csvDataDestination\":{\"name\":\"patients\",\"delimiter\":\";\"}"
 				+ "}");
 
 		json.initialize(new EtlItemConfiguration());
@@ -87,7 +87,8 @@ class EtlDestinationConfigurationTest {
 	@Test
 	void shouldRequireResourceNameAndRecordFieldsForNonJdbcDestinations() throws Exception {
 		EtlDestinationConfiguration noResource = read("{"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\",\"fields\":[{\"name\":\"uuid\"}]}"
+				+ "\"fields\":[{\"name\":\"uuid\"}],"
+				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
 				+ "}");
 		EtlDestinationConfiguration noFields = read("{"
 				+ "\"resource\":{\"name\":\"patients.json\"},"
@@ -98,7 +99,7 @@ class EtlDestinationConfigurationTest {
 				() -> noResource.initialize(new EtlItemConfiguration())).getMessage().contains("resource is required"));
 		assertTrue(assertThrows(EtlConfException.class,
 				() -> noFields.initialize(new EtlItemConfiguration())).getMessage()
-						.contains("destination.jsonDataDestination.fields"));
+						.contains("destination.fields"));
 	}
 
 	@Test
@@ -119,14 +120,18 @@ class EtlDestinationConfigurationTest {
 	void shouldRejectUnknownDestinationProperties() {
 		assertThrows(UnrecognizedPropertyException.class,
 				() -> read("{\"jdbcTable\":{\"tableName\":\"patient\"}}"));
+		assertThrows(UnrecognizedPropertyException.class,
+				() -> read("{\"resource\":{\"name\":\"patients.json\"},"
+						+ "\"jsonDataDestination\":{\"name\":\"patients\","
+						+ "\"fields\":[{\"name\":\"uuid\"}]}}"));
 	}
 
 	@Test
 	void shouldOwnLogicalTransformationRulesIndependentlyOfPhysicalVariant() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\","
-				+ "\"fields\":[{\"name\":\"uuid\"}]},"
+				+ "\"fields\":[{\"name\":\"uuid\"}],"
+				+ "\"jsonDataDestination\":{\"name\":\"patients\"},"
 				+ "\"mapping\":[{\"srcField\":\"person_uuid\",\"dstField\":\"uuid\"}],"
 				+ "\"applyCondition\":\"person_id != null\","
 				+ "\"unmappedFieldBehavior\":\"USE_DEFAULT\","
@@ -177,8 +182,8 @@ class EtlDestinationConfigurationTest {
 	void shouldExposeLegacyDestinationCapabilitiesWithoutMakingNonJdbcDestinationAJdbcTable() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\","
-				+ "\"fields\":[{\"name\":\"uuid\"}]}"
+				+ "\"fields\":[{\"name\":\"uuid\"}],"
+				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
 				+ "}");
 
 		destination.initialize(new EtlItemConfiguration());

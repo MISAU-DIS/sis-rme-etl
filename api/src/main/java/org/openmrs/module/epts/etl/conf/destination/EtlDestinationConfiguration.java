@@ -54,6 +54,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	private JdbcTableDestinationConfiguration tableDataDestination;
 	private JsonDestinationConfiguration jsonDataDestination;
 	private CsvDestinationConfiguration csvDataDestination;
+	private List<Field> fields;
 
 	private List<FieldsMapping> joinFields;
 	private List<List<FieldsMapping>> generatedJoinFields;
@@ -152,6 +153,15 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	public void setCsvDataDestination(CsvDestinationConfiguration csvDataDestination) {
 		this.csvDataDestination = csvDataDestination;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Field> List<T> getFields() {
+		return (List<T>) fields;
+	}
+
+	public void setFields(List<Field> fields) {
+		this.fields = fields;
 	}
 
 	public List<FieldsMapping> getJoinFields() {
@@ -472,12 +482,6 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	}
 
 	@JsonIgnore
-	@SuppressWarnings("unchecked")
-	public <T extends Field> List<T> getFields() {
-		return (List<T>) getDestinationDataConfiguration().getFields();
-	}
-
-	@JsonIgnore
 	public UniqueKeyInfo getPrimaryKey() {
 		return getDestinationDataConfiguration().getPrimaryKey();
 	}
@@ -559,6 +563,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
 		if (physical != null) {
 			physical.fullLoad();
+			synchronizePhysicalFields(physical);
 		}
 		fullLoaded = Boolean.TRUE;
 	}
@@ -568,6 +573,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
 		if (physical != null) {
 			physical.fullLoad(conn);
+			synchronizePhysicalFields(physical);
 		}
 		fullLoaded = Boolean.TRUE;
 	}
@@ -629,6 +635,12 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		return destinationDataConfiguration instanceof EtlObjectConfiguration
 				? (EtlObjectConfiguration) destinationDataConfiguration
 				: null;
+	}
+
+	private void synchronizePhysicalFields(EtlObjectConfiguration physical) {
+		if (physical != null && physical.getFields() != null) {
+			this.fields = new ArrayList<>(physical.getFields());
+		}
 	}
 
 	@Override
@@ -852,6 +864,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		validateDestinationDataConfiguration(resolved);
 		this.destinationDataConfiguration = resolved;
 		this.destinationDataConfiguration.setParentDestination(this);
+		if (fields == null && physicalObjectConfiguration() != null) {
+			synchronizePhysicalFields(physicalObjectConfiguration());
+		}
 	}
 
 	private void validateDestinationDataConfiguration(DestinationDataConfiguration resolved) {
@@ -885,12 +900,12 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	}
 
 	private void validateRecordFields(DestinationDataConfiguration resolved) {
-		if (resolved.getFields() == null || resolved.getFields().isEmpty()) {
-			throw new EtlConfException("destination." + variantName(resolved) + ".fields is required");
+		if (fields == null || fields.isEmpty()) {
+			throw new EtlConfException("destination.fields is required for " + variantName(resolved));
 		}
 
 		Set<String> names = new HashSet<>();
-		for (Field field : resolved.getFields()) {
+		for (Field field : fields) {
 			if (field == null || !utilities.stringHasValue(field.getName())) {
 				throw new EtlConfException(
 						"Every destination." + variantName(resolved) + " field must have a name");
