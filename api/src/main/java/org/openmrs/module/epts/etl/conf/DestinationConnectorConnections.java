@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -29,13 +31,13 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 
 	private final BaseConfiguration openedFrom;
 
-	private final Map<DstConf, ConnectorResource> resourcesByConfiguration;
+	private final Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration;
 
 	private final Map<ConnectorEndpoint, OpenConnection> connectionsByEndpoint = new IdentityHashMap<>();
 
 	private boolean closed;
 
-	DestinationConnectorConnections(EtlConfiguration etlConfiguration, List<DstConf> destinations,
+	DestinationConnectorConnections(EtlConfiguration etlConfiguration, List<EtlDestinationConfiguration> destinations,
 			BaseConfiguration openedFrom) {
 
 		if (etlConfiguration == null) {
@@ -49,10 +51,10 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 		this.etlConfiguration = etlConfiguration;
 		this.openedFrom = openedFrom;
 
-		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
 
 		if (destinations != null) {
-			for (DstConf destination : destinations) {
+			for (EtlDestinationConfiguration destination : destinations) {
 				if (destination == null || destination.getResolvedResource() == null) {
 					throw new IllegalStateException("Every destination must have an initialized connector resource");
 				}
@@ -63,7 +65,7 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 		this.resourcesByConfiguration = Collections.unmodifiableMap(resources);
 	}
 
-	public ConnectorResource getResource(DstConf destination) {
+	public ConnectorResource getResource(EtlDestinationConfiguration destination) {
 		ConnectorResource resource = resourcesByConfiguration.get(destination);
 
 		if (resource == null) {
@@ -73,14 +75,14 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 		return resource;
 	}
 
-	public boolean isJdbc(DstConf destination) {
+	public boolean isJdbc(EtlDestinationConfiguration destination) {
 		return getResource(destination).getEndpoint().getType() == ConnectorType.JDBC;
 	}
 
 	/**
 	 * Returns the connection for a JDBC destination, opening it on first use.
 	 */
-	public synchronized OpenConnection get(DstConf destination) throws DBException {
+	public synchronized OpenConnection get(EtlDestinationConfiguration destination) throws DBException {
 
 		ensureOpen();
 		ConnectorResource resource = getResource(destination);
@@ -104,8 +106,15 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 	/**
 	 * Returns the lazy JDBC connection, or {@code null} for a non-JDBC destination.
 	 */
-	public Connection getIfJdbc(DstConf destination) throws DBException {
+	public Connection getIfJdbc(EtlDestinationConfiguration destination) throws DBException {
 		return isJdbc(destination) ? get(destination) : null;
+	}
+
+	Connection getIfJdbc(DstConf jdbcAdapter) throws DBException {
+		if (!(jdbcAdapter instanceof JdbcTableDestinationConfiguration)) {
+			throw new IllegalArgumentException("Legacy DstConf is not registered as a destination adapter");
+		}
+		return getIfJdbc(((JdbcTableDestinationConfiguration) jdbcAdapter).getParentDestination());
 	}
 
 	public synchronized List<OpenConnection> getOpenedConnections() {

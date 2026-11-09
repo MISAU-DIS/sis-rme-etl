@@ -11,6 +11,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriterFactory;
@@ -40,14 +42,15 @@ class JdbcConnectorRecordWriterTest {
 	@Test
 	void shouldResolveWriterByResourceAndDestinationConfiguration() {
 		Connection connection = connectionMarker();
-		DstConf destination = new DstConf();
-		destination.setTableName("patient");
-		JdbcTableResource resource = new JdbcTableResource(destination, ConnectorDirection.DESTINATION,
+		EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
+		JdbcTableDestinationConfiguration table = new JdbcTableDestinationConfiguration("patient");
+		destination.setTableDataDestination(table);
+		JdbcTableResource resource = new JdbcTableResource(table, ConnectorDirection.DESTINATION,
 				new DBConnectionInfo());
 		ConnectorRecordWriter<GenericDatabaseObject> writer = new JdbcConnectorRecordWriter<>(resource, connection);
 		Map<ConnectorResource, ConnectorRecordWriter<? extends org.openmrs.module.epts.etl.model.EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		writers.put(resource, writer);
-		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
 		resources.put(destination, resource);
 
 		ConnectorRecordWriters aggregate = new ConnectorRecordWriters(writers, resources);

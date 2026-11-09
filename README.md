@@ -31,7 +31,9 @@ EtlConfiguration
        │    │    ├─ jsonDataSource ────> name
        │    │    └─ csvDataSource ─────> name
        │    └─ extra*DataSource[]
-       └─ dstConf[].resource ──────────> ConnectorRecordWriter
+       └─ destinations[]
+            ├─ resource ───────────────> ConnectorRecordWriter
+            └─ inferred/explicit physical adapter
 ```
 
 The primary source is inferred during initialization. There is no `primary`
@@ -141,13 +143,13 @@ physical file, route, queue, topic or table belongs to `resource.name`.
       "tableName": "patient"
     }
   },
-  "dstConf": [
+  "destinations": [
     {
-      "tableName": "patient",
       "resource": {
         "connector": "destination-db",
         "name": "patient"
-      }
+      },
+      "tableDataDestination": {}
     }
   ]
 }
@@ -183,8 +185,11 @@ Its `tableName` is also the physical resource name supplied to the connector.
       ]
     }
   },
-  "dstConf": [
-    { "tableName": "patient" }
+  "destinations": [
+    {
+      "resource": { "connector": "destination-db", "name": "patient" },
+      "tableDataDestination": {}
+    }
   ]
 }
 ```
@@ -235,8 +240,11 @@ given a document whose records are stored in `person_data` and contain an
         }
     ]
   },
-  "dstConf": [
-    { "tableName": "person" }
+  "destinations": [
+    {
+      "resource": { "connector": "destination-db", "name": "person" },
+      "tableDataDestination": {}
+    }
   ]
 }
 ```
@@ -270,8 +278,11 @@ the primary and every extra data source.
       ]
     }
   },
-  "dstConf": [
-    { "tableName": "patient" }
+  "destinations": [
+    {
+      "resource": { "connector": "destination-db", "name": "patient" },
+      "tableDataDestination": {}
+    }
   ]
 }
 ```
@@ -382,32 +393,108 @@ different JDBC connector declared specifically by the additional source.
 
 ## Destination configuration
 
-Destination transformation rules continue to be expressed by `dstConf`. Each
-destination owns its resource so the logical destination and writer cannot
-become misaligned:
+The connector-neutral destination model is represented by
+`EtlDestinationConfiguration`. It owns the transformation rules and logical
+record model independently of JDBC:
 
-```jsonc
-"dstConf": [
-  {
-    "tableName": "patient_export",
-    "resource": {
-      "connector": "jsonl-output",
-      "name": "daily/patients.jsonl"
-    },
-    "mapping": [
-      { "srcField": "uuid", "dstField": "uuid" },
-      { "srcField": "birthdate", "dstField": "birthdate" }
+- `resource` is the single configurable identity of the physical destination;
+- `fields` and `primaryKey` describe the destination record;
+- `mapping`, mapping policies, conditions and transformers remain at the
+  destination root;
+- `tableDataDestination`, `jsonDataDestination` and `csvDataDestination` add
+  only technology-specific capabilities.
+
+`resource.name` and `resource.connector` are canonical. Do not repeat them as
+`destination.name` or `destination.connector`; those root properties are
+rejected. `resource.properties` carries generic resource properties shared by
+all destination technologies.
+
+### JDBC destination
+
+A JDBC adapter can be inferred entirely from the resolved connector:
+
+```json
+{
+  "resource": {
+    "connector": "destination-db",
+    "name": "patient",
+    "properties": {
+      "schema": "openmrs"
+    }
+  },
+  "primaryKey": {
+    "fields": [
+      { "name": "patient_id" }
     ]
-  }
-]
+  },
+  "mapping": [
+    { "srcField": "uuid", "dstField": "uuid" }
+  ]
+}
 ```
 
-JDBC remains the complete relational writer. The FILE writer produces UTF-8
-JSON Lines, creates missing directories, confines paths to the connector root
-and currently supports insert requests.
+When `primaryKey` or `fields` are explicitly configured at the destination
+root, they take precedence. Otherwise the JDBC adapter may discover fields,
+PKs, unique keys, parents and children during physical metadata loading. A
+discovered PK is promoted to the root destination model.
 
-Detailed database mappings, parents and other configuration from the previous
-surface are kept in [README-legacy.md](README-legacy.md).
+`tableDataDestination` remains available when the JDBC adapter must be selected
+explicitly, but it does not own another resource:
+
+```json
+{
+  "resource": {
+    "connector": "destination-db",
+    "name": "patient"
+  },
+  "tableDataDestination": {}
+}
+```
+
+### File destinations
+
+JSON and CSV formats can be inferred from `resource.properties.format` or the
+resource filename extension. They may also be declared explicitly when
+format-specific options are required:
+
+```json
+{
+  "resource": {
+    "connector": "file-output",
+    "name": "daily/patients.csv",
+    "properties": {
+      "format": "csv"
+    }
+  },
+  "fields": [
+    { "name": "uuid", "dataType": "java.lang.String" },
+    { "name": "birthdate", "dataType": "java.util.Date" }
+  ],
+  "csvDataDestination": {
+    "delimiter": ";",
+    "hasHeader": true,
+    "charset": "UTF-8"
+  }
+}
+```
+
+Adapter resolution uses this precedence:
+
+1. explicitly configured adapter;
+2. `resource.properties.format`;
+3. `.json`, `.jsonl` or `.csv` resource extension;
+4. resolved connector type, notably JDBC.
+
+At most one adapter may be active. An explicit adapter must be compatible with
+the resolved connector. A destination without `resource` may still perform its
+logical `fullLoad`—loading data sources, mappings and transformers—but it has
+no physical writer.
+
+`EtlItemConfiguration.destinations` is the executable destination contract.
+The former `dstConf` property is no longer part of the current configuration
+model; its historical format and detailed relational options remain documented
+in [README-legacy.md](README-legacy.md). The destination architecture is
+detailed in [Destination architecture — T1](docs/destination-architecture-t1-contracts.md).
 
 ## Validation rules
 
@@ -420,6 +507,12 @@ Validation occurs before processing. In particular:
 - connector IDs and primary resource names must resolve unambiguously;
 - table/query additional sources require their resolved connector to be JDBC;
 - connector-neutral additional sources accept any primary source;
+- the new destination model accepts at most one explicit adapter;
+- `EtlDestinationConfiguration.resource` owns destination `name`, `connector`
+  and generic properties;
+- adapter-free, JSON and CSV destination models require root `fields`;
+- an explicitly selected destination adapter must be compatible with its
+  resolved connector;
 - unknown JSON configuration properties are rejected.
 
 ## Operations and item selection

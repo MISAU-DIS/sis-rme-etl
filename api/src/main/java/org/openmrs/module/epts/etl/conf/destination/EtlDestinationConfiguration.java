@@ -42,8 +42,10 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Connector-neutral aggregate for one ETL destination. It is a complete logical
@@ -52,12 +54,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		implements EtlTransformTarget, EtlDataSource, EtlDstConf, EtlItemConfigurationComponent, ConditionalEtlElement {
 
-	private String connector;
 	private ConnectorResourceConfiguration resource;
 	private JdbcTableDestinationConfiguration tableDataDestination;
 	private JsonDestinationConfiguration jsonDataDestination;
 	private CsvDestinationConfiguration csvDataDestination;
-	private String name;
 	private List<Field> fields;
 	private PrimaryKey primaryKey;
 
@@ -121,12 +121,32 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		this.useAsDataSource = Boolean.FALSE;
 	}
 
-	public String getConnector() {
-		return connector;
+	public static List<EtlDestinationConfiguration> copyAll(List<EtlDestinationConfiguration> destinations) {
+		if (destinations == null) {
+			return null;
+		}
+		List<EtlDestinationConfiguration> copies = new ArrayList<>(destinations.size());
+		for (EtlDestinationConfiguration destination : destinations) {
+			try {
+				String json = new ObjectMapperProvider().getContext(EtlDestinationConfiguration.class)
+						.writeValueAsString(destination);
+				copies.add(new ObjectMapperProvider().getContext(EtlDestinationConfiguration.class)
+						.readValue(json, EtlDestinationConfiguration.class));
+			} catch (java.io.IOException exception) {
+				throw new EtlConfException("Could not copy destination configuration", exception);
+			}
+		}
+		return copies;
 	}
 
-	public void setConnector(String connector) {
-		this.connector = connector;
+	@JsonIgnore
+	public String getConnector() {
+		return resource == null ? null : resource.getConnector();
+	}
+
+	@JsonProperty("connector")
+	private void rejectRootConnector(String ignored) {
+		throw new EtlConfException("destination.connector is not supported; use destination.resource.connector");
 	}
 
 	public ConnectorResourceConfiguration getResource() {
@@ -138,6 +158,14 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	public JdbcTableDestinationConfiguration getTableDataDestination() {
+		return tableDataDestination;
+	}
+
+	@JsonIgnore
+	public JdbcTableDestinationConfiguration requireJdbcTableDestination() {
+		if (tableDataDestination == null) {
+			throw new ForbiddenOperationException("Destination '" + getName() + "' is not JDBC-backed");
+		}
 		return tableDataDestination;
 	}
 
@@ -162,12 +190,14 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	@Override
+	@JsonIgnore
 	public String getName() {
-		return name;
+		return resource == null ? null : resource.getName();
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	@JsonProperty("name")
+	private void rejectRootName(String ignored) {
+		throw new EtlConfException("destination.name is not supported; use destination.resource.name");
 	}
 
 	@Override
@@ -782,7 +812,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 					continue;
 				}
 
-				if (getName().equals(dataSource.getName())) {
+				if (getName() != null && getName().equals(dataSource.getName())) {
 					preferredDataSource.add(dataSource.getAlias());
 					break;
 				}
@@ -1227,7 +1257,8 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		String format = configuredFormat == null ? null : String.valueOf(configuredFormat).trim().toLowerCase(Locale.ROOT);
 		String resourceName = configuredResource.getName();
 		String normalizedName = resourceName == null ? "" : resourceName.toLowerCase(Locale.ROOT);
-		if ("json".equals(format) || normalizedName.endsWith(".json")) {
+		if ("json".equals(format) || "jsonl".equals(format) || normalizedName.endsWith(".json")
+				|| normalizedName.endsWith(".jsonl")) {
 			jsonDataDestination = new JsonDestinationConfiguration();
 		} else if ("csv".equals(format) || normalizedName.endsWith(".csv")) {
 			csvDataDestination = new CsvDestinationConfiguration();
@@ -1270,20 +1301,8 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 					"destination.tableDataDestination.resource is not allowed; configure destination.resource instead");
 		}
 
-		if (resource != null && utilities.stringHasValue(resource.getConnector())) {
-
-			if (utilities.stringHasValue(connector) && !connector.equals(resource.getConnector())) {
-				throw new EtlConfException("destination.connector differs from destination.resource.connector");
-			}
-			connector = resource.getConnector();
-		}
-
 		if (resolved != null && resolved != tableDataDestination && resource == null) {
 			throw new EtlConfException("destination.resource is required for non-JDBC destinations");
-		}
-
-		if (!utilities.stringHasValue(name)) {
-			throw new EtlConfException("The logical destination name is required");
 		}
 
 		if (resource != null && !utilities.stringHasValue(resource.getName())) {
@@ -1291,7 +1310,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 
 		if ((resolved != null && resolved != tableDataDestination)
-				|| (resolved == null && !utilities.stringHasValue(connector) && resource == null)) {
+				|| (resolved == null && resource == null)) {
 			validateRecordFields(resolved);
 		}
 	}
@@ -1354,7 +1373,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@Override
 	public String toString() {
-		return "EtlDestinationConfiguration[connector=" + connector + ", resource=" + resource + ", variant="
+		return "EtlDestinationConfiguration[resource=" + resource + ", variant="
 				+ (destinationDataConfiguration == null ? "unresolved"
 						: destinationDataConfiguration.getClass().getSimpleName())
 				+ "]";

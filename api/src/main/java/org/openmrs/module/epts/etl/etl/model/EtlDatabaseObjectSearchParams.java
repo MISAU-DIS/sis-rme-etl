@@ -201,7 +201,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 		String extraCondition = "";
 
-		for (DstConf dst : getConfig().getDstConf()) {
+		for (DstConf dst : getConfig().getJdbcDestinations()) {
 
 			if (!dst.hasJoinFields() || getConfig().requireJdbcPrimaryDataSource().hasRequiredExtraDataSource()) {
 				continue;
@@ -229,7 +229,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 		String extraCondition = "";
 
-		for (DstConf dst : getConfig().getDstConf()) {
+		for (DstConf dst : getConfig().getJdbcDestinations()) {
 
 			if (!dst.hasJoinFields()) {
 				continue;

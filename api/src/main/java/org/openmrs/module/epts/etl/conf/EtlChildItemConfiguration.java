@@ -117,7 +117,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 			// ds.addAll(allFromParent);
 		}
 
-		DstConf parentDstConf = this.getParentItemConf().findDstConf(this.relatedParentDstConfName);
+		DstConf parentDstConf = this.getParentItemConf().findJdbcDestination(this.relatedParentDstConfName);
 
 		if (!parentDstConf.isDisabled()) {
 			ds.add(parentDstConf);
@@ -154,15 +154,15 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 		if (this.hasParentItemConf() && this.getRelatedParentDstConf() == null) {
 
 			if (!utilities.stringHasValue(this.getRelatedParentDstConfName())) {
-				if (utilities.listHasExactlyOneElement(this.getParentItemConf().getDstConf())) {
-					this.setRelatedParentDstConfName(this.getParentItemConf().getDstConf().get(0).getName());
+				if (utilities.listHasExactlyOneElement(this.getParentItemConf().getDestinations())) {
+					this.setRelatedParentDstConfName(this.getParentItemConf().getDestinations().get(0).getName());
 				} else {
 					throw new ForbiddenOperationException("The relatedParentDstConfName was not defined for the conf "
 							+ this.getParentItemConf().getConfigCode());
 				}
 			}
 
-			this.setRelatedParentDstConf(this.getParentItemConf().findDstConf(this.getRelatedParentDstConfName()));
+			this.setRelatedParentDstConf(this.getParentItemConf().findJdbcDestination(this.getRelatedParentDstConfName()));
 		}
 	}
 

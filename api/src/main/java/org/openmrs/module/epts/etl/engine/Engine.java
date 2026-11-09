@@ -1825,7 +1825,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			if (this.getRecordsToDisplay() != null) {
 
-				for (DstConf dstConf : this.getEtlItemConfiguration().getDstConf()) {
+				for (DstConf dstConf : this.getEtlItemConfiguration().getJdbcDestinations()) {
 
 					if (dstConf.getDstType().isConsole()) {
 						displayResultInConsole(this.getRecordsToDisplay().get(dstConf.getTableName()));

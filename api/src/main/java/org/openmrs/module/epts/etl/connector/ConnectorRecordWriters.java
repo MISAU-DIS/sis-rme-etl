@@ -7,17 +7,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 /** Writers resolved for one ETL execution, indexed by their destination resource. */
 public final class ConnectorRecordWriters {
 
 	private final Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers;
-	private final Map<DstConf, ConnectorResource> resourcesByConfiguration;
+	private final Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration;
 
 	public ConnectorRecordWriters(
 			Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers,
-			Map<DstConf, ConnectorResource> resourcesByConfiguration) {
+			Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration) {
 		this.writers = Collections.unmodifiableMap(new IdentityHashMap<>(writers));
 		this.resourcesByConfiguration = Collections.unmodifiableMap(new IdentityHashMap<>(resourcesByConfiguration));
 	}
@@ -31,7 +32,7 @@ public final class ConnectorRecordWriters {
 		return (ConnectorRecordWriter<T>) writer;
 	}
 
-	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(DstConf configuration) {
+	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(EtlDestinationConfiguration configuration) {
 		ConnectorResource resource = resourcesByConfiguration.get(configuration);
 		if (resource == null) {
 			throw new IllegalArgumentException("No destination resource registered for " + configuration);
@@ -39,12 +40,24 @@ public final class ConnectorRecordWriters {
 		return get(resource);
 	}
 
-	public ConnectorResource getResource(DstConf configuration) {
+	public ConnectorResource getResource(EtlDestinationConfiguration configuration) {
 		ConnectorResource resource = resourcesByConfiguration.get(configuration);
 		if (resource == null) {
 			throw new IllegalArgumentException("No destination resource registered for " + configuration);
 		}
 		return resource;
+	}
+
+	/** Compatibility bridge for JDBC adapter code during the destination migration. */
+	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(DstConf configuration) {
+		return get(((org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration) configuration)
+				.getParentDestination());
+	}
+
+	/** Compatibility bridge for JDBC adapter code during the destination migration. */
+	public ConnectorResource getResource(DstConf configuration) {
+		return getResource(((org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration) configuration)
+				.getParentDestination());
 	}
 
 	public List<ConnectorRecordWriter<? extends EtlDatabaseObject>> getAll() {

@@ -152,7 +152,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							? new ArrayList<>(parentMigratedRec.collectAllAvaliableSrcObjects())
 							: new ArrayList<>();
 
-					for (DstConf dstConf : etlItemConf.getDstConf()) {
+					for (DstConf dstConf : etlItemConf.getJdbcDestinations()) {
 
 						if (dstConf.isDisabled()) {
 							logTrace("Skiping transformation of dstConf {} as it is disabled", dstConf);
@@ -281,7 +281,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	private void quickTransformRecord(EtlDatabaseObject srcRecord) throws DBException {
 
-		EtlDatabaseObject dstObject = this.getEtlItemConfiguration().getDstConf().get(0).createRecordInstance();
+		EtlDatabaseObject dstObject = this.getEtlItemConfiguration().getJdbcDestinations().get(0).createRecordInstance();
 
 		dstObject.markAsNotCollactable();
 
@@ -509,7 +509,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 								writers);
 					} catch (Exception e) {
 						logWarn("Error happened while perfoming etl within child {} with dstConf {}", itemConf,
-								itemConf.getDstConf());
+								itemConf.getDestinations());
 
 						throw e;
 					}
@@ -517,7 +517,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			}
 		} catch (Exception e) {
 			logWarn("Error happened while perfoming etl within child {} with dstConf {}", itemConf,
-					itemConf.getDstConf());
+					itemConf.getDestinations());
 
 			throw e;
 		}
@@ -526,11 +526,11 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private ConnectorRecordWriter<?> firstDestinationWriter(EtlItemConfiguration itemConf,
 			ConnectorRecordWriters writers) {
 
-		if (itemConf.getDstConf() == null) {
+		if (itemConf.getDestinations() == null) {
 			return null;
 		}
 
-		for (DstConf destination : itemConf.getDstConf()) {
+		for (DstConf destination : itemConf.getJdbcDestinations()) {
 
 			if (!destination.isDisabled()) {
 

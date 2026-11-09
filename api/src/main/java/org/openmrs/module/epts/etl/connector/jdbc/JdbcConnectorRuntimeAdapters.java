@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
@@ -47,7 +48,7 @@ public final class JdbcConnectorRuntimeAdapters {
 
 	public static ConnectorRecordWriters writers(EtlItemConfiguration item, Connection connection) {
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
-		Map<DstConf, ConnectorResource> resources = new IdentityHashMap<>();
+		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
 		collectWriters(item, connection, writers, resources,
 		        java.util.Collections.newSetFromMap(new IdentityHashMap<>()));
 		return new ConnectorRecordWriters(writers, resources);
@@ -55,12 +56,12 @@ public final class JdbcConnectorRuntimeAdapters {
 
 	private static void collectWriters(EtlItemConfiguration item, Connection connection,
 	        Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers,
-	        Map<DstConf, ConnectorResource> resources, Set<EtlItemConfiguration> visited) {
+	        Map<EtlDestinationConfiguration, ConnectorResource> resources, Set<EtlItemConfiguration> visited) {
 		if (item == null || !visited.add(item)) {
 			return;
 		}
-		if (item.getDstConf() != null) {
-			for (DstConf destination : item.getDstConf()) {
+		if (item.getDestinations() != null) {
+			for (EtlDestinationConfiguration destination : item.getDestinations()) {
 				ConnectorResource resource = item.getResolvedDstResource(destination);
 				writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
 				resources.put(destination, resource);

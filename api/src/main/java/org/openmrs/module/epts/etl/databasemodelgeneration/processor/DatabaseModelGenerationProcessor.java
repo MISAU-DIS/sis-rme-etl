@@ -194,15 +194,17 @@ public class DatabaseModelGenerationProcessor
 				}
 			}
 
-			if (item.hasDstConf()) {
+			if (item.hasDestinations()) {
 
-				for (DstConf destination : item.getDstConf()) {
+				for (org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration configuredDestination
+						: item.getDestinations()) {
+					DstConf destination = configuredDestination.requireJdbcTableDestination();
 
-					if (destination.isDisabled() || !destinationConnections.isJdbc(destination)) {
+					if (destination.isDisabled() || !destinationConnections.isJdbc(configuredDestination)) {
 						continue;
 					}
 
-					Connection destinationConnection = destinationConnections.get(destination);
+					Connection destinationConnection = destinationConnections.get(configuredDestination);
 					DatabaseModelGenerationContext destinationContext = DatabaseModelGenerationContext
 							.destination(getRelatedEtlConfiguration().getDataModel(), destinationConnection);
 

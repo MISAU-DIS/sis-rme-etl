@@ -17,7 +17,7 @@ public class NoDstForGivenSrcException extends EtlTransformationException {
 
 	private static String loadConfiguredDst(EtlItemConfiguration etlItemConf) {
 		String msg = "";
-		for (DstConf dstConf : etlItemConf.getDstConf()) {
+		for (DstConf dstConf : etlItemConf.getJdbcDestinations()) {
 			msg += (msg.isEmpty() ? "" : "\n") + dstConf;
 		}
 

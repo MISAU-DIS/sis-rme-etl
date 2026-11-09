@@ -237,7 +237,7 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 	 * @return
 	 */
 	public AbstractTableConfiguration getDstLastTableConfiguration() {
-		return utilities.getLastRecordOnArray(getJdbcPrimaryDataSource().getParentConf().getDstConf());
+		return utilities.getLastRecordOnArray(getJdbcPrimaryDataSource().getParentConf().getJdbcDestinations());
 	}
 
 	public int countAllRecords(OperationController<T> controller, Connection conn) throws DBException {

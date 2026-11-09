@@ -220,7 +220,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 				EtlDatabaseObject recordAsSrc = null;
 
 				for (PrimaryDataSourceConfiguration source : availableSourcesForCurrentParent) {
-					DstConf dst = source.getParentItemConfiguration().findDstTable_(getEtlOperationConfig(),
+					DstConf dst = source.getParentItemConfiguration().findJdbcDestination(getEtlOperationConfig(),
 							parentInfo.getParentTableConfInDst().getTableName());
 
 					recordAsSrc = source.newInstance();

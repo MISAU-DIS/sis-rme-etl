@@ -1568,10 +1568,10 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				item.getPrimaryDataSource().setParentConf(item);
 
-				if (item.hasDstConf()) {
+				if (item.hasDestinations()) {
 
-					for (DstConf dst : item.getDstConf()) {
-						dst.setParentConf(item);
+					for (org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration dst : item.getDestinations()) {
+						dst.initialize(item);
 					}
 				}
 			}
@@ -3018,7 +3018,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 			if (conf.containsDstTable(dstTable.getTableName())) {
 
-				for (DstConf dst : conf.getDstConf()) {
+				for (DstConf dst : conf.getJdbcDestinations()) {
 
 					if (dst.getTableName().equals(dstTable.getTableName())) {
 

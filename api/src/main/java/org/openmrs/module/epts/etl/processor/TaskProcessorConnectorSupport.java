@@ -24,7 +24,7 @@ final class TaskProcessorConnectorSupport {
 			ConnectorRecordWriters writers, Consumer<org.openmrs.module.epts.etl.conf.IdGeneratorManager> collector)
 			throws DBException {
 
-		for (DstConf destination : processor.getEtlItemConfiguration().getDstConf()) {
+		for (DstConf destination : processor.getEtlItemConfiguration().getJdbcDestinations()) {
 			if (!destination.isDisabled() && destination.useManualGeneratedObjectId()) {
 				Connection connection = writers.get(destination).unwrap(Connection.class);
 				// collector.accept(destination.initIdGenerator(processor, records,

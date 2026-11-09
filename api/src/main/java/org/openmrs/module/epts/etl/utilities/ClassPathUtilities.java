@@ -279,7 +279,7 @@ public class ClassPathUtilities {
 				
 				tryToCopyPOJOToClassPath(tableConfiguration, clazzListFiless, connInfo);
 				
-				for (DstConf dstConf : config.getDstConf()) {
+				for (DstConf dstConf : config.getJdbcDestinations()) {
 					tryToCopyPOJOToClassPath(dstConf, clazzListFiless, connInfo);
 				}
 			}

@@ -10,9 +10,8 @@ use `List<DstConf>` until T2 performs normalization.
 
 `EtlDestinationConfiguration` represents one logical destination. It owns:
 
-- `connector`;
-- `resource`;
-- logical destination `name`;
+- `resource`, including the canonical destination `name`, `connector` and
+  generic properties;
 - destination record `fields`;
 - optional logical `primaryKey`;
 - zero or one physical destination variant;
@@ -45,10 +44,10 @@ intentional compatibility bridge: all existing JDBC behaviour stays in place
 while neutral callers gain a destination-variant contract.
 
 JSON and CSV add only format-specific capabilities; CSV, for example, owns its
-record-format options. The logical name, fields and primary key shared by
-transformation and persistence are owned by `EtlDestinationConfiguration`,
-rather than repeated inside each physical variant. Runtime writer integration
-belongs to later phases.
+record-format options. The resource identity is owned by `resource`; fields and
+primary key shared by transformation and persistence are owned by
+`EtlDestinationConfiguration`, rather than repeated inside each physical
+variant. Runtime writer integration belongs to later phases.
 
 ## Common contract
 
@@ -112,9 +111,9 @@ Initialization rejects:
 
 - more than one configured destination variant;
 - a resource nested under `tableDataDestination`;
-- conflicting `destination.connector` and `destination.resource.connector`;
+- root `destination.name` or `destination.connector`, since both belong under
+  `destination.resource`;
 - missing resource for a non-JDBC destination;
-- missing logical destination name;
 - missing resource name when a resource is present;
 - missing, unnamed or duplicated root `destination.fields` for adapter-free,
   JSON or CSV destinations.

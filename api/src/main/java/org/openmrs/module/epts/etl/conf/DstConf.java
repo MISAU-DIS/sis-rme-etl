@@ -291,7 +291,7 @@ public class DstConf extends AbstractTableConfiguration
 	public List<EtlTransformTarget> retrievePreviousDataSourceTargets() {
 		List<EtlTransformTarget> previousTargets = new ArrayList<>();
 
-		for (DstConf dstConf : this.getParentConf().getDstConf()) {
+		for (DstConf dstConf : this.getParentConf().getJdbcDestinations()) {
 
 			if (dstConf == this) {
 				break;
@@ -1209,7 +1209,7 @@ public class DstConf extends AbstractTableConfiguration
 
 			OpenConnection dstConn;
 
-			if (!itemConf.hasDstConf()) {
+			if (!itemConf.hasDestinations()) {
 
 				dstConn = itemConf.getRelatedEtlConf().openDstConn(itemConf);
 
@@ -1231,7 +1231,7 @@ public class DstConf extends AbstractTableConfiguration
 			DBConnectionInfo connectionInfo) {
 
 		synchronized (itemConf) {
-			return itemConf.hasDstConf() ? null
+			return itemConf.hasDestinations() ? null
 					: createDefaultDstConf(itemConf, connectionInfo.getSchema(), connectionInfo);
 		}
 	}

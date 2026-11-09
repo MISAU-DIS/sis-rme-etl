@@ -106,7 +106,7 @@ public interface ParentTable extends RelatedTable {
 					conf.fullLoad(operationConf);
 				}
 
-				for (DstConf dst : conf.getDstConf()) {
+				for (DstConf dst : conf.getJdbcDestinations()) {
 					if (dst.getTableName().equals(this.getTableName())) {
 						allDstForTable.add(dst);
 					}
