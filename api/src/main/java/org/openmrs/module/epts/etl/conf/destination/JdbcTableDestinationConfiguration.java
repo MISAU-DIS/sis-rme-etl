@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -40,6 +41,13 @@ public class JdbcTableDestinationConfiguration extends DstConf implements Destin
 	@Override
 	public Set<ConnectorWriteMode> getSupportedWriteModes() {
 		return EnumSet.allOf(ConnectorWriteMode.class);
+	}
+
+	/** A JDBC destination is intrinsically a database destination. */
+	@Override
+	public EtlDstType getDstType() {
+		EtlDstType configured = super.getDstType();
+		return configured == null ? EtlDstType.db : configured;
 	}
 
 	@Override

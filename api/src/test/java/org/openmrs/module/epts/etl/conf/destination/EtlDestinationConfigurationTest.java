@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
+import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
@@ -50,6 +51,7 @@ class EtlDestinationConfigurationTest {
 		assertSame(destination, destination.getDestinationDataConfiguration().getParentDestination());
 		assertEquals("patient", destination.getName());
 		assertTrue(destination.getDestinationDataConfiguration().supports(ConnectorWriteMode.UPDATE));
+		assertEquals(EtlDstType.db, destination.requireJdbcTableDestination().getDstType());
 	}
 
 	@Test

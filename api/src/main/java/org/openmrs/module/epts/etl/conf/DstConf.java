@@ -878,7 +878,9 @@ public class DstConf extends AbstractTableConfiguration
 
 		this.generateAllFieldsMapping(conn);
 
-		if (this.getDstType().isCsv()) {
+		EtlDstType effectiveDstType = this.getDstType();
+
+		if (effectiveDstType != null && effectiveDstType.isCsv()) {
 
 			if (this.getCsvDelimiter() == null) {
 				this.setCsvDelimiter(";");
