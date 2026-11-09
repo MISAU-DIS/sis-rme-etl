@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.conf.destination;
 import java.util.Collections;
 import java.util.Set;
 
-import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -11,29 +10,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 /** Common logical record schema for non-JDBC destination variants. */
 public abstract class AbstractRecordDestinationConfiguration implements DestinationDataConfiguration {
 
-	private String name;
-	private PrimaryKey primaryKey;
-
 	@JsonIgnore
 	private transient EtlDestinationConfiguration parentDestination;
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public PrimaryKey getPrimaryKey() {
-		return primaryKey;
-	}
-
-	public void setPrimaryKey(PrimaryKey primaryKey) {
-		this.primaryKey = primaryKey;
-	}
 
 	@Override
 	public EtlDestinationConfiguration getParentDestination() {

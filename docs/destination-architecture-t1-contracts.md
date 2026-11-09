@@ -12,8 +12,10 @@ use `List<DstConf>` until T2 performs normalization.
 
 - `connector`;
 - `resource`;
+- logical destination `name`;
 - destination record `fields`;
-- exactly one physical destination variant;
+- optional logical `primaryKey`;
+- zero or one physical destination variant;
 - manual, generated and resolved mappings;
 - join mappings, excluded and ignorable fields;
 - transformer selection and destination apply condition;
@@ -24,8 +26,11 @@ use `List<DstConf>` until T2 performs normalization.
 - the resolved variant and, in later phases, its resolved runtime resource;
 - its parent ETL item.
 
-The aggregate follows the source inference model. No explicit destination type
-or `primary` discriminator is required.
+The aggregate is a complete logical transformation target by itself. No
+explicit destination type or `primary` discriminator is required. When an
+adapter is present, its type is inferred from the configured adapter property.
+When it is omitted, the resource and its resolved connector can create the
+adapter automatically.
 
 ## Destination variants
 
@@ -39,19 +44,17 @@ The supported structural variants are:
 intentional compatibility bridge: all existing JDBC behaviour stays in place
 while neutral callers gain a destination-variant contract.
 
-JSON and CSV variants own their logical name. CSV additionally owns its
-record-format options. The fields shared by transformation and persistence are
-owned by `EtlDestinationConfiguration`, rather than repeated inside each
-physical variant. Their physical key and relationship descriptions are
-neutral and do not require JDBC metadata. They are configuration contracts only
-in T1; runtime writer integration belongs to later phases.
+JSON and CSV add only format-specific capabilities; CSV, for example, owns its
+record-format options. The logical name, fields and primary key shared by
+transformation and persistence are owned by `EtlDestinationConfiguration`,
+rather than repeated inside each physical variant. Runtime writer integration
+belongs to later phases.
 
 ## Common contract
 
-`DestinationDataConfiguration` exposes:
+`DestinationDataConfiguration` exposes optional adapter capabilities:
 
-- logical destination name;
-- primary and unique keys;
+- discovered primary and unique keys;
 - parent, child and shared-primary-key relationships;
 - parent destination aggregate;
 - supported `ConnectorWriteMode` values.
@@ -59,6 +62,24 @@ in T1; runtime writer integration belongs to later phases.
 The JDBC variant currently advertises all existing write modes. JSON and CSV
 advertise `INSERT` only. Runtime capability validation will use this contract
 after destinations are integrated into `EtlItemConfiguration`.
+
+A root `primaryKey` is valid with or without an adapter. For JDBC it takes
+precedence as explicit configuration. When it is absent, the JDBC adapter may
+discover the physical primary key during `fullLoad`, which is then promoted to
+the aggregate.
+
+Adapter resolution uses the following precedence:
+
+1. an explicitly configured adapter;
+2. `resource.properties.format` (`json` or `csv`);
+3. the resource filename extension (`.json` or `.csv`);
+4. the resolved connector type.
+
+A resolved JDBC connector creates `JdbcTableDestinationConfiguration`
+automatically, using the resource name as the physical table name. The
+resolved JDBC resource and connection information are propagated to that
+adapter. Explicit adapters are checked for compatibility with the resolved
+connector, so a JSON adapter cannot silently run over a JDBC connector.
 
 ## Legacy-rule bridge
 
@@ -82,21 +103,21 @@ The aggregate owns the connector-neutral part of `fullLoad`. It collects the
 primary and additional data sources, resolves preferred and non-preferred data
 sources, loads the configured record transformer, initializes configured join
 mappings and builds `allMapping` from manual/automatic mappings. Physical
-metadata discovery remains delegated to the selected destination variant and
-runs before this logical preparation.
+metadata discovery remains delegated to the selected destination variant, when
+one exists, and runs before this logical preparation.
 
 ## Structural validation
 
 Initialization rejects:
 
-- no configured destination variant;
 - more than one configured destination variant;
 - a resource nested under `tableDataDestination`;
 - conflicting `destination.connector` and `destination.resource.connector`;
 - missing resource for a non-JDBC destination;
 - missing logical destination name;
 - missing resource name when a resource is present;
-- missing, unnamed or duplicated root `destination.fields` for JSON/CSV.
+- missing, unnamed or duplicated root `destination.fields` for adapter-free,
+  JSON or CSV destinations.
 
 The resource belongs to the destination aggregate, matching the established
 source ownership rule.
@@ -118,6 +139,6 @@ testable before it participates in production execution.
 
 `EtlDestinationConfigurationTest` verifies inference, parent association,
 public legacy-contract compatibility, lifecycle capabilities, resource
-ownership, record schema requirements, ambiguity rejection and strict
-unknown-property handling.
+ownership, adapter-free loading with a root primary key, record schema
+requirements, ambiguity rejection and strict unknown-property handling.
 

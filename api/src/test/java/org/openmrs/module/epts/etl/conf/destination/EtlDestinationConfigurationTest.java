@@ -24,9 +24,13 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorEndpoint;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 
@@ -36,6 +40,7 @@ class EtlDestinationConfigurationTest {
 	void shouldInferJdbcTableAsTheUniqueDestinationVariant() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"connector\":\"destination-db\","
+				+ "\"name\":\"patient\","
 				+ "\"tableDataDestination\":{\"tableName\":\"patient\"}"
 				+ "}");
 
@@ -43,7 +48,7 @@ class EtlDestinationConfigurationTest {
 
 		assertTrue(destination.getDestinationDataConfiguration() instanceof JdbcTableDestinationConfiguration);
 		assertSame(destination, destination.getDestinationDataConfiguration().getParentDestination());
-		assertEquals("patient", destination.getDestinationDataConfiguration().getName());
+		assertEquals("patient", destination.getName());
 		assertTrue(destination.getDestinationDataConfiguration().supports(ConnectorWriteMode.UPDATE));
 	}
 
@@ -51,14 +56,16 @@ class EtlDestinationConfigurationTest {
 	void shouldInferJsonAndCsvWithoutDependingOnConnectorType() throws Exception {
 		EtlDestinationConfiguration json = read("{"
 				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
+				+ "\"name\":\"patients\","
 				+ "\"fields\":[{\"name\":\"uuid\"}],"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
+				+ "\"jsonDataDestination\":{}"
 				+ "}");
 		EtlDestinationConfiguration csv = read("{"
 				+ "\"connector\":\"output\","
 				+ "\"resource\":{\"name\":\"patients.csv\"},"
+				+ "\"name\":\"patients\","
 				+ "\"fields\":[{\"name\":\"uuid\"}],"
-				+ "\"csvDataDestination\":{\"name\":\"patients\",\"delimiter\":\";\"}"
+				+ "\"csvDataDestination\":{\"delimiter\":\";\"}"
 				+ "}");
 
 		json.initialize(new EtlItemConfiguration());
@@ -72,12 +79,13 @@ class EtlDestinationConfigurationTest {
 	}
 
 	@Test
-	void shouldRejectMissingOrAmbiguousDestinationVariant() throws Exception {
+	void shouldRejectIncompleteLogicalDestinationOrAmbiguousAdapters() throws Exception {
 		EtlDestinationConfiguration missing = read("{\"connector\":\"output\"}");
 		EtlDestinationConfiguration ambiguous = read("{"
+				+ "\"name\":\"records\","
 				+ "\"resource\":{\"name\":\"records\"},"
-				+ "\"jsonDataDestination\":{\"name\":\"json\"},"
-				+ "\"csvDataDestination\":{\"name\":\"csv\"}"
+				+ "\"jsonDataDestination\":{},"
+				+ "\"csvDataDestination\":{}"
 				+ "}");
 
 		EtlConfException missingError = assertThrows(EtlConfException.class,
@@ -85,19 +93,21 @@ class EtlDestinationConfigurationTest {
 		EtlConfException ambiguousError = assertThrows(EtlConfException.class,
 				() -> ambiguous.initialize(new EtlItemConfiguration()));
 
-		assertTrue(missingError.getMessage().contains("exactly one"));
+		assertTrue(missingError.getMessage().contains("logical destination name"));
 		assertTrue(ambiguousError.getMessage().contains("[jsonDataDestination, csvDataDestination]"));
 	}
 
 	@Test
 	void shouldRequireResourceNameAndRecordFieldsForNonJdbcDestinations() throws Exception {
 		EtlDestinationConfiguration noResource = read("{"
+				+ "\"name\":\"patients\","
 				+ "\"fields\":[{\"name\":\"uuid\"}],"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
+				+ "\"jsonDataDestination\":{}"
 				+ "}");
 		EtlDestinationConfiguration noFields = read("{"
+				+ "\"name\":\"patients\","
 				+ "\"resource\":{\"name\":\"patients.json\"},"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
+				+ "\"jsonDataDestination\":{}"
 				+ "}");
 
 		assertTrue(assertThrows(EtlConfException.class,
@@ -111,6 +121,7 @@ class EtlDestinationConfigurationTest {
 	void shouldKeepResourceOwnedByDestinationAggregate() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"connector\":\"destination-db\","
+				+ "\"name\":\"patient\","
 				+ "\"tableDataDestination\":{\"tableName\":\"patient\","
 				+ "\"resource\":{\"connector\":\"other-db\",\"name\":\"patient\"}}"
 				+ "}");
@@ -135,8 +146,9 @@ class EtlDestinationConfigurationTest {
 	void shouldOwnLogicalTransformationRulesIndependentlyOfPhysicalVariant() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
+				+ "\"name\":\"patients\","
 				+ "\"fields\":[{\"name\":\"uuid\"}],"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\"},"
+				+ "\"jsonDataDestination\":{},"
 				+ "\"mapping\":[{\"srcField\":\"person_uuid\",\"dstField\":\"uuid\"}],"
 				+ "\"applyCondition\":\"person_id != null\","
 				+ "\"unmappedFieldBehavior\":\"USE_DEFAULT\","
@@ -187,8 +199,9 @@ class EtlDestinationConfigurationTest {
 	void shouldExposeLegacyDestinationCapabilitiesWithoutMakingNonJdbcDestinationAJdbcTable() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
+				+ "\"name\":\"patients\","
 				+ "\"fields\":[{\"name\":\"uuid\"}],"
-				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
+				+ "\"jsonDataDestination\":{}"
 				+ "}");
 
 		destination.initialize(jsonSourceItem());
@@ -209,6 +222,43 @@ class EtlDestinationConfigurationTest {
 		assertEquals(1, destination.getAllPrefferredDataSource().size());
 		assertEquals("uuid", destination.getAllMapping().get(0).getDstField());
 		assertTrue(destination.useDefaultTransformer());
+	}
+
+	@Test
+	void shouldBeFullyLoadableWithoutAPhysicalAdapterAndOwnItsPrimaryKey() throws Exception {
+		EtlDestinationConfiguration destination = read("{"
+				+ "\"name\":\"patients\","
+				+ "\"fields\":[{\"name\":\"uuid\"}],"
+				+ "\"primaryKey\":{\"fields\":[{\"name\":\"uuid\"}]}"
+				+ "}");
+
+		destination.initialize(jsonSourceItem());
+		destination.fullLoad();
+
+		assertTrue(!destination.hasDestinationDataConfiguration());
+		assertEquals("patients", destination.getName());
+		assertEquals("uuid", destination.getPrimaryKey().asSimpleKey().getName());
+		assertEquals("uuid", destination.getAllMapping().get(0).getDstField());
+		assertTrue(destination.isFullLoaded());
+	}
+
+	@Test
+	void shouldInferJdbcAdapterFromTheResolvedConnectorResource() throws Exception {
+		EtlDestinationConfiguration destination = read("{"
+				+ "\"name\":\"patient\","
+				+ "\"resource\":{\"connector\":\"database\",\"name\":\"patient\"}"
+				+ "}");
+		destination.initialize(new EtlItemConfiguration());
+
+		DBConnectionInfo connectionInfo = new DBConnectionInfo();
+		connectionInfo.setConnectionURI("jdbc:mysql://localhost/openmrs");
+		destination.setResolvedResource(ConnectorConfigurationResolver.resolveResource(destination.getResource(), null,
+				ConnectorDirection.DESTINATION, new JdbcConnectorEndpoint(connectionInfo)));
+
+		assertTrue(destination.getDestinationDataConfiguration() instanceof JdbcTableDestinationConfiguration);
+		assertEquals("patient", destination.getTableDataDestination().getTableName());
+		assertSame(destination, destination.getTableDataDestination().getParentDestination());
+		assertSame(connectionInfo, destination.getTableDataDestination().getRelatedConnInfo());
 	}
 
 	private EtlItemConfiguration jsonSourceItem() throws Exception {

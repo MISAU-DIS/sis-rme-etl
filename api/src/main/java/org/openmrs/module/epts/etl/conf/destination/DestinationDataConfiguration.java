@@ -14,9 +14,9 @@ import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
  */
 public interface DestinationDataConfiguration {
 
-	String getName();
-
-	UniqueKeyInfo getPrimaryKey();
+	default UniqueKeyInfo getPrimaryKey() {
+		return null;
+	}
 
 	default List<UniqueKeyInfo> getUniqueKeys() {
 		return java.util.Collections.emptyList();
