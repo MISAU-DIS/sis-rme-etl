@@ -259,65 +259,66 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 	private void resolveParentForeignKey(EtlDatabaseObject transformedRec, DstConf dstConf,
 			EtlDatabaseObject migratedDstParent, Connection conn) throws EtlTransformationException {
 
-		for (ParentTable refInfo : dstConf.getParentRefInfo()) {
+		if (dstConf.hasParentRefInfo()) {
+			for (ParentTable refInfo : dstConf.getParentRefInfo()) {
 
-			if (!refInfo.getTableName().equals(migratedDstParent.getRelatedConfiguration().getObjectName())) {
-				continue;
-			}
-
-			Field fkField = transformedRec.getField(refInfo);
-
-			if (fkField == null) {
-				throw new EtlTransformationException("Foreign key field for parent '" + refInfo.getTableName()
-						+ "' not found on transformed record.", null, ActionOnEtlIssue.ABORT_PROCESS);
-			}
-
-			FieldsMapping fkMapping = null;
-
-			try {
-				fkMapping = dstConf.getMappingUsingDstField(fkField.getName());
-
-				if (fkMapping == null) {
-					throw new EtlTransformationException(
-							"No mapping found for foreign key field '" + fkField.getName() + "'.", null,
-							ActionOnEtlIssue.ABORT_PROCESS);
+				if (!refInfo.getTableName().equals(migratedDstParent.getRelatedConfiguration().getObjectName())) {
+					continue;
 				}
 
-			} catch (FieldsMappingException e) {
+				Field fkField = transformedRec.getField(refInfo);
+
+				if (fkField == null) {
+					throw new EtlTransformationException("Foreign key field for parent '" + refInfo.getTableName()
+							+ "' not found on transformed record.", null, ActionOnEtlIssue.ABORT_PROCESS);
+				}
+
+				FieldsMapping fkMapping = null;
 
 				try {
-					fkMapping = FieldsMapping.fastCreate(dstConf, fkField.getName(),
-							migratedDstParent.getRelatedConfiguration().getAlias(),
-							refInfo.getParentColumnOnSimpleMapping(), conn);
-				} catch (DBException e1) {
-					throw new EtlExceptionImpl(e);
+					fkMapping = dstConf.getMappingUsingDstField(fkField.getName());
+
+					if (fkMapping == null) {
+						throw new EtlTransformationException(
+								"No mapping found for foreign key field '" + fkField.getName() + "'.", null,
+								ActionOnEtlIssue.ABORT_PROCESS);
+					}
+
+				} catch (FieldsMappingException e) {
+
+					try {
+						fkMapping = FieldsMapping.fastCreate(dstConf, fkField.getName(),
+								migratedDstParent.getRelatedConfiguration().getAlias(),
+								refInfo.getParentColumnOnSimpleMapping(), conn);
+					} catch (DBException e1) {
+						throw new EtlExceptionImpl(e);
+					}
 				}
-			}
 
-			Object currentValue = transformedRec.getFieldValue(fkField.getName());
+				Object currentValue = transformedRec.getFieldValue(fkField.getName());
 
-			if (currentValue != null && !fkMapping.overridable()) {
+				if (currentValue != null && !fkMapping.overridable()) {
+					return;
+				}
+
+				Object parentPkValue = migratedDstParent.getObjectId().asSimpleNumericValue();
+
+				FieldTransformingInfo info = new FieldTransformingInfo(fkMapping, parentPkValue,
+						(EtlDataSource) migratedDstParent.getRelatedConfiguration());
+
+				fkField.setTransformingInfo(info);
+
+				transformedRec.setFieldValue(fkField.getName(), info.getTransformedValue());
+
 				return;
 			}
-
-			Object parentPkValue = migratedDstParent.getObjectId().asSimpleNumericValue();
-
-			FieldTransformingInfo info = new FieldTransformingInfo(fkMapping, parentPkValue,
-					(EtlDataSource) migratedDstParent.getRelatedConfiguration());
-
-			fkField.setTransformingInfo(info);
-
-			transformedRec.setFieldValue(fkField.getName(), info.getTransformedValue());
-
-			return;
 		}
 	}
 
 	public Set<EtlDatabaseObject> collectSourceObjects(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject srcObjectExpansion, EtlDatabaseObject dstObject, EtlDatabaseObject migratedDstParent,
 			DstConf dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader,
-			ConnectorRecordWriter<?> writer)
-			throws DBException {
+			ConnectorRecordWriter<?> writer) throws DBException {
 
 		Set<EtlDatabaseObject> result = new LinkedHashSet<>();
 
@@ -381,8 +382,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	private void collectToSrcObjectsFromExtraDataSources(EtlProcessor processor, Set<EtlDatabaseObject> srcObjects,
 			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, TransformationType transformationType,
-			ConnectorRecordWriter<?> writer)
-			throws DBException {
+			ConnectorRecordWriter<?> writer) throws DBException {
 
 		if (srcObject.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration) {
 			PrimaryDataSourceConfiguration srcConf = (PrimaryDataSourceConfiguration) srcObject
