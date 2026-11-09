@@ -10,7 +10,11 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
@@ -21,6 +25,7 @@ import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
@@ -186,7 +191,7 @@ class EtlDestinationConfigurationTest {
 				+ "\"jsonDataDestination\":{\"name\":\"patients\"}"
 				+ "}");
 
-		destination.initialize(new EtlItemConfiguration());
+		destination.initialize(jsonSourceItem());
 		destination.setDisabled(Boolean.TRUE);
 
 		assertTrue(destination instanceof EtlTransformTarget);
@@ -200,6 +205,27 @@ class EtlDestinationConfigurationTest {
 		destination.fullLoad();
 
 		assertTrue(destination.isFullLoaded());
+		assertEquals(1, destination.getAllAvaliableDataSource().size());
+		assertEquals(1, destination.getAllPrefferredDataSource().size());
+		assertEquals("uuid", destination.getAllMapping().get(0).getDstField());
+		assertTrue(destination.useDefaultTransformer());
+	}
+
+	private EtlItemConfiguration jsonSourceItem() throws Exception {
+		EtlItemConfiguration item = new EtlItemConfiguration();
+		item.setRelatedEtlConf(new EtlConfiguration());
+
+		JsonPrimaryDataSourceConfiguration primary = new JsonPrimaryDataSourceConfiguration();
+		primary.setName("patients");
+		primary.setFields(Collections.singletonList(Field.fastCreateWithType("uuid", "java.lang.String")));
+		SourceResourceConfiguration sourceResource = new SourceResourceConfiguration();
+		sourceResource.setName("patients.json");
+		EtlSourceConfiguration source = new EtlSourceConfiguration();
+		source.setResource(sourceResource);
+		source.setJsonDataSource(primary);
+		item.setSource(source);
+		source.initialize(item);
+		return item;
 	}
 
 	private EtlDestinationConfiguration read(String json) throws Exception {

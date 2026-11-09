@@ -78,6 +78,13 @@ delegated to the selected destination variant. A physical operation not yet
 implemented by a non-JDBC variant fails explicitly instead of silently being
 treated as JDBC.
 
+The aggregate owns the connector-neutral part of `fullLoad`. It collects the
+primary and additional data sources, resolves preferred and non-preferred data
+sources, loads the configured record transformer, initializes configured join
+mappings and builds `allMapping` from manual/automatic mappings. Physical
+metadata discovery remains delegated to the selected destination variant and
+runs before this logical preparation.
+
 ## Structural validation
 
 Initialization rejects:

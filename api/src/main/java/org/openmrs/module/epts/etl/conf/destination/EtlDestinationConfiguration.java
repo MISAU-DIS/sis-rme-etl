@@ -8,35 +8,36 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
+import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ConditionalEtlElement;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
-import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
-import org.openmrs.module.epts.etl.exceptions.EtlConfException;
-import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
-import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
-import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -46,8 +47,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Connector-neutral aggregate for one ETL destination. Its physical destination
  * model is inferred from exactly one configured variant.
  */
-public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration implements EtlTransformTarget,
-		EtlDataSource, EtlDstConf, EtlItemConfigurationComponent, ConditionalEtlElement {
+public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
+		implements EtlTransformTarget, EtlDataSource, EtlDstConf, EtlItemConfigurationComponent, ConditionalEtlElement {
 
 	private String connector;
 	private ConnectorResourceConfiguration resource;
@@ -81,6 +82,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	private Boolean loadedDataSourceInfo;
 	private Boolean fullLoaded;
 	private Boolean mustLoadChildrenInfo;
+	private Boolean fieldsMappingAlreadyGenerated;
 
 	@JsonIgnore
 	private transient Class<? extends EtlDatabaseObject> etlRecordClass;
@@ -155,6 +157,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		this.csvDataDestination = csvDataDestination;
 	}
 
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends Field> List<T> getFields() {
 		return (List<T>) fields;
@@ -184,14 +187,17 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		return mapping;
 	}
 
+	@Override
 	public void setMapping(List<FieldsMapping> mapping) {
 		this.mapping = mapping;
 	}
 
+	@Override
 	public List<FieldsMapping> getAllMapping() {
 		return allMapping;
 	}
 
+	@Override
 	public void setAllMapping(List<FieldsMapping> allMapping) {
 		this.allMapping = allMapping;
 	}
@@ -225,12 +231,15 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	}
 
 	public void setUnmappedFieldBehavior(ActionOnEtlIssue unmappedFieldBehavior) {
+
 		if (unmappedFieldBehavior != null && !unmappedFieldBehavior.allowedOnMissingFieldsMapping()) {
 			throw new EtlConfException("Value not allowed unmappedFieldBehavior [" + unmappedFieldBehavior + "]");
 		}
+
 		this.unmappedFieldBehavior = unmappedFieldBehavior;
 	}
 
+	@Override
 	public ActionOnEtlIssue unmappedFieldBehavior() {
 		return getUnmappedFieldBehavior();
 	}
@@ -285,6 +294,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		setApplyCondition(applyCondition);
 	}
 
+	@Override
 	public String applyCondition() {
 		return applyCondition;
 	}
@@ -302,6 +312,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		this.onMultipleDataSourceForSameMapping = behavior;
 	}
 
+	@Override
 	public ActionOnEtlIssue onMultipleDataSourceForSameMapping() {
 		return onMultipleDataSourceForSameMapping;
 	}
@@ -326,6 +337,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		this.useAsDataSource = useAsDataSource;
 	}
 
+	@Override
 	public Boolean useAsDataSource() {
 		return isTrue(useAsDataSource);
 	}
@@ -350,6 +362,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
 
+	@Override
 	public FieldMappingResolutionStrategy mappingResolutionStrategy() {
 		return mappingResolutionStrategy;
 	}
@@ -375,6 +388,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		this.allowDuplicateDestinationMappings = allowDuplicateDestinationMappings;
 	}
 
+	@Override
 	public Boolean allowDuplicateDestinationMappings() {
 		return isTrue(allowDuplicateDestinationMappings);
 	}
@@ -399,6 +413,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		return identifiedRecordAction != null;
 	}
 
+	@Override
 	public ActionOnEtlIssue getIncompleteMappingBehavior() {
 		return incompleteMappingBehavior;
 	}
@@ -469,6 +484,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	@JsonIgnore
 	public DestinationDataConfiguration getDestinationDataConfiguration() {
+
 		if (destinationDataConfiguration == null) {
 			throw new IllegalStateException(
 					"Destination data configuration has not been resolved; initialize destination first");
@@ -476,31 +492,37 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		return destinationDataConfiguration;
 	}
 
+	@Override
 	@JsonIgnore
 	public String getName() {
 		return getDestinationDataConfiguration().getName();
 	}
 
+	@Override
 	@JsonIgnore
 	public UniqueKeyInfo getPrimaryKey() {
 		return getDestinationDataConfiguration().getPrimaryKey();
 	}
 
+	@Override
 	@JsonIgnore
 	public List<UniqueKeyInfo> getUniqueKeys() {
 		return getDestinationDataConfiguration().getUniqueKeys();
 	}
 
+	@Override
 	@JsonIgnore
 	public List<ParentTable> getParentRefInfo() {
 		return getDestinationDataConfiguration().getParentRefInfo();
 	}
 
+	@Override
 	@JsonIgnore
 	public List<ChildTable> getChildRefInfo() {
 		return getDestinationDataConfiguration().getChildRefInfo();
 	}
 
+	@Override
 	@JsonIgnore
 	public String getSharePkWith() {
 		return getDestinationDataConfiguration().getSharePkWith();
@@ -533,9 +555,23 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
-		if (physicalObjectConfiguration() instanceof EtlTransformTarget) {
-			((EtlTransformTarget) physicalObjectConfiguration()).loadDataSourceInfo(conn);
+
+		if (isLoadedDataSourceInfo()) {
+			return;
 		}
+
+		if (parentItem == null) {
+			throw new EtlConfException("Destination must be attached to an ETL item before loading data sources");
+		}
+
+		addAllToAvaliableDataSource(parentItem.collectAllAvaliableDataSources(conn));
+
+		if (useAsDataSource()) {
+			addToAvaliableDataSource(this);
+		}
+
+		determinePreferredDataSources();
+
 		setLoadedDataSourceInfo(Boolean.TRUE);
 	}
 
@@ -561,20 +597,26 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	@Override
 	public void fullLoad() throws DBException {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		if (physical != null) {
 			physical.fullLoad();
 			synchronizePhysicalFields(physical);
 		}
+		loadTransformationElements(null);
 		fullLoaded = Boolean.TRUE;
 	}
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		if (physical != null) {
 			physical.fullLoad(conn);
 			synchronizePhysicalFields(physical);
 		}
+
+		loadTransformationElements(conn);
+
 		fullLoaded = Boolean.TRUE;
 	}
 
@@ -611,6 +653,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	@Override
 	public void setParentConf(EtlDataConfiguration parent) {
+
 		if (!(parent instanceof EtlItemConfiguration)) {
 			throw new EtlConfException("A destination must belong to an EtlItemConfiguration");
 		}
@@ -624,6 +667,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	@Override
 	public void tryToLoadSchemaInfo(EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
+
 		if (physicalObjectConfiguration() instanceof EtlDataSource) {
 			((EtlDataSource) physicalObjectConfiguration()).tryToLoadSchemaInfo(schemaInfoSrc, conn);
 		} else {
@@ -638,9 +682,207 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	}
 
 	private void synchronizePhysicalFields(EtlObjectConfiguration physical) {
+
 		if (physical != null && physical.getFields() != null) {
 			this.fields = new ArrayList<>(physical.getFields());
 		}
+	}
+
+	private void loadTransformationElements(Connection conn) throws DBException {
+
+		if (!hasUnmappedFieldBehavior()) {
+			setUnmappedFieldBehavior(ActionOnEtlIssue.ABORT_PROCESS);
+		}
+
+		if (mappingResolutionStrategy == null) {
+			setMappingResolutionStrategy(FieldMappingResolutionStrategy.MANUAL_THEN_AUTO);
+		}
+
+		if (hasIncompleteMappingBehavior()) {
+			getIncompleteMappingBehavior().validateOnIncompleteMapping("incompleteMappingBehavior");
+		}
+
+		loadDataSourceInfo(conn);
+		loadTransformer();
+		loadConfiguredJoinFields();
+		generateAllFieldsMapping(conn);
+	}
+
+	private void loadConfiguredJoinFields() {
+
+		if (!utilities.listHasElement(joinFields) || utilities.listHasElement(generatedJoinFields)) {
+			return;
+		}
+		generatedJoinFields = new ArrayList<>();
+		generatedJoinFields.add(new ArrayList<>(joinFields));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void loadTransformer() {
+
+		if (!hasTransformer() || DefaultRecordTransformer.class.getCanonicalName().equals(transformer)) {
+			setTransformer(DefaultRecordTransformer.class.getCanonicalName());
+			setTransformerInstance(DefaultRecordTransformer.getInstance());
+			return;
+		}
+
+		try {
+			ClassLoader loader = EtlRecordTransformer.class.getClassLoader();
+			Class<? extends EtlRecordTransformer> transformerClass = (Class<? extends EtlRecordTransformer>) loader
+					.loadClass(transformer);
+			setTransformerInstance(transformerClass.getDeclaredConstructor().newInstance());
+		} catch (ReflectiveOperationException exception) {
+			throw new ForbiddenOperationException(
+					"Error loading transformer class [" + transformer + "]: " + exception.getLocalizedMessage());
+		}
+	}
+
+	private void determinePreferredDataSources() {
+		List<EtlDataSource> available = getAllAvaliableDataSource();
+
+		if (available == null) {
+			available = new ArrayList<>();
+			setAllAvaliableDataSource(available);
+		}
+
+		if (utilities.listHasNoElement(preferredDataSource)) {
+			preferredDataSource = new ArrayList<>();
+
+			for (EtlDataSource dataSource : available) {
+
+				if (dataSource instanceof PrimaryDataSourceConfiguration
+						&& ((PrimaryDataSourceConfiguration) dataSource).doNotUseAsDatasource()) {
+					continue;
+				}
+
+				if (getName().equals(dataSource.getName())) {
+					preferredDataSource.add(dataSource.getAlias());
+					break;
+				}
+			}
+
+			PrimaryDataSourceConfiguration primary = getPrimaryDataSource();
+
+			if (primary != null && useSrcConfAsDataSource() && !preferredDataSource.contains(primary.getAlias())) {
+				preferredDataSource.add(primary.getAlias());
+			}
+		}
+
+		for (String configuredName : preferredDataSource) {
+			EtlDataSource preferred = findUniqueDataSource(configuredName, available);
+
+			if (preferred == null) {
+				throw new InvalidDataSourceOnFieldDefifitionException(getName(), configuredName);
+			}
+			addToPrefferedDataSource(preferred);
+		}
+
+		for (EtlDataSource dataSource : available) {
+
+			if (getAllPrefferredDataSource() != null && getAllPrefferredDataSource().contains(dataSource)) {
+				continue;
+			}
+			addToNotPrefferedDataSource(dataSource);
+		}
+	}
+
+	private EtlDataSource findUniqueDataSource(String nameOrAlias, List<EtlDataSource> available) {
+		EtlDataSource result = null;
+
+		for (EtlDataSource dataSource : available) {
+
+			if (nameOrAlias.equals(dataSource.getAlias()) || nameOrAlias.equals(dataSource.getName())) {
+
+				if (result != null && !onMultipleDataSourceWithSameName().useLast()) {
+					throw new ForbiddenOperationException("The preferred datasource '" + nameOrAlias
+							+ "' occurs more than once; configure its alias instead");
+				}
+				result = dataSource;
+			}
+		}
+		return result;
+	}
+
+	public synchronized void generateAllFieldsMapping(Connection conn) throws DBException {
+
+		if (isTrue(fieldsMappingAlreadyGenerated) || !useDefaultTransformer()) {
+			return;
+		}
+
+		setAllMapping(new ArrayList<>());
+
+		if (mappingResolutionStrategy().allowManual() && utilities.listHasElement(mapping)) {
+
+			for (FieldsMapping fieldMapping : mapping) {
+				prepareMapping(fieldMapping);
+				fieldMapping.setManuallyConfigured(Boolean.TRUE);
+				addMapping(fieldMapping);
+			}
+		}
+
+		if ((mappingResolutionStrategy().allowAuto() || mappingResolutionStrategy().allowDefault())
+				&& utilities.listHasElement(fields)) {
+
+			for (Field field : fields) {
+
+				if (isIgnorableField(field) || findMappingByDstField(field.getName()) != null) {
+					continue;
+				}
+
+				FieldsMapping generated = FieldsMapping.fastCreate(this, field.getName(), field.getName(), true, conn);
+
+				prepareMapping(generated);
+
+				addMapping(generated);
+			}
+		}
+
+		fieldsMappingAlreadyGenerated = Boolean.TRUE;
+	}
+
+	private void prepareMapping(FieldsMapping fieldMapping) throws DBException {
+		fieldMapping.setTransformationTargetObject(this);
+
+		if (!utilities.stringHasValue(fieldMapping.getDstField())) {
+			throw new EtlConfException(
+					"A mapping on destination '" + getName() + "' does not define dstField: " + fieldMapping);
+		}
+
+		fieldMapping.tryToLoadDataSourceInfoFromSrcField(this);
+		fieldMapping.tryToLoadTransformer(this);
+
+		if (fieldMapping.hasTransformer() && fieldMapping.isSetToNullValue()) {
+			fieldMapping.setSrcValue(null);
+		}
+
+		if (fieldMapping.hasDataSourceName()) {
+			EtlDataSource dataSource = findDataSource(fieldMapping.getDataSourceName());
+
+			if (dataSource == null) {
+				throw new InvalidDataSourceOnFieldDefifitionException(fieldMapping.getName(),
+						fieldMapping.getDataSourceName());
+			}
+			fieldMapping.setDataSource(dataSource);
+			fieldMapping.setDataSourceName(dataSource.getAlias());
+		} else {
+			tryToLoadDataSourceToFieldMapping(fieldMapping);
+		}
+	}
+
+	private boolean isIgnorableField(Field field) {
+
+		if (field == null || !utilities.listHasElement(ignorableFields)) {
+			return false;
+		}
+
+		for (String ignorableField : ignorableFields) {
+
+			if (utilities.equalsFieldsName(ignorableField, field.getName())) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override
@@ -654,19 +896,26 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	@Override
 	public String generateClassName() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		if (physical != null) {
 			return physical.generateClassName();
 		}
+
 		String logicalName = getName();
+
 		if (!utilities.stringHasValue(logicalName)) {
 			throw new EtlConfException("Cannot generate a record class name for an unnamed destination");
 		}
+
 		StringBuilder className = new StringBuilder();
+
 		for (String part : logicalName.split("[^A-Za-z0-9]+")) {
+
 			if (!part.isEmpty()) {
 				className.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
 			}
 		}
+
 		return className.append("VO").toString();
 	}
 
@@ -683,18 +932,21 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	@Override
 	public Boolean hasPK(Connection conn) throws DBException {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		return physical == null ? hasPK() : physical.hasPK(conn);
 	}
 
 	@Override
 	public Boolean isMetadata() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		return physical == null ? Boolean.FALSE : physical.isMetadata();
 	}
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		return physical == null ? null : physical.getRelatedConnInfo();
 	}
 
@@ -702,6 +954,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	public void setEtlRecordClass(Class<? extends EtlDatabaseObject> etlRecordClass) {
 		this.etlRecordClass = etlRecordClass;
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		if (physical != null) {
 			physical.setEtlRecordClass(etlRecordClass);
 		}
@@ -710,6 +963,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	@Override
 	public Class<? extends EtlDatabaseObject> getEtlRecordClass() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		return etlRecordClass != null ? etlRecordClass : physical == null ? null : physical.getEtlRecordClass();
 	}
 
@@ -721,16 +975,20 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	@Override
 	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
 		EtlObjectConfiguration physical = requirePhysicalObjectConfiguration("generateRelatedPojoClass");
+
 		physical.generateRelatedPojoClass(connInfo, fullClass);
+
 		this.etlRecordClass = physical.getEtlRecordClass();
 	}
 
 	@Override
 	public DatabaseObjectLoaderHelper getLoadHealper() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		if (physical != null) {
 			return physical.getLoadHealper();
 		}
+
 		if (loadHelper == null) {
 			loadHelper = new DatabaseObjectLoaderHelper(this);
 		}
@@ -740,6 +998,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	@Override
 	public String getAlias() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		return physical == null ? getName() : physical.getAlias();
 	}
 
@@ -751,12 +1010,14 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	@Override
 	public List<String> getExcludedFieldsFromObjectDesc() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		return physical == null ? java.util.Collections.emptyList() : physical.getExcludedFieldsFromObjectDesc();
 	}
 
 	@Override
 	public Boolean isMustLoadChildrenInfo() {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		return physical == null ? isTrue(mustLoadChildrenInfo) : physical.isMustLoadChildrenInfo();
 	}
 
@@ -766,10 +1027,12 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	private EtlObjectConfiguration requirePhysicalObjectConfiguration(String operation) {
 		EtlObjectConfiguration physical = physicalObjectConfiguration();
+
 		if (physical == null) {
 			throw new ForbiddenOperationException("Destination '" + getName() + "' does not yet provide the physical "
 					+ "capability required by " + operation);
 		}
+
 		return physical;
 	}
 
@@ -779,6 +1042,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	/** Copies only logical transformation rules from a legacy destination. */
 	public void copyTransformationRulesFrom(DstConf legacy) {
+
 		if (legacy == null) {
 			return;
 		}
@@ -812,16 +1076,21 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	}
 
 	private List<List<FieldsMapping>> copyNested(List<List<FieldsMapping>> values) {
+
 		if (values == null) {
 			return null;
 		}
+
 		List<List<FieldsMapping>> copied = new ArrayList<>();
+
 		for (List<FieldsMapping> value : values) {
 			copied.add(copy(value));
 		}
+
 		return copied;
 	}
 
+	@Override
 	@JsonIgnore
 	public ConnectorResource getResolvedResource() {
 		return resolvedResource;
@@ -838,19 +1107,24 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	}
 
 	public void initialize(EtlItemConfiguration parentItem) {
+
 		if (isInitialized()) {
 			return;
 		}
 
 		this.parentItem = parentItem;
+
 		applyIncludes();
+
 		resolveDestinationDataConfiguration();
+
 		markAsInitialized();
 	}
 
 	private void resolveDestinationDataConfiguration() {
 		List<DestinationDataConfiguration> configured = new ArrayList<>();
 		List<String> names = new ArrayList<>();
+
 		add(configured, names, "tableDataDestination", tableDataDestination);
 		add(configured, names, "jsonDataDestination", jsonDataDestination);
 		add(configured, names, "csvDataDestination", csvDataDestination);
@@ -861,21 +1135,26 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 		}
 
 		DestinationDataConfiguration resolved = configured.get(0);
+
 		validateDestinationDataConfiguration(resolved);
+
 		this.destinationDataConfiguration = resolved;
 		this.destinationDataConfiguration.setParentDestination(this);
+
 		if (fields == null && physicalObjectConfiguration() != null) {
 			synchronizePhysicalFields(physicalObjectConfiguration());
 		}
 	}
 
 	private void validateDestinationDataConfiguration(DestinationDataConfiguration resolved) {
+
 		if (resolved == tableDataDestination && tableDataDestination.getResource() != null) {
 			throw new EtlConfException(
 					"destination.tableDataDestination.resource is not allowed; configure destination.resource instead");
 		}
 
 		if (resource != null && utilities.stringHasValue(resource.getConnector())) {
+
 			if (utilities.stringHasValue(connector) && !connector.equals(resource.getConnector())) {
 				throw new EtlConfException("destination.connector differs from destination.resource.connector");
 			}
@@ -900,16 +1179,19 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 	}
 
 	private void validateRecordFields(DestinationDataConfiguration resolved) {
+
 		if (fields == null || fields.isEmpty()) {
 			throw new EtlConfException("destination.fields is required for " + variantName(resolved));
 		}
 
 		Set<String> names = new HashSet<>();
+
 		for (Field field : fields) {
+
 			if (field == null || !utilities.stringHasValue(field.getName())) {
-				throw new EtlConfException(
-						"Every destination." + variantName(resolved) + " field must have a name");
+				throw new EtlConfException("Every destination." + variantName(resolved) + " field must have a name");
 			}
+
 			if (!names.add(field.getName().trim().toLowerCase(Locale.ROOT))) {
 				throw new EtlConfException("Duplicated destination field '" + field.getName() + "' in destination."
 						+ variantName(resolved));
@@ -923,6 +1205,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	private void add(List<DestinationDataConfiguration> configured, List<String> names, String name,
 			DestinationDataConfiguration configuration) {
+
 		if (configuration != null) {
 			configured.add(configuration);
 			names.add(name);
@@ -941,10 +1224,11 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration im
 
 	@Override
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
-		FieldsMapping.tryToReplacePlaceholders(joinFields, schemaInfoSrc);
-		FieldsMapping.tryToReplacePlaceholders(mapping, schemaInfoSrc);
-		ignorableFields = utilities.tryToReplacePlaceholdersAll(ignorableFields, schemaInfoSrc);
-		excludedFields = utilities.tryToReplacePlaceholdersAll(excludedFields, schemaInfoSrc);
+		Field.tryToReplacePlaceholders(joinFields, schemaInfoSrc);
+		Field.tryToReplacePlaceholders(mapping, schemaInfoSrc);
+
+		this.ignorableFields = utilities.tryToReplacePlaceholdersAll(this.ignorableFields, schemaInfoSrc);
+		this.excludedFields = utilities.tryToReplacePlaceholdersAll(this.excludedFields, schemaInfoSrc);
 	}
 
 	@Override
