@@ -1022,8 +1022,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.setRelatedEtlConf(relatedEtlConf);
 
 		this.applyIncludes();
-
 		this.tryToLoadFromTemplate();
+
 		this.setRelatedEtlConfig(relatedEtlConf);
 		this.setTesting(testing);
 		this.prepareSourceConfiguration();
@@ -1049,14 +1049,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					if (!alreadyIncludedTables.contains(dst.getName())) {
 						alreadyIncludedTables.add(dst.getName());
 
-						codeElements = utilities.stringHasValue(codeElements) ? codeElements + "_and_" + dst.getName()
-								: dst.getName();
+						codeElements = utilities.stringHasValue(codeElements) ? codeElements + "_and_" + dst.getAlias()
+								: dst.getAlias();
 					}
 				}
 			}
 		}
 
 		String sourceAlias = this.getPrimaryDataSource().getAlias();
+
 		codeElements = utilities.stringHasValue(codeElements) ? codeElements : sourceAlias;
 
 		codeElements = sourceAlias + "_to_" + codeElements;
@@ -1242,6 +1243,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	private void fullLoad(EtlOperationConfig operationConfig, JdbcTablePrimaryDataSourceConfiguration jdbcSource,
 			Connection sourceConnection) throws DBException {
+
 		this.getRelatedEtlConf().info("Starting full load of etlItemConfiguration {}", this);
 
 		if (!hasManualMapPrimaryKeyOnField()) {

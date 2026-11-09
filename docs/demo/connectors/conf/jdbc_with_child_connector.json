@@ -107,7 +107,8 @@
       "source": {
         "connector": "jdbc-src-connector",
         "tableDataSource": {
-          "tableName": "person"
+          "tableName": "person",
+          "tableAlias":"person_src_ds"          
         }
       },
       "destinations": [
