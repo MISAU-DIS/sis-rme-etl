@@ -678,7 +678,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@Override
 	public void fullLoad(Connection conn) throws DBException {
-		EtlObjectConfiguration physical = physicalObjectConfiguration();
+		EtlObjectConfiguration physical = this.physicalObjectConfiguration();
 
 		if (physical != null) {
 			physical.fullLoad(conn);
