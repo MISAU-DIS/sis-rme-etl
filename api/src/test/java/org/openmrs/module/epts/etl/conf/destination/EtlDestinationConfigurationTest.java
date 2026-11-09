@@ -11,6 +11,10 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent;
+import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
@@ -167,6 +171,30 @@ class EtlDestinationConfigurationTest {
 		assertEquals(ActionOnEtlIssue.IGNORE, destination.unmappedFieldBehavior());
 		assertEquals(FieldMappingResolutionStrategy.MANUAL_ONLY, destination.mappingResolutionStrategy());
 		assertTrue(destination.executeUpdateOnIdentifiedRecordAction());
+	}
+
+	@Test
+	void shouldExposeLegacyDestinationCapabilitiesWithoutMakingNonJdbcDestinationAJdbcTable() throws Exception {
+		EtlDestinationConfiguration destination = read("{"
+				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
+				+ "\"jsonDataDestination\":{\"name\":\"patients\","
+				+ "\"fields\":[{\"name\":\"uuid\"}]}"
+				+ "}");
+
+		destination.initialize(new EtlItemConfiguration());
+		destination.setDisabled(Boolean.TRUE);
+
+		assertTrue(destination instanceof EtlTransformTarget);
+		assertTrue(destination instanceof EtlDataSource);
+		assertTrue(destination instanceof EtlDstConf);
+		assertTrue(destination instanceof EtlItemConfigurationComponent);
+		assertTrue(destination.isDisabled());
+		assertTrue(destination.shouldBeProcessed(null, null, null, null));
+
+		destination.setDisabled(Boolean.FALSE);
+		destination.fullLoad();
+
+		assertTrue(destination.isFullLoaded());
 	}
 
 	private EtlDestinationConfiguration read(String json) throws Exception {

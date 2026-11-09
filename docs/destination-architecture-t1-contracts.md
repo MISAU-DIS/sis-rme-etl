@@ -66,6 +66,16 @@ table name, connection information, JDBC metadata, keys or relationships. This
 is the normalization seam that T2 can use without making `DstConf` the runtime
 owner of transformation behaviour.
 
+The aggregate also exposes the public destination contracts used by the
+current runtime: `EtlTransformTarget`, `EtlDataSource`, `EtlDstConf` and
+`EtlItemConfigurationComponent`. Consequently, lifecycle and selection
+operations such as `fullLoad`, `isDisabled`,
+`isDoNotUseSrcConfAsDataSource` and `shouldBeProcessed` already have a neutral
+entry point. Logical state is owned by the aggregate; physical operations are
+delegated to the selected destination variant. A physical operation not yet
+implemented by a non-JDBC variant fails explicitly instead of silently being
+treated as JDBC.
+
 ## Structural validation
 
 Initialization rejects:
@@ -98,6 +108,7 @@ testable before it participates in production execution.
 ## Verification
 
 `EtlDestinationConfigurationTest` verifies inference, parent association,
-capabilities, resource ownership, record schema requirements, ambiguity
-rejection and strict unknown-property handling.
+public legacy-contract compatibility, lifecycle capabilities, resource
+ownership, record schema requirements, ambiguity rejection and strict
+unknown-property handling.
 
