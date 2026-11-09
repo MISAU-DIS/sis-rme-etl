@@ -404,7 +404,7 @@ record model independently of JDBC:
 
 - `resource` is the single configurable identity of the physical destination;
 - `fields` and `primaryKey` describe the destination record;
-- `mapping`, mapping policies, conditions and transformers remain at the
+- `mapping`, `patchFields`, mapping policies, conditions and transformers remain at the
   destination root;
 - `tableDataDestination`, `jsonDataDestination` and `csvDataDestination` add
   only technology-specific capabilities.
@@ -436,6 +436,7 @@ A JDBC adapter can be inferred entirely from the resolved connector:
       { "name": "patient_id" }
     ]
   },
+  "patchFields": ["uuid", "date_changed"],
   "mapping": [
     { "srcField": "uuid", "dstField": "uuid" }
   ]

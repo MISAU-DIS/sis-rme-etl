@@ -141,7 +141,7 @@
               "tableName": "address"
             }
           },
-          "dstConf": [
+          "destinations": [
             {
               "resource": {
                 "connector": "jdbc-dst-connector",

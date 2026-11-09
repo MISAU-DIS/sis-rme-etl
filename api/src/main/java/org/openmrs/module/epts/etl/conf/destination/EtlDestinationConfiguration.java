@@ -67,6 +67,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	private List<FieldsMapping> allMapping;
 	private List<String> excludedFields;
 	private List<String> ignorableFields;
+	private List<String> patchFields;
 	private List<String> preferredDataSource;
 	private ActionOnEtlIssue unmappedFieldBehavior;
 	private String transformer;
@@ -171,6 +172,26 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	public void setTableDataDestination(JdbcTableDestinationConfiguration tableDataDestination) {
 		this.tableDataDestination = tableDataDestination;
+		if (this.tableDataDestination != null && patchFields != null) {
+			this.tableDataDestination.setPatchFields(new ArrayList<>(patchFields));
+		}
+	}
+
+	/** Fields updated by PATCH_EXISTING/PATCH_UPDATE conflict handling. */
+	public List<String> getPatchFields() {
+		return patchFields;
+	}
+
+	public void setPatchFields(List<String> patchFields) {
+		this.patchFields = copy(patchFields);
+		if (tableDataDestination != null) {
+			tableDataDestination.setPatchFields(copy(patchFields));
+		}
+	}
+
+	@JsonIgnore
+	public boolean hasPatchFields() {
+		return utilities.listHasElement(patchFields);
 	}
 
 	public JsonDestinationConfiguration getJsonDataDestination() {
@@ -1113,6 +1134,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		setAllMapping(copy(legacy.getAllMapping()));
 		setExcludedFields(copy(legacy.getExcludedFields()));
 		setIgnorableFields(copy(legacy.getIgnorableFields()));
+		setPatchFields(copy(legacy.getPatchFields()));
 		setPreferredDataSource(copy(legacy.getPreferredDataSource()));
 		setUnmappedFieldBehavior(legacy.getUnmappedFieldBehavior());
 		setTransformer(legacy.getTransformer());
@@ -1286,6 +1308,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 		if (primaryKey != null) {
 			tableDataDestination.setPrimaryKey(primaryKey);
+		}
+		if (patchFields != null) {
+			tableDataDestination.setPatchFields(new ArrayList<>(patchFields));
 		}
 		if (resolvedResource != null) {
 			tableDataDestination.setResolvedResource(resolvedResource);

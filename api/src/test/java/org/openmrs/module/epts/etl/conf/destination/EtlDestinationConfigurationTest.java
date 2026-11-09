@@ -179,6 +179,7 @@ class EtlDestinationConfigurationTest {
 				+ "\"unmappedFieldBehavior\":\"USE_DEFAULT\","
 				+ "\"mappingResolutionStrategy\":\"MANUAL_WITH_DEFAULTS\","
 				+ "\"identifiedRecordAction\":\"PATCH_UPDATE\","
+				+ "\"patchFields\":[\"uuid\"],"
 				+ "\"allowDuplicateDestinationMappings\":true"
 				+ "}");
 
@@ -191,6 +192,8 @@ class EtlDestinationConfigurationTest {
 				destination.mappingResolutionStrategy());
 		assertEquals(ActionOnLoad.PATCH_UPDATE, destination.getIdentifiedRecordAction());
 		assertTrue(destination.executePatchUpdateOnIdentifiedRecordAction());
+		assertEquals(Collections.singletonList("uuid"), destination.getPatchFields());
+		assertTrue(destination.hasPatchFields());
 		assertTrue(destination.allowDuplicateDestinationMappings());
 		assertEquals("uuid", destination.getFields().get(0).getName());
 	}
@@ -206,6 +209,7 @@ class EtlDestinationConfigurationTest {
 		legacy.setUnmappedFieldBehavior(ActionOnEtlIssue.IGNORE);
 		legacy.setMappingResolutionStrategy(FieldMappingResolutionStrategy.MANUAL_ONLY);
 		legacy.setIdentifiedRecordAction(ActionOnLoad.UPDATE);
+		legacy.setPatchFields(new ArrayList<>(Collections.singletonList("uuid")));
 
 		EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
 		destination.copyTransformationRulesFrom(legacy);
@@ -218,6 +222,21 @@ class EtlDestinationConfigurationTest {
 		assertEquals(ActionOnEtlIssue.IGNORE, destination.unmappedFieldBehavior());
 		assertEquals(FieldMappingResolutionStrategy.MANUAL_ONLY, destination.mappingResolutionStrategy());
 		assertTrue(destination.executeUpdateOnIdentifiedRecordAction());
+		assertEquals(Collections.singletonList("uuid"), destination.getPatchFields());
+	}
+
+	@Test
+	void shouldKeepRootPatchFieldsSynchronizedWithJdbcAdapter() throws Exception {
+		EtlDestinationConfiguration destination = read("{"
+				+ "\"resource\":{\"connector\":\"destination-db\",\"name\":\"patient\"},"
+				+ "\"patchFields\":[\"uuid\",\"date_changed\"],"
+				+ "\"tableDataDestination\":{}"
+				+ "}");
+
+		destination.initialize(new EtlItemConfiguration());
+
+		assertEquals(destination.getPatchFields(),
+				destination.requireJdbcTableDestination().getPatchFields());
 	}
 
 	@Test
