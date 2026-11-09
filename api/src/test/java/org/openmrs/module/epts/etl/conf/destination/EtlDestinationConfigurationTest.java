@@ -234,9 +234,33 @@ class EtlDestinationConfigurationTest {
 				+ "}");
 
 		destination.initialize(new EtlItemConfiguration());
+		destination.requireJdbcTableDestination().pullConfigurationFromParentDestination();
 
 		assertEquals(destination.getPatchFields(),
 				destination.requireJdbcTableDestination().getPatchFields());
+	}
+
+	@Test
+	void jdbcAdapterShouldPullLogicalRulesFromParentDestination() throws Exception {
+		EtlDestinationConfiguration destination = read("{"
+				+ "\"resource\":{\"connector\":\"destination-db\",\"name\":\"patient\"},"
+				+ "\"identifiedRecordAction\":\"PATCH_UPDATE\","
+				+ "\"mappingResolutionStrategy\":\"MANUAL_ONLY\","
+				+ "\"unmappedFieldBehavior\":\"IGNORE\","
+				+ "\"patchFields\":[\"uuid\"],"
+				+ "\"mapping\":[{\"srcField\":\"person_uuid\",\"dstField\":\"uuid\"}],"
+				+ "\"tableDataDestination\":{}"
+				+ "}");
+		destination.initialize(new EtlItemConfiguration());
+		JdbcTableDestinationConfiguration jdbc = destination.requireJdbcTableDestination();
+
+		jdbc.pullConfigurationFromParentDestination();
+
+		assertEquals(ActionOnLoad.PATCH_UPDATE, jdbc.getIdentifiedRecordAction());
+		assertEquals(FieldMappingResolutionStrategy.MANUAL_ONLY, jdbc.getMappingResolutionStrategy());
+		assertEquals(ActionOnEtlIssue.IGNORE, jdbc.getUnmappedFieldBehavior());
+		assertEquals(Collections.singletonList("uuid"), jdbc.getPatchFields());
+		assertEquals("uuid", jdbc.getMapping().get(0).getDstField());
 	}
 
 	@Test

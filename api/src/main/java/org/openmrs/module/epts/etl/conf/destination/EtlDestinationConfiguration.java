@@ -172,9 +172,6 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	public void setTableDataDestination(JdbcTableDestinationConfiguration tableDataDestination) {
 		this.tableDataDestination = tableDataDestination;
-		if (this.tableDataDestination != null && patchFields != null) {
-			this.tableDataDestination.setPatchFields(new ArrayList<>(patchFields));
-		}
 	}
 
 	/** Fields updated by PATCH_EXISTING/PATCH_UPDATE conflict handling. */
@@ -184,9 +181,6 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	public void setPatchFields(List<String> patchFields) {
 		this.patchFields = copy(patchFields);
-		if (tableDataDestination != null) {
-			tableDataDestination.setPatchFields(copy(patchFields));
-		}
 	}
 
 	@JsonIgnore
@@ -1308,9 +1302,6 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 		if (primaryKey != null) {
 			tableDataDestination.setPrimaryKey(primaryKey);
-		}
-		if (patchFields != null) {
-			tableDataDestination.setPatchFields(new ArrayList<>(patchFields));
 		}
 		if (resolvedResource != null) {
 			tableDataDestination.setResolvedResource(resolvedResource);
