@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +19,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -242,17 +243,13 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
-		Connection srcConn = reader.unwrap(Connection.class);
-		Connection dstConn = writer.unwrap(Connection.class);
-
 		traceTransformationInitialization(field);
 
 		try {
 			EtlDatabaseObject dstParent = parentService.retrieveOrCreate(this, processor, srcObject, transformedRecord,
-					additionalSrcObjects, field, srcConn, dstConn);
+					additionalSrcObjects, field, reader, writer);
 
 			if (dstParent == null) {
 
@@ -272,8 +269,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	EtlDatabaseObject resolveSrcParent(EtlProcessor processor, EtlDatabaseObject srcObject,
-			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
-			Connection dstConn) throws EtlTransformationException, DBException {
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects,
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws EtlTransformationException, DBException {
 
 		EtlDatabaseObject srcParent = null;
 
@@ -282,16 +280,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			FieldTransformingInfo fieldInfo = null;
 
 			fieldInfo = this.getParentSourceIdMapping().getTransformerInstance().transform(processor, srcObject,
-					transformedRecord, additionalSrcObjects, getParentSourceIdMapping(),
-					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn),
-					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn));
+					transformedRecord, additionalSrcObjects, getParentSourceIdMapping(), reader, writer);
 
 			if (fieldInfo != null && fieldInfo.getTransformedValue() != null) {
-				JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn,
-						dstConn);
+				JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForExistingSrcParentIfNeeded(reader, writer);
 
 				srcParent = DatabaseObjectDAO.getByOid(srcConf,
-						Oid.fastCreate(srcConf, fieldInfo.getTransformedValue()), srcConn);
+						Oid.fastCreate(srcConf, fieldInfo.getTransformedValue()),
+						reader.unwrap(java.sql.Connection.class));
 
 				if (srcParent == null) {
 					throw new InconsistentStateException("The related srcValue (" + fieldInfo.getTransformedValue()
@@ -304,17 +300,19 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	EtlDatabaseObject resolveParent(EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
-			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
-			Connection dstConn) throws EtlTransformationException, DBException {
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects,
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws EtlTransformationException, DBException {
 
 		if (srcParent != null) {
-			ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
+			ensureEtlTransformTargetForExistingSrcParentInitialized(reader, writer);
 
 			EtlObjectConfiguration bkp = srcParent.getRelatedConfiguration();
 
-			srcParent.setRelatedConfiguration(getEtlTransformTargetForExistingSrcParent(srcConn, dstConn));
+			srcParent.setRelatedConfiguration(getEtlTransformTargetForExistingSrcParent(reader, writer));
 
-			EtlDatabaseObject dstObject = DatabaseObjectDAO.getByUniqueKeys(srcParent, dstConn);
+			EtlDatabaseObject dstObject = DatabaseObjectDAO.getByUniqueKeys(srcParent,
+					writer.unwrap(java.sql.Connection.class));
 
 			srcParent.setRelatedConfiguration(bkp);
 
@@ -327,10 +325,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 	EtlDatabaseObject createParent(EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			Connection srcConn, Connection dstConn) throws DBException {
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
 
 		processor.logDebug("Performing on-demand creation of "
-				+ this.loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn).getTableName() + " For "
+				+ this.loadSrcConfForNonExistingSrcParentIfNeeded(reader, writer).getTableName() + " For "
 				+ srcObject.getRelatedConfiguration().getObjectName());
 
 		DstConf etlTransformTarget = null;
@@ -341,17 +339,16 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			JdbcTablePrimaryDataSourceConfiguration srcConf = null;
 
 			if (srcParent == null) {
-				srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+				srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(reader, writer);
 			} else {
-				srcConf = loadSrcConfForExistingSrcParentIfNeeded(srcConn, dstConn);
+				srcConf = loadSrcConfForExistingSrcParentIfNeeded(reader, writer);
 			}
 
 			if (!srcConf.doNotUseAsDatasource()) {
 				List<EtlDatabaseObject> recs;
 				logTrace("Searching recs on demand for: " + this);
 
-				recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects,
-						JdbcConnectorRuntimeAdapters.reader(srcConn));
+				recs = srcConf.searchRecords(null, srcObject, additionalSrcObjects, reader);
 
 				logTrace("OnDemand Searching recs finalized: " + this);
 
@@ -365,13 +362,13 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		if (srcParent != null && sourceParentMayExists()) {
-			ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
+			ensureEtlTransformTargetForExistingSrcParentInitialized(reader, writer);
 
-			etlTransformTarget = getEtlTransformTargetForExistingSrcParent(srcConn, dstConn);
+			etlTransformTarget = getEtlTransformTargetForExistingSrcParent(reader, writer);
 		} else {
-			ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
+			ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, reader, writer);
 
-			etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
+			etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(reader, writer);
 
 			if (srcParent == null) {
 				srcParent = srcObject.createACopy();
@@ -385,7 +382,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		srcParent.getAuxLoadObject().addAll(additionalSrcObjects);
 
 		EtlLoadHelper loadHelper = EtlLoadHelper.fastLoadRecord(processor, srcParent, etlTransformTarget,
-				transformationType, srcConn, dstConn);
+				transformationType, reader, writer);
 
 		List<EtlDatabaseObject> migratedRecs = loadHelper.getAllSuccedTransformedObjects(etlTransformTarget);
 
@@ -398,16 +395,16 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	EtlDatabaseObject retrieveExistingOnDemandParent(EtlProcessor processor, EtlDatabaseObject srcObject,
-			List<EtlDatabaseObject> srcObjects, Connection srcConn, Connection dstConn)
+			List<EtlDatabaseObject> srcObjects, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws DBException, ForbiddenOperationException {
 
 		if (!utilities.stringHasValue(this.getOnDemandCheckCondition())) {
 			return null;
 		}
 
-		this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
+		this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, reader, writer);
 
-		DstConf dstConf = this.getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
+		DstConf dstConf = this.getEtlTransformTargetForNonExistingSrcParent(reader, writer);
 
 		List<EtlDatabaseObject> allObjs = srcObjects != null ? srcObjects
 				: (srcObject != null ? utilities.parseToList(srcObject) : null);
@@ -416,45 +413,47 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		logTrace(onDemand);
 
-		PreparedQueryInfo p = prepareOnDemandParentLookup(allObjs, srcConn, dstConn);
+		PreparedQueryInfo p = prepareOnDemandParentLookup(allObjs, reader, writer);
 
-		JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn, dstConn);
+		JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(reader, writer);
 
 		return dstConf.find(p.getPreparedQuery(),
-				resolveDstValues(srcObject, p.getParameters(), srcConf, dstConf, srcConn, dstConn), dstConn);
+				resolveDstValues(srcObject, p.getParameters(), srcConf, dstConf,
+						reader.unwrap(java.sql.Connection.class), writer.unwrap(java.sql.Connection.class)),
+				writer.unwrap(java.sql.Connection.class));
 	}
 
 	EtlDatabaseObject retrieveExistingParent_(EtlProcessor processor, EtlDatabaseObject srcParent,
 			EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
-			List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn, Connection dstConn) throws DBException {
+			List<EtlDatabaseObject> additionalSrcObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
 		EtlDatabaseObject parent = srcParent != null
-				? resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects, srcConn,
-						dstConn)
+				? resolveParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects, reader, writer)
 				: null;
 
 		return parent != null ? parent
-				: retrieveExistingOnDemandParent(processor, srcObject, additionalSrcObjects, srcConn, dstConn);
+				: retrieveExistingOnDemandParent(processor, srcObject, additionalSrcObjects, reader, writer);
 	}
 
 	String buildParentRequestKey(EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
-			List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn, Connection dstConn) throws DBException {
+			List<EtlDatabaseObject> additionalSrcObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
 
 		String keyPrefix = getRelatedEtlTransformTarget().getFullTableName() + "->" + getParentTableName();
 
 		if (utilities.stringHasValue(getOnDemandCheckCondition())) {
-			ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, srcConn, dstConn);
+			ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, reader, writer);
 
-			JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(srcConn,
-					dstConn);
-			DstConf dstConf = getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
+			JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(reader, writer);
+			DstConf dstConf = getEtlTransformTargetForNonExistingSrcParent(reader, writer);
 
 			List<EtlDatabaseObject> allObjects = additionalSrcObjects != null ? additionalSrcObjects
 					: (srcObject != null ? utilities.parseToList(srcObject) : null);
 
-			PreparedQueryInfo lookup = this.prepareOnDemandParentLookup(allObjects, srcConn, dstConn);
+			PreparedQueryInfo lookup = this.prepareOnDemandParentLookup(allObjects, reader, writer);
 
-			Object[] values = this.resolveDstValues(srcObject, lookup.getParameters(), srcConf, dstConf, srcConn,
-					dstConn);
+			Object[] values = this.resolveDstValues(srcObject, lookup.getParameters(), srcConf, dstConf,
+					reader.unwrap(java.sql.Connection.class), writer.unwrap(java.sql.Connection.class));
 
 			return keyPrefix + "|" + lookup.getPreparedQuery() + "|" + Arrays.deepToString(values);
 		}
@@ -466,44 +465,45 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return keyPrefix;
 	}
 
-	private PreparedQueryInfo prepareOnDemandParentLookup(List<EtlDatabaseObject> sourceObjects, Connection srcConn,
-			Connection dstConn)
+	private PreparedQueryInfo prepareOnDemandParentLookup(List<EtlDatabaseObject> sourceObjects,
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws DBException {
 		return SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(getOnDemandCheckCondition(), null,
-				sourceObjects, getRelatedEtlConf(), JdbcConnectorRuntimeAdapters.reader(srcConn),
-				JdbcConnectorRuntimeAdapters.writer(dstConn));
+				sourceObjects, getRelatedEtlConf(), reader, writer);
 	}
 
-	DstConf getEtlTransformTargetForExistingSrcParent(Connection srcConn, Connection dstConn) throws DBException {
+	DstConf getEtlTransformTargetForExistingSrcParent(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
 		return this.getExistingParentItemConf().getDstConf().get(0);
 	}
 
-	protected DstConf getEtlTransformTargetForNonExistingSrcParent(Connection srcConn, Connection dstConn)
+	protected DstConf getEtlTransformTargetForNonExistingSrcParent(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer)
 			throws DBException {
 		return this.getOnDemandCreateParentItemConf().getDstConf().get(0);
 	}
 
-	JdbcTablePrimaryDataSourceConfiguration loadSrcConfForNonExistingSrcParentIfNeeded(Connection srcConn,
-			Connection dstConn) throws DBException {
-		ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
+	JdbcTablePrimaryDataSourceConfiguration loadSrcConfForNonExistingSrcParentIfNeeded(
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
+		ensureEtlItemConfForNonExistingSrcParentInitialized(reader, writer);
 
 		return this.getOnDemandCreateParentItemConf().requireJdbcPrimaryDataSource();
 	}
 
-	JdbcTablePrimaryDataSourceConfiguration loadSrcConfForExistingSrcParentIfNeeded(Connection srcConn,
-			Connection dstConn) throws DBException {
-		ensureEtlItemConfForExistingSrcParentInitialized(srcConn, dstConn);
+	JdbcTablePrimaryDataSourceConfiguration loadSrcConfForExistingSrcParentIfNeeded(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
+		ensureEtlItemConfForExistingSrcParentInitialized(reader, writer);
 
 		return this.getExistingParentItemConf().requireJdbcPrimaryDataSource();
 	}
 
-	protected void ensureEtlTransformTargetForNonExistingSrcParentInitialized(boolean skipFullLoad, Connection srcConn,
-			Connection dstConn) throws DBException {
+	protected void ensureEtlTransformTargetForNonExistingSrcParentInitialized(boolean skipFullLoad,
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
 
 		synchronized (lock) {
-			this.ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
+			this.ensureEtlItemConfForNonExistingSrcParentInitialized(reader, writer);
 
-			DstConf etlTransformTarget = this.getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn);
+			DstConf etlTransformTarget = this.getEtlTransformTargetForNonExistingSrcParent(reader, writer);
 
 			if (skipFullLoad && !etlTransformTarget.isFullLoaded()) {
 				etlTransformTarget.tryToGenerateTableAlias(etlTransformTarget.getRelatedEtlConf());
@@ -530,7 +530,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					etlTransformTarget
 							.addAllToPreferredDataSource(this.relatedEtlTransformTarget.getAllPrefferredDataSource());
 
-					etlTransformTarget.fullLoad(dstConn);
+					etlTransformTarget.fullLoad(writer.unwrap(java.sql.Connection.class));
 
 				}
 			}
@@ -582,7 +582,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return onDemandInfo.getTemplateParams();
 	}
 
-	void ensureOverrideFieldsInitialized(Connection srcConn, Connection dstConn) throws DBException {
+	void ensureOverrideFieldsInitialized(ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws DBException {
 
 		if (!existingSrcParentIsApplicable()) {
 			throw new ForbiddenOperationException("The override fields are not applicable for this transformer!");
@@ -591,11 +592,11 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		if (utilities.stringHasValue(this.onDemandInfo.getOverrideFieldsStr())) {
 
 			synchronized (lock) {
-				ensureEtlItemConfForNonExistingSrcParentInitialized(srcConn, dstConn);
+				ensureEtlItemConfForNonExistingSrcParentInitialized(reader, writer);
 
 				List<FieldsMapping> onDemandFields = getOnDemandParentFieldMappings() != null
 						? getOnDemandParentFieldMappings()
-						: getEtlTransformTargetForNonExistingSrcParent(srcConn, dstConn).getMapping();
+						: getEtlTransformTargetForNonExistingSrcParent(reader, writer).getMapping();
 
 				String[] toOverride = this.getOverrideFieldsStr().split(",");
 
@@ -622,7 +623,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 	}
 
-	void ensureEtlTransformTargetForExistingSrcParentInitialized(Connection srcConf, Connection dstConn)
+	void ensureEtlTransformTargetForExistingSrcParentInitialized(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer)
 			throws DBException {
 
 		if (!sourceParentMayExists()) {
@@ -630,9 +632,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					"Error On " + this + "\nExisting SrcParent not applicable as no parentSourceIdMapping is defined!");
 		}
 
-		ensureEtlItemConfForExistingSrcParentInitialized(srcConf, dstConn);
+		ensureEtlItemConfForExistingSrcParentInitialized(reader, writer);
 
-		DstConf etlTransformTarget = getEtlTransformTargetForExistingSrcParent(srcConf, dstConn);
+		DstConf etlTransformTarget = getEtlTransformTargetForExistingSrcParent(reader, writer);
 
 		if (!etlTransformTarget.isFullLoaded()) {
 
@@ -652,7 +654,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllAvaliableDataSource()) {
 
 							if (p != this.relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc()
-									.getSharedKeyRefInfo(dstConn)) {
+									.getSharedKeyRefInfo(writer.unwrap(java.sql.Connection.class))) {
 								avaliableDataSource.add(p);
 							}
 						}
@@ -660,7 +662,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 						for (EtlDataSource p : this.relatedEtlTransformTarget.getAllPrefferredDataSource()) {
 
 							if (p != this.relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc()
-									.getSharedKeyRefInfo(dstConn)) {
+									.getSharedKeyRefInfo(writer.unwrap(java.sql.Connection.class))) {
 								preferredDataSource.add(p);
 							}
 						}
@@ -671,7 +673,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 					}
 
-					ensureOverrideFieldsInitialized(srcConf, dstConn);
+					ensureOverrideFieldsInitialized(reader, writer);
 
 					etlTransformTarget.setMapping(this.getOverrideFields());
 
@@ -680,13 +682,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					etlTransformTarget.addToPrefferedDataSource(etlTransformTarget.getPrimaryDataSource());
 					etlTransformTarget.addAllToPreferredDataSource(preferredDataSource);
 
-					etlTransformTarget.fullLoad(dstConn);
+					etlTransformTarget.fullLoad(writer.unwrap(java.sql.Connection.class));
 				}
 			}
 		}
 	}
 
-	protected void ensureEtlItemConfForNonExistingSrcParentInitialized(Connection srcConn, Connection dstConn)
+	protected void ensureEtlItemConfForNonExistingSrcParentInitialized(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer)
 			throws DBException {
 
 		if (this.getOnDemandCreateParentItemConf() == null) {
@@ -695,7 +698,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 				if (getOnDemandCreateParentItemConf() == null) {
 
-					EtlItemConfiguration conf = this.generateEtlItemConf(srcConn, dstConn);
+					EtlItemConfiguration conf = this.generateEtlItemConf(reader, writer);
 
 					this.onDemandInfo.setOnDemandCreateParentItemConf(conf);
 				}
@@ -703,13 +706,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 	}
 
-	private EtlItemConfiguration generateEtlItemConf(Connection srcConn, Connection dstConn) throws DBException {
+	private EtlItemConfiguration generateEtlItemConf(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
 		boolean useMainEtlTable = false;
 
 		AbstractTableConfiguration parentConf = new GenericTableConfiguration(this.getParentTableName());
 
 		try {
-			parentConf.tryToLoadSchemaInfo(null, srcConn);
+			parentConf.tryToLoadSchemaInfo(null, reader.unwrap(java.sql.Connection.class));
 		} catch (DatabaseResourceDoesNotExists e) {
 
 			if (this.getRelatedEtlTransformTarget().getRelatedEtlConf().hasDefaultEtlTable()) {
@@ -725,7 +729,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			}
 		}
 
-		EtlChildItemConfiguration conf = EtlChildItemConfiguration.fastCreate(parentConf, srcConn);
+		EtlChildItemConfiguration conf = EtlChildItemConfiguration.fastCreate(parentConf,
+				reader.unwrap(java.sql.Connection.class));
 		conf.setRelatedEtlConf(this.getRelatedEtlTransformTarget().getRelatedEtlConf());
 
 		EtlTemplateInfo template = usesTemplate() ? new EtlTemplateInfo(this.getTemplateName()) : null;
@@ -747,9 +752,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		conf.setDoNotFullLoadDstConf(true);
 
-		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false, srcConn);
+		conf.init(relatedEtlTransformTarget.getRelatedEtlConf(), false,
+				reader.unwrap(java.sql.Connection.class));
 
-		conf.init(getRelatedEtlConf(), false, srcConn);
+		conf.init(getRelatedEtlConf(), false, reader.unwrap(java.sql.Connection.class));
 
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 
@@ -767,7 +773,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return this.getParentSourceIdMapping() != null;
 	}
 
-	void ensureEtlItemConfForExistingSrcParentInitialized(Connection srcConn, Connection dstConn) throws DBException {
+	void ensureEtlItemConfForExistingSrcParentInitialized(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
 
 		if (this.getParentSourceIdMapping() == null) {
 			throw new EtlExceptionImpl("Existing SrcParent not applicable as no parentSourceIdMapping is defined!");
@@ -779,7 +786,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 				if (getExistingParentItemConf() == null) {
 
-					EtlItemConfiguration conf = generateEtlItemConf(srcConn, dstConn);
+					EtlItemConfiguration conf = generateEtlItemConf(reader, writer);
 
 					this.onDemandInfo.setExistingParentItemConf(conf);
 				}
@@ -797,12 +804,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		try {
 			srcConn = item.getPrimaryDataSource().openConnection(item);
 			dstConn = getRelatedEtlTransformTarget().openConnection(getRelatedEtlTransformTarget());
+			ConnectorRecordReader<?> reader = JdbcConnectorRuntimeAdapters.reader(srcConn);
+			ConnectorRecordWriter<?> writer = JdbcConnectorRuntimeAdapters.writer(dstConn);
 
 			if (sourceParentMayExists()) {
-				ensureEtlTransformTargetForExistingSrcParentInitialized(srcConn, dstConn);
+				ensureEtlTransformTargetForExistingSrcParentInitialized(reader, writer);
 			}
 
-			ensureEtlTransformTargetForNonExistingSrcParentInitialized(true, srcConn, dstConn);
+			ensureEtlTransformTargetForNonExistingSrcParentInitialized(true, reader, writer);
 
 			srcConn.markAsSuccessifullyTerminated();
 			dstConn.markAsSuccessifullyTerminated();

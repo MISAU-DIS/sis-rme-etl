@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
@@ -646,6 +647,19 @@ public class EtlLoadHelper {
 
 		return processor.performTransformationAndLoadingJdbc(conf, utilities.parseToList(srcRecord), null,
 				LoadingType.PARENT, srcConn, dstConn);
+	}
+
+	public static EtlLoadHelper fastLoadRecord(EtlProcessor processor, EtlDatabaseObject srcRecord, DstConf dstConf,
+			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
+			throws ParentNotYetMigratedException, DBException {
+
+		EtlItemConfiguration conf = dstConf.getParentConf();
+		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(reader);
+		ConnectorRecordWriters writers = org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters
+				.writers(conf, writer.unwrap(Connection.class));
+
+		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,
+				LoadingType.PARENT, readers, writers);
 	}
 
 	public boolean hasDstConf() {

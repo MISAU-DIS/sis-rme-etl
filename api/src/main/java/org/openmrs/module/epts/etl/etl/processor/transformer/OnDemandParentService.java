@@ -11,6 +11,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.inconsistenceresolver.model.InconsistenceInfo;
@@ -39,18 +42,15 @@ public final class OnDemandParentService {
 
 	public EtlDatabaseObject retrieveOrCreate(ParentOnDemandLoadTransformer transformer, EtlProcessor processor,
 			EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
-			List<EtlDatabaseObject> additionalSrcObjects, TransformableField field, Connection currentSrcConn,
-			Connection currentDstConn) throws DBException {
+			List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
+			ConnectorRecordReader<?> currentReader, ConnectorRecordWriter<?> currentWriter) throws DBException {
 
 		EtlDatabaseObject srcParent = null;
-
-		Connection srcConn = currentSrcConn;
-		Connection dstConn = currentDstConn;
 
 		if (transformer.existingSrcParentIsApplicable()) {
 			try {
 				srcParent = transformer.resolveSrcParent(processor, srcObject, transformedRecord, additionalSrcObjects,
-						srcConn, dstConn);
+						currentReader, currentWriter);
 			} catch (InconsistentStateException e) {
 
 				ParentTable parentInfo = ((TableConfiguration) srcObject.getRelatedConfiguration())
@@ -63,28 +63,29 @@ public final class OnDemandParentService {
 
 				srcObject.setFieldValue(transformer.getParentSourceField(), null);
 
-				inconsistence.save((TableConfiguration) transformer.getRelatedEtlTransformTarget(), srcConn);
+				inconsistence.save((TableConfiguration) transformer.getRelatedEtlTransformTarget(),
+						currentReader.unwrap(Connection.class));
 			}
 		}
 
-		String parentKey = transformer.buildParentRequestKey(srcParent, srcObject, additionalSrcObjects, currentSrcConn,
-				currentDstConn);
+		String parentKey = transformer.buildParentRequestKey(srcParent, srcObject, additionalSrcObjects, currentReader,
+				currentWriter);
 
 		ParentLock parentLock = retainLock(parentKey);
 		parentLock.lock.lock();
 
 		try {
-			boolean useCurrentConnections = usesAutoCommit(currentDstConn)
+			boolean useCurrentConnections = usesAutoCommit(currentWriter)
 					|| connectionIsSharedByConcurrentProcessors(processor) || !processor.isRunningInConcurrency();
 
 			if (!useCurrentConnections) {
-				this.commitCurrentDestinationBeforeIndependentTransaction(processor, currentDstConn, parentKey);
+				this.commitCurrentDestinationBeforeIndependentTransaction(processor, currentWriter, parentKey);
 			}
 
 			try {
 				if (useCurrentConnections) {
-					return this.retrieveOrCreateUsingConnections(transformer, processor, srcParent, srcObject,
-							transformedRecord, additionalSrcObjects, field, currentSrcConn, currentDstConn);
+					return this.retrieveOrCreateUsingConnectors(transformer, processor, srcParent, srcObject,
+							transformedRecord, additionalSrcObjects, field, currentReader, currentWriter);
 				}
 
 				return this.retrieveOrCreateInIndependentTransaction(transformer, processor, srcParent, srcObject,
@@ -96,8 +97,8 @@ public final class OnDemandParentService {
 				}
 
 				EtlDatabaseObject parent = useCurrentConnections
-						? retrieveUsingConnections(transformer, processor, srcParent, srcObject, transformedRecord,
-								additionalSrcObjects, currentSrcConn, currentDstConn)
+						? retrieveUsingConnectors(transformer, processor, srcParent, srcObject, transformedRecord,
+								additionalSrcObjects, currentReader, currentWriter)
 						: retrieveInIndependentTransaction(transformer, processor, srcParent, srcObject,
 								transformedRecord, additionalSrcObjects);
 				if (parent != null) {
@@ -117,9 +118,10 @@ public final class OnDemandParentService {
 				&& processor.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
 	}
 
-	private void commitCurrentDestinationBeforeIndependentTransaction(EtlProcessor processor, Connection dstConn,
+	private void commitCurrentDestinationBeforeIndependentTransaction(EtlProcessor processor,
+			ConnectorRecordWriter<?> writer,
 			String parentKey) throws DBException {
-		if (dstConn == null) {
+		if (writer == null) {
 			return;
 		}
 
@@ -127,55 +129,55 @@ public final class OnDemandParentService {
 			processor.logDebug(
 					"Committing current destination work before independent on-demand parent transaction: {}",
 					parentKey);
-			dstConn.commit();
+			writer.unwrap(Connection.class).commit();
 		} catch (SQLException e) {
 			throw new DBException("Could not commit current destination work before creating on-demand parent", e);
 		}
 	}
 
-	private boolean usesAutoCommit(Connection dstConn) throws DBException {
-		if (dstConn == null) {
+	private boolean usesAutoCommit(ConnectorRecordWriter<?> writer) throws DBException {
+		if (writer == null) {
 			return false;
 		}
 
 		try {
-			return dstConn.getAutoCommit();
+			return writer.unwrap(Connection.class).getAutoCommit();
 		} catch (SQLException e) {
 			throw new DBException("Could not determine the destination connection auto-commit mode", e);
 		}
 	}
 
-	private EtlDatabaseObject retrieveOrCreateUsingConnections(ParentOnDemandLoadTransformer transformer,
+	private EtlDatabaseObject retrieveOrCreateUsingConnectors(ParentOnDemandLoadTransformer transformer,
 			EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			Connection srcConn, Connection dstConn) throws DBException {
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
 
-		EtlDatabaseObject parent = retrieveUsingConnections(transformer, processor, srcParent, srcObject,
-				transformedRecord, additionalSrcObjects, srcConn, dstConn);
+		EtlDatabaseObject parent = retrieveUsingConnectors(transformer, processor, srcParent, srcObject,
+				transformedRecord, additionalSrcObjects, reader, writer);
 
 		if (parent == null) {
 			parent = transformer.createParent(processor, srcParent, srcObject, transformedRecord, additionalSrcObjects,
-					field, srcConn, dstConn);
+					field, reader, writer);
 		}
 
 		return parent;
 	}
 
-	private EtlDatabaseObject retrieveUsingConnections(ParentOnDemandLoadTransformer transformer,
+	private EtlDatabaseObject retrieveUsingConnectors(ParentOnDemandLoadTransformer transformer,
 			EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
-			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, Connection srcConn,
-			Connection dstConn) throws DBException {
+			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects,
+			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
 
 		EtlDatabaseObject dstParent = null;
 
 		if (srcParent != null) {
 			dstParent = transformer.resolveParent(processor, srcParent, srcObject, transformedRecord,
-					additionalSrcObjects, srcConn, dstConn);
+					additionalSrcObjects, reader, writer);
 		}
 
 		if (dstParent == null) {
-			dstParent = transformer.retrieveExistingOnDemandParent(processor, srcObject, additionalSrcObjects, srcConn,
-					dstConn);
+			dstParent = transformer.retrieveExistingOnDemandParent(processor, srcObject, additionalSrcObjects, reader,
+					writer);
 		}
 
 		return dstParent;
@@ -191,9 +193,9 @@ public final class OnDemandParentService {
 			boolean retry = false;
 
 			try {
-				EtlDatabaseObject parent = retrieveOrCreateUsingConnections(transformer, processor, srcParent,
-						srcObject, transformedRecord, additionalSrcObjects, field, connections.srcConn,
-						connections.dstConn);
+				EtlDatabaseObject parent = retrieveOrCreateUsingConnectors(transformer, processor, srcParent,
+						srcObject, transformedRecord, additionalSrcObjects, field, connections.reader(),
+						connections.writer());
 
 				connections.markSuccessful();
 				return parent;
@@ -251,8 +253,8 @@ public final class OnDemandParentService {
 
 		IndependentConnections connections = openIndependentConnections(processor);
 		try {
-			EtlDatabaseObject parent = retrieveUsingConnections(transformer, processor, srcParent, srcObject,
-					transformedRecord, additionalSrcObjects, connections.srcConn, connections.dstConn);
+			EtlDatabaseObject parent = retrieveUsingConnectors(transformer, processor, srcParent, srcObject,
+					transformedRecord, additionalSrcObjects, connections.reader(), connections.writer());
 			connections.markSuccessful();
 			return parent;
 		} finally {
@@ -305,6 +307,14 @@ public final class OnDemandParentService {
 		private IndependentConnections(OpenConnection srcConn, OpenConnection dstConn) {
 			this.srcConn = srcConn;
 			this.dstConn = dstConn;
+		}
+
+		private ConnectorRecordReader<?> reader() {
+			return JdbcConnectorRuntimeAdapters.reader(srcConn);
+		}
+
+		private ConnectorRecordWriter<?> writer() {
+			return JdbcConnectorRuntimeAdapters.writer(dstConn);
 		}
 
 		private void markSuccessful() {
