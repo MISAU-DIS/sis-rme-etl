@@ -69,6 +69,22 @@ class EtlDestinationConfigurationTest {
 	}
 
 	@Test
+	void shouldPreserveJdbcGeneratedAliasWhenResourceAliasIsNotConfigured() throws Exception {
+		EtlDestinationConfiguration destination = read("{"
+				+ "\"resource\":{\"connector\":\"destination-db\",\"name\":\"patient\"},"
+				+ "\"tableDataDestination\":{}"
+				+ "}");
+		destination.initialize(new EtlItemConfiguration());
+		JdbcTableDestinationConfiguration jdbc = destination.requireJdbcTableDestination();
+		jdbc.setTableAlias("patient_automatically_resolved");
+		destination.setResolvedResource(ConnectorConfigurationResolver.resolveResource(destination.getResource(), null,
+				ConnectorDirection.DESTINATION, new JdbcConnectorEndpoint(new DBConnectionInfo())));
+
+		assertEquals("patient_automatically_resolved", jdbc.getTableAlias());
+		assertEquals("patient_automatically_resolved", destination.getAlias());
+	}
+
+	@Test
 	void shouldInferJsonAndCsvWithoutDependingOnConnectorType() throws Exception {
 		EtlDestinationConfiguration json = read("{"
 				+ "\"resource\":{\"connector\":\"output\",\"name\":\"patients.json\"},"
