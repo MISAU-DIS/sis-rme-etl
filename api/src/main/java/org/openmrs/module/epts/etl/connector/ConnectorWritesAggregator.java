@@ -11,12 +11,12 @@ import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 /** Writers resolved for one ETL execution, indexed by their destination resource. */
-public final class ConnectorRecordWriters {
+public final class ConnectorWritesAggregator {
 
 	private final Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers;
 	private final Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration;
 
-	public ConnectorRecordWriters(
+	public ConnectorWritesAggregator(
 			Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers,
 			Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration) {
 		this.writers = Collections.unmodifiableMap(new IdentityHashMap<>(writers));

@@ -35,7 +35,6 @@ import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifition
 import org.openmrs.module.epts.etl.exceptions.RequireJdbcException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
@@ -59,9 +58,6 @@ public class DstConf extends AbstractTableConfiguration
 	private List<FieldsMapping> mapping;
 
 	private DBConnectionInfo relatedConnInfo;
-
-	@JsonIgnore
-	private transient volatile IdGeneratorManager idGeneratorManager;
 
 	private List<String> preferredDataSource;
 
@@ -662,7 +658,6 @@ public class DstConf extends AbstractTableConfiguration
 		this.mappingResolutionStrategy = mappingResolutionStrategy;
 	}
 
-
 	public DBConnectionInfo getRelatedConnInfo() {
 		return relatedConnInfo != null ? this.relatedConnInfo : getRelatedEtlConf().getDstConnInfo();
 	}
@@ -707,8 +702,6 @@ public class DstConf extends AbstractTableConfiguration
 		} else {
 
 			try {
-				this.idGeneratorManager = null;
-
 				this.setFieldsLoaded(true);
 
 				loadDataSourceInfo(conn);
@@ -820,8 +813,6 @@ public class DstConf extends AbstractTableConfiguration
 		if (hasIncompleteMappingBehavior()) {
 			this.getIncompleteMappingBehavior().validateOnIncompleteMapping("incompleteMappingBehavior");
 		}
-
-		this.idGeneratorManager = null;
 
 		this.loadJoinFields(conn);
 
@@ -1055,10 +1046,6 @@ public class DstConf extends AbstractTableConfiguration
 		return this.getParentConf().getPrimaryDataSource();
 	}
 
-	public long retrieveNextRecordId(Connection conn) throws DBException, ForbiddenOperationException {
-		return getOrInitializeIdGenerator(conn).retrieveNextIdForRecord();
-	}
-
 	@Override
 	public void setParentConf(EtlDataConfiguration parent) {
 		super.setParentConf((EtlItemConfiguration) parent);
@@ -1067,35 +1054,6 @@ public class DstConf extends AbstractTableConfiguration
 	@Override
 	public EtlItemConfiguration getParentConf() {
 		return (EtlItemConfiguration) super.getParentConf();
-	}
-
-	private IdGeneratorManager getOrInitializeIdGenerator(Connection conn) throws DBException {
-		IdGeneratorManager generator = idGeneratorManager;
-
-		if (generator == null) {
-
-			synchronized (this) {
-				generator = idGeneratorManager;
-
-				if (generator == null) {
-					generator = new IdGeneratorManager(this, determineLastGeneratedId(conn));
-					idGeneratorManager = generator;
-				}
-			}
-		}
-
-		return generator;
-	}
-
-	private long determineLastGeneratedId(Connection conn) throws DBException {
-		long lastGeneratedId = isInMemoryTable() ? 0 : DatabaseObjectDAO.getLastRecord(this, conn);
-
-		if (lastGeneratedId == 0) {
-			Integer initialValue = getPrimaryKeyInitialIncrementValue();
-			return initialValue != null ? initialValue - 1L : 0;
-		}
-
-		return lastGeneratedId;
 	}
 
 	/**

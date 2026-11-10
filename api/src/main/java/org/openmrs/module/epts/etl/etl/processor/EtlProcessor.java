@@ -19,7 +19,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -41,6 +41,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.ConnectionKeepAlive;
 import org.openmrs.module.epts.etl.utilities.db.conn.ConnectionKeepAliveManager;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
@@ -52,7 +53,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	@Override
 	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 
 		try {
 			performTransformation(getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, readers, writers);
@@ -69,13 +70,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	@Override
 	public void transform(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 
 		performTransformation(getEtlItemConfiguration(), etlObjects, null, LoadingType.PRINCIPAL, readers, writers);
 	}
 
 	@Override
-	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws DBException {
 
 		performLoading(getEtlItemConfiguration(), etlObjects, LoadingType.PRINCIPAL, readers, writers);
@@ -92,7 +93,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	public EtlLoadHelper performTransformationAndLoading(EtlItemConfiguration etlItemConf,
 			List<EtlDatabaseObject> etlObjects, EtlDatabaseObject parentMigratedRec, LoadingType loadingType,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers) throws DBException {
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers) throws DBException {
 
 		this.performTransformation(etlItemConf, etlObjects, parentMigratedRec, loadingType, readers, writers);
 
@@ -101,10 +102,12 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	EtlLoadHelper performTransformationAndLoadingJdbc(EtlItemConfiguration etlItemConf,
 			List<EtlDatabaseObject> etlObjects, EtlDatabaseObject parentMigratedRec, LoadingType loadingType,
-			Connection srcConn, Connection dstConn) throws DBException {
+			ConnectorRecordReader<EtlDatabaseObject> srcConn, ConnectorRecordWriter<EtlDatabaseObject> dstConn)
+			throws DBException {
 
-		ConnectorRecordWriters writers = JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn);
+		ConnectorWritesAggregator writers = JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn);
 		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(JdbcConnectorRuntimeAdapters.reader(srcConn));
+
 		this.performTransformation(etlItemConf, etlObjects, parentMigratedRec, loadingType, readers, writers);
 
 		return performLoading(etlItemConf, etlObjects, loadingType, readers, writers);
@@ -112,7 +115,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	private void performTransformation(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 
 		PrimaryDataSourceConfiguration primarySource = etlItemConf.getPrimaryDataSource();
 		Connection srcConn = findPrimaryJdbcConnection(etlItemConf, readers);
@@ -221,7 +224,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		this.debug("Finished transformation of {} {}", etlObjects.size(), primarySource.getAlias());
 	}
 
-	private List<ConnectionKeepAlive> registerDestinationKeepAlives(ConnectorRecordWriters writers) {
+	private List<ConnectionKeepAlive> registerDestinationKeepAlives(ConnectorWritesAggregator writers) {
 		List<ConnectionKeepAlive> keepAlives = new ArrayList<>();
 
 		for (Connection connection : writers.unwrapAll(Connection.class)) {
@@ -237,7 +240,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 	}
 
-	private Connection destinationConnection(ConnectorRecordWriters writers, EtlDestinationConfiguration destination) {
+	private Connection destinationConnection(ConnectorWritesAggregator writers, EtlDestinationConfiguration destination) {
 
 		try {
 			return writers.get(destination).unwrap(Connection.class);
@@ -246,13 +249,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 	}
 
-	private Connection firstJdbcDestinationConnection(ConnectorRecordWriters writers) {
+	private Connection firstJdbcDestinationConnection(ConnectorWritesAggregator writers) {
 		List<Connection> connections = writers.unwrapAll(Connection.class);
 		return connections.isEmpty() ? null : connections.get(0);
 	}
 
 	private EtlLoadHelper performLoading(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-			LoadingType loadingType, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+			LoadingType loadingType, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws DBException, ParentNotYetMigratedException {
 		EtlLoadHelper loadHelper = null;
 
@@ -430,7 +433,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf, EtlLoadHelper loadHelper,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers) throws DBException {
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers) throws DBException {
 
 		tryToPerfomeEtlOnChild(itemConf,
 				childItemConf -> loadHelper.getAllSuccedTransformedObjects(childItemConf.getRelatedParentDstConf()),
@@ -439,7 +442,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration itemConf,
 			Function<EtlChildItemConfiguration, List<EtlDatabaseObject>> objectsProvider,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers) throws DBException {
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers) throws DBException {
 
 		if (!itemConf.hasChildItemConf()) {
 			return;
@@ -463,13 +466,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void tryToPerfomeEtlOnChild(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers) throws DBException {
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers) throws DBException {
 
 		tryToPerfomeEtlOnChild(etlItemConf, childItemConf -> etlObjects, readers, writers);
 	}
 
 	private void performeEtlOnChildItem(EtlChildItemConfiguration itemConf, EtlDatabaseObject transformedParent,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers) throws DBException {
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers) throws DBException {
 
 		ConnectorRecordReader<?> childPrimaryReader = findPrimaryReader(itemConf, readers);
 		Connection parentDstConn = transformedParent.getRelatedConfiguration() instanceof DstConf
@@ -527,7 +530,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private ConnectorRecordWriter<?> firstDestinationWriter(EtlItemConfiguration itemConf,
-			ConnectorRecordWriters writers) {
+			ConnectorWritesAggregator writers) {
 
 		if (itemConf.getDestinations() == null) {
 			return null;
@@ -567,7 +570,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void applyAfterEtlAction(EtlDatabaseObject obj, EtlActionType action, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 		Connection srcConn = requirePrimaryJdbcConnection(readers, "applying after-ETL action " + action);
 		Connection dstConn = firstJdbcDestinationConnection(writers);
 

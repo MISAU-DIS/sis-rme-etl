@@ -15,7 +15,7 @@ import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.ResourceBoundConnectorRecordReader;
@@ -121,7 +121,7 @@ class ChildConnectorScopeTest {
 		@SuppressWarnings("unchecked")
 		public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
 				AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
-				ConnectorRecordWriters writers) throws DBException {
+				ConnectorWritesAggregator writers) throws DBException {
 			return (ConnectorRecordReader<T>) new ResourceBoundConnectorRecordReader<EtlDatabaseObject>(
 					getResolvedSrcResource(), primaryConnection);
 		}

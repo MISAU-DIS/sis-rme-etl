@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
@@ -19,7 +19,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 	protected abstract <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> extractedRecords, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws Exception;
 
 	@Override
@@ -43,7 +43,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 		boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-		ConnectorRecordWriters writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
+		ConnectorWritesAggregator writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
 		ConnectorRecordReaders readers = engine.getEtlItemConfiguration().createSourceReaders(engine.getSearchParams(),
 				engine, writers);
 		ConnectorRecordReader<T> reader = engine.primaryReader(readers);
@@ -76,7 +76,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 	}
 
 	private void persistCompletedInterval(Engine<?> engine, IntervalExtremeRecord interval, OpenConnection srcConn,
-			List<OpenConnection> dstConnections, ConnectorRecordReaders readers, ConnectorRecordWriters writers,
+			List<OpenConnection> dstConnections, ConnectorRecordReaders readers, ConnectorWritesAggregator writers,
 			boolean persistWork) throws Exception {
 
 		if (persistWork) {

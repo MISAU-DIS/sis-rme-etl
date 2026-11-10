@@ -20,7 +20,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.OperationController;
@@ -168,17 +168,17 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	/** Creates the writer scope appropriate for this processor. */
-	public ConnectorRecordWriters createRecordWriters() throws DBException {
+	public ConnectorWritesAggregator createRecordWriters() throws DBException {
 		return getEtlItemConfiguration().createDestinationWriters(getEngine());
 	}
 
 	/** Creates the reader appropriate for this processor. */
-	public ConnectorRecordReader<T> createRecordReader(ConnectorRecordWriters writers) throws DBException {
+	public ConnectorRecordReader<T> createRecordReader(ConnectorWritesAggregator writers) throws DBException {
 		return getEtlItemConfiguration().createSourceReader(getSearchParams(), getEngine(), writers);
 	}
 
 	/** Creates and attaches the complete reader scope for this processor. */
-	public ConnectorRecordReaders createRecordReaders(ConnectorRecordWriters writers) throws DBException {
+	public ConnectorRecordReaders createRecordReaders(ConnectorWritesAggregator writers) throws DBException {
 		ConnectorRecordReaders readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(), getEngine(),
 				writers);
 		setRecordReaders(readers);
@@ -203,7 +203,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 		ConnectorRecordReader<T> reader = readers.getPrimary();
 
 		if (this.getRelatedEtlOperationConfig().isDisableMultithreadingSearch()
@@ -245,7 +245,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	 * result-partitioning strategies, where extraction must happen exactly once.
 	 */
 	public void transformAndLoadExtractedRecords(List<T> records, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 
 		prepareExtractedRecords(records, writers);
 
@@ -267,7 +267,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	/** Prepares and transforms records already extracted by the engine. */
 	@SuppressWarnings("unchecked")
 	public void transformExtractedRecords(List<T> records, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 
 		prepareExtractedRecords(records, writers);
 
@@ -276,7 +276,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 
 	/** Loads records previously transformed by one or more processors. */
 	@SuppressWarnings("unchecked")
-	public void loadTransformedRecords(List<T> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+	public void loadTransformedRecords(List<T> records, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws DBException {
 
 		getTaskResultInfo().setProcessedRecords((List<EtlDatabaseObject>) (List<?>) records);
@@ -284,23 +284,23 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		load((List<EtlDatabaseObject>) (List<?>) records, readers, writers);
 	}
 
-	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws DBException {
 		throw new ForbiddenOperationException("This processor does not support an independent load phase");
 	}
 
-	public void transformAndLoad(List<T> records, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+	public void transformAndLoad(List<T> records, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws DBException {
 		throw new ForbiddenOperationException("This processor does not support transform and load");
 	}
 
 	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 
 		throw new ForbiddenOperationException("This processor does not support an independent transform phase");
 	}
 
-	private void prepareExtractedRecords(List<T> records, ConnectorRecordWriters writers) throws DBException {
+	private void prepareExtractedRecords(List<T> records, ConnectorWritesAggregator writers) throws DBException {
 
 		if (!utilities.listHasElement(records)) {
 			return;
@@ -311,7 +311,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		getTaskResultInfo().addProcessedRecords(records);
 	}
 
-	private void performeDelete(List<T> records, ConnectorRecordWriters writers) throws DBException {
+	private void performeDelete(List<T> records, ConnectorWritesAggregator writers) throws DBException {
 		logDebug("Starting the deletion of " + records.size() + " " + getJdbcPrimaryDataSource().getTableName()
 				+ " on db...");
 

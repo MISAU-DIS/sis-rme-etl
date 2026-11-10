@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.IdGeneratorManager;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
@@ -39,6 +40,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
@@ -90,6 +92,8 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	private Boolean mustLoadChildrenInfo;
 	private Boolean fieldsMappingAlreadyGenerated;
 
+	private Integer primaryKeyInitialIncrementValue;
+
 	@JsonIgnore
 	private transient Class<? extends EtlDatabaseObject> etlRecordClass;
 
@@ -113,6 +117,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@JsonIgnore
 	private transient ConnectorResource resolvedResource;
+
+	@JsonIgnore
+	private transient volatile IdGeneratorManager idGeneratorManager;
 
 	@JsonIgnore
 	private transient EtlItemConfiguration parentItem;
@@ -718,6 +725,8 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 			synchronizePhysicalFields(physical);
 			synchronizePhysicalPrimaryKey(physical);
 		}
+
+		this.idGeneratorManager = null;
 
 		loadTransformationElements(null);
 		fullLoaded = Boolean.TRUE;
@@ -1469,6 +1478,14 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 				+ "]";
 	}
 
+	public Integer getPrimaryKeyInitialIncrementValue() {
+		return primaryKeyInitialIncrementValue;
+	}
+
+	public void setPrimaryKeyInitialIncrementValue(Integer primaryKeyInitialIncrementValue) {
+		this.primaryKeyInitialIncrementValue = primaryKeyInitialIncrementValue;
+	}
+
 	@JsonIgnore
 	public boolean useSharedPKKey() {
 		return this.isJdbcDestination() && this.getTableDataDestination().useSharedPKKey();
@@ -1476,5 +1493,44 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	public boolean isJdbcDestination() {
 		return this.getTableDataDestination() != null;
+	}
+
+	public boolean useManualGeneratedObjectId() {
+		return this.isJdbcDestination() && this.getTableDataDestination().useManualGeneratedObjectId();
+	}
+
+	public long retrieveNextRecordId(Connection conn) throws DBException, ForbiddenOperationException {
+		return getOrInitializeIdGenerator(conn).retrieveNextIdForRecord();
+	}
+
+	private IdGeneratorManager getOrInitializeIdGenerator(Connection conn) throws DBException {
+		IdGeneratorManager generator = idGeneratorManager;
+
+		if (generator == null) {
+
+			synchronized (this) {
+				generator = idGeneratorManager;
+
+				if (generator == null) {
+					generator = new IdGeneratorManager(this, determineLastGeneratedId(conn));
+					idGeneratorManager = generator;
+				}
+			}
+		}
+
+		return generator;
+	}
+
+	private long determineLastGeneratedId(Connection conn) throws DBException {
+		long lastGeneratedId = isJdbcDestination()
+				? DatabaseObjectDAO.getLastRecord(this.getTableDataDestination(), conn)
+				: 0;
+
+		if (lastGeneratedId == 0) {
+			Integer initialValue = getPrimaryKeyInitialIncrementValue();
+			return initialValue != null ? initialValue - 1L : 0;
+		}
+
+		return lastGeneratedId;
 	}
 }

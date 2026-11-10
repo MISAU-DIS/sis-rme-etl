@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -20,7 +20,7 @@ public abstract class JdbcEtlProcessor extends EtlProcessor {
 
 	@Override
 	public void transformAndLoad(List<EtlDatabaseObject> records, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 		transformAndLoad(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
 	}
 

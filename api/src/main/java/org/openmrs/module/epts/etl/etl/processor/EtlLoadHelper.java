@@ -17,7 +17,7 @@ import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
@@ -66,8 +66,11 @@ public class EtlLoadHelper {
 		this.dstConf = new ArrayList<>();
 
 		for (EtlDatabaseObject obj : srcObjects) {
+
 			if (obj.hasDestinationRecords()) {
+
 				for (EtlDatabaseObject dst : obj.getDestinationObjects()) {
+
 					if (!this.dstConf.contains(dst.getRelatedConfiguration())) {
 						this.dstConf.add((DstConf) dst.getRelatedConfiguration());
 					}
@@ -109,13 +112,15 @@ public class EtlLoadHelper {
 		return srcObjects;
 	}
 
-	public void load(ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+	public void load(ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 
-		Connection srcConn = readers.getPrimary().unwrap(Connection.class);
+		Connection srcConn = readers.getEtlSrcConn();
 
 		if (this.hasDstConf()) {
+
 			for (DstConf dst : this.getDstConf()) {
+
 				try {
 					load(dst, srcConn, writers);
 				} catch (Exception e) {
@@ -156,8 +161,7 @@ public class EtlLoadHelper {
 		if (writeOperation) {
 			logInfo("Registering StageArea persistence within {}", generateAvaliableEtl());
 
-			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn,
-					null);
+			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn, null);
 
 			logDebug("StageArea persistence registered!");
 		}
@@ -179,6 +183,7 @@ public class EtlLoadHelper {
 			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
 
 			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
+
 				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
 					logWarn("\n\t-> {} \n\t\t-> While processing record {} \n\t\t\t-> The issue will be logged!",
 							((EtlExceptionImpl) dstObject.getEtlInfo().getExceptionOnEtl()).getSuperLocalizedMessage(),
@@ -202,6 +207,7 @@ public class EtlLoadHelper {
 		DBException dbException = null;
 
 		while (cause != null) {
+
 			if (cause instanceof DBException) {
 				dbException = (DBException) cause;
 
@@ -222,12 +228,12 @@ public class EtlLoadHelper {
 		}
 	}
 
-	private void load(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
+	private void load(DstConf dstConf, Connection srcConn, ConnectorWritesAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 		loadToConnector(dstConf, srcConn, writers);
 	}
 
-	private void loadToConnector(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
+	private void loadToConnector(DstConf dstConf, Connection srcConn, ConnectorWritesAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 
 		if (writers.getResource(dstConf).getEndpoint().getType() == ConnectorType.JDBC) {
@@ -249,7 +255,7 @@ public class EtlLoadHelper {
 		writeToConnector(dstConf, writers);
 	}
 
-	private void writeToConnector(DstConf dstConf, ConnectorRecordWriters writers) throws DBException {
+	private void writeToConnector(DstConf dstConf, ConnectorWritesAggregator writers) throws DBException {
 		List<EtlDatabaseObject> records = getAllTransformedObjects(dstConf);
 
 		for (EtlDatabaseObject record : records) {
@@ -270,7 +276,7 @@ public class EtlLoadHelper {
 				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn));
 	}
 
-	private void loadToDb(DstConf dstConf, Connection srcConn, ConnectorRecordWriters writers)
+	private void loadToDb(DstConf dstConf, Connection srcConn, ConnectorWritesAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 		Connection dstConn = writers.unwrap(writers.getResource(dstConf), Connection.class);
 
@@ -298,6 +304,7 @@ public class EtlLoadHelper {
 			throws ParentNotYetMigratedException, DBException {
 
 		if (getActionType().isCreate() || getActionType().isUpdate()) {
+
 			for (EtlDatabaseObject loadRec : this.getAllReadyTransformedObjects(dstConf)) {
 
 				if (loadRec.getEtlInfo().hasParentsWithDefaultValues()) {
@@ -320,13 +327,16 @@ public class EtlLoadHelper {
 	}
 
 	void tryToAddToResult(EtlOperationItemResult<EtlDatabaseObject> resultItem) {
+
 		if (isPrincipalLoading()) {
 			getProcessor().getTaskResultInfo().addOrUpdate(resultItem);
 		}
 	}
 
 	void loadAndAddResult(EtlOperationResultHeader<EtlDatabaseObject> result, DstConf dstConf) {
+
 		if (isPrincipalLoading()) {
+
 			if (result != null) {
 				getProcessor().getTaskResultInfo().addAllFromOtherResult(result);
 			}
@@ -340,7 +350,7 @@ public class EtlLoadHelper {
 	 * @throws DBException
 	 * @throws ForbiddenOperationException
 	 */
-	public void onLoadToDb(DstConf dstConf, ConnectorRecordWriters writers)
+	public void onLoadToDb(DstConf dstConf, ConnectorWritesAggregator writers)
 			throws DBException, ForbiddenOperationException {
 
 		List<EtlDatabaseObject> objects = getAllReadyTransformedObjects(dstConf);
@@ -360,6 +370,7 @@ public class EtlLoadHelper {
 					|| dstConf.executePatchUpdateOnIdentifiedRecordAction()) {
 
 				for (EtlDatabaseObject obj : objects) {
+
 					if (obj.hasValuedObjectId()) {
 
 						if (obj.hasSharedPkObj()) {
@@ -621,6 +632,7 @@ public class EtlLoadHelper {
 		EtlInfo parent = srcObject.getEtlInfo();
 
 		while (parent != null) {
+
 			if (tree.isEmpty()) {
 				tree = parent.getTransformedObject().toString();
 			} else {
@@ -640,22 +652,12 @@ public class EtlLoadHelper {
 	}
 
 	public static EtlLoadHelper fastLoadRecord(EtlProcessor processor, EtlDatabaseObject srcRecord, DstConf dstConf,
-			TransformationType transformationType, Connection srcConn, Connection dstConn)
-			throws ParentNotYetMigratedException, DBException {
-
-		EtlItemConfiguration conf = dstConf.getParentConf();
-
-		return processor.performTransformationAndLoadingJdbc(conf, utilities.parseToList(srcRecord), null,
-				LoadingType.PARENT, srcConn, dstConn);
-	}
-
-	public static EtlLoadHelper fastLoadRecord(EtlProcessor processor, EtlDatabaseObject srcRecord, DstConf dstConf,
 			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws ParentNotYetMigratedException, DBException {
 
 		EtlItemConfiguration conf = dstConf.getParentConf();
 		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(reader);
-		ConnectorRecordWriters writers = org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters
+		ConnectorWritesAggregator writers = org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters
 				.writers(conf, writer.unwrap(Connection.class));
 
 		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,

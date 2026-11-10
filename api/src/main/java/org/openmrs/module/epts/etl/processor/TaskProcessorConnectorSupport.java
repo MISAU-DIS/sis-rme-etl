@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
@@ -21,7 +21,7 @@ final class TaskProcessorConnectorSupport {
 	}
 
 	static <T extends EtlDatabaseObject> void initializeIdGenerators(TaskProcessor<T> processor, List<T> records,
-			ConnectorRecordWriters writers, Consumer<org.openmrs.module.epts.etl.conf.IdGeneratorManager> collector)
+			ConnectorWritesAggregator writers, Consumer<org.openmrs.module.epts.etl.conf.IdGeneratorManager> collector)
 			throws DBException {
 
 		for (DstConf destination : processor.getEtlItemConfiguration().getJdbcDestinations()) {
@@ -35,7 +35,7 @@ final class TaskProcessorConnectorSupport {
 
 	@SuppressWarnings("unchecked")
 	static <T extends EtlDatabaseObject> EtlOperationResultHeader<T> delete(TaskProcessor<T> processor, List<T> records,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 		Connection connection = writers.unwrapShared(Connection.class);
 
 		return (EtlOperationResultHeader<T>) DatabaseObjectDAO.deleteAll((List<EtlDatabaseObject>) records,

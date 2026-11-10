@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.conf;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -13,14 +14,14 @@ public class IdGeneratorManager extends AbstractEtlDataConfiguration {
 
 	private final AtomicLong lastGeneratedId;
 
-	private final DstConf dstConf;
+	private final EtlDestinationConfiguration dstConf;
 
-	IdGeneratorManager(DstConf dstConf, long lastGeneratedId) {
+	public IdGeneratorManager(EtlDestinationConfiguration dstConf, long lastGeneratedId) {
 		this.dstConf = dstConf;
 		this.lastGeneratedId = new AtomicLong(lastGeneratedId);
 	}
 
-	public DstConf getDstConf() {
+	public EtlDestinationConfiguration getDstConf() {
 		return dstConf;
 	}
 

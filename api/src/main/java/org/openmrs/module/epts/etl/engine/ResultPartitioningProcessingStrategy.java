@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
@@ -20,7 +20,7 @@ public class ResultPartitioningProcessingStrategy extends AbstractResultPartitio
 	@Override
 	protected <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> records, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws Exception {
 
 		boolean sharedConnections = engine.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();

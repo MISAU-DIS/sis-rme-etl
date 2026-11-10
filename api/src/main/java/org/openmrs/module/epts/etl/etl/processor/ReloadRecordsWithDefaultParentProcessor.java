@@ -11,7 +11,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -75,7 +75,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 
 	@Override
 	public void transformAndLoad(List<EtlDatabaseObject> etlObjects, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws DBException {
+			ConnectorWritesAggregator writers) throws DBException {
 
 		Connection srcConn = readers.getPrimary().unwrap(Connection.class);
 		Connection dstConn = writers.unwrapShared(Connection.class);
@@ -105,7 +105,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 	}
 
 	private EtlDatabaseObject reloadDefaultsParents(PrimaryDataSourceConfiguration primarySource,
-			EtlDatabaseObject etlObj, ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+			EtlDatabaseObject etlObj, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws DBException, ForbiddenOperationException {
 
 		ConnectorRecordReader<EtlDatabaseObject> reader = null;

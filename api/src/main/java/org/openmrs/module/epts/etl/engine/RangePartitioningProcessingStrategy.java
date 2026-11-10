@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
@@ -35,7 +35,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 
 		List<CompletableFuture<Void>> tasks = new ArrayList<>(intervals.size());
 
-		ConnectorRecordWriters sharedWriters = engine.getEtlItemConfiguration().createDestinationWriters(engine);
+		ConnectorWritesAggregator sharedWriters = engine.getEtlItemConfiguration().createDestinationWriters(engine);
 		ConnectorRecordReaders sharedReaders = engine.getEtlItemConfiguration().createSourceReaders(
 				engine.getSearchParams(), engine, sharedWriters);
 		ConnectorRecordReader<T> sharedReader = engine.primaryReader(sharedReaders);
@@ -98,7 +98,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 	}
 
 	private void persistPendingData(Engine<?> engine, boolean sharedConnections, ConnectorRecordReaders readers,
-			ConnectorRecordWriters writers) throws Exception {
+			ConnectorWritesAggregator writers) throws Exception {
 		if (engine.getRelatedEtlConf().hasTestingItem()) {
 			engine.discardPendingPersistence();
 		} else if (sharedConnections) {

@@ -25,7 +25,7 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriters;
+import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
@@ -131,18 +131,18 @@ public class DatabaseModelGenerationProcessor
 	}
 
 	@Override
-	public ConnectorRecordWriters createRecordWriters() throws DBException {
+	public ConnectorWritesAggregator createRecordWriters() throws DBException {
 		return getEtlItemConfiguration().createEtlDatabaseWriters(getEngine());
 	}
 
 	@Override
-	public ConnectorRecordReader<DatabaseModelGenerationRecord> createRecordReader(ConnectorRecordWriters writers)
+	public ConnectorRecordReader<DatabaseModelGenerationRecord> createRecordReader(ConnectorWritesAggregator writers)
 			throws DBException {
 		return getEtlItemConfiguration().createEtlDatabaseReader(getSearchParams(), getEngine(), writers);
 	}
 
 	@Override
-	public ConnectorRecordReaders createRecordReaders(ConnectorRecordWriters writers) throws DBException {
+	public ConnectorRecordReaders createRecordReaders(ConnectorWritesAggregator writers) throws DBException {
 		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(createRecordReader(writers));
 		setRecordReaders(readers);
 		return readers;
@@ -150,7 +150,7 @@ public class DatabaseModelGenerationProcessor
 
 	@Override
 	public void extractTransformAndLoad(boolean useMultiThreadSearch,
-			ConnectorRecordReaders readers, ConnectorRecordWriters writers)
+			ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
 			throws DBException {
 		this.getSearchParams().setProcessor(this);
 
