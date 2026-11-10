@@ -14,21 +14,20 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.DestinationDataConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
-import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.dbquickmerge.model.ParentInfo;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
-import org.openmrs.module.epts.etl.etl.processor.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
-import org.openmrs.module.epts.etl.etl.processor.transformer.TransformationType;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
@@ -194,87 +193,80 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	public void reloadParentsWithDefaultValues(Connection srcConn, Connection dstConn)
 			throws ParentNotYetMigratedException, DBException {
 
-		for (ParentInfo parentInfo : this.getParentsWithDefaultValues()) {
+		throw new ForbiddenOperationException("Rever este metodo");
 
-			List<EtlDatabaseObject> recursive = retriveRecursiveRelationship(parentInfo.getParentTableConfInDst(),
-					srcConn, dstConn);
-
-			if (utilities.listHasElement(recursive)) {
-				getProcessor().logDebug("Recursive relationship found reloading parents for record "
-						+ this.getTransformedObject() + " with parent: " + recursive);
-
-				DatabaseObjectDAO.insert(recursive, srcConn);
-			} else {
-				List<PrimaryDataSourceConfiguration> availableSourcesForCurrentParent = parentInfo
-						.getParentTableConfInDst()
-						.findRelatedPrimaryDataSourcesWithMatchingDestination(getEtlOperationConfig());
-
-				if (utilities.listHasNoElement(availableSourcesForCurrentParent)) {
-					throw new ForbiddenOperationException(
-							"There are relashioship which cannot auto resolved as there is no configured etl for "
-									+ parentInfo.getParentTableConfInDst().getTableName()
-									+ " as source and destination!");
-				}
-
-				EtlDatabaseObject dstParent = null;
-				EtlDatabaseObject recordAsSrc = null;
-
-				for (PrimaryDataSourceConfiguration source : availableSourcesForCurrentParent) {
-					DstConf dst = source.getParentItemConfiguration().findJdbcDestination(getEtlOperationConfig(),
-							parentInfo.getParentTableConfInDst().getTableName());
-
-					recordAsSrc = source.newInstance();
-					recordAsSrc.setRelatedConfiguration(source);
-
-					recordAsSrc.copyFrom(parentInfo.getParentRecordInOrigin());
-
-					dstParent = dst.getTransformerInstance().transform(this.getProcessor(), recordAsSrc, dst, null,
-							TransformationType.INNER, JdbcConnectorRuntimeAdapters.reader(srcConn),
-							JdbcConnectorRuntimeAdapters.writer(dstConn));
-
-					if (dstParent != null) {
-						DBException exception = null;
-
-						try {
-							recordAsSrc.getEtlInfo().setParentEtlInfo(this);
-
-							EtlLoadHelper.performeParentLoading(recordAsSrc, srcConn, dstConn);
-						} catch (DBException e) {
-							exception = e;
-
-							if (!exception.isIntegrityConstraintViolationException()) {
-								this.getResultItem().setException(exception);
-							}
-						} finally {
-
-							if (recordAsSrc.getEtlInfo().getResultItem().hasInconsistences()
-									|| exception != null && exception.isIntegrityConstraintViolationException()) {
-
-								getProcessor().logDebug(
-										"The parent for default for parent [" + parentInfo.getParentRecordInOrigin()
-												+ "] could not be loaded. The dstRecord [");
-
-								this.getResultItem()
-										.addInconsistence(InconsistenceInfo.generate(getTransformedObject(),
-												parentInfo.getParentTableConfInDst(),
-												this.getDstConf().getOriginAppLocationCode()));
-							}
-						}
-
-						break;
-					}
-
-				}
-
-				try {
-					getTransformedObject().changeParentValue(parentInfo.getParentTableConfInDst(), dstParent);
-				} catch (NullPointerException e) {
-					e.printStackTrace();
-
-					throw e;
-				}
-			}
-		}
+		/*
+		 * for (ParentInfo parentInfo : this.getParentsWithDefaultValues()) {
+		 * 
+		 * List<EtlDatabaseObject> recursive =
+		 * retriveRecursiveRelationship(parentInfo.getParentTableConfInDst(), srcConn,
+		 * dstConn);
+		 * 
+		 * if (utilities.listHasElement(recursive)) { getProcessor().
+		 * logDebug("Recursive relationship found reloading parents for record " +
+		 * this.getTransformedObject() + " with parent: " + recursive);
+		 * 
+		 * DatabaseObjectDAO.insert(recursive, srcConn); } else {
+		 * List<PrimaryDataSourceConfiguration> availableSourcesForCurrentParent =
+		 * parentInfo .getParentTableConfInDst()
+		 * .findRelatedPrimaryDataSourcesWithMatchingDestination(getEtlOperationConfig()
+		 * );
+		 * 
+		 * if (utilities.listHasNoElement(availableSourcesForCurrentParent)) { throw new
+		 * ForbiddenOperationException(
+		 * "There are relashioship which cannot auto resolved as there is no configured etl for "
+		 * + parentInfo.getParentTableConfInDst().getTableName() +
+		 * " as source and destination!"); }
+		 * 
+		 * EtlDatabaseObject dstParent = null; EtlDatabaseObject recordAsSrc = null;
+		 * 
+		 * for (PrimaryDataSourceConfiguration source :
+		 * availableSourcesForCurrentParent) { DstConf dst =
+		 * source.getParentItemConfiguration().findJdbcDestination(getEtlOperationConfig
+		 * (), parentInfo.getParentTableConfInDst().getTableName());
+		 * 
+		 * recordAsSrc = source.newInstance();
+		 * recordAsSrc.setRelatedConfiguration(source);
+		 * 
+		 * recordAsSrc.copyFrom(parentInfo.getParentRecordInOrigin());
+		 * 
+		 * dstParent = dst.getTransformerInstance().transform(this.getProcessor(),
+		 * recordAsSrc, dst, null, TransformationType.INNER,
+		 * JdbcConnectorRuntimeAdapters.reader(srcConn),
+		 * JdbcConnectorRuntimeAdapters.writer(dstConn));
+		 * 
+		 * if (dstParent != null) { DBException exception = null;
+		 * 
+		 * try { recordAsSrc.getEtlInfo().setParentEtlInfo(this);
+		 * 
+		 * EtlLoadHelper.performeParentLoading(recordAsSrc, srcConn, dstConn); } catch
+		 * (DBException e) { exception = e;
+		 * 
+		 * if (!exception.isIntegrityConstraintViolationException()) {
+		 * this.getResultItem().setException(exception); } } finally {
+		 * 
+		 * if (recordAsSrc.getEtlInfo().getResultItem().hasInconsistences() || exception
+		 * != null && exception.isIntegrityConstraintViolationException()) {
+		 * 
+		 * getProcessor().logDebug( "The parent for default for parent [" +
+		 * parentInfo.getParentRecordInOrigin() +
+		 * "] could not be loaded. The dstRecord [");
+		 * 
+		 * this.getResultItem()
+		 * .addInconsistence(InconsistenceInfo.generate(getTransformedObject(),
+		 * parentInfo.getParentTableConfInDst(),
+		 * this.getDstConf().getOriginAppLocationCode())); } }
+		 * 
+		 * break; }
+		 * 
+		 * }
+		 * 
+		 * try {
+		 * getTransformedObject().changeParentValue(parentInfo.getParentTableConfInDst()
+		 * , dstParent); } catch (NullPointerException e) { e.printStackTrace();
+		 * 
+		 * throw e; } } }
+		 */
 	}
 
 	public void loadDstParentInfo(Connection srcConn, Connection dstConn)
@@ -357,6 +349,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 					} else {
 
 						try {
+
 							if (refInfo.hasDefaultValueDueInconsistency()) {
 
 								Oid key = refInfo.generateParentOidFromChild(getTransformedObject());
@@ -416,7 +409,9 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	 *         parent is not conditional
 	 */
 	private boolean checkIfParentMustBeLoaded(ParentTable refInfo) {
+
 		if (refInfo.hasConditionalFields()) {
+
 			if (refInfo.hasMoreThanOneConditionalFields()) {
 				throw new ForbiddenOperationException("Currently not supported multiple conditional fields");
 			}
@@ -470,6 +465,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	 * @throws DBException
 	 */
 	private void performeParentInfoInitialization(Connection dstConn, ParentTable refInfo) throws DBException {
+
 		if (!refInfo.isFullLoaded()) {
 			refInfo.tryToGenerateTableAlias(this.getEtlConfiguration());
 
@@ -523,6 +519,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 	public List<EtlDatabaseObject> retriveRecursiveRelationship(ParentTable refInfo, Connection srcConn,
 			Connection dstConn) throws DBException {
+
 		if (!utilities.listHasElement(getDstConf().getParentRefInfo())) {
 			return null;
 		}
@@ -561,6 +558,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		}
 
 		if (parent == null) {
+
 			if (!refInfo.isFullLoaded()) {
 				refInfo.fullLoad(dstConn);
 			}
@@ -610,6 +608,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 	public List<EtlDatabaseObject> retriveRecursiveRelationship(Connection srcConn, Connection dstConn)
 			throws DBException {
+
 		if (!utilities.listHasElement(getDstConf().getParentRefInfo())) {
 			return null;
 		}
@@ -628,6 +627,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	}
 
 	public void saveRecordsWithDefaultsParents(Connection srcConn, Connection dstConn) throws DBException {
+
 		for (ParentInfo parentInfo : this.getParentsWithDefaultValues()) {
 			RecordWithDefaultParentInfo defaultParentInfo = RecordWithDefaultParentInfo.init(this.getRelatedSrcObject(),
 					this.getTransformedObject(), parentInfo.getParentRecordInOrigin(),
@@ -667,6 +667,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 	@Override
 	public boolean equals(Object obj) {
+
 		if (!(obj instanceof EtlInfo)) {
 			return false;
 		}
@@ -790,7 +791,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 		EtlInfo inf = new EtlInfo(srcObj, dstObj, etlProcessor);
 
-		DstConf dstConf = (DstConf) dstObj.getRelatedConfiguration();
+		EtlDestinationConfiguration dstConf = ((DestinationDataConfiguration) dstObj.getRelatedConfiguration())
+				.getParentDestination();
 
 		for (Field f : dstObj.getFields()) {
 

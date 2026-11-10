@@ -23,9 +23,9 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.databasemodelgeneration.controller.DatabaseModelGenerationController;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
@@ -131,27 +131,28 @@ public class DatabaseModelGenerationProcessor
 	}
 
 	@Override
-	public ConnectorWritesAggregator createRecordWriters() throws DBException {
+	public ConnectorRecordWritersAggregator createRecordWriters() throws DBException {
 		return getEtlItemConfiguration().createEtlDatabaseWriters(getEngine());
 	}
 
 	@Override
-	public ConnectorRecordReader<DatabaseModelGenerationRecord> createRecordReader(ConnectorWritesAggregator writers)
-			throws DBException {
+	public ConnectorRecordReader<DatabaseModelGenerationRecord> createRecordReader(
+			ConnectorRecordWritersAggregator writers) throws DBException {
 		return getEtlItemConfiguration().createEtlDatabaseReader(getSearchParams(), getEngine(), writers);
 	}
 
 	@Override
-	public ConnectorRecordReaders createRecordReaders(ConnectorWritesAggregator writers) throws DBException {
-		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(createRecordReader(writers));
+	public ConnectorRecordReadersAggregator createRecordReaders(ConnectorRecordWritersAggregator writers)
+			throws DBException {
+		ConnectorRecordReadersAggregator readers = ConnectorRecordReadersAggregator
+				.ofPrimary(createRecordReader(writers));
 		setRecordReaders(readers);
 		return readers;
 	}
 
 	@Override
-	public void extractTransformAndLoad(boolean useMultiThreadSearch,
-			ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
-			throws DBException {
+	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 		this.getSearchParams().setProcessor(this);
 
 		super.extractTransformAndLoad(false, readers, writers);
@@ -196,8 +197,8 @@ public class DatabaseModelGenerationProcessor
 
 			if (item.hasDestinations()) {
 
-				for (org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration configuredDestination
-						: item.getDestinations()) {
+				for (org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration configuredDestination : item
+						.getDestinations()) {
 					DstConf destination = configuredDestination.requireJdbcTableDestination();
 
 					if (destination.isDisabled() || !destinationConnections.isJdbc(configuredDestination)) {

@@ -1,17 +1,18 @@
 package org.openmrs.module.epts.etl.connector.jdbc;
 
 import java.sql.Connection;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
+
 import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.capability.writer.AbstractConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /** JDBC destination adapter preserving the current loading operation. */
-public final class JdbcConnectorRecordWriter<T extends EtlDatabaseObject> implements ConnectorRecordWriter<T> {
+public final class JdbcConnectorRecordWriter<T extends EtlDatabaseObject> extends AbstractConnectorRecordWriter<T> {
 
 	private final ConnectorResource resource;
 	private final Connection destinationConnection;
@@ -46,12 +47,16 @@ public final class JdbcConnectorRecordWriter<T extends EtlDatabaseObject> implem
 		switch (request.getMode()) {
 		case INSERT:
 			return DatabaseObjectDAO.load(cast(request), configuration, destinationConnection);
+
 		case UPDATE:
 			return DatabaseObjectDAO.update(cast(request), configuration, destinationConnection);
+
 		case UPDATE_ALL:
 			return DatabaseObjectDAO.updateAll(cast(request), configuration, destinationConnection);
+
 		case DELETE_ALL:
 			return DatabaseObjectDAO.deleteAll(cast(request), configuration, destinationConnection);
+
 		default:
 			throw new IllegalArgumentException("Unsupported JDBC write mode " + request.getMode());
 		}
@@ -64,6 +69,7 @@ public final class JdbcConnectorRecordWriter<T extends EtlDatabaseObject> implem
 
 	@Override
 	public <N> N unwrap(Class<N> nativeType) {
+
 		if (nativeType != null && nativeType.isInstance(destinationConnection)) {
 			return nativeType.cast(destinationConnection);
 		}

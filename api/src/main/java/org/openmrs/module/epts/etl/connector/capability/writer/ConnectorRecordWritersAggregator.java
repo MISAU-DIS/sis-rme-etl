@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.connector;
+package org.openmrs.module.epts.etl.connector.capability.writer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,15 +8,21 @@ import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.aggregator.ConnectorRecordCapabilityProviderAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
-/** Writers resolved for one ETL execution, indexed by their destination resource. */
-public final class ConnectorWritesAggregator {
+/**
+ * Writers resolved for one ETL execution, indexed by their destination
+ * resource.
+ */
+public final class ConnectorRecordWritersAggregator implements ConnectorRecordCapabilityProviderAggregator {
 
 	private final Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers;
 	private final Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration;
 
-	public ConnectorWritesAggregator(
+	public ConnectorRecordWritersAggregator(
 			Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers,
 			Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration) {
 		this.writers = Collections.unmodifiableMap(new IdentityHashMap<>(writers));
@@ -26,6 +32,7 @@ public final class ConnectorWritesAggregator {
 	@SuppressWarnings("unchecked")
 	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(ConnectorResource resource) {
 		ConnectorRecordWriter<?> writer = writers.get(resource);
+
 		if (writer == null) {
 			throw new IllegalArgumentException("No writer registered for destination resource " + resource);
 		}
@@ -34,6 +41,7 @@ public final class ConnectorWritesAggregator {
 
 	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(EtlDestinationConfiguration configuration) {
 		ConnectorResource resource = resourcesByConfiguration.get(configuration);
+
 		if (resource == null) {
 			throw new IllegalArgumentException("No destination resource registered for " + configuration);
 		}
@@ -42,22 +50,28 @@ public final class ConnectorWritesAggregator {
 
 	public ConnectorResource getResource(EtlDestinationConfiguration configuration) {
 		ConnectorResource resource = resourcesByConfiguration.get(configuration);
+
 		if (resource == null) {
 			throw new IllegalArgumentException("No destination resource registered for " + configuration);
 		}
 		return resource;
 	}
 
-	/** Compatibility bridge for JDBC adapter code during the destination migration. */
+	/**
+	 * Compatibility bridge for JDBC adapter code during the destination migration.
+	 */
 	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(DstConf configuration) {
 		return get(((org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration) configuration)
 				.getParentDestination());
 	}
 
-	/** Compatibility bridge for JDBC adapter code during the destination migration. */
+	/**
+	 * Compatibility bridge for JDBC adapter code during the destination migration.
+	 */
 	public ConnectorResource getResource(DstConf configuration) {
-		return getResource(((org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration) configuration)
-				.getParentDestination());
+		return getResource(
+				((org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration) configuration)
+						.getParentDestination());
 	}
 
 	public List<ConnectorRecordWriter<? extends EtlDatabaseObject>> getAll() {
@@ -71,13 +85,16 @@ public final class ConnectorWritesAggregator {
 	/** Returns the native value only when all writers share that same instance. */
 	public <N> N unwrapShared(Class<N> nativeType) {
 		N shared = null;
+
 		for (ConnectorRecordWriter<?> writer : writers.values()) {
 			N value;
+
 			try {
 				value = writer.unwrap(nativeType);
 			} catch (IllegalArgumentException e) {
 				continue;
 			}
+
 			if (shared != null && shared != value) {
 				throw new IllegalStateException("Destination writers do not share one " + nativeType.getName());
 			}
@@ -88,13 +105,16 @@ public final class ConnectorWritesAggregator {
 
 	public <N> List<N> unwrapAll(Class<N> nativeType) {
 		List<N> values = new ArrayList<>();
+
 		for (ConnectorRecordWriter<?> writer : writers.values()) {
 			N value;
+
 			try {
 				value = writer.unwrap(nativeType);
 			} catch (IllegalArgumentException e) {
 				continue;
 			}
+
 			if (!containsIdentity(values, value)) {
 				values.add(value);
 			}
@@ -103,7 +123,9 @@ public final class ConnectorWritesAggregator {
 	}
 
 	private boolean containsIdentity(List<?> values, Object candidate) {
+
 		for (Object value : values) {
+
 			if (value == candidate) {
 				return true;
 			}

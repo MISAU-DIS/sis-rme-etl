@@ -4,9 +4,9 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.openmrs.module.epts.etl.connector.ConnectorCapability;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
 /** Compatibility adapter exposing {@link DBConnectionInfo} as an endpoint. */

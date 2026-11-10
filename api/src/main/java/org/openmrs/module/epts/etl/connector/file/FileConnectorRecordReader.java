@@ -18,8 +18,9 @@ import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.json.JsonRecordParser;
 import org.openmrs.module.epts.etl.conf.datasource.csv.CsvRecordParser;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.reader.AbstractConnectorRecordReader;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -30,7 +31,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Reads JSON or CSV records from a FILE connector resource. */
-public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implements ConnectorRecordReader<T> {
+public final class FileConnectorRecordReader<T extends EtlDatabaseObject> extends AbstractConnectorRecordReader<T>
+		implements ConnectorRecordReader<T> {
 
 	private final ConnectorResource resource;
 	@SuppressWarnings("unused")
@@ -49,7 +51,7 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> implem
 			throw new IllegalArgumentException(
 					"The source configuration must be fully loaded before creating a FILE reader");
 		}
-		
+
 		this.resource = resource;
 		this.sourceConfiguration = sourceConfiguration;
 		this.supportingConnection = supportingConnection;

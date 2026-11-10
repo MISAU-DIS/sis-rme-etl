@@ -6,9 +6,9 @@ import java.util.List;
 import org.openmrs.module.epts.etl.conf.EtlCounter;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.databasepreparation.model.DatabasePreparationRecord;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -33,19 +33,19 @@ public class DatabasePreparationProcessor extends org.openmrs.module.epts.etl.pr
 	}
 
 	@Override
-	public ConnectorWritesAggregator createRecordWriters() throws DBException {
+	public ConnectorRecordWritersAggregator createRecordWriters() throws DBException {
 		return getEtlItemConfiguration().createEtlDatabaseWriters(getEngine());
 	}
 
 	@Override
-	public ConnectorRecordReader<DatabasePreparationRecord> createRecordReader(ConnectorWritesAggregator writers)
+	public ConnectorRecordReader<DatabasePreparationRecord> createRecordReader(ConnectorRecordWritersAggregator writers)
 			throws DBException {
 		return getEtlItemConfiguration().createEtlDatabaseReader(getSearchParams(), getEngine(), writers);
 	}
 
 	@Override
-	public ConnectorRecordReaders createRecordReaders(ConnectorWritesAggregator writers) throws DBException {
-		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(createRecordReader(writers));
+	public ConnectorRecordReadersAggregator createRecordReaders(ConnectorRecordWritersAggregator writers) throws DBException {
+		ConnectorRecordReadersAggregator readers = ConnectorRecordReadersAggregator.ofPrimary(createRecordReader(writers));
 		setRecordReaders(readers);
 		return readers;
 	}

@@ -6,7 +6,7 @@ import java.util.Set;
 import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 
 /**
  * Connector-neutral description of the records accepted by one physical

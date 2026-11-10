@@ -1174,7 +1174,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		return physical;
 	}
 
-	public boolean supports(org.openmrs.module.epts.etl.connector.ConnectorWriteMode mode) {
+	public boolean supports(org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode mode) {
 		return destinationDataConfiguration != null && destinationDataConfiguration.supports(mode);
 	}
 

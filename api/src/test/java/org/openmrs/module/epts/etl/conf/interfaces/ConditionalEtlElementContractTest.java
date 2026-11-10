@@ -8,8 +8,8 @@ import java.sql.Connection;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 
 class ConditionalEtlElementContractTest {
 

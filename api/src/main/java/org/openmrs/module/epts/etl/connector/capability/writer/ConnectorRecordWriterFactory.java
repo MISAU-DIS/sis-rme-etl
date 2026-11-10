@@ -1,9 +1,16 @@
-package org.openmrs.module.epts.etl.connector;
+package org.openmrs.module.epts.etl.connector.capability.writer;
 
 import java.sql.Connection;
 import java.util.Collections;
 
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.UnsupportedConnectorTypeException;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordWriter;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 

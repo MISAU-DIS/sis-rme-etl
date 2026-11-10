@@ -24,10 +24,10 @@ import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlTotalRecordsCountStrategy;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
@@ -591,7 +591,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	}
 
 	void processRangePartition(TaskProcessor<T> processor, boolean useSharedConnection,
-			ConnectorRecordReaders sharedReaders, ConnectorWritesAggregator sharedWriters) {
+			ConnectorRecordReadersAggregator sharedReaders, ConnectorRecordWritersAggregator sharedWriters) {
 
 		if (useSharedConnection) {
 			processor.setRecordReaders(sharedReaders);
@@ -603,8 +603,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			OpenConnection srcConn = null;
 			List<OpenConnection> dstConnections = Collections.emptyList();
-			ConnectorWritesAggregator writers = null;
-			ConnectorRecordReaders readers = null;
+			ConnectorRecordWritersAggregator writers = null;
+			ConnectorRecordReadersAggregator readers = null;
 			boolean flushWorkerPersistence = false;
 			boolean retryTransaction = false;
 
@@ -727,28 +727,28 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return connections == null || connections.isEmpty() ? null : connections.get(0);
 	}
 
-	List<OpenConnection> destinationConnections(ConnectorWritesAggregator writers) {
+	List<OpenConnection> destinationConnections(ConnectorRecordWritersAggregator writers) {
 		return writers.unwrapAll(OpenConnection.class);
 	}
 
-	List<OpenConnection> sourceConnections(ConnectorRecordReaders readers) {
+	List<OpenConnection> sourceConnections(ConnectorRecordReadersAggregator readers) {
 		return readers.unwrapAll(OpenConnection.class);
 	}
 
-	ConnectorRecordReader<T> primaryReader(ConnectorRecordReaders readers) {
+	ConnectorRecordReader<T> primaryReader(ConnectorRecordReadersAggregator readers) {
 		return readers.getPrimary();
 	}
 
-	void finalizeConnections(ConnectorRecordReaders readers, ConnectorWritesAggregator writers) {
+	void finalizeConnections(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) {
 		OpenConnection.finalizeAllConnections(collectConnectorConnections(readers, writers), this);
 	}
 
-	void markConnectionsAsSuccessfullyTerminated(ConnectorRecordReaders readers, ConnectorWritesAggregator writers) {
+	void markConnectionsAsSuccessfullyTerminated(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) {
 		OpenConnection.markAllAsSuccessifullyTerminected(collectConnectorConnections(readers, writers));
 	}
 
-	private List<OpenConnection> collectConnectorConnections(ConnectorRecordReaders readers,
-			ConnectorWritesAggregator writers) {
+	private List<OpenConnection> collectConnectorConnections(ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) {
 		List<OpenConnection> connections = new ArrayList<>();
 		addConnectionsByIdentity(connections, destinationConnections(writers));
 		addConnectionsByIdentity(connections, sourceConnections(readers));
@@ -885,8 +885,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 					boolean persistTheWork = this.getRelatedEtlConf().hasTestingItem() ? false : true;
 					boolean useMultiThreadSearch = true;
 
-					ConnectorWritesAggregator writers = getEtlItemConfiguration().createDestinationWriters(this);
-					ConnectorRecordReaders readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(),
+					ConnectorRecordWritersAggregator writers = getEtlItemConfiguration().createDestinationWriters(this);
+					ConnectorRecordReadersAggregator readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(),
 							this, writers);
 					taskProcessor.setRecordReaders(readers);
 					performExtractTransformationAndLoading(taskProcessor, useMultiThreadSearch, persistTheWork, readers,
@@ -986,7 +986,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformAndLoadQueue(TaskProcessor<T> processor, Queue<T> transformationQueue,
-			boolean sharedConnections, ConnectorRecordReaders sharedReaders, ConnectorWritesAggregator sharedWriters) {
+			boolean sharedConnections, ConnectorRecordReadersAggregator sharedReaders, ConnectorRecordWritersAggregator sharedWriters) {
 
 		if (!sharedConnections) {
 			consumeTransformAndLoadQueueWithWorkerTransactionRetry(processor, transformationQueue);
@@ -1022,8 +1022,8 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			OpenConnection srcConn = null;
 			List<OpenConnection> dstConnections = Collections.emptyList();
-			ConnectorWritesAggregator writers = null;
-			ConnectorRecordReaders readers = null;
+			ConnectorRecordWritersAggregator writers = null;
+			ConnectorRecordReadersAggregator readers = null;
 			boolean retryTransaction = false;
 
 			try {
@@ -1107,10 +1107,10 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 	@SuppressWarnings("unchecked")
 	void consumeTransformationQueue(TaskProcessor<T> processor, Queue<T> transformationQueue, boolean sharedConnections,
-			ConnectorRecordReaders sharedReaders, ConnectorWritesAggregator sharedWriters) {
+			ConnectorRecordReadersAggregator sharedReaders, ConnectorRecordWritersAggregator sharedWriters) {
 
-		ConnectorWritesAggregator writers = sharedWriters;
-		ConnectorRecordReaders readers = sharedReaders;
+		ConnectorRecordWritersAggregator writers = sharedWriters;
+		ConnectorRecordReadersAggregator readers = sharedReaders;
 
 		try {
 
@@ -1335,7 +1335,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 	 * @return
 	 */
 	void performExtractTransformationAndLoading(TaskProcessor<T> taskProcessor, boolean useMultiTreadSearch,
-			boolean persistTheWork, ConnectorRecordReaders readers, ConnectorWritesAggregator writers) {
+			boolean persistTheWork, ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) {
 
 		ConnectorRecordReader<T> reader = readers.getPrimary();
 		OpenConnection srcConn = reader.unwrap(OpenConnection.class);

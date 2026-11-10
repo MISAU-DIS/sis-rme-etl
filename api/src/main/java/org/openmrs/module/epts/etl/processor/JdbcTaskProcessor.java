@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.etl.model.LoadingType;
@@ -25,20 +25,21 @@ public abstract class JdbcTaskProcessor<T extends EtlDatabaseObject> extends Tas
 	}
 
 	@Override
-	public void transformAndLoad(List<T> records, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
-			throws DBException {
-		transformAndLoad(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
+	public void transformAndLoad(List<T> records, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
+		transformAndLoad(records, readers.getPrimary().unwrap(Connection.class),
+				writers.unwrapShared(Connection.class));
 	}
 
 	@Override
-	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReaders readers,
-			ConnectorWritesAggregator writers) throws DBException {
+	public void transform(List<EtlDatabaseObject> records, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 		transform(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
 	}
 
 	@Override
-	public void load(List<EtlDatabaseObject> records, ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
-			throws DBException {
+	public void load(List<EtlDatabaseObject> records, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 		load(records, readers.getPrimary().unwrap(Connection.class), writers.unwrapShared(Connection.class));
 	}
 

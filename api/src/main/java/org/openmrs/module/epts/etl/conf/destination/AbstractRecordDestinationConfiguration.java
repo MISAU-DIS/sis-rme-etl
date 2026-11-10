@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf.destination;
 import java.util.Collections;
 import java.util.Set;
 
-import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.connector;
+package org.openmrs.module.epts.etl.connector.capability;
 
 /**
  * Behaviour that a connector can explicitly advertise to the ETL runtime.

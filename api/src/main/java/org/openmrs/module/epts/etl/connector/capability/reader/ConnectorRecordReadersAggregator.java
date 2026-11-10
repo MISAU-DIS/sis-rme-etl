@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.connector;
+package org.openmrs.module.epts.etl.connector.capability.reader;
 
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -8,25 +8,30 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.aggregator.ConnectorRecordCapabilityProviderAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
 /** Readers resolved for one ETL worker, indexed by source configuration. */
-public final class ConnectorRecordReaders {
+public final class ConnectorRecordReadersAggregator implements ConnectorRecordCapabilityProviderAggregator {
 
 	private final Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers;
 	private final Map<EtlDataSource, ConnectorResource> resourcesByConfiguration;
 	private final ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader;
 
-	public static ConnectorRecordReaders ofPrimary(ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader) {
-		return new ConnectorRecordReaders(primaryReader, Collections.emptyMap(), Collections.emptyMap());
+	public static ConnectorRecordReadersAggregator ofPrimary(
+			ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader) {
+		return new ConnectorRecordReadersAggregator(primaryReader, Collections.emptyMap(), Collections.emptyMap());
 	}
 
-	public ConnectorRecordReaders(Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers,
+	public ConnectorRecordReadersAggregator(
+			Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers,
 			Map<EtlDataSource, ConnectorResource> resourcesByConfiguration) {
 		this(null, readers, resourcesByConfiguration);
 	}
 
-	public ConnectorRecordReaders(ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader,
+	public ConnectorRecordReadersAggregator(ConnectorRecordReader<? extends EtlDatabaseObject> primaryReader,
 			Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers,
 			Map<EtlDataSource, ConnectorResource> resourcesByConfiguration) {
 

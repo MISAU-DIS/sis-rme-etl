@@ -6,10 +6,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
@@ -35,10 +34,10 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 
 		List<CompletableFuture<Void>> tasks = new ArrayList<>(intervals.size());
 
-		ConnectorWritesAggregator sharedWriters = engine.getEtlItemConfiguration().createDestinationWriters(engine);
-		ConnectorRecordReaders sharedReaders = engine.getEtlItemConfiguration().createSourceReaders(
-				engine.getSearchParams(), engine, sharedWriters);
-		ConnectorRecordReader<T> sharedReader = engine.primaryReader(sharedReaders);
+		ConnectorRecordWritersAggregator sharedWriters = engine.getEtlItemConfiguration()
+				.createDestinationWriters(engine);
+		ConnectorRecordReadersAggregator sharedReaders = engine.getEtlItemConfiguration()
+				.createSourceReaders(engine.getSearchParams(), engine, sharedWriters);
 
 		try {
 
@@ -68,7 +67,8 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			}
 			engine.finalizeConnections(sharedReaders, sharedWriters);
 
-			// Workers and auxiliary persistence have all committed before publishing completion.
+			// Workers and auxiliary persistence have all committed before publishing
+			// completion.
 			for (IntervalExtremeRecord interval : intervals) {
 				interval.markAsProcessed();
 			}
@@ -76,10 +76,12 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			if (!EtlOperationResultHeader.hasAtLeastOneRecordsWithRecursiveRelashionships(results)) {
 				engine.getThreadRecordIntervalsManager().getCurrentLimits().markSkippedRecordsAsProcessed();
 			}
+
 			if (!engine.getRelatedEtlConf().hasTestingItem()) {
 				engine.getThreadRecordIntervalsManager().save();
 			}
 		} finally {
+
 			try {
 				engine.finalizeConnections(sharedReaders, sharedWriters);
 			} finally {
@@ -91,14 +93,16 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 	private <T extends EtlDatabaseObject> List<EtlOperationResultHeader<T>> collectResults(
 			List<TaskProcessor<T>> processors) {
 		List<EtlOperationResultHeader<T>> results = new ArrayList<>(processors.size());
+
 		for (TaskProcessor<T> processor : processors) {
 			results.add(processor.getTaskResultInfo());
 		}
 		return results;
 	}
 
-	private void persistPendingData(Engine<?> engine, boolean sharedConnections, ConnectorRecordReaders readers,
-			ConnectorWritesAggregator writers) throws Exception {
+	private void persistPendingData(Engine<?> engine, boolean sharedConnections,
+			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) throws Exception {
+
 		if (engine.getRelatedEtlConf().hasTestingItem()) {
 			engine.discardPendingPersistence();
 		} else if (sharedConnections) {

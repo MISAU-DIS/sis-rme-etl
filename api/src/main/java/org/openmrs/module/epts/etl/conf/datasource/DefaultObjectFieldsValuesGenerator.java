@@ -28,9 +28,9 @@ public class DefaultObjectFieldsValuesGenerator implements JavaObjectFieldsValue
 			throws DBException, ForbiddenOperationException {
 
 		Map<String, FieldTransformingInfo> map = new HashMap<>();
-		org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader =
+		org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader<?> reader =
 				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.reader(srcConn);
-		org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer =
+		org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter<?> writer =
 				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(dstConn);
 
 		Set<EtlDatabaseObject> set = avaliableSrcObjects != null ? new HashSet<>(avaliableSrcObjects) : null;

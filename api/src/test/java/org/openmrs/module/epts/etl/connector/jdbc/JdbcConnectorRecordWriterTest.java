@@ -14,9 +14,9 @@ import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriterFactory;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWriterFactory;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -53,7 +53,7 @@ class JdbcConnectorRecordWriterTest {
 		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
 		resources.put(destination, resource);
 
-		ConnectorWritesAggregator aggregate = new ConnectorWritesAggregator(writers, resources);
+		ConnectorRecordWritersAggregator aggregate = new ConnectorRecordWritersAggregator(writers, resources);
 
 		assertSame(writer, aggregate.get(resource));
 		assertSame(writer, aggregate.get(destination));

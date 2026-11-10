@@ -11,7 +11,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.EmptyTransformedValueException;
@@ -186,8 +186,8 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
+			org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
 
 		Connection conn;

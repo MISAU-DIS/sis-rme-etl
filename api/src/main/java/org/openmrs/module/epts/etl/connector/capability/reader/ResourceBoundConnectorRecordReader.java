@@ -1,7 +1,9 @@
-package org.openmrs.module.epts.etl.connector;
+package org.openmrs.module.epts.etl.connector.capability.reader;
 
 import java.util.List;
 
+import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -11,12 +13,13 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * not pretend to implement record extraction.
  */
 public final class ResourceBoundConnectorRecordReader<T extends EtlDatabaseObject>
-		implements ConnectorRecordReader<T> {
+		extends AbstractConnectorRecordReader<T> {
 
 	private final ConnectorResource resource;
 	private final Object nativeState;
 
 	public ResourceBoundConnectorRecordReader(ConnectorResource resource, Object nativeState) {
+
 		if (resource == null) {
 			throw new IllegalArgumentException("resource cannot be null");
 		}
@@ -37,6 +40,7 @@ public final class ResourceBoundConnectorRecordReader<T extends EtlDatabaseObjec
 
 	@Override
 	public <N> N unwrap(Class<N> nativeType) {
+
 		if (nativeType != null && nativeState != null && nativeType.isInstance(nativeState)) {
 			return nativeType.cast(nativeState);
 		}

@@ -9,12 +9,14 @@ import java.util.Set;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriterFactory;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.reader.AbstractConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.writer.AbstractConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWriterFactory;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 
@@ -27,7 +29,7 @@ public final class JdbcConnectorRuntimeAdapters {
 	}
 
 	public static ConnectorRecordReader<EtlDatabaseObject> reader(Connection connection) {
-		return new ConnectorRecordReader<EtlDatabaseObject>() {
+		return new AbstractConnectorRecordReader<EtlDatabaseObject>() {
 			@Override
 			public ConnectorResource getResource() {
 				return null;
@@ -46,7 +48,7 @@ public final class JdbcConnectorRuntimeAdapters {
 	}
 
 	public static ConnectorRecordWriter<EtlDatabaseObject> writer(Connection connection) {
-		return new ConnectorRecordWriter<EtlDatabaseObject>() {
+		return new AbstractConnectorRecordWriter<EtlDatabaseObject>() {
 			@Override
 			public ConnectorResource getResource() {
 				return null;
@@ -64,12 +66,12 @@ public final class JdbcConnectorRuntimeAdapters {
 		};
 	}
 
-	public static ConnectorWritesAggregator writers(EtlItemConfiguration item, Connection connection) {
+	public static ConnectorRecordWritersAggregator writers(EtlItemConfiguration item, Connection connection) {
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
 		collectWriters(item, connection, writers, resources,
 				java.util.Collections.newSetFromMap(new IdentityHashMap<>()));
-		return new ConnectorWritesAggregator(writers, resources);
+		return new ConnectorRecordWritersAggregator(writers, resources);
 	}
 
 	private static void collectWriters(EtlItemConfiguration item, Connection connection,

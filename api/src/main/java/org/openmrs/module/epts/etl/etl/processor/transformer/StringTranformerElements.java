@@ -150,8 +150,8 @@ public class StringTranformerElements {
 
 	public Object evaluate(EtlProcessor processor, EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
 			List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer) throws Exception {
+			org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter<?> writer) throws Exception {
 
 		StringTranformerElements element = this;
 

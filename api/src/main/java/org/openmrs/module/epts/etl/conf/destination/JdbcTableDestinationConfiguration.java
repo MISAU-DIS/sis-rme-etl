@@ -8,7 +8,7 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 

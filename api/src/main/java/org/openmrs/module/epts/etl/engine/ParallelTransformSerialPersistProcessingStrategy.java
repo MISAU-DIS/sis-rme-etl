@@ -7,10 +7,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
@@ -25,7 +25,7 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 	@Override
 	protected <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> records, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
+			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
 			throws Exception {
 		ConnectorRecordReader<T> reader = readers.getPrimary();
 		OpenConnection dstConn = engine.firstDestinationConnection(engine.destinationConnections(writers));

@@ -3,9 +3,9 @@ package org.openmrs.module.epts.etl.connector.conf;
 import java.util.Collections;
 import java.util.Set;
 
-import org.openmrs.module.epts.etl.connector.ConnectorCapability;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
 
 /** Endpoint representation used before a concrete connector is installed. */
 final class ConfiguredConnectorEndpoint implements ConnectorEndpoint {

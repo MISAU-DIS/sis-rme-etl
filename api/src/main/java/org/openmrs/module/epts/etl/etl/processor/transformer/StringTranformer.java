@@ -238,8 +238,8 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 	@Override
 	public FieldTransformingInfo transform(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects, TransformableField field,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordReader<?> reader,
-			org.openmrs.module.epts.etl.connector.ConnectorRecordWriter<?> writer)
+			org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader<?> reader,
+			org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
 		traceTransformationInitialization(field);
 

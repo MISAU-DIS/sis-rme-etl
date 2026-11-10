@@ -14,13 +14,13 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.etl.controller.EtlController;
 import org.openmrs.module.epts.etl.etl.model.EtlStatus;
@@ -112,7 +112,7 @@ public class EtlLoadHelper {
 		return srcObjects;
 	}
 
-	public void load(ConnectorRecordReaders readers, ConnectorWritesAggregator writers)
+	public void load(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 
 		Connection srcConn = readers.getEtlSrcConn();
@@ -228,12 +228,12 @@ public class EtlLoadHelper {
 		}
 	}
 
-	private void load(DstConf dstConf, Connection srcConn, ConnectorWritesAggregator writers)
+	private void load(DstConf dstConf, Connection srcConn, ConnectorRecordWritersAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 		loadToConnector(dstConf, srcConn, writers);
 	}
 
-	private void loadToConnector(DstConf dstConf, Connection srcConn, ConnectorWritesAggregator writers)
+	private void loadToConnector(DstConf dstConf, Connection srcConn, ConnectorRecordWritersAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 
 		if (writers.getResource(dstConf).getEndpoint().getType() == ConnectorType.JDBC) {
@@ -255,7 +255,7 @@ public class EtlLoadHelper {
 		writeToConnector(dstConf, writers);
 	}
 
-	private void writeToConnector(DstConf dstConf, ConnectorWritesAggregator writers) throws DBException {
+	private void writeToConnector(DstConf dstConf, ConnectorRecordWritersAggregator writers) throws DBException {
 		List<EtlDatabaseObject> records = getAllTransformedObjects(dstConf);
 
 		for (EtlDatabaseObject record : records) {
@@ -276,7 +276,7 @@ public class EtlLoadHelper {
 				org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn));
 	}
 
-	private void loadToDb(DstConf dstConf, Connection srcConn, ConnectorWritesAggregator writers)
+	private void loadToDb(DstConf dstConf, Connection srcConn, ConnectorRecordWritersAggregator writers)
 			throws ParentNotYetMigratedException, DBException {
 		Connection dstConn = writers.unwrap(writers.getResource(dstConf), Connection.class);
 
@@ -350,7 +350,7 @@ public class EtlLoadHelper {
 	 * @throws DBException
 	 * @throws ForbiddenOperationException
 	 */
-	public void onLoadToDb(DstConf dstConf, ConnectorWritesAggregator writers)
+	public void onLoadToDb(DstConf dstConf, ConnectorRecordWritersAggregator writers)
 			throws DBException, ForbiddenOperationException {
 
 		List<EtlDatabaseObject> objects = getAllReadyTransformedObjects(dstConf);
@@ -656,8 +656,8 @@ public class EtlLoadHelper {
 			throws ParentNotYetMigratedException, DBException {
 
 		EtlItemConfiguration conf = dstConf.getParentConf();
-		ConnectorRecordReaders readers = ConnectorRecordReaders.ofPrimary(reader);
-		ConnectorWritesAggregator writers = org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters
+		ConnectorRecordReadersAggregator readers = ConnectorRecordReadersAggregator.ofPrimary(reader);
+		ConnectorRecordWritersAggregator writers = org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters
 				.writers(conf, writer.unwrap(Connection.class));
 
 		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,

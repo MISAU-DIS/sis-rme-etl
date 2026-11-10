@@ -2,9 +2,9 @@ package org.openmrs.module.epts.etl.engine;
 
 import java.util.List;
 
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 
@@ -26,8 +26,8 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 
 			boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-			ConnectorWritesAggregator writers = processor.createRecordWriters();
-			ConnectorRecordReaders readers = processor.createRecordReaders(writers);
+			ConnectorRecordWritersAggregator writers = processor.createRecordWriters();
+			ConnectorRecordReadersAggregator readers = processor.createRecordReaders(writers);
 
 			try {
 				engine.performExtractTransformationAndLoading(processor, true, persistWork, readers, writers);

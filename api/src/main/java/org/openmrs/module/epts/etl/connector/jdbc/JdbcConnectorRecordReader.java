@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.capability.reader.AbstractConnectorRecordReader;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -13,7 +13,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 /**
  * Preserves the existing JDBC search behaviour behind the source-reader port.
  */
-public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> implements ConnectorRecordReader<T> {
+public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extends AbstractConnectorRecordReader<T> {
 
 	private final ConnectorResource resource;
 	private final AbstractEtlSearchParams<T> searchParams;
@@ -52,10 +52,11 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> implem
 
 	@Override
 	public <N> N unwrap(Class<N> nativeType) {
+
 		if (nativeType != null && nativeType.isInstance(srcConnection)) {
 			return nativeType.cast(srcConnection);
 		}
-		throw new IllegalArgumentException("JDBC reader cannot be unwrapped as "
-				+ (nativeType == null ? "null" : nativeType.getName()));
+		throw new IllegalArgumentException(
+				"JDBC reader cannot be unwrapped as " + (nativeType == null ? "null" : nativeType.getName()));
 	}
 }

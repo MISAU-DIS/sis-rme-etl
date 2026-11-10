@@ -10,10 +10,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.connector.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteMode;
-import org.openmrs.module.epts.etl.connector.ConnectorWriteRequest;
+import org.openmrs.module.epts.etl.connector.capability.writer.AbstractConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 /** Appends one JSON object per line to a file destination resource. */
-public final class FileConnectorRecordWriter<T extends EtlDatabaseObject> implements ConnectorRecordWriter<T> {
+public final class FileConnectorRecordWriter<T extends EtlDatabaseObject> extends AbstractConnectorRecordWriter<T> {
 
 	private final ConnectorResource resource;
 	private final Path path;

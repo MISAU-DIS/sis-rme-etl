@@ -10,15 +10,15 @@ import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorCapability;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.ConnectorRecordReaders;
-import org.openmrs.module.epts.etl.connector.ConnectorWritesAggregator;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
-import org.openmrs.module.epts.etl.connector.ResourceBoundConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.reader.ResourceBoundConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -37,7 +37,7 @@ class ChildConnectorScopeTest {
 		JsonPrimaryDataSourceConfiguration childPrimary = configureSource(child, "child", resource("child"));
 		parent.setChildItemConf(Collections.singletonList(child));
 
-		ConnectorRecordReaders readers = parent.createSourceReaders(null, parent, null);
+		ConnectorRecordReadersAggregator readers = parent.createSourceReaders(null, parent, null);
 
 		assertSame(parent.getResolvedSrcResource(), readers.get(parentPrimary).getResource());
 		assertSame(child.getResolvedSrcResource(), readers.get(childPrimary).getResource());
@@ -62,7 +62,7 @@ class ChildConnectorScopeTest {
 				resource("child", sharedConnector));
 		parent.setChildItemConf(Collections.singletonList(child));
 
-		ConnectorRecordReaders readers = parent.createSourceReaders(null, parent, null);
+		ConnectorRecordReadersAggregator readers = parent.createSourceReaders(null, parent, null);
 
 		assertSame(sharedConnection, readers.get(childPrimary).unwrap(OpenConnection.class));
 	}
@@ -121,7 +121,7 @@ class ChildConnectorScopeTest {
 		@SuppressWarnings("unchecked")
 		public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
 				AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
-				ConnectorWritesAggregator writers) throws DBException {
+				ConnectorRecordWritersAggregator writers) throws DBException {
 			return (ConnectorRecordReader<T>) new ResourceBoundConnectorRecordReader<EtlDatabaseObject>(
 					getResolvedSrcResource(), primaryConnection);
 		}

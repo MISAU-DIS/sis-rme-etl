@@ -9,10 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.EnumSet;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.connector.ConnectorCapability;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.UnsupportedConnectorCapabilityException;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 

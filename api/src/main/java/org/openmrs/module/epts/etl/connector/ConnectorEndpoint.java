@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
+
 /**
  * Connector-neutral view of an external system. Implementations may adapt a
  * legacy configuration object while configuration migration is in progress.

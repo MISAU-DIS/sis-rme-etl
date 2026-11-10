@@ -3,11 +3,11 @@ package org.openmrs.module.epts.etl.connector.conf;
 import java.util.Collections;
 
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorCapability;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcTableResource;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;

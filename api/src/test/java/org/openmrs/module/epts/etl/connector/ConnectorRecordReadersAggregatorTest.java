@@ -12,9 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.reader.ResourceBoundConnectorRecordReader;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
-class ConnectorRecordReadersTest {
+class ConnectorRecordReadersAggregatorTest {
 
 	@Test
 	void shouldResolveReadersByConfigurationIdentity() {
@@ -36,7 +39,7 @@ class ConnectorRecordReadersTest {
 		resources.put(primary, primaryResource);
 		resources.put(additional, additionalResource);
 
-		ConnectorRecordReaders scope = new ConnectorRecordReaders(readers, resources);
+		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(readers, resources);
 
 		assertSame(primaryReader, scope.get(primary));
 		assertSame(additionalReader, scope.get(additional));
@@ -54,7 +57,7 @@ class ConnectorRecordReadersTest {
 		readers.put(first, new ResourceBoundConnectorRecordReader<>(first, sharedNativeState));
 		readers.put(second, new ResourceBoundConnectorRecordReader<>(second, sharedNativeState));
 
-		ConnectorRecordReaders scope = new ConnectorRecordReaders(readers, Collections.emptyMap());
+		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(readers, Collections.emptyMap());
 
 		assertEquals(1, scope.unwrapAll(Object.class).size());
 		assertSame(sharedNativeState, scope.unwrapAll(Object.class).get(0));

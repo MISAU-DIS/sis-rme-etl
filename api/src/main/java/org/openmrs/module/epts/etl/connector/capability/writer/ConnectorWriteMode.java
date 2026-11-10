@@ -1,4 +1,4 @@
-package org.openmrs.module.epts.etl.connector;
+package org.openmrs.module.epts.etl.connector.capability.writer;
 
 /** Persistence operation requested from a destination connector. */
 public enum ConnectorWriteMode {
