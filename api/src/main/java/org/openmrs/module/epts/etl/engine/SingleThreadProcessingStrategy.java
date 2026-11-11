@@ -26,8 +26,10 @@ public class SingleThreadProcessingStrategy implements EngineProcessingStrategy 
 
 			boolean persistWork = !engine.getRelatedEtlConf().hasTestingItem();
 
-			ConnectorRecordWritersAggregator writers = processor.createRecordWriters();
-			ConnectorRecordReadersAggregator readers = processor.createRecordReaders(writers);
+			ConnectorRecordWritersAggregator writers = engine.getEtlItemConfiguration()
+					.createDestinationWriters(engine);
+			ConnectorRecordReadersAggregator readers = engine.getEtlItemConfiguration()
+					.createSourceReaders(engine.getSearchParams(), engine, writers);
 
 			try {
 				engine.performExtractTransformationAndLoading(processor, true, persistWork, readers, writers);

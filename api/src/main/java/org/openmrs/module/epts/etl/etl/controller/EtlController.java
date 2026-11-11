@@ -1,18 +1,19 @@
 package org.openmrs.module.epts.etl.etl.controller;
 
 import java.lang.reflect.Constructor;
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
+import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordReader;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.controller.SiteOperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
-import org.openmrs.module.epts.etl.connector.ConnectorType;
-import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordReader;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -37,6 +38,7 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 	@Override
 	public TaskProcessor<EtlDatabaseObject> initRelatedTaskProcessor(Engine<EtlDatabaseObject> monitor,
 			IntervalExtremeRecord limits, boolean runningInConcurrency) {
+
 		if (getOperationConfig().getProcessorClazz() != null) {
 
 			Class[] parameterTypes = { Engine.class, IntervalExtremeRecord.class, Boolean.class };
@@ -56,10 +58,10 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
+
 		if (engine.getEtlItemConfiguration().getResolvedSrcResource().getEndpoint().getType() == ConnectorType.FILE) {
-			return FileConnectorRecordReader
-					.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource(),
-							engine.getPrimaryDataSource()) > 0 ? 1 : 0;
+			return FileConnectorRecordReader.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource(),
+					engine.getPrimaryDataSource()) > 0 ? 1 : 0;
 		}
 
 		OpenConnection conn = null;
@@ -79,6 +81,7 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
+
 		if (engine.getEtlItemConfiguration().getResolvedSrcResource().getEndpoint().getType() == ConnectorType.FILE) {
 			return FileConnectorRecordReader.countRecords(engine.getEtlItemConfiguration().getResolvedSrcResource(),
 					engine.getPrimaryDataSource());
@@ -107,8 +110,8 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 	public AbstractEtlSearchParams<EtlDatabaseObject> initMainSearchParams(
 			ThreadRecordIntervalsManager<EtlDatabaseObject> intervalsMgt, Engine<EtlDatabaseObject> engine) {
 
-		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new EtlDatabaseObjectSearchParams(engine.getPrimaryDataSource(),
-				intervalsMgt);
+		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new EtlDatabaseObjectSearchParams(
+				engine.getPrimaryDataSource(), intervalsMgt);
 		searchParams.setQtdRecordPerSelected(getQtyRecordsPerProcessing());
 		searchParams.setSyncStartDate(getEtlConfiguration().getStartDate());
 
@@ -116,7 +119,8 @@ public class EtlController extends SiteOperationController<EtlDatabaseObject> {
 	}
 
 	@Override
-	public void afterEtl(List<EtlDatabaseObject> objs, Connection srcConn, Connection dstConn) throws DBException {
+	public void afterEtl(List<EtlDatabaseObject> objs, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 	}
 
 	@Override

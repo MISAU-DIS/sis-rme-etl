@@ -48,6 +48,7 @@ public final class OnDemandParentService {
 		EtlDatabaseObject srcParent = null;
 
 		if (transformer.existingSrcParentIsApplicable()) {
+
 			try {
 				srcParent = transformer.resolveSrcParent(processor, srcObject, transformedRecord, additionalSrcObjects,
 						currentReader, currentWriter);
@@ -83,6 +84,7 @@ public final class OnDemandParentService {
 			}
 
 			try {
+
 				if (useCurrentConnections) {
 					return this.retrieveOrCreateUsingConnectors(transformer, processor, srcParent, srcObject,
 							transformedRecord, additionalSrcObjects, field, currentReader, currentWriter);
@@ -92,6 +94,7 @@ public final class OnDemandParentService {
 						transformedRecord, additionalSrcObjects, field);
 
 			} catch (DBException e) {
+
 				if (!e.isDuplicatePrimaryOrUniqueKeyException()) {
 					throw e;
 				}
@@ -101,6 +104,7 @@ public final class OnDemandParentService {
 								additionalSrcObjects, currentReader, currentWriter)
 						: retrieveInIndependentTransaction(transformer, processor, srcParent, srcObject,
 								transformedRecord, additionalSrcObjects);
+
 				if (parent != null) {
 					return parent;
 				}
@@ -119,8 +123,8 @@ public final class OnDemandParentService {
 	}
 
 	private void commitCurrentDestinationBeforeIndependentTransaction(EtlProcessor processor,
-			ConnectorRecordWriter<?> writer,
-			String parentKey) throws DBException {
+			ConnectorRecordWriter<?> writer, String parentKey) throws DBException {
+
 		if (writer == null) {
 			return;
 		}
@@ -136,6 +140,7 @@ public final class OnDemandParentService {
 	}
 
 	private boolean usesAutoCommit(ConnectorRecordWriter<?> writer) throws DBException {
+
 		if (writer == null) {
 			return false;
 		}
@@ -163,10 +168,10 @@ public final class OnDemandParentService {
 		return parent;
 	}
 
-	private EtlDatabaseObject retrieveUsingConnectors(ParentOnDemandLoadTransformer transformer,
-			EtlProcessor processor, EtlDatabaseObject srcParent, EtlDatabaseObject srcObject,
-			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects,
-			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer) throws DBException {
+	private EtlDatabaseObject retrieveUsingConnectors(ParentOnDemandLoadTransformer transformer, EtlProcessor processor,
+			EtlDatabaseObject srcParent, EtlDatabaseObject srcObject, EtlDatabaseObject transformedRecord,
+			List<EtlDatabaseObject> additionalSrcObjects, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
 
 		EtlDatabaseObject dstParent = null;
 
@@ -193,15 +198,14 @@ public final class OnDemandParentService {
 			boolean retry = false;
 
 			try {
-				EtlDatabaseObject parent = retrieveOrCreateUsingConnectors(transformer, processor, srcParent,
-						srcObject, transformedRecord, additionalSrcObjects, field, connections.reader(),
-						connections.writer());
+				EtlDatabaseObject parent = retrieveOrCreateUsingConnectors(transformer, processor, srcParent, srcObject,
+						transformedRecord, additionalSrcObjects, field, connections.reader(), connections.writer());
 
 				connections.markSuccessful();
 				return parent;
 			} catch (DBException e) {
-				retry = attempt < MAX_TRANSACTION_ATTEMPTS
-						&& isTemporaryTransactionFailure(e, connections.dstConn);
+				retry = attempt < MAX_TRANSACTION_ATTEMPTS && isTemporaryTransactionFailure(e, connections.dstConn);
+
 				if (!retry) {
 					throw e;
 				}
@@ -218,15 +222,19 @@ public final class OnDemandParentService {
 	}
 
 	private boolean isTemporaryTransactionFailure(Throwable failure, Connection conn) {
+
 		if (conn == null) {
 			return false;
 		}
 
 		Throwable current = failure;
+
 		while (current != null) {
+
 			if (current instanceof DBException) {
+
 				try {
-					return ((DBException) current).isTemporaryDBErrr(conn);
+					return ((DBException) current).isTemporaryDBErrr();
 				} catch (DBException ignored) {
 					return false;
 				}
@@ -238,6 +246,7 @@ public final class OnDemandParentService {
 	}
 
 	private void waitBeforeRetry(int failedAttempt) throws DBException {
+
 		try {
 			TimeUnit.MILLISECONDS.sleep(500L * failedAttempt);
 		} catch (InterruptedException e) {
@@ -252,6 +261,7 @@ public final class OnDemandParentService {
 			EtlDatabaseObject transformedRecord, List<EtlDatabaseObject> additionalSrcObjects) throws DBException {
 
 		IndependentConnections connections = openIndependentConnections(processor);
+
 		try {
 			EtlDatabaseObject parent = retrieveUsingConnectors(transformer, processor, srcParent, srcObject,
 					transformedRecord, additionalSrcObjects, connections.reader(), connections.writer());
@@ -286,6 +296,7 @@ public final class OnDemandParentService {
 
 	private void releaseLock(String key, ParentLock released) {
 		parentLocks.computeIfPresent(key, (ignored, current) -> {
+
 			if (current != released) {
 				return current;
 			}
@@ -325,17 +336,21 @@ public final class OnDemandParentService {
 			RuntimeException failure = null;
 
 			try {
+
 				if (dstConn != null) {
 					dstConn.finalizeConnection(processor);
 				}
 			} catch (RuntimeException e) {
 				failure = e;
 			} finally {
+
 				try {
+
 					if (srcConn != null) {
 						srcConn.finalizeConnection(processor);
 					}
 				} catch (RuntimeException e) {
+
 					if (failure == null) {
 						failure = e;
 					} else {

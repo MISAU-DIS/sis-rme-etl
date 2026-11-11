@@ -7,7 +7,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
@@ -15,7 +14,6 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Transforms in parallel and loads the transformed result with one worker. */
 public class ParallelTransformSerialPersistProcessingStrategy extends AbstractResultPartitioningProcessingStrategy {
@@ -25,10 +23,7 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 	@Override
 	protected <T extends EtlDatabaseObject> void processQueue(Engine<T> engine, IntervalExtremeRecord interval,
 			List<T> records, Queue<T> queue, int processorCount, EtlThreadFactory<T> threadFactory,
-			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
-			throws Exception {
-		ConnectorRecordReader<T> reader = readers.getPrimary();
-		OpenConnection dstConn = engine.firstDestinationConnection(engine.destinationConnections(writers));
+			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) throws Exception {
 
 		boolean sharedConnections = engine.getRelatedEtlOperationConfig().isUseSharedConnectionPerThread();
 
@@ -42,7 +37,7 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 
 			for (int i = 0; i < processorCount; i++) {
 				TaskProcessor<T> transformer = engine.initConcurrentTaskProcessor(interval, i);
-				transformer.setRecordReaders(readers);
+
 				engine.getCurrentTaskProcessor().add(transformer);
 
 				tasks.add(CompletableFuture.runAsync(() -> engine.consumeTransformationQueue(transformer, queue,
@@ -56,7 +51,6 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 		}
 
 		TaskProcessor<T> loader = engine.initConcurrentTaskProcessor(interval, processorCount);
-		loader.setRecordReaders(readers);
 
 		engine.getCurrentTaskProcessor().add(loader);
 
@@ -64,7 +58,7 @@ public class ParallelTransformSerialPersistProcessingStrategy extends AbstractRe
 
 		loader.loadTransformedRecords(records, readers, writers);
 
-		engine.completeExtractedTask(loader, reader.unwrap(OpenConnection.class), dstConn, true);
+		engine.completeExtractedTask(loader, readers, writers, true);
 		engine.assertNoProcessorFailed(UTILITIES.parseToList(loader));
 	}
 }

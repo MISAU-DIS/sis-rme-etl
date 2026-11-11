@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.writer.AbstractConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
@@ -111,5 +112,13 @@ public final class FileConnectorRecordWriter<T extends EtlDatabaseObject> extend
 
 		throw new IllegalArgumentException(
 				"FILE writer cannot be unwrapped as " + (nativeType == null ? "null" : nativeType.getName()));
+	}
+
+	@Override
+	public void finalizeCapability(BaseConfiguration openedFrom) {
+	}
+
+	@Override
+	public void markAsSuccessifullyTerminected() {
 	}
 }

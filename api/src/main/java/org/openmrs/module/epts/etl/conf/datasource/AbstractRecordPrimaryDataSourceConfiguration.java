@@ -17,6 +17,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -39,6 +41,9 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	private String name;
 	private PrimaryKey primaryKey;
 	private List<String> excludedFieldsFromObjectDesc;
+
+	private ConnectorResourceConfiguration resource;
+	private transient ConnectorResource resolvedResource;
 
 	@JsonIgnore
 	private transient EtlSourceConfiguration parentSource;
@@ -216,6 +221,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	@Override
 	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo) {
+
 		if (getRelatedEtlConf() == null) {
 			setEtlRecordClass(GenericDatabaseObject.class);
 			return getEtlRecordClass();
@@ -225,6 +231,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	}
 
 	private DatabaseModelGenerationContext getSourceModelContext() {
+
 		if (getRelatedEtlConf() == null) {
 			throw new EtlConfException("The record primary data source is not attached to an ETL configuration");
 		}
@@ -314,6 +321,26 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 		if (name != null) {
 			name = utilities.tryToReplacePlaceholders(name, schemaInfoSrc);
 		}
+	}
+
+	@Override
+	public ConnectorResourceConfiguration getResource() {
+		return this.resource;
+	}
+
+	@Override
+	public void setResource(ConnectorResourceConfiguration resource) {
+		this.resource = resource;
+	}
+
+	@Override
+	public void setResolvedResource(ConnectorResource resource) {
+		this.resolvedResource = resource;
+	}
+
+	@Override
+	public ConnectorResource getResolvedResource() {
+		return resolvedResource;
 	}
 
 	@Override

@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.sql.Connection;
-
 import org.junit.Test;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class EnginePersistenceCoordinatorTest {
@@ -67,7 +67,9 @@ public class EnginePersistenceCoordinatorTest {
 		}
 
 		@Override
-		public void persist(Connection srcConn, Connection dstConn) throws DBException {
+		public void persist(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
+				throws DBException {
+
 			if (fail) {
 				throw new DBException("Expected test failure", null);
 			}

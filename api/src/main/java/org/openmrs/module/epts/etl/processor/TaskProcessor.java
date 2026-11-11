@@ -11,7 +11,6 @@ import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
-import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
@@ -65,8 +64,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	protected boolean runningInConcurrency;
 
 	protected EtlOperationResultHeader<T> taskResultInfo;
-
-	private transient ConnectorRecordReadersAggregator recordReaders;
 
 	protected EtlOperationStatus operationStatus;
 
@@ -167,41 +164,34 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return getEngine().getSearchParams();
 	}
 
-	/** Creates the writer scope appropriate for this processor. */
-	public ConnectorRecordWritersAggregator createRecordWriters() throws DBException {
-		return getEtlItemConfiguration().createDestinationWriters(getEngine());
-	}
-
-	/** Creates the reader appropriate for this processor. */
-	public ConnectorRecordReader<T> createRecordReader(ConnectorRecordWritersAggregator writers) throws DBException {
-		return getEtlItemConfiguration().createSourceReader(getSearchParams(), getEngine(), writers);
-	}
-
-	/** Creates and attaches the complete reader scope for this processor. */
-	public ConnectorRecordReadersAggregator createRecordReaders(ConnectorRecordWritersAggregator writers)
-			throws DBException {
-		ConnectorRecordReadersAggregator readers = getEtlItemConfiguration().createSourceReaders(getSearchParams(),
-				getEngine(), writers);
-		setRecordReaders(readers);
-		return readers;
-	}
-
-	public ConnectorRecordReadersAggregator getRecordReaders() {
-		return recordReaders;
-	}
-
-	public void setRecordReaders(ConnectorRecordReadersAggregator recordReaders) {
-		this.recordReaders = recordReaders;
-	}
-
-	/** Resolves the reader associated with a source visible to this processor. */
-	public ConnectorRecordReader<? extends EtlDatabaseObject> getRecordReader(EtlDataSource dataSource) {
-
-		if (recordReaders == null) {
-			throw new IllegalStateException("Connector reader scope has not been initialized for this processor");
-		}
-		return recordReaders.get(dataSource);
-	}
+	/*
+	 * public ConnectorRecordWritersAggregator createRecordWriters() throws
+	 * DBException { return
+	 * getEtlItemConfiguration().createDestinationWriters(getEngine()); }
+	 * 
+	 * public ConnectorRecordReader<T>
+	 * createRecordReader(ConnectorRecordWritersAggregator writers) throws
+	 * DBException { return
+	 * getEtlItemConfiguration().createSourceReader(getSearchParams(), getEngine(),
+	 * writers); }
+	 * 
+	 * public ConnectorRecordReadersAggregator
+	 * createRecordReaders(ConnectorRecordWritersAggregator writers) throws
+	 * DBException { ConnectorRecordReadersAggregator readers =
+	 * getEtlItemConfiguration().createSourceReaders(getSearchParams(), getEngine(),
+	 * writers); setRecordReaders(readers); return readers; } public
+	 * ConnectorRecordReadersAggregator getRecordReaders() { return recordReaders; }
+	 * 
+	 * public void setRecordReaders(ConnectorRecordReadersAggregator recordReaders)
+	 * { this.recordReaders = recordReaders; }
+	 * 
+	 * public ConnectorRecordReader<? extends EtlDatabaseObject>
+	 * getRecordReader(EtlDataSource dataSource) {
+	 * 
+	 * if (recordReaders == null) { throw new
+	 * IllegalStateException("Connector reader scope has not been initialized for this processor"
+	 * ); } return recordReaders.get(dataSource); }
+	 */
 
 	public void extractTransformAndLoad(boolean useMultiThreadSearch, ConnectorRecordReadersAggregator readers,
 			ConnectorRecordWritersAggregator writers) throws DBException {

@@ -13,6 +13,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -151,9 +153,11 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	}
 
 	private void resolveRelatedParentDestination() {
+
 		if (this.hasParentItemConf() && this.getRelatedParentDstConf() == null) {
 
 			if (!utilities.stringHasValue(this.getRelatedParentDstConfName())) {
+
 				if (utilities.listHasExactlyOneElement(this.getParentItemConf().getDestinations())) {
 					this.setRelatedParentDstConfName(this.getParentItemConf().getDestinations().get(0).getName());
 				} else {
@@ -162,7 +166,8 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 				}
 			}
 
-			this.setRelatedParentDstConf(this.getParentItemConf().findJdbcDestination(this.getRelatedParentDstConfName()));
+			this.setRelatedParentDstConf(
+					this.getParentItemConf().findJdbcDestination(this.getRelatedParentDstConfName()));
 		}
 	}
 
@@ -286,8 +291,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 			this.addToAvaliableDataSource(this.getParentItemConf().getPrimaryDataSource());
 
-			this.addAllToAvaliableDataSource(
-					this.getParentItemConf().getSource().getAvailableAdditionalDataSources());
+			this.addAllToAvaliableDataSource(this.getParentItemConf().getSource().getAvailableAdditionalDataSources());
 
 			this.addAllToAvaliableDataSource(this.getParentItemConf().collectAllAvaliableDataSources(conn));
 
@@ -308,7 +312,8 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 		EtlChildItemConfiguration etl = new EtlChildItemConfiguration();
 
-		JdbcTablePrimaryDataSourceConfiguration src = JdbcTablePrimaryDataSourceConfiguration.fastCreate(tableConfig, etl, conn);
+		JdbcTablePrimaryDataSourceConfiguration src = JdbcTablePrimaryDataSourceConfiguration.fastCreate(tableConfig,
+				etl, conn);
 
 		etl.setSource(sourceWithJdbcPrimary(src));
 
@@ -416,6 +421,24 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 	public ActionOnEtlIssue getIncompleteMappingBehavior() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public ConnectorResourceConfiguration getResource() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setResource(ConnectorResourceConfiguration resource) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void setResolvedResource(ConnectorResource resource) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

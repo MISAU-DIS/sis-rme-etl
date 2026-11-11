@@ -215,6 +215,7 @@ public abstract class BaseDAO {
 	}
 
 	private static void releaseDBResources(PreparedStatement st, ResultSet rs, Connection conn) {
+
 		try {
 			st.close();
 			rs.close();
@@ -255,6 +256,7 @@ public abstract class BaseDAO {
 	 */
 	public static List<Long> executeQueryWithRetryOnError(String sql, Object[] params, Connection connection)
 			throws DBException {
+
 		try {
 			return executeQueryWithoutRetry(sql, params, connection);
 		} catch (DBException e) {
@@ -273,6 +275,7 @@ public abstract class BaseDAO {
 		try (Statement st = conn.createStatement()) {
 
 			for (String batch : batches) {
+
 				if (batch != null && !batch.trim().isEmpty()) {
 					st.addBatch(batch);
 				}
@@ -280,6 +283,7 @@ public abstract class BaseDAO {
 
 			st.executeBatch();
 		} catch (SQLException e) {
+
 			if (!e.getLocalizedMessage().contains("Duplicate key name")) {
 				throw new DBException("Error executing batch", e);
 			}
@@ -325,7 +329,9 @@ public abstract class BaseDAO {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		} finally {
+
 			try {
+
 				if (st != null) {
 					st.close();
 					st = null;
@@ -346,6 +352,7 @@ public abstract class BaseDAO {
 			return;
 
 		for (int i = 0; i < params.length; i++) {
+
 			if (params[i] instanceof InputStream) {
 				st.setBinaryStream(i + 1, (InputStream) params[i], ((InputStream) params[i]).available());
 			} else if (params[i] instanceof FileItem) {
@@ -364,21 +371,22 @@ public abstract class BaseDAO {
 			throws DBException {
 
 		try {
+
 			// A deadlock may roll back the complete transaction. Retrying only this
 			// statement would continue without the writes that preceded it.
-			if (!conn.getAutoCommit() && e.isTemporaryDBErrr(conn)) {
+			if (!conn.getAutoCommit() && e.isTemporaryDBErrr()) {
 				return null;
 			}
 		} catch (SQLException sqlException) {
 			throw new DBException(sqlException);
 		}
 
-		if (e.isDeadLock(conn)) {
+		if (e.isDeadLock()) {
 			DBOperation dbOp = new DBOperation(sql, params, conn, 25, e);
 			dbOp.retryDueTemporaryDBError("DEADLOCK");
 
 			return dbOp;
-		} else if (e.isLockWaitTimeExceded(conn)) {
+		} else if (e.isLockWaitTimeExceded()) {
 			DBOperation dbOp = new DBOperation(sql, params, conn, 25, e);
 			dbOp.retryDueTemporaryDBError("LOCK WAIT TIME EXCEED");
 
@@ -466,6 +474,7 @@ public abstract class BaseDAO {
 	}
 
 	public static void commitConnection(Connection conn) {
+
 		try {
 			if (conn == null)
 				return;
@@ -479,6 +488,7 @@ public abstract class BaseDAO {
 	}
 
 	public static void commitAndCloseConnection(Connection conn) {
+
 		try {
 
 			if (conn == null)
@@ -494,6 +504,7 @@ public abstract class BaseDAO {
 	}
 
 	public static void rollBackAndCloseConnection(Connection conn) {
+
 		try {
 
 			if (conn == null)
@@ -509,6 +520,7 @@ public abstract class BaseDAO {
 	}
 
 	public static void closeConnection(Connection conn) {
+
 		try {
 			if (conn == null)
 				return;
@@ -522,6 +534,7 @@ public abstract class BaseDAO {
 	}
 
 	public static void commit(Connection conn) {
+
 		try {
 			if (conn != null)
 				conn.commit();
@@ -535,6 +548,7 @@ public abstract class BaseDAO {
 	}
 
 	public static void rollback(Connection conn, Savepoint savepoint) {
+
 		try {
 			if (conn.isClosed())
 				return;
@@ -568,8 +582,11 @@ public abstract class BaseDAO {
 
 	private static void setParamsOnCallableStatement(CallableStatement call, int startFrom, Object... params)
 			throws SQLException, IOException {
+
 		if (params != null && params.length > 0) {
+
 			for (int i = 0; i < params.length; i++) {
+
 				if (params[i] instanceof InputStream) {
 					call.setBinaryStream(i + startFrom, (InputStream) params[i], ((InputStream) params[i]).available());
 				} else if (params[i] instanceof FileItem) {
@@ -589,6 +606,7 @@ public abstract class BaseDAO {
 		if (params != null && params.length > 0) {
 
 			strCall += "?";
+
 			for (int i = 1; i < params.length; i++) {
 				strCall += ",?";
 			}

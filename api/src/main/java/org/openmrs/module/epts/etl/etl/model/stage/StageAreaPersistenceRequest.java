@@ -1,10 +1,11 @@
 package org.openmrs.module.epts.etl.etl.model.stage;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.etl.model.persistence.EnginePersistenceRequest;
 import org.openmrs.module.epts.etl.etl.model.persistence.PersistenceType;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -45,11 +46,15 @@ public final class StageAreaPersistenceRequest implements EnginePersistenceReque
 	}
 
 	@Override
-	public void persist(Connection srcConn, Connection dstConn) throws DBException {
+	public void persist(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
+			throws DBException {
 		List<EtlStageObjectInfo> stageInfo = new ArrayList<>();
+
 		for (EtlDatabaseObject sourceObject : sourceObjects) {
-			stageInfo.add(EtlStageObjectInfo.generate(sourceObject, srcConn, dstConn));
+			stageInfo.add(EtlStageObjectInfo.generate(sourceObject, readers.getEtlSrcConn()));
 		}
-		EtlStageAreaObjectDAO.saveAll(stageInfo, srcConn);
+
+		EtlStageAreaObjectDAO.saveAll(stageInfo, readers.getEtlSrcConn());
 	}
+
 }

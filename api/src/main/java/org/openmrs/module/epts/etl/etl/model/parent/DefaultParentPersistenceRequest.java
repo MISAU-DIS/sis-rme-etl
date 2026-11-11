@@ -1,7 +1,7 @@
 package org.openmrs.module.epts.etl.etl.model.parent;
 
-import java.sql.Connection;
-
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.etl.model.persistence.EnginePersistenceRequest;
 import org.openmrs.module.epts.etl.etl.model.persistence.PersistenceType;
 import org.openmrs.module.epts.etl.model.EtlInfo;
@@ -27,7 +27,10 @@ public final class DefaultParentPersistenceRequest implements EnginePersistenceR
 	}
 
 	@Override
-	public void persist(Connection srcConn, Connection dstConn) throws DBException {
-		etlInfo.saveRecordsWithDefaultsParents(srcConn, dstConn);
+	public void persist(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
+			throws DBException {
+
+		etlInfo.saveRecordsWithDefaultsParents(readers.getEtlSrcConn());
 	}
+
 }

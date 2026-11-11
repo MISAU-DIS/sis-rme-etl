@@ -13,6 +13,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -29,6 +31,7 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 	private EtlConfiguration relatedEtlConf;
 
 	public EtlConfParamsAsDataSource(EtlConfiguration relatedEtlConf) {
+
 		if (relatedEtlConf == null) {
 			throw new ForbiddenOperationException("Empty relatedEtlConf was provided to an EtlConfParamsAsDataSource");
 		}
@@ -49,11 +52,13 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 
 	@Override
 	public void fullLoad() throws DBException {
+
 		if (this.isFullLoaded()) {
 			return;
 		}
 
 		synchronized (LOCK) {
+
 			if (this.isFullLoaded()) {
 				return;
 			}
@@ -218,17 +223,32 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 	}
 
 	public Object getParamValue(String token) {
+
 		if (!token.startsWith("@")) {
 			token = "@" + token;
 		}
 
 		for (Field f : this.fields) {
+
 			if (f.getName().equals(token)) {
 				return f.getValue();
 			}
 		}
 
 		throw new ForbiddenOperationException("Parameter " + token + " not found");
+	}
+
+	@Override
+	public ConnectorResourceConfiguration getResource() {
+		return null;
+	}
+
+	@Override
+	public void setResource(ConnectorResourceConfiguration resource) {
+	}
+
+	@Override
+	public void setResolvedResource(ConnectorResource resource) {
 	}
 
 }

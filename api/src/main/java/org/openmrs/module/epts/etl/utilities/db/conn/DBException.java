@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.utilities.db.conn;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -230,17 +229,17 @@ public class DBException extends SQLException implements EtlException {
 		return false;
 	}
 
-	public boolean isTemporaryDBErrr(Connection conn) throws DBException {
-		return isDeadLock(conn) || isLockWaitTimeExceded(conn);
+	public boolean isTemporaryDBErrr() throws DBException {
+		return isDeadLock() || isLockWaitTimeExceded();
 	}
 
-	public boolean isDeadLock(Connection conn) throws DBException {
+	public boolean isDeadLock() throws DBException {
 		if (!CommonUtilities.getInstance().stringHasValue(getMessage()))
 			return false;
 
-		if (DBUtilities.isOracleDB(conn) && getMessage().contains("ORA-00060")) {
+		if (getMessage().contains("ORA-00060")) {
 			return true;
-		} else if (DBUtilities.isMySQLDB(conn) && getMessage().toLowerCase().contains("deadlock")) {
+		} else if (getMessage().toLowerCase().contains("deadlock")) {
 			return true;
 		} else
 			return false;
@@ -250,12 +249,12 @@ public class DBException extends SQLException implements EtlException {
 		return getMessage().contains("The connection is closed");
 	}
 
-	public boolean isLockWaitTimeExceded(Connection conn) throws DBException {
+	public boolean isLockWaitTimeExceded() throws DBException {
 
 		if (!CommonUtilities.getInstance().stringHasValue(getMessage()))
 			return false;
 
-		if (DBUtilities.isMySQLDB(conn) && getMessage().toLowerCase().contains("lock wait timeout exceeded")) {
+		if (getMessage().toLowerCase().contains("lock wait timeout exceeded")) {
 			return true;
 		}
 
@@ -263,6 +262,7 @@ public class DBException extends SQLException implements EtlException {
 	}
 
 	public static boolean checkIfExceptionContainsMessage(Throwable e, String msg) {
+
 		if (e.getLocalizedMessage() != null && e.getLocalizedMessage().contains(msg)) {
 			return true;
 		} else if (e.getCause() != null) {
@@ -311,6 +311,7 @@ public class DBException extends SQLException implements EtlException {
 	}
 
 	public boolean isEtlStageAreaIssue(EtlDatabaseObject object) throws DBException {
+
 		if (object instanceof EtlStageAreaObject) {
 			return messageContains("stage_record_id", "cannot be null") || messageContains("dst_stage_dst_unique_keys");
 		} else {
@@ -323,7 +324,9 @@ public class DBException extends SQLException implements EtlException {
 			return false;
 
 		if (msg != null && msg.length > 0) {
+
 			for (String m : msg) {
+
 				if (!getLocalizedMessage().contains(m)) {
 					return false;
 				}

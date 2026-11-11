@@ -626,7 +626,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		return recursiveRelationship;
 	}
 
-	public void saveRecordsWithDefaultsParents(Connection srcConn, Connection dstConn) throws DBException {
+	public void saveRecordsWithDefaultsParents(Connection srcConn) throws DBException {
 
 		for (ParentInfo parentInfo : this.getParentsWithDefaultValues()) {
 			RecordWithDefaultParentInfo defaultParentInfo = RecordWithDefaultParentInfo.init(this.getRelatedSrcObject(),

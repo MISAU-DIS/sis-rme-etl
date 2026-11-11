@@ -15,6 +15,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.EtlProgressMeter;
@@ -137,6 +139,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public void resetProgressInfo(Connection conn) throws DBException {
+
 		if (this.progressInfo != null) {
 			this.progressInfo.reset(conn);
 		}
@@ -215,10 +218,12 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			OpenConnection srcConn = openSrcConnection(this);
 
 			try {
+
 				if (getEtlConfiguration().hasEtlItemsConf()) {
+
 					for (EtlItemConfiguration config : getEtlItemConfiguration()) {
-						try (DestinationConnectorConnections connections = config
-						        .createDestinationConnections(this)) {
+
+						try (DestinationConnectorConnections connections = config.createDestinationConnections(this)) {
 							config.doMinimalTableInitialization(srcConn, connections);
 						}
 					}
@@ -226,8 +231,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 				if (getEtlConfiguration().hasTestingItem()) {
 					EtlItemConfiguration testingItem = getEtlConfiguration().getTestingEtlItemConfiguration();
-					try (DestinationConnectorConnections connections = testingItem
-					        .createDestinationConnections(this)) {
+
+					try (DestinationConnectorConnections connections = testingItem.createDestinationConnections(this)) {
 						testingItem.doMinimalTableInitialization(srcConn, connections);
 					}
 				}
@@ -255,6 +260,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		logTrace("Running the Process in Sequencial mode!");
 
 		for (EtlItemConfiguration config : allSync) {
+
 			if (config.isDisabled()) {
 				logDebug(("The operation '" + getOperationType().name().toLowerCase() + "' On Etl Confinguration '"
 						+ config.getConfigCode() + "' is disabled! Skipping...").toUpperCase());
@@ -272,6 +278,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 						+ config.getConfigCode() + "'").toUpperCase());
 
 				if (!config.isFullLoaded()) {
+
 					try {
 						logDebug("Performing the full load of etl item configuration");
 
@@ -308,6 +315,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				OpenConnection conn = openDefaultConn(this);
 
 				try {
+
 					if (isResumable()) {
 						logTrace("Saving Progress Info....");
 
@@ -369,6 +377,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		this.getOperationConfig().recalculateThreads(avaliableItems);
 
 		for (EtlItemConfiguration config : avaliableItems) {
+
 			if (operationTableIsAlreadyFinished(config)) {
 				logDebug(("The operation '" + getOperationType().name().toLowerCase() + "' On Etl Configuration '"
 						+ config.getConfigCode() + "' was already finished!").toUpperCase());
@@ -381,6 +390,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 						+ config.getConfigCode().toUpperCase() + "'");
 
 				if (!config.isFullLoaded()) {
+
 					try {
 						logDebug("Performing the full load of etl item configuration");
 
@@ -412,6 +422,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 				OpenConnection conn = openDefaultConn(this);
 
 				try {
+
 					if (isResumable()) {
 						logTrace("Saving Progress Info....");
 
@@ -447,6 +458,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			logDebug("Determine finalized operations...");
 
 			for (EtlItemConfiguration config : allSync) {
+
 				if (operationTableIsAlreadyFinished(config)) {
 					logDebug(("The operation '" + getOperationType().name().toLowerCase() + "' On Etl Configuration '"
 							+ config.getConfigCode() + "' was already finished!").toUpperCase());
@@ -461,6 +473,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public boolean operationTableIsAlreadyFinished(EtlItemConfiguration etlConfig) {
+
 		try {
 			TableOperationProgressInfo tableOpPm = this.retrieveProgressInfo(etlConfig);
 
@@ -485,7 +498,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	public boolean operationIsAlreadyFinished() {
 
 		if (this.getEtlConfiguration().hasEtlItemsConf()) {
+
 			for (EtlItemConfiguration config : getEtlItemConfiguration()) {
+
 				if (!operationTableIsAlreadyFinished(config)) {
 					return false;
 				}
@@ -493,6 +508,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		}
 
 		if (hasChild()) {
+
 			if (!this.getChild().operationIsAlreadyFinished()) {
 				return false;
 			}
@@ -502,7 +518,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public boolean childOperationsAreAlreadyFinished() {
+
 		if (hasChild()) {
+
 			if (!this.getChild().operationIsAlreadyFinished()) {
 				return false;
 			}
@@ -544,6 +562,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	@Override
 	public void run() {
+
 		try {
 
 			this.logDebug("Starting Processs...");
@@ -648,7 +667,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			return false;
 
 		if (isParallelModeProcessing() && this.getEnginesActivititieMonitor() != null) {
+
 			for (Engine<T> monitor : this.getEnginesActivititieMonitor()) {
+
 				if (!monitor.isStopped()) {
 					return false;
 				}
@@ -662,12 +683,15 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	@Override
 	public boolean isFinished() {
+
 		if (isNotInitialized()) {
 			return false;
 		}
 
 		if (isParallelModeProcessing() && this.getEnginesActivititieMonitor() != null) {
+
 			for (Engine<T> monitor : this.getEnginesActivititieMonitor()) {
+
 				if (!monitor.isFinished()) {
 					return false;
 				}
@@ -749,7 +773,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	@Override
 	public void onStart() {
+
 		if (!generateOperationStatusFile().exists()) {
+
 			if (this.progressInfo.getStartTime() == null) {
 				this.progressInfo.setStartTime(DateAndTimeUtilities.getCurrentDate());
 			}
@@ -770,6 +796,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	@Override
 	public void onStop() {
+
 		if (lastException == null) {
 			logWarn("THE PROCESS " + getControllerId().toUpperCase() + " WAS STOPPED!!!");
 		} else {
@@ -794,6 +821,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			return;
 
 		if (this.enginesActivititieMonitor != null) {
+
 			for (Engine<T> monitor : this.getEnginesActivititieMonitor()) {
 				ThreadPoolService.getInstance().terminateTread(LOG, monitor.getEngineId(), monitor);
 			}
@@ -837,6 +865,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	@Override
 	public boolean isNotInitialized() {
+
 		if (Controller.super.isInitialized()) {
 			return false;
 		}
@@ -852,11 +881,13 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	@Override
 	public void requestStop() {
+
 		if (stopRequested()) {
 			return;
 		}
 
 		synchronized (LOCK) {
+
 			if (stopRequested()) {
 				return;
 			}
@@ -872,6 +903,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			this.stopRequested = true;
 
 			if (this.getEnginesActivititieMonitor() != null) {
+
 				for (Engine<T> engine : this.getEnginesActivititieMonitor()) {
 					engine.requestStop();
 				}
@@ -886,6 +918,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 			boolean atLeastOneEngineIsRunning = false;
 
 			if (this.getEnginesActivititieMonitor() != null) {
+
 				for (Engine<T> engine : this.getEnginesActivititieMonitor()) {
 
 					if (engine.isRunning()) {
@@ -903,7 +936,9 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public TableOperationProgressInfo retrieveProgressInfo(EtlItemConfiguration config) {
+
 		if (progressInfo != null && utilities().listHasElement(progressInfo.getItemsProgressInfo())) {
+
 			for (TableOperationProgressInfo item : progressInfo.getItemsProgressInfo()) {
 				if (item.getEtlConfiguration().equals(config))
 					return item;
@@ -986,7 +1021,8 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 		return this.getOperationConfig().getProcessingBatch();
 	}
 
-	public abstract void afterEtl(List<T> objs, Connection srcConn, Connection dstConn) throws DBException;
+	public abstract void afterEtl(List<T> objs, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException;
 
 	public abstract AbstractEtlSearchParams<T> initMainSearchParams(ThreadRecordIntervalsManager<T> intervalsMgt,
 			Engine<T> engine);
@@ -996,6 +1032,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	private synchronized void addItemToFinalized(EtlItemConfiguration item) {
+
 		if (getFinalizedItems() == null) {
 			this.setFinalizedItems(new ArrayList<>());
 		}

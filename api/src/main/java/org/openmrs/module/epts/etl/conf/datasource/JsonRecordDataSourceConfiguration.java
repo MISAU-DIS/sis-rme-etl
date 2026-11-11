@@ -1,14 +1,13 @@
 package org.openmrs.module.epts.etl.conf.datasource;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
-import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -124,6 +123,7 @@ public class JsonRecordDataSourceConfiguration extends AbstractRecordPrimaryData
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
+
 		if (!(relatedParent instanceof PrimaryDataSourceConfiguration)) {
 			throw new org.openmrs.module.epts.etl.exceptions.EtlConfException(
 					"An extra JSON record data source must belong to a primary data source");
@@ -135,13 +135,17 @@ public class JsonRecordDataSourceConfiguration extends AbstractRecordPrimaryData
 	public EtlDatabaseObject loadRelatedSrcObject(EtlProcessor processor, EtlDatabaseObject srcObject,
 			EtlDatabaseObject dstObject, List<EtlDatabaseObject> avaliableSrcObjects, ConnectorRecordReader<?> reader)
 			throws DBException {
+
 		if (avaliableSrcObjects != null) {
+
 			for (EtlDatabaseObject object : avaliableSrcObjects) {
 				if (object != null && object.getRelatedConfiguration() == this)
 					return object;
 			}
 		}
+
 		if (srcObject != null && srcObject.getAuxLoadObject() != null) {
+
 			for (EtlDatabaseObject object : srcObject.getAuxLoadObject()) {
 				if (object != null && object.getRelatedConfiguration() == this)
 					return object;

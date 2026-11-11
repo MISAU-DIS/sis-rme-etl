@@ -1,9 +1,10 @@
 package org.openmrs.module.epts.etl.databasepreparation.controller;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.databasepreparation.model.DatabasePreparationRecord;
@@ -22,47 +23,49 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  * @author jpboane
  */
 public class DatabasePreparationController extends OperationController<DatabasePreparationRecord> {
-	
+
 	public DatabasePreparationController(ProcessController parent, EtlOperationConfig etlOperationConfig) {
 		super(parent, etlOperationConfig);
 	}
-	
+
 	@Override
 	public boolean mustRestartInTheEnd() {
 		return false;
 	}
-	
+
 	@Override
 	public TaskProcessor<DatabasePreparationRecord> initRelatedTaskProcessor(Engine<DatabasePreparationRecord> monitor,
-	        IntervalExtremeRecord limits, boolean runningInConcurrency) {
-		
+			IntervalExtremeRecord limits, boolean runningInConcurrency) {
+
 		return new DatabasePreparationProcessor(monitor, limits, runningInConcurrency);
 	}
-	
+
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		return 1;
 	}
-	
+
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		return 1;
 	}
-	
+
 	@Override
 	public boolean canBeRunInMultipleEngines() {
 		return false;
 	}
-	
+
 	@Override
-	public void afterEtl(List<DatabasePreparationRecord> objs, Connection srcConn, Connection dstConn) throws DBException {
+	public void afterEtl(List<DatabasePreparationRecord> objs, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<DatabasePreparationRecord> initMainSearchParams(
-	        ThreadRecordIntervalsManager<DatabasePreparationRecord> intervalsMgt, Engine<DatabasePreparationRecord> engine) {
-		
+			ThreadRecordIntervalsManager<DatabasePreparationRecord> intervalsMgt,
+			Engine<DatabasePreparationRecord> engine) {
+
 		return new DatabasePreparationSearchParams(engine, intervalsMgt);
 	}
-	
+
 }

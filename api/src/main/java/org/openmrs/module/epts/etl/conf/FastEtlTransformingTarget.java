@@ -13,6 +13,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -169,6 +171,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 			ds = new ArrayList<>();
 
 			for (EtlDatabaseObject obj : avaliableSrcObjects) {
+
 				if (obj.getRelatedConfiguration() instanceof EtlDataSource) {
 					ds.add((EtlDataSource) obj.getRelatedConfiguration());
 				}
@@ -344,5 +347,18 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	public ActionOnEtlIssue getIncompleteMappingBehavior() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public ConnectorResourceConfiguration getResource() {
+		return null;
+	}
+
+	@Override
+	public void setResource(ConnectorResourceConfiguration resource) {
+	}
+
+	@Override
+	public void setResolvedResource(ConnectorResource resource) {
 	}
 }

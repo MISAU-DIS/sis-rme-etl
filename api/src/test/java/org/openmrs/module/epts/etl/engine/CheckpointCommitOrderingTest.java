@@ -162,6 +162,18 @@ public class CheckpointCommitOrderingTest {
 					public <N> N unwrap(Class<N> nativeType) {
 						return nativeType.cast(src);
 					}
+
+					@Override
+					public void finalizeCapability(BaseConfiguration openedFrom) {
+						// TODO Auto-generated method stub
+
+					}
+
+					@Override
+					public void markAsSuccessifullyTerminected() {
+						// TODO Auto-generated method stub
+
+					}
 				};
 			}
 
@@ -184,6 +196,18 @@ public class CheckpointCommitOrderingTest {
 					@Override
 					public <N> N unwrap(Class<N> nativeType) {
 						return nativeType.cast(dst);
+					}
+
+					@Override
+					public void finalizeCapability(BaseConfiguration openedFrom) {
+						// TODO Auto-generated method stub
+
+					}
+
+					@Override
+					public void markAsSuccessifullyTerminected() {
+						// TODO Auto-generated method stub
+
 					}
 				});
 				return new ConnectorRecordWritersAggregator(writers, new IdentityHashMap<>());
@@ -281,21 +305,24 @@ public class CheckpointCommitOrderingTest {
 		}
 
 		@Override
-		void completeExtractedTask(TaskProcessor<EtlDatabaseObject> processor, OpenConnection src, OpenConnection dst,
-				boolean refresh) {
-			// SQL work is stubbed; transaction and checkpoint lifecycle remain real.
+		void completeExtractedTask(TaskProcessor<EtlDatabaseObject> processor, ConnectorRecordReadersAggregator readers,
+				ConnectorRecordWritersAggregator writers, boolean refreshProgress) throws DBException {
 			processor.changeStatusToFinished();
 		}
 
 		@Override
-		void flushPendingPersistence(Connection src, Connection dst) {
+		void flushPendingPersistence(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
+				throws DBException {
 			if (failAuxiliary)
 				throw new IllegalStateException("Auxiliary persistence failed");
+
 		}
 
 		@Override
-		void flushPendingPersistenceUsingDedicatedConnection() {
+		void flushPendingPersistenceUsingDedicatedConnection(ConnectorRecordReadersAggregator readers,
+				ConnectorRecordWritersAggregator writers) throws DBException {
 			flushPendingPersistence(null, null);
+
 		}
 
 		@Override

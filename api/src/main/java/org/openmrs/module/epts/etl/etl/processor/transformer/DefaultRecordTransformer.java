@@ -328,7 +328,8 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 		collectToSrcObjects(srcObjectExpansion, result);
 		collectToSrcObjects(dstObject, result);
 		collectToSrcObjects(migratedDstParent, result);
-		collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType, writer);
+		collectToSrcObjectsFromExtraDataSources(processor, result, srcObject, dstObject, transformationType, reader,
+				writer);
 
 		return result;
 
@@ -384,7 +385,7 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 
 	private void collectToSrcObjectsFromExtraDataSources(EtlProcessor processor, Set<EtlDatabaseObject> srcObjects,
 			EtlDatabaseObject srcObject, EtlDatabaseObject dstObject, TransformationType transformationType,
-			ConnectorRecordWriter<?> writer) throws DBException {
+			ConnectorRecordReader<?> mainReader, ConnectorRecordWriter<?> writer) throws DBException {
 
 		if (srcObject.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration) {
 			PrimaryDataSourceConfiguration srcConf = (PrimaryDataSourceConfiguration) srcObject
@@ -393,7 +394,9 @@ public class DefaultRecordTransformer implements EtlRecordTransformer {
 			if (!srcConf.doNotUseAsDatasource()) {
 
 				for (EtlAdditionalDataSource ds : srcConf.getParentSource().getAvailableAdditionalDataSources()) {
-					ConnectorRecordReader<?> reader = processor.getRecordReader(ds);
+					ConnectorRecordReader<?> reader = (ConnectorRecordReader<?>) mainReader.getAggregator()
+							.get(ds.getResolvedResource());
+
 					List<EtlDatabaseObject> avaliableObjects = srcObjects.stream()
 							.collect(java.util.stream.Collectors.toList());
 

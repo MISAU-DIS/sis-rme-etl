@@ -22,9 +22,9 @@ import org.openmrs.module.epts.etl.model.base.BaseDAO;
 import org.openmrs.module.epts.etl.utilities.DateAndTimeUtilities;
 import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class DatabaseObjectDAO extends BaseDAO {
 
@@ -259,6 +259,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 	@SuppressWarnings({ "unchecked", "deprecation" })
 	public static <T extends EtlDatabaseObject> T getByOid(TableConfiguration tabConf, Oid oid, Connection conn)
 			throws DBException {
+
 		try {
 
 			oid.setTabConf(tabConf);
@@ -540,6 +541,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 			return result;
 
 		List<EtlDatabaseObject> recordsToInsert = collectRecordsEligibleForInsert(objects);
+
 		if (recordsToInsert.isEmpty()) {
 			return result;
 		}
@@ -595,10 +597,11 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 				LOG.trace("Inserted " + recordsToInsert.size() + " " + tabConf.getTableName());
 			} catch (DBException e) {
+
 				// The database may already have rolled back the complete transaction.
 				// Let the engine retry the transactional unit instead of falling back to
 				// individual inserts on an invalidated transaction.
-				if (e.isTemporaryDBErrr(conn)) {
+				if (e.isTemporaryDBErrr()) {
 					throw e;
 				}
 
@@ -608,13 +611,16 @@ public class DatabaseObjectDAO extends BaseDAO {
 				}
 
 				if (tryToResolveException) {
+
 					for (EtlDatabaseObject record : recordsToInsert) {
+
 						try {
 							record.loadObjectIdData(tabConf);
 
 							record.save(tabConf, conn);
 
 							if (generateOperationResult) {
+
 								if (record.isInEtlProcess() && record.getEtlDefaultEtlException() != null) {
 									result.addToRecordsWithUnresolvedErrors(record.getEtlInfo().getRelatedSrcObject(),
 											record.getEtlDefaultEtlException());
@@ -623,6 +629,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 								}
 							}
 						} catch (DBException e1) {
+
 							if (e1.getMessage().contains("stage_record_id")) {
 								tabConf.getRelatedEtlConf()
 										.warn("Error encountered when creating stage record " + record);
@@ -668,7 +675,9 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 	private static List<EtlDatabaseObject> collectRecordsEligibleForInsert(List<EtlDatabaseObject> objects) {
 		List<EtlDatabaseObject> recordsToInsert = new ArrayList<>(objects.size());
+
 		for (EtlDatabaseObject record : objects) {
+
 			if (record.isExcluded() || record.isInEtlProcess() && record.getEtlInfo().hasExceptionOnEtl()) {
 				continue;
 			}
@@ -730,6 +739,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		EtlDatabaseObject maxObj = find(GenericDatabaseObject.class, sql, null, conn);
 
 		if (maxObj != null) {
+
 			if (maxObj.getObjectId().getSimpleValueAsInt() < maxAcceptableId) {
 				return maxAcceptableId;
 			} else {
@@ -787,9 +797,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 		SearchClauses<EtlDatabaseObject> searchClauses = searchParams.generateSearchClauses(null, null, null, conn,
 				null);
 
-		searchClauses
-				.setColumnsToSelect(function + "("
-						+ searchParams.getConfig().requireJdbcPrimaryDataSource().getPrimaryKey() + ") value");
+		searchClauses.setColumnsToSelect(
+				function + "(" + searchParams.getConfig().requireJdbcPrimaryDataSource().getPrimaryKey() + ") value");
 
 		Object[] params = {};
 
@@ -972,9 +981,11 @@ public class DatabaseObjectDAO extends BaseDAO {
 				new IntervalExtremeRecord());
 
 		for (EtlDatabaseObject record : objects) {
+
 			try {
 				record.delete(conn);
 			} catch (DBException e) {
+
 				if (!config.getRelatedEtlConf().getDefaultExceptionBehavior().ignore()) {
 					throw e;
 				}
@@ -999,7 +1010,9 @@ public class DatabaseObjectDAO extends BaseDAO {
 				throw new ForbiddenOperationException("Atempt to update not existing record: " + record);
 
 			if (dstConf.hasActionWhenRecordIdIsSet() && dstConf.getIdentifiedRecordAction().isPatchUpdate()) {
+
 				for (Field field : dstConf.getFields()) {
+
 					if (!dstConf.getPatchFields().contains(field.getName())) {
 						record.setFieldValue(field.getName(), recordOnDB.getFieldValue(field.getName()));
 					}

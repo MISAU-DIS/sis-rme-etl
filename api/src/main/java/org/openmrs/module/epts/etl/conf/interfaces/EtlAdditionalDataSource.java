@@ -6,15 +6,11 @@ import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
-import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Represents an additional data source used in the ETL process.
@@ -32,17 +28,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * flow.
  */
 public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlElement {
-
-	ConnectorResourceConfiguration getResource();
-
-	void setResource(ConnectorResourceConfiguration resource);
-
-	@JsonIgnore
-	ConnectorResource getResolvedResource();
-
-	@JsonIgnore
-	void setResolvedResource(ConnectorResource resource);
-
 	default ActionOnEtlIssue onMultipleSrcObjectsFound() {
 		return ActionOnEtlIssue.ABORT_PROCESS;
 	}
@@ -82,27 +67,24 @@ public interface EtlAdditionalDataSource extends EtlDataSource, ConditionalEtlEl
 		Map<String, Object> allParameters = new HashMap<>();
 
 		// 1. Parameters inherited from the parent source configuration
-		Map<String, Object> parentParameters =
-				this.getRelatedPrimaryDataSource().retrieveAllAvailableTemplateParameters();
+		Map<String, Object> parentParameters = this.getRelatedPrimaryDataSource()
+				.retrieveAllAvailableTemplateParameters();
 
 		if (parentParameters != null && !parentParameters.isEmpty()) {
 			allParameters.putAll(parentParameters);
 		}
 
 		// 2. Parameters defined by this additional data source
-		Map<String, Object> ownParameters =
-				EtlDataSource.super.retrieveAllAvailableTemplateParameters();
+		Map<String, Object> ownParameters = EtlDataSource.super.retrieveAllAvailableTemplateParameters();
 
 		if (ownParameters != null && !ownParameters.isEmpty()) {
 			allParameters.putAll(ownParameters);
 		}
 
 		// 3. Global ETL parameters defined in EtlConfiguration
-		EtlConfiguration etlConfiguration =
-				this.getRelatedPrimaryDataSource().getRelatedEtlConf();
+		EtlConfiguration etlConfiguration = this.getRelatedPrimaryDataSource().getRelatedEtlConf();
 
-		if (etlConfiguration != null
-				&& etlConfiguration.getParams() != null
+		if (etlConfiguration != null && etlConfiguration.getParams() != null
 				&& !etlConfiguration.getParams().isEmpty()) {
 
 			allParameters.putAll(etlConfiguration.getParams());

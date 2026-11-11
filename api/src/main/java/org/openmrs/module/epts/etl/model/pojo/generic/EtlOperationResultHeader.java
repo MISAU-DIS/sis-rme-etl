@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.model.pojo.generic;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.exceptions.EtlException;
@@ -164,7 +165,9 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 	public void addAllFromOtherResult(EtlOperationResultHeader<T> otherResult) {
 		if (otherResult == null || otherResult == this)
 			return;
+
 		for (EtlOperationResultItemType type : EtlOperationResultItemType.values()) {
+
 			for (Map.Entry<ResultRecordKey, EtlOperationItemResult<T>> entry : otherResult.bucket(type).entrySet()) {
 				EtlOperationItemResult<T> item = entry.getValue();
 				ResultRecordKey key = identityByInstance.get(item.getRecord());
@@ -233,6 +236,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 	}
 
 	private void addAll(List<EtlOperationItemResult<T>> toAdd, EtlOperationResultItemType type) {
+
 		if (utilities.listHasElement(toAdd)) {
 
 			for (EtlOperationItemResult<T> rec : toAdd) {
@@ -286,16 +290,20 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		add(resultItem, resultItem.getType());
 	}
 
-	public void documentErrors(Connection srcConn, Connection dstConn) throws DBException {
-		EtlResultErrorDocumenter.document(getAllRecordsWithErros(), srcConn);
+	public void documentErrors(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
+			throws DBException {
+		
+		EtlResultErrorDocumenter.document(getAllRecordsWithErros(), readers.getEtlSrcConn());
 	}
 
 	public void printStackErrorOfFatalErrors() {
+
 		if (getFatalException() != null) {
 			getFatalException().printStackTrace();
 		} else {
 
 			for (EtlOperationItemResult<T> r : getRecordsWithUnexpectedErrors()) {
+
 				if (r.hasException()) {
 					r.getException().printStackTrace();
 				}
@@ -304,6 +312,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 	}
 
 	public void throwDefaultExcetions(Engine<T> engine) throws Exception {
+
 		if (hasFatalException()) {
 
 			String msg = "Error happened on etl '" + engine.getEngineId();
@@ -320,7 +329,9 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 		}
 
 		for (EtlOperationItemResult<T> o : getRecordsWithUnexpectedErrors()) {
+
 			if (o.getException() != null) {
+
 				try {
 					throw o.getException().getException();
 				} catch (Throwable e) {
@@ -362,6 +373,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 			List<EtlOperationResultHeader<T>> results) throws DBException {
 
 		for (EtlOperationResultHeader<T> result : results) {
+
 			if (result.hasFatalError()) {
 				return true;
 			}
@@ -373,7 +385,9 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 
 	public static <T extends EtlDatabaseObject> EtlOperationResultHeader<T> getDefaultResultWithFatalError(
 			List<EtlOperationResultHeader<T>> results) throws DBException {
+
 		for (EtlOperationResultHeader<T> result : results) {
+
 			if (result.hasFatalError()) {
 				return result;
 			}
@@ -386,6 +400,7 @@ public class EtlOperationResultHeader<T extends EtlDatabaseObject> {
 			List<EtlOperationResultHeader<T>> results) {
 
 		for (EtlOperationResultHeader<T> result : results) {
+
 			if (result.hasRecordsWithRecursiveRelashionships()) {
 				return true;
 			}

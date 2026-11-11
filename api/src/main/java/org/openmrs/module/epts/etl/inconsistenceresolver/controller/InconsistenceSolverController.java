@@ -1,9 +1,10 @@
 package org.openmrs.module.epts.etl.inconsistenceresolver.controller;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
@@ -19,94 +20,93 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
- * This class is responsible for control the data inconsistence resolving in the synchronization
- * processs
+ * This class is responsible for control the data inconsistence resolving in the
+ * synchronization processs
  * 
  * @author jpboane
  */
 public class InconsistenceSolverController extends OperationController<EtlDatabaseObject> {
-	
+
 	public InconsistenceSolverController(ProcessController processController, EtlOperationConfig operationConfig) {
 		super(processController, operationConfig);
 	}
-	
+
 	@Override
 	public TaskProcessor<EtlDatabaseObject> initRelatedTaskProcessor(Engine<EtlDatabaseObject> monitor,
-	        IntervalExtremeRecord limits, boolean runningInConcurrency) {
+			IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		return new InconsistenceSolverProcessor(monitor, limits, runningInConcurrency);
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlDatabaseObject> initMainSearchParams(
-	        ThreadRecordIntervalsManager<EtlDatabaseObject> intervalsMgt, Engine<EtlDatabaseObject> engine) {
-		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new InconsistenceSolverSearchParams(engine, intervalsMgt);
+			ThreadRecordIntervalsManager<EtlDatabaseObject> intervalsMgt, Engine<EtlDatabaseObject> engine) {
+		AbstractEtlSearchParams<EtlDatabaseObject> searchParams = new InconsistenceSolverSearchParams(engine,
+				intervalsMgt);
 		searchParams.setQtdRecordPerSelected(getQtyRecordsPerProcessing());
 		searchParams.setSyncStartDate(this.getProgressInfo().getStartTime());
-		
+
 		return searchParams;
 	}
-	
+
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		OpenConnection conn = null;
-		
+
 		try {
 			conn = openSrcConnection(this);
-			
-			EtlDatabaseObject obj = DatabaseObjectDAO.getFirstNeverProcessedRecordOnOrigin(engine.getJdbcPrimaryDataSource(), conn);
-			
+
+			EtlDatabaseObject obj = DatabaseObjectDAO
+					.getFirstNeverProcessedRecordOnOrigin(engine.getJdbcPrimaryDataSource(), conn);
+
 			if (obj != null)
 				return obj.getObjectId().getSimpleValueAsInt();
-			
+
 			return 0;
-		}
-		catch (DBException e) {
+		} catch (DBException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn);
 		}
 	}
-	
+
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		OpenConnection conn = null;
-		
+
 		try {
 			conn = openSrcConnection(this);
-			
-			EtlDatabaseObject obj = DatabaseObjectDAO.getLastNeverProcessedRecordOnOrigin(engine.getJdbcPrimaryDataSource(), conn);
-			
+
+			EtlDatabaseObject obj = DatabaseObjectDAO
+					.getLastNeverProcessedRecordOnOrigin(engine.getJdbcPrimaryDataSource(), conn);
+
 			if (obj != null)
 				return obj.getObjectId().getSimpleValueAsInt();
-			
+
 			return 0;
-		}
-		catch (DBException e) {
+		} catch (DBException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn);
 		}
 	}
-	
+
 	@Override
 	public boolean mustRestartInTheEnd() {
 		return false;
 	}
-	
+
 	@Override
 	public boolean canBeRunInMultipleEngines() {
 		return true;
 	}
-	
+
 	@Override
-	public void afterEtl(List<EtlDatabaseObject> objs, Connection srcConn, Connection dstConn) throws DBException {
-		// TODO Auto-generated method stub
-		
+	public void afterEtl(List<EtlDatabaseObject> objs, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
+
 	}
 }

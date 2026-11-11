@@ -35,6 +35,7 @@ public final class ConnectorRecordReaderFactory {
 		if (resource.getEndpoint().getType() == ConnectorType.JDBC) {
 			return new JdbcConnectorRecordReader<>(resource, searchParams, srcConnection, dstConnection);
 		}
+
 		if (resource.getEndpoint().getType() == ConnectorType.FILE) {
 			return new FileConnectorRecordReader<>(resource, searchParams.getPrimaryDataSource(), srcConnection);
 		}

@@ -1,11 +1,12 @@
 package org.openmrs.module.epts.etl.resolveconflictsinstagearea.controller;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
 import org.openmrs.module.epts.etl.common.model.SyncImportInfoDAO;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
@@ -25,95 +26,91 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
  * @author jpboane
  */
 public class ResolveConflictsInStageAreaController extends OperationController<EtlStageRecordVO> {
-	
-	public ResolveConflictsInStageAreaController(ProcessController processController, EtlOperationConfig operationConfig) {
+
+	public ResolveConflictsInStageAreaController(ProcessController processController,
+			EtlOperationConfig operationConfig) {
 		super(processController, operationConfig);
 	}
-	
+
 	@Override
 	public TaskProcessor<EtlStageRecordVO> initRelatedTaskProcessor(Engine<EtlStageRecordVO> monitor,
-	        IntervalExtremeRecord limits, boolean runningInConcurrency) {
+			IntervalExtremeRecord limits, boolean runningInConcurrency) {
 		return new ResolveConflictsInStageAreaProcessor(monitor, limits, runningInConcurrency);
 	}
-	
+
 	@Override
 	public AbstractEtlSearchParams<EtlStageRecordVO> initMainSearchParams(
-	        ThreadRecordIntervalsManager<EtlStageRecordVO> intervalsMgt, Engine<EtlStageRecordVO> engine) {
-		
+			ThreadRecordIntervalsManager<EtlStageRecordVO> intervalsMgt, Engine<EtlStageRecordVO> engine) {
+
 		AbstractEtlSearchParams<EtlStageRecordVO> searchParams = new ResolveConflictsInStageAreaSearchParams(engine,
-		        intervalsMgt);
-		
+				intervalsMgt);
+
 		searchParams.setQtdRecordPerSelected(getQtyRecordsPerProcessing());
 		searchParams.setSyncStartDate(getEtlConfiguration().getStartDate());
-		
+
 		return searchParams;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public long getMinRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		OpenConnection conn = null;
-		
+
 		ResolveConflictsInStageAreaSearchParams searchParams = new ResolveConflictsInStageAreaSearchParams(
-		        (Engine<EtlStageRecordVO>) engine, null);
-		
+				(Engine<EtlStageRecordVO>) engine, null);
+
 		try {
 			conn = openSrcConnection(this);
-			
+
 			EtlStageRecordVO rec = SyncImportInfoDAO.getFirstRecord(searchParams, conn);
-			
+
 			return rec != null ? rec.getId() : 0;
-			
-		}
-		catch (DBException e) {
+
+		} catch (DBException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn);
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public long getMaxRecordId(Engine<? extends EtlDatabaseObject> engine) {
 		OpenConnection conn = null;
-		
+
 		ResolveConflictsInStageAreaSearchParams searchParams = new ResolveConflictsInStageAreaSearchParams(
-		        (Engine<EtlStageRecordVO>) engine, null);
-		
+				(Engine<EtlStageRecordVO>) engine, null);
+
 		try {
 			conn = openSrcConnection(this);
-			
+
 			EtlStageRecordVO rec = SyncImportInfoDAO.getLastRecord(searchParams, conn);
-			
+
 			return rec != null ? rec.getId() : 0;
-			
-		}
-		catch (DBException e) {
+
+		} catch (DBException e) {
 			e.printStackTrace();
-			
+
 			throw new RuntimeException(e);
-		}
-		finally {
+		} finally {
 			finalizeConnection(conn);
 		}
 	}
-	
+
 	@Override
 	public boolean mustRestartInTheEnd() {
 		return false;
 	}
-	
+
 	@Override
 	public boolean canBeRunInMultipleEngines() {
 		return false;
 	}
-	
+
 	@Override
-	public void afterEtl(List<EtlStageRecordVO> objs, Connection srcConn, Connection dstConn) throws DBException {
-		// TODO Auto-generated method stub
-		
+	public void afterEtl(List<EtlStageRecordVO> objs, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 	}
 }

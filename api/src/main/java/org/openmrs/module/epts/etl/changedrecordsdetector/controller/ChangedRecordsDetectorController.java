@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.changedrecordsdetector.controller;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -10,6 +9,8 @@ import org.openmrs.module.epts.etl.changedrecordsdetector.model.ChangedRecordsDe
 import org.openmrs.module.epts.etl.changedrecordsdetector.model.DetectedRecordInfoDAO;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
@@ -39,6 +40,7 @@ public class ChangedRecordsDetectorController extends OperationController<EtlDat
 		super.onStart();
 
 		try {
+
 			if (!existDetectedRecordInfoTable()) {
 				generateDetectedRecordInfoTable();
 			}
@@ -90,8 +92,8 @@ public class ChangedRecordsDetectorController extends OperationController<EtlDat
 				return DetectedRecordInfoDAO.getLastChangedRecord(engine.getJdbcPrimaryDataSource(),
 						getEtlConfiguration().getStartDate(), conn);
 			} else if (operationConfig.isNewRecordsDetector()) {
-				return DetectedRecordInfoDAO.getLastNewRecord(engine.getJdbcPrimaryDataSource(), getEtlConfiguration().getStartDate(),
-						conn);
+				return DetectedRecordInfoDAO.getLastNewRecord(engine.getJdbcPrimaryDataSource(),
+						getEtlConfiguration().getStartDate(), conn);
 			} else
 				throw new ForbiddenOperationException(
 						"The operation '" + getOperationType() + "' is not supported in this controller!");
@@ -168,6 +170,7 @@ public class ChangedRecordsDetectorController extends OperationController<EtlDat
 
 			throw new RuntimeException(e);
 		} finally {
+
 			if (conn != null) {
 				conn.markAsSuccessifullyTerminated();
 				conn.finalizeConnection(this);
@@ -181,7 +184,8 @@ public class ChangedRecordsDetectorController extends OperationController<EtlDat
 	}
 
 	@Override
-	public void afterEtl(List<EtlDatabaseObject> objs, Connection srcConn, Connection dstConn) throws DBException {
+	public void afterEtl(List<EtlDatabaseObject> objs, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 	}
 
 	@Override

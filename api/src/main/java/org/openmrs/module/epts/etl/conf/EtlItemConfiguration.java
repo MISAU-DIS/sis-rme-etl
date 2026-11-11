@@ -513,8 +513,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
-			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWritersAggregator writers)
-			throws DBException {
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 
 		ConnectorResource sourceResource = getResolvedSrcResource();
 
@@ -547,8 +547,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 	/** Creates the primary and additional reader scope for one ETL worker. */
 	public <T extends EtlDatabaseObject> ConnectorRecordReadersAggregator createSourceReaders(
-			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWritersAggregator writers)
-			throws DBException {
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
+			ConnectorRecordWritersAggregator writers) throws DBException {
+
 		Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers = new IdentityHashMap<>();
 		Map<EtlDataSource, ConnectorResource> resources = new IdentityHashMap<>();
 		Map<ConnectorEndpoint, OpenConnection> jdbcConnections = new IdentityHashMap<>();
@@ -620,7 +621,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				resources.put(dataSource, resource);
 			}
 
-			return new ConnectorRecordReadersAggregator(primaryReader, readers, resources);
+			ConnectorRecordReadersAggregator agg = new ConnectorRecordReadersAggregator(primaryReader, readers,
+					resources);
+
+			agg.loadAggregatorToAvaliableCapabilities();
+
+			return agg;
 		} catch (DBException | RuntimeException exception) {
 			OpenConnection.finalizeAllConnections(openedConnections, openedFrom);
 			throw exception;
@@ -686,7 +692,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			resources.put(destination, resource);
 		}
 
-		return new ConnectorRecordWritersAggregator(writers, resources);
+		ConnectorRecordWritersAggregator agg = new ConnectorRecordWritersAggregator(writers, resources);
+
+		agg.loadAggregatorToAvaliableCapabilities();
+
+		return agg;
 	}
 
 	/**
@@ -702,13 +712,17 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
 
-		return new ConnectorRecordWritersAggregator(writers, Collections.emptyMap());
+		ConnectorRecordWritersAggregator agg = new ConnectorRecordWritersAggregator(writers, Collections.emptyMap());
+
+		agg.loadAggregatorToAvaliableCapabilities();
+
+		return agg;
 	}
 
 	/** Creates the reader used by processors that operate on the ETL database. */
-	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createEtlDatabaseReader(
-			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, ConnectorRecordWritersAggregator writers)
-			throws DBException {
+	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createEtlDatabaseReader_(
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 		ConnectorResource resource = getEtlDatabaseDataSource().getResolvedResource();
 		OpenConnection sourceConnection = null;
 

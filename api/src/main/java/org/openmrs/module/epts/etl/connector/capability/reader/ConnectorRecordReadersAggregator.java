@@ -9,9 +9,11 @@ import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapabilityProvider;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.aggregator.ConnectorRecordCapabilityProviderAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 
 /** Readers resolved for one ETL worker, indexed by source configuration. */
 public final class ConnectorRecordReadersAggregator implements ConnectorRecordCapabilityProviderAggregator {
@@ -60,11 +62,12 @@ public final class ConnectorRecordReadersAggregator implements ConnectorRecordCa
 		return (ConnectorRecordReader<T>) reader;
 	}
 
-	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> get(EtlDataSource configuration) {
+	@Override
+	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> get(EtlObjectConfiguration configuration) {
 		return get(getResource(configuration));
 	}
 
-	public ConnectorResource getResource(EtlDataSource configuration) {
+	public ConnectorResource getResource(EtlObjectConfiguration configuration) {
 		ConnectorResource resource = resourcesByConfiguration.get(configuration);
 
 		if (resource == null) {
@@ -113,8 +116,12 @@ public final class ConnectorRecordReadersAggregator implements ConnectorRecordCa
 		return false;
 	}
 
+	@Override
+	public List<ConnectorCapabilityProvider<?>> collectAvaliableCapabilities() {
+		return new ArrayList<ConnectorCapabilityProvider<?>>(readers.values());
+	}
+
 	public Connection getEtlSrcConn() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

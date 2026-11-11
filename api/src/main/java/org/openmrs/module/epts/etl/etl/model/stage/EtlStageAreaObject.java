@@ -47,7 +47,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	}
 
 	private EtlStageAreaObject(EtlStageAreaObject srcStageInfoObject, EtlDatabaseObject obj, EtlStageTableType type,
-			Connection srcConn, Connection dstConn) throws DBException {
+			Connection srcConn) throws DBException {
 
 		this.type = type;
 		this.relatedEtlObject = obj;
@@ -102,8 +102,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 			this.setRelatedConfiguration(dstStageTable);
 
-			EtlObjectConfiguration sourceConfiguration = this.getRelatedEtlObject().getEtlInfo()
-					.getPrimaryDataSource();
+			EtlObjectConfiguration sourceConfiguration = this.getRelatedEtlObject().getEtlInfo().getPrimaryDataSource();
 			EtlConfigurationTableConf srcStageTable = StageAreaStorageManager.resolveStageTable(sourceConfiguration,
 					EtlStageTableType.SRC, srcConn);
 
@@ -255,50 +254,49 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 	}
 
 	private static EtlStageAreaObject generate(EtlStageAreaObject srcStageInfoObject,
-			EtlDatabaseObject relatedEtlObject, EtlStageTableType type, Connection srcConn, Connection dstConn)
+			EtlDatabaseObject relatedEtlObject, EtlStageTableType type, Connection srcConn) throws DBException {
+
+		return new EtlStageAreaObject(srcStageInfoObject, relatedEtlObject, type, srcConn);
+	}
+
+	public static EtlStageAreaObject generateSrc(EtlDatabaseObject relatedEtlObject, Connection srcConn)
 			throws DBException {
 
-		return new EtlStageAreaObject(srcStageInfoObject, relatedEtlObject, type, srcConn, dstConn);
-	}
-
-	public static EtlStageAreaObject generateSrc(EtlDatabaseObject relatedEtlObject, Connection srcConn,
-			Connection dstConn) throws DBException {
-
 		EtlObjectConfiguration tabConf = relatedEtlObject.getRelatedConfiguration();
 
 		if (tabConf.hasPK()) {
-			return generate(null, relatedEtlObject, EtlStageTableType.SRC, srcConn, dstConn);
+			return generate(null, relatedEtlObject, EtlStageTableType.SRC, srcConn);
 		} else {
 			return null;
 		}
 	}
 
-	public static EtlStageAreaObject generateProcessedRecord(EtlDatabaseObject relatedEtlObject, Connection srcConn,
-			Connection dstConn) throws DBException {
+	public static EtlStageAreaObject generateProcessedRecord(EtlDatabaseObject relatedEtlObject, Connection srcConn)
+			throws DBException {
 
 		EtlObjectConfiguration tabConf = relatedEtlObject.getRelatedConfiguration();
 
 		if (tabConf.hasPK()) {
-			return generate(null, relatedEtlObject, EtlStageTableType.PROCESSED_RECORD, srcConn, dstConn);
+			return generate(null, relatedEtlObject, EtlStageTableType.PROCESSED_RECORD, srcConn);
 		} else {
 			return null;
 		}
 	}
 
-	public static EtlStageAreaObject generateSrcStageRecord(EtlDatabaseObject relatedEtlObject, Connection srcConn,
-			Connection dstConn) throws DBException {
+	public static EtlStageAreaObject generateSrcStageRecord(EtlDatabaseObject relatedEtlObject, Connection srcConn)
+			throws DBException {
 
 		EtlObjectConfiguration tabConf = relatedEtlObject.getRelatedConfiguration();
 
 		if (tabConf.hasPK()) {
-			return generate(null, relatedEtlObject, EtlStageTableType.SRC, srcConn, dstConn);
+			return generate(null, relatedEtlObject, EtlStageTableType.SRC, srcConn);
 		} else {
 			return null;
 		}
 	}
 
 	public static List<EtlStageAreaObject> generateDst(EtlStageAreaObject srcStageInfoObject,
-			List<EtlDatabaseObject> relatedEtlObject, Connection srcConn, Connection dstConn) throws DBException {
+			List<EtlDatabaseObject> relatedEtlObject, Connection srcConn) throws DBException {
 
 		List<EtlStageAreaObject> recs = new ArrayList<>();
 
@@ -308,7 +306,7 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 				EtlObjectConfiguration tabConf = etlObject.getRelatedConfiguration();
 
 				if (tabConf.hasPK()) {
-					recs.add(generate(srcStageInfoObject, etlObject, EtlStageTableType.DST, srcConn, dstConn));
+					recs.add(generate(srcStageInfoObject, etlObject, EtlStageTableType.DST, srcConn));
 				}
 			}
 		}
@@ -360,7 +358,8 @@ public class EtlStageAreaObject extends GenericDatabaseObject {
 
 		if (etlObject.hasUniqueKeys()) {
 			// We want to preserve the key name
-			allKeys.addAll(UniqueKeyInfo.cloneAllWithKeyNameAndLoadValues(objectConfiguration.getUniqueKeys(), etlObject));
+			allKeys.addAll(
+					UniqueKeyInfo.cloneAllWithKeyNameAndLoadValues(objectConfiguration.getUniqueKeys(), etlObject));
 		}
 
 		return allKeys;

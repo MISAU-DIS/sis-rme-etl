@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
@@ -19,6 +20,7 @@ import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWr
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
  * Adapters used only while JDBC-based internals migrate to connector contexts.
@@ -44,6 +46,22 @@ public final class JdbcConnectorRuntimeAdapters {
 			public <N> N unwrap(Class<N> nativeType) {
 				return nativeType.cast(connection);
 			}
+
+			@Override
+			public void finalizeCapability(BaseConfiguration openedFrom) {
+
+				if (connection instanceof OpenConnection) {
+					((OpenConnection) connection).finalizeConnection(openedFrom);
+				}
+			}
+
+			@Override
+			public void markAsSuccessifullyTerminected() {
+
+				if (connection instanceof OpenConnection) {
+					((OpenConnection) connection).markAsSuccessifullyTerminated();
+				}
+			}
 		};
 	}
 
@@ -63,6 +81,22 @@ public final class JdbcConnectorRuntimeAdapters {
 			public <N> N unwrap(Class<N> nativeType) {
 				return nativeType.cast(connection);
 			}
+
+			@Override
+			public void finalizeCapability(BaseConfiguration openedFrom) {
+
+				if (connection instanceof OpenConnection) {
+					((OpenConnection) connection).finalizeConnection(openedFrom);
+				}
+			}
+
+			@Override
+			public void markAsSuccessifullyTerminected() {
+
+				if (connection instanceof OpenConnection) {
+					((OpenConnection) connection).markAsSuccessifullyTerminated();
+				}
+			}
 		};
 	}
 
@@ -71,7 +105,12 @@ public final class JdbcConnectorRuntimeAdapters {
 		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
 		collectWriters(item, connection, writers, resources,
 				java.util.Collections.newSetFromMap(new IdentityHashMap<>()));
-		return new ConnectorRecordWritersAggregator(writers, resources);
+
+		ConnectorRecordWritersAggregator ag = new ConnectorRecordWritersAggregator(writers, resources);
+
+		ag.loadAggregatorToAvaliableCapabilities();
+
+		return ag;
 	}
 
 	private static void collectWriters(EtlItemConfiguration item, Connection connection,

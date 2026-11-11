@@ -16,22 +16,21 @@ public class EtlStageObjectInfo {
 
 	private List<EtlStageAreaObject> dstStageInfoObject;
 
-	private EtlStageObjectInfo(EtlDatabaseObject srcObj, Connection srcConn, Connection dstConn) throws DBException {
+	private EtlStageObjectInfo(EtlDatabaseObject srcObj, Connection srcConn) throws DBException {
 
-		this.setSrcStageInfoObject(EtlStageAreaObject.generateSrc(srcObj, srcConn, dstConn));
+		this.setSrcStageInfoObject(EtlStageAreaObject.generateSrc(srcObj, srcConn));
 
 		if (srcObj.hasDestinationRecords()) {
-			this.setDstStageInfoObject(EtlStageAreaObject.generateDst(srcStageInfoObject,
-					srcObj.getDestinationObjects(), srcConn, dstConn));
+			this.setDstStageInfoObject(
+					EtlStageAreaObject.generateDst(srcStageInfoObject, srcObj.getDestinationObjects(), srcConn));
 		}
 
 		srcObj.setEtlStageObjectInfo(this);
 	}
 
-	public static EtlStageObjectInfo generate(EtlDatabaseObject rec, Connection srcConn, Connection dstConn)
-			throws DBException {
+	public static EtlStageObjectInfo generate(EtlDatabaseObject rec, Connection srcConn) throws DBException {
 
-		EtlStageObjectInfo recInfo = new EtlStageObjectInfo(rec, srcConn, dstConn);
+		EtlStageObjectInfo recInfo = new EtlStageObjectInfo(rec, srcConn);
 
 		return recInfo;
 	}
@@ -54,6 +53,7 @@ public class EtlStageObjectInfo {
 			List<EtlStageAreaObject> allNew = new ArrayList<>();
 
 			for (EtlStageAreaObject o : this.getDstStageInfoObject()) {
+
 				if (!o.hasValuedObjectId()) {
 					allNew.add(o);
 				}
@@ -69,6 +69,7 @@ public class EtlStageObjectInfo {
 			List<EtlStageAreaObject> old = new ArrayList<>();
 
 			for (EtlStageAreaObject o : this.getDstStageInfoObject()) {
+
 				if (o.hasValuedObjectId()) {
 					old.add(o);
 				}
@@ -83,8 +84,11 @@ public class EtlStageObjectInfo {
 	}
 
 	private void loadDstStageObjectIdToDstKeyInfoObject() {
+
 		if (hasDstStageInfoObject()) {
+
 			for (EtlStageAreaObject obj : getDstStageInfoObject()) {
+
 				if (obj.getRelatedEtlObject().getEtlInfo().isInSuccessStatus()) {
 					obj.loadIdToChilds();
 				}
@@ -126,10 +130,12 @@ public class EtlStageObjectInfo {
 	}
 
 	private void loadSrcIdToDstStageObject() {
+
 		if (hasDstStageInfoObject()) {
 			List<EtlStageAreaObject> newDstStageInfo = new ArrayList<>();
 
 			for (EtlStageAreaObject obj : this.getDstStageInfoObject()) {
+
 				if (this.getSrcStageInfoObject().getFieldValue("id") != null) {
 					obj.setFieldValue("stage_record_id", this.getSrcStageInfoObject().getFieldValue("id"));
 					newDstStageInfo.add(obj);
@@ -148,6 +154,7 @@ public class EtlStageObjectInfo {
 		List<EtlDatabaseObject> newSrcStageInfo = new ArrayList<>();
 
 		for (EtlDatabaseObject obj : this.getSrcStageInfoObject().getKeyInfo()) {
+
 			if (this.getSrcStageInfoObject().getFieldValue("id") != null) {
 				obj.setFieldValue("stage_record_id", this.getSrcStageInfoObject().getFieldValue("id"));
 
@@ -202,7 +209,9 @@ public class EtlStageObjectInfo {
 		List<EtlStageAreaObject> collected = new ArrayList<>();
 
 		for (EtlStageObjectInfo sti : stageInfo) {
+
 			if (sti.hasDstStageInfoObject()) {
+
 				for (EtlStageAreaObject obj : sti.getDstStageInfoObject()) {
 
 					boolean collectAll = existing == null;

@@ -321,8 +321,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		sql += " WHERE " + pk.parseToParametrizedStringConditionWithAlias();
 
-		return BaseDAO.find(tabConf.getLoadHealper(), tabConf.getEtlRecordClass(), sql,
-				pk.parseValuesToArray(), conn);
+		return BaseDAO.find(tabConf.getLoadHealper(), tabConf.getEtlRecordClass(), sql, pk.parseValuesToArray(), conn);
 	}
 
 	/**
@@ -333,6 +332,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	default void loadObjectIdData(EtlObjectConfiguration configuration) {
 
 		if (configuration.getPrimaryKey() != null) {
+
 			if (!(configuration.getPrimaryKey() instanceof PrimaryKey)) {
 				throw new ForbiddenOperationException(
 						"The primary key of '" + configuration.getObjectName() + "' is not a PrimaryKey");
@@ -407,6 +407,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	 *         all the unikeKeys has at least one empty field
 	 */
 	default boolean hasAtLeastOnUniqueKeyWIthAllFieldsFilled() {
+
 		if (!hasRelatedConfiguration()) {
 			throw new ForbiddenOperationException("The related configuration is not defined!");
 		}
@@ -697,6 +698,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean hasResolvedConflict() {
+
 		if (isInEtlProcess()) {
 			throw new ForbiddenOperationException("The object " + this + " is not in an etl process");
 		}
@@ -1125,11 +1127,11 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default EtlStageAreaObject generateProcessedRecord(Connection srcConn, Connection dstConn) throws DBException {
-		return EtlStageAreaObject.generateProcessedRecord(this, srcConn, dstConn);
+		return EtlStageAreaObject.generateProcessedRecord(this, srcConn);
 	}
 
 	default EtlStageAreaObject generateSrcStageRecord(Connection srcConn, Connection dstConn) throws DBException {
-		return EtlStageAreaObject.generateSrcStageRecord(this, srcConn, dstConn);
+		return EtlStageAreaObject.generateSrcStageRecord(this, srcConn);
 	}
 
 	default void addChildObject(EtlDatabaseObject obj) {
@@ -1163,11 +1165,13 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean isTrackable() {
+
 		if (!(this.getRelatedConfiguration() instanceof PrimaryDataSourceConfiguration)) {
 			return false;
 		}
 
 		PrimaryDataSourceConfiguration primarySource = (PrimaryDataSourceConfiguration) this.getRelatedConfiguration();
+
 		if (!primarySource.isJdbc()) {
 			return false;
 		}

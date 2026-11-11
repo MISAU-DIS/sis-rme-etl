@@ -161,7 +161,7 @@ public class EtlLoadHelper {
 		if (writeOperation) {
 			logInfo("Registering StageArea persistence within {}", generateAvaliableEtl());
 
-			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), srcConn, null);
+			getEngine().registerStageAreaPersistence(getProcessor(), getSrcObjects(), readers, writers);
 
 			logDebug("StageArea persistence registered!");
 		}

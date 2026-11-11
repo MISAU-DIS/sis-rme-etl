@@ -2,10 +2,12 @@ package org.openmrs.module.epts.etl.connector.capability.reader;
 
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /**
  * Resource-bound reader used while connector-specific related reads are being
@@ -46,5 +48,21 @@ public final class ResourceBoundConnectorRecordReader<T extends EtlDatabaseObjec
 		}
 		throw new IllegalArgumentException("Reader for resource '" + resource.getName() + "' cannot be unwrapped as "
 				+ (nativeType == null ? "null" : nativeType.getName()));
+	}
+
+	@Override
+	public void finalizeCapability(BaseConfiguration openedFrom) {
+
+		if (nativeState instanceof OpenConnection) {
+			((OpenConnection) nativeState).finalizeConnection(openedFrom);
+		}
+	}
+
+	@Override
+	public void markAsSuccessifullyTerminected() {
+
+		if (nativeState instanceof OpenConnection) {
+			((OpenConnection) nativeState).markAsSuccessifullyTerminated();
+		}
 	}
 }

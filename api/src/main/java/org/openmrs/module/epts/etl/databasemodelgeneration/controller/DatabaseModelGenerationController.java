@@ -1,20 +1,21 @@
 package org.openmrs.module.epts.etl.databasemodelgeneration.controller;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
+import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationRecord;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationSearchParams;
-import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
@@ -30,15 +31,16 @@ public class DatabaseModelGenerationController extends OperationController<Datab
 	}
 
 	@Override
-	public TaskProcessor<DatabaseModelGenerationRecord> initRelatedTaskProcessor(Engine<DatabaseModelGenerationRecord> monitor,
-			IntervalExtremeRecord limits, boolean runningInConcurrency) {
+	public TaskProcessor<DatabaseModelGenerationRecord> initRelatedTaskProcessor(
+			Engine<DatabaseModelGenerationRecord> monitor, IntervalExtremeRecord limits, boolean runningInConcurrency) {
 
 		return new DatabaseModelGenerationProcessor(monitor, limits, runningInConcurrency);
 	}
 
 	@Override
 	public AbstractEtlSearchParams<DatabaseModelGenerationRecord> initMainSearchParams(
-			ThreadRecordIntervalsManager<DatabaseModelGenerationRecord> intervalsMgt, Engine<DatabaseModelGenerationRecord> engine) {
+			ThreadRecordIntervalsManager<DatabaseModelGenerationRecord> intervalsMgt,
+			Engine<DatabaseModelGenerationRecord> engine) {
 
 		return new DatabaseModelGenerationSearchParams(engine, intervalsMgt);
 	}
@@ -80,6 +82,7 @@ public class DatabaseModelGenerationController extends OperationController<Datab
 	}
 
 	@Override
-	public void afterEtl(List<DatabaseModelGenerationRecord> objs, Connection srcConn, Connection dstConn) throws DBException {
+	public void afterEtl(List<DatabaseModelGenerationRecord> objs, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 	}
 }

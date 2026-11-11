@@ -9,6 +9,7 @@ import java.util.Map;
 import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorCapabilityProvider;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.capability.aggregator.ConnectorRecordCapabilityProviderAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -131,5 +132,10 @@ public final class ConnectorRecordWritersAggregator implements ConnectorRecordCa
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public List<ConnectorCapabilityProvider<?>> collectAvaliableCapabilities() {
+		return new ArrayList<ConnectorCapabilityProvider<?>>(writers.values());
 	}
 }

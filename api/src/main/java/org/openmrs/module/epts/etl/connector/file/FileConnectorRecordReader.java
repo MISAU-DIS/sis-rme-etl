@@ -9,14 +9,15 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.CsvPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordLayout;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.json.JsonRecordParser;
 import org.openmrs.module.epts.etl.conf.datasource.csv.CsvRecordParser;
+import org.openmrs.module.epts.etl.conf.datasource.json.JsonRecordParser;
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
@@ -272,5 +273,13 @@ public final class FileConnectorRecordReader<T extends EtlDatabaseObject> extend
 		}
 		throw new IllegalArgumentException(
 				"FILE reader cannot be unwrapped as " + (nativeType == null ? "null" : nativeType.getName()));
+	}
+
+	@Override
+	public void markAsSuccessifullyTerminected() {
+	}
+
+	@Override
+	public void finalizeCapability(BaseConfiguration openedFrom) {
 	}
 }

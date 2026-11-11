@@ -4,14 +4,12 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Common interval lifecycle for queue-based processing strategies. */
 public abstract class AbstractResultPartitioningProcessingStrategy implements EngineProcessingStrategy {
@@ -45,15 +43,12 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 		ConnectorRecordWritersAggregator writers = engine.getEtlItemConfiguration().createDestinationWriters(engine);
 		ConnectorRecordReadersAggregator readers = engine.getEtlItemConfiguration()
 				.createSourceReaders(engine.getSearchParams(), engine, writers);
-		ConnectorRecordReader<T> reader = engine.primaryReader(readers);
-		OpenConnection srcConn = reader.unwrap(OpenConnection.class);
-		List<OpenConnection> dstConnections = engine.destinationConnections(writers);
 
 		try {
-			List<T> records = engine.extract(interval, reader);
+			List<T> records = engine.extract(interval, engine.primaryReader(readers));
 
 			if (!UTILITIES.listHasElement(records)) {
-				persistCompletedInterval(engine, interval, srcConn, dstConnections, readers, writers, persistWork);
+				this.persistCompletedInterval(engine, interval, readers, writers, persistWork);
 				return;
 			}
 
@@ -63,7 +58,7 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 
 			processQueue(engine, interval, records, queue, processorCount, threadFactory, readers, writers);
 
-			persistCompletedInterval(engine, interval, srcConn, dstConnections, readers, writers, persistWork);
+			this.persistCompletedInterval(engine, interval, readers, writers, persistWork);
 		} catch (Exception e) {
 			engine.stopOperationDueError(e);
 
@@ -73,13 +68,12 @@ public abstract class AbstractResultPartitioningProcessingStrategy implements En
 		}
 	}
 
-	private void persistCompletedInterval(Engine<?> engine, IntervalExtremeRecord interval, OpenConnection srcConn,
-			List<OpenConnection> dstConnections, ConnectorRecordReadersAggregator readers,
-			ConnectorRecordWritersAggregator writers, boolean persistWork) throws Exception {
+	private void persistCompletedInterval(Engine<?> engine, IntervalExtremeRecord interval,
+			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers, boolean persistWork)
+			throws Exception {
 
 		if (persistWork) {
-			OpenConnection dstConn = engine.firstDestinationConnection(dstConnections);
-			engine.flushPendingPersistence(srcConn, dstConn);
+			engine.flushPendingPersistence(readers, writers);
 			engine.markConnectionsAsSuccessfullyTerminated(readers, writers);
 			engine.finalizeConnections(readers, writers);
 			interval.markAsProcessed();

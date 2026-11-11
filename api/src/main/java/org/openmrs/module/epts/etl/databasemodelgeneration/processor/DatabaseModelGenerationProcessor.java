@@ -23,7 +23,6 @@ import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKey;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableKeyFactory;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadata;
 import org.openmrs.module.epts.etl.conf.physical.PhysicalTableMetadataFingerprint;
-import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -128,26 +127,6 @@ public class DatabaseModelGenerationProcessor
 	/** JDBC datasource representing the current item on the ETL database. */
 	public JdbcTablePrimaryDataSourceConfiguration getEtlDatabaseDataSource() {
 		return getEtlItemConfiguration().getEtlDatabaseDataSource();
-	}
-
-	@Override
-	public ConnectorRecordWritersAggregator createRecordWriters() throws DBException {
-		return getEtlItemConfiguration().createEtlDatabaseWriters(getEngine());
-	}
-
-	@Override
-	public ConnectorRecordReader<DatabaseModelGenerationRecord> createRecordReader(
-			ConnectorRecordWritersAggregator writers) throws DBException {
-		return getEtlItemConfiguration().createEtlDatabaseReader(getSearchParams(), getEngine(), writers);
-	}
-
-	@Override
-	public ConnectorRecordReadersAggregator createRecordReaders(ConnectorRecordWritersAggregator writers)
-			throws DBException {
-		ConnectorRecordReadersAggregator readers = ConnectorRecordReadersAggregator
-				.ofPrimary(createRecordReader(writers));
-		setRecordReaders(readers);
-		return readers;
 	}
 
 	@Override

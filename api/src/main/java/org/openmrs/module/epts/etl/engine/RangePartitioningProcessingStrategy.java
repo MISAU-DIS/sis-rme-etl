@@ -13,7 +13,6 @@ import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.EtlOperationResultHeader;
 import org.openmrs.module.epts.etl.processor.TaskProcessor;
 import org.openmrs.module.epts.etl.utilities.concurrent.EtlThreadFactory;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Executes complete ETL pipelines over independent identifier ranges. */
 public class RangePartitioningProcessingStrategy implements EngineProcessingStrategy {
@@ -43,7 +42,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 
 			for (int i = 0; i < intervals.size(); i++) {
 				TaskProcessor<T> processor = engine.initConcurrentTaskProcessor(intervals.get(i), i);
-				processor.setRecordReaders(sharedReaders);
+
 				engine.getCurrentTaskProcessor().add(processor);
 				tasks.add(CompletableFuture.runAsync(
 						() -> engine.processRangePartition(processor, sharedConnections, sharedReaders, sharedWriters),
@@ -65,6 +64,7 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 			if (!engine.getRelatedEtlConf().hasTestingItem() && sharedConnections) {
 				engine.markConnectionsAsSuccessfullyTerminated(sharedReaders, sharedWriters);
 			}
+
 			engine.finalizeConnections(sharedReaders, sharedWriters);
 
 			// Workers and auxiliary persistence have all committed before publishing
@@ -106,10 +106,9 @@ public class RangePartitioningProcessingStrategy implements EngineProcessingStra
 		if (engine.getRelatedEtlConf().hasTestingItem()) {
 			engine.discardPendingPersistence();
 		} else if (sharedConnections) {
-			engine.flushPendingPersistence(readers.getPrimary().unwrap(OpenConnection.class),
-					engine.firstDestinationConnection(engine.destinationConnections(writers)));
+			engine.flushPendingPersistence(readers, writers);
 		} else {
-			engine.flushPendingPersistenceUsingDedicatedConnection();
+			engine.flushPendingPersistenceUsingDedicatedConnection(readers, writers);
 		}
 	}
 
