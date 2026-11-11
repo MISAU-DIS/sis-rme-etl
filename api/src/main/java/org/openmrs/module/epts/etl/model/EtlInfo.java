@@ -21,6 +21,9 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
+import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.dbquickmerge.model.ParentInfo;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -269,7 +272,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		 */
 	}
 
-	public void loadDstParentInfo(Connection srcConn, Connection dstConn)
+	public void loadDstParentInfo(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
 			throws ParentNotYetMigratedException, MissingParentException, DBException {
 
 		if (!utilities.listHasElement(getDstConf().getParentRefInfo())) {
@@ -284,7 +287,12 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 		getRelatedEtlConf().debug("Starting relationship resolution on object: {}", this.transformedObject);
 
+		Connection srcConn = readers.get(this.getRelatedSrcObject().getRelatedConfiguration()).unwrap(Connection.class);
+
 		for (ParentTable refInfo : getDstConf().getParentRefInfo()) {
+			Connection dstConn = ((ConnectorRecordWriter<EtlDatabaseObject>) writers.get(refInfo))
+					.unwrap(Connection.class);
+
 			Field field = this.getTransformedObject().getField(refInfo);
 
 			if (!field.hasValue()) {
@@ -322,7 +330,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 						|| parentIsDstParentConf;
 
 				if (!skipDstParentLoad) {
-					this.performeParentInfoInitialization(srcConn, refInfo);
+					this.performeParentInfoInitialization(dstConn, refInfo);
 
 					if (!getTransformedObject().hasAllPerentFieldsFilled(refInfo)) {
 						continue;

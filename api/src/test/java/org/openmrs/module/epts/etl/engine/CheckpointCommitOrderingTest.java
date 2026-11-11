@@ -144,7 +144,7 @@ public class CheckpointCommitOrderingTest {
 		final EtlItemConfiguration item = new EtlItemConfiguration() {
 			@Override
 			public <R extends EtlDatabaseObject> ConnectorRecordReader<R> createSourceReader(
-					AbstractEtlSearchParams<R> searchParams, BaseConfiguration openedFrom,
+					AbstractEtlSearchParams<R> searchParams, BaseConfiguration openedFrom, OpenConnection etlSrcConn,
 					ConnectorRecordWritersAggregator writers) {
 				Connection src = connection("src");
 				return new AbstractConnectorRecordReader<R>() {

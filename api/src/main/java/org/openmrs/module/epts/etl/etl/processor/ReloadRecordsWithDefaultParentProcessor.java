@@ -105,8 +105,8 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 	}
 
 	private EtlDatabaseObject reloadDefaultsParents(PrimaryDataSourceConfiguration primarySource,
-			EtlDatabaseObject etlObj, ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
-			throws DBException, ForbiddenOperationException {
+			EtlDatabaseObject etlObj, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException, ForbiddenOperationException {
 
 		ConnectorRecordReader<EtlDatabaseObject> reader = null;
 		ConnectorRecordWriter<EtlDatabaseObject> writer = null;
@@ -179,7 +179,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 					parentAsSrc.addDestinationRecord(dstParent);
 
 					try {
-						EtlLoadHelper.performeParentLoading(parentAsSrc, srcConn, dstConn);
+						EtlLoadHelper.performeParentLoading(parentAsSrc, readers, writers);
 
 						dstParent = parentAsSrc.getDestinationObjects().get(0);
 

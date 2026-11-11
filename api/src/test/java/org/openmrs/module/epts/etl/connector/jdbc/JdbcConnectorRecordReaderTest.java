@@ -14,10 +14,10 @@ import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReaderFactory;
+import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.ThreadRecordIntervalsManager;
-import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.model.SearchClauses;
 import org.openmrs.module.epts.etl.model.base.VOLoaderHelper;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
@@ -31,7 +31,7 @@ class JdbcConnectorRecordReaderTest {
 		JdbcTableResource resource = resource(ConnectorDirection.SOURCE);
 		TrackingSearchParams searchParams = new TrackingSearchParams();
 		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory.create(resource,
-				searchParams, null, null);
+				searchParams, null);
 		IntervalExtremeRecord interval = new IntervalExtremeRecord(1, 10);
 
 		List<GenericDatabaseObject> result = reader.read(new ConnectorReadRequest<>(interval, null, null, false));
@@ -45,8 +45,8 @@ class JdbcConnectorRecordReaderTest {
 	@Test
 	void shouldExposeJdbcConnectionOnlyThroughNativeUnwrap() {
 		Connection connection = newConnectionMarker();
-		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory.create(
-				resource(ConnectorDirection.SOURCE), new TrackingSearchParams(), connection, null);
+		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory
+				.create(resource(ConnectorDirection.SOURCE), new TrackingSearchParams(), connection);
 
 		assertSame(connection, reader.unwrap(Connection.class));
 		assertThrows(IllegalArgumentException.class, () -> reader.unwrap(String.class));
@@ -55,11 +55,11 @@ class JdbcConnectorRecordReaderTest {
 	@Test
 	void shouldDelegateParallelReadWithoutChangingJdbcSemantics() throws DBException {
 		TrackingSearchParams searchParams = new TrackingSearchParams();
-		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory.create(
-				resource(ConnectorDirection.SOURCE), searchParams, null, null);
+		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory
+				.create(resource(ConnectorDirection.SOURCE), searchParams, null);
 
-		List<GenericDatabaseObject> result = reader.read(new ConnectorReadRequest<>(
-				new IntervalExtremeRecord(1, 10), null, null, true));
+		List<GenericDatabaseObject> result = reader
+				.read(new ConnectorReadRequest<>(new IntervalExtremeRecord(1, 10), null, null, true));
 
 		assertSame(searchParams.parallelResult, result);
 		assertEquals(0, searchParams.singleCalls);
@@ -68,8 +68,8 @@ class JdbcConnectorRecordReaderTest {
 
 	@Test
 	void shouldRejectDestinationResourceAsReaderSource() {
-		assertThrows(IllegalArgumentException.class, () -> ConnectorRecordReaderFactory.create(
-				resource(ConnectorDirection.DESTINATION), new TrackingSearchParams(), null, null));
+		assertThrows(IllegalArgumentException.class, () -> ConnectorRecordReaderFactory
+				.create(resource(ConnectorDirection.DESTINATION), new TrackingSearchParams(), null));
 	}
 
 	private JdbcTableResource resource(ConnectorDirection direction) {

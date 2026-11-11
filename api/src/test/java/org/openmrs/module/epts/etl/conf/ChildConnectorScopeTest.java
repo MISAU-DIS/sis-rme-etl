@@ -90,23 +90,59 @@ class ChildConnectorScopeTest {
 
 	private ConnectorEndpoint endpoint(ConnectorType type, String uri) {
 		return new ConnectorEndpoint() {
-			@Override public ConnectorType getType() { return type; }
-			@Override public String getUri() { return uri; }
-			@Override public String getUserName() { return null; }
-			@Override public String getPassword() { return null; }
-			@Override public Set<ConnectorCapability> getCapabilities() {
+			@Override
+			public ConnectorType getType() {
+				return type;
+			}
+
+			@Override
+			public String getUri() {
+				return uri;
+			}
+
+			@Override
+			public String getUserName() {
+				return null;
+			}
+
+			@Override
+			public String getPassword() {
+				return null;
+			}
+
+			@Override
+			public Set<ConnectorCapability> getCapabilities() {
 				return Collections.singleton(ConnectorCapability.READ);
 			}
-			@Override public <T> T unwrap(Class<T> nativeType) { throw new IllegalArgumentException(); }
+
+			@Override
+			public <T> T unwrap(Class<T> nativeType) {
+				throw new IllegalArgumentException();
+			}
 		};
 	}
 
 	private ConnectorResource resource(String name, ConnectorEndpoint endpoint) {
 		return new ConnectorResource() {
-			@Override public String getName() { return name; }
-			@Override public ConnectorDirection getDirection() { return ConnectorDirection.SOURCE; }
-			@Override public ConnectorEndpoint getEndpoint() { return endpoint; }
-			@Override public <T> T unwrap(Class<T> nativeType) { throw new IllegalArgumentException(); }
+			@Override
+			public String getName() {
+				return name;
+			}
+
+			@Override
+			public ConnectorDirection getDirection() {
+				return ConnectorDirection.SOURCE;
+			}
+
+			@Override
+			public ConnectorEndpoint getEndpoint() {
+				return endpoint;
+			}
+
+			@Override
+			public <T> T unwrap(Class<T> nativeType) {
+				throw new IllegalArgumentException();
+			}
 		};
 	}
 
@@ -117,10 +153,10 @@ class ChildConnectorScopeTest {
 			this.primaryConnection = primaryConnection;
 		}
 
-		@Override
 		@SuppressWarnings("unchecked")
+		@Override
 		public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
-				AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
+				AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, OpenConnection etlSrcConn,
 				ConnectorRecordWritersAggregator writers) throws DBException {
 			return (ConnectorRecordReader<T>) new ResourceBoundConnectorRecordReader<EtlDatabaseObject>(
 					getResolvedSrcResource(), primaryConnection);

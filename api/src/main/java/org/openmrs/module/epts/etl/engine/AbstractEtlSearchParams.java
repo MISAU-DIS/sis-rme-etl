@@ -63,7 +63,8 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		this.primaryDataSource = primaryDataSource;
 
 		if (primaryDataSource instanceof JdbcTablePrimaryDataSourceConfiguration) {
-			this.setQueryOrderingInfo(((JdbcTablePrimaryDataSourceConfiguration) primaryDataSource).getQueryOrderingInfo());
+			this.setQueryOrderingInfo(
+					((JdbcTablePrimaryDataSourceConfiguration) primaryDataSource).getQueryOrderingInfo());
 		}
 
 		this.finalCheckStatus = MigrationFinalCheckStatus.NOT_INITIALIZED;
@@ -130,8 +131,8 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 			try {
 				pq = SQLUtilities.prepareQueryReplacingDataSourceElementsWithParams(extraCondition,
-						utilities.parseToList(this.getPrimaryDataSource().getAlias()), ds, getRelatedEtlConf(),
-						reader, writer);
+						utilities.parseToList(this.getPrimaryDataSource().getAlias()), ds, getRelatedEtlConf(), reader,
+						writer);
 			} catch (Exception e) {
 				throw e;
 			}
@@ -176,7 +177,8 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 		String extraCondition = jdbcSource.generateConditionsFields(parentObject, jdbcSource.getJoinFields(),
 				jdbcSource.getJoinExtraCondition());
 
-		tryToAddExtraCondition(extraCondition, searchClauses, parentObject, dataSourceObjects, dbmsType, reader, writer);
+		tryToAddExtraCondition(extraCondition, searchClauses, parentObject, dataSourceObjects, dbmsType, reader,
+				writer);
 	}
 
 	public EtlConfiguration getRelatedEtlConf() {

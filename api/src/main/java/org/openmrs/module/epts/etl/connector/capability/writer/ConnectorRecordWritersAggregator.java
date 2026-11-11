@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.connector.capability.ConnectorCapabilityProvi
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.capability.aggregator.ConnectorRecordCapabilityProviderAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 
 /**
  * Writers resolved for one ETL execution, indexed by their destination
@@ -40,30 +41,23 @@ public final class ConnectorRecordWritersAggregator implements ConnectorRecordCa
 		return (ConnectorRecordWriter<T>) writer;
 	}
 
-	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(EtlDestinationConfiguration configuration) {
+	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(EtlObjectConfiguration configuration) {
 		ConnectorResource resource = resourcesByConfiguration.get(configuration);
 
 		if (resource == null) {
 			throw new IllegalArgumentException("No destination resource registered for " + configuration);
 		}
+
 		return get(resource);
 	}
 
-	public ConnectorResource getResource(EtlDestinationConfiguration configuration) {
+	public ConnectorResource getResource(EtlObjectConfiguration configuration) {
 		ConnectorResource resource = resourcesByConfiguration.get(configuration);
 
 		if (resource == null) {
 			throw new IllegalArgumentException("No destination resource registered for " + configuration);
 		}
 		return resource;
-	}
-
-	/**
-	 * Compatibility bridge for JDBC adapter code during the destination migration.
-	 */
-	public <T extends EtlDatabaseObject> ConnectorRecordWriter<T> get(DstConf configuration) {
-		return get(((org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration) configuration)
-				.getParentDestination());
 	}
 
 	/**

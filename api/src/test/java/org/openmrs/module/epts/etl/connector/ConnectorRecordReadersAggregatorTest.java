@@ -16,6 +16,7 @@ import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
 import org.openmrs.module.epts.etl.connector.capability.reader.ResourceBoundConnectorRecordReader;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 class ConnectorRecordReadersAggregatorTest {
 
@@ -27,10 +28,11 @@ class ConnectorRecordReadersAggregatorTest {
 		TransformableDataSource additional = new TransformableDataSource();
 		Object primaryNativeState = new Object();
 		Object additionalNativeState = new Object();
-		ConnectorRecordReader<EtlDatabaseObject> primaryReader =
-				new ResourceBoundConnectorRecordReader<>(primaryResource, primaryNativeState);
-		ConnectorRecordReader<EtlDatabaseObject> additionalReader =
-				new ResourceBoundConnectorRecordReader<>(additionalResource, additionalNativeState);
+
+		ConnectorRecordReader<EtlDatabaseObject> primaryReader = new ResourceBoundConnectorRecordReader<>(
+				primaryResource, primaryNativeState);
+		ConnectorRecordReader<EtlDatabaseObject> additionalReader = new ResourceBoundConnectorRecordReader<>(
+				additionalResource, additionalNativeState);
 
 		Map<ConnectorResource, ConnectorRecordReader<? extends EtlDatabaseObject>> readers = new IdentityHashMap<>();
 		readers.put(primaryResource, primaryReader);
@@ -39,7 +41,8 @@ class ConnectorRecordReadersAggregatorTest {
 		resources.put(primary, primaryResource);
 		resources.put(additional, additionalResource);
 
-		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(readers, resources);
+		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(
+				primaryReader.unwrap(OpenConnection.class), readers, resources);
 
 		assertSame(primaryReader, scope.get(primary));
 		assertSame(additionalReader, scope.get(additional));
@@ -57,7 +60,8 @@ class ConnectorRecordReadersAggregatorTest {
 		readers.put(first, new ResourceBoundConnectorRecordReader<>(first, sharedNativeState));
 		readers.put(second, new ResourceBoundConnectorRecordReader<>(second, sharedNativeState));
 
-		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(readers, Collections.emptyMap());
+		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(null, readers,
+				Collections.emptyMap());
 
 		assertEquals(1, scope.unwrapAll(Object.class).size());
 		assertSame(sharedNativeState, scope.unwrapAll(Object.class).get(0));
@@ -65,13 +69,30 @@ class ConnectorRecordReadersAggregatorTest {
 
 	private ConnectorResource resource(String name) {
 		return new ConnectorResource() {
-			@Override public String getName() { return name; }
-			@Override public ConnectorDirection getDirection() { return ConnectorDirection.SOURCE; }
-			@Override public ConnectorEndpoint getEndpoint() { return null; }
-			@Override public <T> T unwrap(Class<T> nativeType) {
+			@Override
+			public String getName() {
+				return name;
+			}
+
+			@Override
+			public ConnectorDirection getDirection() {
+				return ConnectorDirection.SOURCE;
+			}
+
+			@Override
+			public ConnectorEndpoint getEndpoint() {
+				return null;
+			}
+
+			@Override
+			public <T> T unwrap(Class<T> nativeType) {
 				throw new IllegalArgumentException("No native resource state");
 			}
-			@Override public String toString() { return name; }
+
+			@Override
+			public String toString() {
+				return name;
+			}
 		};
 	}
 }

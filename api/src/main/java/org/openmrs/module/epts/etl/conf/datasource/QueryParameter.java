@@ -105,6 +105,7 @@ public class QueryParameter extends Field {
 		String[] paramElements = paramName.split("\\.");
 
 		if (paramElements.length > 1) {
+
 			for (String element : paramElements) {
 				String[] arrayParamElements = element.split("\\[");
 
@@ -112,6 +113,7 @@ public class QueryParameter extends Field {
 					String[] arrayParamsLeft = (arrayParamElements[1]).split("]");
 
 					if (arrayParamsLeft.length == 1) {
+
 						if (!utilities.isNumeric(arrayParamsLeft[0])) {
 							throw new ForbiddenOperationException(
 									"The argument on param '" + paramName + "' must be numeric!");

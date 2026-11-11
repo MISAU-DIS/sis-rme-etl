@@ -45,6 +45,7 @@ import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorEndpoint;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDatabaseObjectSearchParams;
 import org.openmrs.module.epts.etl.etl.model.EtlDynamicItemSearchParams;
@@ -513,10 +514,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createSourceReader(
-			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
+			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom, OpenConnection etlSrcConn,
 			ConnectorRecordWritersAggregator writers) throws DBException {
 
-		ConnectorResource sourceResource = getResolvedSrcResource();
+		ConnectorResource sourceResource = this.getResolvedSrcResource();
 
 		if (sourceResource == null) {
 			throw new IllegalStateException("Source resource has not been initialized");
@@ -527,14 +528,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		try {
 
 			if (sourceResource.getEndpoint().getType() == ConnectorType.JDBC) {
-				srcConnection = getRelatedEtlConf().openSourceConnectorConnection(sourceResource, openedFrom);
+
+				if (((JdbcConnectorEndpoint) sourceResource.getEndpoint()).getConnectionInfo() == etlSrcConn
+						.getDbConnInfo()) {
+					srcConnection = etlSrcConn;
+				} else {
+					srcConnection = getRelatedEtlConf().openSourceConnectorConnection(sourceResource, openedFrom);
+				}
 			} else {
 				srcConnection = getRelatedEtlConf().openSrcConn(openedFrom);
 			}
-			Connection destinationConnection = writers == null ? null : writers.unwrapShared(Connection.class);
 
-			return ConnectorRecordReaderFactory.create(sourceResource, searchParams, srcConnection,
-					destinationConnection);
+			return ConnectorRecordReaderFactory.create(sourceResource, searchParams, srcConnection);
 		} catch (RuntimeException e) {
 
 			if (srcConnection != null) {
@@ -555,8 +560,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		Map<ConnectorEndpoint, OpenConnection> jdbcConnections = new IdentityHashMap<>();
 		List<OpenConnection> openedConnections = new ArrayList<>();
 
+		OpenConnection etlSrcConn = this.getRelatedEtlConf().openSrcConn(openedFrom);
+
 		try {
-			ConnectorRecordReader<T> primaryReader = createSourceReader(searchParams, openedFrom, writers);
+			ConnectorRecordReader<T> primaryReader = this.createSourceReader(searchParams, openedFrom, etlSrcConn,
+					writers);
 
 			if (source == null) {
 
@@ -565,11 +573,13 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					openedConnections.add(primaryConnection);
 				} catch (IllegalArgumentException ignored) {
 				}
-				return new ConnectorRecordReadersAggregator(primaryReader, readers, resources);
+
+				return new ConnectorRecordReadersAggregator(etlSrcConn, primaryReader, readers, resources);
 			}
 
-			PrimaryDataSourceConfiguration primary = getPrimaryDataSource();
-			ConnectorResource primaryResource = getResolvedSrcResource();
+			PrimaryDataSourceConfiguration primary = this.getPrimaryDataSource();
+			ConnectorResource primaryResource = this.getResolvedSrcResource();
+
 			readers.put(primaryResource, primaryReader);
 			resources.put(primary, primaryResource);
 
@@ -621,8 +631,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				resources.put(dataSource, resource);
 			}
 
-			ConnectorRecordReadersAggregator agg = new ConnectorRecordReadersAggregator(primaryReader, readers,
-					resources);
+			ConnectorRecordReadersAggregator agg = new ConnectorRecordReadersAggregator(etlSrcConn, primaryReader,
+					readers, resources);
 
 			agg.loadAggregatorToAvaliableCapabilities();
 
@@ -720,25 +730,23 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	/** Creates the reader used by processors that operate on the ETL database. */
-	public <T extends EtlDatabaseObject> ConnectorRecordReader<T> createEtlDatabaseReader_(
-			AbstractEtlSearchParams<T> searchParams, BaseConfiguration openedFrom,
-			ConnectorRecordWritersAggregator writers) throws DBException {
-		ConnectorResource resource = getEtlDatabaseDataSource().getResolvedResource();
-		OpenConnection sourceConnection = null;
-
-		try {
-			sourceConnection = getRelatedEtlConf().openSourceConnectorConnection(resource, openedFrom);
-			Connection destinationConnection = writers == null ? null : writers.unwrapShared(Connection.class);
-
-			return ConnectorRecordReaderFactory.create(resource, searchParams, sourceConnection, destinationConnection);
-		} catch (RuntimeException exception) {
-
-			if (sourceConnection != null) {
-				sourceConnection.finalizeConnection(openedFrom);
-			}
-			throw exception;
-		}
-	}
+	/*
+	 * public <T extends EtlDatabaseObject> ConnectorRecordReader<T>
+	 * createEtlDatabaseReader_( AbstractEtlSearchParams<T> searchParams,
+	 * BaseConfiguration openedFrom, ConnectorRecordWritersAggregator writers)
+	 * throws DBException { ConnectorResource resource =
+	 * getEtlDatabaseDataSource().getResolvedResource(); OpenConnection
+	 * sourceConnection = null;
+	 * 
+	 * try { sourceConnection =
+	 * getRelatedEtlConf().openSourceConnectorConnection(resource, openedFrom);
+	 * 
+	 * return ConnectorRecordReaderFactory.create(resource, searchParams,
+	 * sourceConnection); } catch (RuntimeException exception) {
+	 * 
+	 * if (sourceConnection != null) {
+	 * sourceConnection.finalizeConnection(openedFrom); } throw exception; } }
+	 */
 
 	/**
 	 * Creates the lazy connection scope for this item's destinations. No JDBC

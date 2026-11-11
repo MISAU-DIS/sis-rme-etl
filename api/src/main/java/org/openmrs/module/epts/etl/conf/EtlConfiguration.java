@@ -1570,7 +1570,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 				if (item.hasDestinations()) {
 
-					for (org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration dst : item.getDestinations()) {
+					for (org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration dst : item
+							.getDestinations()) {
 						dst.initialize(item);
 					}
 				}
@@ -2545,6 +2546,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		if (doNotResolveRelationship()) {
 			DBUtilities.disableForegnKeyChecks(connection);
 		}
+
 		return connection;
 	}
 

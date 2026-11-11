@@ -20,10 +20,9 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extend
 	private final ConnectorResource resource;
 	private final AbstractEtlSearchParams<T> searchParams;
 	private final OpenConnection srcConn;
-	private final OpenConnection dstConn;
 
 	public JdbcConnectorRecordReader(ConnectorResource resource, AbstractEtlSearchParams<T> searchParams,
-			Connection srcConnection, Connection dstConnection) {
+			Connection srcConnection) {
 
 		if (searchParams == null) {
 			throw new IllegalArgumentException("searchParams cannot be null");
@@ -33,7 +32,6 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extend
 		this.searchParams = searchParams;
 
 		this.srcConn = (OpenConnection) srcConnection;
-		this.dstConn = (OpenConnection) dstConnection;
 	}
 
 	@Override
@@ -46,11 +44,11 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extend
 
 		if (request.isParallel()) {
 			return searchParams.searchNextRecordsInMultiThreads(request.getInterval(), request.getParentObject(),
-					request.getAuxiliarySourceObjects(), srcConn, dstConn);
+					request.getAuxiliarySourceObjects(), srcConn, null);
 		}
 
 		return searchParams.search(request.getInterval(), request.getParentObject(),
-				request.getAuxiliarySourceObjects(), srcConn, dstConn);
+				request.getAuxiliarySourceObjects(), srcConn, null);
 	}
 
 	@Override
@@ -69,10 +67,6 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extend
 		if (this.srcConn != null) {
 			this.srcConn.finalizeConnection(openedFrom);
 		}
-
-		if (this.dstConn != null) {
-			this.dstConn.finalizeConnection(openedFrom);
-		}
 	}
 
 	@Override
@@ -80,10 +74,6 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extend
 
 		if (this.srcConn != null) {
 			this.srcConn.markAsSuccessifullyTerminated();
-		}
-
-		if (this.dstConn != null) {
-			this.dstConn.markAsSuccessifullyTerminated();
 		}
 	}
 }

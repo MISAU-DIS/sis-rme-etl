@@ -20,7 +20,6 @@ import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
-import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
 import org.openmrs.module.epts.etl.engine.record_intervals_manager.IntervalExtremeRecord;

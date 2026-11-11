@@ -115,6 +115,13 @@
         {
           "resource": {
             "connector": "jdbc-dst-connector",
+            "name": "person",
+            "alias":"person_dst_ds"
+          }
+        },        
+        {
+          "resource": {
+            "connector": "jdbc-dst-connector",
             "name": "person_data",
             "alias":"person_data_dst_ds"
           },
@@ -136,6 +143,7 @@
       ],
       "childItemConf": [
         {
+          "relatedParentDstConfName":"person_dst_ds",
           "source": {
             "connector": "jdbc-src-connector",
             "tableDataSource": {
@@ -146,7 +154,15 @@
             {
               "resource": {
                 "connector": "jdbc-dst-connector",
-                "name": "person_data"
+                "name": "address",
+                "alias":"address_dst_ds"
+              }
+            },            
+            {
+              "resource": {
+                "connector": "jdbc-dst-connector",
+                "name": "person_data",
+                "alias": "person_data_address_dst_ds"
               },
               "identifiedRecordAction": "PATCH_UPDATE",
               "patchFields": [
