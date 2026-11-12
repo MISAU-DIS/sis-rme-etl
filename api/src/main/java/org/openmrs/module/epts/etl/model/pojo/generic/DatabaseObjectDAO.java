@@ -997,8 +997,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 		return result;
 	}
 
-	public static EtlOperationResultHeader<EtlDatabaseObject> update(List<EtlDatabaseObject> objects, JdbcTableDestinationConfiguration dstConf,
-			Connection conn) throws DBException {
+	public static EtlOperationResultHeader<EtlDatabaseObject> update(List<EtlDatabaseObject> objects,
+			JdbcTableDestinationConfiguration dstConf, Connection conn) throws DBException {
 
 		EtlOperationResultHeader<EtlDatabaseObject> result = new EtlOperationResultHeader<>(
 				new IntervalExtremeRecord());

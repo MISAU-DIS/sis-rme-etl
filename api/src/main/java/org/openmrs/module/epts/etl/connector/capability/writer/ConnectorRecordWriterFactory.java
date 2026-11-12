@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.connector.capability.writer;
 import java.sql.Connection;
 import java.util.Collections;
 
+import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -23,6 +24,11 @@ public final class ConnectorRecordWriterFactory {
 
 	public static <T extends EtlDatabaseObject> ConnectorRecordWriter<T> create(ConnectorResource resource,
 			Connection destinationConnection) {
+		return create(resource, null, destinationConnection);
+	}
+
+	public static <T extends EtlDatabaseObject> ConnectorRecordWriter<T> create(ConnectorResource resource,
+			AbstractTableConfiguration tableConfiguration, Connection destinationConnection) {
 
 		if (resource == null) {
 			throw new IllegalArgumentException("A resolved destination resource is required");
@@ -40,7 +46,11 @@ public final class ConnectorRecordWriterFactory {
 			if (!(destinationConnection instanceof OpenConnection)) {
 				throw new IllegalArgumentException("A JDBC writer requires an OpenConnection");
 			}
-			return new JdbcConnectorRecordWriter<>(resource, (OpenConnection) destinationConnection);
+
+			if (tableConfiguration == null) {
+				throw new IllegalArgumentException("A JDBC writer requires its physical table configuration");
+			}
+			return new JdbcConnectorRecordWriter<>(resource, tableConfiguration, (OpenConnection) destinationConnection);
 		}
 
 		if (endpoint.getType() == ConnectorType.FILE) {

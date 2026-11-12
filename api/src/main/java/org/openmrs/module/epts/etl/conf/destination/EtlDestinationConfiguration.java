@@ -1019,7 +1019,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 	}
 
-	private boolean isIgnorableField(Field field) {
+	public boolean isIgnorableField(Field field) {
 
 		if (field == null || !utilities.listHasElement(ignorableFields)) {
 			return false;

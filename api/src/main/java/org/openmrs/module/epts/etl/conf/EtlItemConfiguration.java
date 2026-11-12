@@ -699,7 +699,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					connections.put(endpointKey, connection);
 				}
 
-				writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+				writers.put(resource, ConnectorRecordWriterFactory.create(resource,
+						destination.isJdbcDestination() ? destination.requireJdbcTableDestination() : null, connection));
 				resources.put(destination, resource);
 			}
 		} catch (DBException | RuntimeException exception) {
@@ -723,7 +724,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		Connection connection = getRelatedEtlConf().openDestinationConnectorConnection(resource, openedFrom);
 
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
-		writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+		writers.put(resource, ConnectorRecordWriterFactory.create(resource, dataSource, connection));
 
 		ConnectorRecordWritersAggregator agg = new ConnectorRecordWritersAggregator(writers, Collections.emptyMap());
 

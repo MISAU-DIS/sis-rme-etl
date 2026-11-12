@@ -123,7 +123,8 @@ public final class JdbcConnectorRuntimeAdapters {
 
 			for (EtlDestinationConfiguration destination : item.getDestinations()) {
 				ConnectorResource resource = item.getResolvedDstResource(destination);
-				writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+				writers.put(resource, ConnectorRecordWriterFactory.create(resource,
+						destination.isJdbcDestination() ? destination.requireJdbcTableDestination() : null, connection));
 				resources.put(destination, resource);
 			}
 		}

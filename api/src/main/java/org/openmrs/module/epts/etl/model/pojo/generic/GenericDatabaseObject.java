@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
@@ -71,9 +72,11 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 				return utilities.getFieldValueOnFieldList(utilities.parseList(this.fields, Field.class),
 						fieldNameInCameCase);
 			} catch (ForbiddenOperationException e1) {
-				if (getRelatedConfiguration() instanceof TableConfiguration) {
+				TableConfiguration tableConfiguration = physicalTableConfiguration();
 
-					if (((TableConfiguration) getRelatedConfiguration()).useSharedPKKey()) {
+				if (tableConfiguration != null) {
+
+					if (tableConfiguration.useSharedPKKey()) {
 
 						if (this.getSharedPkObj() == null) {
 							throw new ForbiddenOperationException("The sharedPkObj pk is not loaded");
@@ -116,11 +119,11 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 			throw new ForbiddenOperationException("The relatedConfiguration is not set");
 		}
 
-		TableConfiguration conf = (TableConfiguration) getRelatedConfiguration();
+		TableConfiguration conf = physicalTableConfiguration();
 
 		for (Field f : this.fields) {
 
-			ParentTable parent = conf.getFieldIsRelatedParent(f);
+			ParentTable parent = conf == null ? null : conf.getFieldIsRelatedParent(f);
 
 			if (parent != null) {
 				loadDefaultParentValue(conf, parent, srcConn, dstConn);
@@ -213,9 +216,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 		this.fields = this.getRelatedConfiguration().cloneFields(this);
 
-		if (getRelatedConfiguration() instanceof TableConfiguration) {
+		TableConfiguration tabConf = physicalTableConfiguration();
 
-			TableConfiguration tabConf = (TableConfiguration) getRelatedConfiguration();
+		if (tabConf != null) {
 
 			if (tabConf.getSharePkWith() != null) {
 				this.setSharedPkObj(new GenericDatabaseObject(tabConf.getSharedKeyRefInfo(null)));
@@ -241,9 +244,11 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		for (Field field : this.fields) {
 
 			try {
-				if (getRelatedConfiguration() instanceof TableConfiguration) {
+				TableConfiguration tableConfiguration = physicalTableConfiguration();
+
+				if (tableConfiguration != null) {
 					field.setValue(retrieveFieldValue(
-							field.generateAliasedColumn((TableConfiguration) this.relatedConfiguration),
+							field.generateAliasedColumn(tableConfiguration),
 							field.getDataType(), rs));
 				} else {
 					field.setValue(retrieveFieldValue(field.getName(), field.getDataType(), rs));
@@ -268,9 +273,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 			this.getSharedPkObj().load(rs);
 		}
 
-		if (this.getRelatedConfiguration() instanceof TableConfiguration) {
-			this.loadObjectIdData((TableConfiguration) this.getRelatedConfiguration());
-		}
+		this.loadObjectIdData(this.getRelatedConfiguration());
 
 		loadedFromDb = true;
 	}
@@ -278,8 +281,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public Object[] getInsertParamsWithoutObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).generateInsertParamsWithoutObjectId(this);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.generateInsertParamsWithoutObjectId(this);
 		}
 
 		return null;
@@ -288,8 +292,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public String getInsertSQLWithoutObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).getInsertSQLWithoutObjectId();
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.getInsertSQLWithoutObjectId();
 		}
 
 		return null;
@@ -298,8 +303,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public Object[] getInsertParamsWithObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).generateInsertParamsWithObjectId(this);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.generateInsertParamsWithObjectId(this);
 		}
 
 		return null;
@@ -308,8 +314,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public String getInsertSQLWithObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).getInsertSQLWithObjectId();
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.getInsertSQLWithObjectId();
 		}
 
 		return null;
@@ -318,8 +325,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public String getUpdateSQL() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).getUpdateSql();
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.getUpdateSql();
 		}
 
 		return null;
@@ -328,8 +336,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public Object[] getUpdateParams() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).generateUpdateParams(this);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.generateUpdateParams(this);
 		}
 
 		return null;
@@ -338,8 +347,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public String generateInsertValuesWithoutObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).generateInsertValuesWithoutObjectId(this);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.generateInsertValuesWithoutObjectId(this);
 		}
 
 		return null;
@@ -348,8 +358,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public String generateInsertValuesWithObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).generateInsertValuesWithObjectId(this);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.generateInsertValuesWithObjectId(this);
 		}
 
 		return null;
@@ -357,16 +368,18 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 	@Override
 	public void setInsertSQLQuestionMarksWithObjectId(String insertQuestionMarks) {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			((TableConfiguration) this.relatedConfiguration).setInsertSQLQuestionMarksWithObjectId(insertQuestionMarks);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			tableConfiguration.setInsertSQLQuestionMarksWithObjectId(insertQuestionMarks);
 		}
 	}
 
 	@Override
 	@JsonIgnore
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).getInsertSQLQuestionMarksWithObjectId();
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.getInsertSQLQuestionMarksWithObjectId();
 		}
 
 		return null;
@@ -374,17 +387,18 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 
 	@Override
 	public void setInsertSQLQuestionMarksWithoutObjectId(String insertQuestionMarks) {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			((TableConfiguration) this.relatedConfiguration)
-					.setInsertSQLQuestionMarksWithoutObjectId(insertQuestionMarks);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			tableConfiguration.setInsertSQLQuestionMarksWithoutObjectId(insertQuestionMarks);
 		}
 	}
 
 	@Override
 	@JsonIgnore
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).getInsertSQLQuestionMarksWithoutObjectId();
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.getInsertSQLQuestionMarksWithoutObjectId();
 		}
 
 		return null;
@@ -393,8 +407,9 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	@Override
 	@JsonIgnore
 	public String generateFullFilledUpdateSql() {
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			return ((TableConfiguration) this.relatedConfiguration).generateFullFilledUpdateSql(this);
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
+			return tableConfiguration.generateFullFilledUpdateSql(this);
 		}
 
 		return null;
@@ -494,8 +509,10 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 		if (!getRelatedConfiguration().isFullLoaded())
 			throw new ForbiddenOperationException("The relatedConfiguration  is not full loaded");
 
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+
 		for (Field f : this.fields) {
-			if (((TableConfiguration) this.getRelatedConfiguration()).isIgnorableField(f)) {
+			if (isIgnorableField(f, tableConfiguration)) {
 				continue;
 			}
 
@@ -510,12 +527,34 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 			}
 		}
 
-		this.loadUniqueKeyValues((TableConfiguration) getRelatedConfiguration());
+		this.loadUniqueKeyValues(getRelatedConfiguration());
 
 		if (this.hasSharedPkObj()) {
 			this.getSharedPkObj().copyFrom(copyFrom.getSharedPkObj());
 		}
 
+	}
+
+	private TableConfiguration physicalTableConfiguration() {
+
+		if (relatedConfiguration instanceof TableConfiguration) {
+			return (TableConfiguration) relatedConfiguration;
+		}
+
+		if (relatedConfiguration instanceof EtlDestinationConfiguration) {
+			return ((EtlDestinationConfiguration) relatedConfiguration).getTableDataDestination();
+		}
+
+		return null;
+	}
+
+	private boolean isIgnorableField(Field field, TableConfiguration tableConfiguration) {
+
+		if (relatedConfiguration instanceof EtlDestinationConfiguration) {
+			return ((EtlDestinationConfiguration) relatedConfiguration).isIgnorableField(field);
+		}
+
+		return tableConfiguration != null && tableConfiguration.isIgnorableField(field);
 	}
 
 	@Override

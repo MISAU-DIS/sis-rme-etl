@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
-import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
