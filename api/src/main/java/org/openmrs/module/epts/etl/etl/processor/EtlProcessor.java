@@ -74,8 +74,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	@Override
-	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
-			throws DBException {
+	public void load(List<EtlDatabaseObject> etlObjects, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
 
 		performLoading(getEtlItemConfiguration(), etlObjects, LoadingType.PRINCIPAL, readers, writers);
 
@@ -104,7 +104,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			throws DBException {
 
 		throw new ForbiddenOperationException("Rever este metodo");
-		
+
 		/*
 		 * ConnectorRecordWritersAggregator writers =
 		 * JdbcConnectorRuntimeAdapters.writers(etlItemConf, dstConn);
@@ -118,7 +118,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		 * return performLoading(etlItemConf, etlObjects, loadingType, readers,
 		 * writers);
 		 */
-		
+
 	}
 
 	private void performTransformation(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
@@ -126,8 +126,9 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			ConnectorRecordWritersAggregator writers) throws DBException {
 
 		PrimaryDataSourceConfiguration primarySource = etlItemConf.getPrimaryDataSource();
-		Connection srcConn = findPrimaryJdbcConnection(etlItemConf, readers);
-		ConnectorRecordReader<?> primaryReader = findPrimaryReader(etlItemConf, readers);
+		ConnectorRecordReader<?> primaryReader = readers.getPrimary();
+		Connection srcConn = primaryReader.unwrap(Connection.class);
+
 		this.debug("Starting transformation of {} {}", etlObjects.size(), primarySource.getAlias());
 
 		List<ConnectionKeepAlive> keepAlives = registerDestinationKeepAlives(writers);
@@ -248,7 +249,8 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		}
 	}
 
-	private Connection destinationConnection(ConnectorRecordWritersAggregator writers, EtlDestinationConfiguration destination) {
+	private Connection destinationConnection(ConnectorRecordWritersAggregator writers,
+			EtlDestinationConfiguration destination) {
 
 		try {
 			return writers.get(destination).unwrap(Connection.class);
@@ -373,7 +375,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			}
 
 			if (exceptionBehavior.logging()) {
-				Connection srcConn = requirePrimaryJdbcConnection(readers, "recording an ETL issue in the stage area");
+				Connection srcConn = readers.getEtlSrcConn();
 
 				for (EtlDatabaseObject record : records) {
 					EtlStageAreaObject r = record.generateSrcStageRecord(srcConn, dstConn);
@@ -482,11 +484,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	private void performeEtlOnChildItem(EtlChildItemConfiguration itemConf, EtlDatabaseObject transformedParent,
 			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) throws DBException {
 
-		ConnectorRecordReader<?> childPrimaryReader = findPrimaryReader(itemConf, readers);
+		ConnectorRecordReader<?> childPrimaryReader = readers.get(itemConf.getPrimaryDataSource());
+
 		EtlDestinationConfiguration parentDestination = transformedParent
 				.getRelatedConfiguration() instanceof EtlDestinationConfiguration
 						? (EtlDestinationConfiguration) transformedParent.getRelatedConfiguration()
 						: null;
+
 		Connection parentDstConn = parentDestination != null && parentDestination.isJdbcDestination()
 				? destinationConnection(writers, parentDestination)
 				: null;
@@ -580,9 +584,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		return (EtlController) super.getRelatedOperationController();
 	}
 
-	private void applyAfterEtlAction(EtlDatabaseObject obj, EtlActionType action, ConnectorRecordReadersAggregator readers,
-			ConnectorRecordWritersAggregator writers) throws DBException {
-		Connection srcConn = requirePrimaryJdbcConnection(readers, "applying after-ETL action " + action);
+	private void applyAfterEtlAction(EtlDatabaseObject obj, EtlActionType action,
+			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) throws DBException {
+
+		Connection srcConn = readers.getEtlSrcConn();
 		Connection dstConn = firstJdbcDestinationConnection(writers);
 
 		if (action.isDelete()) {

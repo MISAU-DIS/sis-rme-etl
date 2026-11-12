@@ -4,10 +4,10 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
-import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -425,48 +425,6 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	@Override
 	public void logWarn(String msg, long interval, boolean suppressIfAnyRecentLog) {
 		LOG.warn(msg, interval, suppressIfAnyRecentLog);
-	}
-
-	public Connection findPrimaryJdbcConnection(ConnectorRecordReadersAggregator readers) {
-		return findPrimaryJdbcConnection(getEtlItemConfiguration(), readers);
-	}
-
-	public Connection findPrimaryJdbcConnection(EtlItemConfiguration itemConf,
-			ConnectorRecordReadersAggregator readers) {
-		return this.findJdbcConnection(findPrimaryReader(itemConf, readers));
-	}
-
-	public Connection findJdbcConnection(ConnectorRecordReader<?> reader) {
-
-		try {
-			return reader.unwrap(Connection.class);
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
-	}
-
-	public ConnectorRecordReader<?> findPrimaryReader(EtlItemConfiguration itemConf,
-			ConnectorRecordReadersAggregator readers) {
-
-		try {
-			return readers.get(itemConf.getPrimaryDataSource());
-		} catch (IllegalArgumentException e) {
-
-			if (itemConf == getEtlItemConfiguration()) {
-				return readers.getPrimary();
-			}
-			throw e;
-		}
-	}
-
-	public Connection requirePrimaryJdbcConnection(ConnectorRecordReadersAggregator readers, String operation) {
-		Connection connection = findPrimaryJdbcConnection(readers);
-
-		if (connection == null) {
-			throw new IllegalStateException("A JDBC source connection is required for " + operation);
-		}
-
-		return connection;
 	}
 
 	public boolean writeOperationHistory() {

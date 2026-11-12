@@ -9,6 +9,7 @@ import java.sql.Connection;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -88,8 +89,8 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 			if (utilities.equalsFieldsName(fieldName, field.getName()))
 				return field.getValue();
 		}
-		if (getRelatedConfiguration() instanceof TableConfiguration
-				&& ((TableConfiguration) getRelatedConfiguration()).useSharedPKKey()) {
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null && tableConfiguration.useSharedPKKey()) {
 			if (this.getSharedPkObj() == null) {
 				throw new ForbiddenOperationException("The sharedPkObj pk is not loaded");
 			}
@@ -100,10 +101,11 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	}
 
 	private void attachMissingPhysicalFields(EtlObjectConfiguration configuration) {
-		if (!(configuration instanceof AbstractTableConfiguration))
+		TableConfiguration physical = physicalTableConfiguration(configuration);
+		if (!(physical instanceof AbstractTableConfiguration))
 			return;
 
-		AbstractTableConfiguration table = (AbstractTableConfiguration) configuration;
+		AbstractTableConfiguration table = (AbstractTableConfiguration) physical;
 		if (table.getPhysicalTableConfiguration() == null || !table.getPhysicalTableConfiguration().hasFields())
 			return;
 
@@ -152,9 +154,9 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 	}
 
 	protected final void regenerateObjectIdIfKeyField(String fieldName) {
-		if (regeneratingObjectId || !(getRelatedConfiguration() instanceof TableConfiguration)) return;
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (regeneratingObjectId || tableConfiguration == null) return;
 
-		TableConfiguration tableConfiguration = (TableConfiguration) getRelatedConfiguration();
 		if (!Boolean.TRUE.equals(tableConfiguration.isPrimaryKeyInfoLoaded())) return;
 		if (tableConfiguration.getPrimaryKey() == null || tableConfiguration.getPrimaryKey().getFields() == null) return;
 
@@ -239,8 +241,9 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 
 		EtlObjectConfiguration configuration = requireRelatedConfiguration();
 
-		if (configuration instanceof TableConfiguration) {
-			TableConfiguration tableConfiguration = (TableConfiguration) configuration;
+		TableConfiguration tableConfiguration = physicalTableConfiguration(configuration);
+
+		if (tableConfiguration != null) {
 			ParentTable parent = tableConfiguration.getFieldIsRelatedParent(field);
 
 			if (parent != null) {
@@ -340,7 +343,7 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		TableConfiguration destinationConfiguration = this.getDestinationTableConfiguration();
 
 		for (Field destinationField : getFields()) {
-			if (destinationConfiguration.isIgnorableField(destinationField)) {
+			if (isIgnorableField(destinationField, destinationConfiguration)) {
 				continue;
 			}
 
@@ -357,15 +360,41 @@ public abstract class AbstractGeneratedDatabaseObject extends AbstractDatabaseOb
 		if (!this.hasRelatedConfiguration()) {
 			throw new ForbiddenOperationException("The relatedConfiguration is not set for dstRecord [" + this + "]");
 		}
-		if (!(this.getRelatedConfiguration() instanceof TableConfiguration)) {
-			throw new ForbiddenOperationException("The relatedConfiguration is not a table configuration");
+		TableConfiguration configuration = physicalTableConfiguration();
+		if (configuration == null) {
+			throw new ForbiddenOperationException(
+					"The relatedConfiguration does not provide a physical table configuration");
 		}
-
-		TableConfiguration configuration = (TableConfiguration) this.getRelatedConfiguration();
-		if (!configuration.isFullLoaded()) {
+		if (!this.getRelatedConfiguration().isFullLoaded()) {
 			throw new ForbiddenOperationException("The relatedConfiguration is not full loaded");
 		}
 		return configuration;
+	}
+
+	private boolean isIgnorableField(Field field, TableConfiguration tableConfiguration) {
+
+		if (this.getRelatedConfiguration() instanceof EtlDestinationConfiguration) {
+			return ((EtlDestinationConfiguration) this.getRelatedConfiguration()).isIgnorableField(field);
+		}
+
+		return tableConfiguration.isIgnorableField(field);
+	}
+
+	private TableConfiguration physicalTableConfiguration() {
+		return physicalTableConfiguration(this.getRelatedConfiguration());
+	}
+
+	private TableConfiguration physicalTableConfiguration(EtlObjectConfiguration configuration) {
+
+		if (configuration instanceof TableConfiguration) {
+			return (TableConfiguration) configuration;
+		}
+
+		if (configuration instanceof EtlDestinationConfiguration) {
+			return ((EtlDestinationConfiguration) configuration).getTableDataDestination();
+		}
+
+		return null;
 	}
 
 	private void copyCompatibleFieldValue(EtlDatabaseObject source, Field destinationField) {

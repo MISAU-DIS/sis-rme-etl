@@ -146,6 +146,21 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		return this.inconsistencyBehavior;
 	}
 
+	@Override
+	public EtlDatabaseObject createRecordInstance() {
+		EtlDatabaseObject obj;
+
+		if (isJdbcDestination()) {
+			obj = this.getTableDataDestination().createRecordInstance();
+		} else {
+			obj = EtlTransformTarget.super.createRecordInstance();
+		}
+
+		obj.setRelatedConfiguration(this);
+
+		return obj;
+	}
+
 	public static List<EtlDestinationConfiguration> copyAll(List<EtlDestinationConfiguration> destinations) {
 
 		if (destinations == null) {

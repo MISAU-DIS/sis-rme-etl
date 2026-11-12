@@ -8,6 +8,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.base.VO;
@@ -15,25 +16,27 @@ import org.openmrs.module.epts.etl.model.base.VOLoaderHelper;
 
 public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 
-	private EtlObjectConfiguration tableConf;
+	private EtlObjectConfiguration objectConfiguration;
 
-	public DatabaseObjectLoaderHelper(EtlObjectConfiguration tableConf) {
-		this.tableConf = tableConf;
+	public DatabaseObjectLoaderHelper(EtlObjectConfiguration objectConfiguration) {
+		this.objectConfiguration = objectConfiguration;
 	}
 
 	@Override
 	public void beforeLoad(ResultSet rs, VO vo) {
+
 		if (!(vo instanceof EtlDatabaseObject)) {
 			throw new ForbiddenOperationException("This method is only applied to EtlDatabaseObject instances");
 		}
 
 		EtlDatabaseObject databaseObject = (EtlDatabaseObject) vo;
-		databaseObject.setRelatedConfiguration(this.tableConf);
+		databaseObject.setRelatedConfiguration(this.objectConfiguration);
 
-		if (this.tableConf instanceof TableConfiguration) {
-			TableConfiguration tableConfiguration = (TableConfiguration) this.tableConf;
+		TableConfiguration tableConfiguration = physicalTableConfiguration();
+		if (tableConfiguration != null) {
 
 			if (tableConfiguration.useSharedPKKey()) {
+
 				if (databaseObject.getSharedPkObj() == null) {
 					throw new ForbiddenOperationException(
 							"The shared PK object for " + tableConfiguration.getTableName() + " was not initialized");
@@ -46,7 +49,9 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 	}
 
 	private ParentTable resolveLoadedSharedPkConfiguration(TableConfiguration tableConfiguration) {
+
 		if (tableConfiguration.hasParentRefInfo()) {
+
 			for (ParentTable parent : tableConfiguration.getParentRefInfo()) {
 				if (parent.getTableName().equalsIgnoreCase(tableConfiguration.getSharePkWith()))
 					return parent;
@@ -59,6 +64,7 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 
 	@Override
 	public void afterLoad(ResultSet rs, VO vo) throws SQLException {
+
 		if (!(vo instanceof EtlDatabaseObject)) {
 			throw new ForbiddenOperationException("This method is only applied to EtlDatabaseObject instances");
 		}
@@ -69,16 +75,17 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 
 		EtlDatabaseObject voAsEtlDatabaseObject = ((EtlDatabaseObject) vo);
 
-		if (voAsEtlDatabaseObject.getRelatedConfiguration() instanceof TableConfiguration) {
+		TableConfiguration tableConfiguration = physicalTableConfiguration(
+				voAsEtlDatabaseObject.getRelatedConfiguration());
+		if (tableConfiguration != null) {
+
 			if (voAsEtlDatabaseObject.getSharedPkObj() != null) {
 				this.afterLoad(rs, voAsEtlDatabaseObject.getSharedPkObj());
 			}
 
-			voAsEtlDatabaseObject
-					.loadUniqueKeyValues((TableConfiguration) voAsEtlDatabaseObject.getRelatedConfiguration());
+			voAsEtlDatabaseObject.loadUniqueKeyValues(voAsEtlDatabaseObject.getRelatedConfiguration());
 
-			voAsEtlDatabaseObject
-					.loadObjectIdData((TableConfiguration) voAsEtlDatabaseObject.getRelatedConfiguration());
+			voAsEtlDatabaseObject.loadObjectIdData(voAsEtlDatabaseObject.getRelatedConfiguration());
 
 			if (voAsEtlDatabaseObject.getSharedPkObj() != null && voAsEtlDatabaseObject.getUuid() == null
 					&& voAsEtlDatabaseObject.getSharedPkObj().getUuid() != null) {
@@ -90,14 +97,18 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 	}
 
 	private void loadAuxiliaryObjects(EtlDatabaseObject databaseObject, ResultSet rs) throws SQLException {
-		if (!(databaseObject.getRelatedConfiguration() instanceof MainJoiningEntity))
+		EtlObjectConfiguration configuration = databaseObject.getRelatedConfiguration();
+		Object joiningConfiguration = configuration instanceof MainJoiningEntity ? configuration
+				: physicalTableConfiguration(configuration);
+		if (!(joiningConfiguration instanceof MainJoiningEntity))
 			return;
 
-		MainJoiningEntity mainJoiningEntity = (MainJoiningEntity) databaseObject.getRelatedConfiguration();
+		MainJoiningEntity mainJoiningEntity = (MainJoiningEntity) joiningConfiguration;
 		if (!mainJoiningEntity.hasAuxExtractTable())
 			return;
 
 		databaseObject.setAuxLoadObject(new ArrayList<>());
+
 		for (JoinableEntity auxiliaryConfiguration : mainJoiningEntity.getJoiningTable()) {
 			if (auxiliaryConfiguration.doNotUseAsDatasource())
 				continue;
@@ -118,14 +129,31 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 
 	@Override
 	public String toString() {
-		return this.tableConf.toString();
+		return this.objectConfiguration.toString();
 	}
 
-	public void setTableConf(EtlObjectConfiguration tableConf) {
-		this.tableConf = tableConf;
+	public void setTableConf(EtlObjectConfiguration objectConfiguration) {
+		this.objectConfiguration = objectConfiguration;
 	}
 
 	public EtlObjectConfiguration getTableConf() {
-		return tableConf;
+		return objectConfiguration;
+	}
+
+	private TableConfiguration physicalTableConfiguration() {
+		return physicalTableConfiguration(this.objectConfiguration);
+	}
+
+	private TableConfiguration physicalTableConfiguration(EtlObjectConfiguration configuration) {
+
+		if (configuration instanceof TableConfiguration) {
+			return (TableConfiguration) configuration;
+		}
+
+		if (configuration instanceof EtlDestinationConfiguration) {
+			return ((EtlDestinationConfiguration) configuration).getTableDataDestination();
+		}
+
+		return null;
 	}
 }

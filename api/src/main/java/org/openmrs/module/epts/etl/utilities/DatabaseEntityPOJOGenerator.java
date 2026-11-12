@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.RefMapping;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -592,7 +593,18 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	private static boolean usesSharedPk(EtlObjectConfiguration configuration) {
-		return configuration instanceof TableConfiguration && ((TableConfiguration) configuration).useSharedPKKey();
+		TableConfiguration tableConfiguration = physicalTableConfiguration(configuration);
+		return tableConfiguration != null && tableConfiguration.useSharedPKKey();
+	}
+
+	private static TableConfiguration physicalTableConfiguration(EtlObjectConfiguration configuration) {
+		if (configuration instanceof TableConfiguration) {
+			return (TableConfiguration) configuration;
+		}
+		if (configuration instanceof EtlDestinationConfiguration) {
+			return ((EtlDestinationConfiguration) configuration).getTableDataDestination();
+		}
+		return null;
 	}
 
 	private static void generateCompileTimeDependencies(EtlObjectConfiguration configuration,
@@ -645,13 +657,12 @@ public class DatabaseEntityPOJOGenerator {
 		if (!usesSharedPk(configuration)) {
 			return "";
 		}
-		String code = "\n\t\torg.openmrs.module.epts.etl.conf.interfaces.TableConfiguration tableConfiguration = "
-				+ "(org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration) getRelatedConfiguration();\n";
+		String code = "\n";
 		code += "\t\tif (!utilities.stringHasValue(getUuid()) && getSharedPkObj() != null "
 				+ "&& utilities.stringHasValue(getSharedPkObj().getUuid())) {\n";
 		code += "\t\t\tsetUuid(getSharedPkObj().getUuid());\n";
 		code += "\t\t}\n";
-		code += "\t\tloadObjectIdData(tableConfiguration);\n";
+		code += "\t\tloadObjectIdData(getRelatedConfiguration());\n";
 		return code;
 	}
 
