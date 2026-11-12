@@ -20,7 +20,7 @@ public abstract class AbstractConnectorRecordWriter<T extends EtlDatabaseObject>
 		if (aggregator instanceof ConnectorRecordWritersAggregator) {
 			this.writersAggregator = (ConnectorRecordWritersAggregator) aggregator;
 		} else {
-			throw new EtlConfException("Only ConnectorRecordReadersAggregator is accepted for ConnectorRecordWriter");
+			throw new EtlConfException("Only ConnectorRecordWritersAggregator is accepted for ConnectorRecordWriter");
 		}
 	}
 }

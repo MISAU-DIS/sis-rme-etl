@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.connector.jdbc;
 
-import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
@@ -22,7 +21,7 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extend
 	private final OpenConnection srcConn;
 
 	public JdbcConnectorRecordReader(ConnectorResource resource, AbstractEtlSearchParams<T> searchParams,
-			Connection srcConnection) {
+			OpenConnection srcConnection) {
 
 		if (searchParams == null) {
 			throw new IllegalArgumentException("searchParams cannot be null");
@@ -31,7 +30,7 @@ public final class JdbcConnectorRecordReader<T extends EtlDatabaseObject> extend
 		this.resource = resource;
 		this.searchParams = searchParams;
 
-		this.srcConn = (OpenConnection) srcConnection;
+		this.srcConn = srcConnection;
 	}
 
 	@Override

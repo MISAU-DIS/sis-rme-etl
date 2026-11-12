@@ -29,6 +29,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
+import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
@@ -1385,6 +1386,10 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 		if (tableDataDestination == null) {
 			return;
+		}
+
+		if (tableDataDestination.getDstType() == null) {
+			tableDataDestination.setDstType(EtlDstType.db);
 		}
 
 		if (parentItem != null) {

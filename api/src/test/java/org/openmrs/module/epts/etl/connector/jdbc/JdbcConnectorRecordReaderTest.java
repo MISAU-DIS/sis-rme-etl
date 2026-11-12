@@ -23,6 +23,8 @@ import org.openmrs.module.epts.etl.model.base.VOLoaderHelper;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnectionTestFactory;
 
 class JdbcConnectorRecordReaderTest {
 
@@ -31,7 +33,7 @@ class JdbcConnectorRecordReaderTest {
 		JdbcTableResource resource = resource(ConnectorDirection.SOURCE);
 		TrackingSearchParams searchParams = new TrackingSearchParams();
 		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory.create(resource,
-				searchParams, null);
+				searchParams, newConnectionMarker());
 		IntervalExtremeRecord interval = new IntervalExtremeRecord(1, 10);
 
 		List<GenericDatabaseObject> result = reader.read(new ConnectorReadRequest<>(interval, null, null, false));
@@ -44,7 +46,7 @@ class JdbcConnectorRecordReaderTest {
 
 	@Test
 	void shouldExposeJdbcConnectionOnlyThroughNativeUnwrap() {
-		Connection connection = newConnectionMarker();
+		OpenConnection connection = newConnectionMarker();
 		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory
 				.create(resource(ConnectorDirection.SOURCE), new TrackingSearchParams(), connection);
 
@@ -56,7 +58,7 @@ class JdbcConnectorRecordReaderTest {
 	void shouldDelegateParallelReadWithoutChangingJdbcSemantics() throws DBException {
 		TrackingSearchParams searchParams = new TrackingSearchParams();
 		ConnectorRecordReader<GenericDatabaseObject> reader = ConnectorRecordReaderFactory
-				.create(resource(ConnectorDirection.SOURCE), searchParams, null);
+				.create(resource(ConnectorDirection.SOURCE), searchParams, newConnectionMarker());
 
 		List<GenericDatabaseObject> result = reader
 				.read(new ConnectorReadRequest<>(new IntervalExtremeRecord(1, 10), null, null, true));
@@ -76,9 +78,8 @@ class JdbcConnectorRecordReaderTest {
 		return new JdbcTableResource(new GenericTableConfiguration("patient"), direction, new DBConnectionInfo());
 	}
 
-	private Connection newConnectionMarker() {
-		return (Connection) java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),
-				new Class<?>[] { Connection.class }, (proxy, method, args) -> null);
+	private OpenConnection newConnectionMarker() {
+		return OpenConnectionTestFactory.create(new GenericTableConfiguration("connection_owner"));
 	}
 
 	private static final class TrackingSearchParams extends AbstractEtlSearchParams<GenericDatabaseObject> {

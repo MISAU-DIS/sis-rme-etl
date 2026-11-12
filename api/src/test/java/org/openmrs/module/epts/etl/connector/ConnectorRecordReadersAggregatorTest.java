@@ -41,13 +41,15 @@ class ConnectorRecordReadersAggregatorTest {
 		resources.put(primary, primaryResource);
 		resources.put(additional, additionalResource);
 
-		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(
-				primaryReader.unwrap(OpenConnection.class), readers, resources);
+		ConnectorRecordReadersAggregator scope = new ConnectorRecordReadersAggregator(null, primaryReader, readers,
+				resources);
 
 		assertSame(primaryReader, scope.get(primary));
 		assertSame(additionalReader, scope.get(additional));
 		assertSame(additionalResource, scope.getResource(additional));
 		assertEquals(2, scope.getAll().size());
+		assertSame(scope, primaryReader.getAggregator());
+		assertSame(scope, additionalReader.getAggregator());
 		assertThrows(IllegalArgumentException.class, () -> scope.get(new TransformableDataSource()));
 	}
 

@@ -3,7 +3,6 @@ package org.openmrs.module.epts.etl.connector.jdbc;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -19,12 +18,14 @@ import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWr
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnectionTestFactory;
 
 class JdbcConnectorRecordWriterTest {
 
 	@Test
 	void shouldBeAssociatedWithExactlyOneResource() {
-		Connection connection = connectionMarker();
+		OpenConnection connection = connectionMarker();
 		JdbcTableResource resource = resource(ConnectorDirection.DESTINATION, "patient");
 		ConnectorRecordWriter<GenericDatabaseObject> writer = new JdbcConnectorRecordWriter<>(resource, connection);
 
@@ -40,7 +41,7 @@ class JdbcConnectorRecordWriterTest {
 
 	@Test
 	void shouldResolveWriterByResourceAndDestinationConfiguration() {
-		Connection connection = connectionMarker();
+		OpenConnection connection = connectionMarker();
 		EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
 		JdbcTableDestinationConfiguration table = new JdbcTableDestinationConfiguration("patient");
 		destination.setTableDataDestination(table);
@@ -63,8 +64,7 @@ class JdbcConnectorRecordWriterTest {
 		return new JdbcTableResource(new GenericTableConfiguration(name), direction, new DBConnectionInfo());
 	}
 
-	private Connection connectionMarker() {
-		return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { Connection.class },
-				(proxy, method, args) -> null);
+	private OpenConnection connectionMarker() {
+		return OpenConnectionTestFactory.create(new GenericTableConfiguration("connection_owner"));
 	}
 }

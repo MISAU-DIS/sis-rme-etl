@@ -108,8 +108,6 @@ public final class JdbcConnectorRuntimeAdapters {
 
 		ConnectorRecordWritersAggregator ag = new ConnectorRecordWritersAggregator(writers, resources);
 
-		ag.loadAggregatorToAvaliableCapabilities();
-
 		return ag;
 	}
 

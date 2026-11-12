@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRecordWriter;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Selects the destination execution adapter for resolved resources. */
 public final class ConnectorRecordWriterFactory {
@@ -35,7 +36,11 @@ public final class ConnectorRecordWriterFactory {
 		ConnectorEndpoint endpoint = resource.getEndpoint();
 
 		if (endpoint.getType() == ConnectorType.JDBC) {
-			return new JdbcConnectorRecordWriter<>(resource, destinationConnection);
+
+			if (!(destinationConnection instanceof OpenConnection)) {
+				throw new IllegalArgumentException("A JDBC writer requires an OpenConnection");
+			}
+			return new JdbcConnectorRecordWriter<>(resource, (OpenConnection) destinationConnection);
 		}
 
 		if (endpoint.getType() == ConnectorType.FILE) {

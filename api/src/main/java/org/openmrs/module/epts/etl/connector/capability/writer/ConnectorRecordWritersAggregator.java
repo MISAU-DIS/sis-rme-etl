@@ -28,6 +28,7 @@ public final class ConnectorRecordWritersAggregator implements ConnectorRecordCa
 			Map<EtlDestinationConfiguration, ConnectorResource> resourcesByConfiguration) {
 		this.writers = Collections.unmodifiableMap(new IdentityHashMap<>(writers));
 		this.resourcesByConfiguration = Collections.unmodifiableMap(new IdentityHashMap<>(resourcesByConfiguration));
+		loadAggregatorToAvaliableCapabilities();
 	}
 
 	@SuppressWarnings("unchecked")

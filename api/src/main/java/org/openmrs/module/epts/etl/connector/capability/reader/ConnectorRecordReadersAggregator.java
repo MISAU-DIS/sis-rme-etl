@@ -40,6 +40,7 @@ public final class ConnectorRecordReadersAggregator implements ConnectorRecordCa
 		this.readers = Collections.unmodifiableMap(new IdentityHashMap<>(readers));
 		this.resourcesByConfiguration = Collections.unmodifiableMap(new IdentityHashMap<>(resourcesByConfiguration));
 		this.etlSrcConn = etlSrcConn;
+		loadAggregatorToAvaliableCapabilities();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -118,7 +119,12 @@ public final class ConnectorRecordReadersAggregator implements ConnectorRecordCa
 
 	@Override
 	public List<ConnectorCapabilityProvider<?>> collectAvaliableCapabilities() {
-		return new ArrayList<ConnectorCapabilityProvider<?>>(readers.values());
+		List<ConnectorCapabilityProvider<?>> capabilities = new ArrayList<ConnectorCapabilityProvider<?>>(readers.values());
+
+		if (primaryReader != null && !containsIdentity(capabilities, primaryReader)) {
+			capabilities.add(primaryReader);
+		}
+		return capabilities;
 	}
 
 	@Override

@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.connector.file.FileConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRecordReader;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 /** Selects the source execution adapter for a resolved resource. */
 public final class ConnectorRecordReaderFactory {
@@ -33,7 +34,11 @@ public final class ConnectorRecordReaderFactory {
 		resource.getEndpoint().requireCapabilities(java.util.Collections.singleton(ConnectorCapability.READ));
 
 		if (resource.getEndpoint().getType() == ConnectorType.JDBC) {
-			return new JdbcConnectorRecordReader<>(resource, searchParams, srcConnection);
+
+			if (!(srcConnection instanceof OpenConnection)) {
+				throw new IllegalArgumentException("A JDBC reader requires an OpenConnection");
+			}
+			return new JdbcConnectorRecordReader<>(resource, searchParams, (OpenConnection) srcConnection);
 		}
 
 		if (resource.getEndpoint().getType() == ConnectorType.FILE) {

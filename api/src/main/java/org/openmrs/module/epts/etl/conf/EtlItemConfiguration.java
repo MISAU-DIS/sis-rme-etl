@@ -404,7 +404,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		if (destinations != null) {
 
 			for (EtlDestinationConfiguration destination : destinations) {
-				jdbcDestinations.add(destination.requireJdbcTableDestination());
+
+				if (destination.isJdbcDestination()) {
+					jdbcDestinations.add(destination.requireJdbcTableDestination());
+				}
 			}
 		}
 		return jdbcDestinations;
@@ -633,8 +636,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			ConnectorRecordReadersAggregator agg = new ConnectorRecordReadersAggregator(etlSrcConn, primaryReader,
 					readers, resources);
 
-			agg.loadAggregatorToAvaliableCapabilities();
-
 			return agg;
 		} catch (DBException | RuntimeException exception) {
 			OpenConnection.finalizeAllConnections(openedConnections, openedFrom);
@@ -682,28 +683,31 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
 		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
-		Map<String, Connection> connections = new HashMap<>();
+		Map<String, OpenConnection> connections = new HashMap<>();
 
-		for (EtlDestinationConfiguration destination : collectDestinationConfigurations()) {
-			ConnectorResource resource = getResolvedDstResource(destination);
+		try {
+			for (EtlDestinationConfiguration destination : collectDestinationConfigurations()) {
+				ConnectorResource resource = getResolvedDstResource(destination);
 
-			String endpointKey = resource.getEndpoint().getType() + "|" + resource.getEndpoint().getUri() + "|"
-					+ resource.getEndpoint().getUserName();
+				String endpointKey = resource.getEndpoint().getType() + "|" + resource.getEndpoint().getUri() + "|"
+						+ resource.getEndpoint().getUserName();
 
-			Connection connection = connections.get(endpointKey);
+				OpenConnection connection = connections.get(endpointKey);
 
-			if (connection == null && resource.getEndpoint().getType() == ConnectorType.JDBC) {
-				connection = getRelatedEtlConf().openDestinationConnectorConnection(resource, openedFrom);
-				connections.put(endpointKey, connection);
+				if (connection == null && resource.getEndpoint().getType() == ConnectorType.JDBC) {
+					connection = getRelatedEtlConf().openDestinationConnectorConnection(resource, openedFrom);
+					connections.put(endpointKey, connection);
+				}
+
+				writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
+				resources.put(destination, resource);
 			}
-
-			writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
-			resources.put(destination, resource);
+		} catch (DBException | RuntimeException exception) {
+			OpenConnection.finalizeAllConnections(new ArrayList<>(connections.values()), openedFrom);
+			throw exception;
 		}
 
 		ConnectorRecordWritersAggregator agg = new ConnectorRecordWritersAggregator(writers, resources);
-
-		agg.loadAggregatorToAvaliableCapabilities();
 
 		return agg;
 	}
@@ -722,8 +726,6 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		writers.put(resource, ConnectorRecordWriterFactory.create(resource, connection));
 
 		ConnectorRecordWritersAggregator agg = new ConnectorRecordWritersAggregator(writers, Collections.emptyMap());
-
-		agg.loadAggregatorToAvaliableCapabilities();
 
 		return agg;
 	}

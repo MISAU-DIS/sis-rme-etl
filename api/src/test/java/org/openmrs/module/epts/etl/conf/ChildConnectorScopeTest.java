@@ -31,6 +31,8 @@ class ChildConnectorScopeTest {
 	@Test
 	void shouldRegisterChildPrimarySourceInReaderScope() throws Exception {
 		TestItem parent = new TestItem();
+		OpenConnection etlConnection = OpenConnectionTestFactory.create(parent);
+		parent.setRelatedEtlConf(etlConfiguration(etlConnection));
 		JsonPrimaryDataSourceConfiguration parentPrimary = configureSource(parent, "parent", resource("parent"));
 
 		EtlChildItemConfiguration child = new EtlChildItemConfiguration();
@@ -49,12 +51,7 @@ class ChildConnectorScopeTest {
 		TestItem parent = new TestItem();
 		OpenConnection sharedConnection = OpenConnectionTestFactory.create(parent);
 		parent.setPrimaryConnection(sharedConnection);
-		parent.setRelatedEtlConf(new EtlConfiguration() {
-			@Override
-			OpenConnection openSourceConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom) {
-				throw new AssertionError("The shared connector must not open a second connection");
-			}
-		});
+		parent.setRelatedEtlConf(etlConfiguration(sharedConnection));
 
 		configureSource(parent, "parent", resource("parent", sharedConnector));
 		EtlChildItemConfiguration child = new EtlChildItemConfiguration();
@@ -82,6 +79,20 @@ class ChildConnectorScopeTest {
 		source.setResolvedResource(resource);
 		item.setSource(source);
 		return primary;
+	}
+
+	private EtlConfiguration etlConfiguration(OpenConnection etlConnection) {
+		return new EtlConfiguration() {
+			@Override
+			public OpenConnection openSrcConn(BaseConfiguration openedFrom) {
+				return etlConnection;
+			}
+
+			@Override
+			OpenConnection openSourceConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom) {
+				throw new AssertionError("The shared connector must not open a second connection");
+			}
+		};
 	}
 
 	private ConnectorResource resource(String name) {

@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.connector.jdbc;
 
-import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
@@ -19,7 +18,7 @@ public final class JdbcConnectorRecordWriter<T extends EtlDatabaseObject> extend
 	private final ConnectorResource resource;
 	private final OpenConnection dstConn;
 
-	public JdbcConnectorRecordWriter(ConnectorResource resource, Connection destinationConnection) {
+	public JdbcConnectorRecordWriter(ConnectorResource resource, OpenConnection destinationConnection) {
 
 		if (destinationConnection == null) {
 			throw new IllegalArgumentException("destinationConnection cannot be null");
@@ -29,7 +28,7 @@ public final class JdbcConnectorRecordWriter<T extends EtlDatabaseObject> extend
 			throw new IllegalArgumentException("resource cannot be null");
 		}
 		this.resource = resource;
-		this.dstConn = (OpenConnection) destinationConnection;
+		this.dstConn = destinationConnection;
 	}
 
 	@Override

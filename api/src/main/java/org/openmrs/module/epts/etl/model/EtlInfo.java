@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
@@ -102,7 +103,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	}
 
 	public EtlItemConfiguration getRelatedItemConf() {
-		return ((JdbcTableDestinationConfiguration) this.transformedObject.getRelatedConfiguration()).getParentConf();
+		return ((EtlDestinationConfiguration) this.transformedObject.getRelatedConfiguration()).getParentConf();
 	}
 
 	public EtlInfo getParentEtlInfo() {
