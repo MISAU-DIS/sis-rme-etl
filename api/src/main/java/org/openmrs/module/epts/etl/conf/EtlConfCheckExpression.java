@@ -74,9 +74,9 @@ public class EtlConfCheckExpression {
 
 			EtlDataSource ds;
 
-			if (t instanceof DstConf) {
+			if (t instanceof JdbcTableDestinationConfiguration) {
 
-				if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf((DstConf) t))) {
+				if (tryToSelectDsToRelatedConfiguration(tryToLocateDsWithinSrcConf((JdbcTableDestinationConfiguration) t))) {
 					return;
 				}
 			}
@@ -116,8 +116,8 @@ public class EtlConfCheckExpression {
 	private EtlDataSource tryToLocateDsWithinSrcConf(EtlDataSource ds) {
 		PrimaryDataSourceConfiguration primaryDataSource = null;
 
-		if (ds instanceof DstConf) {
-			EtlDataSource ds1 = ((DstConf) ds).findDataSource(this.confName);
+		if (ds instanceof JdbcTableDestinationConfiguration) {
+			EtlDataSource ds1 = ((JdbcTableDestinationConfiguration) ds).findDataSource(this.confName);
 
 			if (ds1 != null) {
 				return ds1;
@@ -128,8 +128,8 @@ public class EtlConfCheckExpression {
 			primaryDataSource = ((EtlAdditionalDataSource) ds).getRelatedPrimaryDataSource();
 		} else if (ds instanceof JdbcTablePrimaryDataSourceConfiguration) {
 			primaryDataSource = (JdbcTablePrimaryDataSourceConfiguration) ds;
-		} else if (ds instanceof DstConf) {
-			primaryDataSource = ((DstConf) ds).getPrimaryDataSource();
+		} else if (ds instanceof JdbcTableDestinationConfiguration) {
+			primaryDataSource = ((JdbcTableDestinationConfiguration) ds).getPrimaryDataSource();
 		}
 
 		if (primaryDataSource != null) {

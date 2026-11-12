@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf.interfaces;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.Key;
@@ -96,8 +96,8 @@ public interface ParentTable extends RelatedTable {
 		return false;
 	}
 
-	default List<DstConf> findRelatedDstConf(EtlOperationConfig operationConf) throws DBException {
-		List<DstConf> allDstForTable = new ArrayList<>();
+	default List<JdbcTableDestinationConfiguration> findRelatedDstConf(EtlOperationConfig operationConf) throws DBException {
+		List<JdbcTableDestinationConfiguration> allDstForTable = new ArrayList<>();
 
 		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
@@ -106,7 +106,7 @@ public interface ParentTable extends RelatedTable {
 					conf.fullLoad(operationConf);
 				}
 
-				for (DstConf dst : conf.getJdbcDestinations()) {
+				for (JdbcTableDestinationConfiguration dst : conf.getJdbcDestinations()) {
 					if (dst.getTableName().equals(this.getTableName())) {
 						allDstForTable.add(dst);
 					}

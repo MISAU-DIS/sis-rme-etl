@@ -1,6 +1,5 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,9 +7,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -52,7 +51,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 	private Map<String, Object> templateParams;
 
-	private DstConf relatedEtlTransformTarget;
+	private EtlDestinationConfiguration relatedEtlTransformTarget;
 
 	private TransformableField field;
 
@@ -70,7 +69,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 	private String tableAlias;
 
-	public static OnDemandInfo create(List<Object> parameters, DstConf relatedEtlTransformTarget,
+	public static OnDemandInfo create(List<Object> parameters, EtlDestinationConfiguration relatedEtlTransformTarget,
 			TransformableField field) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		OnDemandInfo o = new OnDemandInfo();
@@ -80,7 +79,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		return o;
 	}
 
-	public void init(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field)
+	public void init(List<Object> parameters, EtlDestinationConfiguration relatedEtlTransformTarget, TransformableField field)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		this.relatedEtlTransformTarget = relatedEtlTransformTarget;
@@ -286,7 +285,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		return "override_fields".equals(map[0]);
 	}
 
-	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField, DstConf transformTarget)
+	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField, EtlDestinationConfiguration transformTarget)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 		FieldsMapping fieldMap = FieldsMapping.fastCreate(transformTarget, parentFieldName, dstField);
 
@@ -415,11 +414,11 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		this.templateParams = templateParams;
 	}
 
-	public DstConf getRelatedEtlTransformTarget() {
+	public EtlDestinationConfiguration getRelatedEtlTransformTarget() {
 		return relatedEtlTransformTarget;
 	}
 
-	public void setRelatedEtlTransformTarget(DstConf relatedEtlTransformTarget) {
+	public void setRelatedEtlTransformTarget(EtlDestinationConfiguration relatedEtlTransformTarget) {
 		this.relatedEtlTransformTarget = relatedEtlTransformTarget;
 	}
 

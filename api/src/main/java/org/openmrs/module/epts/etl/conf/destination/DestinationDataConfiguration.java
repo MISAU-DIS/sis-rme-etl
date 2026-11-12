@@ -6,6 +6,7 @@ import java.util.Set;
 import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
+import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 
 /**
@@ -42,5 +43,9 @@ public interface DestinationDataConfiguration {
 
 	default boolean supports(ConnectorWriteMode mode) {
 		return mode != null && getSupportedWriteModes().contains(mode);
+	}
+
+	default ActionOnEtlIssue getInconsistencyBehavior() {
+		return this.getParentDestination().getGeneralBehaviourOnEtlException();
 	}
 }

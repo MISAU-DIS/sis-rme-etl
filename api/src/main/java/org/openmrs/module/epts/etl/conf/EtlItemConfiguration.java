@@ -20,7 +20,6 @@ import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguratio
 import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.SourceProcessingPolicy;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
-import org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlAdditionalDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
@@ -473,7 +472,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	public boolean usesLegacyDestinationResource(DstConf jdbcAdapter) {
+	public boolean usesLegacyDestinationResource(JdbcTableDestinationConfiguration jdbcAdapter) {
 		return jdbcAdapter instanceof JdbcTableDestinationConfiguration && usesLegacyDestinationResource(
 				((JdbcTableDestinationConfiguration) jdbcAdapter).getParentDestination());
 	}
@@ -1118,8 +1117,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					}
 				}
 
-				childItem.setRelatedParentDstConf(
-						this.findDestination(childItem.getRelatedParentDstConfName()).requireJdbcTableDestination());
+				childItem.setRelatedParentDstConf(this.findDestination(childItem.getRelatedParentDstConfName()));
 				childItem.setRelatedEtlConfig(getRelatedEtlConf());
 				childItem.init(getRelatedEtlConf(), testing, srcConn);
 			}

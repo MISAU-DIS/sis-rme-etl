@@ -1,6 +1,6 @@
 package org.openmrs.module.epts.etl.exceptions;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.FieldsMappingIssues;
 
 public class MissingMetadataException extends EtlExceptionImpl {
@@ -11,11 +11,11 @@ public class MissingMetadataException extends EtlExceptionImpl {
 		super(msg);
 	}
 	
-	public MissingMetadataException(DstConf conf, FieldsMappingIssues mappingIssue) {
+	public MissingMetadataException(JdbcTableDestinationConfiguration conf, FieldsMappingIssues mappingIssue) {
 		super(generateIssueMsg(conf, mappingIssue));
 	}
 	
-	static String generateIssueMsg(DstConf conf, FieldsMappingIssues mappingIssue) {
+	static String generateIssueMsg(JdbcTableDestinationConfiguration conf, FieldsMappingIssues mappingIssue) {
 		String tableName = conf.getTableName();
 		String confName = conf.getParentConf().getConfigCode();
 		String fullObjectName = confName + ">" + tableName + ": ";

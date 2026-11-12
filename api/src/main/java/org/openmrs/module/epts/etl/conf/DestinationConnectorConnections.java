@@ -7,9 +7,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
-import org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration;
+import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -54,7 +53,9 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 		Map<EtlDestinationConfiguration, ConnectorResource> resources = new IdentityHashMap<>();
 
 		if (destinations != null) {
+
 			for (EtlDestinationConfiguration destination : destinations) {
+
 				if (destination == null || destination.getResolvedResource() == null) {
 					throw new IllegalStateException("Every destination must have an initialized connector resource");
 				}
@@ -110,7 +111,8 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 		return isJdbc(destination) ? get(destination) : null;
 	}
 
-	Connection getIfJdbc(DstConf jdbcAdapter) throws DBException {
+	Connection getIfJdbc(JdbcTableDestinationConfiguration jdbcAdapter) throws DBException {
+
 		if (!(jdbcAdapter instanceof JdbcTableDestinationConfiguration)) {
 			throw new IllegalArgumentException("Legacy DstConf is not registered as a destination adapter");
 		}
@@ -132,10 +134,12 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 	 */
 	@Override
 	public synchronized void close() {
+
 		if (closed) {
 			return;
 		}
 		closed = true;
+
 		try {
 			OpenConnection.finalizeAllConnections(new ArrayList<>(connectionsByEndpoint.values()), openedFrom);
 		} finally {
@@ -144,6 +148,7 @@ public final class DestinationConnectorConnections implements AutoCloseable {
 	}
 
 	private void ensureOpen() {
+
 		if (closed) {
 			throw new IllegalStateException("Destination connector connections have already been finalized");
 		}

@@ -7,21 +7,22 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlTemplateInfo;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlLoadHelper;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -220,8 +221,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	@Override
-	public DstConf getRelatedEtlTransformTarget() {
-		return (DstConf) super.getRelatedEtlTransformTarget();
+	public JdbcTableDestinationConfiguration getRelatedEtlTransformTarget() {
+		return (JdbcTableDestinationConfiguration) super.getRelatedEtlTransformTarget();
 	}
 
 	public static ParentOnDemandLoadTransformer getInstance(List<Object> parameters,
@@ -232,8 +233,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		return INSTANCES.computeIfAbsent(key, k -> {
 
 			try {
-				return new ParentOnDemandLoadTransformer(
-						OnDemandInfo.create(parameters, (DstConf) relatedEtlTransformTarget, field));
+				return new ParentOnDemandLoadTransformer(OnDemandInfo.create(parameters,
+						(EtlDestinationConfiguration) relatedEtlTransformTarget, field));
 			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}
@@ -332,7 +333,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				+ this.loadSrcConfForNonExistingSrcParentIfNeeded(reader, writer).getTableName() + " For "
 				+ srcObject.getRelatedConfiguration().getObjectName());
 
-		DstConf etlTransformTarget = null;
+		EtlDestinationConfiguration etlTransformTarget = null;
 
 		TransformationType transformationType = TransformationType.PRINCIPAL;
 
@@ -363,13 +364,13 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		if (srcParent != null && sourceParentMayExists()) {
-			ensureEtlTransformTargetForExistingSrcParentInitialized(reader, writer);
+			this.ensureEtlTransformTargetForExistingSrcParentInitialized(reader, writer);
 
-			etlTransformTarget = getEtlTransformTargetForExistingSrcParent(reader, writer);
+			etlTransformTarget = this.getEtlTransformTargetForExistingSrcParent(reader, writer);
 		} else {
-			ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, reader, writer);
+			this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, reader, writer);
 
-			etlTransformTarget = getEtlTransformTargetForNonExistingSrcParent(reader, writer);
+			etlTransformTarget = this.getEtlTransformTargetForNonExistingSrcParent(reader, writer);
 
 			if (srcParent == null) {
 				srcParent = srcObject.createACopy();
@@ -405,7 +406,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		this.ensureEtlTransformTargetForNonExistingSrcParentInitialized(false, reader, writer);
 
-		DstConf dstConf = this.getEtlTransformTargetForNonExistingSrcParent(reader, writer);
+		EtlDestinationConfiguration dstConf = this.getEtlTransformTargetForNonExistingSrcParent(reader, writer);
 
 		List<EtlDatabaseObject> allObjs = srcObjects != null ? srcObjects
 				: (srcObject != null ? utilities.parseToList(srcObject) : null);
@@ -419,8 +420,8 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		JdbcTablePrimaryDataSourceConfiguration srcConf = this.loadSrcConfForNonExistingSrcParentIfNeeded(reader,
 				writer);
 
-		return dstConf.find(p.getPreparedQuery(),
-				resolveDstValues(srcObject, p.getParameters(), srcConf, dstConf,
+		return dstConf.getTableDataDestination().find(p.getPreparedQuery(),
+				resolveDstValues(srcObject, p.getParameters(), srcConf, dstConf.getTableDataDestination(),
 						reader.unwrap(java.sql.Connection.class), writer.unwrap(java.sql.Connection.class)),
 				writer.unwrap(java.sql.Connection.class));
 	}
@@ -449,15 +450,16 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 			JdbcTablePrimaryDataSourceConfiguration srcConf = loadSrcConfForNonExistingSrcParentIfNeeded(reader,
 					writer);
-			DstConf dstConf = getEtlTransformTargetForNonExistingSrcParent(reader, writer);
+			EtlDestinationConfiguration dstConf = this.getEtlTransformTargetForNonExistingSrcParent(reader, writer);
 
 			List<EtlDatabaseObject> allObjects = additionalSrcObjects != null ? additionalSrcObjects
 					: (srcObject != null ? utilities.parseToList(srcObject) : null);
 
 			PreparedQueryInfo lookup = this.prepareOnDemandParentLookup(allObjects, reader, writer);
 
-			Object[] values = this.resolveDstValues(srcObject, lookup.getParameters(), srcConf, dstConf,
-					reader.unwrap(java.sql.Connection.class), writer.unwrap(java.sql.Connection.class));
+			Object[] values = this.resolveDstValues(srcObject, lookup.getParameters(), srcConf,
+					dstConf.getTableDataDestination(), reader.unwrap(java.sql.Connection.class),
+					writer.unwrap(java.sql.Connection.class));
 
 			return keyPrefix + "|" + lookup.getPreparedQuery() + "|" + Arrays.deepToString(values);
 		}
@@ -475,14 +477,14 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 				sourceObjects, getRelatedEtlConf(), reader, writer);
 	}
 
-	DstConf getEtlTransformTargetForExistingSrcParent(ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
-			throws DBException {
-		return this.getExistingParentItemConf().getJdbcDestinations().get(0);
+	EtlDestinationConfiguration getEtlTransformTargetForExistingSrcParent(ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws DBException {
+		return this.getExistingParentItemConf().getDestinations().get(0);
 	}
 
-	protected DstConf getEtlTransformTargetForNonExistingSrcParent(ConnectorRecordReader<?> reader,
+	protected EtlDestinationConfiguration getEtlTransformTargetForNonExistingSrcParent(ConnectorRecordReader<?> reader,
 			ConnectorRecordWriter<?> writer) throws DBException {
-		return this.getOnDemandCreateParentItemConf().getJdbcDestinations().get(0);
+		return this.getOnDemandCreateParentItemConf().getDestinations().get(0);
 	}
 
 	JdbcTablePrimaryDataSourceConfiguration loadSrcConfForNonExistingSrcParentIfNeeded(ConnectorRecordReader<?> reader,
@@ -505,10 +507,12 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		synchronized (lock) {
 			this.ensureEtlItemConfForNonExistingSrcParentInitialized(reader, writer);
 
-			DstConf etlTransformTarget = this.getEtlTransformTargetForNonExistingSrcParent(reader, writer);
+			EtlDestinationConfiguration etlTransformTarget = this.getEtlTransformTargetForNonExistingSrcParent(reader,
+					writer);
 
 			if (skipFullLoad && !etlTransformTarget.isFullLoaded()) {
-				etlTransformTarget.tryToGenerateTableAlias(etlTransformTarget.getRelatedEtlConf());
+				etlTransformTarget.getTableDataDestination()
+						.tryToGenerateTableAlias(etlTransformTarget.getRelatedEtlConf());
 
 				if (!usesTemplate()) {
 					etlTransformTarget.setMapping(this.getOnDemandParentFieldMappings());
@@ -635,7 +639,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		ensureEtlItemConfForExistingSrcParentInitialized(reader, writer);
 
-		DstConf etlTransformTarget = getEtlTransformTargetForExistingSrcParent(reader, writer);
+		EtlDestinationConfiguration etlTransformTarget = this.getEtlTransformTargetForExistingSrcParent(reader, writer);
 
 		if (!etlTransformTarget.isFullLoaded()) {
 
@@ -646,8 +650,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 					List<EtlDataSource> avaliableDataSource = null;
 					List<EtlDataSource> preferredDataSource = null;
 
-					if (this.getRelatedEtlTransformTarget().useSharedPKKey() && etlTransformTarget.getTableName()
-							.equals(this.getRelatedEtlTransformTarget().getSharePkWith())) {
+					if (this.getRelatedEtlTransformTarget().useSharedPKKey()
+							&& etlTransformTarget.getTableDataDestination().getTableName()
+									.equals(this.getRelatedEtlTransformTarget().getSharePkWith())) {
 
 						preferredDataSource = new ArrayList<>();
 						avaliableDataSource = new ArrayList<>();
@@ -746,9 +751,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration resource = new org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration();
 			resource.setName(getParentTableName());
 			destination.setResource(resource);
-			destination.setTableDataDestination(
-					new org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration(
-							getParentTableName()));
+			destination.setTableDataDestination(new JdbcTableDestinationConfiguration(getParentTableName()));
 			conf.setDestinations(utilities.parseToList(destination));
 		}
 
@@ -763,7 +766,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 
 		conf.fullLoad(relatedEtlTransformTarget.getRelatedEtlConf().getOperations().get(0));
 
-		for (DstConf dstC : conf.getJdbcDestinations()) {
+		for (JdbcTableDestinationConfiguration dstC : conf.getJdbcDestinations()) {
 			dstC.setUnmappedFieldBehavior(this.onDemandInfo.unmappedFieldBehavior());
 			dstC.setMappingResolutionStrategy(this.onDemandInfo.getMappingResolutionStrategy());
 			dstC.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.USE_LAST);

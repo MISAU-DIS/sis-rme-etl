@@ -4,10 +4,14 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.DestinationDataConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDstConf;
@@ -19,6 +23,7 @@ import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
@@ -41,8 +46,8 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class DstConf extends AbstractTableConfiguration
-		implements EtlDataSource, EtlDstConf, EtlTransformTarget, EtlItemConfigurationComponent {
+public class JdbcTableDestinationConfiguration extends AbstractTableConfiguration implements EtlDataSource, EtlDstConf,
+		EtlTransformTarget, EtlItemConfigurationComponent, DestinationDataConfiguration {
 
 	/*
 	 * The user-defined join fields with {@link #getPrimaryDataSource()}.
@@ -127,13 +132,16 @@ public class DstConf extends AbstractTableConfiguration
 
 	private ActionOnEtlIssue incompleteMappingBehavior;
 
-	public DstConf() {
+	@JsonIgnore
+	private EtlDestinationConfiguration parentDestination;
+
+	public JdbcTableDestinationConfiguration() {
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
 		this.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.ABORT_PROCESS);
 		this.useAsDataSource = false;
 	}
 
-	public DstConf(String tableName) {
+	public JdbcTableDestinationConfiguration(String tableName) {
 		this();
 
 		setTableName(tableName);
@@ -287,7 +295,7 @@ public class DstConf extends AbstractTableConfiguration
 	public List<EtlTransformTarget> retrievePreviousDataSourceTargets() {
 		List<EtlTransformTarget> previousTargets = new ArrayList<>();
 
-		for (DstConf dstConf : this.getParentConf().getJdbcDestinations()) {
+		for (JdbcTableDestinationConfiguration dstConf : this.getParentConf().getJdbcDestinations()) {
 
 			if (dstConf == this) {
 				break;
@@ -299,15 +307,6 @@ public class DstConf extends AbstractTableConfiguration
 		}
 
 		return Collections.unmodifiableList(previousTargets);
-	}
-
-	public DstConf getParentDstConf() {
-
-		if (hasParentDstConf()) {
-			return ((EtlChildItemConfiguration) this.getPrimaryDataSource().getParentConf()).getRelatedParentDstConf();
-		}
-
-		return null;
 	}
 
 	public Boolean isLoadedDataSourceInfo() {
@@ -1116,7 +1115,8 @@ public class DstConf extends AbstractTableConfiguration
 		return utilities.listHasElement(this.getGeneratedJoinFields());
 	}
 
-	public static List<DstConf> generateDefaultDstConf(final EtlItemConfiguration itemConf) throws DBException {
+	public static List<JdbcTableDestinationConfiguration> generateDefaultDstConf(final EtlItemConfiguration itemConf)
+			throws DBException {
 
 		synchronized (itemConf) {
 
@@ -1140,7 +1140,7 @@ public class DstConf extends AbstractTableConfiguration
 		}
 	}
 
-	public static List<DstConf> generateDefaultDstConf(final EtlItemConfiguration itemConf,
+	public static List<JdbcTableDestinationConfiguration> generateDefaultDstConf(final EtlItemConfiguration itemConf,
 			DBConnectionInfo connectionInfo) {
 
 		synchronized (itemConf) {
@@ -1149,10 +1149,10 @@ public class DstConf extends AbstractTableConfiguration
 		}
 	}
 
-	private static List<DstConf> createDefaultDstConf(EtlItemConfiguration itemConf, String schema,
-			DBConnectionInfo connectionInfo) {
+	private static List<JdbcTableDestinationConfiguration> createDefaultDstConf(EtlItemConfiguration itemConf,
+			String schema, DBConnectionInfo connectionInfo) {
 		var sourceTable = itemConf.getPrimaryDataSource().requireJdbc();
-		DstConf map = new DstConf();
+		JdbcTableDestinationConfiguration map = new JdbcTableDestinationConfiguration();
 		map.setTableName(sourceTable.getTableName());
 		map.setSchema(schema);
 		map.setDstType(sourceTable.getDstType());
@@ -1171,16 +1171,17 @@ public class DstConf extends AbstractTableConfiguration
 		return utilities.listHasElement(this.getMapping());
 	}
 
-	public static List<DstConf> cloneAll(List<DstConf> allToCloneFrom, EtlItemConfiguration relatedItemConf,
+	public static List<JdbcTableDestinationConfiguration> cloneAll(
+			List<JdbcTableDestinationConfiguration> allToCloneFrom, EtlItemConfiguration relatedItemConf,
 			EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
 
-		List<DstConf> allCloned = null;
+		List<JdbcTableDestinationConfiguration> allCloned = null;
 
 		if (utilities.listHasElement(allToCloneFrom)) {
 			allCloned = new ArrayList<>(allToCloneFrom.size());
 
-			for (DstConf aux : allToCloneFrom) {
-				DstConf cloned = new DstConf();
+			for (JdbcTableDestinationConfiguration aux : allToCloneFrom) {
+				JdbcTableDestinationConfiguration cloned = new JdbcTableDestinationConfiguration();
 				cloned.setIgnoreMissingParameters(true);
 				cloned.clone(aux, relatedItemConf, schemaInfoSrc, conn);
 
@@ -1191,8 +1192,8 @@ public class DstConf extends AbstractTableConfiguration
 		return allCloned;
 	}
 
-	public void clone(DstConf toCloneFrom, EtlItemConfiguration relatedItemConf, EtlDatabaseObject schemaInfoSrc,
-			Connection conn) throws DBException {
+	public void clone(JdbcTableDestinationConfiguration toCloneFrom, EtlItemConfiguration relatedItemConf,
+			EtlDatabaseObject schemaInfoSrc, Connection conn) throws DBException {
 
 		super.clone(toCloneFrom, relatedItemConf, schemaInfoSrc, conn);
 		this.setJoinFields(toCloneFrom.getJoinFields());
@@ -1227,9 +1228,9 @@ public class DstConf extends AbstractTableConfiguration
 	public boolean equals(Object obj) {
 		boolean se = super.equals(obj);
 
-		if (obj instanceof DstConf && se) {
-			DstConf thisDstConf = (DstConf) this;
-			DstConf otherDstConf = (DstConf) obj;
+		if (obj instanceof JdbcTableDestinationConfiguration && se) {
+			JdbcTableDestinationConfiguration thisDstConf = (JdbcTableDestinationConfiguration) this;
+			JdbcTableDestinationConfiguration otherDstConf = (JdbcTableDestinationConfiguration) obj;
 
 			if (thisDstConf.hasAlias()) {
 				return thisDstConf.getTableAlias().equals(otherDstConf.getTableAlias());
@@ -1415,7 +1416,80 @@ public class DstConf extends AbstractTableConfiguration
 				+ " Could not found within dstConf avaliable Data Sources: " + this);
 	}
 
+	public void pullConfigurationFromParentDestination() {
+
+		if (this.parentDestination == null) {
+			return;
+		}
+
+		if (this.parentDestination.getFields() != null) {
+			this.setFields(this.copy(this.parentDestination.getFields()));
+		}
+
+		if (this.parentDestination.getPrimaryKey() != null) {
+			this.setPrimaryKey(this.parentDestination.getPrimaryKey());
+		}
+
+		this.setJoinFields(copy(this.parentDestination.getJoinFields()));
+		this.setGeneratedJoinFields(copyNested(this.parentDestination.getGeneratedJoinFields()));
+		this.setMapping(copy(this.parentDestination.getMapping()));
+		this.setAllMapping(copy(this.parentDestination.getAllMapping()));
+		this.setExcludedFields(copy(this.parentDestination.getExcludedFields()));
+		this.setIgnorableFields(copy(this.parentDestination.getIgnorableFields()));
+		this.setPatchFields(copy(this.parentDestination.getPatchFields()));
+		this.setPreferredDataSource(copy(this.parentDestination.getPreferredDataSource()));
+		this.setUnmappedFieldBehavior(this.parentDestination.getUnmappedFieldBehavior());
+		this.setTransformer(this.parentDestination.getTransformer());
+		this.setTransformerInstance(this.parentDestination.getTransformerInstance());
+		this.setIncludeAllFieldsFromDataSource(this.parentDestination.getIncludeAllFieldsFromDataSource());
+		this.setSrcObjectCondition(this.parentDestination.getApplyCondition());
+		this.setOnMultipleDataSourceForSameMapping(this.parentDestination.getOnMultipleDataSourceForSameMapping());
+		this.setOnMultipleDataSourceWithSameName(this.parentDestination.getOnMultipleDataSourceWithSameName());
+		this.setUseAsDataSource(this.parentDestination.getUseAsDataSource());
+		this.setIgnoreNoDstIssue(this.parentDestination.getIgnoreNoDstIssue());
+		this.setMappingResolutionStrategy(this.parentDestination.getMappingResolutionStrategy());
+		this.setOnMissingRequiredSrcObject(this.parentDestination.getOnMissingRequiredSrcObject());
+		this.setAllowDuplicateDestinationMappings(this.parentDestination.getAllowDuplicateDestinationMappings());
+		this.setIdentifiedRecordAction(this.parentDestination.getIdentifiedRecordAction());
+		this.setIncompleteMappingBehavior(this.parentDestination.getIncompleteMappingBehavior());
+		this.setDisabled(this.parentDestination.getDisabled());
+	}
+
+	private <T> List<T> copy(List<T> values) {
+		return values == null ? null : new ArrayList<>(values);
+	}
+
+	private List<List<FieldsMapping>> copyNested(List<List<FieldsMapping>> values) {
+
+		if (values == null) {
+			return null;
+		}
+		List<List<FieldsMapping>> copied = new ArrayList<>();
+
+		for (List<FieldsMapping> value : values) {
+			copied.add(copy(value));
+		}
+		return copied;
+	}
+
 	public boolean hasActionWhenRecordIdIsSet() {
 		return this.getIdentifiedRecordAction() != null;
+	}
+
+	@Override
+	public EtlDestinationConfiguration getParentDestination() {
+		return this.parentDestination;
+	}
+
+	@Override
+	public void setParentDestination(EtlDestinationConfiguration parentDestination) {
+		this.parentDestination = parentDestination;
+
+		this.pullConfigurationFromParentDestination();
+	}
+
+	@Override
+	public Set<ConnectorWriteMode> getSupportedWriteModes() {
+		return EnumSet.allOf(ConnectorWriteMode.class);
 	}
 }

@@ -8,27 +8,25 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.junit.jupiter.api.Test;
+import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonMainOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonSimpleOutputDataSource;
+import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
+import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.JsonDataSource;
-import org.openmrs.module.epts.etl.conf.datasource.JsonMainOutputDataSource;
-import org.openmrs.module.epts.etl.conf.datasource.JsonSimpleOutputDataSource;
-import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
-import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
-import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
-import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
-import org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
@@ -208,7 +206,7 @@ class EtlConnectorConfigurationTest {
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
 		setJdbcSource(item, source);
-		DstConf destination = new DstConf("patient_copy");
+		JdbcTableDestinationConfiguration destination = new JdbcTableDestinationConfiguration("patient_copy");
 		destination.setResource(resource(null, "patient_copy"));
 		item.setDestinations(java.util.Collections.singletonList(destination(destination)));
 
@@ -247,9 +245,9 @@ class EtlConnectorConfigurationTest {
 		source.setTableName("patient");
 		source.setResource(resource("source-db", "patient"));
 		setJdbcSource(item, source);
-		DstConf databaseDestination = new DstConf("patient_copy");
+		JdbcTableDestinationConfiguration databaseDestination = new JdbcTableDestinationConfiguration("patient_copy");
 		databaseDestination.setResource(resource("destination-db", "patient_copy"));
-		DstConf fileDestination = new DstConf("patient_export");
+		JdbcTableDestinationConfiguration fileDestination = new JdbcTableDestinationConfiguration("patient_export");
 		fileDestination.setResource(resource("jsonl-output", "patients.jsonl"));
 		EtlDestinationConfiguration database = destination(databaseDestination);
 		EtlDestinationConfiguration file = destination(fileDestination);
@@ -296,7 +294,7 @@ class EtlConnectorConfigurationTest {
 		JdbcTablePrimaryDataSourceConfiguration sourceConfiguration = new JdbcTablePrimaryDataSourceConfiguration();
 		sourceConfiguration.setTableName("patient");
 		sourceConfiguration.setResource(resource("source-db", "patient"));
-		DstConf destinationConfiguration = new DstConf();
+		JdbcTableDestinationConfiguration destinationConfiguration = new JdbcTableDestinationConfiguration();
 		destinationConfiguration.setTableName("patient_archive");
 		destinationConfiguration.setResource(resource("archive-db", "patient_archive"));
 		setJdbcSource(item, sourceConfiguration);
@@ -325,17 +323,17 @@ class EtlConnectorConfigurationTest {
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
 		setJdbcSource(item, source);
-		DstConf first = new DstConf("patient_first");
+		JdbcTableDestinationConfiguration first = new JdbcTableDestinationConfiguration("patient_first");
 		first.setResource(resource("first-db", "patient_first"));
-		DstConf second = new DstConf("patient_second");
+		JdbcTableDestinationConfiguration second = new JdbcTableDestinationConfiguration("patient_second");
 		second.setResource(resource("second-db", "patient_second"));
 		item.setDestinations(java.util.Arrays.asList(destination(first), destination(second)));
 
 		initializeConnectors(configuration);
 		initializeResources(item);
 
-		DstConf resolvedFirst = item.getDestinations().get(0).requireJdbcTableDestination();
-		DstConf resolvedSecond = item.getDestinations().get(1).requireJdbcTableDestination();
+		JdbcTableDestinationConfiguration resolvedFirst = item.getDestinations().get(0).requireJdbcTableDestination();
+		JdbcTableDestinationConfiguration resolvedSecond = item.getDestinations().get(1).requireJdbcTableDestination();
 		assertEquals("jdbc:mysql://first/etl", resolvedFirst.getRelatedConnInfo().getConnectionURI());
 		assertEquals("jdbc:mysql://second/etl", resolvedSecond.getRelatedConnInfo().getConnectionURI());
 		assertNotSame(resolvedFirst.getRelatedConnInfo(), resolvedSecond.getRelatedConnInfo());
@@ -411,9 +409,9 @@ class EtlConnectorConfigurationTest {
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
 		setJdbcSource(item, source);
-		DstConf jdbcDestination = new DstConf("patient_copy");
+		JdbcTableDestinationConfiguration jdbcDestination = new JdbcTableDestinationConfiguration("patient_copy");
 		jdbcDestination.setResource(resource("destination-db", "patient_copy"));
-		DstConf fileDestination = new DstConf("patient_export");
+		JdbcTableDestinationConfiguration fileDestination = new JdbcTableDestinationConfiguration("patient_export");
 		fileDestination.setResource(resource("jsonl-output", "patients.jsonl"));
 		item.setDestinations(java.util.Arrays.asList(destination(jdbcDestination), destination(fileDestination)));
 
@@ -456,7 +454,7 @@ class EtlConnectorConfigurationTest {
 		prepare.invoke(item);
 
 		assertEquals(1, item.getDestinations().size());
-		DstConf generated = item.getDestinations().get(0).requireJdbcTableDestination();
+		JdbcTableDestinationConfiguration generated = item.getDestinations().get(0).requireJdbcTableDestination();
 		assertEquals("patient", generated.getTableName());
 		assertEquals("target_schema", generated.getSchema());
 		assertEquals("jdbc:invalid:must-not-open", generated.getRelatedConnInfo().getConnectionURI());
@@ -617,7 +615,7 @@ class EtlConnectorConfigurationTest {
 		JdbcTablePrimaryDataSourceConfiguration source = new JdbcTablePrimaryDataSourceConfiguration();
 		source.setTableName("patient");
 		setJdbcSource(item, source);
-		DstConf destination = new DstConf("patient-export");
+		JdbcTableDestinationConfiguration destination = new JdbcTableDestinationConfiguration("patient-export");
 		destination.setResource(resource("jsonl-output", "patients.jsonl"));
 		EtlDestinationConfiguration configuredDestination = new EtlDestinationConfiguration();
 		configuredDestination.setResource(destination.getResource());
@@ -671,7 +669,7 @@ class EtlConnectorConfigurationTest {
 		return resource;
 	}
 
-	private EtlDestinationConfiguration destination(DstConf jdbcConfiguration) {
+	private EtlDestinationConfiguration destination(JdbcTableDestinationConfiguration jdbcConfiguration) {
 		EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
 		destination.setResource(jdbcConfiguration.getResource());
 		if (jdbcConfiguration.getResource() == null

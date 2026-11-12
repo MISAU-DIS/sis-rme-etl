@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.model.pojo.generic;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
@@ -120,7 +120,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 			throw new ForbiddenOperationException("The relatedItemConf must be full loaded!!!");
 		}
 
-		DstConf dstConf = relatedItemConf.findJdbcDestination(null, this.getDstTableName());
+		JdbcTableDestinationConfiguration dstConf = relatedItemConf.findJdbcDestination(null, this.getDstTableName());
 
 		this.parentRefInfo = relatedSource.getFieldIsRelatedParent(Field.fastCreateField(this.getParentField()));
 

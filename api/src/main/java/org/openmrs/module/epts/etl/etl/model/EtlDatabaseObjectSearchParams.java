@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.AuxExtractTable;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
@@ -201,7 +201,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 		String extraCondition = "";
 
-		for (DstConf dst : getConfig().getJdbcDestinations()) {
+		for (JdbcTableDestinationConfiguration dst : getConfig().getJdbcDestinations()) {
 
 			if (!dst.hasJoinFields() || getConfig().requireJdbcPrimaryDataSource().hasRequiredExtraDataSource()) {
 				continue;
@@ -229,7 +229,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 		String extraCondition = "";
 
-		for (DstConf dst : getConfig().getJdbcDestinations()) {
+		for (JdbcTableDestinationConfiguration dst : getConfig().getJdbcDestinations()) {
 
 			if (!dst.hasJoinFields()) {
 				continue;
@@ -247,7 +247,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 		return extraCondition += ")";
 	}
 
-	private String generateDestinationJoinSubquery(DstConf dstConf, Connection dstConn) throws DBException {
+	private String generateDestinationJoinSubquery(JdbcTableDestinationConfiguration dstConf, Connection dstConn) throws DBException {
 
 		AbstractTableConfiguration srcTabConf = this.getJdbcPrimaryDataSource();
 

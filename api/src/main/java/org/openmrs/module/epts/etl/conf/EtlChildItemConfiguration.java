@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -31,7 +32,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 	private String applyCondition;
 
-	private DstConf relatedParentDstConf;
+	private EtlDestinationConfiguration relatedParentDstConf;
 
 	private String relatedParentDstConfName;
 
@@ -65,11 +66,11 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 		this.relatedParentDstConfName = relatedParentDstConfName;
 	}
 
-	public DstConf getRelatedParentDstConf() {
+	public EtlDestinationConfiguration getRelatedParentDstConf() {
 		return relatedParentDstConf;
 	}
 
-	public void setRelatedParentDstConf(DstConf relatedParentDstConf) {
+	public void setRelatedParentDstConf(EtlDestinationConfiguration relatedParentDstConf) {
 		this.relatedParentDstConf = relatedParentDstConf;
 	}
 
@@ -119,7 +120,8 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 			// ds.addAll(allFromParent);
 		}
 
-		DstConf parentDstConf = this.getParentItemConf().findJdbcDestination(this.relatedParentDstConfName);
+		JdbcTableDestinationConfiguration parentDstConf = this.getParentItemConf()
+				.findJdbcDestination(this.relatedParentDstConfName);
 
 		if (!parentDstConf.isDisabled()) {
 			ds.add(parentDstConf);
@@ -166,8 +168,7 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 				}
 			}
 
-			this.setRelatedParentDstConf(
-					this.getParentItemConf().findJdbcDestination(this.getRelatedParentDstConfName()));
+			this.setRelatedParentDstConf(this.getParentItemConf().findDestination(this.getRelatedParentDstConfName()));
 		}
 	}
 

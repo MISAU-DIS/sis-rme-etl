@@ -3014,13 +3014,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return null;
 	}
 
-	public DstConf tryToFindDstWithInitialIncrementValue(TableConfiguration dstTable) throws DBException {
+	public JdbcTableDestinationConfiguration tryToFindDstWithInitialIncrementValue(TableConfiguration dstTable) throws DBException {
 
 		for (EtlItemConfiguration conf : getRelatedEtlConf().getEtlItemConfiguration()) {
 
 			if (conf.containsDstTable(dstTable.getTableName())) {
 
-				for (DstConf dst : conf.getJdbcDestinations()) {
+				for (JdbcTableDestinationConfiguration dst : conf.getJdbcDestinations()) {
 
 					if (dst.getTableName().equals(dstTable.getTableName())) {
 

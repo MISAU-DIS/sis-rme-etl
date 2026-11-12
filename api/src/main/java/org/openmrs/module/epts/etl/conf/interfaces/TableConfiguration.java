@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.AbstractRelatedTable;
 import org.openmrs.module.epts.etl.conf.ChildTable;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
@@ -279,39 +279,40 @@ public interface TableConfiguration extends EtlDataSource {
 					} else if (f.isTextField()) {
 						definitions.add(DBUtilities.generateTableTextField(f.getName(), constraint, conn));
 					} else if (f.isString()) {
-						definitions.add(DBUtilities.generateTableVarcharField(f.getName(),
-								f.getPrecision().getLength(), constraint, conn));
+						definitions.add(DBUtilities.generateTableVarcharField(f.getName(), f.getPrecision().getLength(),
+								constraint, conn));
 					} else if (f.isLongField()) {
 						definitions.add(DBUtilities.generateTableBigIntField(f.getName(), constraint, conn));
 					} else if (f.isIntegerField() || f.isSmallIntType()) {
-						definitions.add(DBUtilities.generateTableIntegerField(f.getName(),
-								f.getPrecision().getLength(), constraint, conn));
+						definitions.add(DBUtilities.generateTableIntegerField(f.getName(), f.getPrecision().getLength(),
+								constraint, conn));
 					} else if (f.isDateField()) {
 						definitions.add(DBUtilities.generateTableDateTimeField(f.getName(), constraint, conn));
 					} else if (f.isDecimalField()) {
-						definitions.add(DBUtilities.generateTableDecimalField(f.getName(),
-								f.getPrecision().getLength(), f.getPrecision().getDecimalDigits(), constraint, conn));
+						definitions.add(DBUtilities.generateTableDecimalField(f.getName(), f.getPrecision().getLength(),
+								f.getPrecision().getDecimalDigits(), constraint, conn));
 
 					} else {
-						definitions.add(DBUtilities.generateTableVarcharField(f.getName(),
-								f.getPrecision().getLength(), constraint, conn));
+						definitions.add(DBUtilities.generateTableVarcharField(f.getName(), f.getPrecision().getLength(),
+								constraint, conn));
 					}
 				}
 
 				if (this.hasPK()) {
 					definitions.add(DBUtilities.generateTablePrimaryKeyDefinition(
-							getPrimaryKey().parseFieldNamesToCommaSeparatedString(), this.getTableName() + "_pk", conn));
+							getPrimaryKey().parseFieldNamesToCommaSeparatedString(), this.getTableName() + "_pk",
+							conn));
 				}
 
 				if (this.hasUniqueKeys()) {
+
 					for (UniqueKeyInfo uk : this.getUniqueKeys()) {
 						definitions.add(DBUtilities.generateTableUniqueKeyDefinition(uk.getKeyName(),
 								uk.parseFieldNamesToCommaSeparatedString(), conn));
 					}
 				}
 
-				String sql = "CREATE TABLE " + getFullTableName() + "(\n"
-						+ String.join(",\n", definitions) + "\n)";
+				String sql = "CREATE TABLE " + getFullTableName() + "(\n" + String.join(",\n", definitions) + "\n)";
 
 				BaseDAO.executeBatch(conn, sql);
 			}
@@ -900,16 +901,16 @@ public interface TableConfiguration extends EtlDataSource {
 									if (childFieldName.equals(this.getPrimaryKey().asSimpleKey().getName())) {
 										this.setSharePkWith(parentTableName);
 
-										if (this instanceof DstConf) {
-											DstConf dstConf = (DstConf) this;
+										if (this instanceof JdbcTableDestinationConfiguration) {
+											JdbcTableDestinationConfiguration dstConf = (JdbcTableDestinationConfiguration) this;
 
 											if (dstConf.hasParentDstConf()) {
 												// Try to retrieve parent from the parent etlItemConf
 
-												if (dstConf.getParentDstConf().getTableName()
+												if (dstConf.getParentDestination().getParentDstConf().getName()
 														.equals(this.getSharePkWith())) {
-													parentTabConf.setIgnorableFields(
-															dstConf.getParentDstConf().getIgnorableFields());
+													parentTabConf.setIgnorableFields(dstConf.getParentDestination()
+															.getParentDstConf().getIgnorableFields());
 												}
 											}
 										}

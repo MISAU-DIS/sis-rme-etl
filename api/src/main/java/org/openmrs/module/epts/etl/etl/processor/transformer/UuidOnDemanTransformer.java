@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
@@ -111,7 +111,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 	private Map<String, Object> placeholdersSrc;
 
-	public UuidOnDemanTransformer(List<Object> parameters, DstConf relatedEtlTransformTarget, TransformableField field)
+	public UuidOnDemanTransformer(List<Object> parameters, JdbcTableDestinationConfiguration relatedEtlTransformTarget, TransformableField field)
 			throws FieldAvaliableInMultipleDataSources, DBException {
 
 		super(parameters, relatedEtlTransformTarget, field);
@@ -197,8 +197,8 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 	}
 
 	@Override
-	public DstConf getRelatedEtlTransformTarget() {
-		return (DstConf) super.getRelatedEtlTransformTarget();
+	public JdbcTableDestinationConfiguration getRelatedEtlTransformTarget() {
+		return (JdbcTableDestinationConfiguration) super.getRelatedEtlTransformTarget();
 	}
 
 	public static UuidOnDemanTransformer getInstance(List<Object> parameters,
@@ -208,7 +208,7 @@ public class UuidOnDemanTransformer extends AbstractEtlFieldTransformer {
 
 		return INSTANCES.computeIfAbsent(key, k -> {
 			try {
-				return new UuidOnDemanTransformer(parameters, (DstConf) relatedEtlTransformTarget, field);
+				return new UuidOnDemanTransformer(parameters, (JdbcTableDestinationConfiguration) relatedEtlTransformTarget, field);
 			} catch (DBException e) {
 				throw new EtlExceptionImpl(e);
 			}

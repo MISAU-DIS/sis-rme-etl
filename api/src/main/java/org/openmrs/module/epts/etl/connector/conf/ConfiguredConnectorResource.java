@@ -25,8 +25,7 @@ final class ConfiguredConnectorResource implements ConnectorResource {
 
 	@Override
 	public String getAlias() {
-		return configuration.getAlias() == null || configuration.getAlias().trim().isEmpty()
-				? getName()
+		return configuration.getAlias() == null || configuration.getAlias().trim().isEmpty() ? getName()
 				: configuration.getAlias();
 	}
 
@@ -42,9 +41,11 @@ final class ConfiguredConnectorResource implements ConnectorResource {
 
 	@Override
 	public <T> T unwrap(Class<T> nativeType) {
+
 		if (nativeType != null && nativeType.isInstance(configuration)) {
 			return nativeType.cast(configuration);
 		}
+
 		throw new IllegalArgumentException(
 				"Configured resource cannot be unwrapped as " + (nativeType == null ? "null" : nativeType.getName()));
 	}

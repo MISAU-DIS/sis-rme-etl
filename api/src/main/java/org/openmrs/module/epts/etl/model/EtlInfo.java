@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
@@ -102,7 +102,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	}
 
 	public EtlItemConfiguration getRelatedItemConf() {
-		return ((DstConf) this.transformedObject.getRelatedConfiguration()).getParentConf();
+		return ((JdbcTableDestinationConfiguration) this.transformedObject.getRelatedConfiguration()).getParentConf();
 	}
 
 	public EtlInfo getParentEtlInfo() {
@@ -189,8 +189,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		return transformedObject;
 	}
 
-	public DstConf getDstConf() {
-		return (DstConf) this.transformedObject.getRelatedConfiguration();
+	public EtlDestinationConfiguration getDstConf() {
+		return (EtlDestinationConfiguration) this.transformedObject.getRelatedConfiguration();
 	}
 
 	public void reloadParentsWithDefaultValues(Connection srcConn, Connection dstConn)
@@ -275,7 +275,14 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	public void loadDstParentInfo(ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers)
 			throws ParentNotYetMigratedException, MissingParentException, DBException {
 
-		if (!utilities.listHasElement(getDstConf().getParentRefInfo())) {
+		if (!(this.getDstConf().getDestinationDataConfiguration() instanceof JdbcTableDestinationConfiguration)) {
+			throw new ForbiddenOperationException(
+					"Currently only JdbcTableDestinationConfiguration is supported for dstParent loading..");
+		}
+
+		JdbcTableDestinationConfiguration tabConf = this.getDstConf().getTableDataDestination();
+
+		if (!utilities.listHasElement(this.getDstConf().getParentRefInfo())) {
 			return;
 		}
 
@@ -321,8 +328,8 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 				// We check if this parent is same to the parent dstConf
 				// The FK for parent dstConf is already loaded with the dst PK
-				boolean parentIsDstParentConf = this.getDstConf().hasParentDstConf()
-						&& this.getDstConf().getTableName().equals(refInfo.getTableName());
+				boolean parentIsDstParentConf = tabConf.hasParentDstConf()
+						&& tabConf.getTableName().equals(refInfo.getTableName());
 
 				boolean skipDstParentLoad = false;
 
@@ -502,7 +509,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 	 */
 	public static void determineMissingMetadataParent(EtlInfo EtlInfo, Connection srcConn, Connection destConn)
 			throws MissingParentException, DBException {
-		TableConfiguration dstConf = EtlInfo.getDstConf();
+		TableConfiguration dstConf = EtlInfo.getDstConf().getTableDataDestination();
 
 		EtlDatabaseObject dstRecord = EtlInfo.getTransformedObject();
 
@@ -527,6 +534,13 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 
 	public List<EtlDatabaseObject> retriveRecursiveRelationship(ParentTable refInfo, Connection srcConn,
 			Connection dstConn) throws DBException {
+
+		if (!(this.getDstConf().getDestinationDataConfiguration() instanceof JdbcTableDestinationConfiguration)) {
+			throw new ForbiddenOperationException(
+					"Currently only JdbcTableDestinationConfiguration is supported for dstParent loading..");
+		}
+
+		JdbcTableDestinationConfiguration tabConf = this.getDstConf().getTableDataDestination();
 
 		if (!utilities.listHasElement(getDstConf().getParentRefInfo())) {
 			return null;
@@ -572,7 +586,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			}
 
 			// If the relationship is self recursive
-			if (refInfo.getTableName().equals(this.getDstConf().getTableName())) {
+			if (refInfo.getTableName().equals(tabConf.getTableName())) {
 				recursiveRelationship.add(RecordWithDefaultParentInfo.init(this.getRelatedSrcObject(),
 						this.getTransformedObject(), parentInOrigin, refInfo, srcConn));
 			}
@@ -587,7 +601,7 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 			for (ParentTable p : refInfo.getParentRefInfo()) {
 
 				// Mean that the parent 'p' is the very same as the table of this record
-				if (p.getTableName().equals(this.getDstConf().getTableName())) {
+				if (p.getTableName().equals(tabConf.getTableName())) {
 					Object parentValue = parentInOrigin.getParentValue(p.getChildFieldName());
 
 					if (parentValue != null) {

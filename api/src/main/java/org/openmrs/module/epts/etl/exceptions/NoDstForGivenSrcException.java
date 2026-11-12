@@ -2,7 +2,7 @@ package org.openmrs.module.epts.etl.exceptions;
 
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 
@@ -17,7 +17,7 @@ public class NoDstForGivenSrcException extends EtlTransformationException {
 
 	private static String loadConfiguredDst(EtlItemConfiguration etlItemConf) {
 		String msg = "";
-		for (DstConf dstConf : etlItemConf.getJdbcDestinations()) {
+		for (JdbcTableDestinationConfiguration dstConf : etlItemConf.getJdbcDestinations()) {
 			msg += (msg.isEmpty() ? "" : "\n") + dstConf;
 		}
 

@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -13,7 +13,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 /**
  * This class represent a table which can act as source of {@link JdbcTablePrimaryDataSourceConfiguration} or
- * {@link DstConf}. This allow the dynamic configuration of
+ * {@link JdbcTableDestinationConfiguration}. This allow the dynamic configuration of
  * {@link EtlItemConfiguration}
  */
 public class EtlItemSrcConf extends JdbcTablePrimaryDataSourceConfiguration {

@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.data.validation.missingrecords.model;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
@@ -18,7 +18,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 public class DetectMissingRecordsSearchParams extends EtlDatabaseObjectSearchParams {
 
-	DstConf relatedDstConf;
+	JdbcTableDestinationConfiguration relatedDstConf;
 
 	public DetectMissingRecordsSearchParams(Engine<EtlDatabaseObject> relatedEngine,
 			ThreadRecordIntervalsManager<EtlDatabaseObject> limits) {
@@ -27,7 +27,7 @@ public class DetectMissingRecordsSearchParams extends EtlDatabaseObjectSearchPar
 
 		this.excludedRecords = null;
 
-		this.relatedDstConf = new DstConf();
+		this.relatedDstConf = new JdbcTableDestinationConfiguration();
 		this.relatedDstConf.setTableName(getJdbcPrimaryDataSource().getTableName());
 		this.relatedDstConf.setParentConf(relatedEngine.getEtlItemConfiguration());
 

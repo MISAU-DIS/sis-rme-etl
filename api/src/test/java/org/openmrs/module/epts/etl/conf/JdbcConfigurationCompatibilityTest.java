@@ -46,7 +46,7 @@ class JdbcConfigurationCompatibilityTest {
 	@Test
 	void shouldKeepTableNameAsTheConfiguredJdbcResourceName() throws Exception {
 		JdbcTablePrimaryDataSourceConfiguration source = mapper.readValue("{\"tableName\":\"patient\"}", JdbcTablePrimaryDataSourceConfiguration.class);
-		DstConf destination = mapper.readValue("{\"tableName\":\"patient_stage\"}", DstConf.class);
+		JdbcTableDestinationConfiguration destination = mapper.readValue("{\"tableName\":\"patient_stage\"}", JdbcTableDestinationConfiguration.class);
 
 		assertEquals("patient", source.getTableName());
 		assertEquals("patient", source.getName());

@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
@@ -484,7 +484,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) throws DBException {
 
 		ConnectorRecordReader<?> childPrimaryReader = findPrimaryReader(itemConf, readers);
-		Connection parentDstConn = transformedParent.getRelatedConfiguration() instanceof DstConf
+		Connection parentDstConn = transformedParent.getRelatedConfiguration() instanceof JdbcTableDestinationConfiguration
 				? destinationConnection(writers,
 						(EtlDestinationConfiguration) transformedParent.getRelatedConfiguration())
 				: null;
@@ -545,7 +545,7 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 			return null;
 		}
 
-		for (DstConf destination : itemConf.getJdbcDestinations()) {
+		for (JdbcTableDestinationConfiguration destination : itemConf.getJdbcDestinations()) {
 
 			if (!destination.isDisabled()) {
 

@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.openmrs.module.epts.etl.conf.AbstractBaseConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
@@ -1704,7 +1704,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 		return String.format("%-22s : %s%n", label, value);
 	}
 
-	public synchronized void requestDisplayOfEtlResult(DstConf dstConf, List<EtlDatabaseObject> resultObjs) {
+	public synchronized void requestDisplayOfEtlResult(JdbcTableDestinationConfiguration dstConf, List<EtlDatabaseObject> resultObjs) {
 
 		if (this.getRecordsToDisplay() == null) {
 			this.setRecordsToDisplay(new HashMap<>());
@@ -1745,7 +1745,7 @@ public class Engine<T extends EtlDatabaseObject> extends AbstractBaseConfigurati
 
 			if (this.getRecordsToDisplay() != null) {
 
-				for (DstConf dstConf : this.getEtlItemConfiguration().getJdbcDestinations()) {
+				for (JdbcTableDestinationConfiguration dstConf : this.getEtlItemConfiguration().getJdbcDestinations()) {
 
 					if (dstConf.getDstType().isConsole()) {
 						displayResultInConsole(this.getRecordsToDisplay().get(dstConf.getTableName()));

@@ -9,10 +9,11 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.IdGeneratorManager;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
@@ -124,10 +125,24 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	@JsonIgnore
 	private transient EtlItemConfiguration parentItem;
 
+	private ActionOnEtlIssue inconsistencyBehavior;
+
 	public EtlDestinationConfiguration() {
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.ABORT_PROCESS;
 		this.onMultipleDataSourceWithSameName = ActionOnEtlIssue.ABORT_PROCESS;
 		this.useAsDataSource = Boolean.FALSE;
+	}
+
+	public ActionOnEtlIssue getInconsistencyBehavior() {
+		return inconsistencyBehavior;
+	}
+
+	public void setInconsistencyBehavior(ActionOnEtlIssue inconsistencyBehavior) {
+		this.inconsistencyBehavior = inconsistencyBehavior;
+	}
+
+	public ActionOnEtlIssue inconsistencyBehavior() {
+		return this.inconsistencyBehavior;
 	}
 
 	public static List<EtlDestinationConfiguration> copyAll(List<EtlDestinationConfiguration> destinations) {
@@ -1179,7 +1194,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	/** Copies only logical transformation rules from a legacy destination. */
-	public void copyTransformationRulesFrom(DstConf legacy) {
+	public void copyTransformationRulesFrom(JdbcTableDestinationConfiguration legacy) {
 
 		if (legacy == null) {
 			return;
@@ -1457,7 +1472,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public EtlDataConfiguration getParentConf() {
+	public EtlItemConfiguration getParentConf() {
 		return parentItem;
 	}
 
@@ -1532,5 +1547,22 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 
 		return lastGeneratedId;
+	}
+
+	public EtlDestinationConfiguration getParentDstConf() {
+
+		if (hasParentDstConf()) {
+			return ((EtlChildItemConfiguration) this.getPrimaryDataSource().getParentConf()).getRelatedParentDstConf();
+		}
+
+		return null;
+	}
+
+	public Boolean hasParentDstConf() {
+		return this.getPrimaryDataSource().getParentConf() instanceof EtlChildItemConfiguration;
+	}
+
+	public Boolean hasChildDstConf() {
+		return this.getParentConf().hasChildItemConf();
 	}
 }

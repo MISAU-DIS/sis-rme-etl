@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 import java.sql.Connection;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.JoinableEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.RelatedTable;
@@ -17,8 +17,8 @@ public class TableConfigurationUtils {
 
 		if (tab instanceof JdbcTablePrimaryDataSourceConfiguration) {
 			jdbcPrimary = (JdbcTablePrimaryDataSourceConfiguration) tab;
-		} else if (tab instanceof DstConf) {
-			jdbcPrimary = ((DstConf) tab).getPrimaryDataSource().requireJdbc();
+		} else if (tab instanceof JdbcTableDestinationConfiguration) {
+			jdbcPrimary = ((JdbcTableDestinationConfiguration) tab).getPrimaryDataSource().requireJdbc();
 		} else if (tab instanceof TableDataSourceConfig) {
 			jdbcPrimary = ((TableDataSourceConfig) tab).getRelatedPrimaryDataSource().requireJdbc();
 		} else if (tab instanceof JoinableEntity) {

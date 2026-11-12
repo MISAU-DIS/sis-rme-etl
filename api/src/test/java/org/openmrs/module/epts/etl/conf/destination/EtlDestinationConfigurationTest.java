@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
@@ -21,20 +21,20 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlItemConfigurationComponent
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
-import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorEndpoint;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.Field;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 
 class EtlDestinationConfigurationTest {
 
@@ -202,7 +202,7 @@ class EtlDestinationConfigurationTest {
 
 	@Test
 	void shouldCopyOnlyLogicalRulesFromLegacyDestination() {
-		DstConf legacy = new DstConf("patient");
+		JdbcTableDestinationConfiguration legacy = new JdbcTableDestinationConfiguration("patient");
 		FieldsMapping mapping = new FieldsMapping();
 		mapping.setSrcField("person_uuid");
 		mapping.setDstField("uuid");

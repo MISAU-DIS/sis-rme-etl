@@ -2,7 +2,7 @@ package org.openmrs.module.epts.etl.connector.jdbc;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.writer.AbstractConnectorRecordWriter;
@@ -44,7 +44,7 @@ public final class JdbcConnectorRecordWriter<T extends EtlDatabaseObject> extend
 			throw new IllegalArgumentException("request cannot be null");
 		}
 
-		DstConf configuration = resource.unwrap(DstConf.class);
+		JdbcTableDestinationConfiguration configuration = resource.unwrap(JdbcTableDestinationConfiguration.class);
 
 		switch (request.getMode()) {
 		case INSERT:

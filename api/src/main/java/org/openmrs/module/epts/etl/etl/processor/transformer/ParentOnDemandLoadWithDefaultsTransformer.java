@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
@@ -69,7 +69,8 @@ public class ParentOnDemandLoadWithDefaultsTransformer extends ParentOnDemandLoa
 
 		try {
 			ParentOnDemandLoadWithDefaultsTransformer created = new ParentOnDemandLoadWithDefaultsTransformer(
-					OnDemandInfo.create(effectiveParameters, (DstConf) relatedEtlTransformTarget, field));
+					OnDemandInfo.create(effectiveParameters, (EtlDestinationConfiguration) relatedEtlTransformTarget,
+							field));
 
 			ParentOnDemandLoadWithDefaultsTransformer previous = INSTANCES.putIfAbsent(key, created);
 

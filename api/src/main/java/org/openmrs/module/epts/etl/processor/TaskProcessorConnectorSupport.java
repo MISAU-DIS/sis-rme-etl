@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectDAO;
@@ -24,7 +24,7 @@ final class TaskProcessorConnectorSupport {
 			ConnectorRecordWritersAggregator writers, Consumer<org.openmrs.module.epts.etl.conf.IdGeneratorManager> collector)
 			throws DBException {
 
-		for (DstConf destination : processor.getEtlItemConfiguration().getJdbcDestinations()) {
+		for (JdbcTableDestinationConfiguration destination : processor.getEtlItemConfiguration().getJdbcDestinations()) {
 			if (!destination.isDisabled() && destination.useManualGeneratedObjectId()) {
 				Connection connection = writers.get(destination).unwrap(Connection.class);
 				// collector.accept(destination.initIdGenerator(processor, records,

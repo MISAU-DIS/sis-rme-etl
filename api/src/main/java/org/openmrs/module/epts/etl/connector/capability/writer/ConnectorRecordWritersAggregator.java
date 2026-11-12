@@ -6,7 +6,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorCapabilityProvider;
@@ -58,15 +57,6 @@ public final class ConnectorRecordWritersAggregator implements ConnectorRecordCa
 			throw new IllegalArgumentException("No destination resource registered for " + configuration);
 		}
 		return resource;
-	}
-
-	/**
-	 * Compatibility bridge for JDBC adapter code during the destination migration.
-	 */
-	public ConnectorResource getResource(DstConf configuration) {
-		return getResource(
-				((org.openmrs.module.epts.etl.conf.destination.JdbcTableDestinationConfiguration) configuration)
-						.getParentDestination());
 	}
 
 	public List<ConnectorRecordWriter<? extends EtlDatabaseObject>> getAll() {

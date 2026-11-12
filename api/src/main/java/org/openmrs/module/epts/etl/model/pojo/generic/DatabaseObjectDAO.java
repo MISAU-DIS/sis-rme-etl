@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
@@ -997,7 +997,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		return result;
 	}
 
-	public static EtlOperationResultHeader<EtlDatabaseObject> update(List<EtlDatabaseObject> objects, DstConf dstConf,
+	public static EtlOperationResultHeader<EtlDatabaseObject> update(List<EtlDatabaseObject> objects, JdbcTableDestinationConfiguration dstConf,
 			Connection conn) throws DBException {
 
 		EtlOperationResultHeader<EtlDatabaseObject> result = new EtlOperationResultHeader<>(

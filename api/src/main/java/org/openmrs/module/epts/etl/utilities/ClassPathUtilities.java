@@ -17,7 +17,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.openmrs.module.ModuleUtil;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -279,7 +279,7 @@ public class ClassPathUtilities {
 				
 				tryToCopyPOJOToClassPath(tableConfiguration, clazzListFiless, connInfo);
 				
-				for (DstConf dstConf : config.getJdbcDestinations()) {
+				for (JdbcTableDestinationConfiguration dstConf : config.getJdbcDestinations()) {
 					tryToCopyPOJOToClassPath(dstConf, clazzListFiless, connInfo);
 				}
 			}

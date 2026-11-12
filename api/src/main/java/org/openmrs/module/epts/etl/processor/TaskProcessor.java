@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
@@ -323,7 +323,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return getRelatedEtlOperationConfig().getActionType();
 	}
 
-	public EtlDstType determineDstType(DstConf dstConf) {
+	public EtlDstType determineDstType(JdbcTableDestinationConfiguration dstConf) {
 		ConnectorResource resource = dstConf.getResolvedResource();
 
 		if (resource == null) {
@@ -347,7 +347,7 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 		return determineLegacyDstType(dstConf);
 	}
 
-	private EtlDstType determineLegacyDstType(DstConf dstConf) {
+	private EtlDstType determineLegacyDstType(JdbcTableDestinationConfiguration dstConf) {
 		EtlDstType dstType = dstConf.getDstType();
 
 		if (dstType == null) {

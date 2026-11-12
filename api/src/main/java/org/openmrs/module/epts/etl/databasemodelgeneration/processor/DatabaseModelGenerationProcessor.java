@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.DestinationConnectorConnections;
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
@@ -178,7 +178,7 @@ public class DatabaseModelGenerationProcessor
 
 				for (org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration configuredDestination : item
 						.getDestinations()) {
-					DstConf destination = configuredDestination.requireJdbcTableDestination();
+					JdbcTableDestinationConfiguration destination = configuredDestination.requireJdbcTableDestination();
 
 					if (destination.isDisabled() || !destinationConnections.isJdbc(configuredDestination)) {
 						continue;
@@ -205,7 +205,7 @@ public class DatabaseModelGenerationProcessor
 		}
 	}
 
-	private void generateOnDemandConfigurationTrees(DstConf destination, EtlOperationConfig operationConfig,
+	private void generateOnDemandConfigurationTrees(JdbcTableDestinationConfiguration destination, EtlOperationConfig operationConfig,
 			Connection srcConn, Connection dstConn) throws DBException {
 
 		if (!destination.hasMapping()) {

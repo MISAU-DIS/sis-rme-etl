@@ -1,6 +1,6 @@
 package org.openmrs.module.epts.etl.etl.processor.transformer;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
@@ -87,7 +87,7 @@ public class FieldTransformingInfo {
 		boolean isDstDs = false;
 
 		if (this.getTransformationDatasource() != null) {
-			if (this.getTransformationDatasource() instanceof DstConf) {
+			if (this.getTransformationDatasource() instanceof JdbcTableDestinationConfiguration) {
 				isDstDs = true;
 			} else {
 				if (this.getTransformationDatasource() instanceof TableConfiguration) {

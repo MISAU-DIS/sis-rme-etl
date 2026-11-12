@@ -7,14 +7,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
-import org.openmrs.module.epts.etl.conf.types.EtlDstType;
-import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
@@ -54,7 +53,7 @@ public class EtlLoadHelper {
 	private LoadingType loadingType;
 	private EtlItemConfiguration etlItemConf;
 
-	private List<DstConf> dstConf;
+	private List<EtlDestinationConfiguration> dstConf;
 
 	public EtlLoadHelper(EtlProcessor processor, EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> srcObjects,
 			LoadingType loadingType, boolean ignoreNoDstIssue) {
@@ -71,8 +70,8 @@ public class EtlLoadHelper {
 
 				for (EtlDatabaseObject dst : obj.getDestinationObjects()) {
 
-					if (!this.dstConf.contains(dst.getRelatedConfiguration())) {
-						this.dstConf.add((DstConf) dst.getRelatedConfiguration());
+					if (!this.dstConf.contains((EtlDestinationConfiguration) dst.getRelatedConfiguration())) {
+						this.dstConf.add((EtlDestinationConfiguration) dst.getRelatedConfiguration());
 					}
 				}
 			}
@@ -87,7 +86,7 @@ public class EtlLoadHelper {
 		return etlItemConf;
 	}
 
-	public List<DstConf> getDstConf() {
+	public List<EtlDestinationConfiguration> getDstConf() {
 		return dstConf;
 	}
 
@@ -120,7 +119,7 @@ public class EtlLoadHelper {
 
 		if (this.hasDstConf()) {
 
-			for (DstConf dst : this.getDstConf()) {
+			for (EtlDestinationConfiguration dst : this.getDstConf()) {
 
 				try {
 					load(dst, readers, writers);
@@ -132,7 +131,7 @@ public class EtlLoadHelper {
 				}
 
 				if (!dst.getRelatedEtlConf().getGeneralBehaviourOnEtlException().log()) {
-					EtlDatabaseObject err = retrieveFirstDstRecordWithUnresolvedError(dst);
+					EtlDatabaseObject err = this.retrieveFirstDstRecordWithUnresolvedError(dst);
 
 					if (err != null) {
 						logError("Found issues loading object {} {}",
@@ -171,14 +170,14 @@ public class EtlLoadHelper {
 	private Set<EtlItemConfiguration> generateAvaliableEtl() {
 		Set<EtlItemConfiguration> itemConf = new HashSet<>();
 
-		for (DstConf dst : this.getDstConf()) {
+		for (EtlDestinationConfiguration dst : this.getDstConf()) {
 			itemConf.add(dst.getParentConf());
 		}
 
 		return itemConf;
 	}
 
-	private EtlDatabaseObject retrieveFirstDstRecordWithUnresolvedError(DstConf dst) {
+	private EtlDatabaseObject retrieveFirstDstRecordWithUnresolvedError(EtlDestinationConfiguration dst) {
 
 		for (EtlDatabaseObject r : this.getSrcObjects()) {
 			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
@@ -200,7 +199,7 @@ public class EtlLoadHelper {
 		return null;
 	}
 
-	private boolean isIgnorableException(DstConf dstConf, EtlException e) {
+	private boolean isIgnorableException(EtlDestinationConfiguration dstConf, EtlException e) {
 		boolean isInconsistency = e instanceof InconsistentStateException;
 
 		Throwable cause = e.getException();
@@ -229,49 +228,38 @@ public class EtlLoadHelper {
 		}
 	}
 
-	private void load(DstConf dstConf, ConnectorRecordReadersAggregator readers,
+	private void load(EtlDestinationConfiguration dstConf, ConnectorRecordReadersAggregator readers,
 			ConnectorRecordWritersAggregator writers) throws ParentNotYetMigratedException, DBException {
 		loadToConnector(dstConf, readers, writers);
 	}
 
-	private void loadToConnector(DstConf dstConf, ConnectorRecordReadersAggregator readers,
+	private void loadToConnector(EtlDestinationConfiguration dstConf, ConnectorRecordReadersAggregator readers,
 			ConnectorRecordWritersAggregator writers) throws ParentNotYetMigratedException, DBException {
 
-		if (writers.getResource(dstConf).getEndpoint().getType() == ConnectorType.JDBC) {
-			EtlDstType dstType = getProcessor().determineDstType(dstConf);
-
-			if (dstType.isDb()) {
-				loadToDb(dstConf, readers, writers);
-			} else if (dstType.isFile()) {
-				loadToFile(dstConf);
-			} else if (dstType.isInstantaneo()) {
-				getEngine().requestDisplayOfEtlResult(dstConf, getAllTransformedObjects(dstConf));
-			} else {
-				throw new ForbiddenOperationException("Unsupported dstType '" + dstType + "'");
-			}
-
-			return;
+		if (dstConf.getDestinationDataConfiguration() instanceof JdbcTableDestinationConfiguration) {
+			this.loadToDb(dstConf, readers, writers);
+		} else {
+			writeToConnector(dstConf, writers);
 		}
-
-		writeToConnector(dstConf, writers);
 	}
 
-	private void writeToConnector(DstConf dstConf, ConnectorRecordWritersAggregator writers) throws DBException {
-		List<EtlDatabaseObject> records = getAllTransformedObjects(dstConf);
+	private void writeToConnector(EtlDestinationConfiguration dstConf, ConnectorRecordWritersAggregator writers)
+			throws DBException {
+		List<EtlDatabaseObject> records = this.getAllTransformedObjects(dstConf, null);
 
 		for (EtlDatabaseObject record : records) {
 			record.loadObjectIdData();
 			record.getEtlInfo().markAsReady();
 		}
 
-		List<EtlDatabaseObject> ready = getAllReadyTransformedObjects(dstConf);
+		List<EtlDatabaseObject> ready = this.getAllReadyTransformedObjects(dstConf);
 
 		ConnectorRecordWriter<EtlDatabaseObject> writer = writers.get(dstConf);
 
-		loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, ready)), dstConf);
+		this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, ready)), dstConf);
 	}
 
-	private void loadToDb(DstConf dstConf, ConnectorRecordReadersAggregator readers,
+	private void loadToDb(EtlDestinationConfiguration dstConf, ConnectorRecordReadersAggregator readers,
 			ConnectorRecordWritersAggregator writers) throws ParentNotYetMigratedException, DBException {
 
 		if (!dstConf.isFullLoaded()) {
@@ -294,7 +282,7 @@ public class EtlLoadHelper {
 	 * @throws ParentNotYetMigratedException
 	 * @throws DBException
 	 */
-	public void afterLoadToDb(DstConf dstConf, ConnectorRecordReadersAggregator readers,
+	public void afterLoadToDb(EtlDestinationConfiguration dstConf, ConnectorRecordReadersAggregator readers,
 			ConnectorRecordWritersAggregator writers) throws ParentNotYetMigratedException, DBException {
 
 		if (getActionType().isCreate() || getActionType().isUpdate()) {
@@ -328,7 +316,7 @@ public class EtlLoadHelper {
 		}
 	}
 
-	void loadAndAddResult(EtlOperationResultHeader<EtlDatabaseObject> result, DstConf dstConf) {
+	void loadAndAddResult(EtlOperationResultHeader<EtlDatabaseObject> result, EtlDestinationConfiguration dstConf) {
 
 		if (isPrincipalLoading()) {
 
@@ -345,24 +333,26 @@ public class EtlLoadHelper {
 	 * @throws DBException
 	 * @throws ForbiddenOperationException
 	 */
-	public void onLoadToDb(DstConf dstConf, ConnectorRecordWritersAggregator writers)
+	public void onLoadToDb(EtlDestinationConfiguration dstConf, ConnectorRecordWritersAggregator writers)
 			throws DBException, ForbiddenOperationException {
 
-		List<EtlDatabaseObject> objects = getAllReadyTransformedObjects(dstConf);
+		List<EtlDatabaseObject> objects = this.getAllReadyTransformedObjects(dstConf);
 
 		ConnectorRecordWriter<EtlDatabaseObject> writer = writers.get(dstConf);
 		Connection dstConn = writer.unwrap(Connection.class);
 
-		if (getActionType().isCreate()) {
-			logDebug("Starting the insertion of " + objects.size() + " " + dstConf.getTableName() + " on db...");
+		JdbcTableDestinationConfiguration tabConf = dstConf.getTableDataDestination();
 
-			dstConf.setUseMysqlInsertIgnore(this.getEtlOperationConfig().useseMysqlInsertIgnore());
+		if (getActionType().isCreate()) {
+			logDebug("Starting the insertion of " + objects.size() + " " + tabConf.getTableName() + " on db...");
+
+			tabConf.setUseMysqlInsertIgnore(this.getEtlOperationConfig().useseMysqlInsertIgnore());
 
 			List<EtlDatabaseObject> recordToUpdate = new ArrayList<>();
 			List<EtlDatabaseObject> recordToCreate = new ArrayList<>();
 
-			if (dstConf.executeUpdateOnIdentifiedRecordAction()
-					|| dstConf.executePatchUpdateOnIdentifiedRecordAction()) {
+			if (tabConf.executeUpdateOnIdentifiedRecordAction()
+					|| tabConf.executePatchUpdateOnIdentifiedRecordAction()) {
 
 				for (EtlDatabaseObject obj : objects) {
 
@@ -372,7 +362,7 @@ public class EtlLoadHelper {
 							// We want to prevent situation where the sharedObject is persisted but the
 							// child object is not yet persisted
 
-							EtlDatabaseObject recordOnDB = DatabaseObjectDAO.getByOid(dstConf, obj.getObjectId(),
+							EtlDatabaseObject recordOnDB = DatabaseObjectDAO.getByOid(tabConf, obj.getObjectId(),
 									dstConn);
 
 							if (recordOnDB == null) {
@@ -393,43 +383,43 @@ public class EtlLoadHelper {
 			this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, recordToCreate)),
 					dstConf);
 
-			logDebug(recordToCreate.size() + " " + dstConf.getTableName() + "  inserted on db!");
+			logDebug(recordToCreate.size() + " " + tabConf.getTableName() + "  inserted on db!");
 
 			if (!recordToUpdate.isEmpty()) {
 				this.loadAndAddResult(
 						writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE, recordToUpdate)), dstConf);
-				logDebug(recordToUpdate.size() + " " + dstConf.getTableName() + "  updated on db!");
+				logDebug(recordToUpdate.size() + " " + tabConf.getTableName() + "  updated on db!");
 			}
 
 		} else if (getActionType().isUpdate()) {
-			logDebug("Starting the update of " + objects.size() + " " + dstConf.getTableName() + " on db...");
+			logDebug("Starting the update of " + objects.size() + " " + tabConf.getTableName() + " on db...");
 
 			this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.UPDATE_ALL, objects)),
 					dstConf);
-			logDebug(objects.size() + " " + dstConf.getTableName() + " updated from db!");
+			logDebug(objects.size() + " " + tabConf.getTableName() + " updated from db!");
 
 		} else if (getActionType().isDelete()) {
-			logDebug("Starting the deletion of " + objects.size() + " " + dstConf.getTableName() + " on db...");
+			logDebug("Starting the deletion of " + objects.size() + " " + tabConf.getTableName() + " on db...");
 
 			this.loadAndAddResult(writer.write(new ConnectorWriteRequest<>(ConnectorWriteMode.DELETE_ALL, objects)),
 					dstConf);
 
-			logDebug(objects.size() + " " + dstConf.getTableName() + "  deleted on db!");
+			logDebug(objects.size() + " " + tabConf.getTableName() + "  deleted on db!");
 
 		} else {
 			throw new ForbiddenOperationException("Unsupported operation " + getActionType() + " on ETL");
 		}
 	}
 
-	public List<EtlDatabaseObject> getAllSuccedTransformedObjects(DstConf dstConf) {
-		return getAllTransformedObjects(dstConf, EtlStatus.SUCCESS);
+	public List<EtlDatabaseObject> getAllSuccedTransformedObjects(EtlDestinationConfiguration dstConf) {
+		return this.getAllTransformedObjects(dstConf, EtlStatus.SUCCESS);
 	}
 
-	private List<EtlDatabaseObject> getAllReadyTransformedObjects(DstConf dstConf) {
+	private List<EtlDatabaseObject> getAllReadyTransformedObjects(EtlDestinationConfiguration dstConf) {
 		return getAllTransformedObjects(dstConf, EtlStatus.READY);
 	}
 
-	public List<EtlDatabaseObject> getAllTransformedObjects(DstConf dstConf) {
+	public List<EtlDatabaseObject> getAllTransformedObjects(EtlDestinationConfiguration dstConf) {
 		return getAllTransformedObjects(dstConf, null);
 	}
 
@@ -446,7 +436,7 @@ public class EtlLoadHelper {
 		return allOfDst;
 	}
 
-	public List<EtlDatabaseObject> getAllTransformedObjects(DstConf dstConf, EtlStatus status) {
+	public List<EtlDatabaseObject> getAllTransformedObjects(EtlDestinationConfiguration dstConf, EtlStatus status) {
 		List<EtlDatabaseObject> allOfDst = new ArrayList<>();
 
 		for (EtlDatabaseObject srcObject : this.getSrcObjects()) {
@@ -469,7 +459,7 @@ public class EtlLoadHelper {
 	 * @throws ParentNotYetMigratedException
 	 * @throws MissingParentException
 	 */
-	public void beforeLoadToDb(DstConf dstConf, ConnectorRecordReadersAggregator readers,
+	public void beforeLoadToDb(EtlDestinationConfiguration dstConf, ConnectorRecordReadersAggregator readers,
 			ConnectorRecordWritersAggregator writers)
 			throws DBException, ParentNotYetMigratedException, MissingParentException {
 
@@ -536,7 +526,7 @@ public class EtlLoadHelper {
 		return getEtlOperationConfig().getActionType();
 	}
 
-	public void loadToFile(DstConf dstConf) throws ParentNotYetMigratedException, DBException {
+	public void loadToFile(EtlDestinationConfiguration dstConf) throws ParentNotYetMigratedException, DBException {
 		List<EtlDatabaseObject> toLoad = this.getAllTransformedObjects(dstConf);
 
 		for (EtlDatabaseObject obj : toLoad) {
@@ -544,7 +534,7 @@ public class EtlLoadHelper {
 			obj.getEtlInfo().markAsReady();
 		}
 
-		List<EtlDatabaseObject> objs = getAllReadyTransformedObjects(dstConf);
+		List<EtlDatabaseObject> objs = this.getAllReadyTransformedObjects(dstConf);
 
 		String dataFile = getEngine().getDataDir().getAbsolutePath() + File.separator + objs.get(0).generateTableName();
 
@@ -557,7 +547,8 @@ public class EtlLoadHelper {
 		} else if (getEngine().isCsvDst()) {
 			dataFile += ".csv";
 
-			data = utilities.parseToCSVWithoutHeader(objs, dstConf.getExcludedFields(), dstConf.getCsvDelimiter());
+			data = utilities.parseToCSVWithoutHeader(objs, dstConf.getExcludedFields(),
+					dstConf.getCsvDataDestination().getDelimiter());
 		} else if (getEngine().isDumpDst()) {
 			dataFile += ".sql";
 
@@ -569,7 +560,7 @@ public class EtlLoadHelper {
 
 			if (includeHeader) {
 				FileUtilities.write(dataFile, utilities.generateCsvHeader(objs.get(0), dstConf.getExcludedFields(),
-						dstConf.getCsvDelimiter()));
+						dstConf.getCsvDataDestination().getDelimiter()));
 			}
 
 			FileUtilities.write(dataFile, data);
@@ -647,9 +638,9 @@ public class EtlLoadHelper {
 				.load(etlInfo.getDstConf(), readers, writers);
 	}
 
-	public static EtlLoadHelper fastLoadRecord(EtlProcessor processor, EtlDatabaseObject srcRecord, DstConf dstConf,
-			TransformationType transformationType, ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
-			throws ParentNotYetMigratedException, DBException {
+	public static EtlLoadHelper fastLoadRecord(EtlProcessor processor, EtlDatabaseObject srcRecord,
+			EtlDestinationConfiguration dstConf, TransformationType transformationType, ConnectorRecordReader<?> reader,
+			ConnectorRecordWriter<?> writer) throws ParentNotYetMigratedException, DBException {
 
 		EtlItemConfiguration conf = dstConf.getParentConf();
 

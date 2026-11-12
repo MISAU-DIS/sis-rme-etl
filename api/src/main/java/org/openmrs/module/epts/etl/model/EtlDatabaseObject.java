@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.common.model.EtlStageRecordVO;
-import org.openmrs.module.epts.etl.conf.DstConf;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
@@ -18,6 +18,7 @@ import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
@@ -913,7 +914,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		this.getDestinationObjects().add(dstObject);
 	}
 
-	default EtlDatabaseObject retriveDestinationRecord(DstConf dstConf) {
+	default EtlDatabaseObject retriveDestinationRecord(EtlDestinationConfiguration dstConf) {
 
 		if (hasDestinationRecords()) {
 
@@ -1059,7 +1060,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean isDstObject() {
-		return this.getRelatedConfiguration() instanceof DstConf;
+		return this.getRelatedConfiguration() instanceof JdbcTableDestinationConfiguration;
 	}
 
 	default Set<EtlDatabaseObject> collectAllAvaliableSrcObjects() {
@@ -1067,10 +1068,10 @@ public interface EtlDatabaseObject extends EtlObject {
 
 		if (this.getEtlInfo() != null) {
 			boolean isDataSourceDstObject = this.isDstObject()
-					&& ((DstConf) this.getRelatedConfiguration()).useAsDataSource();
+					&& ((JdbcTableDestinationConfiguration) this.getRelatedConfiguration()).useAsDataSource();
 
 			boolean isParentDstConf = this.isDstObject()
-					&& ((DstConf) this.getRelatedConfiguration()).hasChildDstConf();
+					&& ((JdbcTableDestinationConfiguration) this.getRelatedConfiguration()).hasChildDstConf();
 
 			if (isDataSourceDstObject || isParentDstConf) {
 				avaliableSrcOjects.add(this);
@@ -1084,8 +1085,8 @@ public interface EtlDatabaseObject extends EtlObject {
 
 			return avaliableSrcOjects;
 
-		} else if (this.isSrcObject()
-				|| (this.isDstObject() && ((DstConf) this.getRelatedConfiguration()).useAsDataSource())) {
+		} else if (this.isSrcObject() || (this.isDstObject()
+				&& ((JdbcTableDestinationConfiguration) this.getRelatedConfiguration()).useAsDataSource())) {
 
 			EtlObjectConfiguration conf = this.getRelatedConfiguration();
 
