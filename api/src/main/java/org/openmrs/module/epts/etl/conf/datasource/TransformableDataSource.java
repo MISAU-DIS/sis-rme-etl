@@ -23,10 +23,10 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.conf.types.ObjectLanguageType;
-import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.etl.processor.transformer.SimpleValueTransformer;
@@ -41,7 +41,6 @@ import org.openmrs.module.epts.etl.model.pojo.generic.DatabaseObjectLoaderHelper
 import org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -139,6 +138,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	public void setUnmappedFieldBehavior(ActionOnEtlIssue unmappedFieldBehavior) {
+
 		if (unmappedFieldBehavior != null && !unmappedFieldBehavior.allowedOnMissingFieldsMapping()) {
 			throw new EtlConfException("Value not allowed unmappedFieldBehavior [" + unmappedFieldBehavior + "]");
 		}
@@ -249,6 +249,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public synchronized void fullLoad(Connection conn) throws DBException {
+
 		if (isFullLoaded()) {
 			return;
 		}
@@ -266,6 +267,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		this.tryToLoadFieldValueGenerator();
 
 		if (hasObjectFields()) {
+
 			for (TransformableDataSourceField field : this.getObjectFields()) {
 				field.setParent(this);
 
@@ -278,7 +280,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 					field.setAuxFieldMapping(auxFieldMapping);
 
 					field.setTransformer(SimpleValueTransformer.class.getCanonicalName());
-				field.setTransformerInstance(SimpleValueTransformer.getInstance(null, this, field));
+					field.setTransformerInstance(SimpleValueTransformer.getInstance(null, this, field));
 				}
 
 				field.loadType(this, this);
@@ -456,6 +458,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		Connection conn = reader.unwrap(Connection.class);
 
 		if (avaliableSrcObjects != null) {
+
 			if (!this.shouldBeProcessed(srcObject, new LinkedHashSet<>(avaliableSrcObjects), reader,
 					org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters.writer(conn))) {
 				return null;
@@ -515,6 +518,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	@SuppressWarnings({ "unchecked", "deprecation" })
 	public void tryToLoadFieldValueGenerator() {
+
 		if (this.hasFieldsValuesGenerator()) {
 
 			try {
@@ -559,7 +563,8 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		return allCloned;
 	}
 
-	public void clone(TransformableDataSource toCloneFrom, PrimaryDataSourceConfiguration relatedPrimaryDataSource, Connection conn) throws DBException {
+	public void clone(TransformableDataSource toCloneFrom, PrimaryDataSourceConfiguration relatedPrimaryDataSource,
+			Connection conn) throws DBException {
 		this.setName(toCloneFrom.getName());
 		this.setRelatedPrimaryDataSource(relatedPrimaryDataSource);
 		this.setRequired(toCloneFrom.isRequired());
@@ -576,7 +581,9 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 
 	public static void tryToReplacePlaceholders(List<TransformableDataSource> extraObjectDataSource,
 			EtlDatabaseObject schemaInfoSrc) {
+
 		if (utilities.listHasElement(extraObjectDataSource)) {
+
 			for (TransformableDataSource a : extraObjectDataSource) {
 				a.tryToReplacePlaceholders(schemaInfoSrc);
 			}
@@ -621,7 +628,8 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
 		if (!(relatedParent instanceof PrimaryDataSourceConfiguration))
-			throw new ForbiddenOperationException("The parent of TransformableDataSource must be a primary data source");
+			throw new ForbiddenOperationException(
+					"The parent of TransformableDataSource must be a primary data source");
 		this.relatedPrimaryDataSource = (PrimaryDataSourceConfiguration) relatedParent;
 	}
 

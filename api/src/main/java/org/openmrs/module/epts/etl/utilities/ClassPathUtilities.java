@@ -18,6 +18,7 @@ import java.util.zip.ZipOutputStream;
 import org.openmrs.module.ModuleUtil;
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -220,7 +221,14 @@ public class ClassPathUtilities {
 	}
 	
 	public static void addClassToClassPath(EtlObjectConfiguration pojoble, DBConnectionInfo connInfo) {
-		addClassToClassPath(pojoble, pojoble.getRelatedEtlConf().getPojoPackage(connInfo));
+		String pojoPackage = pojoble.getResolvedResource() == null
+				? pojoble.getRelatedEtlConf().getPojoPackage(connInfo)
+				: pojoble.getRelatedEtlConf().getPojoPackage(pojoble.getResolvedResource());
+		addClassToClassPath(pojoble, pojoPackage);
+	}
+
+	public static void addClassToClassPath(EtlObjectConfiguration pojoble, ConnectorResource resource) {
+		addClassToClassPath(pojoble, pojoble.getRelatedEtlConf().getPojoPackage(resource));
 	}
 
 	public static void addClassToClassPath(EtlObjectConfiguration pojoble, String pojoPackageName) {

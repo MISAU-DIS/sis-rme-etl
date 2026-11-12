@@ -37,6 +37,7 @@ import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorRegistry;
 import org.openmrs.module.epts.etl.controller.ProcessController;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.databasemodelgeneration.processor.DatabaseModelGenerationProcessor;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -794,6 +795,21 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
+	public String getPojoPackage(ConnectorResource resource) {
+
+		if (resource == null || resource.getDirection() == null) {
+			return null;
+		}
+
+		return resource.getDirection().isDestination() ? getDstPojoPackageName() : getSrcPojoPackageName();
+	}
+
+	/**
+	 * @deprecated use {@link #getPojoPackage(ConnectorResource)}. Connection
+	 *             information is not a data-model identity.
+	 */
+	@Deprecated
+	@JsonIgnore
 	public String getPojoPackage(DBConnectionInfo connInfo) {
 
 		if (connInfo == null) {
@@ -812,6 +828,33 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return null;
 	}
 
+	@JsonIgnore
+	public String getDataModelId(ConnectorResource resource) {
+
+		if (resource == null || resource.getDirection() == null) {
+			return null;
+		}
+
+		return resource.getDirection().isDestination() ? getDataModel().getDstDataModelId()
+				: getDataModel().getSrcDataModelId();
+	}
+
+	@JsonIgnore
+	public DatabaseModelGenerationContext createDatabaseModelGenerationContext(ConnectorResource resource,
+			Connection connection) {
+
+		if (resource == null || resource.getDirection() == null) {
+			throw new ForbiddenOperationException(
+					"Cannot create a data-model generation context from a resource without direction");
+		}
+
+		return resource.getDirection().isDestination()
+				? DatabaseModelGenerationContext.destination(getDataModel(), connection)
+				: DatabaseModelGenerationContext.source(getDataModel(), connection);
+	}
+
+	/** @deprecated use {@link #getDataModelId(ConnectorResource)}. */
+	@Deprecated
 	@JsonIgnore
 	public String getDataModelId(DBConnectionInfo connInfo) {
 
@@ -2171,6 +2214,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
+	public File getPojoPackageAsDirectory(ConnectorResource resource) {
+		return getPojoPackageAsDirectory(getPojoPackage(resource));
+	}
+
+	/** @deprecated use {@link #getPojoPackageAsDirectory(ConnectorResource)}. */
+	@Deprecated
+	@JsonIgnore
 	public File getPojoPackageAsDirectory(DBConnectionInfo connInfo) {
 		String pojoPackageDir = "";
 		pojoPackageDir += getPOJOCompiledFilesDirectory().getAbsolutePath() + FileUtilities.getPathSeparator();
@@ -2189,6 +2239,13 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return new File(path);
 	}
 
+	@JsonIgnore
+	public String getPojoPackageRelativePath(ConnectorResource resource) {
+		return getPojoPackageRelativePath(this.getPojoPackage(resource));
+	}
+
+	/** @deprecated use {@link #getPojoPackageRelativePath(ConnectorResource)}. */
+	@Deprecated
 	@JsonIgnore
 	public String getPojoPackageRelativePath(DBConnectionInfo app) {
 		return getPojoPackageRelativePath(this.getPojoPackage(app));

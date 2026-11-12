@@ -441,10 +441,10 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (mode != null && mode.usesFilesFirst()) {
 			FilePhysicalTableMetadataRepository files = new FilePhysicalTableMetadataRepository(
 					this.getRelatedEtlConf().getSchemaMetadataDirectory());
-			String dataModelId = this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo());
+			String dataModelId = resolveDataModelId();
 			java.util.Optional<PhysicalTableMetadata> stored = utilities.stringHasValue(dataModelId)
 					? files.find(dataModelId, this.getTableName())
-					: files.find(this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo()), this.getSchema(),
+					: files.find(resolvePojoPackage(), this.getSchema(),
 							this.getTableName());
 
 			if (stored.isPresent()) {
@@ -480,7 +480,9 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		java.io.File manifestFile = new java.io.File(metadataDirectory, "manifest.json").getAbsoluteFile();
 		DatabaseModelManifest manifest = new FileDatabaseModelManifestRepository(metadataDirectory).read();
 		String expectedKey = metadata.getKey().toString();
-		String expectedClass = this.generateFullClassName(this.getRelatedConnInfo());
+		String expectedClass = this.getResolvedResource() == null
+				? this.generateFullClassName(this.getRelatedConnInfo())
+				: this.generateFullClassName(this.getResolvedResource());
 		String expectedFingerprint = PhysicalTableMetadataFingerprint.sha256(metadata);
 		DatabaseModelManifest.Entry matchingClass = null;
 		List<String> classesForKey = new ArrayList<>();
@@ -780,10 +782,20 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	 * explicit schema.
 	 */
 	private String toPortableReferencedSchema(String referencedSchema) {
-		String dataModelId = this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo());
+		String dataModelId = resolveDataModelId();
 		if (utilities.stringHasValue(dataModelId) && sameSchema(referencedSchema, this.getSchema()))
 			return "";
 		return referencedSchema;
+	}
+
+	private String resolveDataModelId() {
+		return this.getResolvedResource() == null ? this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo())
+				: this.getRelatedEtlConf().getDataModelId(this.getResolvedResource());
+	}
+
+	private String resolvePojoPackage() {
+		return this.getResolvedResource() == null ? this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo())
+				: this.getRelatedEtlConf().getPojoPackage(this.getResolvedResource());
 	}
 
 	private String resolveReferencedSchema(String schema, String catalog) {

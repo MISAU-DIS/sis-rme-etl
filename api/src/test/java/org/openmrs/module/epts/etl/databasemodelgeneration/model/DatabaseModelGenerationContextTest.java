@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.DataModelConfiguration;
+import org.openmrs.module.epts.etl.conf.EtlConfiguration;
+import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext.Side;
 
 class DatabaseModelGenerationContextTest {
@@ -25,5 +29,52 @@ class DatabaseModelGenerationContextTest {
 		assertEquals(Side.DST, destination.getSide());
 		assertEquals("openmrs_2_6_sisrme", destination.getDataModelId());
 		assertEquals("openmrs_2_6.sisrme", destination.getPojoPackageName());
+	}
+
+	@Test
+	void shouldResolveModelIdentityFromTheResourceDirection() {
+		DataModelConfiguration dataModel = new DataModelConfiguration();
+		dataModel.setSrcDataModelId("source-model");
+		dataModel.setSrcPojoPackageName("source.model");
+		dataModel.setDstDataModelId("destination-model");
+		dataModel.setDstPojoPackageName("destination.model");
+		EtlConfiguration configuration = new EtlConfiguration();
+		configuration.setDataModel(dataModel);
+
+		ConnectorResource sourceResource = resource(ConnectorDirection.SOURCE);
+		ConnectorResource destinationResource = resource(ConnectorDirection.DESTINATION);
+
+		assertEquals("source.model", configuration.getPojoPackage(sourceResource));
+		assertEquals("destination.model", configuration.getPojoPackage(destinationResource));
+		assertEquals("source-model", configuration.getDataModelId(sourceResource));
+		assertEquals("destination-model", configuration.getDataModelId(destinationResource));
+		assertEquals(Side.SRC,
+				configuration.createDatabaseModelGenerationContext(sourceResource, null).getSide());
+		assertEquals(Side.DST,
+				configuration.createDatabaseModelGenerationContext(destinationResource, null).getSide());
+	}
+
+	private ConnectorResource resource(ConnectorDirection direction) {
+		return new ConnectorResource() {
+			@Override
+			public String getName() {
+				return "model";
+			}
+
+			@Override
+			public ConnectorDirection getDirection() {
+				return direction;
+			}
+
+			@Override
+			public ConnectorEndpoint getEndpoint() {
+				return null;
+			}
+
+			@Override
+			public <T> T unwrap(Class<T> nativeType) {
+				throw new UnsupportedOperationException();
+			}
+		};
 	}
 }

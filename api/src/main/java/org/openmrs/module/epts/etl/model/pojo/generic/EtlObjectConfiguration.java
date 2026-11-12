@@ -77,6 +77,17 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
+	default String generateFullPackageName(ConnectorResource resource) {
+		return utilities.concatStringsWithSeparator("org.openmrs.module.epts.etl.model.pojo",
+				getClassPackage(resource), ".");
+	}
+
+	@JsonIgnore
+	default String generateFullPackageName() {
+		return generateFullPackageName(getResolvedResource());
+	}
+
+	@JsonIgnore
 	default String generateFullPackageName(DatabaseModelGenerationContext context) {
 		return utilities.concatStringsWithSeparator("org.openmrs.module.epts.etl.model.pojo",
 				context.getPojoPackageName(), ".");
@@ -90,6 +101,16 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	@JsonIgnore
 	default String getClassPackage(DBConnectionInfo connInfo) {
 		return getRelatedEtlConf().getPojoPackage(connInfo);
+	}
+
+	@JsonIgnore
+	default String getClassPackage(ConnectorResource resource) {
+		return getRelatedEtlConf().getPojoPackage(resource);
+	}
+
+	@JsonIgnore
+	default String getClassPackage() {
+		return getClassPackage(getResolvedResource());
 	}
 
 	@JsonIgnore
@@ -111,6 +132,14 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		return pF;
 	}
 
+	default String getClassPackageForForder(ConnectorResource resource) {
+		return getClassPackage(resource).replace('.', File.separatorChar);
+	}
+
+	default String getClassPackageForForder() {
+		return getClassPackageForForder(getResolvedResource());
+	}
+
 	default String getClassPackageForForder(DatabaseModelGenerationContext context) {
 		return getClassPackage(context).replace('.', File.separatorChar);
 	}
@@ -124,6 +153,16 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
 		return utilities.concatStringsWithSeparator(fullPackageName, generateClassName(), ".");
+	}
+
+	@JsonIgnore
+	default String generateFullClassName(ConnectorResource resource) {
+		return utilities.concatStringsWithSeparator(generateFullPackageName(resource), generateClassName(), ".");
+	}
+
+	@JsonIgnore
+	default String generateFullClassName() {
+		return generateFullClassName(getResolvedResource());
 	}
 
 	@JsonIgnore
@@ -211,6 +250,10 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 
 	void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass);
 
+	default void generateRelatedPojoClass(ConnectorResource resource, Boolean fullClass) {
+		generateRelatedPojoClass(getRelatedEtlConf().createDatabaseModelGenerationContext(resource, null), fullClass);
+	}
+
 	default void generateRelatedPojoClass(DatabaseModelGenerationContext context, Boolean fullClass) {
 
 		try {
@@ -273,7 +316,8 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		Class<? extends EtlDatabaseObject> recordClass = getEtlRecordClass();
 
 		if (recordClass == null) {
-			recordClass = generateEtlRecordClass(getRelatedConnInfo());
+			recordClass = getResolvedResource() == null ? generateEtlRecordClass(getRelatedConnInfo())
+					: generateEtlRecordClass(getResolvedResource());
 		}
 
 		try {
@@ -297,6 +341,12 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DatabaseModelGenerationContext context)
 			throws PojoNotFoundException {
 		return resolveEtlRecordClass(generateFullClassName(context));
+	}
+
+	@JsonIgnore
+	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(ConnectorResource resource)
+			throws PojoNotFoundException {
+		return resolveEtlRecordClass(generateFullClassName(resource));
 	}
 
 	private Class<? extends EtlDatabaseObject> resolveEtlRecordClass(String fullClassName) {

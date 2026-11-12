@@ -30,6 +30,7 @@ import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
@@ -411,6 +412,18 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@Override
 	public String getClassPackage(DBConnectionInfo connInfo) {
 		return EtlAdditionalDataSource.super.getClassPackage(connInfo) + "._query_result";
+	}
+
+	@JsonIgnore
+	@Override
+	public String getClassPackage(ConnectorResource resource) {
+		return EtlAdditionalDataSource.super.getClassPackage(resource) + "._query_result";
+	}
+
+	@JsonIgnore
+	@Override
+	public String getClassPackage(DatabaseModelGenerationContext context) {
+		return EtlAdditionalDataSource.super.getClassPackage(context) + "._query_result";
 	}
 
 	@JsonIgnore
