@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.AtomicCondition;
-import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSourceField;
@@ -353,11 +353,12 @@ public interface EtlTransformTarget extends EtlObjectConfiguration, ConditionalE
 			}
 		}
 
-		if (qtyOccurences == 0 && this instanceof JdbcTableDestinationConfiguration) {
-			JdbcTableDestinationConfiguration c = (JdbcTableDestinationConfiguration) this;
+		if (qtyOccurences == 0 && this instanceof EtlDestinationConfiguration) {
+			EtlDestinationConfiguration c = (EtlDestinationConfiguration) this;
 
 			if (c.hasParentDstConf()) {
-				ParentTable ref = c.getFieldIsRelatedParent(fm);
+				TableConfiguration table = c.retrieveRelatedTableConf();
+				ParentTable ref = table != null ? table.getFieldIsRelatedParent(fm) : null;
 
 				if (ref != null) {
 					EtlDataSource parentRelatedDs = c.findParentDataSource(ref);

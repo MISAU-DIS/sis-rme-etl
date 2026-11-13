@@ -3,8 +3,8 @@ package org.openmrs.module.epts.etl.exceptions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.FieldsMappingIssues;
+import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 
 public class FieldsMappingException extends EtlExceptionImpl {
 
@@ -14,13 +14,13 @@ public class FieldsMappingException extends EtlExceptionImpl {
 		super(msg);
 	}
 
-	public FieldsMappingException(JdbcTableDestinationConfiguration conf, FieldsMappingIssues mappingIssue) {
+	public FieldsMappingException(EtlDestinationConfiguration conf, FieldsMappingIssues mappingIssue) {
 		super(generateIssueMsg(conf, mappingIssue));
 	}
 
-	static String generateIssueMsg(JdbcTableDestinationConfiguration conf, FieldsMappingIssues mappingIssue) {
+	static String generateIssueMsg(EtlDestinationConfiguration conf, FieldsMappingIssues mappingIssue) {
 
-		String tableAlias = conf.getTableAlias();
+		String tableAlias = conf.getAlias() != null ? conf.getAlias() : conf.getName();
 		String configCode = conf.getParentConf().getConfigCode();
 		String fullObjectName = configCode + " > " + tableAlias;
 

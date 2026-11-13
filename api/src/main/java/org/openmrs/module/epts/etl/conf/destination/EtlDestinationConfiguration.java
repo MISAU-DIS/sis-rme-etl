@@ -8,12 +8,14 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
+import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
 import org.openmrs.module.epts.etl.conf.ChildTable;
 import org.openmrs.module.epts.etl.conf.EtlChildItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.IdGeneratorManager;
 import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
+import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
 import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQuery;
@@ -38,8 +40,10 @@ import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.FieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.IncompleteFieldsMappingException;
 import org.openmrs.module.epts.etl.exceptions.InvalidDataSourceOnFieldDefifitionException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
@@ -105,6 +109,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@JsonIgnore
 	private transient EtlRecordTransformer transformerInstance;
+
+	@JsonIgnore
+	private transient EtlDatabaseObject targetDefaultObject;
 
 	@JsonIgnore
 	private transient List<EtlDataSource> allAvailableDataSource;
@@ -341,6 +348,10 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	public void setGeneratedJoinFields(List<List<FieldsMapping>> generatedJoinFields) {
 		this.generatedJoinFields = generatedJoinFields;
+	}
+
+	public Boolean hasJoinFields() {
+		return utilities.listHasElement(generatedJoinFields);
 	}
 
 	public List<FieldsMapping> getMapping() {
@@ -709,6 +720,36 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	@Override
+	public List<EtlTransformTarget> retrievePreviousDataSourceTargets() {
+		List<EtlTransformTarget> previous = new ArrayList<>();
+
+		if (parentItem == null || parentItem.getDestinations() == null) {
+			return previous;
+		}
+
+		for (EtlDestinationConfiguration destination : parentItem.getDestinations()) {
+			if (destination == this) {
+				break;
+			}
+			if (destination.useAsDataSource()) {
+				previous.add(destination);
+			}
+		}
+		return java.util.Collections.unmodifiableList(previous);
+	}
+
+	public EtlDataSource findParentDataSource(ParentTable reference) {
+		for (EtlDataSource dataSource : getAllAvaliableDataSource()) {
+			TableConfiguration table = dataSource.retrieveRelatedTableConf();
+			if (table != null && table.getFullTableName().equals(reference.getFullTableName())) {
+				return dataSource;
+			}
+		}
+		throw new EtlConfException("Parent-related data source [" + reference
+				+ "] was not found among the available data sources of destination '" + getName() + "'");
+	}
+
+	@Override
 	public void loadDataSourceInfo(Connection conn) throws DBException {
 
 		if (isLoadedDataSourceInfo()) {
@@ -788,9 +829,11 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@Override
 	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
-		return physicalObjectConfiguration() instanceof EtlTransformTarget
-				? ((EtlTransformTarget) physicalObjectConfiguration()).getTargetDefaultObject(srcConn, dstConn)
-				: null;
+		if (targetDefaultObject == null) {
+			targetDefaultObject = createRecordInstance();
+			targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
+		}
+		return targetDefaultObject;
 	}
 
 	@Override
@@ -870,7 +913,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 		loadDataSourceInfo(conn);
 		loadTransformer();
-		loadConfiguredJoinFields();
+		loadJoinFields(conn);
 		generateAllFieldsMapping(conn);
 	}
 
@@ -881,6 +924,66 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 		generatedJoinFields = new ArrayList<>();
 		generatedJoinFields.add(new ArrayList<>(joinFields));
+	}
+
+	private void loadJoinFields(Connection conn) throws DBException {
+		loadConfiguredJoinFields();
+
+		if (!isJdbcDestination() || getPrimaryDataSource() == null || !getPrimaryDataSource().isJdbc()) {
+			return;
+		}
+
+		AbstractTableConfiguration destinationTable = requireJdbcTableDestination();
+		AbstractTableConfiguration sourceTable = getPrimaryDataSource().requireJdbc();
+
+		if (destinationTable.hasUniqueKeys()) {
+			tryToAutoGenerateJoinFields(destinationTable, sourceTable, conn);
+
+			if (!hasJoinFields() && sourceTable.hasUniqueKeys()) {
+				tryToAutoGenerateJoinFields(sourceTable, destinationTable, conn);
+			}
+		} else if (sourceTable.hasUniqueKeys()) {
+			tryToAutoGenerateJoinFields(sourceTable, destinationTable, conn);
+		}
+	}
+
+	private void tryToAutoGenerateJoinFields(AbstractTableConfiguration uniqueKeyTable,
+			AbstractTableConfiguration targetTable, Connection conn)
+			throws FieldAvaliableInMultipleDataSources, DBException {
+
+		for (UniqueKeyInfo uniqueKey : uniqueKeyTable.getUniqueKeys()) {
+			UniqueKeyInfo matchingTargetKey = new UniqueKeyInfo(targetTable);
+
+			for (Key key : uniqueKey.getFields()) {
+				if (targetTable.containsField(key.getName())) {
+					matchingTargetKey.addKey(key);
+				} else if (destinationUsesSharedPrimaryKey(conn)
+						&& requireJdbcTableDestination().getSharedKeyRefInfo(conn).containsField(key.getName())) {
+					matchingTargetKey.addKey(key);
+				}
+			}
+
+			if (matchingTargetKey.hasFields() && uniqueKey.equals(matchingTargetKey)) {
+				List<FieldsMapping> generated = new ArrayList<>();
+
+				for (Key key : uniqueKey.getFields()) {
+					generated.add(FieldsMapping.fastCreate(this, key.getName(), conn));
+				}
+				addGeneratedJoinFields(generated);
+			}
+		}
+	}
+
+	private boolean destinationUsesSharedPrimaryKey(Connection conn) throws DBException {
+		return isJdbcDestination() && requireJdbcTableDestination().useSharedPKKey()
+				&& requireJdbcTableDestination().getSharedKeyRefInfo(conn) != null;
+	}
+
+	private void addGeneratedJoinFields(List<FieldsMapping> generated) {
+		if (generatedJoinFields == null) {
+			generatedJoinFields = new ArrayList<>();
+		}
+		generatedJoinFields.add(generated);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1004,6 +1107,15 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 
 		fieldsMappingAlreadyGenerated = Boolean.TRUE;
+	}
+
+	@JsonIgnore
+	public Boolean getFieldsMappingAlreadyGenerated() {
+		return fieldsMappingAlreadyGenerated;
+	}
+
+	public void setFieldsMappingAlreadyGenerated(Boolean fieldsMappingAlreadyGenerated) {
+		this.fieldsMappingAlreadyGenerated = fieldsMappingAlreadyGenerated;
 	}
 
 	private void prepareMapping(FieldsMapping fieldMapping) throws DBException {
@@ -1210,55 +1322,8 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		return destinationDataConfiguration != null && destinationDataConfiguration.supports(mode);
 	}
 
-	/** Copies only logical transformation rules from a legacy destination. */
-	public void copyTransformationRulesFrom(JdbcTableDestinationConfiguration legacy) {
-
-		if (legacy == null) {
-			return;
-		}
-
-		setJoinFields(copy(legacy.getJoinFields()));
-		setGeneratedJoinFields(copyNested(legacy.getGeneratedJoinFields()));
-		setMapping(copy(legacy.getMapping()));
-		setAllMapping(copy(legacy.getAllMapping()));
-		setExcludedFields(copy(legacy.getExcludedFields()));
-		setIgnorableFields(copy(legacy.getIgnorableFields()));
-		setPatchFields(copy(legacy.getPatchFields()));
-		setPreferredDataSource(copy(legacy.getPreferredDataSource()));
-		setUnmappedFieldBehavior(legacy.getUnmappedFieldBehavior());
-		setTransformer(legacy.getTransformer());
-		setTransformerInstance(legacy.getTransformerInstance());
-		setIncludeAllFieldsFromDataSource(legacy.isIncludeAllFieldsFromDataSource());
-		setApplyCondition(legacy.getApplyCondition());
-		setOnMultipleDataSourceForSameMapping(legacy.getOnMultipleDataSourceForSameMapping());
-		setOnMultipleDataSourceWithSameName(legacy.getOnMultipleDataSourceWithSameName());
-		setUseAsDataSource(legacy.getUseAsDataSource());
-		setIgnoreNoDstIssue(legacy.getIgnoreNoDstIssue());
-		setMappingResolutionStrategy(legacy.getMappingResolutionStrategy());
-		setOnMissingRequiredSrcObject(legacy.getOnMissingRequiredSrcObject());
-		setAllowDuplicateDestinationMappings(legacy.getAllowDuplicateDestinationMappings());
-		setIdentifiedRecordAction(legacy.getIdentifiedRecordAction());
-		setIncompleteMappingBehavior(legacy.getIncompleteMappingBehavior());
-		setDisabled(legacy.isDisabled());
-	}
-
 	private <T> List<T> copy(List<T> values) {
 		return values == null ? null : new ArrayList<>(values);
-	}
-
-	private List<List<FieldsMapping>> copyNested(List<List<FieldsMapping>> values) {
-
-		if (values == null) {
-			return null;
-		}
-
-		List<List<FieldsMapping>> copied = new ArrayList<>();
-
-		for (List<FieldsMapping> value : values) {
-			copied.add(copy(value));
-		}
-
-		return copied;
 	}
 
 	@Override
@@ -1294,10 +1359,34 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		this.parentItem = parentItem;
 
 		applyIncludes();
+		initializeConfiguredMappings();
 
 		resolveDestinationDataConfiguration();
 
 		markAsInitialized();
+	}
+
+	private void initializeConfiguredMappings() {
+		if (!utilities.listHasElement(mapping)) {
+			return;
+		}
+
+		List<FieldsMapping> initialized = new ArrayList<>();
+		for (FieldsMapping fieldMapping : mapping) {
+			fieldMapping.setTransformationTargetObject(this);
+			fieldMapping.tryToLoadFromTemplate();
+
+			try {
+				fieldMapping.init(this);
+				initialized.add(fieldMapping);
+			} catch (IncompleteFieldsMappingException exception) {
+				if (!fieldMapping.hasIncompleteMappingBehavior()
+						|| !fieldMapping.getIncompleteMappingBehavior().discardmapping()) {
+					throw exception;
+				}
+			}
+		}
+		mapping = initialized;
 	}
 
 	private void resolveDestinationDataConfiguration() {

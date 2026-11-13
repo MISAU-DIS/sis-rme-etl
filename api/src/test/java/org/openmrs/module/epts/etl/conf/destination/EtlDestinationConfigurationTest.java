@@ -201,34 +201,7 @@ class EtlDestinationConfigurationTest {
 	}
 
 	@Test
-	void shouldCopyOnlyLogicalRulesFromLegacyDestination() {
-		JdbcTableDestinationConfiguration legacy = new JdbcTableDestinationConfiguration("patient");
-		FieldsMapping mapping = new FieldsMapping();
-		mapping.setSrcField("person_uuid");
-		mapping.setDstField("uuid");
-		legacy.setMapping(new ArrayList<>(Collections.singletonList(mapping)));
-		legacy.setExcludedFields(new ArrayList<>(Collections.singletonList("internal_id")));
-		legacy.setUnmappedFieldBehavior(ActionOnEtlIssue.IGNORE);
-		legacy.setMappingResolutionStrategy(FieldMappingResolutionStrategy.MANUAL_ONLY);
-		legacy.setIdentifiedRecordAction(ActionOnLoad.UPDATE);
-		legacy.setPatchFields(new ArrayList<>(Collections.singletonList("uuid")));
-
-		EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
-		destination.copyTransformationRulesFrom(legacy);
-		legacy.getMapping().clear();
-		legacy.getExcludedFields().clear();
-
-		assertEquals(1, destination.getMapping().size());
-		assertEquals("uuid", destination.getMapping().get(0).getDstField());
-		assertEquals(Collections.singletonList("internal_id"), destination.getExcludedFields());
-		assertEquals(ActionOnEtlIssue.IGNORE, destination.unmappedFieldBehavior());
-		assertEquals(FieldMappingResolutionStrategy.MANUAL_ONLY, destination.mappingResolutionStrategy());
-		assertTrue(destination.executeUpdateOnIdentifiedRecordAction());
-		assertEquals(Collections.singletonList("uuid"), destination.getPatchFields());
-	}
-
-	@Test
-	void shouldKeepRootPatchFieldsSynchronizedWithJdbcAdapter() throws Exception {
+	void shouldExposeRootPatchFieldsThroughJdbcAdapterWithoutCopyingThem() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"resource\":{\"connector\":\"destination-db\",\"name\":\"patient\"},"
 				+ "\"patchFields\":[\"uuid\",\"date_changed\"],"
@@ -236,14 +209,12 @@ class EtlDestinationConfigurationTest {
 				+ "}");
 
 		destination.initialize(new EtlItemConfiguration());
-		destination.requireJdbcTableDestination().pullConfigurationFromParentDestination();
 
-		assertEquals(destination.getPatchFields(),
-				destination.requireJdbcTableDestination().getPatchFields());
+		assertSame(destination.getPatchFields(), destination.requireJdbcTableDestination().getPatchFields());
 	}
 
 	@Test
-	void jdbcAdapterShouldPullLogicalRulesFromParentDestination() throws Exception {
+	void jdbcAdapterShouldDelegateLogicalRulesToParentDestination() throws Exception {
 		EtlDestinationConfiguration destination = read("{"
 				+ "\"resource\":{\"connector\":\"destination-db\",\"name\":\"patient\"},"
 				+ "\"identifiedRecordAction\":\"PATCH_UPDATE\","
@@ -255,8 +226,6 @@ class EtlDestinationConfigurationTest {
 				+ "}");
 		destination.initialize(new EtlItemConfiguration());
 		JdbcTableDestinationConfiguration jdbc = destination.requireJdbcTableDestination();
-
-		jdbc.pullConfigurationFromParentDestination();
 
 		assertEquals(ActionOnLoad.PATCH_UPDATE, jdbc.getIdentifiedRecordAction());
 		assertEquals(FieldMappingResolutionStrategy.MANUAL_ONLY, jdbc.getMappingResolutionStrategy());
