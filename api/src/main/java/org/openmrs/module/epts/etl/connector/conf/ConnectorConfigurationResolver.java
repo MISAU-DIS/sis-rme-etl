@@ -3,7 +3,7 @@ package org.openmrs.module.epts.etl.connector.conf;
 import java.util.Collections;
 
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -22,13 +22,13 @@ public final class ConnectorConfigurationResolver {
 	}
 
 	public static ConnectorEndpoint requireDirectionCapability(ConnectorEndpoint endpoint,
-			ConnectorDirection direction) {
+			EtlSide direction) {
 
 		if (endpoint == null) {
 			return null;
 		}
 
-		ConnectorCapability required = direction == ConnectorDirection.SOURCE ? ConnectorCapability.READ
+		ConnectorCapability required = direction == EtlSide.SRC ? ConnectorCapability.READ
 				: ConnectorCapability.WRITE;
 
 		endpoint.requireCapabilities(Collections.singleton(required));
@@ -97,7 +97,7 @@ public final class ConnectorConfigurationResolver {
 	}
 
 	public static ConnectorResource resolveResource(ConnectorResourceConfiguration configured,
-			TableConfiguration legacyTable, ConnectorDirection direction, ConnectorEndpoint endpoint) {
+			TableConfiguration legacyTable, EtlSide direction, ConnectorEndpoint endpoint) {
 
 		if (configured == null && legacyTable == null) {
 			return null;

@@ -11,15 +11,15 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.CsvPrimaryDataSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
+import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordCardinality;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonRecordLayout;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
-import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorReadRequest;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -227,7 +227,7 @@ class FileConnectorRecordReaderTest {
 		resourceConfiguration.setName(name);
 		resourceConfiguration.setLayout(layout);
 		resourceConfiguration.setRecordPath(recordPath);
-		return ConnectorConfigurationResolver.resolveResource(resourceConfiguration, null, ConnectorDirection.SOURCE,
+		return ConnectorConfigurationResolver.resolveResource(resourceConfiguration, null, EtlSide.SRC,
 				ConnectorConfigurationResolver.resolveEndpoint(endpointConfiguration, null));
 	}
 
@@ -237,7 +237,7 @@ class FileConnectorRecordReaderTest {
 		endpointConfiguration.setUri(directory.toString());
 		ConnectorResourceConfiguration resourceConfiguration = new ConnectorResourceConfiguration();
 		resourceConfiguration.setName(name);
-		return ConnectorConfigurationResolver.resolveResource(resourceConfiguration, null, ConnectorDirection.SOURCE,
+		return ConnectorConfigurationResolver.resolveResource(resourceConfiguration, null, EtlSide.SRC,
 				ConnectorConfigurationResolver.resolveEndpoint(endpointConfiguration, null));
 	}
 }

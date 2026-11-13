@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.Collections;
 
 import org.openmrs.module.epts.etl.conf.AbstractTableConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -34,7 +34,7 @@ public final class ConnectorRecordWriterFactory {
 			throw new IllegalArgumentException("A resolved destination resource is required");
 		}
 
-		if (resource.getDirection() != ConnectorDirection.DESTINATION) {
+		if (resource.getDirection() != EtlSide.DST) {
 			throw new IllegalArgumentException("Record writer requires a DESTINATION resource");
 		}
 		resource.getEndpoint().requireCapabilities(Collections.singleton(ConnectorCapability.WRITE));
@@ -57,7 +57,7 @@ public final class ConnectorRecordWriterFactory {
 			return new FileConnectorRecordWriter<>(resource);
 		}
 
-		throw new UnsupportedConnectorTypeException(endpoint.getType(), ConnectorDirection.DESTINATION);
+		throw new UnsupportedConnectorTypeException(endpoint.getType(), EtlSide.DST);
 	}
 
 }

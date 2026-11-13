@@ -100,6 +100,7 @@ public class OpenConnection implements Connection, Closeable {
 			return;
 
 		for (OpenConnection conn : conns) {
+
 			if (conn != null) {
 				conn.markAsSuccessifullyTerminated();
 			}
@@ -111,15 +112,20 @@ public class OpenConnection implements Connection, Closeable {
 			return;
 
 		RuntimeException failure = null;
+
 		for (OpenConnection conn : conns) {
+
 			if (conn != null) {
+
 				try {
+
 					// A failed commit must not authorize commits on the remaining resources.
 					if (failure != null) {
 						conn.setOperationTerminatedSuccessifully(false);
 					}
 					conn.finalizeConnection(finalizer);
 				} catch (Exception e) {
+
 					if (failure == null) {
 						failure = e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
 					} else {
@@ -128,6 +134,7 @@ public class OpenConnection implements Connection, Closeable {
 				}
 			}
 		}
+
 		if (failure != null) {
 			throw failure;
 		}
@@ -188,12 +195,15 @@ public class OpenConnection implements Connection, Closeable {
 			return;
 
 		RuntimeException failure = null;
+
 		try {
+
 			if (connection.isClosed()) {
 				return;
 			}
 
 			if (!connection.getAutoCommit()) {
+
 				if (this.operationTerminatedSuccessifully) {
 					commit();
 				} else {
@@ -204,9 +214,11 @@ public class OpenConnection implements Connection, Closeable {
 		} catch (SQLException e) {
 			failure = new RuntimeException(e);
 		} finally {
+
 			try {
 				this.close();
 			} catch (RuntimeException e) {
+
 				if (failure == null) {
 					failure = e;
 				} else {
@@ -218,13 +230,16 @@ public class OpenConnection implements Connection, Closeable {
 			}
 			qtyClosedConnections++;
 		}
+
 		if (failure != null) {
 			throw failure;
 		}
 	}
 
 	private void tryToReopen() throws SQLException {
+
 		if (!this.isFinalized()) {
+
 			if (isClosed()) {
 				this.connection = connService.openConnection(this.openedFrom);
 			}
@@ -307,6 +322,7 @@ public class OpenConnection implements Connection, Closeable {
 	}
 
 	public void commitCurrentWork() throws DBException {
+
 		try {
 			this.commit();
 		} catch (SQLException e) {
@@ -326,6 +342,7 @@ public class OpenConnection implements Connection, Closeable {
 
 	@Override
 	public void close() {
+
 		try {
 
 			DBConnectionInfo.logDebug("Closing connection {}", this);
@@ -568,6 +585,7 @@ public class OpenConnection implements Connection, Closeable {
 
 	@Override
 	public void setClientInfo(String name, String value) throws SQLClientInfoException {
+
 		try {
 			tryToReopen();
 		} catch (SQLException e) {
@@ -579,6 +597,7 @@ public class OpenConnection implements Connection, Closeable {
 
 	@Override
 	public void setClientInfo(Properties properties) throws SQLClientInfoException {
+
 		try {
 			tryToReopen();
 		} catch (SQLException e) {

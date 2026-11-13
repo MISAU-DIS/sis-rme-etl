@@ -21,6 +21,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.JavaObjectFieldsValuesGenerat
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.conf.types.ObjectLanguageType;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -292,7 +293,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		}
 
 		try {
-			this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
+			this.setEtlRecordClass(this.generateEtlRecordClass(this.getResolvedResource().getDirection()));
 		} catch (PojoNotFoundException e) {
 		}
 
@@ -386,7 +387,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(EtlSide connInfo, Boolean fullClass) {
 	}
 
 	@Override
@@ -439,11 +440,10 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
-			throws PojoNotFoundException {
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(EtlSide side) throws PojoNotFoundException {
 
 		try {
-			return EtlAdditionalDataSource.super.generateEtlRecordClass(connInfo);
+			return EtlAdditionalDataSource.super.generateEtlRecordClass(side);
 		} catch (PojoNotFoundException e) {
 			this.setEtlRecordClass(GenericDatabaseObject.class);
 		}

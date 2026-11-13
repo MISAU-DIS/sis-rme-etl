@@ -7,9 +7,25 @@ public enum EtlSide {
 	DST;
 
 	// @formatter:on
-	
+
 	@Override
 	public String toString() {
 		return this.name().toLowerCase();
+	}
+
+	public boolean isDst() {
+		return this == DST;
+	}
+
+	public boolean isSrc() {
+		return this == SRC;
+	}
+
+	public boolean isDestination() {
+		return isDst();
+	}
+
+	public boolean isSource() {
+		return isSrc();
 	}
 }

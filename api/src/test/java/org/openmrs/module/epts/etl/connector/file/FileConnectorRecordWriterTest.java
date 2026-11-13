@@ -11,7 +11,7 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
@@ -78,7 +78,7 @@ class FileConnectorRecordWriterTest {
 		ConnectorResourceConfiguration resourceConfiguration = new ConnectorResourceConfiguration();
 		resourceConfiguration.setName(name);
 		return ConnectorConfigurationResolver.resolveResource(resourceConfiguration, null,
-				ConnectorDirection.DESTINATION,
+				EtlSide.DST,
 				ConnectorConfigurationResolver.resolveEndpoint(endpointConfiguration, null));
 	}
 }

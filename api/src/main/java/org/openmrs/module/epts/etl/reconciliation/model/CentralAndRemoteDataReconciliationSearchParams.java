@@ -117,7 +117,9 @@ public class CentralAndRemoteDataReconciliationSearchParams extends AbstractEtlS
 		 * searchClauses.addToParameters(this.getLimits().getCurrentFirstRecordId());
 		 * searchClauses.addToParameters(this.getLimits().getCurrentLastRecordId()); }
 		 * 
-		 * if (this.getConfig().requireJdbcPrimaryDataSource().getExtraConditionForExtract() != null) {
+		 * if
+		 * (this.getConfig().requireJdbcPrimaryDataSource().getExtraConditionForExtract(
+		 * ) != null) {
 		 * searchClauses.addToClauses(this.getConfig().requireJdbcPrimaryDataSource().
 		 * getExtraConditionForExtract()); } }
 		 * 
@@ -136,11 +138,11 @@ public class CentralAndRemoteDataReconciliationSearchParams extends AbstractEtlS
 					.tryToGetExistingCLass("org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject");
 		} else if (type.isOutdatedRecordsDetector()) {
 			return (Class<EtlDatabaseObject>) this.getJdbcPrimaryDataSource()
-					.generateEtlRecordClass(this.getConfig().getSrcConnInfo());
+					.generateEtlRecordClass(this.getConfig().getResolvedSrcResource().getDirection());
 
 		} else if (type.isPhantomRecordsDetector()) {
 			return (Class<EtlDatabaseObject>) this.getJdbcPrimaryDataSource()
-					.generateEtlRecordClass(this.getConfig().getSrcConnInfo());
+					.generateEtlRecordClass(this.getConfig().getResolvedSrcResource().getDirection());
 		}
 
 		throw new ForbiddenOperationException("Unsupported operation type '" + type + "'");

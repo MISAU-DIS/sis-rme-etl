@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.DataModelConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext.Side;
@@ -41,20 +41,18 @@ class DatabaseModelGenerationContextTest {
 		EtlConfiguration configuration = new EtlConfiguration();
 		configuration.setDataModel(dataModel);
 
-		ConnectorResource sourceResource = resource(ConnectorDirection.SOURCE);
-		ConnectorResource destinationResource = resource(ConnectorDirection.DESTINATION);
+		ConnectorResource sourceResource = resource(EtlSide.SRC);
+		ConnectorResource destinationResource = resource(EtlSide.DST);
 
-		assertEquals("source.model", configuration.getPojoPackage(sourceResource));
-		assertEquals("destination.model", configuration.getPojoPackage(destinationResource));
-		assertEquals("source-model", configuration.getDataModelId(sourceResource));
-		assertEquals("destination-model", configuration.getDataModelId(destinationResource));
-		assertEquals(Side.SRC,
-				configuration.createDatabaseModelGenerationContext(sourceResource, null).getSide());
-		assertEquals(Side.DST,
-				configuration.createDatabaseModelGenerationContext(destinationResource, null).getSide());
+		assertEquals("source.model", configuration.getPojoPackage(EtlSide.SRC));
+		assertEquals("destination.model", configuration.getPojoPackage(EtlSide.DST));
+		assertEquals("source-model", configuration.getDataModelId(EtlSide.SRC));
+		assertEquals("destination-model", configuration.getDataModelId(EtlSide.DST));
+		assertEquals(Side.SRC, configuration.createDatabaseModelGenerationContext(sourceResource, null).getSide());
+		assertEquals(Side.DST, configuration.createDatabaseModelGenerationContext(destinationResource, null).getSide());
 	}
 
-	private ConnectorResource resource(ConnectorDirection direction) {
+	private ConnectorResource resource(EtlSide direction) {
 		return new ConnectorResource() {
 			@Override
 			public String getName() {
@@ -62,7 +60,7 @@ class DatabaseModelGenerationContextTest {
 			}
 
 			@Override
-			public ConnectorDirection getDirection() {
+			public EtlSide getDirection() {
 				return direction;
 			}
 

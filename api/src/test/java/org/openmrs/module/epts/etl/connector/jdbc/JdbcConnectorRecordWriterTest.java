@@ -1,8 +1,8 @@
 package org.openmrs.module.epts.etl.connector.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.sql.Connection;
 import java.util.Collections;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWriterFactory;
@@ -32,7 +32,7 @@ class JdbcConnectorRecordWriterTest {
 	@Test
 	void shouldBeAssociatedWithExactlyOneResource() {
 		OpenConnection connection = connectionMarker();
-		JdbcTableResource resource = resource(ConnectorDirection.DESTINATION, "patient");
+		JdbcTableResource resource = resource(EtlSide.DST, "patient");
 		ConnectorRecordWriter<GenericDatabaseObject> writer = new JdbcConnectorRecordWriter<>(resource,
 				new JdbcTableDestinationConfiguration("patient"), connection);
 
@@ -43,7 +43,7 @@ class JdbcConnectorRecordWriterTest {
 	@Test
 	void shouldRejectSourceResourceForDestinationWriter() {
 		assertThrows(IllegalArgumentException.class, () -> ConnectorRecordWriterFactory.create(
-				resource(ConnectorDirection.SOURCE, "patient"), connectionMarker()));
+				resource(EtlSide.SRC, "patient"), connectionMarker()));
 	}
 
 	@Test
@@ -52,7 +52,7 @@ class JdbcConnectorRecordWriterTest {
 		EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
 		JdbcTableDestinationConfiguration table = new JdbcTableDestinationConfiguration("patient");
 		destination.setTableDataDestination(table);
-		JdbcTableResource resource = new JdbcTableResource(table, ConnectorDirection.DESTINATION,
+		JdbcTableResource resource = new JdbcTableResource(table, EtlSide.DST,
 				new DBConnectionInfo());
 		ConnectorRecordWriter<GenericDatabaseObject> writer = new JdbcConnectorRecordWriter<>(resource, table,
 				connection);
@@ -74,7 +74,7 @@ class JdbcConnectorRecordWriterTest {
 		ConnectorResourceConfiguration configured = new ConnectorResourceConfiguration();
 		configured.setName("patient");
 		ConnectorResource resource = ConnectorConfigurationResolver.resolveResource(configured, null,
-				ConnectorDirection.DESTINATION, new JdbcConnectorEndpoint(new DBConnectionInfo()));
+				EtlSide.DST, new JdbcConnectorEndpoint(new DBConnectionInfo()));
 		ConnectorRecordWriter<GenericDatabaseObject> writer = ConnectorRecordWriterFactory.create(resource, table,
 				connectionMarker());
 
@@ -82,7 +82,7 @@ class JdbcConnectorRecordWriterTest {
 				.write(new ConnectorWriteRequest<>(ConnectorWriteMode.INSERT, Collections.emptyList())));
 	}
 
-	private JdbcTableResource resource(ConnectorDirection direction, String name) {
+	private JdbcTableResource resource(EtlSide direction, String name) {
 		return new JdbcTableResource(new GenericTableConfiguration(name), direction, new DBConnectionInfo());
 	}
 

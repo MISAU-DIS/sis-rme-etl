@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.conf;
 import java.sql.Connection;
 
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.PojoNotFoundException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -19,6 +20,7 @@ public class GenericTableConfiguration extends AbstractTableConfiguration {
 
 	@Override
 	public EtlConfiguration getRelatedEtlConf() {
+
 		if (super.getRelatedEtlConf() != null) {
 			return super.getRelatedEtlConf();
 		} else if (this.getRelatedTableConf() != null) {
@@ -68,12 +70,12 @@ public class GenericTableConfiguration extends AbstractTableConfiguration {
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo application)
-			throws PojoNotFoundException {
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(EtlSide side) throws PojoNotFoundException {
 
 		if (this.getEtlRecordClass() == null) {
+
 			try {
-				super.generateEtlRecordClass(application);
+				super.generateEtlRecordClass(side);
 			} catch (PojoNotFoundException e) {
 			}
 

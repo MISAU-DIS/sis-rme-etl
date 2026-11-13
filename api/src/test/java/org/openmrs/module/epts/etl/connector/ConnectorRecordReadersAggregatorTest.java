@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
 import org.openmrs.module.epts.etl.connector.capability.reader.ResourceBoundConnectorRecordReader;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
-import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 class ConnectorRecordReadersAggregatorTest {
 
@@ -77,8 +77,8 @@ class ConnectorRecordReadersAggregatorTest {
 			}
 
 			@Override
-			public ConnectorDirection getDirection() {
-				return ConnectorDirection.SOURCE;
+			public EtlSide getDirection() {
+				return EtlSide.SRC;
 			}
 
 			@Override

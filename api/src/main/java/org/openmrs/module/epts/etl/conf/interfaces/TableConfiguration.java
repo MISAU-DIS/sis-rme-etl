@@ -12,10 +12,10 @@ import java.util.regex.Pattern;
 
 import org.openmrs.module.epts.etl.conf.AbstractRelatedTable;
 import org.openmrs.module.epts.etl.conf.ChildTable;
-import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfigurationTableConf;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.FastEtlTransformingTarget;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.PrimaryKey;
@@ -31,6 +31,7 @@ import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.SqlOrderingType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -51,7 +52,6 @@ import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.DatabaseEntityPOJOGenerator;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
 import org.openmrs.module.epts.etl.utilities.db.SQLUtilities;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
@@ -1234,24 +1234,24 @@ public interface TableConfiguration extends EtlDataSource {
 	}
 
 	@JsonIgnore
-	default Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
+	default Boolean existsSyncRecordClass(EtlSide side) {
 
 		try {
-			return this.generateEtlRecordClass(connInfo) != null;
+			return this.generateEtlRecordClass(side) != null;
 		} catch (ForbiddenOperationException e) {
 
 			return false;
 		}
 	}
 
-	default void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	default void generateRelatedPojoClass(EtlSide side, Boolean fullClass) {
 
 		try {
 
 			if (fullClass) {
-				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, connInfo));
+				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generate(this, side));
 			} else {
-				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo));
+				this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, side));
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -1268,10 +1268,10 @@ public interface TableConfiguration extends EtlDataSource {
 		}
 	}
 
-	default void generateSkeletonRecordClass(DBConnectionInfo application) {
+	default void generateSkeletonRecordClass(EtlSide side) {
 
 		try {
-			this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, application));
+			this.setEtlRecordClass(DatabaseEntityPOJOGenerator.generateSkeleton(this, side));
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 

@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
@@ -75,7 +75,7 @@ public final class ConnectorRegistry {
 		return endpoint;
 	}
 
-	public ConnectorEndpoint select(String requestedId, String defaultId, ConnectorDirection direction,
+	public ConnectorEndpoint select(String requestedId, String defaultId, EtlSide direction,
 			boolean preferLegacy) {
 
 		String selectedId = requestedId;
@@ -112,7 +112,7 @@ public final class ConnectorRegistry {
 		return LEGACY_SOURCE_CONNECTOR_ID.equals(id) || LEGACY_DESTINATION_CONNECTOR_ID.equals(id);
 	}
 
-	private static String legacyId(ConnectorDirection direction) {
-		return direction == ConnectorDirection.SOURCE ? LEGACY_SOURCE_CONNECTOR_ID : LEGACY_DESTINATION_CONNECTOR_ID;
+	private static String legacyId(EtlSide direction) {
+		return direction == EtlSide.SRC ? LEGACY_SOURCE_CONNECTOR_ID : LEGACY_DESTINATION_CONNECTOR_ID;
 	}
 }

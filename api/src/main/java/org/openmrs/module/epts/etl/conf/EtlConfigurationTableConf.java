@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.types.ConflictResolutionType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.etl.model.stage.EtlStageAreaObject;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -55,8 +56,7 @@ public class EtlConfigurationTableConf extends AbstractTableConfiguration {
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
-			throws ForbiddenOperationException {
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(EtlSide side) throws ForbiddenOperationException {
 		return GenericDatabaseObject.class;
 	}
 
@@ -78,7 +78,7 @@ public class EtlConfigurationTableConf extends AbstractTableConfiguration {
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo app, Boolean fullClass) {
+	public void generateRelatedPojoClass(EtlSide app, Boolean fullClass) {
 		// TODO Auto-generated method stub
 
 	}

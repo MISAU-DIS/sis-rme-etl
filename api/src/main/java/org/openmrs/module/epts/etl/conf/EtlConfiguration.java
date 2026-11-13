@@ -30,7 +30,6 @@ import org.openmrs.module.epts.etl.conf.types.EtlDBConnectionType;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -795,48 +794,31 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
-	public String getPojoPackage(ConnectorResource resource) {
-
-		if (resource == null || resource.getDirection() == null) {
-			return null;
-		}
-
-		return resource.getDirection().isDestination() ? getDstPojoPackageName() : getSrcPojoPackageName();
+	public String getPojoPackage(EtlSide side) {
+		return side.isDst() ? getDstPojoPackageName() : getSrcPojoPackageName();
 	}
 
 	/**
-	 * @deprecated use {@link #getPojoPackage(ConnectorResource)}. Connection
-	 *             information is not a data-model identity.
+	 * use {@link #getPojoPackage(ConnectorResource)}. Connection information is not
+	 * a data-model identity.
+	 *
+	 * @JsonIgnore public String getPojoPackage(DBConnectionInfo connInfo) {
+	 * 
+	 *             if (connInfo == null) { return null; }
+	 * 
+	 *             if (connInfo == getDstConnInfo() || connInfo.isDstConn()) {
+	 *             return getDstPojoPackageName(); }
+	 * 
+	 *             if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo()
+	 *             || connInfo.isSrcConn() || connInfo.isMainConn()) { return
+	 *             getSrcPojoPackageName(); }
+	 * 
+	 *             return null; }
 	 */
-	@Deprecated
-	@JsonIgnore
-	public String getPojoPackage(DBConnectionInfo connInfo) {
-
-		if (connInfo == null) {
-			return null;
-		}
-
-		if (connInfo == getDstConnInfo() || connInfo.isDstConn()) {
-			return getDstPojoPackageName();
-		}
-
-		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
-				|| connInfo.isMainConn()) {
-			return getSrcPojoPackageName();
-		}
-
-		return null;
-	}
 
 	@JsonIgnore
-	public String getDataModelId(ConnectorResource resource) {
-
-		if (resource == null || resource.getDirection() == null) {
-			return null;
-		}
-
-		return resource.getDirection().isDestination() ? getDataModel().getDstDataModelId()
-				: getDataModel().getSrcDataModelId();
+	public String getDataModelId(EtlSide side) {
+		return side.isDst() ? getDataModel().getDstDataModelId() : getDataModel().getSrcDataModelId();
 	}
 
 	@JsonIgnore
@@ -853,26 +835,22 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 				: DatabaseModelGenerationContext.source(getDataModel(), connection);
 	}
 
-	/** @deprecated use {@link #getDataModelId(ConnectorResource)}. */
-	@Deprecated
-	@JsonIgnore
-	public String getDataModelId(DBConnectionInfo connInfo) {
+	/** use {@link #getDataModelId(ConnectorResource)}. */
 
-		if (connInfo == null) {
-			return null;
-		}
-
-		if (connInfo == getDstConnInfo() || connInfo.isDstConn()) {
-			return getDataModel().getDstDataModelId();
-		}
-
-		if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() || connInfo.isSrcConn()
-				|| connInfo.isMainConn()) {
-			return getDataModel().getSrcDataModelId();
-		}
-
-		return null;
-	}
+	/*
+	 * @JsonIgnore public String getDataModelId(DBConnectionInfo connInfo) {
+	 * 
+	 * if (connInfo == null) { return null; }
+	 * 
+	 * if (connInfo == getDstConnInfo() || connInfo.isDstConn()) { return
+	 * getDataModel().getDstDataModelId(); }
+	 * 
+	 * if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() ||
+	 * connInfo.isSrcConn() || connInfo.isMainConn()) { return
+	 * getDataModel().getSrcDataModelId(); }
+	 * 
+	 * return null; }
+	 */
 
 	@JsonIgnore
 	public String getSchema(DBConnectionInfo connInfo) {
@@ -977,7 +955,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 					+ this.defaultSourceConnector + "' is not JDBC");
 		}
 
-		registry.select(this.defaultSourceConnector, null, ConnectorDirection.SOURCE, false);
+		registry.select(this.defaultSourceConnector, null, EtlSide.SRC, false);
 		return endpoint.unwrap(DBConnectionInfo.class);
 	}
 
@@ -1819,14 +1797,14 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 			return issues;
 		}
 
-		validateDefaultConnector(registry, defaultSourceConnector, ConnectorDirection.SOURCE, issues);
+		validateDefaultConnector(registry, defaultSourceConnector, EtlSide.SRC, issues);
 
 		try {
 			resolveRequiredSrcConnInfo(registry);
 		} catch (RuntimeException e) {
 			issues.add("Invalid source state connection: " + e.getMessage());
 		}
-		validateDefaultConnector(registry, defaultDestinationConnector, ConnectorDirection.DESTINATION, issues);
+		validateDefaultConnector(registry, defaultDestinationConnector, EtlSide.DST, issues);
 
 		if (hasEtlItemsConf()) {
 
@@ -1850,7 +1828,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 	}
 
-	private void validateDefaultConnector(ConnectorRegistry registry, String connectorId, ConnectorDirection direction,
+	private void validateDefaultConnector(ConnectorRegistry registry, String connectorId, EtlSide direction,
 			List<String> issues) {
 
 		if (!utilities.stringHasValue(connectorId)) {
@@ -1860,8 +1838,9 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		try {
 			registry.select(connectorId, null, direction, false);
 		} catch (RuntimeException e) {
-			issues.add("Invalid " + (direction == ConnectorDirection.SOURCE ? "defaultSourceConnector"
-					: "defaultDestinationConnector") + ": " + e.getMessage());
+			issues.add(
+					"Invalid " + (direction == EtlSide.SRC ? "defaultSourceConnector" : "defaultDestinationConnector")
+							+ ": " + e.getMessage());
 		}
 	}
 
@@ -2214,22 +2193,25 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
-	public File getPojoPackageAsDirectory(ConnectorResource resource) {
-		return getPojoPackageAsDirectory(getPojoPackage(resource));
+	public File getPojoPackageAsDirectory(EtlSide side) {
+		return getPojoPackageAsDirectory(getPojoPackage(side));
 	}
 
-	/** @deprecated use {@link #getPojoPackageAsDirectory(ConnectorResource)}. */
-	@Deprecated
-	@JsonIgnore
-	public File getPojoPackageAsDirectory(DBConnectionInfo connInfo) {
-		String pojoPackageDir = "";
-		pojoPackageDir += getPOJOCompiledFilesDirectory().getAbsolutePath() + FileUtilities.getPathSeparator();
+	/** use {@link #getPojoPackageAsDirectory(ConnectorResource)}. */
 
-		pojoPackageDir += getPojoPackageRelativePath(connInfo).replaceAll("/",
-				Matcher.quoteReplacement(FileUtilities.getPathSeparator()));
-
-		return new File(pojoPackageDir);
-	}
+	/**
+	 * 
+	 * @JsonIgnore public File getPojoPackageAsDirectory(DBConnectionInfo connInfo)
+	 *             { String pojoPackageDir = ""; pojoPackageDir +=
+	 *             getPOJOCompiledFilesDirectory().getAbsolutePath() +
+	 *             FileUtilities.getPathSeparator();
+	 * 
+	 *             pojoPackageDir +=
+	 *             getPojoPackageRelativePath(connInfo).replaceAll("/",
+	 *             Matcher.quoteReplacement(FileUtilities.getPathSeparator()));
+	 * 
+	 *             return new File(pojoPackageDir); }
+	 **/
 
 	@JsonIgnore
 	public File getPojoPackageAsDirectory(String pojoPackageName) {
@@ -2240,16 +2222,17 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
-	public String getPojoPackageRelativePath(ConnectorResource resource) {
-		return getPojoPackageRelativePath(this.getPojoPackage(resource));
+	public String getPojoPackageRelativePath(EtlSide side) {
+		return getPojoPackageRelativePath(this.getPojoPackage(side));
 	}
 
-	/** @deprecated use {@link #getPojoPackageRelativePath(ConnectorResource)}. */
-	@Deprecated
-	@JsonIgnore
-	public String getPojoPackageRelativePath(DBConnectionInfo app) {
-		return getPojoPackageRelativePath(this.getPojoPackage(app));
-	}
+	/** use {@link #getPojoPackageRelativePath(ConnectorResource)}. */
+
+	/*
+	 * 
+	 * @JsonIgnore public String getPojoPackageRelativePath(DBConnectionInfo app) {
+	 * return getPojoPackageRelativePath(this.getPojoPackage(app)); }
+	 */
 
 	@JsonIgnore
 	public String getPojoPackageRelativePath(String pojoPackageName) {
@@ -3071,7 +3054,8 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return null;
 	}
 
-	public JdbcTableDestinationConfiguration tryToFindDstWithInitialIncrementValue(TableConfiguration dstTable) throws DBException {
+	public JdbcTableDestinationConfiguration tryToFindDstWithInitialIncrementValue(TableConfiguration dstTable)
+			throws DBException {
 
 		for (EtlItemConfiguration conf : getRelatedEtlConf().getEtlItemConfiguration()) {
 

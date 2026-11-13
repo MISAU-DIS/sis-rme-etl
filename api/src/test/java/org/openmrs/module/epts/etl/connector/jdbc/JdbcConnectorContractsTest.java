@@ -9,11 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.EnumSet;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.UnsupportedConnectorCapabilityException;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
-import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
 class JdbcConnectorContractsTest {
@@ -54,10 +54,10 @@ class JdbcConnectorContractsTest {
 		DBConnectionInfo connection = new DBConnectionInfo();
 		GenericTableConfiguration table = new GenericTableConfiguration("patient");
 
-		JdbcTableResource resource = new JdbcTableResource(table, ConnectorDirection.SOURCE, connection);
+		JdbcTableResource resource = new JdbcTableResource(table, EtlSide.SRC, connection);
 
 		assertEquals("patient", resource.getName());
-		assertEquals(ConnectorDirection.SOURCE, resource.getDirection());
+		assertEquals(EtlSide.SRC, resource.getDirection());
 		assertEquals(ConnectorType.JDBC, resource.getEndpoint().getType());
 		assertSame(table, resource.unwrap(GenericTableConfiguration.class));
 	}

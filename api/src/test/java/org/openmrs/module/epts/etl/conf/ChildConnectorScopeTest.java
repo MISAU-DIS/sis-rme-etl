@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.datasource.EtlSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JsonPrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -141,8 +141,8 @@ class ChildConnectorScopeTest {
 			}
 
 			@Override
-			public ConnectorDirection getDirection() {
-				return ConnectorDirection.SOURCE;
+			public EtlSide getDirection() {
+				return EtlSide.SRC;
 			}
 
 			@Override

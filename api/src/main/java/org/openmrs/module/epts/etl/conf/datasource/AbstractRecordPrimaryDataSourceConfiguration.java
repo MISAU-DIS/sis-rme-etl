@@ -17,6 +17,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
@@ -117,7 +118,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 		validateFields();
 
 		try {
-			this.etlRecordClass = generateEtlRecordClass((DBConnectionInfo) null);
+			this.etlRecordClass = generateEtlRecordClass((this.getResolvedResource().getDirection()));
 		} catch (PojoNotFoundException exception) {
 			// The POJO may legitimately not exist yet while DATABASE_MODEL_GENERATION is
 			// creating it. Strict PRECOMPILED_POJO mode will fail later if no class is
@@ -220,7 +221,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo) {
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(EtlSide side) {
 
 		if (getRelatedEtlConf() == null) {
 			setEtlRecordClass(GenericDatabaseObject.class);
@@ -245,11 +246,11 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(EtlSide side, Boolean fullClass) {
 
 		try {
-			setEtlRecordClass(fullClass ? DatabaseEntityPOJOGenerator.generate(this, connInfo)
-					: DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo));
+			setEtlRecordClass(fullClass ? DatabaseEntityPOJOGenerator.generate(this, side)
+					: DatabaseEntityPOJOGenerator.generateSkeleton(this, side));
 		} catch (IOException | SQLException | ClassNotFoundException exception) {
 			throw new RuntimeException(exception);
 		}

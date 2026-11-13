@@ -2,7 +2,7 @@ package org.openmrs.module.epts.etl.connector.capability.reader;
 
 import java.sql.Connection;
 
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.UnsupportedConnectorTypeException;
@@ -27,7 +27,7 @@ public final class ConnectorRecordReaderFactory {
 			throw new IllegalArgumentException("Resolved source resource cannot be null");
 		}
 
-		if (resource.getDirection() != ConnectorDirection.SOURCE) {
+		if (resource.getDirection() != EtlSide.SRC) {
 			throw new IllegalArgumentException("Record reader requires a SOURCE resource");
 		}
 
@@ -45,6 +45,6 @@ public final class ConnectorRecordReaderFactory {
 			return new FileConnectorRecordReader<>(resource, searchParams.getPrimaryDataSource(), srcConnection);
 		}
 
-		throw new UnsupportedConnectorTypeException(resource.getEndpoint().getType(), ConnectorDirection.SOURCE);
+		throw new UnsupportedConnectorTypeException(resource.getEndpoint().getType(), EtlSide.SRC);
 	}
 }

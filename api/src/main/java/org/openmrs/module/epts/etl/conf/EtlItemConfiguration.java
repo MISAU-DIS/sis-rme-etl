@@ -28,8 +28,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.ParallelProcessingStrategyType;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
@@ -346,8 +346,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		ConnectorEndpoint endpoint = resolveEtlDatabaseConnector();
 
-		jdbc.setResolvedResource(
-				ConnectorConfigurationResolver.resolveResource(null, jdbc, ConnectorDirection.SOURCE, endpoint));
+		jdbc.setResolvedResource(ConnectorConfigurationResolver.resolveResource(null, jdbc, EtlSide.SRC, endpoint));
 
 		return jdbc;
 	}
@@ -686,6 +685,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		Map<String, OpenConnection> connections = new HashMap<>();
 
 		try {
+
 			for (EtlDestinationConfiguration destination : collectDestinationConfigurations()) {
 				ConnectorResource resource = getResolvedDstResource(destination);
 
@@ -699,8 +699,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 					connections.put(endpointKey, connection);
 				}
 
-				writers.put(resource, ConnectorRecordWriterFactory.create(resource,
-						destination.isJdbcDestination() ? destination.requireJdbcTableDestination() : null, connection));
+				writers.put(resource,
+						ConnectorRecordWriterFactory.create(resource,
+								destination.isJdbcDestination() ? destination.requireJdbcTableDestination() : null,
+								connection));
 				resources.put(destination, resource);
 			}
 		} catch (DBException | RuntimeException exception) {
@@ -719,8 +721,8 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	public ConnectorRecordWritersAggregator createEtlDatabaseWriters(BaseConfiguration openedFrom) throws DBException {
 		JdbcTablePrimaryDataSourceConfiguration dataSource = getEtlDatabaseDataSource();
 		ConnectorEndpoint endpoint = dataSource.getResolvedResource().getEndpoint();
-		ConnectorResource resource = ConnectorConfigurationResolver.resolveResource(null, dataSource,
-				ConnectorDirection.DESTINATION, endpoint);
+		ConnectorResource resource = ConnectorConfigurationResolver.resolveResource(null, dataSource, EtlSide.DST,
+				endpoint);
 		Connection connection = getRelatedEtlConf().openDestinationConnectorConnection(resource, openedFrom);
 
 		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> writers = new IdentityHashMap<>();
@@ -806,13 +808,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			configured.setProperties(primary.getResourceProperties());
 		}
 
-		ConnectorEndpoint endpoint = selectConnector(registry, source.getConnector(), ConnectorDirection.SOURCE,
+		ConnectorEndpoint endpoint = selectConnector(registry, source.getConnector(), EtlSide.SRC,
 				source.getConnector() == null && primary instanceof JdbcTablePrimaryDataSourceConfiguration);
 
 		TableConfiguration legacyTable = primary instanceof TableConfiguration ? (TableConfiguration) primary : null;
 
-		return ConnectorConfigurationResolver.resolveResource(configured, legacyTable, ConnectorDirection.SOURCE,
-				endpoint);
+		return ConnectorConfigurationResolver.resolveResource(configured, legacyTable, EtlSide.SRC, endpoint);
 	}
 
 	private List<ConnectorResource> resolveAdditionalSourceResources(ConnectorRegistry registry,
@@ -881,7 +882,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 
 		ConnectorEndpoint endpoint = utilities.stringHasValue(effective.getConnector())
-				? selectConnector(registry, effective.getConnector(), ConnectorDirection.SOURCE, false)
+				? selectConnector(registry, effective.getConnector(), EtlSide.SRC, false)
 				: primaryResource.getEndpoint();
 
 		if ((additional instanceof TableConfiguration || additional instanceof QueryDataSourceConfig)
@@ -892,8 +893,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 		TableConfiguration legacyTable = additional instanceof TableConfiguration ? (TableConfiguration) additional
 				: null;
-		return ConnectorConfigurationResolver.resolveResource(effective, legacyTable, ConnectorDirection.SOURCE,
-				endpoint);
+		return ConnectorConfigurationResolver.resolveResource(effective, legacyTable, EtlSide.SRC, endpoint);
 	}
 
 	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {
@@ -909,11 +909,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			String connectorId = configured == null ? null : configured.getConnector();
 
-			ConnectorEndpoint endpoint = selectConnector(registry, connectorId, ConnectorDirection.DESTINATION,
-					configured == null);
+			ConnectorEndpoint endpoint = selectConnector(registry, connectorId, EtlSide.DST, configured == null);
 
-			resolved.add(ConnectorConfigurationResolver.resolveResource(configured, null,
-					ConnectorDirection.DESTINATION, endpoint));
+			resolved.add(ConnectorConfigurationResolver.resolveResource(configured, null, EtlSide.DST, endpoint));
 		}
 
 		return resolved;
@@ -968,10 +966,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		}
 	}
 
-	private ConnectorEndpoint selectConnector(ConnectorRegistry registry, String connectorId,
-			ConnectorDirection direction, boolean preferLegacy) {
+	private ConnectorEndpoint selectConnector(ConnectorRegistry registry, String connectorId, EtlSide direction,
+			boolean preferLegacy) {
 
-		String defaultId = direction == ConnectorDirection.SOURCE ? getRelatedEtlConf().getDefaultSourceConnector()
+		String defaultId = direction == EtlSide.SRC ? getRelatedEtlConf().getDefaultSourceConnector()
 				: getRelatedEtlConf().getDefaultDestinationConnector();
 
 		return registry.select(connectorId, defaultId, direction, preferLegacy);
@@ -1229,7 +1227,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		if (!hasDestinations() && (getRelatedEtlConf().hasDstConnInfo()
 				|| utilities.stringHasValue(getRelatedEtlConf().getDefaultDestinationConnector()))) {
 			ConnectorEndpoint endpoint = selectConnector(getRelatedEtlConf().getInitializedConnectorRegistry(), null,
-					ConnectorDirection.DESTINATION, true);
+					EtlSide.DST, true);
 
 			if (endpoint.getType() == ConnectorType.JDBC) {
 				EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
@@ -1475,7 +1473,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 			String sql = searchClauses.generateSQL(srcConn);
 
 			EtlDatabaseObject simpleValue = BaseDAO.find(jdbcSource.getLoadHealper(),
-					jdbcSource.generateEtlRecordClass(getSrcConnInfo()), sql, searchClauses.getParameters(), srcConn);
+					jdbcSource.generateEtlRecordClass(EtlSide.SRC), sql, searchClauses.getParameters(), srcConn);
 
 			return simpleValue;
 		}

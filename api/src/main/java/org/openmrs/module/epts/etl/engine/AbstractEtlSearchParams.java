@@ -207,7 +207,8 @@ public abstract class AbstractEtlSearchParams<T extends EtlDatabaseObject> exten
 
 	@SuppressWarnings("unchecked")
 	public Class<T> getRecordClass() {
-		return (Class<T>) getPrimaryDataSource().generateEtlRecordClass(getPrimaryDataSource().getSrcConnInfo());
+		return (Class<T>) getPrimaryDataSource()
+				.generateEtlRecordClass(getPrimaryDataSource().getResolvedResource().getDirection());
 	}
 
 	public PrimaryDataSourceConfiguration getPrimaryDataSource() {

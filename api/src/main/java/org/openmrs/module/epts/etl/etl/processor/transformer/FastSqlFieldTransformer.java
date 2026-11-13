@@ -10,7 +10,7 @@ import org.openmrs.module.epts.etl.conf.datasource.QueryDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
@@ -70,7 +70,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 	private String name;
 
-	private ConnectorDirection queryConnection;
+	private EtlSide queryConnection;
 
 	private ActionOnEtlIssue onMultipleSrcObjectsFound;
 
@@ -81,7 +81,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		super(parameters, relatedEtlTransformTarget, field);
 
-		this.queryConnection = ConnectorDirection.SOURCE;
+		this.queryConnection = EtlSide.SRC;
 
 		this.loadParameters(parameters);
 
@@ -107,11 +107,11 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 		return sqlQuery;
 	}
 
-	public ConnectorDirection getQueryConnection() {
+	public EtlSide getQueryConnection() {
 		return queryConnection;
 	}
 
-	public void setQueryConnection(ConnectorDirection queryConnection) {
+	public void setQueryConnection(EtlSide queryConnection) {
 		this.queryConnection = queryConnection;
 	}
 
@@ -154,7 +154,7 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 			}
 
 			if (paramName.equalsIgnoreCase("query_connection")) {
-				this.queryConnection = ConnectorDirection.valueOf(paramValue);
+				this.queryConnection = EtlSide.valueOf(paramValue);
 			} else if (paramName.equalsIgnoreCase("query")) {
 				this.sqlQuery = paramValue;
 			} else if (paramName.equalsIgnoreCase("name")) {

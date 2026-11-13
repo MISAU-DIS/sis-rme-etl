@@ -41,7 +41,9 @@ public interface MainJoiningEntity extends TableConfiguration {
 	}
 
 	default void tryToLoadAuxExtraJoinTable(EtlDatabaseObject schemaInfo, Connection conn) throws DBException {
+
 		if (hasAuxExtractTable()) {
+
 			for (JoinableEntity t : this.getJoiningTable()) {
 				t.tryToLoadSchemaInfo(schemaInfo, conn);
 
@@ -52,9 +54,10 @@ public interface MainJoiningEntity extends TableConfiguration {
 				TableConfiguration fullLoadedTab = findFullConfiguredConfInAllRelatedTable(t.getFullTableName(),
 						new ArrayList<>());
 
-				OpenConnection srcConn = this.getRelatedConnInfo().openConnection(this);
+				OpenConnection srcConn = this.openConnection(this);
 
 				try {
+
 					if (fullLoadedTab != null) {
 						t.clone(fullLoadedTab, this, null, conn);
 					} else {

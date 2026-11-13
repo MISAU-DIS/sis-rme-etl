@@ -22,8 +22,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorEndpoint;
@@ -63,7 +63,7 @@ class EtlDestinationConfigurationTest {
 				+ "}");
 		destination.initialize(new EtlItemConfiguration());
 		destination.setResolvedResource(ConnectorConfigurationResolver.resolveResource(destination.getResource(), null,
-				ConnectorDirection.DESTINATION, new JdbcConnectorEndpoint(new DBConnectionInfo())));
+				EtlSide.DST, new JdbcConnectorEndpoint(new DBConnectionInfo())));
 
 		assertEquals("patient", destination.getName());
 		assertEquals("destination_patient", destination.getAlias());
@@ -80,7 +80,7 @@ class EtlDestinationConfigurationTest {
 		JdbcTableDestinationConfiguration jdbc = destination.requireJdbcTableDestination();
 		jdbc.setTableAlias("patient_automatically_resolved");
 		destination.setResolvedResource(ConnectorConfigurationResolver.resolveResource(destination.getResource(), null,
-				ConnectorDirection.DESTINATION, new JdbcConnectorEndpoint(new DBConnectionInfo())));
+				EtlSide.DST, new JdbcConnectorEndpoint(new DBConnectionInfo())));
 
 		assertEquals("patient_automatically_resolved", jdbc.getTableAlias());
 		assertEquals("patient_automatically_resolved", destination.getAlias());
@@ -320,7 +320,7 @@ class EtlDestinationConfigurationTest {
 		DBConnectionInfo connectionInfo = new DBConnectionInfo();
 		connectionInfo.setConnectionURI("jdbc:mysql://localhost/openmrs");
 		destination.setResolvedResource(ConnectorConfigurationResolver.resolveResource(destination.getResource(), null,
-				ConnectorDirection.DESTINATION, new JdbcConnectorEndpoint(connectionInfo)));
+				EtlSide.DST, new JdbcConnectorEndpoint(connectionInfo)));
 
 		assertTrue(destination.getDestinationDataConfiguration() instanceof JdbcTableDestinationConfiguration);
 		assertEquals("patient", destination.getTableDataDestination().getTableName());

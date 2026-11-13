@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -150,7 +151,7 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(EtlSide connInfo, Boolean fullClass) {
 	}
 
 	@Override

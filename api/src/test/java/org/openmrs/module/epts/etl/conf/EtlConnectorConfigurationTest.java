@@ -22,7 +22,7 @@ import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.TableDataSourceConfig;
 import org.openmrs.module.epts.etl.conf.datasource.TransformableDataSource;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorEndpointConfiguration;
@@ -181,16 +181,16 @@ class EtlConnectorConfigurationTest {
 		initializeConnectors(configuration);
 		assertEquals("jdbc:mysql://legacy/source", configuration.getSrcConnInfo().getConnectionURI());
 		assertEquals("jdbc:mysql://neutral/source",
-				configuration.getInitializedConnectorRegistry().select(null, "source-db", ConnectorDirection.SOURCE,
+				configuration.getInitializedConnectorRegistry().select(null, "source-db", EtlSide.SRC,
 						false).getUri());
 		assertEquals("reader", configuration.getInitializedConnectorRegistry()
-				.select(null, "source-db", ConnectorDirection.SOURCE, false).getUserName());
+				.select(null, "source-db", EtlSide.SRC, false).getUserName());
 		assertEquals(ConnectorType.JDBC,
 				configuration.getInitializedConnectorRegistry()
-						.select(null, "destination-db", ConnectorDirection.DESTINATION, false).getType());
+						.select(null, "destination-db", EtlSide.DST, false).getType());
 		assertEquals("writer",
 				configuration.getInitializedConnectorRegistry()
-						.select(null, "destination-db", ConnectorDirection.DESTINATION, false).getUserName());
+						.select(null, "destination-db", EtlSide.DST, false).getUserName());
 	}
 
 	@Test
@@ -216,9 +216,9 @@ class EtlConnectorConfigurationTest {
 		ConnectorResource resolvedDestination = item.getResolvedDstResources().get(0);
 
 		assertEquals("patient", resolvedSource.getName());
-		assertEquals(ConnectorDirection.SOURCE, resolvedSource.getDirection());
+		assertEquals(EtlSide.SRC, resolvedSource.getDirection());
 		assertEquals("patient_copy", resolvedDestination.getName());
-		assertEquals(ConnectorDirection.DESTINATION, resolvedDestination.getDirection());
+		assertEquals(EtlSide.DST, resolvedDestination.getDirection());
 		assertSame(source, resolvedSource.unwrap(JdbcTablePrimaryDataSourceConfiguration.class));
 		assertSame(resolvedSource, source.getResolvedResource());
 		assertSame(resolvedDestination,

@@ -142,6 +142,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 		if (hasSubQueries()) {
 			this.trace("Masking found Subqueries");
+
 			for (String sQuery : this.getSubqueries()) {
 				this.setMainQuery(utilities.maskToken(this.getMainQuery(), sQuery, '#'));
 			}
@@ -430,6 +431,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		}
 
 		for (QueryParameter parameter : parameters) {
+
 			if (!containsQueryParameter(uniqueParameters, parameter.getName())) {
 				uniqueParameters.add(parameter);
 			}
@@ -439,11 +441,13 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	}
 
 	private boolean containsQueryParameter(List<QueryParameter> parameters, String name) {
+
 		if (!utilities.listHasElement(parameters)) {
 			return false;
 		}
 
 		for (QueryParameter parameter : parameters) {
+
 			if (parameter.getName().equals(name)) {
 				return true;
 			}
@@ -453,6 +457,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	}
 
 	private String buildQuestionMarkReplacement(int qtyQuestionMarks) {
+
 		if (qtyQuestionMarks <= 0) {
 			throw new IllegalArgumentException("qtyQuestionMarks must be greater than zero");
 		}
@@ -464,6 +469,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		Map<String, QueryParameter> paramsByToken = new HashMap<>();
 
 		for (QueryParameter param : this.getQueryParams()) {
+
 			for (String token : buildParameterTokens(param.getName())) {
 				paramsByToken.put(token, param);
 			}
@@ -492,6 +498,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		StringBuilder regex = new StringBuilder();
 
 		for (String token : orderedTokens) {
+
 			if (regex.length() > 0) {
 				regex.append("|");
 			}
@@ -503,7 +510,9 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	}
 
 	private String ensureDynamicElementsLoadedAsParameteres(String query) {
+
 		if (hasDynamicElements()) {
+
 			for (String element : this.getDataSource().getDynamicElements()) {
 				query = query.replaceAll(element, "@(" + element + ")");
 			}
@@ -555,6 +564,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 	}
 
 	private boolean isDynamicToken(String fullToken) {
+
 		if (hasDynamicElements()) {
 			return this.getDynamicElements().contains(fullToken);
 		}
@@ -735,10 +745,12 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		}
 
 		if (foundPossibleSubQueryStarting) {
+
 			for (int i = paramStart + 1; i < sqlQuery.length(); i++) {
 				char currChar = sqlQuery.charAt(i);
 
 				if (currChar == ')') {
+
 					if (parenthesisStack.size() == 0) {
 						foundPossibleSubQueryFinishing = true;
 						break;
@@ -757,6 +769,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 			}
 
 			if (foundPossibleSubQueryFinishing) {
+
 				if (SQLUtilities.isValidSelectSqlQuery(subQuery, dbmsType)) {
 					return subQuery;
 				}
@@ -840,6 +853,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 
 	public IntervalExtremeRecord detemineLimits(Engine<? extends EtlDatabaseObject> engine, Connection conn)
 			throws DBException {
+
 		if (!this.isCountQuery()) {
 			throw new ForbiddenOperationException("The query does not use count function!");
 		}
@@ -873,8 +887,9 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		Object[] params = pq.extractParametersValueToArray();
 
 		if (this.getDataSource().getEtlRecordClass() == null) {
+
 			if (conn instanceof OpenConnection) {
-				this.getDataSource().generateEtlRecordClass(((OpenConnection) conn).getDbConnInfo());
+				this.getDataSource().generateEtlRecordClass(this.dataSource.getResolvedResource().getDirection());
 			}
 		}
 

@@ -1,9 +1,11 @@
 package org.openmrs.module.epts.etl.connector;
 
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
+
 /**
- * Connector-neutral identity of the resource read or written by one ETL item.
- * A JDBC table, REST route, queue or file can all be represented by this
- * contract without leaking their technology into the item itself.
+ * Connector-neutral identity of the resource read or written by one ETL item. A
+ * JDBC table, REST route, queue or file can all be represented by this contract
+ * without leaking their technology into the item itself.
  */
 public interface ConnectorResource {
 
@@ -14,7 +16,7 @@ public interface ConnectorResource {
 		return getName();
 	}
 
-	ConnectorDirection getDirection();
+	EtlSide getDirection();
 
 	ConnectorEndpoint getEndpoint();
 

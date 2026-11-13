@@ -308,6 +308,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isTableNameInfoLoaded())
 			return;
 
+		openConnection(defaultPreparedQuery)
+		
 		if (usesPrecompiledSchemaMetadata()) {
 			if (this.getSchema() == null)
 				this.setSchema(this.getRelatedConnInfo().determineSchema());
@@ -444,8 +446,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 			String dataModelId = resolveDataModelId();
 			java.util.Optional<PhysicalTableMetadata> stored = utilities.stringHasValue(dataModelId)
 					? files.find(dataModelId, this.getTableName())
-					: files.find(resolvePojoPackage(), this.getSchema(),
-							this.getTableName());
+					: files.find(resolvePojoPackage(), this.getSchema(), this.getTableName());
 
 			if (stored.isPresent()) {
 
@@ -480,9 +481,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		java.io.File manifestFile = new java.io.File(metadataDirectory, "manifest.json").getAbsoluteFile();
 		DatabaseModelManifest manifest = new FileDatabaseModelManifestRepository(metadataDirectory).read();
 		String expectedKey = metadata.getKey().toString();
-		String expectedClass = this.getResolvedResource() == null
-				? this.generateFullClassName(this.getRelatedConnInfo())
-				: this.generateFullClassName(this.getResolvedResource());
+		String expectedClass = this.generateFullClassName(this.getResolvedResource().getDirection());
 		String expectedFingerprint = PhysicalTableMetadataFingerprint.sha256(metadata);
 		DatabaseModelManifest.Entry matchingClass = null;
 		List<String> classesForKey = new ArrayList<>();
@@ -789,13 +788,17 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	private String resolveDataModelId() {
-		return this.getResolvedResource() == null ? this.getRelatedEtlConf().getDataModelId(this.getRelatedConnInfo())
-				: this.getRelatedEtlConf().getDataModelId(this.getResolvedResource());
+		if (this.getResolvedResource() == null)
+			throw new EtlConfException("The resolvedResource is not resolved!!");
+
+		return this.getRelatedEtlConf().getDataModelId(this.getResolvedResource().getDirection());
 	}
 
 	private String resolvePojoPackage() {
-		return this.getResolvedResource() == null ? this.getRelatedEtlConf().getPojoPackage(this.getRelatedConnInfo())
-				: this.getRelatedEtlConf().getPojoPackage(this.getResolvedResource());
+		if (this.getResolvedResource() == null)
+			throw new EtlConfException("The resolvedResource is not resolved!!");
+
+		return this.getRelatedEtlConf().getPojoPackage(this.getResolvedResource().getDirection());
 	}
 
 	private String resolveReferencedSchema(String schema, String catalog) {
@@ -943,7 +946,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		try {
-			this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
+			this.setEtlRecordClass(this.generateEtlRecordClass(this.getResolvedResource().getDirection()));
 		} catch (PojoNotFoundException e) {
 		}
 	}
@@ -1169,7 +1172,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		OpenConnection conn = null;
 
 		try {
-			conn = getRelatedConnInfo().openConnection(this);
+			conn = this.openConnection(this);
 
 			tryToManualLoadConfiguredPk(conn);
 

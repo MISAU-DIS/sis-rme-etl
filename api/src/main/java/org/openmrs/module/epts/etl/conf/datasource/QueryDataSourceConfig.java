@@ -26,12 +26,13 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.DbmsType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.RelationshipResolutionStrategy;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
-import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
+import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformingInfo;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
@@ -320,7 +321,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			this.debug("QueryDataSourceConfig [" + this.getDesc() + "] full loaded!");
 
 			try {
-				this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
+				this.setEtlRecordClass(this.generateEtlRecordClass(this.getResolvedResource().getDirection()));
 			} catch (PojoNotFoundException e) {
 			}
 
@@ -394,10 +395,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	@JsonIgnore
-	public Boolean existsSyncRecordClass(DBConnectionInfo connInfo) {
+	public Boolean existsSyncRecordClass(EtlSide side) {
 
 		try {
-			return generateEtlRecordClass(connInfo) != null;
+			return generateEtlRecordClass(side) != null;
 		} catch (ForbiddenOperationException e) {
 
 			return false_();
@@ -410,14 +411,8 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@JsonIgnore
 	@Override
-	public String getClassPackage(DBConnectionInfo connInfo) {
-		return EtlAdditionalDataSource.super.getClassPackage(connInfo) + "._query_result";
-	}
-
-	@JsonIgnore
-	@Override
-	public String getClassPackage(ConnectorResource resource) {
-		return EtlAdditionalDataSource.super.getClassPackage(resource) + "._query_result";
+	public String getClassPackage(EtlSide side) {
+		return EtlAdditionalDataSource.super.getClassPackage(side) + "._query_result";
 	}
 
 	@JsonIgnore
@@ -428,10 +423,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@JsonIgnore
 	@Override
-	public String generateFullClassName(DBConnectionInfo connInfo) {
+	public String generateFullClassName(EtlSide side) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClassPackage(connInfo);
+		String packageName = getClassPackage(side);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -439,11 +434,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
-			throws ForbiddenOperationException {
+	public Class<? extends EtlDatabaseObject> generateEtlRecordClass(EtlSide side) throws ForbiddenOperationException {
 
 		try {
-			return EtlAdditionalDataSource.super.generateEtlRecordClass(connInfo);
+			return EtlAdditionalDataSource.super.generateEtlRecordClass(side);
 		} catch (PojoNotFoundException e) {
 
 			if (this.name != null) {
@@ -457,17 +451,17 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	}
 
 	@JsonIgnore
-	public String generateFullPackageName(DBConnectionInfo connInfo) {
+	public String generateFullPackageName(EtlSide side) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClassPackage(connInfo);
+		String packageName = getClassPackage(side);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
 		return fullPackageName;
 	}
 
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(EtlSide connInfo, Boolean fullClass) {
 
 		try {
 
@@ -491,10 +485,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 		}
 	}
 
-	public void generateSkeletonRecordClass(DBConnectionInfo connInfo) {
+	public void generateSkeletonRecordClass(EtlSide side) {
 
 		try {
-			this.etlRecordClass = DatabaseEntityPOJOGenerator.generateSkeleton(this, connInfo);
+			this.etlRecordClass = DatabaseEntityPOJOGenerator.generateSkeleton(this, side);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 

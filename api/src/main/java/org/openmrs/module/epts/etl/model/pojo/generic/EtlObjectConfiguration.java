@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
@@ -66,10 +67,10 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default String generateFullPackageName(DBConnectionInfo connInfo) {
+	default String generateFullPackageName(EtlSide side) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClassPackage(connInfo);
+		String packageName = getClassPackage(side);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -77,14 +78,8 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default String generateFullPackageName(ConnectorResource resource) {
-		return utilities.concatStringsWithSeparator("org.openmrs.module.epts.etl.model.pojo",
-				getClassPackage(resource), ".");
-	}
-
-	@JsonIgnore
 	default String generateFullPackageName() {
-		return generateFullPackageName(getResolvedResource());
+		return generateFullPackageName(getResolvedResource().getDirection());
 	}
 
 	@JsonIgnore
@@ -99,18 +94,13 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default String getClassPackage(DBConnectionInfo connInfo) {
-		return getRelatedEtlConf().getPojoPackage(connInfo);
-	}
-
-	@JsonIgnore
-	default String getClassPackage(ConnectorResource resource) {
-		return getRelatedEtlConf().getPojoPackage(resource);
+	default String getClassPackage(EtlSide side) {
+		return getRelatedEtlConf().getPojoPackage(side);
 	}
 
 	@JsonIgnore
 	default String getClassPackage() {
-		return getClassPackage(getResolvedResource());
+		return getClassPackage(getResolvedResource().getDirection());
 	}
 
 	@JsonIgnore
@@ -118,8 +108,8 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		return context.getPojoPackageName();
 	}
 
-	default String getClassPackageForForder(DBConnectionInfo connInfo) {
-		String packageS = this.getClassPackage(connInfo);
+	default String getClassPackageForForder(EtlSide side) {
+		String packageS = this.getClassPackage(side);
 
 		String[] packageParts = packageS.split("\\.");
 
@@ -132,12 +122,8 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		return pF;
 	}
 
-	default String getClassPackageForForder(ConnectorResource resource) {
-		return getClassPackage(resource).replace('.', File.separatorChar);
-	}
-
 	default String getClassPackageForForder() {
-		return getClassPackageForForder(getResolvedResource());
+		return getClassPackageForForder(getResolvedResource().getDirection());
 	}
 
 	default String getClassPackageForForder(DatabaseModelGenerationContext context) {
@@ -145,10 +131,10 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default String generateFullClassName(DBConnectionInfo connInfo) {
+	default String generateFullClassName(EtlSide side) {
 		String rootPackageName = "org.openmrs.module.epts.etl.model.pojo";
 
-		String packageName = getClassPackage(connInfo);
+		String packageName = getClassPackage(side);
 
 		String fullPackageName = utilities.concatStringsWithSeparator(rootPackageName, packageName, ".");
 
@@ -156,13 +142,8 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default String generateFullClassName(ConnectorResource resource) {
-		return utilities.concatStringsWithSeparator(generateFullPackageName(resource), generateClassName(), ".");
-	}
-
-	@JsonIgnore
 	default String generateFullClassName() {
-		return generateFullClassName(getResolvedResource());
+		return generateFullClassName(getResolvedResource().getDirection());
 	}
 
 	@JsonIgnore
@@ -204,8 +185,6 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 
 	Boolean isMetadata();
 
-	DBConnectionInfo getRelatedConnInfo();
-
 	/**
 	 * Returns the connector resource resolved for this object, when available.
 	 * Legacy configurations may rely exclusively on {@link #getRelatedConnInfo()}.
@@ -224,6 +203,10 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	 * @param openedFrom configuration component that owns this connection lifecycle
 	 */
 	default OpenConnection openConnection(BaseConfiguration openedFrom) throws DBException {
+		return this.getRelatedConnInfo().openConnection(openedFrom);
+	}
+
+	default DBConnectionInfo getRelatedConnInfo() {
 		ConnectorResource resolvedResource = this.getResolvedResource();
 
 		if (resolvedResource != null && resolvedResource.getEndpoint() != null
@@ -232,23 +215,21 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 					"Object configuration '" + getObjectName() + "' is bound to a non-JDBC resource");
 		}
 
-		DBConnectionInfo connectionInfo = resolvedResource != null && resolvedResource.getEndpoint() != null
-				? resolvedResource.getEndpoint().unwrap(DBConnectionInfo.class)
-				: getRelatedConnInfo();
+		DBConnectionInfo connectionInfo = resolvedResource.getEndpoint().unwrap(DBConnectionInfo.class);
 
 		if (connectionInfo == null) {
 			throw new RequireJdbcException(
 					"No JDBC connection information is available for object configuration '" + getObjectName() + "'");
 		}
 
-		return connectionInfo.openConnection(openedFrom);
+		return connectionInfo;
 	}
 
 	void setEtlRecordClass(Class<? extends EtlDatabaseObject> syncRecordClass);
 
 	Boolean isDestinationInstallationType();
 
-	void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass);
+	void generateRelatedPojoClass(EtlSide side, Boolean fullClass);
 
 	default void generateRelatedPojoClass(ConnectorResource resource, Boolean fullClass) {
 		generateRelatedPojoClass(getRelatedEtlConf().createDatabaseModelGenerationContext(resource, null), fullClass);
@@ -316,8 +297,9 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		Class<? extends EtlDatabaseObject> recordClass = getEtlRecordClass();
 
 		if (recordClass == null) {
-			recordClass = getResolvedResource() == null ? generateEtlRecordClass(getRelatedConnInfo())
-					: generateEtlRecordClass(getResolvedResource());
+			recordClass = getResolvedResource() == null
+					? generateEtlRecordClass(this.getResolvedResource().getDirection())
+					: generateEtlRecordClass(getResolvedResource().getDirection());
 		}
 
 		try {
@@ -332,21 +314,14 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	}
 
 	@JsonIgnore
-	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DBConnectionInfo connInfo)
-			throws PojoNotFoundException {
-		return resolveEtlRecordClass(generateFullClassName(connInfo));
+	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(EtlSide side) throws PojoNotFoundException {
+		return resolveEtlRecordClass(generateFullClassName(side));
 	}
 
 	@JsonIgnore
 	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(DatabaseModelGenerationContext context)
 			throws PojoNotFoundException {
 		return resolveEtlRecordClass(generateFullClassName(context));
-	}
-
-	@JsonIgnore
-	default Class<? extends EtlDatabaseObject> generateEtlRecordClass(ConnectorResource resource)
-			throws PojoNotFoundException {
-		return resolveEtlRecordClass(generateFullClassName(resource));
 	}
 
 	private Class<? extends EtlDatabaseObject> resolveEtlRecordClass(String fullClassName) {

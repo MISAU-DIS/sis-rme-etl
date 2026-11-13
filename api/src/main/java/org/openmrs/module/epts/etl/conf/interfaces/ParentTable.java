@@ -3,9 +3,9 @@ package org.openmrs.module.epts.etl.conf.interfaces;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.Key;
 import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
@@ -13,7 +13,6 @@ import org.openmrs.module.epts.etl.conf.UniqueKeyInfo;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.Field;
-import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -34,10 +33,6 @@ public interface ParentTable extends RelatedTable {
 
 	default Boolean isGeneric() {
 		return Boolean.FALSE;
-	}
-
-	default DBConnectionInfo getRelatedConnInfo() {
-		return this.getChildTableConf().getRelatedConnInfo();
 	}
 
 	default UniqueKeyInfo parseRelationshipToSelfKey() {
@@ -76,6 +71,7 @@ public interface ParentTable extends RelatedTable {
 	 * configured for a conditional field.
 	 */
 	default boolean matchesConditionalFieldValue(Field conditionalField, Object recordValue) {
+
 		if (conditionalField == null || conditionalField.getValue() == null || recordValue == null) {
 			return false;
 		}
@@ -88,6 +84,7 @@ public interface ParentTable extends RelatedTable {
 		}
 
 		for (String acceptedValue : configuredValue.split(",", -1)) {
+
 			if (acceptedValue.trim().equals(currentValue)) {
 				return true;
 			}
@@ -96,17 +93,20 @@ public interface ParentTable extends RelatedTable {
 		return false;
 	}
 
-	default List<JdbcTableDestinationConfiguration> findRelatedDstConf(EtlOperationConfig operationConf) throws DBException {
+	default List<JdbcTableDestinationConfiguration> findRelatedDstConf(EtlOperationConfig operationConf)
+			throws DBException {
 		List<JdbcTableDestinationConfiguration> allDstForTable = new ArrayList<>();
 
 		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
 			if (conf.containsDstTable(getTableName())) {
+
 				if (!conf.isFullLoaded()) {
 					conf.fullLoad(operationConf);
 				}
 
 				for (JdbcTableDestinationConfiguration dst : conf.getJdbcDestinations()) {
+
 					if (dst.getTableName().equals(this.getTableName())) {
 						allDstForTable.add(dst);
 					}
@@ -119,6 +119,7 @@ public interface ParentTable extends RelatedTable {
 
 	default PrimaryDataSourceConfiguration findRelatedPrimaryDataSource(EtlOperationConfig operationConf)
 			throws DBException {
+
 		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
 			if (!conf.isFullLoaded()) {
@@ -126,6 +127,7 @@ public interface ParentTable extends RelatedTable {
 			}
 
 			PrimaryDataSourceConfiguration primary = conf.getPrimaryDataSource();
+
 			if (primary.getObjectName().equals(this.getTableName())) {
 				return primary;
 			}
@@ -142,13 +144,13 @@ public interface ParentTable extends RelatedTable {
 	 * @throws DBException
 	 */
 	default List<PrimaryDataSourceConfiguration> findRelatedPrimaryDataSourcesWithMatchingDestination(
-			EtlOperationConfig operationConf)
-			throws DBException {
+			EtlOperationConfig operationConf) throws DBException {
 		List<PrimaryDataSourceConfiguration> sources = new ArrayList<>();
 
 		for (EtlItemConfiguration conf : getRelatedEtlConf().resolveEtlItems(operationConf)) {
 
 			PrimaryDataSourceConfiguration primary = conf.getPrimaryDataSource();
+
 			if (primary.getObjectName().equals(this.getTableName())) {
 
 				if (!conf.isFullLoaded()) {
@@ -177,6 +179,7 @@ public interface ParentTable extends RelatedTable {
 	}
 
 	default Boolean hasMoreThanOneConditionalFields() {
+
 		if (hasConditionalFields()) {
 			return utilities.arrayHasMoreThanOneElements(getConditionalFields());
 		}
@@ -221,6 +224,7 @@ public interface ParentTable extends RelatedTable {
 	}
 
 	default String getChildFieldName() {
+
 		if (!this.useSimplePk()) {
 			throw new ForbiddenOperationException("The parent " + this + " does not use simple pk");
 		}

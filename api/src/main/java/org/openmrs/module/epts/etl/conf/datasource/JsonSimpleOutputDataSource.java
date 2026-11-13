@@ -13,10 +13,11 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlSrcConf;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
-import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
+import org.openmrs.module.epts.etl.etl.processor.EtlProcessor;
 import org.openmrs.module.epts.etl.exceptions.DatabaseResourceDoesNotExists;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
@@ -242,7 +243,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(EtlSide connInfo, Boolean fullClass) {
 	}
 
 	@Override

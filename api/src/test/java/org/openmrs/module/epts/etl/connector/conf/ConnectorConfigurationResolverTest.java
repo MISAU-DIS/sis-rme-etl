@@ -9,13 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.connector.UnsupportedConnectorCapabilityException;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorCapability;
-import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.utilities.ObjectMapperProvider;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
@@ -79,7 +79,7 @@ class ConnectorConfigurationResolverTest {
 		assertEquals(ConnectorType.REST, endpoint.getType());
 		assertThrows(UnsupportedConnectorCapabilityException.class,
 				() -> ConnectorConfigurationResolver.requireDirectionCapability(endpoint,
-						ConnectorDirection.SOURCE));
+						EtlSide.SRC));
 	}
 
 	@Test
@@ -101,14 +101,14 @@ class ConnectorConfigurationResolverTest {
 		GenericTableConfiguration table = new GenericTableConfiguration("patient");
 
 		ConnectorResource legacy = ConnectorConfigurationResolver.resolveResource(null, table,
-				ConnectorDirection.SOURCE, endpoint);
+				EtlSide.SRC, endpoint);
 		assertEquals("patient", legacy.getName());
 		assertSame(table, legacy.unwrap(GenericTableConfiguration.class));
 
 		ConnectorResourceConfiguration configured = new ConnectorResourceConfiguration();
 		configured.setName("another_patient");
 		assertThrows(IllegalArgumentException.class, () -> ConnectorConfigurationResolver.resolveResource(configured,
-				table, ConnectorDirection.SOURCE, endpoint));
+				table, EtlSide.SRC, endpoint));
 	}
 
 	@Test
@@ -121,7 +121,7 @@ class ConnectorConfigurationResolverTest {
 		configured.setAlias("source_patient");
 
 		ConnectorResource resource = ConnectorConfigurationResolver.resolveResource(configured, table,
-				ConnectorDirection.SOURCE, endpoint);
+				EtlSide.SRC, endpoint);
 
 		assertEquals("patient", resource.getName());
 		assertEquals("source_patient", resource.getAlias());
@@ -147,9 +147,9 @@ class ConnectorConfigurationResolverTest {
 		DBConnectionInfo destination = new DBConnectionInfo();
 		ConnectorRegistry registry = new ConnectorRegistry(null, source, destination);
 
-		assertSame(source, registry.select(null, null, ConnectorDirection.SOURCE, true)
+		assertSame(source, registry.select(null, null, EtlSide.SRC, true)
 				.unwrap(DBConnectionInfo.class));
-		assertSame(destination, registry.select(null, null, ConnectorDirection.DESTINATION, true)
+		assertSame(destination, registry.select(null, null, EtlSide.DST, true)
 				.unwrap(DBConnectionInfo.class));
 	}
 

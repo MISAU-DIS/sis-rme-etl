@@ -1,6 +1,6 @@
 package org.openmrs.module.epts.etl.connector.conf;
 
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 
@@ -8,10 +8,10 @@ import org.openmrs.module.epts.etl.connector.ConnectorResource;
 final class ConfiguredConnectorResource implements ConnectorResource {
 
 	private final ConnectorResourceConfiguration configuration;
-	private final ConnectorDirection direction;
+	private final EtlSide direction;
 	private final ConnectorEndpoint endpoint;
 
-	ConfiguredConnectorResource(ConnectorResourceConfiguration configuration, ConnectorDirection direction,
+	ConfiguredConnectorResource(ConnectorResourceConfiguration configuration, EtlSide direction,
 			ConnectorEndpoint endpoint) {
 		this.configuration = configuration;
 		this.direction = direction;
@@ -30,7 +30,7 @@ final class ConfiguredConnectorResource implements ConnectorResource {
 	}
 
 	@Override
-	public ConnectorDirection getDirection() {
+	public EtlSide getDirection() {
 		return direction;
 	}
 

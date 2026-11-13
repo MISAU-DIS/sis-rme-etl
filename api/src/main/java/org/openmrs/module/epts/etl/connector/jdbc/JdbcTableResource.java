@@ -1,30 +1,30 @@
 package org.openmrs.module.epts.etl.connector.jdbc;
 
-import org.openmrs.module.epts.etl.connector.ConnectorDirection;
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
-import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBConnectionInfo;
 
 /** Compatibility adapter exposing a table configuration as a resource. */
 public final class JdbcTableResource implements ConnectorResource {
 
 	private final TableConfiguration tableConfiguration;
-	private final ConnectorDirection direction;
+	private final EtlSide direction;
 	private final ConnectorEndpoint endpoint;
 
-	public JdbcTableResource(TableConfiguration tableConfiguration, ConnectorDirection direction) {
+	public JdbcTableResource(TableConfiguration tableConfiguration, EtlSide direction) {
 		this(tableConfiguration, direction,
 				tableConfiguration == null ? null : tableConfiguration.getRelatedConnInfo());
 	}
 
-	public JdbcTableResource(TableConfiguration tableConfiguration, ConnectorDirection direction,
+	public JdbcTableResource(TableConfiguration tableConfiguration, EtlSide direction,
 			DBConnectionInfo connectionInfo) {
 		this(tableConfiguration, direction,
 				connectionInfo == null ? null : new JdbcConnectorEndpoint(connectionInfo));
 	}
 
-	public JdbcTableResource(TableConfiguration tableConfiguration, ConnectorDirection direction,
+	public JdbcTableResource(TableConfiguration tableConfiguration, EtlSide direction,
 			ConnectorEndpoint endpoint) {
 		if (tableConfiguration == null) {
 			throw new IllegalArgumentException("tableConfiguration cannot be null");
@@ -54,7 +54,7 @@ public final class JdbcTableResource implements ConnectorResource {
 	}
 
 	@Override
-	public ConnectorDirection getDirection() {
+	public EtlSide getDirection() {
 		return direction;
 	}
 

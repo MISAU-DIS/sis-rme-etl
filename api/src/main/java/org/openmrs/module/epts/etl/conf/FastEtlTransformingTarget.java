@@ -12,6 +12,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
@@ -113,7 +114,7 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	}
 
 	@Override
-	public void generateRelatedPojoClass(DBConnectionInfo connInfo, Boolean fullClass) {
+	public void generateRelatedPojoClass(EtlSide connInfo, Boolean fullClass) {
 		throw new ForbiddenOperationException("Forbiden Method!");
 	}
 

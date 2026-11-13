@@ -39,6 +39,7 @@ public interface EtlDataSource extends EtlObjectConfiguration {
 			Set<EtlDataSource> datasources = new HashSet<>();
 
 			for (EtlDatabaseObject obj : avaliableSrcObjects) {
+
 				if (obj.getRelatedConfiguration() instanceof EtlDataSource) {
 
 					datasources.add((EtlDataSource) obj.getRelatedConfiguration());
@@ -55,6 +56,7 @@ public interface EtlDataSource extends EtlObjectConfiguration {
 	}
 
 	default void prepare(List<EtlDatabaseObject> avaliableSrcObjects, Connection conn) throws DBException {
+
 		if (isPrepared()) {
 			return;
 		}
@@ -70,8 +72,7 @@ public interface EtlDataSource extends EtlObjectConfiguration {
 
 	default List<EtlDatabaseObject> searchRecords(Engine<? extends EtlDatabaseObject> engine,
 			EtlDatabaseObject parentSrcObject, List<EtlDatabaseObject> auxDataSourceObjects,
-			ConnectorRecordReader<?> reader)
-			throws DBException {
+			ConnectorRecordReader<?> reader) throws DBException {
 		Connection srcConn = reader.unwrap(Connection.class);
 
 		List<EtlDatabaseObject> avaliableSrcObjects = parentSrcObject != null ? utilities.parseToList(parentSrcObject)
@@ -97,7 +98,9 @@ public interface EtlDataSource extends EtlObjectConfiguration {
 			}
 
 			if (dsAsJoining.hasAuxExtractTable()) {
+
 				for (JoinableEntity j : dsAsJoining.getJoiningTable()) {
+
 					if (!j.doNotUseAsDatasource()) {
 						j.loadOwnFieldsToEtlFields(etlFields, false);
 					}
@@ -148,7 +151,7 @@ public interface EtlDataSource extends EtlObjectConfiguration {
 		this.tryToLoadSchemaInfo(etlSchemaObject, conn);
 
 		try {
-			this.setEtlRecordClass(this.generateEtlRecordClass(getRelatedConnInfo()));
+			this.setEtlRecordClass(this.generateEtlRecordClass(getResolvedResource().getDirection()));
 		} catch (PojoNotFoundException e) {
 		}
 	}

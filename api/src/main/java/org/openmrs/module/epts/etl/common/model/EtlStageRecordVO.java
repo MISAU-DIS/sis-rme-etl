@@ -80,10 +80,12 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 			this.dateCreated = resultSet.getDate("record_date_created");
 		} catch (SQLException e) {
 		}
+
 		try {
 			this.dateChanged = resultSet.getDate("record_date_changed");
 		} catch (SQLException e) {
 		}
+
 		try {
 			this.dateVoided = resultSet.getDate("record_date_voided");
 		} catch (SQLException e) {
@@ -333,11 +335,15 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 		EtlDatabaseObject rec = null;
 
 		try {
-			rec = utilities.loadObjectFormJSON(tableInfo.generateEtlRecordClass(tableInfo.getSrcConnInfo()), modifiedJSON);
+			rec = utilities.loadObjectFormJSON(
+					tableInfo.generateEtlRecordClass(tableInfo.getResolvedResource().getDirection()), modifiedJSON);
 		} catch (Exception e) {
 			// try to resolve pattern problems
 			modifiedJSON = utilities.resolveScapeCharacter(modifiedJSON);
-			rec = utilities.loadObjectFormJSON(tableInfo.generateEtlRecordClass(tableInfo.getSrcConnInfo()), modifiedJSON);
+			rec = utilities.loadObjectFormJSON(
+					tableInfo.generateEtlRecordClass(tableInfo.getResolvedResource().getDirection()),
+
+					modifiedJSON);
 		}
 
 		if (!tableInfo.isMetadata()) {
@@ -368,6 +374,7 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 	}
 
 	public void save(TableConfiguration tableConfiguration, Connection conn) throws DBException {
+
 		if (getId() > 0) {
 			SyncImportInfoDAO.update(this, tableConfiguration, conn);
 		} else {
@@ -384,7 +391,9 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 		EtlStageRecordVO mostRecent = records.get(0);
 
 		for (EtlStageRecordVO rec : records) {
+
 			if (rec.getDateChanged() != null) {
+
 				if (mostRecent.getDateChanged() == null) {
 					mostRecent = rec;
 				} else if (DateAndTimeUtilities.compareTo(rec.getDateChanged(), mostRecent.getDateChanged()) > 0) {
@@ -393,6 +402,7 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 			}
 
 			if (rec.getDateVoided() != null) {
+
 				if (mostRecent.getDateVoided() == null) {
 					mostRecent = rec;
 				} else if (DateAndTimeUtilities.compareTo(rec.getDateVoided(), mostRecent.getDateVoided()) > 0) {

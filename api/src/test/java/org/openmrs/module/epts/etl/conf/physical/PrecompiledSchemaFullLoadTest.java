@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.conf.ParentTableImpl;
 import org.openmrs.module.epts.etl.conf.RefMapping;
 import org.openmrs.module.epts.etl.conf.SchemaMetadataLoadSource;
 import org.openmrs.module.epts.etl.conf.SchemaMetadataMode;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelManifest;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.FileDatabaseModelManifestRepository;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -94,7 +95,7 @@ public class PrecompiledSchemaFullLoadTest {
 		configuredLocation.setRefMapping(Arrays.asList(configuredMapping));
 		table.setParents(Arrays.asList(configuredLocation));
 		new FileDatabaseModelManifestRepository(etl.getSchemaMetadataDirectory())
-				.record(new DatabaseModelManifest.Entry(key.toString(), table.generateFullClassName(connectionInfo),
+				.record(new DatabaseModelManifest.Entry(key.toString(), table.generateFullClassName(EtlSide.SRC),
 						PhysicalTableMetadataFingerprint.sha256(metadata)));
 		table.fullLoad(connectionRejectingMetadataCalls());
 
@@ -120,12 +121,12 @@ public class PrecompiledSchemaFullLoadTest {
 			// structural shared-PK generation is validated with complete model graphs.
 			table.setSharePkWith(null);
 			etl.setClassPath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
-			table.generateRelatedPojoClass(connectionInfo, true);
+			table.generateRelatedPojoClass(EtlSide.SRC, true);
 			Class<? extends EtlDatabaseObject> generatedClass = table.getEtlRecordClass();
-			assertSame(generatedClass, DatabaseEntityPOJOGenerator.tryToGetExistingCLass(
-					table.generateFullClassName(connectionInfo), etl));
-			assertSame(generatedClass, DatabaseEntityPOJOGenerator.tryToGetExistingCLass(
-					table.generateFullClassName(connectionInfo), etl));
+			assertSame(generatedClass,
+					DatabaseEntityPOJOGenerator.tryToGetExistingCLass(table.generateFullClassName(EtlSide.SRC), etl));
+			assertSame(generatedClass,
+					DatabaseEntityPOJOGenerator.tryToGetExistingCLass(table.generateFullClassName(EtlSide.SRC), etl));
 			EtlDatabaseObject generated = table.getEtlRecordClass().getConstructor().newInstance();
 			generated.setRelatedConfiguration(table);
 			Field generatedLocation = (Field) generated.getClass().getMethod("getLocationId").invoke(generated);
@@ -153,6 +154,7 @@ public class PrecompiledSchemaFullLoadTest {
 	private Connection connectionRejectingMetadataCalls() {
 		return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(),
 				new Class<?>[] { Connection.class }, (proxy, method, arguments) -> {
+
 					if ("getMetaData".equals(method.getName())) {
 						throw new AssertionError("JDBC DatabaseMetaData must not be used in PRECOMPILED mode");
 					}
