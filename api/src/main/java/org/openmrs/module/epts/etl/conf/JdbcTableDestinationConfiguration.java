@@ -22,8 +22,11 @@ import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ActionOnLoad;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.DefaultRecordTransformer;
 import org.openmrs.module.epts.etl.etl.processor.transformer.EtlRecordTransformer;
@@ -61,8 +64,6 @@ public class JdbcTableDestinationConfiguration extends AbstractTableConfiguratio
 	private List<String> excludedFields;
 
 	private List<FieldsMapping> mapping;
-
-	private DBConnectionInfo relatedConnInfo;
 
 	private List<String> preferredDataSource;
 
@@ -136,6 +137,7 @@ public class JdbcTableDestinationConfiguration extends AbstractTableConfiguratio
 	private EtlDestinationConfiguration parentDestination;
 
 	public JdbcTableDestinationConfiguration() {
+		this.setEtlSide(EtlSide.DST);
 		this.setOnMultipleDataSourceForSameMapping(ActionOnEtlIssue.ABORT_PROCESS);
 		this.setOnMultipleDataSourceWithSameName(ActionOnEtlIssue.ABORT_PROCESS);
 		this.useAsDataSource = false;
@@ -658,11 +660,15 @@ public class JdbcTableDestinationConfiguration extends AbstractTableConfiguratio
 	}
 
 	public DBConnectionInfo getRelatedConnInfo() {
-		return relatedConnInfo != null ? this.relatedConnInfo : getRelatedEtlConf().getDstConnInfo();
-	}
-
-	public void setRelatedConnInfo(DBConnectionInfo relatedConnInfo) {
-		this.relatedConnInfo = relatedConnInfo;
+		ConnectorResource resource = getResolvedResource();
+		if (resource == null || resource.getEndpoint() == null) {
+			throw new RequireJdbcException(
+					"The connector resource is not initialized for destination '" + getObjectName() + "'");
+		}
+		if (resource.getEndpoint().getType() != ConnectorType.JDBC) {
+			throw new RequireJdbcException("Destination '" + getObjectName() + "' is not JDBC-backed");
+		}
+		return resource.getEndpoint().unwrap(DBConnectionInfo.class);
 	}
 
 	@Override
@@ -1161,7 +1167,6 @@ public class JdbcTableDestinationConfiguration extends AbstractTableConfiguratio
 		map.setOnConflict(sourceTable.onConflict());
 		map.setWinningRecordFieldsInfo(sourceTable.getWinningRecordFieldsInfo());
 		map.setManualMapPrimaryKeyOnField(sourceTable.getManualMapPrimaryKeyOnField());
-		map.setRelatedConnInfo(connectionInfo);
 		map.setAutomaticalyGenerated(true);
 		map.setParentConf(itemConf);
 		return utilities.parseToList(map);

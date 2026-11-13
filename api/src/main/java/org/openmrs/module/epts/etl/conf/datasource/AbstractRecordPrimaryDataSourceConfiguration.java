@@ -39,6 +39,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public abstract class AbstractRecordPrimaryDataSourceConfiguration extends AbstractEtlDataConfiguration
 		implements PrimaryDataSourceConfiguration, EtlDataSource {
 
+	protected AbstractRecordPrimaryDataSourceConfiguration() {
+		setEtlSide(EtlSide.SRC);
+	}
+
 	private String name;
 	private PrimaryKey primaryKey;
 	private List<String> excludedFieldsFromObjectDesc;
@@ -118,7 +122,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 		validateFields();
 
 		try {
-			this.etlRecordClass = generateEtlRecordClass((this.getResolvedResource().getDirection()));
+			this.etlRecordClass = generateEtlRecordClass(requireEtlSide());
 		} catch (PojoNotFoundException exception) {
 			// The POJO may legitimately not exist yet while DATABASE_MODEL_GENERATION is
 			// creating it. Strict PRECOMPILED_POJO mode will fail later if no class is

@@ -486,6 +486,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		List<ConnectorResource> destinationResources = Collections.unmodifiableList(resolveDstResources(registry));
 
 		this.source.setResolvedResource(source);
+		this.source.getPrimaryDataSource().setEtlSide(EtlSide.SRC);
 		resolveAdditionalSourceResources(registry, source, true);
 
 		if (this.source.getPrimaryDataSource() instanceof JdbcTablePrimaryDataSourceConfiguration) {
@@ -508,6 +509,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 				EtlDestinationConfiguration destinationConfiguration = this.destinations.get(index);
 				ConnectorResource destinationResource = destinationResources.get(index);
+				destinationConfiguration.setEtlSide(EtlSide.DST);
 				destinationConfiguration.initialize(this);
 				destinationConfiguration.setResolvedResource(destinationResource);
 			}
@@ -821,6 +823,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		List<ConnectorResource> resolved = new ArrayList<>();
 
 		for (EtlAdditionalDataSource additional : source.getConfiguredAdditionalDataSources()) {
+			additional.setEtlSide(EtlSide.SRC);
 			ConnectorResource resource = resolveAdditionalSourceResource(registry, primaryResource, additional);
 			resolved.add(resource);
 
@@ -848,6 +851,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		resolved.add(outputResource);
 
 		if (assign) {
+			output.setEtlSide(EtlSide.SRC);
 			output.setResolvedResource(outputResource);
 		}
 
@@ -859,6 +863,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				resolved.add(parentOutputResource);
 
 				if (assign) {
+					parent.setEtlSide(EtlSide.SRC);
 					parent.setResolvedResource(parentOutputResource);
 				}
 			}
@@ -939,6 +944,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 
 			for (int index = 0; this.destinations != null && index < this.destinations.size(); index++) {
 				EtlDestinationConfiguration destination = this.destinations.get(index);
+				destination.setEtlSide(EtlSide.DST);
 				destination.initialize(this);
 				destination.setResolvedResource(destinations.get(index));
 

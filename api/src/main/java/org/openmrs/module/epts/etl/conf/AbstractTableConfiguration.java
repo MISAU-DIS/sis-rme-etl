@@ -308,8 +308,6 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (this.isTableNameInfoLoaded())
 			return;
 
-		openConnection(defaultPreparedQuery)
-		
 		if (usesPrecompiledSchemaMetadata()) {
 			if (this.getSchema() == null)
 				this.setSchema(this.getRelatedConnInfo().determineSchema());
@@ -400,6 +398,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		if (hasParents()) {
 
 			for (ParentTable p : this.getParents()) {
+				p.setEtlSide(requireEtlSide());
+				p.setResolvedResource(this.getResolvedResource());
 				p.setParentConf(this.getParentConf());
 			}
 		}
@@ -481,7 +481,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		java.io.File manifestFile = new java.io.File(metadataDirectory, "manifest.json").getAbsoluteFile();
 		DatabaseModelManifest manifest = new FileDatabaseModelManifestRepository(metadataDirectory).read();
 		String expectedKey = metadata.getKey().toString();
-		String expectedClass = this.generateFullClassName(this.getResolvedResource().getDirection());
+		String expectedClass = this.generateFullClassName(requireEtlSide());
 		String expectedFingerprint = PhysicalTableMetadataFingerprint.sha256(metadata);
 		DatabaseModelManifest.Entry matchingClass = null;
 		List<String> classesForKey = new ArrayList<>();
@@ -659,6 +659,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 			ParentTableImpl parent = ParentTableImpl.init(foreignKey.getReferencedTable(), foreignKey.getName(), this);
 
+			parent.setEtlSide(requireEtlSide());
+			parent.setResolvedResource(this.getResolvedResource());
 			parent.setSchema(
 					resolveReferencedSchema(foreignKey.getReferencedSchema(), foreignKey.getReferencedCatalog()));
 			parent.setParentConf(this.getParentConf());
@@ -710,6 +712,8 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 
 		for (PhysicalExportedForeignKeyMetadata foreignKey : this.physicalTableConfiguration.getExportedForeignKeys()) {
 			ChildTable child = ChildTable.init(foreignKey.getChildTable(), foreignKey.getName(), this);
+			child.setEtlSide(requireEtlSide());
+			child.setResolvedResource(this.getResolvedResource());
 			child.setSchema(resolveReferencedSchema(foreignKey.getChildSchema(), foreignKey.getChildCatalog()));
 			child.setParentConf(this.getParentConf());
 			List<RefMapping> mappings = new ArrayList<>();
@@ -788,17 +792,11 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 	}
 
 	private String resolveDataModelId() {
-		if (this.getResolvedResource() == null)
-			throw new EtlConfException("The resolvedResource is not resolved!!");
-
-		return this.getRelatedEtlConf().getDataModelId(this.getResolvedResource().getDirection());
+		return this.getRelatedEtlConf().getDataModelId(requireEtlSide());
 	}
 
 	private String resolvePojoPackage() {
-		if (this.getResolvedResource() == null)
-			throw new EtlConfException("The resolvedResource is not resolved!!");
-
-		return this.getRelatedEtlConf().getPojoPackage(this.getResolvedResource().getDirection());
+		return this.getRelatedEtlConf().getPojoPackage(requireEtlSide());
 	}
 
 	private String resolveReferencedSchema(String schema, String catalog) {
@@ -946,7 +944,7 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		}
 
 		try {
-			this.setEtlRecordClass(this.generateEtlRecordClass(this.getResolvedResource().getDirection()));
+			this.setEtlRecordClass(this.generateEtlRecordClass(requireEtlSide()));
 		} catch (PojoNotFoundException e) {
 		}
 	}

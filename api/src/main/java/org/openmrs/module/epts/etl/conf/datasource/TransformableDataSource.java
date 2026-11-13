@@ -293,7 +293,7 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		}
 
 		try {
-			this.setEtlRecordClass(this.generateEtlRecordClass(this.getResolvedResource().getDirection()));
+			this.setEtlRecordClass(this.generateEtlRecordClass(requireEtlSide()));
 		} catch (PojoNotFoundException e) {
 		}
 

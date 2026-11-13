@@ -130,6 +130,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	private ActionOnEtlIssue inconsistencyBehavior;
 
 	public EtlDestinationConfiguration() {
+		this.setEtlSide(EtlSide.DST);
 		this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue.ABORT_PROCESS;
 		this.onMultipleDataSourceWithSameName = ActionOnEtlIssue.ABORT_PROCESS;
 		this.useAsDataSource = Boolean.FALSE;
@@ -1417,15 +1418,13 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 
 		if (resolvedResource != null) {
+			tableDataDestination.setEtlSide(EtlSide.DST);
 			tableDataDestination.setResolvedResource(resolvedResource);
 
 			if (resource != null && utilities.stringHasValue(resource.getAlias())) {
 				tableDataDestination.setTableAlias(resource.getAlias());
 			}
 
-			if (resolvedResource.getEndpoint().getType() == ConnectorType.JDBC) {
-				tableDataDestination.setRelatedConnInfo(resolvedResource.getEndpoint().unwrap(DBConnectionInfo.class));
-			}
 		}
 	}
 

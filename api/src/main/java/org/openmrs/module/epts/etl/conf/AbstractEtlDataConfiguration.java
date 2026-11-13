@@ -4,10 +4,13 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.transformer.FieldTransformerType;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfiguration implements EtlDataConfiguration {
 
@@ -18,6 +21,17 @@ public abstract class AbstractEtlDataConfiguration extends AbstractBaseConfigura
 	private List<String> dynamicElements;
 
 	private Boolean initialized;
+
+	private transient EtlSide etlSide;
+
+	@JsonIgnore
+	public EtlSide getEtlSide() {
+		return etlSide;
+	}
+
+	public void setEtlSide(EtlSide etlSide) {
+		this.etlSide = etlSide;
+	}
 
 	public Boolean isInitialized() {
 		return isTrue(initialized);

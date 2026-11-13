@@ -29,6 +29,17 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	private List<EtlDataSource> allAvaliableDataSource;
 	private String condition;
 	private EtlConfiguration relatedEtlConf;
+	private EtlSide etlSide;
+
+	@Override
+	public EtlSide getEtlSide() {
+		return etlSide;
+	}
+
+	@Override
+	public void setEtlSide(EtlSide etlSide) {
+		this.etlSide = etlSide;
+	}
 
 	private FastEtlTransformingTarget(EtlConfiguration relatedEtlConf, List<EtlDataSource> allAvaliableDataSource) {
 		this.relatedEtlConf = relatedEtlConf;

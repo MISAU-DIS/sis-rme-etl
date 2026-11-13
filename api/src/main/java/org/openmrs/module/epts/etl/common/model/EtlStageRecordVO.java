@@ -336,12 +336,12 @@ public class EtlStageRecordVO extends BaseVO implements EtlDatabaseObject {
 
 		try {
 			rec = utilities.loadObjectFormJSON(
-					tableInfo.generateEtlRecordClass(tableInfo.getResolvedResource().getDirection()), modifiedJSON);
+					tableInfo.generateEtlRecordClass(tableInfo.requireEtlSide()), modifiedJSON);
 		} catch (Exception e) {
 			// try to resolve pattern problems
 			modifiedJSON = utilities.resolveScapeCharacter(modifiedJSON);
 			rec = utilities.loadObjectFormJSON(
-					tableInfo.generateEtlRecordClass(tableInfo.getResolvedResource().getDirection()),
+					tableInfo.generateEtlRecordClass(tableInfo.requireEtlSide()),
 
 					modifiedJSON);
 		}

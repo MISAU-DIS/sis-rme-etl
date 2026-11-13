@@ -151,7 +151,7 @@ public interface EtlDataSource extends EtlObjectConfiguration {
 		this.tryToLoadSchemaInfo(etlSchemaObject, conn);
 
 		try {
-			this.setEtlRecordClass(this.generateEtlRecordClass(getResolvedResource().getDirection()));
+			this.setEtlRecordClass(this.generateEtlRecordClass(requireEtlSide()));
 		} catch (PojoNotFoundException e) {
 		}
 	}

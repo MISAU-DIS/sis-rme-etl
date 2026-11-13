@@ -27,6 +27,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.ConditionClauseScope;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.EtlDstType;
 import org.openmrs.module.epts.etl.conf.types.JoinType;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
@@ -135,6 +136,7 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	private transient EtlSourceConfiguration detachedLegacySource;
 
 	public JdbcTablePrimaryDataSourceConfiguration() {
+		this.setEtlSide(EtlSide.SRC);
 		this.joinExtraConditionScope = ConditionClauseScope.JOIN_CLAUSE;
 		this.limitToOneResult = false;
 	}
@@ -558,16 +560,16 @@ public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfig
 	public DBConnectionInfo getRelatedConnInfo() {
 		ConnectorResource resource = getResolvedResource();
 
-		if (resource != null && resource.getEndpoint() != null) {
-
-			if (resource.getEndpoint().getType() != ConnectorType.JDBC) {
-				throw new RequireJdbcException("Primary data source '" + getObjectName() + "' is not JDBC-backed");
-			}
-
-			return resource.getEndpoint().unwrap(DBConnectionInfo.class);
+		if (resource == null || resource.getEndpoint() == null) {
+			throw new RequireJdbcException(
+					"The connector resource is not initialized for primary data source '" + getObjectName() + "'");
 		}
 
-		return getSrcConnInfo();
+		if (resource.getEndpoint().getType() != ConnectorType.JDBC) {
+			throw new RequireJdbcException("Primary data source '" + getObjectName() + "' is not JDBC-backed");
+		}
+
+		return resource.getEndpoint().unwrap(DBConnectionInfo.class);
 	}
 
 	@JsonIgnore

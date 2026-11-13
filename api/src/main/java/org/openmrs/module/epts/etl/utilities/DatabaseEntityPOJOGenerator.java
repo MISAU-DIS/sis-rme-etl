@@ -28,7 +28,6 @@ import org.openmrs.module.epts.etl.conf.interfaces.MainJoiningEntity;
 import org.openmrs.module.epts.etl.conf.interfaces.ParentTable;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext.Side;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
@@ -51,10 +50,7 @@ public class DatabaseEntityPOJOGenerator {
 
 	public static Class<EtlDatabaseObject> generate(EtlObjectConfiguration pojoble, EtlSide side)
 			throws IOException, SQLException, ClassNotFoundException {
-
-		if (pojoble.getResolvedResource() != null) {
-			return generate(pojoble, pojoble.getResolvedResource());
-		}
+		pojoble.setEtlSide(side);
 
 		if (!pojoble.isFullLoaded()) {
 			pojoble.fullLoad();
@@ -68,13 +64,9 @@ public class DatabaseEntityPOJOGenerator {
 				etl.getPojoPackage(side), null));
 	}
 
-	public static Class<EtlDatabaseObject> generate(EtlObjectConfiguration pojoble, ConnectorResource resource)
-			throws IOException, SQLException, ClassNotFoundException {
-		return generate(pojoble, pojoble.getRelatedEtlConf().createDatabaseModelGenerationContext(resource, null));
-	}
-
 	public static Class<EtlDatabaseObject> generate(EtlObjectConfiguration pojoble,
 			DatabaseModelGenerationContext context) throws IOException, SQLException, ClassNotFoundException {
+		pojoble.setEtlSide(context.getSide() == Side.DST ? EtlSide.DST : EtlSide.SRC);
 
 		if (!pojoble.isFullLoaded()) {
 			pojoble.fullLoad(context.getConnection());

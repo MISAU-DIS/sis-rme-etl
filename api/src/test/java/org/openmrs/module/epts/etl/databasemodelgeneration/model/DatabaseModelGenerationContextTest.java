@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.openmrs.module.epts.etl.conf.DataModelConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlSide;
-import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
-import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.databasemodelgeneration.model.DatabaseModelGenerationContext.Side;
 
 class DatabaseModelGenerationContextTest {
@@ -32,7 +30,7 @@ class DatabaseModelGenerationContextTest {
 	}
 
 	@Test
-	void shouldResolveModelIdentityFromTheResourceDirection() {
+	void shouldResolveModelIdentityFromTheExplicitEtlSide() {
 		DataModelConfiguration dataModel = new DataModelConfiguration();
 		dataModel.setSrcDataModelId("source-model");
 		dataModel.setSrcPojoPackageName("source.model");
@@ -41,38 +39,11 @@ class DatabaseModelGenerationContextTest {
 		EtlConfiguration configuration = new EtlConfiguration();
 		configuration.setDataModel(dataModel);
 
-		ConnectorResource sourceResource = resource(EtlSide.SRC);
-		ConnectorResource destinationResource = resource(EtlSide.DST);
-
 		assertEquals("source.model", configuration.getPojoPackage(EtlSide.SRC));
 		assertEquals("destination.model", configuration.getPojoPackage(EtlSide.DST));
 		assertEquals("source-model", configuration.getDataModelId(EtlSide.SRC));
 		assertEquals("destination-model", configuration.getDataModelId(EtlSide.DST));
-		assertEquals(Side.SRC, configuration.createDatabaseModelGenerationContext(sourceResource, null).getSide());
-		assertEquals(Side.DST, configuration.createDatabaseModelGenerationContext(destinationResource, null).getSide());
-	}
-
-	private ConnectorResource resource(EtlSide direction) {
-		return new ConnectorResource() {
-			@Override
-			public String getName() {
-				return "model";
-			}
-
-			@Override
-			public EtlSide getDirection() {
-				return direction;
-			}
-
-			@Override
-			public ConnectorEndpoint getEndpoint() {
-				return null;
-			}
-
-			@Override
-			public <T> T unwrap(Class<T> nativeType) {
-				throw new UnsupportedOperationException();
-			}
-		};
+		assertEquals(Side.SRC, configuration.createDatabaseModelGenerationContext(EtlSide.SRC, null).getSide());
+		assertEquals(Side.DST, configuration.createDatabaseModelGenerationContext(EtlSide.DST, null).getSide());
 	}
 }

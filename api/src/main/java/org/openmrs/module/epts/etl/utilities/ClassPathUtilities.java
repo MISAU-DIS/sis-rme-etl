@@ -224,9 +224,8 @@ public class ClassPathUtilities {
 	}
 
 	public static void addClassToClassPath(EtlObjectConfiguration pojoble, EtlSide side) {
-		String pojoPackage = pojoble.getResolvedResource() == null ? pojoble.getRelatedEtlConf().getPojoPackage(side)
-				: pojoble.getRelatedEtlConf().getPojoPackage(pojoble.getResolvedResource().getDirection());
-		addClassToClassPath(pojoble, pojoPackage);
+		pojoble.setEtlSide(side);
+		addClassToClassPath(pojoble, pojoble.getRelatedEtlConf().getPojoPackage(side));
 	}
 
 	public static void addClassToClassPath(EtlObjectConfiguration pojoble, String pojoPackageName) {

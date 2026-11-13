@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -199,6 +200,7 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 
 		applyIncludes();
 		resolvePrimaryDataSource();
+		primaryDataSource.setEtlSide(EtlSide.SRC);
 		markAsInitialized();
 	}
 
@@ -238,6 +240,7 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 	}
 
 	private void initAdditionalDataSource(EtlAdditionalDataSource additional) throws DBException {
+		additional.setEtlSide(EtlSide.SRC);
 		additional.setRelatedPrimaryDataSource(primaryDataSource);
 		Connection connection = null;
 		org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection ownedConnection = null;

@@ -889,7 +889,7 @@ public class PreparedQuery extends AbstractEtlDataConfiguration {
 		if (this.getDataSource().getEtlRecordClass() == null) {
 
 			if (conn instanceof OpenConnection) {
-				this.getDataSource().generateEtlRecordClass(this.dataSource.getResolvedResource().getDirection());
+				this.getDataSource().generateEtlRecordClass(this.dataSource.requireEtlSide());
 			}
 		}
 

@@ -321,7 +321,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 			this.debug("QueryDataSourceConfig [" + this.getDesc() + "] full loaded!");
 
 			try {
-				this.setEtlRecordClass(this.generateEtlRecordClass(this.getResolvedResource().getDirection()));
+				this.setEtlRecordClass(this.generateEtlRecordClass(requireEtlSide()));
 			} catch (PojoNotFoundException e) {
 			}
 

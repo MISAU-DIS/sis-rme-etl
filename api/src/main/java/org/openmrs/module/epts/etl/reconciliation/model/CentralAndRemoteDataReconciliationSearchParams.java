@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import org.openmrs.module.epts.etl.conf.types.EtlOperationType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.engine.AbstractEtlSearchParams;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -138,11 +139,11 @@ public class CentralAndRemoteDataReconciliationSearchParams extends AbstractEtlS
 					.tryToGetExistingCLass("org.openmrs.module.epts.etl.model.pojo.generic.GenericDatabaseObject");
 		} else if (type.isOutdatedRecordsDetector()) {
 			return (Class<EtlDatabaseObject>) this.getJdbcPrimaryDataSource()
-					.generateEtlRecordClass(this.getConfig().getResolvedSrcResource().getDirection());
+					.generateEtlRecordClass(EtlSide.SRC);
 
 		} else if (type.isPhantomRecordsDetector()) {
 			return (Class<EtlDatabaseObject>) this.getJdbcPrimaryDataSource()
-					.generateEtlRecordClass(this.getConfig().getResolvedSrcResource().getDirection());
+					.generateEtlRecordClass(EtlSide.SRC);
 		}
 
 		throw new ForbiddenOperationException("Unsupported operation type '" + type + "'");

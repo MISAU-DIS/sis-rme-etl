@@ -795,62 +795,33 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 
 	@JsonIgnore
 	public String getPojoPackage(EtlSide side) {
+		if (side == null) {
+			throw new ForbiddenOperationException("Cannot resolve the POJO package without an ETL side");
+		}
 		return side.isDst() ? getDstPojoPackageName() : getSrcPojoPackageName();
 	}
 
-	/**
-	 * use {@link #getPojoPackage(ConnectorResource)}. Connection information is not
-	 * a data-model identity.
-	 *
-	 * @JsonIgnore public String getPojoPackage(DBConnectionInfo connInfo) {
-	 * 
-	 *             if (connInfo == null) { return null; }
-	 * 
-	 *             if (connInfo == getDstConnInfo() || connInfo.isDstConn()) {
-	 *             return getDstPojoPackageName(); }
-	 * 
-	 *             if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo()
-	 *             || connInfo.isSrcConn() || connInfo.isMainConn()) { return
-	 *             getSrcPojoPackageName(); }
-	 * 
-	 *             return null; }
-	 */
-
 	@JsonIgnore
 	public String getDataModelId(EtlSide side) {
+		if (side == null) {
+			throw new ForbiddenOperationException("Cannot resolve the data-model identity without an ETL side");
+		}
 		return side.isDst() ? getDataModel().getDstDataModelId() : getDataModel().getSrcDataModelId();
 	}
 
 	@JsonIgnore
-	public DatabaseModelGenerationContext createDatabaseModelGenerationContext(ConnectorResource resource,
+	public DatabaseModelGenerationContext createDatabaseModelGenerationContext(EtlSide side,
 			Connection connection) {
 
-		if (resource == null || resource.getDirection() == null) {
+		if (side == null) {
 			throw new ForbiddenOperationException(
-					"Cannot create a data-model generation context from a resource without direction");
+					"Cannot create a data-model generation context without an ETL side");
 		}
 
-		return resource.getDirection().isDestination()
+		return side.isDst()
 				? DatabaseModelGenerationContext.destination(getDataModel(), connection)
 				: DatabaseModelGenerationContext.source(getDataModel(), connection);
 	}
-
-	/** use {@link #getDataModelId(ConnectorResource)}. */
-
-	/*
-	 * @JsonIgnore public String getDataModelId(DBConnectionInfo connInfo) {
-	 * 
-	 * if (connInfo == null) { return null; }
-	 * 
-	 * if (connInfo == getDstConnInfo() || connInfo.isDstConn()) { return
-	 * getDataModel().getDstDataModelId(); }
-	 * 
-	 * if (connInfo == getSrcConnInfo() || connInfo == getMainConnInfo() ||
-	 * connInfo.isSrcConn() || connInfo.isMainConn()) { return
-	 * getDataModel().getSrcDataModelId(); }
-	 * 
-	 * return null; }
-	 */
 
 	@JsonIgnore
 	public String getSchema(DBConnectionInfo connInfo) {
@@ -2197,22 +2168,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		return getPojoPackageAsDirectory(getPojoPackage(side));
 	}
 
-	/** use {@link #getPojoPackageAsDirectory(ConnectorResource)}. */
-
-	/**
-	 * 
-	 * @JsonIgnore public File getPojoPackageAsDirectory(DBConnectionInfo connInfo)
-	 *             { String pojoPackageDir = ""; pojoPackageDir +=
-	 *             getPOJOCompiledFilesDirectory().getAbsolutePath() +
-	 *             FileUtilities.getPathSeparator();
-	 * 
-	 *             pojoPackageDir +=
-	 *             getPojoPackageRelativePath(connInfo).replaceAll("/",
-	 *             Matcher.quoteReplacement(FileUtilities.getPathSeparator()));
-	 * 
-	 *             return new File(pojoPackageDir); }
-	 **/
-
 	@JsonIgnore
 	public File getPojoPackageAsDirectory(String pojoPackageName) {
 		String path = getPOJOCompiledFilesDirectory().getAbsolutePath() + FileUtilities.getPathSeparator();
@@ -2225,14 +2180,6 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	public String getPojoPackageRelativePath(EtlSide side) {
 		return getPojoPackageRelativePath(this.getPojoPackage(side));
 	}
-
-	/** use {@link #getPojoPackageRelativePath(ConnectorResource)}. */
-
-	/*
-	 * 
-	 * @JsonIgnore public String getPojoPackageRelativePath(DBConnectionInfo app) {
-	 * return getPojoPackageRelativePath(this.getPojoPackage(app)); }
-	 */
 
 	@JsonIgnore
 	public String getPojoPackageRelativePath(String pojoPackageName) {
