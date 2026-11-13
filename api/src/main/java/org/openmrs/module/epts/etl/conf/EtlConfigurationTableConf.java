@@ -25,6 +25,13 @@ public class EtlConfigurationTableConf extends AbstractTableConfiguration {
 		super.setTableName(tableName);
 
 		this.relatedEtlConf = relatedEtlConf;
+		/*
+		 * ETL configuration and Stage Area tables belong to the ETL state database,
+		 * which is currently backed by the source side. These descriptors are created
+		 * outside the regular source configuration tree, so their side cannot be
+		 * inherited during EtlItemConfiguration initialization.
+		 */
+		setEtlSide(EtlSide.SRC);
 
 		setSchema(getSyncStageSchema());
 
