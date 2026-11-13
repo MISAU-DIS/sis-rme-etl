@@ -117,7 +117,13 @@
             "connector": "jdbc-dst-connector",
             "name": "person",
             "alias":"person_dst_ds"
-          }
+          },
+          "mapping":[
+            {
+              "dstField":"office_id",
+              "transformer": "PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(office,on_demand_check_condition:name = (select name from office o where o.name = person_src_ds.office_id)),name:person_src_ds.office_id,uuid:FAST_SQL_TRANSFORMER(select uuid()))"
+            }            
+          ]
         },        
         {
           "resource": {
@@ -141,9 +147,9 @@
               "dstField": "person_creation_date"
             },
             {
-              "dstField":"office_id",
-              "transformer": "PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(office,on_demand_check_condition:office_id = (select office_id from office o where o.office_id = person_src_ds.office_id)),patient_id:${dst_patient_id},name:DEFAULT_OFFICE,uuid:FAST_SQL_TRANSFORMER(select uuid()))"
-            }
+              "srcField": "office_id",
+              "dstField": "office_name"
+            }   
           ],
           "ignorableFields": [
             "creation_date"
