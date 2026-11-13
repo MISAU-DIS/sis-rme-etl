@@ -136,7 +136,7 @@
           "mapping": [
             {
               "dstField": "id",
-              "transformer": "FAST_SQL_TRANSFORMER(query:select id from person_data p where p.person_uuid =  person_dst_ds.uuid,query_connection:DST)"
+              "transformer": "FAST_SQL_TRANSFORMER(query:select id from person_data p where p.person_uuid =  person_dst_ds.uuid,query_connection:DST,onNullTransformedValue:SET_TO_NULL)"
             },            
             {
               "srcField": "uuid",

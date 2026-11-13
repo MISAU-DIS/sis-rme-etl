@@ -4,7 +4,9 @@ import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
@@ -14,10 +16,12 @@ import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlActionType;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
 import org.openmrs.module.epts.etl.connector.capability.reader.ConnectorRecordReadersAggregator;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWritersAggregator;
+import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorRecordWriterFactory;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteMode;
 import org.openmrs.module.epts.etl.connector.capability.writer.ConnectorWriteRequest;
 import org.openmrs.module.epts.etl.engine.Engine;
@@ -643,10 +647,34 @@ public class EtlLoadHelper {
 			ConnectorRecordWriter<?> writer) throws ParentNotYetMigratedException, DBException {
 
 		EtlItemConfiguration conf = dstConf.getParentConf();
+		ConnectorRecordWriter<? extends EtlDatabaseObject> destinationWriter = createOnDemandWriter(dstConf, writer);
+		Map<ConnectorResource, ConnectorRecordWriter<? extends EtlDatabaseObject>> destinationWriters = new IdentityHashMap<>();
+		Map<EtlDestinationConfiguration, ConnectorResource> destinationResources = new IdentityHashMap<>();
 
-		return processor.performTransformationAndLoading(conf, utilities.parseToList(srcRecord), null,
+		destinationWriters.put(destinationWriter.getResource(), destinationWriter);
+		destinationResources.put(dstConf, destinationWriter.getResource());
+
+		ConnectorRecordWritersAggregator scopedWriters = new ConnectorRecordWritersAggregator(destinationWriters,
+				destinationResources);
+
+		return processor.performTransformationAndLoading(conf, dstConf, utilities.parseToList(srcRecord), null,
 				LoadingType.PARENT, (ConnectorRecordReadersAggregator) reader.getAggregator(),
-				(ConnectorRecordWritersAggregator) writer.getAggregator());
+				scopedWriters);
+	}
+
+	private static ConnectorRecordWriter<? extends EtlDatabaseObject> createOnDemandWriter(
+			EtlDestinationConfiguration destination, ConnectorRecordWriter<?> currentWriter) {
+
+		if (destination.getResolvedResource() == null) {
+			throw new IllegalArgumentException("The on-demand destination has no resolved resource: " + destination);
+		}
+
+		if (destination.isJdbcDestination()) {
+			return ConnectorRecordWriterFactory.create(destination.getResolvedResource(),
+					destination.requireJdbcTableDestination(), currentWriter.unwrap(Connection.class));
+		}
+
+		return ConnectorRecordWriterFactory.create(destination.getResolvedResource(), null);
 	}
 
 	public boolean hasDstConf() {

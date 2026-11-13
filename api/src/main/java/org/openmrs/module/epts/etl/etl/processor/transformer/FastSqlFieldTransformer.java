@@ -81,7 +81,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		super(parameters, relatedEtlTransformTarget, field);
 
-		this.queryConnection = EtlSide.SRC;
+		if (this.queryConnection == null) {
+			this.queryConnection = EtlSide.SRC;
+		}
 
 		OpenConnection conn = null;
 

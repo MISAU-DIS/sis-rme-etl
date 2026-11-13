@@ -98,6 +98,23 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 		return performLoading(etlItemConf, etlObjects, loadingType, readers, writers);
 	}
 
+	/**
+	 * Transforms and loads records for one explicitly selected destination. This is
+	 * used by destinations created lazily (for example by an on-demand parent
+	 * transformer), which are intentionally not part of the execution-wide writer
+	 * registry.
+	 */
+	public EtlLoadHelper performTransformationAndLoading(EtlItemConfiguration etlItemConf,
+			EtlDestinationConfiguration destination, List<EtlDatabaseObject> etlObjects,
+			EtlDatabaseObject parentMigratedRec, LoadingType loadingType,
+			ConnectorRecordReadersAggregator readers, ConnectorRecordWritersAggregator writers) throws DBException {
+
+		this.performTransformation(etlItemConf, destination, etlObjects, parentMigratedRec, loadingType, readers,
+				writers);
+
+		return performLoading(etlItemConf, etlObjects, loadingType, readers, writers);
+	}
+
 	EtlLoadHelper performTransformationAndLoadingJdbc(EtlItemConfiguration etlItemConf,
 			List<EtlDatabaseObject> etlObjects, EtlDatabaseObject parentMigratedRec, LoadingType loadingType,
 			ConnectorRecordReader<EtlDatabaseObject> srcConn, ConnectorRecordWriter<EtlDatabaseObject> dstConn)
@@ -122,6 +139,13 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 	}
 
 	private void performTransformation(EtlItemConfiguration etlItemConf, List<EtlDatabaseObject> etlObjects,
+			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, ConnectorRecordReadersAggregator readers,
+			ConnectorRecordWritersAggregator writers) throws DBException {
+		performTransformation(etlItemConf, null, etlObjects, parentMigratedRec, loadingType, readers, writers);
+	}
+
+	private void performTransformation(EtlItemConfiguration etlItemConf,
+			EtlDestinationConfiguration selectedDestination, List<EtlDatabaseObject> etlObjects,
 			EtlDatabaseObject parentMigratedRec, LoadingType loadingType, ConnectorRecordReadersAggregator readers,
 			ConnectorRecordWritersAggregator writers) throws DBException {
 
@@ -167,6 +191,10 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 							: new ArrayList<>();
 
 					for (EtlDestinationConfiguration dstConf : etlItemConf.getDestinations()) {
+
+						if (selectedDestination != null && dstConf != selectedDestination) {
+							continue;
+						}
 
 						if (dstConf.isDisabled()) {
 							logTrace("Skiping transformation of dstConf {} as it is disabled", dstConf);
