@@ -1585,4 +1585,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	public Boolean hasChildDstConf() {
 		return this.getParentConf().hasChildItemConf();
 	}
+
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		return this.isJdbcDestination() ? this.requireJdbcTableDestination() : null;
+	}
 }

@@ -717,7 +717,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		if (recordOnDB == null) {
-			TableConfiguration refInfo = (TableConfiguration) getRelatedConfiguration();
+			TableConfiguration refInfo = this.getRelatedConfiguration().retrieveRelatedTableConf();
 
 			if (refInfo.useSharedPKKey() && !refInfo.hasItsOwnKeys()) {
 				// Ignore duplication if it uses shared key

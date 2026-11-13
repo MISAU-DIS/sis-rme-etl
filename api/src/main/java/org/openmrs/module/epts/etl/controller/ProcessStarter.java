@@ -66,11 +66,13 @@ public class ProcessStarter implements ControllerStarter {
 	 * @throws DBException
 	 */
 	public void init() throws ForbiddenOperationException, DBException {
+
 		if (this.initialized) {
 			return;
 		}
 
 		synchronized (LOCK) {
+
 			if (this.initialized) {
 				return;
 			}
@@ -93,6 +95,7 @@ public class ProcessStarter implements ControllerStarter {
 
 	@Override
 	public void run() {
+
 		try {
 			applyStartupDebugDelayIfConfigured();
 
@@ -129,7 +132,9 @@ public class ProcessStarter implements ControllerStarter {
 		ProcessController controller = (ProcessController) controllerToFinalize;
 
 		if (controllerToFinalize.isFinished()) {
+
 			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
+
 				try {
 
 					logger.warn(
@@ -140,7 +145,7 @@ public class ProcessStarter implements ControllerStarter {
 
 					while (childConfig != null && childConfig.isDisabled()) {
 						logger.warn("Disabled config was found on the tree", childConfig.getConfigFilePath());
-						
+
 						childConfig = EtlConfiguration.loadFromFile(new File(childConfig.getChildConfigFilePath()));
 					}
 
@@ -189,6 +194,7 @@ public class ProcessStarter implements ControllerStarter {
 	}
 
 	public void applyStartupDebugDelayIfConfigured() {
+
 		if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
 			TimeCountDown.sleep(10);
 		}
@@ -202,6 +208,7 @@ public class ProcessStarter implements ControllerStarter {
 	}
 
 	private void waitUntilFinalized() {
+
 		while (!this.finalized) {
 			TimeCountDown.sleep(15);
 
@@ -210,10 +217,11 @@ public class ProcessStarter implements ControllerStarter {
 	}
 
 	private void logFinalStatus() {
-		if (this.currentController.isFinished()) {
-			logger.warn("ALL JOBS ARE FINISHED");
-		} else if (this.currentController.isStopped()) {
+
+		if (this.currentController.isStopped()) {
 			logger.warn("ALL JOBS ARE STOPPED");
+		} else {
+			logger.warn("ALL JOBS ARE FINISHED");
 		}
 	}
 

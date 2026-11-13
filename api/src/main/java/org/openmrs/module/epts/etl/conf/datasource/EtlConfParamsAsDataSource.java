@@ -252,4 +252,10 @@ public final class EtlConfParamsAsDataSource extends AbstractEtlDataConfiguratio
 	public void setResolvedResource(ConnectorResource resource) {
 	}
 
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

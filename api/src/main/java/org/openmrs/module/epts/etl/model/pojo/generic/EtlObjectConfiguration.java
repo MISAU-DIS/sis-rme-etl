@@ -59,6 +59,7 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 
 	@JsonIgnore
 	default EtlSide requireEtlSide() {
+
 		if (getEtlSide() == null) {
 			throw new ForbiddenOperationException(
 					"The ETL side is not initialized for object configuration '" + getObjectName() + "'");
@@ -104,6 +105,7 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 
 	@JsonIgnore
 	default String getClassPackage(EtlSide side) {
+
 		if (side == null) {
 			throw new ForbiddenOperationException(
 					"Cannot resolve the POJO package without an ETL side for '" + getObjectName() + "'");
@@ -423,4 +425,21 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		return utilities.listHasElement(this.getExcludedFieldsFromObjectDesc());
 	}
 
+	default Boolean containsAllFields(List<Field> fields) {
+		if (!this.hasFields() || fields == null)
+			return false;
+
+		for (Field f : fields) {
+			if (!this.containsField(f.getName()))
+				return false;
+		}
+
+		return true;
+	}
+
+	default Boolean hasAlias() {
+		return utilities.stringHasValue(this.getAlias());
+	}
+
+	TableConfiguration retrieveRelatedTableConf();
 }

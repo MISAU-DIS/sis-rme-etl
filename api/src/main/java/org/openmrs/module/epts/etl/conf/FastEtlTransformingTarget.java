@@ -373,4 +373,10 @@ public class FastEtlTransformingTarget implements EtlTransformTarget {
 	@Override
 	public void setResolvedResource(ConnectorResource resource) {
 	}
+
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

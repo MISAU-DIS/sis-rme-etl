@@ -2,6 +2,7 @@ package org.openmrs.module.epts.etl.conf.datasource;
 
 import java.util.List;
 
+import org.openmrs.module.epts.etl.conf.interfaces.TableConfiguration;
 import org.openmrs.module.epts.etl.model.Field;
 
 /** Logical JSON records, independently of the connector transporting them. */
@@ -22,5 +23,10 @@ public class JsonPrimaryDataSourceConfiguration extends AbstractRecordPrimaryDat
 	@Override
 	protected String getSourceTypeName() {
 		return "jsonDataSource";
+	}
+
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		return null;
 	}
 }

@@ -218,6 +218,14 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 							field.getTransformationTargetObject().getPrimaryDataSource());
 
 					conf.setRelatedEtlConf(relatedEtlConfiguration);
+					/*
+					 * This query data source is created lazily, after configuration
+					 * initialization. Bind it to the capability that actually executes the
+					 * query instead of inheriting the transformation target's primary source.
+					 */
+					conf.setEtlSide(this.queryConnection);
+					conf.setResolvedResource(this.queryConnection.isDestination() ? writer.getResource()
+							: reader.getResource());
 
 					conf.setName(this.name);
 

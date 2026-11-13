@@ -155,7 +155,7 @@ public class Oid extends PrimaryKey {
 	}
 	
 	@Override
-	public void setTabConf(TableConfiguration tabConf) {
+	public void setTabConf(EtlObjectConfiguration tabConf) {
 		super.setTabConf(tabConf, false);
 	}
 	

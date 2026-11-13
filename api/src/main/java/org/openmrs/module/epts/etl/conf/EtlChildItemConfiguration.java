@@ -443,4 +443,10 @@ public class EtlChildItemConfiguration extends EtlItemConfiguration implements E
 
 	}
 
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

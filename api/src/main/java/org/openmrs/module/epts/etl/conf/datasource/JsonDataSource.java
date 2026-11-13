@@ -484,4 +484,10 @@ public class JsonDataSource extends AbstractEtlDataConfiguration
 		return null;
 	}
 
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

@@ -115,6 +115,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	@Override
 	public void setParentConf(EtlDataConfiguration relatedParent) {
+
 		if (relatedParent instanceof PrimaryDataSourceConfiguration) {
 			this.parent = (PrimaryDataSourceConfiguration) relatedParent;
 		} else {
@@ -156,8 +157,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 			RecordSchemaConfiguration schema = recordSchema != null ? recordSchema
 					: RecordSchemaConfiguration.fromFieldNames(this.fields);
-			this.dataSourceFields = schema
-					.resolveFields("JSON data source '" + this.getName() + "'");
+			this.dataSourceFields = schema.resolveFields("JSON data source '" + this.getName() + "'");
 
 		}
 
@@ -308,6 +308,7 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 			return null;
 
 		for (JsonEtlObjectParent p : parents) {
+
 			if (this.childField.equals(p.getChild_field())) {
 				return p;
 			}
@@ -333,6 +334,11 @@ public class JsonSimpleOutputDataSource extends AbstractEtlDataConfiguration
 
 	public void setExcludedFieldsFromObjectDesc(List<String> excludedFieldsFromObjectDesc) {
 		this.excludedFieldsFromObjectDesc = excludedFieldsFromObjectDesc;
+	}
+
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		return null;
 	}
 
 }

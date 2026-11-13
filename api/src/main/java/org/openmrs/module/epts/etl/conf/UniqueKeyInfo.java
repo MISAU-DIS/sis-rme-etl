@@ -15,6 +15,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.exceptions.MissingFieldException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.Field;
+import org.openmrs.module.epts.etl.model.pojo.generic.EtlObjectConfiguration;
 import org.openmrs.module.epts.etl.utilities.AttDefinedElements;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.DBUtilities;
@@ -36,18 +37,18 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 
 	private Boolean fieldValuesLoaded;
 
-	private TableConfiguration tabConf;
+	private EtlObjectConfiguration objectConf;
 
 	private Boolean manualConfigured;
 
 	public UniqueKeyInfo() {
 	}
 
-	public UniqueKeyInfo(TableConfiguration tabConf) {
-		this.tabConf = tabConf;
+	public UniqueKeyInfo(EtlObjectConfiguration tabConf) {
+		this.objectConf = tabConf;
 	}
 
-	public static UniqueKeyInfo init(TableConfiguration tabConf, String keyName) {
+	public static UniqueKeyInfo init(EtlObjectConfiguration tabConf, String keyName) {
 		UniqueKeyInfo uk = new UniqueKeyInfo(tabConf);
 		uk.keyName = keyName;
 
@@ -129,10 +130,12 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	}
 
 	public void loadValuesToFields(EtlDatabaseObject object) {
+
 		for (Field field : this.fields) {
 			Object value = null;
 
 			try {
+
 				try {
 					value = object.getFieldValue(field.getName());
 				} catch (MissingFieldException e) {
@@ -143,9 +146,11 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 			}
 
 			if (value == null && object.hasSharedPkObj()) {
+
 				try {
 					value = object.getSharedPkObj().getFieldValue(field.getName());
 				} catch (ForbiddenOperationException e1) {
+
 					try {
 						value = object.getSharedPkObj()
 								.getFieldValue(AttDefinedElements.convertTableAttNameToClassAttName(field.getName()));
@@ -224,7 +229,9 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 
 			return uniqueKeysInfo;
 		} catch (SQLException e) {
+
 			if (rs != null) {
+
 				try {
 					rs.close();
 				} catch (SQLException e1) {
@@ -262,11 +269,13 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	}
 
 	public Boolean isContained(List<UniqueKeyInfo> uniqueKeys) {
+
 		if (!utilities.listHasElement(uniqueKeys)) {
 			return false;
 		}
 
 		for (UniqueKeyInfo uk : uniqueKeys) {
+
 			if (this.equals(uk)) {
 				return true;
 			}
@@ -403,7 +412,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 
 	@JsonIgnore
 	public UniqueKeyInfo cloneMe() {
-		UniqueKeyInfo uk = UniqueKeyInfo.init(this.tabConf, keyName);
+		UniqueKeyInfo uk = UniqueKeyInfo.init(this.objectConf, keyName);
 
 		for (Field field : this.getFields()) {
 			uk.addKey(Key.fastCreateTyped(field.getName(), field.getDataType()));
@@ -412,6 +421,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	}
 
 	public void copy(UniqueKeyInfo srcInfo) {
+
 		if (srcInfo.hasFields()) {
 			setFields(new ArrayList<>());
 
@@ -519,6 +529,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 		String fields = "";
 
 		for (int i = 0; i < this.getFields().size(); i++) {
+
 			if (utilities.stringHasValue(fields)) {
 				fields += ", ";
 			}
@@ -544,15 +555,16 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 
 	@JsonIgnore
 	public String parseToFilledStringConditionWithAlias() {
-		if (getTabConf() == null) {
+
+		if (getObjectConf() == null) {
 			throw new ForbiddenOperationException("The tabConf is needed");
 		}
 
-		if (!getTabConf().hasAlias()) {
-			throw new ForbiddenOperationException("The table " + getTabConf().getTableName() + " has no alias!");
+		if (!getObjectConf().hasAlias()) {
+			throw new ForbiddenOperationException("The table " + getObjectConf().getObjectName() + " has no alias!");
 		}
 
-		return parseToFilledStringCondition(getTabConf().getAlias());
+		return parseToFilledStringCondition(getObjectConf().getAlias());
 	}
 
 	@JsonIgnore
@@ -562,15 +574,16 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 
 	@JsonIgnore
 	public String parseToParametrizedStringConditionWithAlias() {
-		if (getTabConf() == null) {
+
+		if (getObjectConf() == null) {
 			throw new ForbiddenOperationException("The tabConf is needed");
 		}
 
-		if (!getTabConf().hasAlias()) {
-			throw new ForbiddenOperationException("The table " + getTabConf().getTableName() + " has no alias!");
+		if (!getObjectConf().hasAlias()) {
+			throw new ForbiddenOperationException("The table " + getObjectConf().getObjectName() + " has no alias!");
 		}
 
-		return parseToParametrizedStringCondition(getTabConf().getAlias());
+		return parseToParametrizedStringCondition(getObjectConf().getAlias());
 	}
 
 	@JsonIgnore
@@ -629,7 +642,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	}
 
 	public static String parseToFilledStringConditionToAllWithAlias(List<UniqueKeyInfo> uks) {
-		return parseToFilledStringConditionToAll(uks, uks.get(0).getTabConf().getAlias());
+		return parseToFilledStringConditionToAll(uks, uks.get(0).getObjectConf().getAlias());
 	}
 
 	public static String parseToFilledStringConditionToAllWithoutAlias(List<UniqueKeyInfo> uks) {
@@ -640,6 +653,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 		String fields = "";
 
 		for (UniqueKeyInfo uk : uks) {
+
 			if (utilities.stringHasValue(fields)) {
 				fields += " AND ";
 			}
@@ -655,7 +669,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	}
 
 	public static String parseToParametrizedStringConditionToAllWithAlias(List<UniqueKeyInfo> uks) {
-		return parseToParametrizedStringConditionToAll(uks, uks.get(0).getTabConf().getAlias());
+		return parseToParametrizedStringConditionToAll(uks, uks.get(0).getObjectConf().getAlias());
 	}
 
 	public static String parseToParametrizedStringConditionToAllWithoutAlias(List<UniqueKeyInfo> uks) {
@@ -666,6 +680,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 		String fields = "";
 
 		for (UniqueKeyInfo uk : uks) {
+
 			if (utilities.stringHasValue(fields)) {
 				fields += " AND ";
 			}
@@ -681,29 +696,35 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	}
 
 	@JsonIgnore
-	public TableConfiguration getTabConf() {
-		return tabConf;
+	public EtlObjectConfiguration getObjectConf() {
+		return objectConf;
 	}
 
-	public void setTabConf(TableConfiguration tabConf) {
+	public void setTabConf(EtlObjectConfiguration tabConf) {
 		setTabConf(tabConf, true);
 	}
 
-	public void setTabConf(TableConfiguration tabConf, Boolean checkFields) {
+	public void setTabConf(EtlObjectConfiguration conf, Boolean checkFields) {
+
 		if (!checkFields) {
-			this.tabConf = tabConf;
+			this.objectConf = conf;
 		} else {
 
-			if (!tabConf.containsAllFields(utilities.parseList(this.getFields(), Field.class))) {
-				if (tabConf.useSharedPKKey()) {
-					tabConf = tabConf.getSharedKeyRefInfo(null);
+			if (!conf.containsAllFields(utilities.parseList(this.getFields(), Field.class))) {
+
+				TableConfiguration tabConf = conf.retrieveRelatedTableConf();
+
+				if (tabConf != null) {
+					if (tabConf.useSharedPKKey()) {
+						conf = tabConf.getSharedKeyRefInfo(null);
+					}
 				}
 			}
 
-			if (tabConf.containsAllFields(utilities.parseList(this.getFields(), Field.class))) {
-				this.tabConf = tabConf;
+			if (conf.containsAllFields(utilities.parseList(this.getFields(), Field.class))) {
+				this.objectConf = conf;
 			} else {
-				throw new ForbiddenOperationException("The table [" + tabConf.getTableName()
+				throw new ForbiddenOperationException("The table [" + conf.getObjectName()
 						+ "] you a setting for this UniqueKeyInfo does not contain one or more fields contained by the UniqueKeyInfo");
 			}
 		}
@@ -712,7 +733,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	@JsonIgnore
 	public String generateSqlNullCheckWithDisjunction() {
 
-		if (tabConf == null)
+		if (objectConf == null)
 			throw new ForbiddenOperationException("The tabConf is not set");
 
 		String fields = "";
@@ -724,7 +745,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 				fields += " OR ";
 			}
 
-			fields += this.tabConf.getTableAlias() + "." + key.getName() + " is null ";
+			fields += this.objectConf.getAlias() + "." + key.getName() + " is null ";
 		}
 
 		return fields;
@@ -733,7 +754,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	@JsonIgnore
 	public String generateSqlNotNullCheckWithDisjunction() {
 
-		if (tabConf == null)
+		if (objectConf == null)
 			throw new ForbiddenOperationException("The tabConf is not set");
 
 		String fields = "";
@@ -745,7 +766,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 				fields += " OR ";
 			}
 
-			fields += this.tabConf.getTableAlias() + "." + key.getName() + " is not null ";
+			fields += this.objectConf.getAlias() + "." + key.getName() + " is not null ";
 		}
 
 		return fields;
@@ -762,18 +783,20 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 				fields += " AND ";
 			}
 
-			fields += this.tabConf.getTableAlias() + "." + key.getName() + " is not null ";
+			fields += this.objectConf.getAlias() + "." + key.getName() + " is not null ";
 		}
 
 		return fields;
 	}
 
 	public Key getKey(String name) {
+
 		if (!utilities.listHasElement(this.fields)) {
 			return null;
 		}
 
 		for (Key key : this.fields) {
+
 			if (key.getName().equals(name)) {
 				return key;
 			}
@@ -798,6 +821,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 					"The values for the fields was not loaded. Please call loadValuesToFields(EtlDatabaseObject object) before you try to call this method");
 
 		for (Key k : this.fields) {
+
 			if (k.getValue() == null) {
 				return true;
 			}
@@ -818,6 +842,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 
 	@JsonIgnore
 	public String parseToJson() {
+
 		if (hasFields()) {
 			Collections.sort(this.getFields());
 		}
@@ -834,6 +859,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 		String compacted = "";
 
 		for (UniqueKeyInfo uk : uks) {
+
 			if (!compacted.isEmpty()) {
 				compacted += ",";
 			}
@@ -845,7 +871,9 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	}
 
 	public void tryToReplacePlaceholders(EtlDatabaseObject schemaInfoSrc) {
+
 		if (hasFields()) {
+
 			for (Key k : getFields()) {
 				k.tryToReplacePlaceholders(schemaInfoSrc);
 			}
@@ -855,6 +883,7 @@ public class UniqueKeyInfo implements Comparable<UniqueKeyInfo> {
 	public static void tryToReplacePlaceholders(List<UniqueKeyInfo> uniqueKeys, EtlDatabaseObject schemaInfoSrc) {
 
 		if (uniqueKeys != null) {
+
 			for (UniqueKeyInfo r : uniqueKeys) {
 				r.tryToReplacePlaceholders(schemaInfoSrc);
 			}

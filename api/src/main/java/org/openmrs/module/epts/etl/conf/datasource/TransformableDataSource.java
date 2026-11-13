@@ -765,4 +765,9 @@ public class TransformableDataSource extends AbstractEtlDataConfiguration
 		return this.getApplyCondition();
 	}
 
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		return null;
+	}
+
 }

@@ -9,11 +9,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.openmrs.module.epts.etl.conf.AbstractEtlDataConfiguration;
-import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
-import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlItemConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
+import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.DestinationDataConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
@@ -296,10 +295,11 @@ public class EtlInfo extends AbstractEtlDataConfiguration {
 		getRelatedEtlConf().debug("Starting relationship resolution on object: {}", this.transformedObject);
 
 		Connection srcConn = readers.get(this.getRelatedSrcObject().getRelatedConfiguration()).unwrap(Connection.class);
+		
+		Connection dstConn = ((ConnectorRecordWriter<EtlDatabaseObject>) writers.get(this.getDstConf()))
+				.unwrap(Connection.class);
 
 		for (ParentTable refInfo : getDstConf().getParentRefInfo()) {
-			Connection dstConn = ((ConnectorRecordWriter<EtlDatabaseObject>) writers.get(refInfo))
-					.unwrap(Connection.class);
 
 			Field field = this.getTransformedObject().getField(refInfo);
 

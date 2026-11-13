@@ -214,6 +214,10 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 	@Override
 	public void setRelatedPrimaryDataSource(PrimaryDataSourceConfiguration primaryDataSource) {
 		this.relatedPrimaryDataSource = primaryDataSource;
+
+		if (primaryDataSource != null && primaryDataSource.getEtlSide() != null) {
+			setEtlSide(primaryDataSource.getEtlSide());
+		}
 	}
 
 	public String getScript() {
@@ -683,7 +687,7 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	@Override
 	public DBConnectionInfo getRelatedConnInfo() {
-		return getRelatedPrimaryDataSource().getSrcConnInfo();
+		return EtlAdditionalDataSource.super.getRelatedConnInfo();
 	}
 
 	@Override
@@ -810,6 +814,11 @@ public class QueryDataSourceConfig extends AbstractEtlDataConfiguration
 
 	public void setRelatedEtlConf(EtlConfiguration relatedEtlConfiguration) {
 		this.relatedEtlConfiguration = relatedEtlConfiguration;
+	}
+
+	@Override
+	public TableConfiguration retrieveRelatedTableConf() {
+		return null;
 	}
 
 }
