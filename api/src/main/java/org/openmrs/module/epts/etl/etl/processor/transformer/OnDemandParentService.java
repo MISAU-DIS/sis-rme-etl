@@ -54,7 +54,7 @@ public final class OnDemandParentService {
 						currentReader, currentWriter);
 			} catch (InconsistentStateException e) {
 
-				ParentTable parentInfo = ((TableConfiguration) srcObject.getRelatedConfiguration())
+				ParentTable parentInfo = srcObject.getRelatedConfiguration().requireRelatedTableConf()
 						.findParentRefInfoByParentTable(transformer.getParentTableName());
 
 				parentInfo.setTableName(transformer.getParentTableName());
@@ -64,7 +64,7 @@ public final class OnDemandParentService {
 
 				srcObject.setFieldValue(transformer.getParentSourceField(), null);
 
-				inconsistence.save((TableConfiguration) transformer.getRelatedEtlTransformTarget(),
+				inconsistence.save(transformer.getRelatedEtlTransformTarget().requireRelatedTableConf(),
 						currentReader.unwrap(Connection.class));
 			}
 		}

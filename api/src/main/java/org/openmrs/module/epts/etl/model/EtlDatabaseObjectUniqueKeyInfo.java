@@ -17,16 +17,6 @@ public class EtlDatabaseObjectUniqueKeyInfo extends UniqueKeyInfo {
 	public static List<EtlDatabaseObjectUniqueKeyInfo> generate(EtlObjectConfiguration configuration,
 			EtlDatabaseObject etlDatabaseObject) {
 
-		/*
-		 * List<EtlDatabaseObjectUniqueKeyInfo> uks = new ArrayList<>();
-		 * 
-		 * if (etlDatabaseObject.getSharedPkObj() != null &&
-		 * etlDatabaseObject.getSharedPkObj().getRelatedConfiguration() instanceof
-		 * TableConfiguration) { uks = generate((TableConfiguration)
-		 * etlDatabaseObject.getSharedPkObj().getRelatedConfiguration(),
-		 * etlDatabaseObject.getSharedPkObj()); }
-		 */
-
 		if (configuration.getUniqueKeys() != null && !configuration.getUniqueKeys().isEmpty()) {
 			List<EtlDatabaseObjectUniqueKeyInfo> list = new ArrayList<>(configuration.getUniqueKeys().size());
 

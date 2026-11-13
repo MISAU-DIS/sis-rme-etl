@@ -92,7 +92,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				EtlDatabaseObject dstObject = this.reloadDefaultsParents(primarySource, etlObj, readers, writers);
 
 				if (dstObject != null) {
-					dstObject.update((TableConfiguration) dstObject.getRelatedConfiguration(), dstConn);
+					dstObject.update(dstObject.getRelatedConfiguration().requireRelatedTableConf(), dstConn);
 				}
 			}
 		} catch (Exception e) {
@@ -135,7 +135,7 @@ public class ReloadRecordsWithDefaultParentProcessor extends EtlProcessor {
 				recWithDefaultParentInfo.setFieldValue("status", "ERR");
 				recWithDefaultParentInfo.setFieldValue("last_err", e.getLocalizedMessage());
 
-				recWithDefaultParentInfo.save((TableConfiguration) recWithDefaultParentInfo.getRelatedConfiguration(),
+				recWithDefaultParentInfo.save(recWithDefaultParentInfo.getRelatedConfiguration().requireRelatedTableConf(),
 						srcConn);
 
 				continue;

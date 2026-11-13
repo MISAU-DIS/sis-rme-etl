@@ -536,16 +536,7 @@ public class GenericDatabaseObject extends AbstractDatabaseObject {
 	}
 
 	private TableConfiguration physicalTableConfiguration() {
-
-		if (relatedConfiguration instanceof TableConfiguration) {
-			return (TableConfiguration) relatedConfiguration;
-		}
-
-		if (relatedConfiguration instanceof EtlDestinationConfiguration) {
-			return ((EtlDestinationConfiguration) relatedConfiguration).getTableDataDestination();
-		}
-
-		return null;
+		return relatedConfiguration != null ? relatedConfiguration.retrieveRelatedTableConf() : null;
 	}
 
 	private boolean isIgnorableField(Field field, TableConfiguration tableConfiguration) {

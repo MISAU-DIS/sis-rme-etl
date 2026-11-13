@@ -464,7 +464,7 @@ public class DatabaseEntityPOJOGenerator {
 		}
 
 		if (usesSharedPk(pojoble)) {
-			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
+			ParentTable shared = resolveSharedPkConfiguration(pojoble.requireRelatedTableConf());
 			commonMethods += "\t\tsetSharedPkObj(new " + shared.generateFullClassName(context) + "());\n";
 		}
 		commonMethods += "	} \n \n";
@@ -519,7 +519,7 @@ public class DatabaseEntityPOJOGenerator {
 		commonMethods += "	}\n\n";
 
 		if (usesSharedPk(pojoble)) {
-			ParentTable shared = resolveSharedPkConfiguration((TableConfiguration) pojoble);
+			ParentTable shared = resolveSharedPkConfiguration(pojoble.requireRelatedTableConf());
 			String sharedClass = shared.generateFullClassName(context);
 			commonMethods += "\t@JsonIgnore\n";
 			commonMethods += "\t@Override\n";
@@ -604,15 +604,7 @@ public class DatabaseEntityPOJOGenerator {
 	}
 
 	private static TableConfiguration physicalTableConfiguration(EtlObjectConfiguration configuration) {
-
-		if (configuration instanceof TableConfiguration) {
-			return (TableConfiguration) configuration;
-		}
-
-		if (configuration instanceof EtlDestinationConfiguration) {
-			return ((EtlDestinationConfiguration) configuration).getTableDataDestination();
-		}
-		return null;
+		return configuration != null ? configuration.retrieveRelatedTableConf() : null;
 	}
 
 	private static void generateCompileTimeDependencies(EtlObjectConfiguration configuration,
@@ -627,7 +619,7 @@ public class DatabaseEntityPOJOGenerator {
 		try {
 
 			if (usesSharedPk(configuration)) {
-				generate(resolveSharedPkConfiguration((TableConfiguration) configuration), context);
+				generate(resolveSharedPkConfiguration(configuration.requireRelatedTableConf()), context);
 			}
 
 			if (configuration instanceof MainJoiningEntity) {

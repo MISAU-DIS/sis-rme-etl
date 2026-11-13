@@ -89,7 +89,7 @@ public class DuplicatedUsersProcessor extends org.openmrs.module.epts.etl.etl.pr
 				}
 				
 				finally {
-					dup.save((TableConfiguration) dup.getRelatedConfiguration(), srcConn);
+					dup.save(dup.getRelatedConfiguration().requireRelatedTableConf(), srcConn);
 					
 					try {
 						srcConn.commit();

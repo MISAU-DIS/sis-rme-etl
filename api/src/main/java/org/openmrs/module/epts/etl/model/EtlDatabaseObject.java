@@ -287,11 +287,7 @@ public interface EtlDatabaseObject extends EtlObject {
 			throw new ForbiddenOperationException("The related table configuration is not set");
 		}
 
-		if (!(getRelatedConfiguration() instanceof TableConfiguration)) {
-			throw new ForbiddenOperationException("The related configuration should be type of TableConfiguration");
-		}
-
-		TableConfiguration thisTabConf = (TableConfiguration) getRelatedConfiguration();
+		TableConfiguration thisTabConf = getRelatedConfiguration().requireRelatedTableConf();
 
 		if (!thisTabConf.isFullLoaded()) {
 			thisTabConf.fullLoad(conn);
@@ -412,7 +408,7 @@ public interface EtlDatabaseObject extends EtlObject {
 			throw new ForbiddenOperationException("The related configuration is not defined!");
 		}
 
-		TableConfiguration tabConf = (TableConfiguration) getRelatedConfiguration();
+		TableConfiguration tabConf = getRelatedConfiguration().requireRelatedTableConf();
 
 		if (!tabConf.hasUniqueKeys()) {
 			throw new ForbiddenOperationException(
@@ -596,7 +592,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default void loadSharedKeyParentRelatedObject(Connection conn) throws DBException {
-		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
+		TableConfiguration tabConf = this.getRelatedConfiguration().requireRelatedTableConf();
 
 		if (!tabConf.useSharedPKKey()) {
 			throw new ForbiddenOperationException(
@@ -614,7 +610,7 @@ public interface EtlDatabaseObject extends EtlObject {
 
 	default EtlDatabaseObject getSharedKeyChildRelatedObject(TableConfiguration childTabConf, Connection conn)
 			throws DBException {
-		TableConfiguration tabConf = (TableConfiguration) this.getRelatedConfiguration();
+		TableConfiguration tabConf = this.getRelatedConfiguration().requireRelatedTableConf();
 
 		if (!childTabConf.useSharedPKKey()) {
 			throw new ForbiddenOperationException(
@@ -672,7 +668,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default boolean checkIfExistsOnSrc(Connection srcConn) throws DBException {
-		EtlDatabaseObject recOnDb = findOnDB((TableConfiguration) this.getRelatedConfiguration(), srcConn);
+		EtlDatabaseObject recOnDb = findOnDB(this.getRelatedConfiguration().requireRelatedTableConf(), srcConn);
 
 		return recOnDb != null;
 	}
@@ -717,7 +713,7 @@ public interface EtlDatabaseObject extends EtlObject {
 		}
 
 		if (recordOnDB == null) {
-			TableConfiguration refInfo = this.getRelatedConfiguration().retrieveRelatedTableConf();
+			TableConfiguration refInfo = this.getRelatedConfiguration().requireRelatedTableConf();
 
 			if (refInfo.useSharedPKKey() && !refInfo.hasItsOwnKeys()) {
 				// Ignore duplication if it uses shared key
@@ -1200,7 +1196,7 @@ public interface EtlDatabaseObject extends EtlObject {
 	}
 
 	default void validateIfRecordExistsOnDB(Connection conn) throws RecordNotFoundException, DBException {
-		TableConfiguration conf = ((TableConfiguration) this.getRelatedConfiguration());
+		TableConfiguration conf = this.getRelatedConfiguration().requireRelatedTableConf();
 
 		this.loadObjectIdData();
 

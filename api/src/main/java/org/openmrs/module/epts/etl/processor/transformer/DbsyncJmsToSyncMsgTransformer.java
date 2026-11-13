@@ -39,7 +39,7 @@ public class DbsyncJmsToSyncMsgTransformer implements EtlRecordTransformer {
 			ConnectorRecordWriter<?> writer) throws DBException, EtlTransformationException {
 		Connection srcConn = reader.unwrap(Connection.class);
 
-		TableConfiguration srcConf = (TableConfiguration) srcObject.getRelatedConfiguration();
+		TableConfiguration srcConf = srcObject.getRelatedConfiguration().requireRelatedTableConf();
 
 		srcObject.loadObjectIdData(srcConf);
 		srcObject.getObjectId().setTabConf(srcConf);

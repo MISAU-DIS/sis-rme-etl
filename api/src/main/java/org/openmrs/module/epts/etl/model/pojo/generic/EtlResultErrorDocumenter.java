@@ -16,7 +16,7 @@ final class EtlResultErrorDocumenter {
 		for (EtlOperationItemResult<T> r : toDocument) {
 			if (r.hasInconsistences()) {
 				for (InconsistenceInfo i : r.getInconsistenceInfo()) {
-					i.save((TableConfiguration) r.getRecord().getRelatedConfiguration(), srcConn);
+					i.save(r.getRecord().getRelatedConfiguration().requireRelatedTableConf(), srcConn);
 				}
 			} else if (r.hasException()) {
 				EtlConfigurationTableConf etlErr = r.getRecord().getRelatedConfiguration().getRelatedEtlConf()

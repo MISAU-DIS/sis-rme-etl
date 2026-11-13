@@ -131,7 +131,7 @@ public class ParentTableImpl extends AbstractRelatedTable implements ParentTable
 
 	@Override
 	public void setRelatedTabConf(TableConfiguration relatedTabConf) {
-		this.childTableConf = (TableConfiguration) relatedTabConf;
+		this.childTableConf = relatedTabConf;
 	}
 
 	public Boolean hasConditionalFields() {

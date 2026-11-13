@@ -164,7 +164,7 @@ public class EtlDatabaseObjectSearchParams extends AbstractEtlSearchParams<EtlDa
 
 		if (!aux.doNotUseAsDatasource()) {
 			String fullSelectColumns = queryInfo.getColumnsToSelect() + ","
-					+ ((TableConfiguration) aux).generateFullAliasedSelectColumns();
+					+ aux.requireRelatedTableConf().generateFullAliasedSelectColumns();
 
 			queryInfo.setColumnsToSelect(fullSelectColumns);
 		}

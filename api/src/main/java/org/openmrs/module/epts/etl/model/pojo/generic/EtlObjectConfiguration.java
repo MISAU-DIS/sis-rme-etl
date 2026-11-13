@@ -441,5 +441,26 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 		return utilities.stringHasValue(this.getAlias());
 	}
 
-	TableConfiguration retrieveRelatedTableConf();
+	/**
+	 * Returns the physical JDBC table behind this logical object configuration,
+	 * when one exists. Non-JDBC configurations deliberately return {@code null}.
+	 */
+	default TableConfiguration retrieveRelatedTableConf() {
+		return null;
+	}
+
+	/**
+	 * Requires a physical JDBC table for an operation that cannot be performed by
+	 * a generic connector.
+	 */
+	default TableConfiguration requireRelatedTableConf() {
+		TableConfiguration table = retrieveRelatedTableConf();
+
+		if (table == null) {
+			throw new RequireJdbcException("Object configuration '" + getObjectName()
+					+ "' does not provide a related JDBC table configuration");
+		}
+
+		return table;
+	}
 }

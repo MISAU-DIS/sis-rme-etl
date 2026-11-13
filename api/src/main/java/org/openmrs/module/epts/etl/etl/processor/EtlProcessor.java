@@ -154,11 +154,12 @@ public class EtlProcessor extends TaskProcessor<EtlDatabaseObject> {
 					 * srcRecord.changeStatusToProcessing(srcConn); }
 					 */
 
-					if (primarySource instanceof TableConfiguration
+					TableConfiguration primaryTable = primarySource.retrieveRelatedTableConf();
+					if (primaryTable != null
 							&& (!(primarySource instanceof JdbcTablePrimaryDataSourceConfiguration)
 									|| !((JdbcTablePrimaryDataSourceConfiguration) primarySource)
 											.doNotUseAsDatasource())) {
-						srcRecord.loadObjectIdData((TableConfiguration) primarySource);
+						srcRecord.loadObjectIdData(primaryTable);
 					}
 
 					List<EtlDatabaseObject> avaliableSrcDs = parentMigratedRec != null

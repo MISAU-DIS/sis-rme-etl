@@ -610,9 +610,10 @@ public class EtlLoadHelper {
 
 		EtlInfo etlInfo = srcObject.getDestinationObjects().get(0).getEtlInfo();
 
-		String msg = "Initializing the load of parent record ["
-				+ ((TableConfiguration) srcObject.getRelatedConfiguration()).getFullTableDescription() + srcObject
-				+ "]";
+		TableConfiguration relatedTable = srcObject.getRelatedConfiguration().retrieveRelatedTableConf();
+		String sourceDescription = relatedTable != null ? relatedTable.getFullTableDescription()
+				: srcObject.getRelatedConfiguration().getObjectName();
+		String msg = "Initializing the load of parent record [" + sourceDescription + srcObject + "]";
 
 		String tree = "";
 

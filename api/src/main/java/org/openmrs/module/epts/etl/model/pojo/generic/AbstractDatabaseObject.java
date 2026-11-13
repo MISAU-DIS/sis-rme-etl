@@ -915,8 +915,11 @@ public abstract class AbstractDatabaseObject extends BaseVO implements EtlDataba
 
 		String objectName = null;
 
-		if (this.getRelatedConfiguration() instanceof TableConfiguration) {
-			objectName = ((TableConfiguration) this.getRelatedConfiguration()).getTableAlias();
+		TableConfiguration relatedTable = this.getRelatedConfiguration() != null
+				? this.getRelatedConfiguration().retrieveRelatedTableConf()
+				: null;
+		if (relatedTable != null) {
+			objectName = relatedTable.getTableAlias();
 		} else {
 			objectName = this.getObjectName();
 		}

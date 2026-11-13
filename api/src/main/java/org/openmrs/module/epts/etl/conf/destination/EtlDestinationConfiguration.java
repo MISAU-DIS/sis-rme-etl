@@ -782,9 +782,8 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@Override
 	public Boolean isAutoIncrementId() {
-		return physicalObjectConfiguration() instanceof TableConfiguration
-				? ((TableConfiguration) physicalObjectConfiguration()).isAutoIncrementId()
-				: Boolean.FALSE;
+		TableConfiguration table = retrieveRelatedTableConf();
+		return table != null ? table.isAutoIncrementId() : Boolean.FALSE;
 	}
 
 	@Override

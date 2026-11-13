@@ -145,15 +145,6 @@ public class DatabaseObjectLoaderHelper implements VOLoaderHelper {
 	}
 
 	private TableConfiguration physicalTableConfiguration(EtlObjectConfiguration configuration) {
-
-		if (configuration instanceof TableConfiguration) {
-			return (TableConfiguration) configuration;
-		}
-
-		if (configuration instanceof EtlDestinationConfiguration) {
-			return ((EtlDestinationConfiguration) configuration).getTableDataDestination();
-		}
-
-		return null;
+		return configuration != null ? configuration.retrieveRelatedTableConf() : null;
 	}
 }

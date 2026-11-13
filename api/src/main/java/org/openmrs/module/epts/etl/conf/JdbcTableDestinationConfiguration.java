@@ -1407,10 +1407,9 @@ public class JdbcTableDestinationConfiguration extends AbstractTableConfiguratio
 	public EtlDataSource findParentDataSource(ParentTable ref) {
 
 		for (EtlDataSource ds : getAllAvaliableDataSource()) {
-			if (!(ds instanceof TableConfiguration))
+			TableConfiguration tabConf = ds.retrieveRelatedTableConf();
+			if (tabConf == null)
 				continue;
-
-			TableConfiguration tabConf = (TableConfiguration) ds;
 
 			if (tabConf.getFullTableName().equals(ref.getFullTableName())) {
 				return ds;

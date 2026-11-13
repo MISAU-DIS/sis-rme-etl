@@ -191,8 +191,8 @@ public class MappingFieldTransformer extends AbstractEtlFieldTransformer {
 
 				if (mappingCache == null) {
 
-					this.tableConfig = new GenericTableConfiguration(mappingTable,
-							(TableConfiguration) additionalSrcObjects.get(0).getRelatedConfiguration());
+					this.tableConfig = new GenericTableConfiguration(mappingTable, additionalSrcObjects.get(0)
+							.getRelatedConfiguration().requireRelatedTableConf());
 
 					this.tableConfig.setExtraConditionForExtract(utilities.removeEscapedQuotes(this.extraCondition));
 

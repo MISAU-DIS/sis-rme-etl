@@ -264,8 +264,8 @@ public class EtlSourceConfiguration extends AbstractEtlDataConfiguration {
 			}
 		}
 
-		if (additional instanceof AbstractTableConfiguration) {
-			TableConfiguration table = (TableConfiguration) additional;
+		TableConfiguration table = additional.retrieveRelatedTableConf();
+		if (table != null) {
 
 			if (table.hasAlias()) {
 				table.setUsingManualDefinedAlias(true);

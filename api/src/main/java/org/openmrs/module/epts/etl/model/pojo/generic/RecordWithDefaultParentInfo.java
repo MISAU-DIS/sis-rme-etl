@@ -193,7 +193,7 @@ public class RecordWithDefaultParentInfo extends GenericDatabaseObject {
 		this.setFieldValue("status", "ERR");
 		this.setFieldValue("last_err", "INCONSISTENT");
 
-		this.update((TableConfiguration) this.getRelatedConfiguration(), conn);
+		this.update(this.getRelatedConfiguration().requireRelatedTableConf(), conn);
 	}
 
 	public static void deleteAllSuccessifulyProcessed(PrimaryDataSourceConfiguration primarySource,

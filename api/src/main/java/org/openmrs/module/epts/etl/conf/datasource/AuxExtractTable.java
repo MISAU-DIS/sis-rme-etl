@@ -174,7 +174,7 @@ public class AuxExtractTable extends AbstractTableConfiguration
 
 	@Override
 	public TableConfiguration getJoiningEntity() {
-		return (TableConfiguration) this.getMainExtractTable();
+		return this.getMainExtractTable().requireRelatedTableConf();
 	}
 
 	@Override

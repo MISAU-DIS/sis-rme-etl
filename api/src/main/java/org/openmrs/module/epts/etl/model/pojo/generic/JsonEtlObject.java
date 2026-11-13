@@ -88,7 +88,7 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 			throw new ForbiddenOperationException("The relatedConfiguration  is not set");
 		}
 
-		TableConfiguration conf = (TableConfiguration) getRelatedConfiguration();
+		TableConfiguration conf = getRelatedConfiguration().requireRelatedTableConf();
 
 		for (Field f : this.fields) {
 			if (!f.allowNull()) {
@@ -313,8 +313,11 @@ public class JsonEtlObject extends AbstractDatabaseObject {
 
 		String tableNameAlias = "N/A";
 
-		if (this.relatedConfiguration instanceof TableConfiguration) {
-			tableNameAlias = ((TableConfiguration) this.relatedConfiguration).getTableAlias();
+		TableConfiguration relatedTable = this.relatedConfiguration != null
+				? this.relatedConfiguration.retrieveRelatedTableConf()
+				: null;
+		if (relatedTable != null) {
+			tableNameAlias = relatedTable.getTableAlias();
 		}
 
 		return tableName + "(" + tableNameAlias + "): " + super.toString();

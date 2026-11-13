@@ -190,7 +190,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 	public static <T extends EtlDatabaseObject> T getByUniqueKeys(T record, Connection conn) throws DBException {
 		record.loadUniqueKeyValues();
 
-		TableConfiguration tableConfiguration = (TableConfiguration) record.getRelatedConfiguration();
+		TableConfiguration tableConfiguration = record.getRelatedConfiguration().requireRelatedTableConf();
 
 		if (!record.hasAtLeastOnUniqueKeyWIthAllFieldsFilled()) {
 			throw new ForbiddenOperationException("No valued uniqueKey found within object: " + record);
@@ -408,11 +408,11 @@ public class DatabaseObjectDAO extends BaseDAO {
 	}
 
 	public static void remove(EtlDatabaseObject record, Connection conn) throws DBException {
-		record.loadObjectIdData((TableConfiguration) record.getRelatedConfiguration());
+		record.loadObjectIdData(record.getRelatedConfiguration().requireRelatedTableConf());
 
 		Object[] params = record.getObjectId().parseValuesToArray();
 
-		TableConfiguration conf = (TableConfiguration) record.getRelatedConfiguration();
+		TableConfiguration conf = record.getRelatedConfiguration().requireRelatedTableConf();
 
 		String sql = " DELETE" + " FROM " + conf.getFullTableName() + " WHERE  "
 				+ record.getObjectId().parseToParametrizedStringConditionWithoutAlias();
@@ -519,7 +519,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		if (utilities.listHasNoElement(objects))
 			return;
 
-		TableConfiguration tabConf = (TableConfiguration) objects.get(0).getRelatedConfiguration();
+		TableConfiguration tabConf = objects.get(0).getRelatedConfiguration().requireRelatedTableConf();
 
 		insert(objects, tabConf, conn);
 	}

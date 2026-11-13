@@ -90,8 +90,8 @@ public class FieldTransformingInfo {
 			if (this.getTransformationDatasource() instanceof JdbcTableDestinationConfiguration) {
 				isDstDs = true;
 			} else {
-				if (this.getTransformationDatasource() instanceof TableConfiguration) {
-					TableConfiguration conf = (TableConfiguration) this.getTransformationDatasource();
+				TableConfiguration conf = this.getTransformationDatasource().retrieveRelatedTableConf();
+				if (conf != null) {
 
 					if (conf.hasSchema() && utilities.isStringIn(conf.getSchema(), dstConnInfo.getSchema())
 							&& DBUtilities.isSameDatabaseServer(dstConnInfo, conf.getRelatedConnInfo())) {

@@ -362,13 +362,14 @@ public abstract class TaskProcessor<T extends EtlDatabaseObject> extends Abstrac
 	}
 
 	private void beforeSync(List<T> records) {
-		if (!(getPrimaryDataSource() instanceof TableConfiguration))
+		TableConfiguration primaryTable = getPrimaryDataSource().retrieveRelatedTableConf();
+		if (primaryTable == null)
 			return;
 
 		for (EtlObject rec : records) {
 
 			if (rec instanceof EtlDatabaseObject) {
-				((EtlDatabaseObject) rec).loadObjectIdData((TableConfiguration) getPrimaryDataSource());
+				((EtlDatabaseObject) rec).loadObjectIdData(primaryTable);
 			}
 		}
 	}

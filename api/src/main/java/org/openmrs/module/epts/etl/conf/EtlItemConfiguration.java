@@ -813,7 +813,7 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		ConnectorEndpoint endpoint = selectConnector(registry, source.getConnector(), EtlSide.SRC,
 				source.getConnector() == null && primary instanceof JdbcTablePrimaryDataSourceConfiguration);
 
-		TableConfiguration legacyTable = primary instanceof TableConfiguration ? (TableConfiguration) primary : null;
+		TableConfiguration legacyTable = primary.retrieveRelatedTableConf();
 
 		return ConnectorConfigurationResolver.resolveResource(configured, legacyTable, EtlSide.SRC, endpoint);
 	}
@@ -873,9 +873,10 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	private ConnectorResource resolveAdditionalSourceResource(ConnectorRegistry registry,
 			ConnectorResource primaryResource, EtlAdditionalDataSource additional) {
 		ConnectorResourceConfiguration configured = additional.getResource();
+		TableConfiguration relatedTable = additional.retrieveRelatedTableConf();
+		boolean requiresJdbc = relatedTable != null || additional instanceof QueryDataSourceConfig;
 
-		if (configured == null && !(additional instanceof TableConfiguration)
-				&& !(additional instanceof QueryDataSourceConfig)) {
+		if (configured == null && !requiresJdbc) {
 			return primaryResource;
 		}
 
@@ -890,15 +891,12 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 				? selectConnector(registry, effective.getConnector(), EtlSide.SRC, false)
 				: primaryResource.getEndpoint();
 
-		if ((additional instanceof TableConfiguration || additional instanceof QueryDataSourceConfig)
-				&& endpoint.getType() != ConnectorType.JDBC) {
+		if (requiresJdbc && endpoint.getType() != ConnectorType.JDBC) {
 			throw new EtlConfException(
 					"Additional data source '" + additional.getName() + "' requires a JDBC connector");
 		}
 
-		TableConfiguration legacyTable = additional instanceof TableConfiguration ? (TableConfiguration) additional
-				: null;
-		return ConnectorConfigurationResolver.resolveResource(effective, legacyTable, EtlSide.SRC, endpoint);
+		return ConnectorConfigurationResolver.resolveResource(effective, relatedTable, EtlSide.SRC, endpoint);
 	}
 
 	private List<ConnectorResource> resolveDstResources(ConnectorRegistry registry) {

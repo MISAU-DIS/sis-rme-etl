@@ -43,8 +43,8 @@ public final class StageAreaStorageManager {
 	}
 
 	public static String resolveObjectName(EtlObjectConfiguration configuration) {
-		return configuration instanceof TableConfiguration ? ((TableConfiguration) configuration).getTableName()
-				: configuration.getObjectName();
+		TableConfiguration table = configuration.retrieveRelatedTableConf();
+		return table != null ? table.getTableName() : configuration.getObjectName();
 	}
 
 	public static void ensureSourceStageTables(EtlObjectConfiguration configuration, Connection stageConnection)
@@ -55,8 +55,9 @@ public final class StageAreaStorageManager {
 		stageDescriptor.createRelatedStageAreaSrcUniqueKeysTable(stageConnection);
 
 		if (configuration.getRelatedEtlConf().mustCreateArquiveTables()) {
-			if (configuration instanceof TableConfiguration) {
-				((TableConfiguration) configuration).createRelatedProcessedRecordStageAreaTable(stageConnection);
+			TableConfiguration table = configuration.retrieveRelatedTableConf();
+			if (table != null) {
+				table.createRelatedProcessedRecordStageAreaTable(stageConnection);
 			} else {
 				createProcessedRecordStageTable(configuration, stageConnection);
 			}

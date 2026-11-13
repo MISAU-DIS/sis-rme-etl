@@ -133,6 +133,6 @@ public abstract class AbstractOpenMrsIndexUpdateProcessor extends EtlProcessor {
 
 		logWarn("Could not update the OpenMRS index for staging record {}. Error: {}", record.getObjectId(),
 				record.getFieldValue("processing_error"));
-		record.update((TableConfiguration) record.getRelatedConfiguration(), srcConn);
+		record.update(record.getRelatedConfiguration().requireRelatedTableConf(), srcConn);
 	}
 }
