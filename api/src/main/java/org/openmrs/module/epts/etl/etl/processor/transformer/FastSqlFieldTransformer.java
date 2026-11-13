@@ -83,13 +83,10 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 		this.queryConnection = EtlSide.SRC;
 
-		this.loadParameters(parameters);
-
 		OpenConnection conn = null;
 
 		try {
-
-			conn = relatedEtlTransformTarget.getPrimaryDataSource().requireJdbc().openConnection(this);
+			conn = relatedEtlTransformTarget.requireRelatedTableConf().openConnection(this);
 
 			this.tryToLoadDumpScriptContentToFieldAndValidate("sqlQuery",
 					relatedEtlTransformTarget != null
@@ -124,7 +121,9 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 				k -> new FastSqlFieldTransformer(parameters, relatedEtlTransformTarget, field));
 	}
 
-	private void loadParameters(List<Object> parameters) {
+	@Override
+	protected void loadParameters() {
+		List<Object> parameters = this.parameters;
 
 		if (parameters == null || parameters.isEmpty()) {
 			throw new EtlExceptionImpl("A FastSqlFieldTransformer needs a sqlQuery as parameter.\n"
@@ -219,13 +218,13 @@ public class FastSqlFieldTransformer extends AbstractEtlFieldTransformer {
 
 					conf.setRelatedEtlConf(relatedEtlConfiguration);
 					/*
-					 * This query data source is created lazily, after configuration
-					 * initialization. Bind it to the capability that actually executes the
-					 * query instead of inheriting the transformation target's primary source.
+					 * This query data source is created lazily, after configuration initialization.
+					 * Bind it to the capability that actually executes the query instead of
+					 * inheriting the transformation target's primary source.
 					 */
 					conf.setEtlSide(this.queryConnection);
-					conf.setResolvedResource(this.queryConnection.isDestination() ? writer.getResource()
-							: reader.getResource());
+					conf.setResolvedResource(
+							this.queryConnection.isDestination() ? writer.getResource() : reader.getResource());
 
 					conf.setName(this.name);
 

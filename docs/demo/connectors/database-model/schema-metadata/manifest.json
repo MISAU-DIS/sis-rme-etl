@@ -3,22 +3,30 @@
   "entries" : [ {
     "metadataKey" : "testing_etl_dst|||.address",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_dst.AddressVO",
-    "metadataFingerprint" : "027dd024a5e9461283acac59a7158baab0573de228a538c54963f314ad5c6834"
+    "metadataFingerprint" : "ea9a8b7e432d4740d00d97b43c20540a182a2b4767d7af4dfbd5bc1812d16910"
+  }, {
+    "metadataKey" : "testing_etl_dst|||.office",
+    "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_dst.OfficeVO",
+    "metadataFingerprint" : "f31b5371451cf6aed3c30e878cb78ea96d46c72f49fb810c5e65cbb3ad548ccf"
   }, {
     "metadataKey" : "testing_etl_dst|||.person",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_dst.PersonVO",
-    "metadataFingerprint" : "d433543e1cda1d085819290e65aa655d1b12b2d62cb6df4563d46e72765f6a56"
+    "metadataFingerprint" : "11a40438dbee436eb2e807f6a1619a1871d9b9e74d4c9be529c81aa71d1840fa"
   }, {
     "metadataKey" : "testing_etl_dst|||.person_data",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_dst.PersonDataVO",
-    "metadataFingerprint" : "00a731f056d95e0176909629080e1edfb521fd5ad5c88c781fbc3400f89c3366"
+    "metadataFingerprint" : "65f5e3a036a8e4f705ff6b477d2ab8c4932720fda48a28e6fb32e423dca9e20e"
   }, {
     "metadataKey" : "testing_etl_src|||.address",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_src.AddressVO",
     "metadataFingerprint" : "99ff146a838766623f37064b52dc55c92cf07df2a59b54e175a202dcb224346f"
   }, {
+    "metadataKey" : "testing_etl_src|||.office",
+    "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_src.OfficeVO",
+    "metadataFingerprint" : "6b9e3ee4e7de4105af6ae482aaccf128d640ce0b3d084009b95e38877630e53f"
+  }, {
     "metadataKey" : "testing_etl_src|||.person",
     "generatedClassName" : "org.openmrs.module.epts.etl.model.pojo.testing.etl_src.PersonVO",
-    "metadataFingerprint" : "4d403258232ed2012dad829f69172ece584a3565987d033bf0ce8999bf5cacf5"
+    "metadataFingerprint" : "b6d66b520f9e1d11b3127dfb119c2f616346ec0eb73ab43489385955997461fc"
   } ]
 }

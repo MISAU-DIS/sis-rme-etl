@@ -66,8 +66,8 @@
   } ],
   "importedForeignKeys" : [ {
     "name" : "fk1",
-    "referencedCatalog" : "connectors_test_dst_db",
-    "referencedSchema" : "connectors_test_dst_db",
+    "referencedCatalog" : "",
+    "referencedSchema" : "",
     "referencedTable" : "person",
     "mappings" : [ {
       "childColumn" : "person_id",

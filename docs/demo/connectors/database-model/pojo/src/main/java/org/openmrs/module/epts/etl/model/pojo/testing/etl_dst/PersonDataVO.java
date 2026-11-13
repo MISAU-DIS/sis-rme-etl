@@ -28,6 +28,7 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 	private Field fullAddress = Field.fastCreateWithType("full_address", "VARCHAR");
 	private Field personCreationDate = Field.fastCreateWithType("person_creation_date", "DATETIME");
 	private Field addressCreationDate = Field.fastCreateWithType("address_creation_date", "DATETIME");
+	private Field officeName = Field.fastCreateWithType("office_name", "VARCHAR");
 	private Field personUuid = Field.fastCreateWithType("person_uuid", "CHAR");
 	private Field addressUuid = Field.fastCreateWithType("address_uuid", "CHAR");
 
@@ -38,6 +39,7 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 		this.fields.add(this.fullAddress);
 		this.fields.add(this.personCreationDate);
 		this.fields.add(this.addressCreationDate);
+		this.fields.add(this.officeName);
 		this.fields.add(this.personUuid);
 		this.fields.add(this.addressUuid);
 		this.fields.add(this.creationDate);
@@ -72,6 +74,10 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 
 		if (utilities.equalsFieldsName(fieldName, "address_creation_date")) {
 			return this.addressCreationDate.getValue();
+		}
+
+		if (utilities.equalsFieldsName(fieldName, "office_name")) {
+			return this.officeName.getValue();
 		}
 
 		if (utilities.equalsFieldsName(fieldName, "person_uuid")) {
@@ -117,6 +123,12 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 
 		if (utilities.equalsFieldsName(fieldName, "address_creation_date")) {
 			this.addressCreationDate.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+
+		if (utilities.equalsFieldsName(fieldName, "office_name")) {
+			this.officeName.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
@@ -167,6 +179,7 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 		loadGeneratedFieldWithDefaultValue(this.fullAddress, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.personCreationDate, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.addressCreationDate, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.officeName, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.personUuid, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.addressUuid, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.creationDate, srcConn, dstConn);
@@ -244,6 +257,18 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 		return this.addressCreationDate;
 	}
 
+	public void setOfficeName(Field officeName) {
+		this.officeName = officeName;
+	}
+
+	public void setOfficeNameValue(String value) {
+		this.officeName.setValue(value);
+	}
+
+	public Field getOfficeName() {
+		return this.officeName;
+	}
+
 	public void setPersonUuid(Field personUuid) {
 		this.personUuid = personUuid;
 	}
@@ -303,6 +328,11 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 
 		this.addressCreationDate.setValue(BaseVO.retrieveFieldValue(addressCreationDateAttName, "DATETIME", rs));
 
+		String officeNameAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"office_name", "_");
+
+		this.officeName.setValue(BaseVO.retrieveFieldValue(officeNameAttName, "VARCHAR", rs));
+
 		String personUuidAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"person_uuid", "_");
 
@@ -318,20 +348,21 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO person_data(`full_name`, `full_address`, `person_creation_date`, `address_creation_date`, `person_uuid`, `address_uuid`) VALUES( ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO person_data(`full_name`, `full_address`, `person_creation_date`, `address_creation_date`, `office_name`, `person_uuid`, `address_uuid`) VALUES( ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO person_data(`id`, `full_name`, `full_address`, `person_creation_date`, `address_creation_date`, `person_uuid`, `address_uuid`) VALUES( ?, ?, ?, ?, ?, ?, ?);";
+		return "INSERT INTO person_data(`id`, `full_name`, `full_address`, `person_creation_date`, `address_creation_date`, `office_name`, `person_uuid`, `address_uuid`) VALUES( ?, ?, ?, ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
 		Object[] params = { this.fullName.getValue(), this.fullAddress.getValue(), this.personCreationDate.getValue(),
-				this.addressCreationDate.getValue(), this.personUuid.getValue(), this.addressUuid.getValue() };
+				this.addressCreationDate.getValue(), this.officeName.getValue(), this.personUuid.getValue(),
+				this.addressUuid.getValue() };
 		return params;
 	}
 
@@ -339,36 +370,36 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
 		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.fullAddress.getValue(),
-				this.personCreationDate.getValue(), this.addressCreationDate.getValue(), this.personUuid.getValue(),
-				this.addressUuid.getValue() };
+				this.personCreationDate.getValue(), this.addressCreationDate.getValue(), this.officeName.getValue(),
+				this.personUuid.getValue(), this.addressUuid.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithObjectId() {
-		return "?, ?, ?, ?, ?, ?, ?";
+		return "?, ?, ?, ?, ?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getUpdateParams() {
 		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.fullAddress.getValue(),
-				this.personCreationDate.getValue(), this.addressCreationDate.getValue(), this.personUuid.getValue(),
-				this.addressUuid.getValue(), this.id.getValue() };
+				this.personCreationDate.getValue(), this.addressCreationDate.getValue(), this.officeName.getValue(),
+				this.personUuid.getValue(), this.addressUuid.getValue(), this.id.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE person_data SET `id` = ?, `full_name` = ?, `full_address` = ?, `person_creation_date` = ?, `address_creation_date` = ?, `person_uuid` = ?, `address_uuid` = ? WHERE id = ? ";
+		return "UPDATE person_data SET `id` = ?, `full_name` = ?, `full_address` = ?, `person_creation_date` = ?, `address_creation_date` = ?, `office_name` = ?, `person_uuid` = ?, `address_uuid` = ? WHERE id = ? ";
 	}
 
 	@JsonIgnore
@@ -391,6 +422,10 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 				+ (this.addressCreationDate.getValue() != null
 						? "\"" + DateAndTimeUtilities
 								.formatToYYYYMMDD_HHMISS((java.util.Date) this.addressCreationDate.getValue()) + "\""
+						: null)
+				+ ","
+				+ (this.officeName.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.officeName.getValue().toString()) + "\""
 						: null)
 				+ ","
 				+ (this.personUuid.getValue() != null
@@ -422,6 +457,10 @@ public class PersonDataVO extends AbstractGeneratedDatabaseObject {
 				+ (this.addressCreationDate.getValue() != null
 						? "\"" + DateAndTimeUtilities
 								.formatToYYYYMMDD_HHMISS((java.util.Date) this.addressCreationDate.getValue()) + "\""
+						: null)
+				+ ","
+				+ (this.officeName.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.officeName.getValue().toString()) + "\""
 						: null)
 				+ ","
 				+ (this.personUuid.getValue() != null

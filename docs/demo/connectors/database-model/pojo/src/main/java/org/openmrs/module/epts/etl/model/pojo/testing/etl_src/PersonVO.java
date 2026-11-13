@@ -26,12 +26,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class PersonVO extends AbstractGeneratedDatabaseObject {
 	private Field id = Field.fastCreateWithType("id", "INT");
 	private Field fullName = Field.fastCreateWithType("full_name", "VARCHAR");
+	private Field officeId = Field.fastCreateWithType("office_id", "VARCHAR");
 	private Field creationDate = Field.fastCreateWithType("creation_date", "DATETIME");
 
 	public PersonVO() {
 		this.metadata = false;
 		this.fields.add(this.id);
 		this.fields.add(this.fullName);
+		this.fields.add(this.officeId);
 		this.fields.add(this.creationDate);
 	}
 
@@ -54,6 +56,10 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 			return this.fullName.getValue();
 		}
 
+		if (utilities.equalsFieldsName(fieldName, "office_id")) {
+			return this.officeId.getValue();
+		}
+
 		if (utilities.equalsFieldsName(fieldName, "creation_date")) {
 			return this.creationDate.getValue();
 		}
@@ -71,6 +77,12 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 
 		if (utilities.equalsFieldsName(fieldName, "full_name")) {
 			this.fullName.setValue(value instanceof Field ? ((Field) value).getValue() : value);
+			regenerateObjectIdIfKeyField(fieldName);
+			return;
+		}
+
+		if (utilities.equalsFieldsName(fieldName, "office_id")) {
+			this.officeId.setValue(value instanceof Field ? ((Field) value).getValue() : value);
 			regenerateObjectIdIfKeyField(fieldName);
 			return;
 		}
@@ -106,6 +118,7 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 		super.loadWithDefaultValues(srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.id, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.fullName, srcConn, dstConn);
+		loadGeneratedFieldWithDefaultValue(this.officeId, srcConn, dstConn);
 		loadGeneratedFieldWithDefaultValue(this.creationDate, srcConn, dstConn);
 	}
 
@@ -133,6 +146,18 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 		return this.fullName;
 	}
 
+	public void setOfficeId(Field officeId) {
+		this.officeId = officeId;
+	}
+
+	public void setOfficeIdValue(String value) {
+		this.officeId.setValue(value);
+	}
+
+	public Field getOfficeId() {
+		return this.officeId;
+	}
+
 	public void setCreationDate(Field creationDate) {
 		this.creationDate = creationDate;
 	}
@@ -158,6 +183,11 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 
 		this.fullName.setValue(BaseVO.retrieveFieldValue(fullNameAttName, "VARCHAR", rs));
 
+		String officeIdAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
+				"office_id", "_");
+
+		this.officeId.setValue(BaseVO.retrieveFieldValue(officeIdAttName, "VARCHAR", rs));
+
 		String creationDateAttName = utilities.concatStringsWithSeparator(this.getRelatedConfiguration().getAlias(),
 				"creation_date", "_");
 
@@ -174,53 +204,55 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithoutObjectId() {
-		return "INSERT INTO person(`full_name`, `creation_date`, `uuid`) VALUES( ?, ?, ?);";
+		return "INSERT INTO person(`full_name`, `office_id`, `creation_date`, `uuid`) VALUES( ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLWithObjectId() {
-		return "INSERT INTO person(`id`, `full_name`, `creation_date`, `uuid`) VALUES( ?, ?, ?, ?);";
+		return "INSERT INTO person(`id`, `full_name`, `office_id`, `creation_date`, `uuid`) VALUES( ?, ?, ?, ?, ?);";
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithoutObjectId() {
-		Object[] params = { this.fullName.getValue(), this.creationDate.getValue(), this.uuid };
+		Object[] params = { this.fullName.getValue(), this.officeId.getValue(), this.creationDate.getValue(),
+				this.uuid };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public Object[] getInsertParamsWithObjectId() {
-		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.creationDate.getValue(), this.uuid };
+		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.officeId.getValue(),
+				this.creationDate.getValue(), this.uuid };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getInsertSQLQuestionMarksWithoutObjectId() {
-		return "?, ?, ?";
-	}
-
-	@JsonIgnore
-	@Override
-	public String getInsertSQLQuestionMarksWithObjectId() {
 		return "?, ?, ?, ?";
 	}
 
 	@JsonIgnore
 	@Override
+	public String getInsertSQLQuestionMarksWithObjectId() {
+		return "?, ?, ?, ?, ?";
+	}
+
+	@JsonIgnore
+	@Override
 	public Object[] getUpdateParams() {
-		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.creationDate.getValue(), this.uuid,
-				this.id.getValue() };
+		Object[] params = { this.id.getValue(), this.fullName.getValue(), this.officeId.getValue(),
+				this.creationDate.getValue(), this.uuid, this.id.getValue() };
 		return params;
 	}
 
 	@JsonIgnore
 	@Override
 	public String getUpdateSQL() {
-		return "UPDATE person SET `id` = ?, `full_name` = ?, `creation_date` = ?, `uuid` = ? WHERE id = ? ";
+		return "UPDATE person SET `id` = ?, `full_name` = ?, `office_id` = ?, `creation_date` = ?, `uuid` = ? WHERE id = ? ";
 	}
 
 	@JsonIgnore
@@ -229,6 +261,10 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 		return ""
 				+ (this.fullName.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.fullName.getValue().toString()) + "\""
+						: null)
+				+ ","
+				+ (this.officeId.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.officeId.getValue().toString()) + "\""
 						: null)
 				+ ","
 				+ (this.creationDate.getValue() != null ? "\""
@@ -243,6 +279,10 @@ public class PersonVO extends AbstractGeneratedDatabaseObject {
 		return "" + (this.id.getValue()) + ","
 				+ (this.fullName.getValue() != null
 						? "\"" + utilities.scapeQuotationMarks(this.fullName.getValue().toString()) + "\""
+						: null)
+				+ ","
+				+ (this.officeId.getValue() != null
+						? "\"" + utilities.scapeQuotationMarks(this.officeId.getValue().toString()) + "\""
 						: null)
 				+ ","
 				+ (this.creationDate.getValue() != null ? "\""

@@ -1821,6 +1821,8 @@ public interface TableConfiguration extends EtlDataSource {
 	}
 
 	default ParentTable findParentRefInfoByField(String fieldName) {
+		if (!hasParentRefInfo())
+			return null;
 
 		for (ParentTable ref : this.getParentRefInfo()) {
 

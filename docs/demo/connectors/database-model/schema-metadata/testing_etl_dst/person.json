@@ -39,6 +39,14 @@
     "nullable" : false,
     "autoIncrement" : false,
     "timestamp" : false
+  }, {
+    "name" : "office_id",
+    "dataType" : "INT",
+    "length" : 10,
+    "decimalDigits" : 0,
+    "nullable" : false,
+    "autoIncrement" : false,
+    "timestamp" : false
   } ],
   "primaryKey" : {
     "name" : "pk",
@@ -56,6 +64,15 @@
     } ],
     "manuallyConfigured" : false
   } ],
-  "importedForeignKeys" : [ ],
+  "importedForeignKeys" : [ {
+    "name" : "person_fk1",
+    "referencedCatalog" : "",
+    "referencedSchema" : "",
+    "referencedTable" : "office",
+    "mappings" : [ {
+      "childColumn" : "office_id",
+      "parentColumn" : "id"
+    } ]
+  } ],
   "exportedForeignKeys" : [ ]
 }

@@ -22,6 +22,7 @@ import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
+import org.openmrs.module.epts.etl.utilities.db.conn.OpenConnection;
 
 public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
@@ -79,8 +80,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		return o;
 	}
 
-	public void init(List<Object> parameters, EtlDestinationConfiguration relatedEtlTransformTarget, TransformableField field)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+	public void init(List<Object> parameters, EtlDestinationConfiguration relatedEtlTransformTarget,
+			TransformableField field) throws FieldAvaliableInMultipleDataSources, DBException {
 
 		this.relatedEtlTransformTarget = relatedEtlTransformTarget;
 		this.field = field;
@@ -95,10 +96,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		this.dynamicElements = new HashMap<>();
 		this.parentTableName = parameters.get(0).toString();
 
-		this.rawParameterDefinitions = parameters.size() > 1
-				? parameters.subList(1, parameters.size()).stream().map(Object::toString)
-						.collect(java.util.stream.Collectors.toList())
-				: null;
+		this.rawParameterDefinitions = parameters.size() > 1 ? parameters.subList(1, parameters.size()).stream()
+				.map(Object::toString).collect(java.util.stream.Collectors.toList()) : null;
 
 		if (utilities.listHasElement(this.rawParameterDefinitions)) {
 			String prev = null;
@@ -107,6 +106,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 				String[] mapping = fieldData.split(":", 2);
 
 				if (mapping.length != 2) {
+
 					if (isOverrideField(prev)) {
 						this.overrideFieldsStr += "," + mapping[0];
 					} else
@@ -118,6 +118,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					String srcFieldOrValue = mapping[1];
 
 					if (dstField.equals("parent_field_in_datasource_object")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The parent_field_in_datasource_object has no value");
 						}
@@ -137,24 +138,28 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						}
 
 					} else if (dstField.equals("on_demand_check_condition")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The on_demand_check_condition has no value");
 						}
 
 						this.onDemandCheckCondition = srcFieldOrValue;
 					} else if (dstField.equals("template")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The template has no value");
 						}
 
 						this.templateName = srcFieldOrValue;
 					} else if (dstField.equals("unmapped_field_behavior")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The unmapped_field_behavior has no value");
 						}
 
 						this.unmappedFieldBehavior = ActionOnEtlIssue.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("on_multiple_data_source_for_same_mapping")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException(
 									"The on_multiple_data_source_for_same_mapping has no value");
@@ -163,6 +168,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 						this.onMultipleDataSourceForSameMapping = ActionOnEtlIssue
 								.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("mapping_resolution_strategy")) {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)) {
 							throw new ForbiddenOperationException("The mapping_resolution_strategy has no value");
 						}
@@ -186,6 +192,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 					} else if (dstField.equals("table_alias")) {
 						this.tableAlias = srcFieldOrValue;
 					} else {
+
 						if (!utilities.stringHasValue(srcFieldOrValue)
 								|| srcFieldOrValue.toLowerCase().equals("null")) {
 							srcFieldOrValue = null;
@@ -215,6 +222,7 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 							this.onDemandParentFieldMappings.add(fm);
 						} catch (FieldAvaliableInMultipleDataSources e) {
+
 							if (this.onMultipleDataSourceForSameMapping != null
 									&& this.onMultipleDataSourceForSameMapping.ignore()) {
 
@@ -248,19 +256,26 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		}
 
 		if (params != null && !params.isEmpty()) {
+
 			for (Entry<String, Object> p : params.entrySet()) {
 				this.dynamicElements.put(p.getKey(), p.getValue());
 			}
 		}
 
 		if (this.templateParams != null && !this.templateParams.isEmpty()) {
+
 			for (Entry<String, Object> p : this.templateParams.entrySet()) {
 				this.dynamicElements.put(p.getKey(), p.getValue());
 			}
 		}
 
-		this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", dynamicElements, null);
+		OpenConnection conn = relatedEtlTransformTarget.openConnection(this);
 
+		try {
+			this.tryToLoadDumpScriptContentToFieldAndValidate("onDemandCheckCondition", dynamicElements, conn);
+		} finally {
+			conn.finalizeConnection(this);
+		}
 	}
 
 	public AutoIncrementHandlingType getAutoIncrementHandlingType() {
@@ -285,8 +300,8 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 		return "override_fields".equals(map[0]);
 	}
 
-	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField, EtlDestinationConfiguration transformTarget)
-			throws FieldAvaliableInMultipleDataSources, DBException {
+	private FieldsMapping fastCreateFieldMap(String parentFieldName, String dstField,
+			EtlDestinationConfiguration transformTarget) throws FieldAvaliableInMultipleDataSources, DBException {
 		FieldsMapping fieldMap = FieldsMapping.fastCreate(transformTarget, parentFieldName, dstField);
 
 		if (!fieldMap.hasDataSourceName() && !fieldMap.isMapToNullValue()) {

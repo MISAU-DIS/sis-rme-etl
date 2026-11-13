@@ -24,6 +24,14 @@
     "autoIncrement" : false,
     "timestamp" : false
   }, {
+    "name" : "office_id",
+    "dataType" : "VARCHAR",
+    "length" : 50,
+    "decimalDigits" : 0,
+    "nullable" : false,
+    "autoIncrement" : false,
+    "timestamp" : false
+  }, {
     "name" : "creation_date",
     "dataType" : "DATETIME",
     "length" : 19,

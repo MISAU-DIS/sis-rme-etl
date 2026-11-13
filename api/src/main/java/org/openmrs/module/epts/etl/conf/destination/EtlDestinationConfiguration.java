@@ -728,9 +728,11 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 		}
 
 		for (EtlDestinationConfiguration destination : parentItem.getDestinations()) {
+
 			if (destination == this) {
 				break;
 			}
+
 			if (destination.useAsDataSource()) {
 				previous.add(destination);
 			}
@@ -739,8 +741,10 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	public EtlDataSource findParentDataSource(ParentTable reference) {
+
 		for (EtlDataSource dataSource : getAllAvaliableDataSource()) {
 			TableConfiguration table = dataSource.retrieveRelatedTableConf();
+
 			if (table != null && table.getFullTableName().equals(reference.getFullTableName())) {
 				return dataSource;
 			}
@@ -829,6 +833,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 
 	@Override
 	public EtlDatabaseObject getTargetDefaultObject(Connection srcConn, Connection dstConn) throws DBException {
+
 		if (targetDefaultObject == null) {
 			targetDefaultObject = createRecordInstance();
 			targetDefaultObject.loadWithDefaultValues(srcConn, dstConn);
@@ -955,6 +960,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 			UniqueKeyInfo matchingTargetKey = new UniqueKeyInfo(targetTable);
 
 			for (Key key : uniqueKey.getFields()) {
+
 				if (targetTable.containsField(key.getName())) {
 					matchingTargetKey.addKey(key);
 				} else if (destinationUsesSharedPrimaryKey(conn)
@@ -980,6 +986,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	private void addGeneratedJoinFields(List<FieldsMapping> generated) {
+
 		if (generatedJoinFields == null) {
 			generatedJoinFields = new ArrayList<>();
 		}
@@ -1367,11 +1374,13 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	}
 
 	private void initializeConfiguredMappings() {
+
 		if (!utilities.listHasElement(mapping)) {
 			return;
 		}
 
 		List<FieldsMapping> initialized = new ArrayList<>();
+
 		for (FieldsMapping fieldMapping : mapping) {
 			fieldMapping.setTransformationTargetObject(this);
 			fieldMapping.tryToLoadFromTemplate();
@@ -1380,6 +1389,7 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 				fieldMapping.init(this);
 				initialized.add(fieldMapping);
 			} catch (IncompleteFieldsMappingException exception) {
+
 				if (!fieldMapping.hasIncompleteMappingBehavior()
 						|| !fieldMapping.getIncompleteMappingBehavior().discardmapping()) {
 					throw exception;
@@ -1677,5 +1687,9 @@ public class EtlDestinationConfiguration extends AbstractEtlDataConfiguration
 	@Override
 	public TableConfiguration retrieveRelatedTableConf() {
 		return this.isJdbcDestination() ? this.requireJdbcTableDestination() : null;
+	}
+
+	public String getFullObjectName() {
+		return isJdbcDestination() ? this.getTableDataDestination().getFullTableName() : this.getName();
 	}
 }
