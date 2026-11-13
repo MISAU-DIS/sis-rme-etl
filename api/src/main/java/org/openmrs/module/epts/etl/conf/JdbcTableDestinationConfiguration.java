@@ -661,10 +661,12 @@ public class JdbcTableDestinationConfiguration extends AbstractTableConfiguratio
 
 	public DBConnectionInfo getRelatedConnInfo() {
 		ConnectorResource resource = getResolvedResource();
+
 		if (resource == null || resource.getEndpoint() == null) {
 			throw new RequireJdbcException(
 					"The connector resource is not initialized for destination '" + getObjectName() + "'");
 		}
+
 		if (resource.getEndpoint().getType() != ConnectorType.JDBC) {
 			throw new RequireJdbcException("Destination '" + getObjectName() + "' is not JDBC-backed");
 		}

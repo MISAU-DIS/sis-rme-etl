@@ -351,8 +351,7 @@ public class EtlLoadHelper {
 			List<EtlDatabaseObject> recordToUpdate = new ArrayList<>();
 			List<EtlDatabaseObject> recordToCreate = new ArrayList<>();
 
-			if (tabConf.executeUpdateOnIdentifiedRecordAction()
-					|| tabConf.executePatchUpdateOnIdentifiedRecordAction()) {
+			if (tabConf.hasActionWhenRecordIdIsSet()) {
 
 				for (EtlDatabaseObject obj : objects) {
 

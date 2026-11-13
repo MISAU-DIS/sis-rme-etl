@@ -126,7 +126,12 @@
             "alias":"person_data_dst_ds"
           },
           "unmappedFieldBehavior":"IGNORE",
+          "identifiedRecordAction": "NONE",          
           "mapping": [
+            {
+              "dstField": "id",
+              "transformer": "FAST_SQL_TRANSFORMER(query:select id from person_data p where p.person_uuid =  person_dst_ds.uuid,query_connection:DST)"
+            },            
             {
               "srcField": "uuid",
               "dstField": "person_uuid"
@@ -134,6 +139,10 @@
             {
               "srcField": "creation_date",
               "dstField": "person_creation_date"
+            },
+            {
+              "dstField":"office_id",
+              "transformer": "PARENT_ON_DEMAND_LOAD_WITH_DEFAULTS_TRANSFORMER(office,on_demand_check_condition:office_id = (select office_id from office o where o.office_id = person_src_ds.office_id)),patient_id:${dst_patient_id},name:DEFAULT_OFFICE,uuid:FAST_SQL_TRANSFORMER(select uuid()))"
             }
           ],
           "ignorableFields": [

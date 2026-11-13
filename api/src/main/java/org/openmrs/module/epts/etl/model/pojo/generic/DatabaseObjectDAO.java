@@ -130,8 +130,9 @@ public class DatabaseObjectDAO extends BaseDAO {
 					+ parentTableConfiguration.generateFullSrcStageTableName() + " ON record_uuid = uuid\n";
 			sql += " WHERE 	record_origin_id = ? and record_origin_location_code = ? ";
 
-			return find(parentTableConfiguration.getLoadHealper(), parentTableConfiguration.generateEtlRecordClass(
-					parentTableConfiguration.requireEtlSide()), sql, params, conn);
+			return find(parentTableConfiguration.getLoadHealper(),
+					parentTableConfiguration.generateEtlRecordClass(parentTableConfiguration.requireEtlSide()), sql,
+					params, conn);
 		} catch (Exception e) {
 			LOG.info("Error trying do retrieve dstRecord on table " + parentTableConfiguration.getTableName() + "["
 					+ e.getMessage() + "]");
@@ -267,8 +268,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 				tabConf.fullLoad(conn);
 			}
 
-			Class<T> openMRSClass = (Class<T>) tabConf
-					.generateEtlRecordClass(tabConf.requireEtlSide());
+			Class<T> openMRSClass = (Class<T>) tabConf.generateEtlRecordClass(tabConf.requireEtlSide());
 
 			T record = openMRSClass.newInstance();
 
@@ -323,8 +323,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += " LIMIT 0, 1";
 
 		return find(tableConfiguration.getLoadHealper(),
-				tableConfiguration.generateEtlRecordClass(tableConfiguration.requireEtlSide()), sql,
-				params, conn);
+				tableConfiguration.generateEtlRecordClass(tableConfiguration.requireEtlSide()), sql, params, conn);
 	}
 
 	public static long countAll(TableConfiguration tableConfiguration, Connection conn) throws DBException {
@@ -403,8 +402,8 @@ public class DatabaseObjectDAO extends BaseDAO {
 				+ tabConf.getPrimaryKey() + "\n)";
 		sql += "												   )";
 
-		return find(tabConf.getLoadHealper(),
-				tabConf.generateEtlRecordClass(tabConf.requireEtlSide()), sql, params, conn);
+		return find(tabConf.getLoadHealper(), tabConf.generateEtlRecordClass(tabConf.requireEtlSide()), sql, params,
+				conn);
 	}
 
 	public static void remove(EtlDatabaseObject record, Connection conn) throws DBException {
@@ -469,8 +468,7 @@ public class DatabaseObjectDAO extends BaseDAO {
 		sql += "			AND record_origin_location_code = ? ";
 
 		return search(tableConfiguration.getLoadHealper(),
-				tableConfiguration.generateEtlRecordClass(tableConfiguration.requireEtlSide()), sql,
-				params, conn);
+				tableConfiguration.generateEtlRecordClass(tableConfiguration.requireEtlSide()), sql, params, conn);
 	}
 
 	public static List<? extends EtlDatabaseObject> getByParentIdOnSpecificSchema(TableConfiguration tabConf,
@@ -1010,6 +1008,10 @@ public class DatabaseObjectDAO extends BaseDAO {
 
 			if (recordOnDB == null)
 				throw new ForbiddenOperationException("Atempt to update not existing record: " + record);
+
+			if (dstConf.hasActionWhenRecordIdIsSet() && dstConf.getIdentifiedRecordAction().isNone()) {
+				continue;
+			}
 
 			if (dstConf.hasActionWhenRecordIdIsSet() && dstConf.getIdentifiedRecordAction().isPatchUpdate()) {
 

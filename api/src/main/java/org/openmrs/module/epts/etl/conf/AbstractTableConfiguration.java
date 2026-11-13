@@ -285,6 +285,17 @@ public abstract class AbstractTableConfiguration extends AbstractEtlDataConfigur
 		return patchFields;
 	}
 
+	public List<String> requirePatchFields() {
+
+		List<String> patchFields = this.getPatchFields();
+
+		if (!utilities.listHasElement(patchFields)) {
+			throw new EtlConfException("No patch field was defined!");
+		}
+
+		return patchFields;
+	}
+
 	public void setPatchFields(List<String> patchFields) {
 		this.patchFields = patchFields;
 	}
