@@ -288,7 +288,7 @@
 	<globalProperty>
 		<property>epts.etl.startup.file</property>
 		<description>EPTS ETL startup configuration file.</description>
-		<defaultValue>/opt/openmrs/etl/conf/sync/sis_rme_sesp_sync.json</defaultValue>
+		<defaultValue>/opt/openmrs/etl/conf/sync/sis_rme_sesp_sync.json,/opt/openmrs/etl/conf/migr/startup.json</defaultValue>
 	</globalProperty>
 
 	<globalProperty>

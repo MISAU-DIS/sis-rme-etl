@@ -47,6 +47,7 @@ public class Main implements Runnable {
 
 	public static void main(String[] synConfigFiles) throws IOException, DBException {
 		ProcessStarter starter = performeInitialization(synConfigFiles);
+
 		if (starter == null) {
 			LOG.info("No automatic ETL configurations were found. Nothing to start.");
 			return;
@@ -143,7 +144,9 @@ public class Main implements Runnable {
 						+ "' must contain the ETL startup file path");
 			}
 
-			ProcessStarter processStarter = performeInitialization(new String[] { startupFile.trim() });
+			String[] startupFiles = startupFile.split(",");
+
+			ProcessStarter processStarter = performeInitialization(startupFiles);
 
 			if (processStarter == null) {
 				LOG.info("No automatic ETL configurations were found. OpenMRS startup will not launch an ETL process.");
