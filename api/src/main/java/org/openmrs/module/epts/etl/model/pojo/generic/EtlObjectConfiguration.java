@@ -205,7 +205,13 @@ public interface EtlObjectConfiguration extends EtlDataConfiguration {
 	 * @param openedFrom configuration component that owns this connection lifecycle
 	 */
 	default OpenConnection openConnection(BaseConfiguration openedFrom) throws DBException {
-		return this.getRelatedConnInfo().openConnection(openedFrom);
+		DBConnectionInfo connectionInfo = this.getRelatedConnInfo();
+
+		if (connectionInfo == null) {
+			throw new RequireJdbcException(
+					"No JDBC connection is available for object configuration '" + getObjectName() + "'");
+		}
+		return connectionInfo.openConnection(openedFrom);
 	}
 
 	default DBConnectionInfo getRelatedConnInfo() {

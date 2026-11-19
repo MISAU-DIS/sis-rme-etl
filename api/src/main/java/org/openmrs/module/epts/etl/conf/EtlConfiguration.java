@@ -931,7 +931,7 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 	}
 
 	@JsonIgnore
-	ConnectorRegistry getInitializedConnectorRegistry() {
+	public ConnectorRegistry getInitializedConnectorRegistry() {
 
 		if (this.connectorRegistry == null) {
 			throw new IllegalStateException("Connector registry has not been initialized");
@@ -2535,6 +2535,11 @@ public class EtlConfiguration extends AbstractBaseConfiguration implements Table
 		}
 
 		return connection;
+	}
+
+	public OpenConnection openResolvedSourceConnectorConnection(ConnectorResource resource,
+			BaseConfiguration openedFrom) throws DBException {
+		return openSourceConnectorConnection(resource, openedFrom);
 	}
 
 	OpenConnection openDestinationConnectorConnection(ConnectorResource resource, BaseConfiguration openedFrom)

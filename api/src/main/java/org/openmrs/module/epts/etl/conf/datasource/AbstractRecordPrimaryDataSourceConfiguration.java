@@ -44,6 +44,7 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 	}
 
 	private String name;
+	private String alias;
 	private PrimaryKey primaryKey;
 	private List<String> excludedFieldsFromObjectDesc;
 
@@ -277,7 +278,12 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 	@Override
 	public String getAlias() {
-		return getObjectName();
+		return utilities.stringHasValue(alias) ? alias : getObjectName();
+	}
+
+	@Override
+	public void setAlias(String alias) {
+		this.alias = alias;
 	}
 
 	@Override
@@ -325,6 +331,9 @@ public abstract class AbstractRecordPrimaryDataSourceConfiguration extends Abstr
 
 		if (name != null) {
 			name = utilities.tryToReplacePlaceholders(name, schemaInfoSrc);
+		}
+		if (alias != null) {
+			alias = utilities.tryToReplacePlaceholders(alias, schemaInfoSrc);
 		}
 	}
 

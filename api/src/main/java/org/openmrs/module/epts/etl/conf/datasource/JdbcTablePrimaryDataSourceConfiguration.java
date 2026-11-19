@@ -55,6 +55,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class JdbcTablePrimaryDataSourceConfiguration extends AbstractTableConfiguration implements MainJoiningEntity,
 		JoinableEntity, EtlSrcConf, EtlItemConfigurationComponent, PrimaryDataSourceConfiguration {
 
+	@Override
+	public void setAlias(String alias) {
+		setTableAlias(alias);
+	}
+
 	private static final String[] TRACKING_FIELDS = { "processing_status", "processing_date", "processing_error",
 			"retry_count" };
 

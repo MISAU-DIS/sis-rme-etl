@@ -3,8 +3,9 @@
 SIS-RME ETL is a configurable extraction, transformation and loading engine.
 The current architecture separates the logical source model from the connector
 that transports its records. An ETL item selects the endpoint through
-`source.connector`; its primary data source describes the records and names
-the physical table, file, route, queue or topic.
+`source.connector`; its primary data source describes the logical records,
+while `source.resource` identifies the physical table, file, route, queue or
+topic.
 
 The previous database-oriented configuration remains supported and is
 documented separately in [README-legacy.md](README-legacy.md).
@@ -136,6 +137,34 @@ that share the same physical name. When omitted, it defaults to
 `resource.name`. For JDBC resources, an explicitly configured alias becomes
 the corresponding `tableAlias`.
 
+Every primary variant also accepts `alias`. This is the logical name used by
+field mappings, preferred-data-source selection and expression lookup. When it
+is omitted, it defaults to the primary `name` (or the JDBC table identity).
+When both primary `alias` and `source.resource.alias` are present, the resource
+alias is canonical and is propagated to the primary source during item
+initialization.
+
+| `source` property | Meaning |
+|---|---|
+| `connector` | Connector used when `resource.connector` is omitted. |
+| `resource` | Physical source identity and generic connector properties. |
+| `tableDataSource` | JDBC primary record model; mutually exclusive with JSON and CSV. |
+| `jsonDataSource` | JSON primary record model and fields. |
+| `csvDataSource` | CSV primary record model, fields and parsing options. |
+| `extraTableDataSource` | Additional JDBC tables. |
+| `extraQueryDataSource` | Additional SQL queries. |
+| `extraObjectDataSource` | Connector-neutral calculated/transformed objects. |
+| `extraJsonDataSource` | Additional JSON-derived objects. |
+| `extraJsonRecordDataSource` | Nested records extracted from the primary JSON record. |
+| `processingPolicy` | Source policies such as result limiting and processing-state tracking. |
+| `missingRequiredObjectBehavior` | Behaviour when a required source object is absent. |
+
+All primary variants expose `name`, `alias`, `fields` where applicable and the
+common ETL record-model capabilities. JDBC retains its relational properties
+such as `tableName`, joins and extraction conditions. JSON owns its logical
+fields. CSV additionally owns `delimiter`, `hasHeader`, `charset`, `quote` and
+`escape`.
+
 ### JDBC table source
 
 ```json
@@ -144,7 +173,8 @@ the corresponding `tableAlias`.
   "source": {
     "connector": "openmrs-source",
     "tableDataSource": {
-      "tableName": "patient"
+      "tableName": "patient",
+      "alias": "source_patient"
     }
   },
   "destinations": [
@@ -162,6 +192,7 @@ the corresponding `tableAlias`.
 
 `tableDataSource` contains table-specific extraction and relational metadata.
 Its `tableName` is also the physical resource name supplied to the connector.
+The modern `alias` property maps internally to the JDBC `tableAlias`.
 
 ### JSON source
 
@@ -177,6 +208,7 @@ Its `tableName` is also the physical resource name supplied to the connector.
     },
     "jsonDataSource": {
       "name": "patientEvent",
+      "alias": "patient_event",
       "fields": [
         {
           "name": "uuid",
@@ -272,6 +304,7 @@ the primary and every extra data source.
     },
     "csvDataSource": {
       "name": "patient",
+      "alias": "csv_patient",
       "delimiter": ";",
       "hasHeader": true,
       "charset": "UTF-8",
@@ -408,6 +441,22 @@ record model independently of JDBC:
   destination root;
 - `tableDataDestination`, `jsonDataDestination` and `csvDataDestination` add
   only technology-specific capabilities.
+
+The destination root currently exposes the following groups:
+
+| Group | Properties |
+|---|---|
+| Physical identity | `resource`, `fields`, `primaryKey` |
+| Mapping | `mapping`, `joinFields`, `excludedFields`, `ignorableFields`, `patchFields`, `preferredDataSource` |
+| Mapping policies | `mappingResolutionStrategy`, `unmappedFieldBehavior`, `incompleteMappingBehavior`, `allowDuplicateDestinationMappings` |
+| Source resolution | `includeAllFieldsFromDataSource`, `onMultipleDataSourceForSameMapping`, `onMultipleDataSourceWithSameName`, `onMissingRequiredSrcObject` |
+| Transformation | `transformer`, `applyCondition`, `useAsDataSource`, `ignoreNoDstIssue` |
+| Loading | `identifiedRecordAction`, `inconsistencyBehavior`, `primaryKeyInitialIncrementValue`, `disabled` |
+| Physical adapter | `tableDataDestination`, `jsonDataDestination`, `csvDataDestination` |
+
+These logical transformation and conflict-resolution properties belong to
+`EtlDestinationConfiguration`, not to `tableDataDestination`. The JDBC adapter
+only contributes relational metadata and persistence capabilities.
 
 `resource.name` and `resource.connector` are canonical. Do not repeat them as
 `destination.name` or `destination.connector`; those root properties are

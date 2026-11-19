@@ -90,6 +90,26 @@ class SourceConfigurationTest {
 	}
 
 	@Test
+	void shouldConfigureAliasOnEveryPrimaryDataSourceVariant() throws Exception {
+		EtlSourceConfiguration jdbc = read("{\"tableDataSource\":{\"tableName\":\"patient\","
+				+ "\"alias\":\"jdbc_patient\"}}");
+		EtlSourceConfiguration json = read("{\"resource\":{\"name\":\"patients.json\"},"
+				+ "\"jsonDataSource\":{\"name\":\"patient\",\"alias\":\"json_patient\","
+				+ "\"fields\":[{\"name\":\"uuid\"}]}}");
+		EtlSourceConfiguration csv = read("{\"resource\":{\"name\":\"patients.csv\"},"
+				+ "\"csvDataSource\":{\"name\":\"patient\",\"alias\":\"csv_patient\","
+				+ "\"fields\":[{\"name\":\"uuid\"}]}}");
+
+		jdbc.initialize(new EtlItemConfiguration());
+		json.initialize(new EtlItemConfiguration());
+		csv.initialize(new EtlItemConfiguration());
+
+		assertEquals("jdbc_patient", jdbc.getPrimaryDataSource().getAlias());
+		assertEquals("json_patient", json.getPrimaryDataSource().getAlias());
+		assertEquals("csv_patient", csv.getPrimaryDataSource().getAlias());
+	}
+
+	@Test
 	void shouldRejectMissingOrAmbiguousPrimarySource() throws Exception {
 		EtlSourceConfiguration missing = read("{\"connector\":\"source\"}");
 		EtlSourceConfiguration ambiguous = read("{" +

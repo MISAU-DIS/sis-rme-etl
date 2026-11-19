@@ -14,11 +14,18 @@ import org.openmrs.module.epts.etl.conf.interfaces.EtlDataConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.conf.types.AutoIncrementHandlingType;
+import org.openmrs.module.epts.etl.conf.types.EtlSide;
 import org.openmrs.module.epts.etl.conf.types.FieldMappingResolutionStrategy;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.FieldAvaliableInMultipleDataSources;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
+import org.openmrs.module.epts.etl.connector.ConnectorEndpoint;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.ConnectorType;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorConfigurationResolver;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.utilities.CommonUtilities;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
@@ -69,6 +76,10 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 	private Map<String, Object> dynamicElements;
 
 	private String tableAlias;
+
+	private ConnectorResourceConfiguration sourceResource;
+
+	private transient ConnectorResource resolvedSourceResource;
 
 	public static OnDemandInfo create(List<Object> parameters, EtlDestinationConfiguration relatedEtlTransformTarget,
 			TransformableField field) throws FieldAvaliableInMultipleDataSources, DBException {
@@ -191,6 +202,12 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 								.valueOf(srcFieldOrValue.toUpperCase());
 					} else if (dstField.equals("table_alias")) {
 						this.tableAlias = srcFieldOrValue;
+					} else if (dstField.equals("source_connector")) {
+						sourceResource().setConnector(srcFieldOrValue);
+					} else if (dstField.equals("source_resource_name")) {
+						sourceResource().setName(srcFieldOrValue);
+					} else if (dstField.equals("source_resource_alias")) {
+						sourceResource().setAlias(srcFieldOrValue);
 					} else {
 
 						if (!utilities.stringHasValue(srcFieldOrValue)
@@ -280,6 +297,57 @@ public class OnDemandInfo extends AbstractEtlDataConfiguration {
 
 	public AutoIncrementHandlingType getAutoIncrementHandlingType() {
 		return autoIncrementHandlingType;
+	}
+
+	public ConnectorResourceConfiguration getSourceResource() {
+		return sourceResource();
+	}
+
+	public String getTableAlias() {
+		return tableAlias;
+	}
+
+	private ConnectorResourceConfiguration sourceResource() {
+		if (sourceResource == null) {
+			sourceResource = new ConnectorResourceConfiguration();
+		}
+		if (!utilities.stringHasValue(sourceResource.getName())) {
+			sourceResource.setName(parentTableName);
+		}
+		return sourceResource;
+	}
+
+	public synchronized ConnectorResource resolveSourceResource() {
+		if (resolvedSourceResource != null) {
+			return resolvedSourceResource;
+		}
+
+		ConnectorResourceConfiguration configured = sourceResource();
+		EtlConfiguration etl = getRelatedEtlConf();
+		String connectorId = configured.getConnector();
+		String defaultConnector = etl.getDefaultSourceConnector();
+		ConnectorEndpoint endpoint = null;
+
+		if (!utilities.stringHasValue(connectorId) && relatedEtlTransformTarget.getParentEtlItemConf() != null) {
+			ConnectorResource primaryResource = relatedEtlTransformTarget.getParentEtlItemConf().getResolvedSrcResource();
+
+			if (primaryResource != null && primaryResource.getEndpoint().getType() == ConnectorType.JDBC) {
+				endpoint = primaryResource.getEndpoint();
+			}
+		}
+
+		if (endpoint == null) {
+			endpoint = etl.getInitializedConnectorRegistry().select(connectorId, defaultConnector, EtlSide.SRC, false);
+		}
+
+		if (endpoint.getType() != ConnectorType.JDBC) {
+			throw new EtlConfException("Parent-on-demand source resource '" + configured.getName()
+					+ "' requires a JDBC connector; resolved " + endpoint.getType());
+		}
+
+		resolvedSourceResource = ConnectorConfigurationResolver.resolveResource(configured, null, EtlSide.SRC,
+				endpoint);
+		return resolvedSourceResource;
 	}
 
 	@Override

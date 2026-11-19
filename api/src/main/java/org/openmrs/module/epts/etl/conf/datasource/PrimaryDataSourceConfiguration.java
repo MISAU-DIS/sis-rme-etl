@@ -20,6 +20,9 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
  */
 public interface PrimaryDataSourceConfiguration extends EtlDataSource, EtlSrcConf {
 
+	/** Configures the logical identity used by mappings and data-source lookup. */
+	void setAlias(String alias);
+
 	/**
 	 * Searches records through the reader bound to this primary data source.
 	 * Connector-specific implementations adapt the reader to their native search

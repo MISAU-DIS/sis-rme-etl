@@ -14,6 +14,7 @@ import org.openmrs.module.epts.etl.conf.GenericTableConfiguration;
 import org.openmrs.module.epts.etl.conf.JdbcTableDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.JdbcTablePrimaryDataSourceConfiguration;
 import org.openmrs.module.epts.etl.conf.datasource.PreparedQueryInfo;
+import org.openmrs.module.epts.etl.conf.datasource.SourceResourceConfiguration;
 import org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlDataSource;
 import org.openmrs.module.epts.etl.conf.interfaces.EtlTransformTarget;
@@ -21,6 +22,8 @@ import org.openmrs.module.epts.etl.conf.interfaces.TransformableField;
 import org.openmrs.module.epts.etl.conf.types.ActionOnEtlIssue;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordReader;
 import org.openmrs.module.epts.etl.connector.capability.ConnectorRecordWriter;
+import org.openmrs.module.epts.etl.connector.ConnectorResource;
+import org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration;
 import org.openmrs.module.epts.etl.connector.jdbc.JdbcConnectorRuntimeAdapters;
 import org.openmrs.module.epts.etl.controller.conf.tablemapping.FieldsMapping;
 import org.openmrs.module.epts.etl.etl.processor.EtlLoadHelper;
@@ -255,10 +258,20 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			ConnectorRecordReader<?> reader, ConnectorRecordWriter<?> writer)
 			throws DBException, EtlTransformationException {
 		traceTransformationInitialization(field);
+		OpenConnection ownedSourceConnection = null;
 
 		try {
+			ConnectorResource onDemandSource = onDemandInfo.resolveSourceResource();
+			ConnectorRecordReader<?> onDemandReader = reader;
+
+			if (reader.getResource() == null || reader.getResource().getEndpoint() != onDemandSource.getEndpoint()) {
+				ownedSourceConnection = getRelatedEtlTransformTarget().getRelatedEtlConf()
+						.openResolvedSourceConnectorConnection(onDemandSource, onDemandInfo);
+				onDemandReader = JdbcConnectorRuntimeAdapters.reader(ownedSourceConnection);
+			}
+
 			EtlDatabaseObject dstParent = parentService.retrieveOrCreate(this, processor, srcObject, transformedRecord,
-					additionalSrcObjects, field, reader, writer);
+					additionalSrcObjects, field, onDemandReader, writer);
 
 			if (dstParent == null) {
 
@@ -272,6 +285,10 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			return new FieldTransformingInfo(field, dstParent != null ? dstParent.getObjectId().asSimpleValue() : null,
 					dstParent != null ? (EtlDataSource) dstParent.getRelatedConfiguration() : null);
 		} finally {
+			if (ownedSourceConnection != null) {
+				ownedSourceConnection.markAsSuccessifullyTerminated();
+				ownedSourceConnection.finalizeConnection(onDemandInfo);
+			}
 			traceTransformationFinalization(field);
 		}
 
@@ -745,6 +762,16 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		EtlChildItemConfiguration conf = EtlChildItemConfiguration.fastCreate(parentConf,
 				reader.unwrap(java.sql.Connection.class));
 		conf.setRelatedEtlConf(this.getRelatedEtlTransformTarget().getRelatedEtlConf());
+		ConnectorResourceConfiguration principalDestinationResource = getRelatedEtlTransformTarget().getResource();
+		conf.setGeneratedDestinationConnector(
+				principalDestinationResource == null ? null : principalDestinationResource.getConnector());
+		SourceResourceConfiguration sourceResource = new SourceResourceConfiguration();
+		sourceResource.setConnector(onDemandInfo.getSourceResource().getConnector());
+		sourceResource.setName(onDemandInfo.getSourceResource().getName());
+		sourceResource.setAlias(onDemandInfo.getSourceResource().getAlias());
+		sourceResource.setProperties(onDemandInfo.getSourceResource().getProperties());
+		conf.getSource().setConnector(sourceResource.getConnector());
+		conf.getSource().setResource(sourceResource);
 
 		EtlTemplateInfo template = usesTemplate() ? new EtlTemplateInfo(this.getTemplateName()) : null;
 
@@ -756,7 +783,7 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 			conf.getRelatedEtlConf().trace("Template within transformer loaded!");
 		} else if (useMainEtlTable) {
 			org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration destination = new org.openmrs.module.epts.etl.conf.destination.EtlDestinationConfiguration();
-			org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration resource = new org.openmrs.module.epts.etl.connector.conf.ConnectorResourceConfiguration();
+			ConnectorResourceConfiguration resource = buildOnDemandDestinationResource();
 			resource.setName(getParentTableName());
 			destination.setResource(resource);
 			destination.setTableDataDestination(new JdbcTableDestinationConfiguration(getParentTableName()));
@@ -782,6 +809,19 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		}
 
 		return conf;
+	}
+
+	private ConnectorResourceConfiguration buildOnDemandDestinationResource() {
+		ConnectorResourceConfiguration resource = new ConnectorResourceConfiguration();
+		ConnectorResourceConfiguration principal = getRelatedEtlTransformTarget().getResource();
+
+		if (principal != null) {
+			resource.setConnector(principal.getConnector());
+			resource.setProperties(principal.getProperties());
+		}
+		resource.setName(getParentTableName());
+		resource.setAlias(onDemandInfo.getTableAlias());
+		return resource;
 	}
 
 	boolean existingSrcParentIsApplicable() {
@@ -817,7 +857,9 @@ public class ParentOnDemandLoadTransformer extends AbstractEtlFieldTransformer {
 		OpenConnection dstConn = null;
 
 		try {
-			srcConn = item.getPrimaryDataSource().openConnection(item);
+			ConnectorResource sourceResource = onDemandInfo.resolveSourceResource();
+			srcConn = getRelatedEtlTransformTarget().getRelatedEtlConf()
+					.openResolvedSourceConnectorConnection(sourceResource, onDemandInfo);
 			dstConn = getRelatedEtlTransformTarget().openConnection(getRelatedEtlTransformTarget());
 			ConnectorRecordReader<?> reader = JdbcConnectorRuntimeAdapters.reader(srcConn);
 			ConnectorRecordWriter<?> writer = JdbcConnectorRuntimeAdapters.writer(dstConn);

@@ -83,6 +83,9 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	@JsonIgnore
 	private transient JdbcTablePrimaryDataSourceConfiguration etlDatabaseDataSource;
 
+	@JsonIgnore
+	private transient String generatedDestinationConnector;
+
 	private List<EtlDestinationConfiguration> destinations;
 
 	private Boolean disabled;
@@ -126,6 +129,16 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	private EtlConfiguration relatedEtlConf;
 
 	public EtlItemConfiguration() {
+	}
+
+	@JsonIgnore
+	public String getGeneratedDestinationConnector() {
+		return generatedDestinationConnector;
+	}
+
+	@JsonIgnore
+	public void setGeneratedDestinationConnector(String generatedDestinationConnector) {
+		this.generatedDestinationConnector = generatedDestinationConnector;
 	}
 
 	public void setRelatedEtlConf(EtlConfiguration relatedEtlConf) {
@@ -489,14 +502,15 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		this.source.getPrimaryDataSource().setEtlSide(EtlSide.SRC);
 		resolveAdditionalSourceResources(registry, source, true);
 
+		if (this.source.getResource() != null && utilities.stringHasValue(this.source.getResource().getAlias())) {
+			this.source.getPrimaryDataSource().setAlias(this.source.getResource().getAlias());
+		}
+
 		if (this.source.getPrimaryDataSource() instanceof JdbcTablePrimaryDataSourceConfiguration) {
 			JdbcTablePrimaryDataSourceConfiguration jdbcSource = (JdbcTablePrimaryDataSourceConfiguration) this.source
 					.getPrimaryDataSource();
 			jdbcSource.setResolvedResource(source);
 
-			if (this.source.getResource() != null && utilities.stringHasValue(this.source.getResource().getAlias())) {
-				jdbcSource.setTableAlias(this.source.getResource().getAlias());
-			}
 		}
 
 		if (destinationResources != null) {
@@ -1228,15 +1242,18 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 	private void prepareDestinationConfigurationsForConnectorFullLoad() {
 		prepareSourceConfiguration();
 
-		if (!hasDestinations() && (getRelatedEtlConf().hasDstConnInfo()
+		if (!hasDestinations() && (utilities.stringHasValue(generatedDestinationConnector)
+				|| getRelatedEtlConf().hasDstConnInfo()
 				|| utilities.stringHasValue(getRelatedEtlConf().getDefaultDestinationConnector()))) {
-			ConnectorEndpoint endpoint = selectConnector(getRelatedEtlConf().getInitializedConnectorRegistry(), null,
+			ConnectorEndpoint endpoint = selectConnector(getRelatedEtlConf().getInitializedConnectorRegistry(),
+					generatedDestinationConnector,
 					EtlSide.DST, true);
 
 			if (endpoint.getType() == ConnectorType.JDBC) {
 				EtlDestinationConfiguration destination = new EtlDestinationConfiguration();
 				ConnectorResourceConfiguration resource = new ConnectorResourceConfiguration();
-				resource.setConnector(getRelatedEtlConf().getDefaultDestinationConnector());
+				resource.setConnector(utilities.stringHasValue(generatedDestinationConnector)
+						? generatedDestinationConnector : getRelatedEtlConf().getDefaultDestinationConnector());
 				resource.setName(getPrimaryDataSource().getName());
 				destination.setResource(resource);
 				JdbcTableDestinationConfiguration table = new JdbcTableDestinationConfiguration(
