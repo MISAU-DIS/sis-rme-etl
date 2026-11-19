@@ -27,8 +27,14 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	public static DynamicProcessStarter init(List<EtlConfiguration> configs, EtlLogger logger)
 			throws ForbiddenOperationException, DBException {
 
-		if (configs.size() > 1) {
-			throw new ForbiddenOperationException("Currently not supported multiple Dynamic Configuration files");
+		if (configs == null || configs.size() != 1) {
+			throw new ForbiddenOperationException(
+					"DynamicProcessStarter requires exactly one Dynamic Configuration file");
+		}
+
+		if (!configs.get(0).isDynamic()) {
+			throw new ForbiddenOperationException(
+					"The ETL configuration is not dynamic: " + configs.get(0).getConfigFilePath());
 		}
 
 		DynamicProcessStarter starter = new DynamicProcessStarter(configs, logger);
@@ -36,16 +42,21 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		return starter;
 	}
 
+	@Override
+	public ProcessStarter recreate() throws ForbiddenOperationException, DBException {
+		return DynamicProcessStarter.init(configs, getLogger());
+	}
+
 	private List<EtlDatabaseObject> loadAvaliableSrcObjects(EtlConfiguration etlConfig) {
 		OpenConnection conn = null;
 
 		try {
-			conn = etlConfig.getMainConnInfo().openConnection(etlConfig);
-
 			if (!etlConfig.hasMainConnInfo()) {
 				throw new ForbiddenOperationException(
 						"For dynamic etl configuration you must setup the mainConnInfo!!!");
 			}
+
+			conn = etlConfig.getMainConnInfo().openConnection(etlConfig);
 
 			EtlItemConfiguration itemConf = EtlItemConfiguration.fastCreate(etlConfig.getDynamicSrcConf(), false, conn);
 			itemConf.setRelatedEtlConf(etlConfig);
@@ -85,13 +96,19 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	public void run() {
 
 		try {
+			if (!markStarted()) {
+				throw new ForbiddenOperationException("DynamicProcessStarter has already been started");
+			}
+
 			applyStartupDebugDelayIfConfigured();
 
 			ProcessController controller = null;
+			int discoveredSources = 0;
 
 			for (EtlConfiguration etlConfig : this.configs) {
 
 				for (EtlDatabaseObject src : loadAvaliableSrcObjects(etlConfig)) {
+					discoveredSources++;
 
 					controller = init(etlConfig, src);
 
@@ -108,9 +125,14 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 				}
 			}
 
-			if (controller.isFinished()) {
+			if (discoveredSources == 0) {
+				LOG.warn("No source objects were found for the dynamic ETL configuration");
+				return;
+			}
+
+			if (controller != null && controller.isFinished()) {
 				LOG.warn("ALL JOBS ARE FINISHED");
-			} else if (controller.isStopped()) {
+			} else if (controller != null && controller.isStopped()) {
 				LOG.warn("ALL JOBS ARE STOPPED");
 			}
 		} catch (ForbiddenOperationException e) {
@@ -129,14 +151,17 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		if (c.isFinished()) {
 
 			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
+				finalizeController(controller);
 				throw new ForbiddenOperationException(
 						"You cannot configure childConfigFilePath on dynamic etl configuration!!!!");
-			} else {
-				controller.handleFinalization();
 			}
 		} else if (c.isStopped()) {
 			LOG.warn("THE APPLICATION IS STOPPING DUE STOP REQUESTED!");
-			controller.handleFinalization();
+			finalizeController(controller);
+		}
+
+		if (c.isFinished()) {
+			finalizeController(controller);
 		}
 
 	}

@@ -46,10 +46,15 @@ public class Main implements Runnable {
 	private static volatile boolean openMrsEtlEnabled;
 
 	public static void main(String[] synConfigFiles) throws IOException, DBException {
-		performeInitialization(synConfigFiles, false).run();
+		ProcessStarter starter = performeInitialization(synConfigFiles);
+		if (starter == null) {
+			LOG.info("No automatic ETL configurations were found. Nothing to start.");
+			return;
+		}
+		starter.run();
 	}
 
-	private static ProcessStarter performeInitialization(String[] synConfigFiles, boolean fromOpenMrs)
+	private static ProcessStarter performeInitialization(String[] synConfigFiles)
 			throws ForbiddenOperationException, DBException {
 		List<EtlConfiguration> dynamics = new ArrayList<>();
 		List<EtlConfiguration> statics = new ArrayList<>();
@@ -138,7 +143,16 @@ public class Main implements Runnable {
 						+ "' must contain the ETL startup file path");
 			}
 
-			ProcessStarter processStarter = performeInitialization(new String[] { startupFile.trim() }, true);
+			ProcessStarter processStarter = performeInitialization(new String[] { startupFile.trim() });
+
+			if (processStarter == null) {
+				LOG.info("No automatic ETL configurations were found. OpenMRS startup will not launch an ETL process.");
+				OPENMRS_START_TRIGGERED.set(false);
+				return;
+			}
+
+			/* Keep the exact starter instance exposed to the OMOD monitor and controls. */
+			openMrsProcessStarter = processStarter;
 
 			/*
 			 * ProcessStarter.run() contains its own lifecycle and waits until the ETL is
@@ -269,6 +283,21 @@ public class Main implements Runnable {
 	 */
 	public static ProcessStarter getOpenMrsProcessStarter() {
 		return openMrsProcessStarter;
+	}
+
+	/** Restarts a completed OpenMRS-managed starter with fresh controllers. */
+	public static synchronized boolean restartFromOpenMRS() throws DBException {
+		ProcessStarter current = openMrsProcessStarter;
+		if (current == null || !current.isFinalized())
+			return false;
+
+		ProcessStarter replacement = current.recreate();
+		openMrsProcessStarter = replacement;
+
+		Thread etlThread = new Thread(replacement, "epts-etl-starter-restart");
+		etlThread.setDaemon(true);
+		etlThread.start();
+		return true;
 	}
 
 	/**

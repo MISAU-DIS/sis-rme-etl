@@ -310,6 +310,24 @@
             word-break: break-all;
         }
 
+        #etl-monitor .operations-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        #etl-monitor .operation-empty {
+            color: #888;
+            text-align: center;
+        }
+
+        #etl-monitor .operation-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: #777;
+            font-size: 11px;
+        }
+
         #etl-monitor .progress-label {
             display: flex;
             justify-content: space-between;
@@ -602,69 +620,13 @@
                  OPERATION
                  ================================================= -->
 
-            <div class="operation-panel">
-
-                <div class="operation-header">
-
-                    <div class="operation-title">
-                        Sincronização actual
-                    </div>
-
-                    <div id="operationStatus"
-                         class="operation-status">
-
-                        <span class="status-icon">
-                            ●
-                        </span>
-
-                        <span id="operationStatusText">
-                            IDLE
-                        </span>
-
-                    </div>
-
+            <div id="operationsList" class="operations-list">
+                <div class="operation-panel operation-empty">
+                    Nenhuma operação em execução.
                 </div>
-
-
-                <div class="operation-id">
-
-                    Operação:
-
-                    <span id="operationId">
-                        -
-                    </span>
-
-                </div>
-
-
-                <div class="progress-label">
-
-                    <span>
-                        Progresso
-                    </span>
-
-                    <span id="progressText">
-                        0%
-                    </span>
-
-                </div>
-
-
-                <div class="progress-container">
-
-                    <div id="progressBar"
-                         class="progress-bar">
-                        0%
-                    </div>
-
-                </div>
-
-
-                <div id="message"
-                     class="message">
-                </div>
-
             </div>
+
+            <div id="message" class="message"></div>
 
         </div>
 
@@ -940,144 +902,91 @@
             getStatusLabel(status);
 
 
-        /* -----------------------------------------------------
-           OPERATION
-           ----------------------------------------------------- */
+        var operations = data.operations || [];
+        var operationsList = document.getElementById("operationsList");
+        var processed = 0;
+        var total = 0;
+        var errorCount = 0;
 
-        document.getElementById("operationId").innerText =
-            data.operationIdentifier || "-";
+        operationsList.innerHTML = "";
 
-
-        var operationStatus =
-            document.getElementById("operationStatus");
-
-
-        operationStatus.className =
-            "operation-status " + statusClass;
-
-
-        document.getElementById("operationStatusText").innerText =
-            getStatusLabel(status);
-
-
-        var statusIcon =
-            operationStatus.querySelector(".status-icon");
-
-
-        if (statusIcon) {
-
-            statusIcon.innerText =
-                getStatusIcon(status);
-
+        if (!operations.length) {
+            var empty = document.createElement("div");
+            empty.className = "operation-panel operation-empty";
+            empty.innerText = "Nenhuma operação em execução.";
+            operationsList.appendChild(empty);
         }
 
+        operations.forEach(function(operation) {
+            var operationProgress = Math.max(0, Math.min(100, Number(operation.progress || 0)));
+            var operationProcessed = Number(operation.processed || 0);
+            var operationTotal = Number(operation.total || 0);
+            var operationStatusClass = getStatusClass(operation.status);
 
-        /* -----------------------------------------------------
-           PROCESSED
-           ----------------------------------------------------- */
+            processed += operationProcessed;
+            total += operationTotal;
 
-        var processed =
-            Number(data.processed || 0);
-
-
-        var total =
-            Number(data.total || 0);
-
-
-        document.getElementById("processed").innerText =
-            formatNumber(processed);
-
-
-        /* -----------------------------------------------------
-           PENDING
-           ----------------------------------------------------- */
-
-        var pending =
-            Math.max(
-                0,
-                total - processed
-            );
-
-
-        document.getElementById("pending").innerText =
-            formatNumber(pending);
-
-
-        /* -----------------------------------------------------
-           PROGRESS
-           ----------------------------------------------------- */
-
-        var progress =
-            Number(data.progress || 0);
-
-
-        progress =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    progress
-                )
-            );
-
-
-        var progressBar =
-            document.getElementById("progressBar");
-
-
-        progressBar.style.width =
-            progress + "%";
-
-
-        progressBar.innerText =
-            Math.round(progress) + "%";
-
-
-        document.getElementById("progressText").innerText =
-            progress.toFixed(2) + "%";
-
-
-        /* -----------------------------------------------------
-           ERRORS
-
-           Nesta release mantemos apenas o contador.
-           A visualização detalhada será implementada
-           numa release futura.
-           ----------------------------------------------------- */
-
-        var errorCount =
-            0;
-
-
-        if (data.tasks &&
-            data.tasks.length) {
-
-            for (var i = 0;
-                 i < data.tasks.length;
-                 i++) {
-
-                var task =
-                    data.tasks[i];
-
-
-                if (task &&
-                    task.status &&
-                    (
-                        String(task.status).toUpperCase() === "ERROR" ||
-                        String(task.status).toUpperCase() === "FAILED"
-                    )) {
-
-                    errorCount++;
-
-                }
-
+            if (operationStatusClass === "error") {
+                errorCount++;
             }
 
-        }
+            var panel = document.createElement("div");
+            panel.className = "operation-panel";
 
+            var header = document.createElement("div");
+            header.className = "operation-header";
 
-        document.getElementById("errors").innerText =
-            formatNumber(errorCount);
+            var title = document.createElement("div");
+            title.className = "operation-title";
+            title.innerText = operation.operationIdentifier || "Operação sem identificador";
+
+            var operationStatus = document.createElement("div");
+            operationStatus.className = "operation-status " + operationStatusClass;
+            operationStatus.innerText = getStatusIcon(operation.status) + " " + getStatusLabel(operation.status);
+
+            header.appendChild(title);
+            header.appendChild(operationStatus);
+            panel.appendChild(header);
+
+            var identifiers = document.createElement("div");
+            identifiers.className = "operation-id";
+            identifiers.innerText = "Processo: " + (operation.processId || "-")
+                + " | Engine activo: " + (operation.engineId || "-");
+            panel.appendChild(identifiers);
+
+            var progressLabel = document.createElement("div");
+            progressLabel.className = "progress-label";
+            progressLabel.innerText = "Progresso do engine activo: " + operationProgress.toFixed(2) + "%";
+            panel.appendChild(progressLabel);
+
+            var progressContainer = document.createElement("div");
+            progressContainer.className = "progress-container";
+            var progressBar = document.createElement("div");
+            progressBar.className = "progress-bar";
+            progressBar.style.width = operationProgress + "%";
+            progressBar.innerText = Math.round(operationProgress) + "%";
+            progressContainer.appendChild(progressBar);
+            panel.appendChild(progressContainer);
+
+            var metrics = document.createElement("div");
+            metrics.className = "operation-metrics";
+            metrics.innerText = "Processados: " + formatNumber(operationProcessed)
+                + " | Pendentes: " + formatNumber(Math.max(0, operationTotal - operationProcessed));
+            panel.appendChild(metrics);
+
+            if (operation.message) {
+                var operationMessage = document.createElement("div");
+                operationMessage.className = "message visible";
+                operationMessage.innerText = operation.message;
+                panel.appendChild(operationMessage);
+            }
+
+            operationsList.appendChild(panel);
+        });
+
+        document.getElementById("processed").innerText = formatNumber(processed);
+        document.getElementById("pending").innerText = formatNumber(Math.max(0, total - processed));
+        document.getElementById("errors").innerText = formatNumber(errorCount);
 
 
         /* -----------------------------------------------------
@@ -1307,17 +1216,8 @@
 
     function loadMonitor() {
 
-        var operationIdentifier =
-            new URLSearchParams(window.location.search)
-                .get("operationIdentifier");
-
         var monitorUrl =
             "${pageContext.request.contextPath}/module/epts/etl/monitorData.json";
-
-        if (operationIdentifier) {
-            monitorUrl += "?operationIdentifier=" +
-                encodeURIComponent(operationIdentifier);
-        }
 
         fetch(
             monitorUrl,
@@ -1385,31 +1285,6 @@
                 ).className =
                     "status-dot error";
 
-
-                document.getElementById(
-                    "operationStatus"
-                ).className =
-                    "operation-status error";
-
-
-                document.getElementById(
-                    "operationStatusText"
-                ).innerText =
-                    "Falhou";
-
-
-                var statusIcon =
-                    document.querySelector(
-                        "#operationStatus .status-icon"
-                    );
-
-
-                if (statusIcon) {
-
-                    statusIcon.innerText =
-                        "✕";
-
-                }
 
             });
 

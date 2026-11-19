@@ -55,7 +55,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	protected List<Engine<T>> enginesActivititieMonitor;
 
-	protected Engine<T> currentActivititieMonitor;
+	protected volatile Engine<T> currentActivititieMonitor;
 
 	protected OperationController<? extends EtlDatabaseObject> child;
 
@@ -354,13 +354,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 	}
 
 	public Engine<T> getCurrentActivititieMonitor() {
-
-		if (isParallelModeProcessing()) {
-			throw new ForbiddenOperationException(
-					"Cannot determine currentActivititieMonitor when running on Parallel Mode");
-		} else {
-			return currentActivititieMonitor;
-		}
+		return currentActivititieMonitor;
 	}
 
 	protected synchronized void runInParallelMode() throws DBException {
@@ -547,6 +541,7 @@ public abstract class OperationController<T extends EtlDatabaseObject> extends A
 
 	private void startAndAddToEnginesActivititieMonitor(Engine<T> activitityMonitor) {
 		this.getEnginesActivititieMonitor().add(activitityMonitor);
+		this.currentActivititieMonitor = activitityMonitor;
 
 		ThreadPoolService.getInstance().createNewThreadPoolExecutor(activitityMonitor.getEngineId())
 				.execute(activitityMonitor);

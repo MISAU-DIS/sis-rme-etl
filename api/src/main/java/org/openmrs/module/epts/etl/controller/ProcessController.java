@@ -784,4 +784,9 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	}
 
+	@Override
+	public int hashCode() {
+		return this.getControllerId() != null ? this.getControllerId().hashCode() : 0;
+	}
+
 }

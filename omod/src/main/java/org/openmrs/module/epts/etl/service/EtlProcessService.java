@@ -69,15 +69,21 @@ public class EtlProcessService {
 	 * @throws IOException
 	 */
 	public synchronized void start() throws DBException, IOException {
-		Main.startFromOpenMRS();
+		ProcessStarter starter = getProcessStarter();
+		if (starter == null) {
+			Main.startFromOpenMRS();
+		} else if (starter.isFinalized() && Main.restartFromOpenMRS()) {
+			this.processStarter = Main.getOpenMrsProcessStarter();
+		}
 	}
 
 	/**
 	 * Requests the current ETL controller to stop.
 	 */
 	public synchronized void stop() {
-		this.processStarter.requestStop();
-
-		this.getProcessStarter().waitUntilFinalized();
+		ProcessStarter starter = getProcessStarter();
+		if (starter != null) {
+			starter.requestStop();
+		}
 	}
 }

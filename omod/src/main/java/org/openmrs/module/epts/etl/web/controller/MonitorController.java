@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -73,15 +72,11 @@ public class MonitorController {
 	 */
 	@RequestMapping(value = "/module/epts/etl/monitorData.json", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String monitorData(
-			@RequestParam(value = "operationIdentifier", required = false) String operationIdentifier) {
+	public String monitorData() {
 
 		try {
 
 			LOGGER.debug("[ETL-MONITOR] Getting ETL monitor");
-
-			if (operationIdentifier == null)
-				operationIdentifier = "sync-processor";
 
 			MonitorInfoDTO response = monitorService.retrieveMonitor();
 
@@ -242,11 +237,6 @@ public class MonitorController {
 
 			response.setStatus("ERROR");
 			response.setMessage(message);
-			response.setOperationIdentifier(null);
-			response.setProgress(0.0);
-			response.setProcessed(0L);
-			response.setTotal(0L);
-
 			return objectMapper.writeValueAsString(response);
 
 		} catch (Exception e) {
