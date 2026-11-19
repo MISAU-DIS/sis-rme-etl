@@ -2,6 +2,8 @@ package org.openmrs.module.epts.etl.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
@@ -11,50 +13,55 @@ import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
 public class ProcessStarter implements ControllerStarter {
 
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
-	private volatile boolean initialized;
-	private volatile boolean finalized;
+	private volatile boolean stopRequested;
 
-	protected EtlConfiguration etlConfig;
+	protected List<ProcessController> currentControllers;
 
-	protected ProcessController currentController;
+	protected List<EtlConfiguration> configs;
 
 	private final EtlLogger logger;
 
-	private final Object LOCK = new Object();
+	protected ProcessStarter(List<EtlConfiguration> configs, EtlLogger logger) {
+		this.configs = configs;
 
-	public ProcessStarter(EtlConfiguration etlConfig) {
-		this.etlConfig = etlConfig;
+		this.currentControllers = new ArrayList<>();
 
-		this.logger = EtlLogger.getLogger(ProcessStarter.class);
+		if (logger == null) {
+
+			this.logger = EtlLogger.getLogger(ProcessStarter.class);
+		} else {
+			this.logger = logger;
+		}
 	}
 
-	public ProcessController getCurrentController() {
-		return currentController;
+	public List<ProcessController> getCurrentControllers() {
+		return currentControllers;
 	}
 
-	public EtlConfiguration getEtlConfig() {
-		return this.etlConfig;
+	public ProcessController getCurrentController(EtlConfiguration config) {
+
+		for (ProcessController controller : currentControllers) {
+
+			if (controller.getRelatedEtlConf().equals(config)) {
+				return controller;
+			}
+		}
+
+		return null;
 	}
 
-	public ProcessStarter(EtlConfiguration etlConfig, Logger logger) {
-		this.etlConfig = etlConfig;
-
-		this.logger = new EtlLogger(logger);
+	public EtlConfiguration getEtlConfig(ProcessController controller) {
+		return controller.getRelatedEtlConf();
 	}
 
 	public EtlLogger getLogger() {
 		return logger;
-	}
-
-	public boolean isInitialized() {
-		return initialized;
 	}
 
 	/**
@@ -65,61 +72,66 @@ public class ProcessStarter implements ControllerStarter {
 	 * @throws IOException
 	 * @throws DBException
 	 */
-	public void init() throws ForbiddenOperationException, DBException {
-		if (this.initialized) {
-			return;
-		}
+	public static ProcessStarter init(List<EtlConfiguration> configs, EtlLogger logger)
+			throws ForbiddenOperationException, DBException {
+		ProcessStarter starter = new ProcessStarter(configs, logger);
 
-		synchronized (LOCK) {
-			if (this.initialized) {
-				return;
-			}
+		logger.debug("Initializing the ProcessStarter...");
 
-			logger.debug("Initializing the ProcessStarter...");
+		for (EtlConfiguration config : configs) {
+			logger.debug("Initializing ProcessController for conmfiguration {} ", config.getConfigFilePath());
 
-			logger.debug("Initializing ProcessController using " + this.etlConfig.getConfigFilePath());
-
-			this.currentController = new ProcessController(this, this.etlConfig);
+			starter.currentControllers.add(new ProcessController(starter, config));
 
 			logger.debug("ProcessController Initialized");
-
-			this.initialized = true;
-			this.finalized = false;
-
-			logger.debug("Starter Initialization Fineshed");
 		}
 
+		logger.debug("Starter Initialization Fineshed");
+
+		return starter;
 	}
 
 	@Override
 	public void run() {
+
 		try {
-			applyStartupDebugDelayIfConfigured();
+			this.applyStartupDebugDelayIfConfigured();
 
-			init();
+			for (ProcessController controller : this.currentControllers) {
 
-			ProcessController controller = this.currentController;
+				if (controller.getRelatedEtlConf().isDisabled()) {
+					logger.info("Operation " + controller.getControllerId() + " is disabled. Skipping...");
+					controller.markAsFinished();
+					handleControllerFinalization(controller);
+					return;
+				}
 
-			if (controller.getRelatedEtlConf().isDisabled()) {
-				logger.info("Operation " + controller.getControllerId() + " is disabled. Skipping...");
-				controller.markAsFinished();
-				handleControllerFinalization(controller);
-				return;
+				startController(controller);
 			}
-
-			startController(controller);
 
 			waitUntilFinalized();
 			logFinalStatus();
 		} catch (Exception e) {
 			logger.err("ProcessStarter failed", e);
 
-			if (this.currentController != null) {
-				this.currentController.requestStop();
-			}
-
-			throw new RuntimeException(e);
+			this.requestStop();
 		}
+	}
+
+	public synchronized void requestStop() {
+
+		if (this.stopRequested) {
+			return;
+		} else {
+
+			for (ProcessController controller : this.currentControllers) {
+				controller.requestStop();
+			}
+		}
+	}
+
+	private synchronized void removeFinalizedController(ProcessController controller) {
+		this.currentControllers.remove(controller);
 	}
 
 	@Override
@@ -129,9 +141,10 @@ public class ProcessStarter implements ControllerStarter {
 		ProcessController controller = (ProcessController) controllerToFinalize;
 
 		if (controllerToFinalize.isFinished()) {
-			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
-				try {
 
+			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
+
+				try {
 					logger.warn(
 							"Loading next child conf file " + controller.getRelatedEtlConf().getChildConfigFilePath());
 
@@ -140,29 +153,27 @@ public class ProcessStarter implements ControllerStarter {
 
 					while (childConfig != null && childConfig.isDisabled()) {
 						logger.warn("Disabled config was found on the tree", childConfig.getConfigFilePath());
-						
+
 						childConfig = EtlConfiguration.loadFromFile(new File(childConfig.getChildConfigFilePath()));
 					}
 
-					if (childConfig == null) {
-						this.finalized = true;
-					} else {
-						ProcessController child = new ProcessController(this, childConfig);
+					if (childConfig != null) {
+						ProcessController childController = new ProcessController(this, childConfig);
 
-						this.currentController = child;
+						this.currentControllers.add(childController);
 
-						if (this.currentController.isDisabled()) {
-							logger.info("Operation " + this.currentController.getControllerId()
+						if (childController.isDisabled()) {
+							logger.info("Operation " + childController.getControllerId()
 									+ " is marked as disabled... skipping...");
 
-							this.currentController.markAsFinished();
+							childController.markAsFinished();
 
-							this.handleControllerFinalization(this.currentController);
+							this.handleControllerFinalization(childController);
 						} else {
 							ExecutorService executor = ThreadPoolService.getInstance()
-									.createNewThreadPoolExecutor(this.currentController.getControllerId());
+									.createNewThreadPoolExecutor(childController.getControllerId());
 
-							executor.execute(this.currentController);
+							executor.execute(childController);
 
 							if (!controllerToFinalize.isDisabled()) {
 								ThreadPoolService.getInstance().terminateTread(logger,
@@ -175,46 +186,66 @@ public class ProcessStarter implements ControllerStarter {
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				} finally {
-					controller.handleFinalization();
+					finalizeController(controller);
 				}
 			} else {
-				controller.handleFinalization();
-				this.finalized = true;
+				finalizeController(controller);
 			}
 		} else if (controllerToFinalize.isStopped()) {
-			controller.handleFinalization();
-			this.finalized = true;
+			finalizeController(controller);
 		}
+	}
 
+	private void finalizeController(ProcessController controller) {
+		controller.handleFinalization();
+		this.removeFinalizedController(controller);
 	}
 
 	public void applyStartupDebugDelayIfConfigured() {
+
 		if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
 			TimeCountDown.sleep(10);
 		}
 	}
 
-	private void startController(ProcessController controller) {
+	protected void startController(ProcessController controller) {
 		ExecutorService executor = ThreadPoolService.getInstance()
 				.createNewThreadPoolExecutor(controller.getControllerId());
 
 		executor.execute(controller);
 	}
 
-	private void waitUntilFinalized() {
-		while (!this.finalized) {
+	public void waitUntilFinalized() {
+
+		while (!this.isFinalized()) {
 			TimeCountDown.sleep(15);
 
 			logger.warn("THE APPLICATION IS STILL RUNNING...", 60 * 15, true);
 		}
 	}
 
+	public boolean isFinalized() {
+		return this.currentControllers.isEmpty();
+	}
+
 	private void logFinalStatus() {
-		if (this.currentController.isFinished()) {
-			logger.warn("ALL JOBS ARE FINISHED");
-		} else if (this.currentController.isStopped()) {
+
+		if (this.stopRequested) {
 			logger.warn("ALL JOBS ARE STOPPED");
+		} else {
+			logger.warn("ALL JOBS ARE FINISHED");
 		}
 	}
 
+	public synchronized void runExternalController(ProcessController controller) {
+
+		if (this.getCurrentController(controller.getRelatedEtlConf()) != null) {
+			throw new ForbiddenOperationException(
+					"The controller youu tried to start is already started within this starter!!");
+		}
+
+		this.currentControllers.add(controller);
+
+		startController(controller);
+	}
 }

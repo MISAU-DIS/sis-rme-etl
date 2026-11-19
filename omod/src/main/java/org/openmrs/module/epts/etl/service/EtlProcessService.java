@@ -1,137 +1,83 @@
 package org.openmrs.module.epts.etl.service;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.openmrs.module.epts.etl.Main;
-import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.controller.ProcessStarter;
+import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EtlProcessService {
 
-    private volatile ProcessStarter processStarter;
+	private volatile ProcessStarter processStarter;
 
-    /**
-     * Gets the ProcessStarter instance that is actually managed
-     * by the OpenMRS ETL lifecycle.
-     */
-    public synchronized void initialize() {
-        if (this.processStarter != null) {
-            return;
-        }
+	/**
+	 * Gets the ProcessStarter instance that is actually managed by the OpenMRS ETL
+	 * lifecycle.
+	 */
+	public synchronized void initialize() {
 
-        ProcessStarter starter = Main.getOpenMrsProcessStarter();
+		if (this.processStarter != null) {
+			return;
+		}
 
-        if (starter != null) {
-            this.processStarter = starter;
-        }
-    }
+		ProcessStarter starter = Main.getOpenMrsProcessStarter();
 
-    public boolean isEnabled() {
-        return Main.isOpenMrsEtlEnabled();
-    }
+		if (starter != null) {
+			this.processStarter = starter;
+		}
+	}
 
-    public boolean isInitialized() {
+	public boolean isEnabled() {
+		return Main.isOpenMrsEtlEnabled();
+	}
 
-        initialize();
+	public boolean isInitialized() {
 
-        return processStarter != null
-                && processStarter.isInitialized();
-    }
+		initialize();
 
-    public ProcessStarter getProcessStarter() {
+		return processStarter != null;
+	}
 
-        initialize();
+	public ProcessStarter getProcessStarter() {
+		initialize();
 
-        return processStarter;
-    }
+		return processStarter;
+	}
 
-    public ProcessController getCurrentController() {
+	public List<ProcessController> getCurrentControllers() {
 
-        ProcessStarter starter =
-                getProcessStarter();
+		ProcessStarter starter = getProcessStarter();
 
-        if (starter == null) {
-            return null;
-        }
+		if (starter == null) {
+			return null;
+		}
 
-        return starter.getCurrentController();
-    }
+		return starter.getCurrentControllers();
+	}
 
-    /**
-     * Starts the ETL using the ProcessStarter instance
-     * already created by Main/OpenMRS.
-     *
-     * This method does NOT create another ProcessStarter.
-     */
-    public synchronized ProcessController start() {
-        ProcessStarter starter = getProcessStarter();
+	/**
+	 * Starts the ETL using the ProcessStarter instance already created by
+	 * Main/OpenMRS.
+	 *
+	 * This method does NOT create another ProcessStarter.
+	 * 
+	 * @throws DBException
+	 * @throws IOException
+	 */
+	public synchronized void start() throws DBException, IOException {
+		Main.startFromOpenMRS();
+	}
 
-        if (starter == null) {
-            throw new IllegalStateException(
-                    "EPTS ETL ProcessStarter is not available. The ETL has not been started by OpenMRS."
-            );
-        }
+	/**
+	 * Requests the current ETL controller to stop.
+	 */
+	public synchronized void stop() {
+		this.processStarter.requestStop();
 
-        ProcessController controller = starter.getCurrentController();
-
-        if (controller != null && controller.isRunning()) {
-            return controller;
-        }
-
-        /*
-         * Primeiro arranque do ProcessStarter.
-         */
-        if (!starter.isInitialized()) {
-            Thread etlThread = new Thread(starter, "epts-etl-manual-start");
-            etlThread.setDaemon(true);
-            etlThread.start();
-            return null;
-        }
-
-        /*
-         * O lifecycle anterior terminou.
-         * Criamos um novo ProcessStarter usando a mesma configuração ETL.
-         */
-        if (controller != null && (controller.isStopped() || controller.isFinished())) {
-
-            EtlConfiguration etlConfig = starter.getEtlConfig();
-
-            ProcessStarter newStarter = new ProcessStarter(etlConfig);
-
-            this.processStarter = newStarter;
-
-            Thread etlThread = new Thread(
-                    newStarter,
-                    "epts-etl-manual-restart"
-            );
-
-            etlThread.setDaemon(true);
-            etlThread.start();
-
-            return null;
-        }
-
-        return controller;
-    }
-
-    /**
-     * Requests the current ETL controller to stop.
-     */
-    public synchronized void stop() {
-
-        ProcessController controller =
-                getCurrentController();
-
-        if (controller == null) {
-            return;
-        }
-
-        if (!controller.isStopping()
-                && !controller.isStopped()
-                && !controller.isFinished()) {
-
-            controller.requestStop();
-        }
-    }
+		this.getProcessStarter().waitUntilFinalized();
+	}
 }

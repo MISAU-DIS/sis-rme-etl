@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.openmrs.module.epts.etl.controller.OperationController;
 import org.openmrs.module.epts.etl.controller.ProcessController;
+import org.openmrs.module.epts.etl.controller.ProcessStarter;
 import org.openmrs.module.epts.etl.engine.EtlProgressMeter;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
 import org.openmrs.module.epts.etl.model.OperationProgressInfo;
@@ -18,203 +19,133 @@ import org.springframework.stereotype.Service;
 @Service
 public class EtlMonitorService {
 
-    private final EtlProcessService processService;
+	private final EtlProcessService processService;
 
-    @Autowired
-    public EtlMonitorService(EtlProcessService processService) {
-        this.processService = processService;
-    }
+	@Autowired
+	public EtlMonitorService(EtlProcessService processService) {
+		this.processService = processService;
+	}
 
-    public MonitorInfoDTO getMonitor(String operationIdentifier) {
+	public MonitorInfoDTO retrieveMonitor() {
+		MonitorInfoDTO monitor = new MonitorInfoDTO();
 
-        MonitorInfoDTO monitor = new MonitorInfoDTO();
+		if (this.processService.getProcessStarter() == null) {
+			monitor.setOperationIdentifier(null);
+			monitor.setProgress(0.0);
+			monitor.setProcessed(0L);
+			monitor.setTotal(0L);
+			monitor.setTasks(new ArrayList<TaskMonitorInfoDTO>());
 
-        ProcessController controller =
-                processService.getCurrentController();
+			if (processService.isEnabled()) {
+				monitor.setStatus("NOT_INITIALIZED");
+				monitor.setMessage("ETL is not initialized.");
+			} else {
+				monitor.setStatus("DISABLED");
+				monitor.setMessage("ETL is disabled.");
+			}
 
-        if (controller == null) {
-            monitor.setOperationIdentifier(null);
-            monitor.setProgress(0.0);
-            monitor.setProcessed(0L);
-            monitor.setTotal(0L);
-            monitor.setTasks(new ArrayList<TaskMonitorInfoDTO>());
+			return monitor;
+		}
 
-            if (processService.isEnabled()) {
-                monitor.setStatus("NOT_INITIALIZED");
-                monitor.setMessage("ETL is not initialized.");
-            } else {
-                monitor.setStatus("DISABLED");
-                monitor.setMessage("ETL is disabled.");
-            }
+		List<ProcessController> processes = this.getStarter().getCurrentControllers();
 
-            return monitor;
-        }
+		int runningProcess = 0;
+		int stoppedProcess = 0;
+		int finishedProcess = 0;
 
-        OperationController<? extends EtlDatabaseObject> operationController =
-                controller.findOperationControllerByIdentifier(operationIdentifier);
+		for (ProcessController p : processes) {
+			runningProcess += p.isRunning() ? 1 : 0;
+			stoppedProcess += p.isStopped() ? 1 : 0;
+			finishedProcess += p.isFinished() ? 1 : 0;
 
-        if (operationController == null) {
-            monitor.setOperationIdentifier(operationIdentifier);
-            monitor.setProgress(0.0);
-            monitor.setProcessed(0L);
-            monitor.setTotal(0L);
-            monitor.setTasks(new ArrayList<TaskMonitorInfoDTO>());
-            monitor.setStatus(operationIdentifier == null || operationIdentifier.trim().isEmpty()
-                    ? "OPERATION_NOT_SELECTED"
-                    : "OPERATION_NOT_FOUND");
-            monitor.setMessage(operationIdentifier == null || operationIdentifier.trim().isEmpty()
-                    ? "No operation identifier was provided."
-                    : "No operation was found for identifier '" + operationIdentifier + "'.");
+			List<OperationController<? extends EtlDatabaseObject>> operationController = p.getOperationsControllers();
 
-            return monitor;
-        }
+			for (OperationController<? extends EtlDatabaseObject> operation : operationController) {
+				TableOperationProgressInfo item = operation.getCurrentActivititieMonitor()
+						.getTableOperationProgressInfo();
 
-        monitor.setOperationIdentifier(operationController.getOperationIdentifier());
+				TaskMonitorInfoDTO task = createTaskInfo(operation.getProgressInfo(), item);
 
-        OperationProgressInfo operation = operationController.getProgressInfo();
+				monitor.getTasks().add(task);
+			}
+		}
 
-        if (operation == null) {
-            setControllerStatus(monitor, operationController);
+		if (runningProcess > 0 && stoppedProcess == 0) {
+			monitor.setStatus("RUNNING");
+			monitor.setMessage("All Processes are running.");
 
-            monitor.setProgress(0.0);
-            monitor.setProcessed(0L);
-            monitor.setTotal(0L);
-            monitor.setTasks(new ArrayList<TaskMonitorInfoDTO>());
+		} else if (stoppedProcess > 0 && runningProcess == 0) {
+			monitor.setStatus("STOPPED");
+			monitor.setMessage("All Processes are stopped.");
 
-            return monitor;
-        }
+		} else if (finishedProcess > 0 && runningProcess == 0) {
+			monitor.setStatus("FINISHED");
+			monitor.setMessage("All process are finished.");
+		} else if (runningProcess > 0 && stoppedProcess > 0) {
+			monitor.setStatus("RUNNING");
+			monitor.setMessage("Processes Partial running.");
+		} else {
+			monitor.setStatus("INITIALIZED");
+			monitor.setMessage("ETL is initialized.");
+		}
 
-        long total = 0L;
-        long processed = 0L;
+		setControllerStatus(monitor);
 
-        List<TaskMonitorInfoDTO> tasks =
-                new ArrayList<TaskMonitorInfoDTO>();
+		return monitor;
+	}
 
-        List<TableOperationProgressInfo> items = operation.getItemsProgressInfo();
+	private ProcessStarter getStarter() {
+		return this.processService.getProcessStarter();
+	}
 
-        if (items != null) {
-            for (TableOperationProgressInfo item : items) {
-                if (item == null) {
-                    continue;
-                }
+	private TaskMonitorInfoDTO createTaskInfo(OperationProgressInfo operation, TableOperationProgressInfo item) {
+		EtlProgressMeter meter = item.getProgressMeter();
 
-                EtlProgressMeter meter = item.getProgressMeter();
+		TaskMonitorInfoDTO task = new TaskMonitorInfoDTO();
 
-                if (meter == null) {
-                    continue;
-                }
+		String taskId;
 
-                total += meter.getTotal();
-                processed += meter.getProcessed();
+		try {
+			taskId = item.getOperationId();
+		} catch (Exception e) {
+			taskId = operation.getOperationName();
+		}
 
-                TaskMonitorInfoDTO task = createTaskInfo(operation, item, meter);
-                tasks.add(task);
-            }
-        }
+		task.setTaskId(taskId);
 
-        monitor.setTotal(total);
-        monitor.setProcessed(processed);
+		task.setStatus(meter.getStatus() != null ? meter.getStatus().name() : "NOT_INITIALIZED");
 
-        if (total > 0) {
-            double progress =
-                    ((double) processed / (double) total) * 100.0;
+		String message = meter.getStatusMsg();
 
-            monitor.setProgress(roundProgress(progress));
-        } else {
-            monitor.setProgress(0.0);
-        }
+		if (message == null || message.trim().isEmpty()) {
+			message = meter.getStatus() != null ? meter.getStatus().getDsc() : "";
+		}
 
-        monitor.setTasks(tasks);
+		if (meter.isStatusError()) {
+			task.setStatus("ERROR");
+		}
 
-        setControllerStatus(monitor, operationController);
+		task.setMessage(message);
 
-        return monitor;
-    }
+		long total = meter.getTotal();
+		long processed = meter.getProcessed();
 
-    private TaskMonitorInfoDTO createTaskInfo(
-            OperationProgressInfo operation,
-            TableOperationProgressInfo item,
-            EtlProgressMeter meter) {
+		task.setTotal(total);
+		task.setProcessed(processed);
 
-        TaskMonitorInfoDTO task =
-                new TaskMonitorInfoDTO();
+		if (total > 0) {
+			task.setProgress(roundProgress(((double) processed / (double) total) * 100.0));
+		} else {
+			task.setProgress(0.0);
+		}
 
-        String taskId;
+		return task;
+	}
 
-        try {
-            taskId = item.getOperationId();
-        } catch (Exception e) {
-            taskId = operation.getOperationName();
-        }
+	private void setControllerStatus(MonitorInfoDTO monitor) {
+	}
 
-        task.setTaskId(taskId);
-
-        task.setStatus(
-                meter.getStatus() != null
-                        ? meter.getStatus().name()
-                        : "NOT_INITIALIZED"
-        );
-
-        String message = meter.getStatusMsg();
-
-        if (message == null || message.trim().isEmpty()) {
-            message = meter.getStatus() != null
-                    ? meter.getStatus().getDsc()
-                    : "";
-        }
-
-        if (meter.isStatusError()) {
-            task.setStatus("ERROR");
-        }
-
-        task.setMessage(message);
-
-        long total = meter.getTotal();
-        long processed = meter.getProcessed();
-
-        task.setTotal(total);
-        task.setProcessed(processed);
-
-        if (total > 0) {
-            task.setProgress(
-                    roundProgress(
-                            ((double) processed / (double) total) * 100.0
-                    )
-            );
-        } else {
-            task.setProgress(0.0);
-        }
-
-        return task;
-    }
-
-    private void setControllerStatus(
-            MonitorInfoDTO monitor,
-            OperationController<? extends EtlDatabaseObject> controller) {
-
-        if (controller.isRunning()) {
-            monitor.setStatus("RUNNING");
-            monitor.setMessage("ETL is running.");
-
-        } else if (controller.isStopped()) {
-            monitor.setStatus("STOPPED");
-            monitor.setMessage("ETL is stopped.");
-
-        } else if (controller.isFinished()) {
-            monitor.setStatus("FINISHED");
-            monitor.setMessage("ETL process is finished.");
-
-        } else {
-            monitor.setStatus("INITIALIZED");
-            monitor.setMessage("ETL is initialized.");
-        }
-    }
-
-    private double roundProgress(double progress) {
-        return Math.round(progress * 100.0) / 100.0;
-    }
-
-    public ProcessController getCurrentController() {
-        return processService.getCurrentController();
-    }
+	private double roundProgress(double progress) {
+		return Math.round(progress * 100.0) / 100.0;
+	}
 }

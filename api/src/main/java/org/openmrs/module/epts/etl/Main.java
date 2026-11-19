@@ -46,26 +46,41 @@ public class Main implements Runnable {
 	private static volatile boolean openMrsEtlEnabled;
 
 	public static void main(String[] synConfigFiles) throws IOException, DBException {
+		performeInitialization(synConfigFiles, false).run();
+	}
 
-		int i = 0;
+	private static ProcessStarter performeInitialization(String[] synConfigFiles, boolean fromOpenMrs)
+			throws ForbiddenOperationException, DBException {
+		List<EtlConfiguration> dynamics = new ArrayList<>();
+		List<EtlConfiguration> statics = new ArrayList<>();
 
 		for (EtlConfiguration etlConfig : loadSyncConfig(synConfigFiles)) {
 
-			ProcessStarter p;
-
 			if (!etlConfig.isManualStart()) {
 
-				i++;
-
-				if (i > 1) {
-					throw new ForbiddenOperationException("Currently not supported multiple Configuration files");
+				if (etlConfig.isDynamic()) {
+					dynamics.add(etlConfig);
+				} else {
+					statics.add(etlConfig);
 				}
 
-				p = etlConfig.isDynamic() ? new DynamicProcessStarter(etlConfig) : new ProcessStarter(etlConfig);
-
-				p.run();
 			}
 		}
+
+		ProcessStarter starter = null;
+
+		if (!statics.isEmpty() && !dynamics.isEmpty()) {
+			throw new ForbiddenOperationException(
+					"Mixing of static and dynamic configuration is currently not allowed!");
+		}
+
+		if (!statics.isEmpty()) {
+			starter = ProcessStarter.init(statics, LOG);
+		} else if (!dynamics.isEmpty()) {
+			starter = DynamicProcessStarter.init(dynamics, LOG);
+		}
+
+		return starter;
 	}
 
 	/**
@@ -123,47 +138,7 @@ public class Main implements Runnable {
 						+ "' must contain the ETL startup file path");
 			}
 
-			/*
-			 * Keep using the existing configuration loading mechanism.
-			 */
-			List<EtlConfiguration> configurations = loadSyncConfig(new String[] { startupFile.trim() });
-
-			if (configurations.isEmpty()) {
-
-				throw new IllegalStateException("No ETL configuration could be loaded from: " + startupFile);
-			}
-
-			if (configurations.size() > 1) {
-
-				throw new IllegalStateException("Currently not supported multiple Configuration files");
-			}
-
-			EtlConfiguration configuration = configurations.get(0);
-
-			/*
-			 * Preserve the existing manual-start behavior.
-			 */
-			if (configuration.isManualStart()) {
-
-				LOG.info("ETL configuration is marked for manual start. " + "Skipping automatic OpenMRS startup.");
-
-				return;
-			}
-
-			/*
-			 * Create exactly the same type of ProcessStarter used by the traditional
-			 * launcher.
-			 */
-			ProcessStarter processStarter = configuration.isDynamic() ? new DynamicProcessStarter(configuration)
-					: new ProcessStarter(configuration);
-
-			/*
-			 * IMPORTANT:
-			 *
-			 * Keep the exact instance used by the running ETL. The OMOD will access this
-			 * same object later.
-			 */
-			openMrsProcessStarter = processStarter;
+			ProcessStarter processStarter = performeInitialization(new String[] { startupFile.trim() }, true);
 
 			/*
 			 * ProcessStarter.run() contains its own lifecycle and waits until the ETL is
@@ -230,6 +205,7 @@ public class Main implements Runnable {
 	}
 
 	private static void startWhenOpenMrsIsReady(ProcessStarter processStarter, long timeoutSeconds, long pollSeconds) {
+
 		try {
 			long timeoutNanos = Math.multiplyExact(timeoutSeconds, 1_000_000_000L);
 			long deadline = System.nanoTime() + timeoutNanos;
@@ -265,7 +241,9 @@ public class Main implements Runnable {
 			return false;
 
 		boolean sessionOpenedHere = false;
+
 		try {
+
 			if (!Context.isSessionOpen()) {
 				Context.openSession();
 				sessionOpenedHere = true;
@@ -273,8 +251,8 @@ public class Main implements Runnable {
 
 			/*
 			 * Do not invoke privileged API methods here. Opening a Hibernate session
-			 * successfully after the Spring context refresh is enough to confirm that
-			 * the OpenMRS service infrastructure is available to this worker thread.
+			 * successfully after the Spring context refresh is enough to confirm that the
+			 * OpenMRS service infrastructure is available to this worker thread.
 			 */
 			return Context.getAdministrationService() != null;
 		} catch (RuntimeException exception) {

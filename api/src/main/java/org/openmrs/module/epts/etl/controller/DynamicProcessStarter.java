@@ -20,17 +20,25 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
-	public DynamicProcessStarter(EtlConfiguration etlConfig) {
-		super(etlConfig);
+	public DynamicProcessStarter(List<EtlConfiguration> configs, EtlLogger logger) {
+		super(configs, logger);
+	}
 
-		if (!etlConfig.isDynamic()) {
-			throw new ForbiddenOperationException(
-					"The etl cong " + etlConfig.getConfigFilePath() + " is not dynamic!!!");
+	public static DynamicProcessStarter init(List<EtlConfiguration> configs, EtlLogger logger)
+			throws ForbiddenOperationException, DBException {
+
+		if (configs.size() > 1) {
+			throw new ForbiddenOperationException("Currently not supported multiple Dynamic Configuration files");
 		}
+
+		DynamicProcessStarter starter = new DynamicProcessStarter(configs, logger);
+
+		return starter;
 	}
 
 	private List<EtlDatabaseObject> loadAvaliableSrcObjects(EtlConfiguration etlConfig) {
 		OpenConnection conn = null;
+
 		try {
 			conn = etlConfig.getMainConnInfo().openConnection(etlConfig);
 
@@ -51,18 +59,20 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		} catch (DBException e) {
 			throw new RuntimeException(e);
 		} finally {
+
 			if (conn != null) {
 				conn.finalizeConnection(etlConfig);
 			}
 		}
 	}
 
-	ProcessController init(EtlDatabaseObject src) throws ForbiddenOperationException, DBException {
+	ProcessController init(EtlConfiguration etlConfig, EtlDatabaseObject src)
+			throws ForbiddenOperationException, DBException {
 		ProcessController currentController;
 
-		LOG.debug("Initializing ProcessController using " + this.etlConfig.getConfigFilePath());
+		LOG.debug("Initializing ProcessController using " + etlConfig.getConfigFilePath());
 
-		currentController = new ProcessController(this, this.etlConfig.cloneDynamic(src));
+		currentController = new ProcessController(this, etlConfig.cloneDynamic(src));
 
 		currentController.setSchemaInfoSrc(src);
 
@@ -77,24 +87,30 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		try {
 			applyStartupDebugDelayIfConfigured();
 
-			this.currentController = null;
+			ProcessController controller = null;
 
-			for (EtlDatabaseObject src : loadAvaliableSrcObjects(this.etlConfig)) {
-				this.currentController = init(src);
+			for (EtlConfiguration etlConfig : this.configs) {
 
-				ThreadPoolService.getInstance().createNewThreadPoolExecutor(this.currentController.getControllerId())
-						.execute(this.currentController);
+				for (EtlDatabaseObject src : loadAvaliableSrcObjects(etlConfig)) {
 
-				while (!this.currentController.isFinalized()) {
-					TimeCountDown.sleep(30);
+					controller = init(etlConfig, src);
 
-					LOG.warn("THE APPLICATION IS STILL RUNING...", 60 * 15, true);
+					this.currentControllers.add(controller);
+
+					ThreadPoolService.getInstance().createNewThreadPoolExecutor(controller.getControllerId())
+							.execute(controller);
+
+					while (!controller.isFinalized()) {
+						TimeCountDown.sleep(30);
+
+						LOG.warn("THE APPLICATION IS STILL RUNING...", 60 * 15, true);
+					}
 				}
 			}
 
-			if (this.currentController.isFinished()) {
+			if (controller.isFinished()) {
 				LOG.warn("ALL JOBS ARE FINISHED");
-			} else if (this.currentController.isStopped()) {
+			} else if (controller.isStopped()) {
 				LOG.warn("ALL JOBS ARE STOPPED");
 			}
 		} catch (ForbiddenOperationException e) {
@@ -111,6 +127,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		ProcessController controller = (ProcessController) c;
 
 		if (c.isFinished()) {
+
 			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
 				throw new ForbiddenOperationException(
 						"You cannot configure childConfigFilePath on dynamic etl configuration!!!!");

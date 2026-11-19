@@ -13,6 +13,7 @@ import org.openmrs.module.epts.etl.conf.EtlConfiguration;
 import org.openmrs.module.epts.etl.conf.EtlOperationConfig;
 import org.openmrs.module.epts.etl.conf.interfaces.BaseConfiguration;
 import org.openmrs.module.epts.etl.conf.types.EtlOperationStatus;
+import org.openmrs.module.epts.etl.exceptions.EtlConfException;
 import org.openmrs.module.epts.etl.exceptions.EtlExceptionImpl;
 import org.openmrs.module.epts.etl.exceptions.ForbiddenOperationException;
 import org.openmrs.module.epts.etl.model.EtlDatabaseObject;
@@ -45,7 +46,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	private EtlOperationStatus operationStatus;
 
-	private List<OperationController<? extends EtlDatabaseObject>> operationsControllers;
+	private List<OperationController<? extends EtlDatabaseObject>> runningOperationControllers;
 
 	private String controllerId;
 
@@ -110,20 +111,21 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	@JsonIgnore
 	public List<OperationController<? extends EtlDatabaseObject>> getOperationsControllers() {
-		return operationsControllers;
+		return runningOperationControllers;
 	}
 
 	public void setOperationsControllers(
 			List<OperationController<? extends EtlDatabaseObject>> operationsControllers_) {
-		this.operationsControllers = operationsControllers_;
+		this.runningOperationControllers = operationsControllers_;
 	}
 
 	public OperationController<? extends EtlDatabaseObject> findOperationControllerByIdentifier(String identifier) {
-		if (!utilities.stringHasValue(identifier) || !utilities.listHasElement(this.operationsControllers)) {
+
+		if (!utilities.stringHasValue(identifier) || !utilities.listHasElement(this.runningOperationControllers)) {
 			return null;
 		}
 
-		for (OperationController<? extends EtlDatabaseObject> controller : this.operationsControllers) {
+		for (OperationController<? extends EtlDatabaseObject> controller : this.runningOperationControllers) {
 			OperationController<? extends EtlDatabaseObject> matchedController = findOperationControllerByIdentifier(
 					controller, identifier.trim());
 
@@ -137,6 +139,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	private OperationController<? extends EtlDatabaseObject> findOperationControllerByIdentifier(
 			OperationController<? extends EtlDatabaseObject> controller, String identifier) {
+
 		if (controller == null) {
 			return null;
 		}
@@ -164,6 +167,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	}
 
 	public void init(File syncCongigurationFile) throws DBException {
+
 		try {
 			init(EtlConfiguration.loadFromFile(syncCongigurationFile));
 		} catch (IOException e) {
@@ -238,12 +242,15 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		}
 
 		if (nextOperation != null) {
+
 			if (!stopRequested()) {
 				logDebug("STARTING NEXT OPERATION " + nextOperation.getControllerId());
 
 				ExecutorService executor = ThreadPoolService.getInstance()
 						.createNewThreadPoolExecutor(nextOperation.getControllerId());
 				executor.execute(nextOperation);
+
+				this.replaceParentOperation(nextOperation);
 			} else {
 				logWarn("THE OPERATION [" + nextOperation.getControllerId().toUpperCase() + "]"
 						+ "NESTED COULD NOT BE INITIALIZED BECAUSE THERE WAS A STOP REQUEST!!!");
@@ -257,7 +264,25 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		getRelatedEtlConf().finalizeAllApps();
 	}
 
+	private synchronized void replaceParentOperation(OperationController<? extends EtlDatabaseObject> operation) {
+		OperationController<? extends EtlDatabaseObject> parent = operation.getParentController();
+
+		if (parent == null) {
+			throw new EtlConfException("No parent is defined for operation " + operation);
+		}
+
+		int i = utilities.getPosOfElementOnList(runningOperationControllers, parent);
+
+		if (i < 0) {
+			throw new EtlConfException("No parent was found for operation " + operation);
+		}
+
+		this.runningOperationControllers.remove(parent);
+		this.runningOperationControllers.add(operation);
+	}
+
 	public OpenConnection openDefaultConn(BaseConfiguration opendFrom) {
+
 		try {
 			return getRelatedEtlConf().getSrcConnInfo().openConnection(opendFrom);
 		} catch (DBException e) {
@@ -302,6 +327,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	@Override
 	public boolean isStopped() {
+
 		if (this.operationStatus.stopped()) {
 			return true;
 		}
@@ -311,6 +337,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		}
 
 		for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
+
 			if (!controller.isStopped()) {
 				return false;
 			}
@@ -335,6 +362,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		logWarn("Requesting Stop");
 
 		synchronized (LOCK) {
+
 			if (isStopping()) {
 				return;
 			}
@@ -352,6 +380,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 				logWarn("Requesting stop of Operation Controllers...");
 
 				for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
+
 					if (!controller.stopRequested()) {
 						controller.requestStop();
 					}
@@ -386,6 +415,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			boolean running;
 
 			try {
+
 				if (wasPreviouslyFinished) {
 					performePreReRunActions();
 				}
@@ -397,6 +427,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			} catch (DBException e) {
 				throw new RuntimeException(e);
 			} finally {
+
 				if (conn != null) {
 					conn.finalizeConnection(this);
 				}
@@ -499,6 +530,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	}
 
 	private boolean tryToInitController(OperationController<? extends EtlDatabaseObject> controller) {
+
 		if (!controller.getOperationConfig().isDisabled() && !controller.operationIsAlreadyFinished()) {
 			ExecutorService executor = ThreadPoolService.getInstance()
 					.createNewThreadPoolExecutor(controller.getControllerId());
@@ -559,6 +591,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			return;
 
 		if (this.getOperationsControllers() != null) {
+
 			for (OperationController<? extends EtlDatabaseObject> operationController : this
 					.getOperationsControllers()) {
 				operationController.killSelfCreatedThreads();
@@ -597,7 +630,9 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 
 	@JsonIgnore
 	public boolean processIsAlreadyFinished() {
+
 		for (OperationController<? extends EtlDatabaseObject> controller : this.getOperationsControllers()) {
+
 			if (!controller.operationIsAlreadyFinished() || !controller.childOperationsAreAlreadyFinished()) {
 				return false;
 			}
@@ -677,6 +712,7 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		// Thread runningThread = null;
 
 		for (Thread t : Thread.getAllStackTraces().keySet()) {
+
 			if (t.getName().equals(controllerId)) {
 				t.getState();
 				t.getThreadGroup();
@@ -731,6 +767,21 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 	@Override
 	public void logErr(String msg, Throwable throwable) {
 		LOG.err(msg, throwable);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+
+		if (obj instanceof ProcessController) {
+			ProcessController controller = (ProcessController) obj;
+
+			return this.getControllerId().equals(controller.getControllerId());
+		} else {
+			return false;
+		}
+
 	}
 
 }
