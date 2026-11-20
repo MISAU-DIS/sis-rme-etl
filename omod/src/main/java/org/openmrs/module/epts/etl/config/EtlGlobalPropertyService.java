@@ -144,7 +144,7 @@ public class EtlGlobalPropertyService {
      */
     public String getRootDir() {
         return get(
-                "root.dir",
+                "etl_root_dir",
                 "/opt/openmrs/etl"
         );
     }
@@ -173,52 +173,46 @@ public class EtlGlobalPropertyService {
 
     public boolean isDebugMode() {
         return getBoolean(
-                "run.in.debug.mode",
+                "run_in_debug_mode",
                 false
         );
     }
 
     public boolean isAutoCommit() {
         return getBoolean(
-                "auto.commit",
+                "autoCommit",
                 false
         );
     }
 
     public String getParallelProcessingStrategy() {
         return get(
-                "parallel.processing.strategy",
+                "parallelProcessingStrategy",
                 "SINGLE_THREAD"
         );
     }
 
     public int getProcessingBatch() {
         return getInt(
-                "processing.batch",
+                "processingBatch",
                 2000
         );
     }
 
     public boolean isDemographicsDisabled() {
         return getBoolean(
-                "disable.demographics",
+                "disableDemographics",
                 false
         );
     }
 
     public int getMaxSupportedProcessors() {
         return getInt(
-                "max.supported.processors",
+                "maxSupportedProcessors",
                 1
         );
     }
 
-    public String getMode() {
-        return get(
-                "mode",
-                "db_synchronization"
-        );
-    }
 
     // =========================================================
     // LOGGING
@@ -278,46 +272,46 @@ public class EtlGlobalPropertyService {
     // =========================================================
 
     public String getLocationName() {
-        return get("location.name");
+        return get("location_name");
     }
 
     public String getHivDestinationLocationId() {
-        return get("hiv.destination.location.id");
+        return get("hiv_destination_location_id");
     }
 
     public String getSmiDestinationLocationId() {
-        return get("smi.destination.location.id");
+        return get("smi_destination_location_id");
     }
 
     public String getSyncDestinationLocationId() {
-        return get("sync.destination.location.id");
+        return get("sync_destination_location_id");
     }
 
     public String getDstTarvServiceId() {
-        return get("dst.tarv.service.id");
+        return get("dst_tarv_service_id");
     }
 
     public String getDstCcrServiceId() {
-        return get("dst.ccr.service.id");
+        return get("dst_ccr_service_id");
     }
 
     public int getTarvProgramId() {
         return getInt(
-                "tarv.program.id",
+                "tarv_program_id",
                 2
         );
     }
 
     public int getCcrProgramId() {
         return getInt(
-                "ccr.program.id",
+                "ccr_program_id",
                 6
         );
     }
 
     public int getPrepProgramId() {
         return getInt(
-                "prep.program.id",
+                "prep_program_id",
                 25
         );
     }
@@ -326,56 +320,63 @@ public class EtlGlobalPropertyService {
     // SOURCE DATABASE
     // =========================================================
 
-    public String getSourceDatabase() {
-        return get("src.db");
+    private String connectionProperty(String flow, String suffix) {
+        if (!"sync".equals(flow) && !"migr".equals(flow)) {
+            throw new IllegalArgumentException("Expected sync or migr flow");
+        }
+        return flow + suffix;
     }
 
-    public String getSourceUsername() {
-        return get("src.username");
+    public String getSourceDatabase(String flow) {
+        return get(connectionProperty(flow, "SrcDb"));
     }
 
-    public String getSourcePassword() {
-        return get("src.password");
+    public String getSourceUsername(String flow) {
+        return get(connectionProperty(flow, "SrcUserName"));
     }
 
-    public String getSourceConnectionUri() {
-        return get("src.connection.uri");
+    public String getSourcePassword(String flow) {
+        return get(connectionProperty(flow, "SrcUserPassword"));
+    }
+
+    public String getSourceConnectionUri(String flow) {
+        return get(connectionProperty(flow, "SrcConnectionURI"));
     }
 
     public String getSourceLocationList() {
-        return get("src.location.list");
+        return get("src_location_list");
     }
 
     // =========================================================
     // DESTINATION DATABASE
     // =========================================================
 
-    public String getDestinationDatabase() {
-        return get("dst.db");
+    public String getDestinationDatabase(String flow) {
+        return get(connectionProperty(flow, "DstDb"));
     }
 
-    public String getDestinationUsername() {
-        return get("dst.username");
+    public String getDestinationUsername(String flow) {
+        return get(connectionProperty(flow, "DstUserName"));
     }
 
-    public String getDestinationPassword() {
-        return get("dst.password");
+    public String getDestinationPassword(String flow) {
+        return get(connectionProperty(flow, "DstUserPassword"));
     }
 
-    public String getDestinationConnectionUri() {
-        return get("dst.connection.uri");
+    public String getDestinationConnectionUri(String flow) {
+        return get(connectionProperty(flow, "DstConnectionURI"));
     }
 
     public String getDatabaseDriver() {
         return get(
-                "database.driver",
+                "driveClassName",
                 "com.mysql.cj.jdbc.Driver"
         );
     }
 
     public String getConnectionIsolationLevel() {
         return get(
-                "connection.isolation.level",
+                "connectionIsolationLevel",
                 "TRANSACTION_REPEATABLE_READ"
         );
     }
@@ -386,35 +387,35 @@ public class EtlGlobalPropertyService {
 
     public boolean isExtraConditionEnabled() {
         return getBoolean(
-                "extra.condition",
+                "extra_condition",
                 true
         );
     }
 
     public String getSyncFragments() {
         return get(
-                "sync.fragments",
-                "sesp-sync-fragments/*.json"
+                "sync_fragments",
+                "sync/sesp-sync-fragments/*.json"
         );
     }
 
     public boolean isIncludedPatientExtraConditionEnabled() {
         return getBoolean(
-                "included.patient.extra.condition",
+                "included_patient_extra_condition",
                 true
         );
     }
 
     public boolean isIncludedPersonExtraConditionEnabled() {
         return getBoolean(
-                "included.person.extra.condition",
+                "included_person_extra_condition",
                 true
         );
     }
 
     public boolean isIncludedPersonBExtraConditionEnabled() {
         return getBoolean(
-                "included.person.b.extra.condition",
+                "included_person_b_extra_condition",
                 true
         );
     }
@@ -446,21 +447,21 @@ public class EtlGlobalPropertyService {
 
     public String getDefaultExceptionBehavior() {
         return get(
-                "default.exception.behavior",
+                "defaultExceptionBehavior",
                 "LOG"
         );
     }
 
     public String getDefaultInconsistencyBehavior() {
         return get(
-                "default.inconsistency.behavior",
+                "defaultInconsistencyBehavior",
                 "MARK_RECORD_AS_FAILED"
         );
     }
 
     public String getStageRecordIssueBehavior() {
         return get(
-                "stage.record.issue.behavior",
+                "stageRecordIssueBehavior",
                 "IGNORE"
         );
     }

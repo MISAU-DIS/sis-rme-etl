@@ -38,7 +38,7 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.ccr.program.id</property>
+		<property>epts.etl.ccr_program_id</property>
 		<description>CCR program ID.</description>
 		<defaultValue>6</defaultValue>
 	</globalProperty>
@@ -81,33 +81,57 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.disable.demographics</property>
+		<property>epts.etl.disableDemographics</property>
 		<description>Disable demographic processing.</description>
 		<defaultValue>true</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.dstConnectionURI</property>
-		<description>Destination database connection URI.</description>
-		<defaultValue>jdbc:mysql://172.16.60.45:3320/openmrs?autoReconnect=true&amp;useSSL=false&amp;allowPublicKeyRetrieval=true</defaultValue>
+		<property>epts.etl.syncDstConnectionURI</property>
+		<description>SYNC: Destination database connection URI.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.dst_db</property>
-		<description>Destination database name.</description>
-		<defaultValue>openmrs</defaultValue>
+		<property>epts.etl.migrDstConnectionURI</property>
+		<description>MIGR: Destination database connection URI.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.dstUserPassword</property>
-		<description>Destination database password.</description>
-		<defaultValue>root</defaultValue>
+		<property>epts.etl.syncDstDb</property>
+		<description>SYNC: Destination database name.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.dstUserName</property>
-		<description>Destination database username.</description>
-		<defaultValue>root</defaultValue>
+		<property>epts.etl.migrDstDb</property>
+		<description>MIGR: Destination database name.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.syncDstUserPassword</property>
+		<description>SYNC: Destination database password.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.migrDstUserPassword</property>
+		<description>MIGR: Destination database password.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.syncDstUserName</property>
+		<description>SYNC: Destination database username.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.migrDstUserName</property>
+		<description>MIGR: Destination database username.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
@@ -123,7 +147,7 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.hiv.destination.location.id</property>
+		<property>epts.etl.hiv_destination_location_id</property>
 		<description>Destination location ID for HIV data.</description>
 		<defaultValue>DESTINATION_LOCATION_ID</defaultValue>
 	</globalProperty>
@@ -135,19 +159,19 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.included.patient.extra.condition</property>
+		<property>epts.etl.included_patient_extra_condition</property>
 		<description>Enable additional patient extraction conditions.</description>
 		<defaultValue>true</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.included.person.b.extra.condition</property>
+		<property>epts.etl.included_person_b_extra_condition</property>
 		<description>Enable additional person B extraction conditions.</description>
 		<defaultValue>true</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.included.person.extra.condition</property>
+		<property>epts.etl.included_person_extra_condition</property>
 		<description>Enable additional person extraction conditions.</description>
 		<defaultValue>true</defaultValue>
 	</globalProperty>
@@ -206,12 +230,6 @@
 		<defaultValue>1</defaultValue>
 	</globalProperty>
 
-	<globalProperty>
-		<property>epts.etl.mode</property>
-		<description>ETL running mode. Possible values are db_synchronization or db_migration.</description>
-		<defaultValue>db_synchronization</defaultValue>
-		<editPrivilege>Manage Protected Settings</editPrivilege>
-	</globalProperty>
 
 	<globalProperty>
 		<property>epts.etl.parallelProcessingStrategy</property>
@@ -220,7 +238,7 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.prep.program.id</property>
+		<property>epts.etl.prep_program_id</property>
 		<description>PrEP program ID.</description>
 		<defaultValue>25</defaultValue>
 	</globalProperty>
@@ -238,49 +256,73 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.run.in.debug.mode</property>
+		<property>epts.etl.run_in_debug_mode</property>
 		<description>Enable ETL debug execution mode.</description>
 		<defaultValue>false</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.smi.destination.location.id</property>
+		<property>epts.etl.smi_destination_location_id</property>
 		<description>Destination location ID for SMI data.</description>
 		<defaultValue>DESTINATION_LOCATION_ID</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.srcConnectionURI</property>
-		<description>Source database connection URI.</description>
-		<defaultValue>jdbc:mysql://172.16.60.45:3320/openmrs_event_receiver_mgt?autoReconnect=true&amp;useSSL=false&amp;allowPublicKeyRetrieval=true</defaultValue>
+		<property>epts.etl.syncSrcConnectionURI</property>
+		<description>SYNC: Source database connection URI.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.src_db</property>
-		<description>Source database name.</description>
-		<defaultValue>openmrs_event_receiver_mgt</defaultValue>
+		<property>epts.etl.migrSrcConnectionURI</property>
+		<description>MIGR: Source database connection URI.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.src.location.list</property>
+		<property>epts.etl.syncSrcDb</property>
+		<description>SYNC: Source database name.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.migrSrcDb</property>
+		<description>MIGR: Source database name.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.src_location_list</property>
 		<description>List of source locations.</description>
 		<defaultValue>SOURCE_LOCATION_LIST</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.srcUserPassword</property>
-		<description>Source database password.</description>
-		<defaultValue>root</defaultValue>
+		<property>epts.etl.syncSrcUserPassword</property>
+		<description>SYNC: Source database password.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.srcUserName</property>
-		<description>Source database username.</description>
-		<defaultValue>root</defaultValue>
+		<property>epts.etl.migrSrcUserPassword</property>
+		<description>MIGR: Source database password.</description>
+		<defaultValue></defaultValue>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.stage.record.issue.behavior</property>
+		<property>epts.etl.syncSrcUserName</property>
+		<description>SYNC: Source database username.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.migrSrcUserName</property>
+		<description>MIGR: Source database username.</description>
+		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.stageRecordIssueBehavior</property>
 		<description>Behavior when an issue is detected in a staging record.</description>
 		<defaultValue>ABORT_PROCESS</defaultValue>
 	</globalProperty>
@@ -288,7 +330,7 @@
 	<globalProperty>
 		<property>epts.etl.startup.file</property>
 		<description>EPTS ETL startup configuration file.</description>
-		<defaultValue>/opt/openmrs/etl/conf/sync/sis_rme_sesp_sync.json,/opt/openmrs/etl/conf/migr/startup.json</defaultValue>
+		<defaultValue>/opt/openmrs/etl/conf/sync/sis_rme_sesp_sync.json,/opt/openmrs/etl/conf/migr/sesp_sis_rme_migration.json</defaultValue>
 	</globalProperty>
 
 	<globalProperty>
@@ -304,26 +346,21 @@
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.tarv.program.id</property>
+		<property>epts.etl.tarv_program_id</property>
 		<description>TARV program ID.</description>
 		<defaultValue>2</defaultValue>
 	</globalProperty>
 
-	<globalProperty>
-		<property>epts.etl.override.existing.data.model.element</property>
-		<description>Whether existing ETL data model elements should be overridden.</description>
-		<defaultValue>false</defaultValue>
-	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.bin.pojo.directory</property>
+		<property>epts.etl.binPojoDirectory</property>
 		<description>Optional directory where compiled POJO classes are written.</description>
 		<defaultValue>database-model/pojo/target/classes</defaultValue>
 		<editPrivilege>Manage Protected Settings</editPrivilege>
 	</globalProperty>
 
 	<globalProperty>
-		<property>epts.etl.src.pojo.directory</property>
+		<property>epts.etl.srcPojoDirectory</property>
 		<description>Optional directory where generated POJO source files are written.</description>
 		<defaultValue>database-model/pojo/src/main/java</defaultValue>
 		<editPrivilege>Manage Protected Settings</editPrivilege>
@@ -411,6 +448,12 @@
 		<property>epts.etl.openmrs_password</property>
 		<description>Password used to authenticate with the OpenMRS REST API.</description>
 		<defaultValue></defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>epts.etl.running_remigrate</property>
+		<description>Enable remigration rules.</description>
+		<defaultValue>false</defaultValue>
 	</globalProperty>
 
 	<!-- / Global Properties -->
