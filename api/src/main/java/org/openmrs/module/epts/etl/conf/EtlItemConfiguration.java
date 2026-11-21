@@ -261,7 +261,11 @@ public class EtlItemConfiguration extends AbstractEtlDataConfiguration {
 		return dstConfiguration.getResource() == null;
 	}
 
-	private void initializeConnectorResources() {
+	private void initializeConnectorResources() throws DBException {
+		if (!this.hasDstConf()) {
+			this.setDstConf(DstConf.generateDefaultDstConf(this));
+		}
+		
 		ConnectorRegistry registry = getRelatedEtlConf().getInitializedConnectorRegistry();
 		ConnectorResource source = resolveSrcResource(registry);
 		List<ConnectorResource> destinations = Collections.unmodifiableList(resolveDstResources(registry));
