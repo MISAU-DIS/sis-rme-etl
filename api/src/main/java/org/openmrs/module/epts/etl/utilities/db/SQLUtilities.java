@@ -1911,7 +1911,7 @@ public class SQLUtilities {
 			return fields;
 		}
 
-		String normalizedQuery = normalizeQuery(query);
+		String normalizedQuery = normalizeQuery(removeSqlComments(query));
 
 		String selectClause = extractSelectClause(normalizedQuery);
 
@@ -1966,14 +1966,13 @@ public class SQLUtilities {
 	}
 
 	private static String extractSelectClause(String query) {
+		int selectIndex = indexOfTopLevelKeyword(query, "select", 0);
 
-		String lower = query.toLowerCase();
-
-		if (!lower.startsWith("select ")) {
+		if (selectIndex < 0) {
 			return null;
 		}
 
-		int selectStart = 6;
+		int selectStart = selectIndex + "select".length();
 
 		int fromIndex = indexOfTopLevelKeyword(query, "from", selectStart);
 
@@ -1982,6 +1981,99 @@ public class SQLUtilities {
 		}
 
 		return query.substring(selectStart).trim();
+	}
+
+	private static String removeSqlComments(String query) {
+		StringBuilder result = new StringBuilder(query.length());
+		boolean inSingleQuote = false;
+		boolean inDoubleQuote = false;
+		boolean inBacktick = false;
+
+		for (int i = 0; i < query.length(); i++) {
+			char current = query.charAt(i);
+			char next = i + 1 < query.length() ? query.charAt(i + 1) : '\0';
+
+			if (inSingleQuote || inDoubleQuote || inBacktick) {
+				result.append(current);
+
+				if (current == '\\' && i + 1 < query.length()) {
+					result.append(next);
+					i++;
+					continue;
+				}
+
+				if ((inSingleQuote && current == '\'') || (inDoubleQuote && current == '"')
+						|| (inBacktick && current == '`')) {
+					if (next == current) {
+						result.append(next);
+						i++;
+					} else {
+						inSingleQuote = inSingleQuote && current != '\'';
+						inDoubleQuote = inDoubleQuote && current != '"';
+						inBacktick = inBacktick && current != '`';
+					}
+				}
+
+				continue;
+			}
+
+			if (current == '\'') {
+				inSingleQuote = true;
+				result.append(current);
+				continue;
+			}
+
+			if (current == '"') {
+				inDoubleQuote = true;
+				result.append(current);
+				continue;
+			}
+
+			if (current == '`') {
+				inBacktick = true;
+				result.append(current);
+				continue;
+			}
+
+			if (current == '-' && next == '-' && (i + 2 >= query.length()
+					|| Character.isWhitespace(query.charAt(i + 2)))) {
+				i = skipLineComment(query, i + 2);
+				result.append(' ');
+				continue;
+			}
+
+			if (current == '#') {
+				i = skipLineComment(query, i + 1);
+				result.append(' ');
+				continue;
+			}
+
+			if (current == '/' && next == '*') {
+				i += 2;
+
+				while (i + 1 < query.length() && !(query.charAt(i) == '*' && query.charAt(i + 1) == '/')) {
+					i++;
+				}
+
+				i = Math.min(i + 1, query.length() - 1);
+				result.append(' ');
+				continue;
+			}
+
+			result.append(current);
+		}
+
+		return result.toString();
+	}
+
+	private static int skipLineComment(String query, int start) {
+		int index = start;
+
+		while (index < query.length() && query.charAt(index) != '\n' && query.charAt(index) != '\r') {
+			index++;
+		}
+
+		return index < query.length() ? index : query.length() - 1;
 	}
 
 	private static List<String> splitSelectFields(String selectClause) {
