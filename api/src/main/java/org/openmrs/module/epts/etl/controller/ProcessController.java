@@ -246,11 +246,12 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 			if (!stopRequested()) {
 				logDebug("STARTING NEXT OPERATION " + nextOperation.getControllerId());
 
+				this.replaceParentOperation(nextOperation);
+
 				ExecutorService executor = ThreadPoolService.getInstance()
 						.createNewThreadPoolExecutor(nextOperation.getControllerId());
 				executor.execute(nextOperation);
 
-				this.replaceParentOperation(nextOperation);
 			} else {
 				logWarn("THE OPERATION [" + nextOperation.getControllerId().toUpperCase() + "]"
 						+ "NESTED COULD NOT BE INITIALIZED BECAUSE THERE WAS A STOP REQUEST!!!");
@@ -272,6 +273,12 @@ public class ProcessController extends AbstractBaseConfiguration implements Cont
 		}
 
 		int i = utilities.getPosOfElementOnList(runningOperationControllers, parent);
+
+		while (i < 0 && parent.getParentController() != null) {
+			parent = parent.getParentController();
+			
+			i = utilities.getPosOfElementOnList(runningOperationControllers, parent);
+		}
 
 		if (i < 0) {
 			throw new EtlConfException("No parent was found for operation " + operation);
