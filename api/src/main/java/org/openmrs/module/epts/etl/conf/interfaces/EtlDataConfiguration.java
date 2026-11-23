@@ -34,7 +34,7 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 public interface EtlDataConfiguration extends BaseConfiguration {
 
 	Pattern PLACEHOLDER = Pattern.compile("\\$\\{([A-Za-z0-9_.-]+)}");
-	String ETL_GLOBAL_PROPERTY_PREFIX = "epts.etl.";
+	String ETL_GLOBAL_PROPERTY_PREFIX = "eptsetl.";
 
 	EtlConfiguration getRelatedEtlConf();
 
@@ -506,9 +506,9 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 
 	/**
 	 * Loads the ETL properties exposed by OpenMRS. The prefix is removed so that,
-	 * for example, {@code epts.etl.location_name} can resolve
-	 * {@code ${location_name}}. The complete property name is also retained to
-	 * support {@code ${epts.etl.location_name}}.
+	 * for example, {@code eptsetl.locationName} can resolve
+	 * {@code ${locationName}}. The complete property name is also retained to
+	 * support {@code ${eptsetl.locationName}}.
 	 */
 	public static Properties loadOpenMrsGlobalProperties() {
 		Properties properties = cachedOpenMrsGlobalProperties();

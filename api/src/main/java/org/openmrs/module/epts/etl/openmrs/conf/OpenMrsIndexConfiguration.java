@@ -24,24 +24,24 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 	private final int requestTimeoutSeconds;
 
 	private OpenMrsIndexConfiguration(Properties properties, boolean requireAutentication) {
-		String bU = required(properties, "openmrs_base_url");
+		String bU = required(properties, "openmrsBaseUrl");
 
 		this.baseUrl = bU + PATH;
 
-		this.endpoint = required(properties, "openmrs_endpoint");
-		this.username = optional(properties, "openmrs_username", null);
-		this.password = optional(properties, "openmrs_password", null);
-		this.bearerToken = optional(properties, "openmrs_bearer_token", null);
-		this.resourceTypeField = optional(properties, "resource_type_field", "resource_type");
-		this.uuidField = optional(properties, "uuid_field", "record_uuid");
-		this.operationField = optional(properties, "operation_field", "operation_type");
-		this.connectTimeoutSeconds = positiveInteger(properties, "connect_timeout_seconds", 1800);
-		this.requestTimeoutSeconds = positiveInteger(properties, "request_timeout_seconds", 1800);
+		this.endpoint = required(properties, "openmrsEndpoint");
+		this.username = optional(properties, "openmrsUsername", null);
+		this.password = optional(properties, "openmrsPassword", null);
+		this.bearerToken = optional(properties, "openmrsBearerToken", null);
+		this.resourceTypeField = optional(properties, "resourceTypeField", "resource_type");
+		this.uuidField = optional(properties, "uuidField", "record_uuid");
+		this.operationField = optional(properties, "operationField", "operation_type");
+		this.connectTimeoutSeconds = positiveInteger(properties, "connectTimeoutSeconds", 1800);
+		this.requestTimeoutSeconds = positiveInteger(properties, "requestTimeoutSeconds", 1800);
 
 		if (requireAutentication) {
 			if (isDefined(username) != isDefined(password)) {
 				throw new IllegalStateException(
-						"Both epts.etl.openmrs.index.username and epts.etl.openmrs.index.password must be configured");
+						"Both eptsetl.openmrsUsername and eptsetl.openmrsPassword must be configured");
 			}
 		}
 	}
@@ -53,20 +53,20 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 
 		Properties openMrsProperties = EtlDataConfiguration.loadOpenMrsGlobalProperties();
 
-		for (String name : new String[] { "openmrs_base_url", "openmrs_endpoint", "openmrs_username",
-				"openmrs_password", "openmrs_bearer_token", "resource_type_field", "uuid_field", "operation_field",
-				"connect_timeout_seconds", "request_timeout_seconds" }) {
+		for (String name : new String[] { "openmrsBaseUrl", "openmrsEndpoint", "openmrsUsername",
+				"openmrsPassword", "openmrsBearerToken", "resourceTypeField", "uuidField", "operationField",
+				"connectTimeoutSeconds", "requestTimeoutSeconds" }) {
 
 			String value = resolve(name, openMrsProperties, fileProperties);
 
 			if (value == null) {
 
 				switch (name) {
-				case "openmrs_base_url":
+				case "openmrsBaseUrl":
 					value = "http://127.0.0.1:8080/openmrs";
 
 					break;
-				case "openmrs_endpoint":
+				case "openmrsEndpoint":
 					value = "searchindexupdate";
 
 					break;
@@ -129,15 +129,15 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 	}
 
 	private static String toIndexPropertyName(String name) {
-		String property = name.startsWith("openmrs_") ? name.substring("openmrs_".length()) : name;
-		return "openmrs.index." + property;
+		String property = name.startsWith("openmrs") ? name.substring("openmrs".length()) : name;
+		return "openmrsIndex" + Character.toUpperCase(property.charAt(0)) + property.substring(1);
 	}
 
 	private static String required(Properties properties, String name) {
 		String value = optional(properties, name, null);
 
 		if (!isDefined(value))
-			throw new IllegalStateException("Missing required ETL property: epts.etl." + name);
+			throw new IllegalStateException("Missing required ETL property: eptsetl." + name);
 
 		return value.trim();
 	}
@@ -159,7 +159,7 @@ public final class OpenMrsIndexConfiguration extends AbstractEtlDataConfiguratio
 			return parsed;
 		} catch (NumberFormatException exception) {
 			throw new IllegalStateException(
-					"ETL property epts.etl." + name + " must be a positive integer, but was: " + value, exception);
+					"ETL property eptsetl." + name + " must be a positive integer, but was: " + value, exception);
 		}
 	}
 

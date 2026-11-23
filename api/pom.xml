@@ -10,7 +10,7 @@
 
 	<artifactId>sisrme-etl-api</artifactId>
 	<packaging>jar</packaging>
-	<name>Epts ETL Module API</name>
+	<name>EptsEtl Module API</name>
 	<description>API project for SISRME-Etl</description>
 
 	<dependencies>

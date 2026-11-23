@@ -1,0 +1,2 @@
+Fixes divergentes main e o feat/connetors
+- Suporte ao With em SQLUtilities.determineFieldsFromQuery(String query)

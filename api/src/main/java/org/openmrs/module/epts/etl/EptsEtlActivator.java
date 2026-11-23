@@ -10,12 +10,12 @@ public class EptsEtlActivator extends BaseModuleActivator {
 
 	@Override
 	public void willStart() {
-		LOG.info("Starting Epts Synchronize Module");
+		LOG.info("Starting EptsEtl Module");
 	}
 
 	@Override
 	public void started() {
-		LOG.info("Epts Synchronize Module started");
+		LOG.info("EptsEtl Module started");
 
 		try {
 			/*
@@ -24,8 +24,8 @@ public class EptsEtlActivator extends BaseModuleActivator {
 			 *
 			 * Main is responsible for reading:
 			 *
-			 *   epts.etl.enabled
-			 *   epts.etl.startup.file
+				 *   eptsetl.enabled
+				 *   eptsetl.startupFile
 			 */
 			Main.startFromOpenMRS();
 
@@ -40,21 +40,21 @@ public class EptsEtlActivator extends BaseModuleActivator {
 
 	@Override
 	public void willRefreshContext() {
-		LOG.info("Refreshing Epts Synchronize Module");
+		LOG.info("Refreshing EptsEtl Module");
 	}
 
 	@Override
 	public void contextRefreshed() {
-		LOG.info("Epts Synchronize Module refreshed");
+		LOG.info("EptsEtl Module refreshed");
 	}
 
 	@Override
 	public void willStop() {
-		LOG.info("Stopping Epts Synchronize Module");
+		LOG.info("Stopping EptsEtl Module");
 	}
 
 	@Override
 	public void stopped() {
-		LOG.info("Epts Synchronize Module stopped");
+		LOG.info("EptsEtl Module stopped");
 	}
 }

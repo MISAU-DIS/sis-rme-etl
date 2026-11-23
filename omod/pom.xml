@@ -10,7 +10,7 @@
 
 	<artifactId>sisrme-etl-omod</artifactId>
 	<packaging>jar</packaging>
-	<name>Epts Etl Module OMOD</name>
+	<name>EptsEtl Module OMOD</name>
 	<description>OMOD project for sisrme-etl</description>
 
 	<dependencies>

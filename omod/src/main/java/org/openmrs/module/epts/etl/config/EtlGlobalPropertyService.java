@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EtlGlobalPropertyService {
 
-    private static final String PREFIX = "epts.etl.";
+    private static final String PREFIX = "eptsetl.";
 
     /**
      * Gets the OpenMRS AdministrationService lazily.
@@ -43,7 +43,7 @@ public class EtlGlobalPropertyService {
     /**
      * Gets an ETL global property.
      *
-     * @param property property name without the "epts.etl." prefix
+     * @param property property name without the "eptsetl." prefix
      * @return configured value or null when not configured
      */
     public String get(String property) {
@@ -55,7 +55,7 @@ public class EtlGlobalPropertyService {
     /**
      * Gets an ETL global property with a default value.
      *
-     * @param property     property name without the "epts.etl." prefix
+     * @param property     property name without the "eptsetl." prefix
      * @param defaultValue value returned when the property is not configured
      * @return configured value or default value
      */
@@ -72,7 +72,7 @@ public class EtlGlobalPropertyService {
     /**
      * Gets a boolean ETL global property.
      *
-     * @param property     property name without the "epts.etl." prefix
+     * @param property     property name without the "eptsetl." prefix
      * @param defaultValue default value
      * @return configured value or default value
      */
@@ -89,7 +89,7 @@ public class EtlGlobalPropertyService {
     /**
      * Gets an integer ETL global property.
      *
-     * @param property     property name without the "epts.etl." prefix
+     * @param property     property name without the "eptsetl." prefix
      * @param defaultValue default value
      * @return configured value or default value when parsing fails
      */
@@ -110,7 +110,7 @@ public class EtlGlobalPropertyService {
     /**
      * Gets a long ETL global property.
      *
-     * @param property     property name without the "epts.etl." prefix
+     * @param property     property name without the "eptsetl." prefix
      * @param defaultValue default value
      * @return configured value or default value when parsing fails
      */
@@ -144,7 +144,7 @@ public class EtlGlobalPropertyService {
      */
     public String getRootDir() {
         return get(
-                "etl_root_dir",
+                "etlRootDir",
                 "/opt/openmrs/etl"
         );
     }
@@ -154,7 +154,7 @@ public class EtlGlobalPropertyService {
      */
     public String getConfDir() {
         return get(
-                "conf.dir",
+                "etlConfDir",
                 "/opt/openmrs/etl/conf"
         );
     }
@@ -164,16 +164,16 @@ public class EtlGlobalPropertyService {
      *
      * <p>
      * When this property is not configured, the process service may
-     * fall back to {@code conf.dir/etl.json}.
+     * fall back to {@code etlConfDir/etl.json}.
      * </p>
      */
     public String getStartupFile() {
-        return get("startup.file");
+        return get("startupFile");
     }
 
     public boolean isDebugMode() {
         return getBoolean(
-                "run_in_debug_mode",
+                "runInDebugMode",
                 false
         );
     }
@@ -220,49 +220,49 @@ public class EtlGlobalPropertyService {
 
     public String getLogLevel() {
         return get(
-                "log.level",
+                "logLevel",
                 "WARN"
         );
     }
 
     public String getConfigurationLogLevel() {
         return get(
-                "log.level.configuration",
+                "logLevelConfiguration",
                 "WARN"
         );
     }
 
     public String getControllerLogLevel() {
         return get(
-                "log.level.controller",
+                "logLevelController",
                 "WARN"
         );
     }
 
     public String getEngineLogLevel() {
         return get(
-                "log.level.engine",
+                "logLevelEngine",
                 "WARN"
         );
     }
 
     public String getProcessorLogLevel() {
         return get(
-                "log.level.processor",
+                "logLevelProcessor",
                 "WARN"
         );
     }
 
     public String getDaoLogLevel() {
         return get(
-                "log.level.dao",
+                "logLevelDao",
                 "WARN"
         );
     }
 
     public String getConnectionLogLevel() {
         return get(
-                "log.level.connection",
+                "logLevelConnection",
                 "WARN"
         );
     }
@@ -272,46 +272,46 @@ public class EtlGlobalPropertyService {
     // =========================================================
 
     public String getLocationName() {
-        return get("location_name");
+        return get("locationName");
     }
 
     public String getHivDestinationLocationId() {
-        return get("hiv_destination_location_id");
+        return get("hivDestinationLocationId");
     }
 
     public String getSmiDestinationLocationId() {
-        return get("smi_destination_location_id");
+        return get("smiDestinationLocationId");
     }
 
     public String getSyncDestinationLocationId() {
-        return get("sync_destination_location_id");
+        return get("syncDestinationLocationId");
     }
 
     public String getDstTarvServiceId() {
-        return get("dst_tarv_service_id");
+        return get("dstTarvServiceId");
     }
 
     public String getDstCcrServiceId() {
-        return get("dst_ccr_service_id");
+        return get("dstCcrServiceId");
     }
 
     public int getTarvProgramId() {
         return getInt(
-                "tarv_program_id",
+                "tarvProgramId",
                 2
         );
     }
 
     public int getCcrProgramId() {
         return getInt(
-                "ccr_program_id",
+                "ccrProgramId",
                 6
         );
     }
 
     public int getPrepProgramId() {
         return getInt(
-                "prep_program_id",
+                "prepProgramId",
                 25
         );
     }
@@ -344,7 +344,7 @@ public class EtlGlobalPropertyService {
     }
 
     public String getSourceLocationList() {
-        return get("src_location_list");
+        return get("srcLocationList");
     }
 
     // =========================================================
@@ -387,35 +387,35 @@ public class EtlGlobalPropertyService {
 
     public boolean isExtraConditionEnabled() {
         return getBoolean(
-                "extra_condition",
+                "extraCondition",
                 true
         );
     }
 
     public String getSyncFragments() {
         return get(
-                "sync_fragments",
+                "syncFragments",
                 "sync/sesp-sync-fragments/*.json"
         );
     }
 
     public boolean isIncludedPatientExtraConditionEnabled() {
         return getBoolean(
-                "included_patient_extra_condition",
+                "includedPatientExtraCondition",
                 true
         );
     }
 
     public boolean isIncludedPersonExtraConditionEnabled() {
         return getBoolean(
-                "included_person_extra_condition",
+                "includedPersonExtraCondition",
                 true
         );
     }
 
     public boolean isIncludedPersonBExtraConditionEnabled() {
         return getBoolean(
-                "included_person_b_extra_condition",
+                "includedPersonBExtraCondition",
                 true
         );
     }
@@ -436,7 +436,7 @@ public class EtlGlobalPropertyService {
      */
     public long getRebuildIndexRepeatInterval() {
         return getLong(
-                "rebuild.index.repeat.interval",
+                "rebuildIndexRepeatInterval",
                 1800000L
         );
     }

@@ -19,13 +19,13 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class Main implements Runnable {
 
-	public static final String STARTUP_FILE_GLOBAL_PROPERTY = "epts.etl.startup.file";
+	public static final String STARTUP_FILE_GLOBAL_PROPERTY = "eptsetl.startupFile";
 
-	public static final String ENABLED_GLOBAL_PROPERTY = "epts.etl.enabled";
+	public static final String ENABLED_GLOBAL_PROPERTY = "eptsetl.enabled";
 
-	public static final String STARTUP_READINESS_TIMEOUT_SECONDS_GLOBAL_PROPERTY = "epts.etl.openmrs_readiness_timeout_seconds";
+	public static final String STARTUP_READINESS_TIMEOUT_SECONDS_GLOBAL_PROPERTY = "eptsetl.openmrsReadinessTimeoutSeconds";
 
-	public static final String STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY = "epts.etl.openmrs_readiness_poll_seconds";
+	public static final String STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY = "eptsetl.openmrsReadinessPollSeconds";
 
 	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 600L;
 

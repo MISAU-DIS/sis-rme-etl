@@ -6,7 +6,7 @@
 	<artifactId>etl</artifactId>
 	<version>1.0</version>
 	<packaging>pom</packaging>
-	<name>Epts ETL Module</name>
+	<name>EptsEtl Module</name>
 	<description>An ETL tool with multiple capabilities</description>
 	<url>https://wiki.openmrs.org/display/docs/Sisrme+ETL+Module</url>
 
