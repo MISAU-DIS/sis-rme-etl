@@ -31,7 +31,7 @@ public class Main implements Runnable {
 
 	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 5L;
 
-	private static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
+	public static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
 
 	private static final AtomicBoolean OPENMRS_START_TRIGGERED = new AtomicBoolean(false);
 

@@ -456,6 +456,12 @@
 		<defaultValue>false</defaultValue>
 	</globalProperty>
 
+	<globalProperty>
+		<property>eptsetl.syncStageSchema</property>
+		<description>Staging database schema used by migration and remigration.</description>
+		<defaultValue>data_migration_stage_area</defaultValue>
+	</globalProperty>
+
 	<!-- / Global Properties -->
 
 	<!-- Adds link to admin page -->

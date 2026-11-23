@@ -75,6 +75,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	}
 
 	default Map<String, Object> retrieveAllAvailableTemplateParameters() {
+
 		if (hasTemplate()) {
 			return this.getTemplate().getAllAvailableParameters();
 		} else {
@@ -123,6 +124,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	}
 
 	default void tryToLoadFromTemplate() {
+
 		if (this.hasTemplate()) {
 			EtlTemplateConfiguration template = EtlTemplateConfiguration.findTemplate(this.getRelatedEtlConf(),
 					this.getTemplate().getName());
@@ -162,8 +164,11 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	}
 
 	default void applyIncludes() {
+
 		if (hasInclude()) {
+
 			for (EtlFragmentInclude i : this.getInclude()) {
+
 				if (i.getParent() == null) {
 					i.setParent(this);
 				}
@@ -269,6 +274,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 				}
 
 				if (value instanceof Collection<?>) {
+
 					for (Object item : (Collection<?>) value) {
 						applyDynamicElementsIfMissing(item, templateInfo, errorSufix);
 					}
@@ -326,6 +332,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 		Class<?> current = clazz;
 
 		while (current != null && current != Object.class) {
+
 			try {
 				return current.getDeclaredField(fieldName);
 			} catch (NoSuchFieldException ignored) {
@@ -553,7 +560,9 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 			}
 
 			OpenMrsGlobalPropertiesCache.properties = loadedProperties;
-			return copyProperties(loadedProperties);
+			Properties pps = copyProperties(loadedProperties);
+
+			return pps;
 		} catch (ReflectiveOperationException exception) {
 			if (!properties.isEmpty())
 				return properties;
@@ -587,6 +596,7 @@ public interface EtlDataConfiguration extends BaseConfiguration {
 	}
 
 	public static String resolvePlaceholders(File file, Object allowedPlaceholders, Object env) {
+
 		try {
 			@SuppressWarnings("unchecked")
 			Set<String> allowed = allowedPlaceholders instanceof Set ? (Set<String>) allowedPlaceholders : null;
