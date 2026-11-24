@@ -253,6 +253,31 @@
             margin-bottom: 12px;
         }
 
+        #etl-monitor .operation-panel.selectable {
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #etl-monitor .operation-panel.selectable:hover {
+            border-color: #9fc5e8;
+        }
+
+        #etl-monitor .operation-panel.selected {
+            border-color: #5b9bd5;
+            box-shadow: 0 0 0 2px rgba(91, 155, 213, 0.18);
+        }
+
+        #etl-monitor .selected-engine-banner {
+            margin-bottom: 10px;
+            color: #555;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #etl-monitor .selected-engine-banner span {
+            color: #31708f;
+        }
+
         #etl-monitor .operation-header {
             display: flex;
             justify-content: space-between;
@@ -517,6 +542,11 @@
                  SUMMARY
                  ================================================= -->
 
+            <div class="selected-engine-banner">
+                Dashboard do engine:
+                <span id="selectedEngineName">Nenhum engine selecionado</span>
+            </div>
+
             <div class="summary">
 
                 <div class="summary-card pending">
@@ -569,17 +599,17 @@
                             ✕
                         </span>
 
-                        Mensagens com erros
+                        Engine com erro
 
                     </div>
 
                     <div id="errors"
                          class="summary-value">
-                        0
+                        -
                     </div>
 
                     <div class="summary-description">
-                        Erros reportados pelo ETL
+                        Estado do engine selecionado
                     </div>
 
                 </div>
@@ -638,6 +668,7 @@
 <script>
 
     var monitorTimer = null;
+    var selectedEngineKey = null;
 
 
     /* =========================================================
@@ -862,6 +893,56 @@
     }
 
 
+    function getEngineKey(operation) {
+
+        return [
+            operation.processId || "",
+            operation.operationIdentifier || "",
+            operation.engineId || ""
+        ].join("|");
+    }
+
+
+    function updateSelectedEngineDashboard(operation) {
+
+        var selectedEngineName = document.getElementById("selectedEngineName");
+
+        if (!operation) {
+            selectedEngineName.innerText = "Nenhum engine selecionado";
+            document.getElementById("processed").innerText = "0";
+            document.getElementById("pending").innerText = "0";
+            document.getElementById("errors").innerText = "-";
+            return;
+        }
+
+        var processed = Number(operation.processed || 0);
+        var total = Number(operation.total || 0);
+        var statusClass = getStatusClass(operation.status);
+
+        selectedEngineName.innerText = operation.engineId
+            || operation.operationIdentifier
+            || "Engine sem identificador";
+        document.getElementById("processed").innerText = formatNumber(processed);
+        document.getElementById("pending").innerText = formatNumber(Math.max(0, total - processed));
+        document.getElementById("errors").innerText = statusClass === "error" ? "Sim" : "Não";
+    }
+
+
+    function selectEngine(operation, panel) {
+
+        selectedEngineKey = getEngineKey(operation);
+
+        var panels = document.querySelectorAll("#operationsList .operation-panel.selectable");
+        for (var i = 0; i < panels.length; i++) {
+            var selected = panels[i] === panel;
+            panels[i].classList.toggle("selected", selected);
+            panels[i].setAttribute("aria-pressed", selected ? "true" : "false");
+        }
+
+        updateSelectedEngineDashboard(operation);
+    }
+
+
     /* =========================================================
        MAIN UPDATE
        ========================================================= */
@@ -904,11 +985,22 @@
 
         var operations = data.operations || [];
         var operationsList = document.getElementById("operationsList");
-        var processed = 0;
-        var total = 0;
-        var errorCount = 0;
+        var selectedOperation = null;
+        var selectedPanel = null;
 
         operationsList.innerHTML = "";
+
+        if (operations.length) {
+            var selectedStillAvailable = operations.some(function(operation) {
+                return getEngineKey(operation) === selectedEngineKey;
+            });
+
+            if (!selectedStillAvailable) {
+                selectedEngineKey = getEngineKey(operations[0]);
+            }
+        } else {
+            selectedEngineKey = null;
+        }
 
         if (!operations.length) {
             var empty = document.createElement("div");
@@ -923,15 +1015,23 @@
             var operationTotal = Number(operation.total || 0);
             var operationStatusClass = getStatusClass(operation.status);
 
-            processed += operationProcessed;
-            total += operationTotal;
-
-            if (operationStatusClass === "error") {
-                errorCount++;
-            }
-
             var panel = document.createElement("div");
-            panel.className = "operation-panel";
+            var operationKey = getEngineKey(operation);
+            panel.className = "operation-panel selectable";
+            panel.setAttribute("role", "button");
+            panel.setAttribute("tabindex", "0");
+            panel.setAttribute("aria-pressed", "false");
+
+            panel.onclick = function() {
+                selectEngine(operation, panel);
+            };
+
+            panel.onkeydown = function(event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    selectEngine(operation, panel);
+                }
+            };
 
             var header = document.createElement("div");
             header.className = "operation-header";
@@ -982,11 +1082,19 @@
             }
 
             operationsList.appendChild(panel);
+
+            if (operationKey === selectedEngineKey) {
+                selectedOperation = operation;
+                selectedPanel = panel;
+            }
         });
 
-        document.getElementById("processed").innerText = formatNumber(processed);
-        document.getElementById("pending").innerText = formatNumber(Math.max(0, total - processed));
-        document.getElementById("errors").innerText = formatNumber(errorCount);
+        if (selectedPanel) {
+            selectedPanel.classList.add("selected");
+            selectedPanel.setAttribute("aria-pressed", "true");
+        }
+
+        updateSelectedEngineDashboard(selectedOperation);
 
 
         /* -----------------------------------------------------
