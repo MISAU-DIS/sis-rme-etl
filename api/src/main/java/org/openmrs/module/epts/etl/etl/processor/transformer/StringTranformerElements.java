@@ -60,8 +60,11 @@ public class StringTranformerElements {
 	}
 
 	private synchronized void fullLoad(Connection conn) throws FieldAvaliableInMultipleDataSources, DBException {
+
 		if (!fullLoaded) {
+
 			if (this.valueToTransform != null) {
+
 				try {
 					this.auxMapping = FieldsMapping.fastCreate(this.relatedTransformer.getRelatedEtlTransformTarget(),
 							this.valueToTransform.toString(), "anknown_field", conn);
@@ -139,6 +142,7 @@ public class StringTranformerElements {
 		Method[] methods = String.class.getMethods();
 
 		for (Method m : methods) {
+
 			if (m.getName().equals(methodName) && m.getParameterCount() == paramCount) {
 				this.method = m;
 
@@ -174,6 +178,7 @@ public class StringTranformerElements {
 				valueToTransform = this.getAuxMapping().getTransformerInstance().transform(processor, srcObject,
 						transformedRecord, additionalSrcObjects, auxMapping, srcConn, dstConn).getTransformedValue();
 			} catch (EmptyTransformedValueException e) {
+
 				if (this.getNullOperandBehavior().useEmptyString()) {
 					valueToTransform = "";
 				} else
@@ -185,7 +190,8 @@ public class StringTranformerElements {
 			try {
 				currentValue = method.invoke(valueToTransform.toString(), methodParams);
 			} catch (Exception e) {
-				if (e.getCause() instanceof NullPointerException) {
+
+				if (e instanceof NullPointerException || e.getCause() instanceof NullPointerException) {
 					currentValue = valueToTransform;
 
 					field.getTransformationTargetObject().getRelatedEtlConf().warn(
@@ -291,6 +297,7 @@ public class StringTranformerElements {
 		List<FieldsMapping> params = new ArrayList<>();
 
 		if (!argsStr.isBlank()) {
+
 			for (String arg : splitArguments(argsStr)) {
 				params.add(parseArgument(arg.trim(), relatedTransformer.getRelatedEtlTransformTarget(), conn));
 			}
@@ -465,6 +472,7 @@ public class StringTranformerElements {
 		FieldsMapping map = null;
 
 		if (argInstance instanceof String) {
+
 			try {
 				map = FieldsMapping.fastCreate(dstConf, arg, conn);
 

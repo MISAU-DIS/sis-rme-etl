@@ -1,2 +1,9 @@
 Fixes divergentes main e o feat/connetors
 - Suporte ao With em SQLUtilities.determineFieldsFromQuery(String query)
+- Arranque atrasado da etl via openmrs
+- Verificacao da propria exception antes da causa em StringTranformerElements
+		if (e.getCause() instanceof NullPointerException) {
+		} ->
+		if (e instanceof NullPointerException || e.getCause() instanceof NullPointerException) {
+		}
+		
