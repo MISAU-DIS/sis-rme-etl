@@ -111,6 +111,7 @@ public class SQLUtilities {
 		PreparedStatement st = null;
 		ResultSet rs = null;
 		String codigo = "";
+
 		try {
 
 			String sql = " SELECT count(" + campoID + ") " + " FROM        " + tabela + " WHERE       " + campoID
@@ -184,6 +185,7 @@ public class SQLUtilities {
 		PreparedStatement st = null;
 		ResultSet rs = null;
 		long codigo = 0;
+
 		try {
 
 			String sql = " SELECT count( " + campoSequencial + " ) " + " FROM        " + tabela + " WHERE       "
@@ -214,6 +216,7 @@ public class SQLUtilities {
 
 	static public long getNextId(String tabela, String campoSequencial, String condition, Connection conn)
 			throws DBException {
+
 		try {
 			return getNextId(tabela, campoSequencial, condition, true, conn);
 		} catch (Exception e) {
@@ -247,6 +250,7 @@ public class SQLUtilities {
 			logs.add("Opened rs");
 
 			while (rs.next()) {
+
 				try {
 					codigo = rs.getLong(1);
 				} catch (Exception e) {
@@ -270,6 +274,7 @@ public class SQLUtilities {
 		PreparedStatement st = null;
 		ResultSet rs = null;
 		long codigo = 0;
+
 		try {
 
 			String sql = " SELECT count(" + campoSequencial + ") " + " FROM " + tabela + " WHERE " + condition;
@@ -331,6 +336,7 @@ public class SQLUtilities {
 			logs.add("Opened rs");
 
 			if (rs.next()) {
+
 				if (rs.getString("maxID") != null) {
 					if (FuncoesGenericas.isNumeric(rs.getString("maxID")))
 						maxID = Long.parseLong(rs.getString("maxID"));
@@ -393,7 +399,9 @@ public class SQLUtilities {
 	}
 
 	private static void ensureResourceAreClosed(List<String> logs, PreparedStatement st, ResultSet rs) {
+
 		try {
+
 			if (st != null) {
 				st.close();
 				logs.add("Closed st");
@@ -421,6 +429,7 @@ public class SQLUtilities {
 		PreparedStatement st = null;
 		ResultSet rs = null;
 		long codigo = 0;
+
 		try {
 
 			st = conn.prepareStatement("SELECT MAX(" + campo + ") FROM " + tabela);
@@ -428,6 +437,7 @@ public class SQLUtilities {
 			st.execute();
 			rs = st.getResultSet();
 			logs.add("Opened rs");
+
 			while (rs.next()) {
 				codigo = rs.getLong(1);
 			}
@@ -473,6 +483,7 @@ public class SQLUtilities {
 		int currParam = 0;
 
 		String dateFormat;
+
 		try {
 			dateFormat = DBUtilities.isOracleDB(conn) ? DateAndTimeUtilities.ORACLE_DATE_TIME_FORMAT
 					: DateAndTimeUtilities.DATE_TIME_FORMAT;
@@ -605,6 +616,7 @@ public class SQLUtilities {
 	 */
 	public static String createPhasedSelectPostgres(String originalSelect, int start, int qtdRecordSuported,
 			Connection conn) throws DBException {
+
 		try {
 			originalSelect = originalSelect.toUpperCase();
 
@@ -670,6 +682,7 @@ public class SQLUtilities {
 	 */
 	public static String createPhasedSelect(String originalSelect, int start, int qtdRecordSuported, Connection conn)
 			throws DBException {
+
 		try {
 
 			if (DBUtilities.determineDataBaseFromConnection(conn).equals(DBUtilities.ORACLE_DATABASE)) {
@@ -959,18 +972,21 @@ public class SQLUtilities {
 				String trimmed = part.trim();
 
 				Matcher mNotNull = isNotNullPattern.matcher(trimmed);
+
 				if (mNotNull.find()) {
 					result.add(new SqlConditionElement(mNotNull.group(1), "IS NOT NULL", null));
 					continue;
 				}
 
 				Matcher mNull = isNullPattern.matcher(trimmed);
+
 				if (mNull.find()) {
 					result.add(new SqlConditionElement(mNull.group(1), "IS NULL", null));
 					continue;
 				}
 
 				Matcher m = normalPattern.matcher(trimmed);
+
 				if (m.find()) {
 					result.add(new SqlConditionElement(m.group(1), m.group(2), cleanValue(m.group(3))));
 				}
@@ -1039,6 +1055,7 @@ public class SQLUtilities {
 			if (c == '(')
 				parentheses++;
 			else if (c == ')') {
+
 				if (parentheses == 0) {
 					return i;
 				}
@@ -1047,6 +1064,7 @@ public class SQLUtilities {
 
 			// parar em keywords comuns (fora de subqueries)
 			if (parentheses == 0) {
+
 				if (startsWithKeyword(sql, i, "group by") || startsWithKeyword(sql, i, "order by")
 						|| startsWithKeyword(sql, i, "limit")) {
 					return i;
@@ -1246,6 +1264,7 @@ public class SQLUtilities {
 				parentheses--;
 
 			if (parentheses == 0) {
+
 				if (lower.startsWith(" and ", i) || lower.startsWith(" or ", i)) {
 					return true;
 				}
@@ -1285,6 +1304,7 @@ public class SQLUtilities {
 		String whereClause = extractWhereClause(normalized);
 
 		if (whereClause != null) {
+
 			if (!isBalanced(whereClause)) {
 				return false;
 			}
@@ -1659,6 +1679,7 @@ public class SQLUtilities {
 					level--;
 
 				if (Character.isWhitespace(c) && level == 0) {
+
 					if (current.length() > 0) {
 						result.add(current.toString());
 						current.setLength(0);
@@ -1773,6 +1794,7 @@ public class SQLUtilities {
 		String lowerQuery = query.toLowerCase();
 
 		int i = 0;
+
 		while (i < query.length()) {
 			char currentChar = query.charAt(i);
 			currentQuery.append(currentChar);
@@ -1833,6 +1855,7 @@ public class SQLUtilities {
 			int qtyQuestionMarksOnQuery = getQtyQuestionMarksOnQuery(query);
 
 			if (qtyQuestionMarksOnQuery > 0) {
+
 				if (params == null) {
 					params = new Object[qtyQuestionMarksOnQuery];
 
@@ -2004,6 +2027,7 @@ public class SQLUtilities {
 
 				if ((inSingleQuote && current == '\'') || (inDoubleQuote && current == '"')
 						|| (inBacktick && current == '`')) {
+
 					if (next == current) {
 						result.append(next);
 						i++;
@@ -2035,8 +2059,8 @@ public class SQLUtilities {
 				continue;
 			}
 
-			if (current == '-' && next == '-' && (i + 2 >= query.length()
-					|| Character.isWhitespace(query.charAt(i + 2)))) {
+			if (current == '-' && next == '-'
+					&& (i + 2 >= query.length() || Character.isWhitespace(query.charAt(i + 2)))) {
 				i = skipLineComment(query, i + 2);
 				result.append(' ');
 				continue;
@@ -2235,6 +2259,7 @@ public class SQLUtilities {
 		// Find all matches and add the field names to the list
 		while (matcher.find()) {
 			String field = matcher.group(1);
+
 			if (!field.contains(".")) {
 				field = tableName + "." + field;
 			}
@@ -2256,6 +2281,7 @@ public class SQLUtilities {
 		// Replace each matched field with its fully qualified name
 		int fieldIndex = 0;
 		StringBuffer result = new StringBuffer();
+
 		while (matcher.find()) {
 			// Construct the replacement with the field and a space before the token
 			String replacement = fields.get(fieldIndex) + " " + matcher.group(2);
@@ -2291,6 +2317,7 @@ public class SQLUtilities {
 		List<String> fieldsWithTabName = new ArrayList<>();
 
 		for (String field : fields) {
+
 			if (SQLUtilities.checkIfTableIsPresentInSqlExpretion(field)) {
 				fieldsWithTabName.add(field);
 			} else {
@@ -2316,6 +2343,7 @@ public class SQLUtilities {
 
 			if (c == '(') {
 				parenthesisStack.push(i);
+
 				if (parenthesisStack.size() == 1) {
 					currentSubquery = new StringBuilder();
 				}
@@ -2326,8 +2354,10 @@ public class SQLUtilities {
 			}
 
 			if (c == ')') {
+
 				if (parenthesisStack.size() == 1) {
 					String subquery = currentSubquery.toString();
+
 					// Validate subquery starts with "select"
 					if (subquery.trim().toLowerCase().startsWith("(select")
 							|| subquery.trim().toLowerCase().startsWith("( select")) {
@@ -2602,6 +2632,7 @@ public class SQLUtilities {
 		String firstToken = findFirstLiteralToken(query, tokens);
 
 		for (ResolvedQueryElement element : resolvedElements) {
+
 			if (Objects.equals(firstToken, element.getToken())) {
 				return element;
 			}
@@ -2633,8 +2664,7 @@ public class SQLUtilities {
 			return -1;
 		}
 
-		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token)
-				+ "(?![a-zA-Z0-9_\\.])");
+		Pattern pattern = Pattern.compile("(?<![a-zA-Z0-9_\\.])" + Pattern.quote(token) + "(?![a-zA-Z0-9_\\.])");
 		Matcher matcher = pattern.matcher(query);
 
 		return matcher.find() ? matcher.start() : -1;
@@ -2647,6 +2677,7 @@ public class SQLUtilities {
 		String[] valueParts = paramValue.toString().split("\\,");
 
 		for (String p : valueParts) {
+
 			if (!utilities.isNumeric(p)) {
 				return 1;
 			}
@@ -2858,19 +2889,25 @@ public class SQLUtilities {
 
 							if (map == null && checkIfFieldDefinitionIncludeQualifier(candidateAdjustedElement)) {
 
-								map = generateMapping(transformingTarget, candidatePreviousElement,
-										candidateAdjustedElement, conn);
+								String[] parts = candidateAdjustedElement.split("\\.");
 
 								/*
 								 * A field belonging to a table/alias from the SQL query itself is not
 								 * transformed, but it remains important as contextual information for the next
 								 * element.
 								 */
-								if (utilities.contains(avaliableTableAliases, map.getDataSourceName())
-										|| !map.hasTransformer()) {
+								if (utilities.contains(avaliableTableAliases, parts[0])) {
+									continue;
+								}
+
+								map = generateMapping(transformingTarget, candidatePreviousElement,
+										candidateAdjustedElement, conn);
+
+								if (!map.hasTransformer()) {
 
 									continue;
 								}
+
 							}
 
 						} catch (InvalidDataSourceOnFieldDefifitionException e) {
@@ -3281,6 +3318,7 @@ public class SQLUtilities {
 			}
 
 			if (c == '(') {
+
 				if (level == 0) {
 					start = i + 1;
 				}

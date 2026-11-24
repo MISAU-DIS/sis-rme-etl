@@ -248,7 +248,6 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 		}
 
 		try {
-
 			Object result = this.transformerElements.evaluate(processor, srcObject, transformedRecord,
 					additionalSrcObjects, field, srcConn, dstConn);
 
@@ -259,9 +258,6 @@ public class StringTranformer extends AbstractEtlFieldTransformer {
 			return transformingInfo;
 
 		} catch (Exception e) {
-
-			transform(processor, srcObject, transformedRecord, additionalSrcObjects, field, srcConn, dstConn);
-
 			throw new EtlTransformationException("Failed to evaluate string expression: " + field.getValueToTransform(),
 					e, srcObject, ActionOnEtlIssue.ABORT_PROCESS);
 		} finally {

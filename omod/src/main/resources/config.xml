@@ -453,7 +453,7 @@
 	<globalProperty>
 		<property>eptsetl.openmrsStartupStabilizationSeconds</property>
 		<description>Continuous readiness period required after the OpenMRS HTTP connector becomes available and before the ETL starts.</description>
-		<defaultValue>5</defaultValue>
+		<defaultValue>30</defaultValue>
 	</globalProperty>
 
 	<globalProperty>

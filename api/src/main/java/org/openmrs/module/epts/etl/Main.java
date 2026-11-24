@@ -2,9 +2,8 @@ package org.openmrs.module.epts.etl;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URI;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +37,7 @@ public class Main implements Runnable {
 
 	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 5L;
 
-	private static final long DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS = 5L;
+	private static final long DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS = 30L;
 
 	public static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
 
@@ -162,25 +161,16 @@ public class Main implements Runnable {
 
 			String[] startupFiles = startupFile.split(",");
 
-			ProcessStarter processStarter = performeInitialization(startupFiles);
-
-			if (processStarter == null) {
-				LOG.info("No automatic ETL configurations were found. OpenMRS startup will not launch an ETL process.");
-				OPENMRS_START_TRIGGERED.set(false);
-				return;
-			}
-
-			/* Keep the exact starter instance exposed to the OMOD monitor and controls. */
-			openMrsProcessStarter = processStarter;
-
 			/*
-			 * ProcessStarter.run() contains its own lifecycle and waits until the ETL is
-			 * finalized.
+			 * Configuration loading and ProcessStarter initialization must also happen in
+			 * this worker. Both may access the database and are intentionally postponed
+			 * until OpenMRS is serving HTTP requests normally.
 			 *
-			 * Therefore it must execute outside the OpenMRS startup thread.
+			 * ProcessStarter.run() contains its own lifecycle and waits until the ETL is
+			 * finalized, so none of this work may execute in the OpenMRS startup thread.
 			 */
 			Thread etlThread = new Thread(
-					() -> startWhenOpenMrsIsReady(processStarter, readinessTimeoutSeconds, readinessPollSeconds,
+					() -> startWhenOpenMrsIsReady(startupFiles, readinessTimeoutSeconds, readinessPollSeconds,
 							startupStabilizationSeconds, openMrsBaseUrl.trim()),
 					"epts-etl-starter");
 
@@ -239,7 +229,7 @@ public class Main implements Runnable {
 		return value;
 	}
 
-	private static void startWhenOpenMrsIsReady(ProcessStarter processStarter, long timeoutSeconds, long pollSeconds,
+	private static void startWhenOpenMrsIsReady(String[] startupFiles, long timeoutSeconds, long pollSeconds,
 			long stabilizationSeconds, String openMrsBaseUrl) {
 
 		try {
@@ -272,7 +262,18 @@ public class Main implements Runnable {
 				Thread.sleep(Math.multiplyExact(pollSeconds, 1000L));
 			}
 
-			LOG.info("OpenMRS startup is complete and stable. Starting EPTS ETL.");
+			LOG.info("OpenMRS startup is complete and stable. Initializing EPTS ETL.");
+			ProcessStarter processStarter = performeInitialization(startupFiles);
+
+			if (processStarter == null) {
+				LOG.info("No automatic ETL configurations were found. OpenMRS startup will not launch an ETL process.");
+				OPENMRS_START_TRIGGERED.set(false);
+				return;
+			}
+
+			/* Expose the starter only after OpenMRS readiness and ETL initialization. */
+			openMrsProcessStarter = processStarter;
+			LOG.info("EPTS ETL initialization completed. Starting ETL processing.");
 			processStarter.run();
 		} catch (InterruptedException exception) {
 			Thread.currentThread().interrupt();
@@ -283,7 +284,7 @@ public class Main implements Runnable {
 			openMrsProcessStarter = null;
 			OPENMRS_START_TRIGGERED.set(false);
 			LOG.err("The configured EPTS ETL readiness timeout or polling interval is too large.", exception);
-		} catch (RuntimeException exception) {
+		} catch (Exception exception) {
 			openMrsProcessStarter = null;
 			OPENMRS_START_TRIGGERED.set(false);
 			LOG.err("Failed to start EPTS ETL while waiting for OpenMRS readiness.", exception);
@@ -320,24 +321,31 @@ public class Main implements Runnable {
 	}
 
 	private static boolean isOpenMrsHttpConnectorAvailable(String openMrsBaseUrl, int connectionTimeoutMillis) {
+		HttpURLConnection connection = null;
+
 		try {
-			URI uri = URI.create(openMrsBaseUrl);
-			String host = uri.getHost();
-			int port = uri.getPort();
+			String sessionUrl = openMrsBaseUrl.endsWith("/") ? openMrsBaseUrl + "ws/rest/v1/session"
+					: openMrsBaseUrl + "/ws/rest/v1/session";
+			int requestTimeoutMillis = Math.min(connectionTimeoutMillis, 2000);
 
-			if (host == null || host.trim().isEmpty())
-				throw new IllegalArgumentException("URL has no host");
+			connection = (HttpURLConnection) new URL(sessionUrl).openConnection();
+			connection.setRequestMethod("GET");
+			connection.setConnectTimeout(requestTimeoutMillis);
+			connection.setReadTimeout(requestTimeoutMillis);
+			connection.setUseCaches(false);
+			connection.setInstanceFollowRedirects(false);
+			connection.setRequestProperty("Accept", "application/json");
 
-			if (port < 0)
-				port = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
-
-			try (Socket socket = new Socket()) {
-				socket.connect(new InetSocketAddress(host, port), connectionTimeoutMillis);
-				return true;
-			}
+			int responseCode = connection.getResponseCode();
+			return responseCode == HttpURLConnection.HTTP_OK
+					|| responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
+					|| responseCode == HttpURLConnection.HTTP_FORBIDDEN;
 		} catch (IOException | IllegalArgumentException exception) {
-			LOG.warn("OpenMRS HTTP connector is not ready yet at " + openMrsBaseUrl + ": " + exception.getMessage());
+			LOG.warn("OpenMRS HTTP application is not ready yet at " + openMrsBaseUrl + ": " + exception.getMessage());
 			return false;
+		} finally {
+			if (connection != null)
+				connection.disconnect();
 		}
 	}
 

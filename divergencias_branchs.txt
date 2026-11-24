@@ -7,3 +7,26 @@ Fixes divergentes main e o feat/connetors
 		if (e instanceof NullPointerException || e.getCause() instanceof NullPointerException) {
 		}
 		
+- Skip mapping definition when datasource element is a alias within SQLUtilities
+	if (map == null && checkIfFieldDefinitionIncludeQualifier(candidateAdjustedElement)) {
+
+			String[] parts = candidateAdjustedElement.split("\\.");
+
+			/*
+			 * A field belonging to a table/alias from the SQL query itself is not
+			 * transformed, but it remains important as contextual information for the next
+			 * element.
+			 */
+			if (utilities.contains(avaliableTableAliases, parts[0])) {
+				continue;
+			}
+
+			map = generateMapping(transformingTarget, candidatePreviousElement,
+					candidateAdjustedElement, conn);
+
+			if (!map.hasTransformer()) {
+
+				continue;
+			}
+
+		}
