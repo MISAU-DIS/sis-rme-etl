@@ -439,6 +439,24 @@
 	</globalProperty>
 
 	<globalProperty>
+		<property>eptsetl.openmrsReadinessTimeoutSeconds</property>
+		<description>Maximum time to wait for OpenMRS startup before cancelling automatic ETL startup.</description>
+		<defaultValue>600</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>eptsetl.openmrsReadinessPollSeconds</property>
+		<description>Interval between OpenMRS startup readiness checks.</description>
+		<defaultValue>5</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
+		<property>eptsetl.openmrsStartupStabilizationSeconds</property>
+		<description>Continuous readiness period required after the OpenMRS HTTP connector becomes available and before the ETL starts.</description>
+		<defaultValue>5</defaultValue>
+	</globalProperty>
+
+	<globalProperty>
 		<property>eptsetl.openmrsUsername</property>
 		<description>Username used to authenticate with the OpenMRS REST API.</description>
 		<defaultValue></defaultValue>

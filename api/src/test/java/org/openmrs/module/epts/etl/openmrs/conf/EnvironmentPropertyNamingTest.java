@@ -64,6 +64,9 @@ public class EnvironmentPropertyNamingTest {
                 Main.STARTUP_READINESS_TIMEOUT_SECONDS_GLOBAL_PROPERTY);
         assertEquals("eptsetl.openmrsReadinessPollSeconds",
                 Main.STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY);
+		assertEquals("eptsetl.openmrsStartupStabilizationSeconds",
+				Main.STARTUP_STABILIZATION_SECONDS_GLOBAL_PROPERTY);
+		assertEquals("eptsetl.openmrsBaseUrl", Main.OPENMRS_BASE_URL_GLOBAL_PROPERTY);
     }
 
     private void useProperties(String contents) throws Exception {

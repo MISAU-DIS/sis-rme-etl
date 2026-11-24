@@ -2,6 +2,9 @@ package org.openmrs.module.epts.etl;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,9 +30,15 @@ public class Main implements Runnable {
 
 	public static final String STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY = "eptsetl.openmrsReadinessPollSeconds";
 
+	public static final String STARTUP_STABILIZATION_SECONDS_GLOBAL_PROPERTY = "eptsetl.openmrsStartupStabilizationSeconds";
+
+	public static final String OPENMRS_BASE_URL_GLOBAL_PROPERTY = "eptsetl.openmrsBaseUrl";
+
 	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 600L;
 
 	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 5L;
+
+	private static final long DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS = 5L;
 
 	public static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
 
@@ -132,6 +141,13 @@ public class Main implements Runnable {
 					STARTUP_READINESS_TIMEOUT_SECONDS_GLOBAL_PROPERTY, DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS);
 			long readinessPollSeconds = getPositiveGlobalProperty(STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY,
 					DEFAULT_OPENMRS_READINESS_POLL_SECONDS);
+			long startupStabilizationSeconds = getNonNegativeGlobalProperty(
+					STARTUP_STABILIZATION_SECONDS_GLOBAL_PROPERTY, DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS);
+			String openMrsBaseUrl = Context.getAdministrationService().getGlobalProperty(OPENMRS_BASE_URL_GLOBAL_PROPERTY);
+
+			if (openMrsBaseUrl == null || openMrsBaseUrl.trim().isEmpty())
+				throw new IllegalStateException("The OpenMRS global property '" + OPENMRS_BASE_URL_GLOBAL_PROPERTY
+						+ "' must contain the OpenMRS base URL");
 
 			/*
 			 * Read the startup configuration.
@@ -164,14 +180,16 @@ public class Main implements Runnable {
 			 * Therefore it must execute outside the OpenMRS startup thread.
 			 */
 			Thread etlThread = new Thread(
-					() -> startWhenOpenMrsIsReady(processStarter, readinessTimeoutSeconds, readinessPollSeconds),
+					() -> startWhenOpenMrsIsReady(processStarter, readinessTimeoutSeconds, readinessPollSeconds,
+							startupStabilizationSeconds, openMrsBaseUrl.trim()),
 					"epts-etl-starter");
 
 			etlThread.setDaemon(true);
 			etlThread.start();
 
 			LOG.info("EPTS ETL startup requested successfully. Waiting up to " + readinessTimeoutSeconds
-					+ " second(s) for OpenMRS readiness, checking every " + readinessPollSeconds + " second(s).");
+					+ " second(s) for OpenMRS readiness, checking every " + readinessPollSeconds
+					+ " second(s), with a final stabilization period of " + startupStabilizationSeconds + " second(s).");
 
 		} catch (Exception e) {
 
@@ -221,13 +239,32 @@ public class Main implements Runnable {
 		return value;
 	}
 
-	private static void startWhenOpenMrsIsReady(ProcessStarter processStarter, long timeoutSeconds, long pollSeconds) {
+	private static void startWhenOpenMrsIsReady(ProcessStarter processStarter, long timeoutSeconds, long pollSeconds,
+			long stabilizationSeconds, String openMrsBaseUrl) {
 
 		try {
 			long timeoutNanos = Math.multiplyExact(timeoutSeconds, 1_000_000_000L);
+			long stabilizationNanos = Math.multiplyExact(stabilizationSeconds, 1_000_000_000L);
 			long deadline = System.nanoTime() + timeoutNanos;
+			long readySince = -1L;
 
-			while (!isOpenMrsReady()) {
+			while (true) {
+				long now = System.nanoTime();
+				int connectionTimeoutMillis = (int) Math.min(Integer.MAX_VALUE,
+						Math.multiplyExact(pollSeconds, 1000L));
+
+				if (isOpenMrsReady(openMrsBaseUrl, connectionTimeoutMillis)) {
+					if (readySince < 0) {
+						readySince = now;
+						LOG.info("OpenMRS context and HTTP connector are available. Waiting for startup stabilization.");
+					}
+
+					if (now - readySince >= stabilizationNanos)
+						break;
+				} else {
+					readySince = -1L;
+				}
+
 				if (timeoutSeconds == 0 || System.nanoTime() - deadline >= 0)
 					throw new IllegalStateException(
 							"OpenMRS did not become ready within " + timeoutSeconds + " second(s)");
@@ -235,7 +272,7 @@ public class Main implements Runnable {
 				Thread.sleep(Math.multiplyExact(pollSeconds, 1000L));
 			}
 
-			LOG.info("OpenMRS readiness confirmed. Starting EPTS ETL.");
+			LOG.info("OpenMRS startup is complete and stable. Starting EPTS ETL.");
 			processStarter.run();
 		} catch (InterruptedException exception) {
 			Thread.currentThread().interrupt();
@@ -253,7 +290,7 @@ public class Main implements Runnable {
 		}
 	}
 
-	private static boolean isOpenMrsReady() {
+	private static boolean isOpenMrsReady(String openMrsBaseUrl, int connectionTimeoutMillis) {
 		if (Context.isRefreshingContext())
 			return false;
 
@@ -271,13 +308,36 @@ public class Main implements Runnable {
 			 * successfully after the Spring context refresh is enough to confirm that the
 			 * OpenMRS service infrastructure is available to this worker thread.
 			 */
-			return Context.getAdministrationService() != null;
+			return Context.getAdministrationService() != null
+					&& isOpenMrsHttpConnectorAvailable(openMrsBaseUrl, connectionTimeoutMillis);
 		} catch (RuntimeException exception) {
 			LOG.warn("OpenMRS is not ready yet: " + exception.getMessage());
 			return false;
 		} finally {
 			if (sessionOpenedHere)
 				Context.closeSession();
+		}
+	}
+
+	private static boolean isOpenMrsHttpConnectorAvailable(String openMrsBaseUrl, int connectionTimeoutMillis) {
+		try {
+			URI uri = URI.create(openMrsBaseUrl);
+			String host = uri.getHost();
+			int port = uri.getPort();
+
+			if (host == null || host.trim().isEmpty())
+				throw new IllegalArgumentException("URL has no host");
+
+			if (port < 0)
+				port = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+
+			try (Socket socket = new Socket()) {
+				socket.connect(new InetSocketAddress(host, port), connectionTimeoutMillis);
+				return true;
+			}
+		} catch (IOException | IllegalArgumentException exception) {
+			LOG.warn("OpenMRS HTTP connector is not ready yet at " + openMrsBaseUrl + ": " + exception.getMessage());
+			return false;
 		}
 	}
 
