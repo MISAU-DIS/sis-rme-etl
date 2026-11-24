@@ -111,6 +111,7 @@ public class ProcessStarter implements ControllerStarter {
 	 */
 	public static ProcessStarter init(List<EtlConfiguration> configs, EtlLogger logger)
 			throws ForbiddenOperationException, DBException {
+
 		if (configs == null || configs.isEmpty()) {
 			throw new ForbiddenOperationException("At least one static ETL configuration is required");
 		}
@@ -120,6 +121,7 @@ public class ProcessStarter implements ControllerStarter {
 		starter.logger.debug("Initializing the ProcessStarter...");
 
 		for (EtlConfiguration config : configs) {
+
 			if (config.isDynamic()) {
 				throw new ForbiddenOperationException(
 						"Dynamic configuration must be initialized by DynamicProcessStarter: "
@@ -141,6 +143,7 @@ public class ProcessStarter implements ControllerStarter {
 	public void run() {
 
 		try {
+
 			if (!markStarted()) {
 				logger.warn("ProcessStarter has already been started");
 				return;
@@ -175,6 +178,7 @@ public class ProcessStarter implements ControllerStarter {
 		}
 
 		this.stopRequested = true;
+
 		for (ProcessController controller : new ArrayList<>(this.currentControllers)) {
 			controller.requestStop();
 		}
@@ -182,6 +186,7 @@ public class ProcessStarter implements ControllerStarter {
 
 	private synchronized void removeFinalizedController(ProcessController controller) {
 		this.currentControllers.remove(controller);
+
 		if (!this.completedControllers.contains(controller)) {
 			this.completedControllers.add(controller);
 		}
@@ -208,10 +213,12 @@ public class ProcessStarter implements ControllerStarter {
 						logger.warn("Disabled config was found on the tree", childConfig.getConfigFilePath());
 
 						String nextChildPath = childConfig.getChildConfigFilePath();
+
 						if (nextChildPath == null || nextChildPath.trim().isEmpty()) {
 							childConfig = null;
 							break;
 						}
+
 						childConfig = EtlConfiguration.loadFromFile(new File(nextChildPath));
 					}
 
@@ -219,44 +226,39 @@ public class ProcessStarter implements ControllerStarter {
 						ProcessController childController = new ProcessController(this, childConfig);
 
 						this.currentControllers.add(childController);
+						this.finalizeController(controller, true);
 
-						if (childController.isDisabled()) {
-							logger.info("Operation " + childController.getControllerId()
-									+ " is marked as disabled... skipping...");
+						ExecutorService executor = ThreadPoolService.getInstance()
+								.createNewThreadPoolExecutor(childController.getControllerId());
 
-							childController.markAsFinished();
+						executor.execute(childController);
 
-							this.handleControllerFinalization(childController);
-						} else {
-							ExecutorService executor = ThreadPoolService.getInstance()
-									.createNewThreadPoolExecutor(childController.getControllerId());
-
-							executor.execute(childController);
-
-							if (!controllerToFinalize.isDisabled()) {
-								ThreadPoolService.getInstance().terminateTread(logger,
-										controllerToFinalize.getControllerId(), controllerToFinalize);
-							}
+						if (!controllerToFinalize.isDisabled()) {
+							ThreadPoolService.getInstance().terminateTread(logger,
+									controllerToFinalize.getControllerId(), controllerToFinalize);
 						}
+					} else {
+						this.finalizeController(controller, false);
 					}
 				} catch (DBException e) {
 					throw new RuntimeException(e);
 				} catch (IOException e) {
 					throw new RuntimeException(e);
-				} finally {
-					finalizeController(controller);
 				}
 			} else {
-				finalizeController(controller);
+				this.finalizeController(controller, false);
 			}
 		} else if (controllerToFinalize.isStopped()) {
-			finalizeController(controller);
+			this.finalizeController(controller, false);
 		}
 	}
 
-	protected void finalizeController(ProcessController controller) {
+	protected void finalizeController(ProcessController controller, boolean removeController) {
 		controller.handleFinalization();
-		this.removeFinalizedController(controller);
+
+		if (removeController) {
+			this.removeFinalizedController(controller);
+		}
 	}
 
 	public void applyStartupDebugDelayIfConfigured() {
@@ -283,7 +285,22 @@ public class ProcessStarter implements ControllerStarter {
 	}
 
 	public boolean isFinalized() {
-		return this.started && this.currentControllers.isEmpty();
+
+		if (this.started && this.currentControllers.isEmpty()) {
+			return true;
+		} else if (this.started) {
+
+			for (ProcessController c : this.currentControllers) {
+
+				if (!c.isFinalized()) {
+					return false;
+				}
+			}
+
+			return false;
+		} else {
+			return false;
+		}
 	}
 
 	private void logFinalStatus() {

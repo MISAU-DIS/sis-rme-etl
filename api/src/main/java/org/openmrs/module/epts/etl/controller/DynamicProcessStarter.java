@@ -51,6 +51,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		OpenConnection conn = null;
 
 		try {
+
 			if (!etlConfig.hasMainConnInfo()) {
 				throw new ForbiddenOperationException(
 						"For dynamic etl configuration you must setup the mainConnInfo!!!");
@@ -96,6 +97,7 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 	public void run() {
 
 		try {
+
 			if (!markStarted()) {
 				throw new ForbiddenOperationException("DynamicProcessStarter has already been started");
 			}
@@ -151,17 +153,17 @@ public class DynamicProcessStarter extends ProcessStarter implements ControllerS
 		if (c.isFinished()) {
 
 			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
-				finalizeController(controller);
+				finalizeController(controller, true);
 				throw new ForbiddenOperationException(
 						"You cannot configure childConfigFilePath on dynamic etl configuration!!!!");
 			}
 		} else if (c.isStopped()) {
 			LOG.warn("THE APPLICATION IS STOPPING DUE STOP REQUESTED!");
-			finalizeController(controller);
+			finalizeController(controller, true);
 		}
 
 		if (c.isFinished()) {
-			finalizeController(controller);
+			finalizeController(controller, true);
 		}
 
 	}
