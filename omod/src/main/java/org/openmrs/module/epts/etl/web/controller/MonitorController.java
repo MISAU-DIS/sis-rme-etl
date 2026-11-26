@@ -3,6 +3,7 @@ package org.openmrs.module.epts.etl.web.controller;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.openmrs.module.epts.etl.monitor.dto.MonitorInfoDTO;
 import org.openmrs.module.epts.etl.monitor.service.EtlMonitorService;
@@ -10,6 +11,7 @@ import org.openmrs.module.epts.etl.service.EtlProcessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -37,6 +39,7 @@ public class MonitorController {
 	private final EtlProcessService processService;
 
 	private final ObjectMapper objectMapper;
+	private final AtomicBoolean monitorRequestInProgress = new AtomicBoolean();
 
 	@Autowired
 	public MonitorController(EtlMonitorService monitorService, EtlProcessService processService) {
@@ -72,7 +75,10 @@ public class MonitorController {
 	 */
 	@RequestMapping(value = "/module/epts/etl/monitorData.json", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String monitorData() {
+	public ResponseEntity<String> monitorData() {
+		if (!monitorRequestInProgress.compareAndSet(false, true)) {
+			return ResponseEntity.noContent().build();
+		}
 
 		try {
 
@@ -84,17 +90,19 @@ public class MonitorController {
 
 				LOGGER.warn("[ETL-MONITOR] No monitor available");
 
-				return createErrorResponse("No ETL monitor available");
+				return ResponseEntity.ok(createErrorResponse("No ETL monitor available"));
 			}
 
-			return objectMapper.writeValueAsString(response);
+			return ResponseEntity.ok(objectMapper.writeValueAsString(response));
 
 		} catch (Exception e) {
 
 			LOGGER.error("[ETL-MONITOR] Error getting ETL monitor", e);
 
-			return createErrorResponse("Unable to get ETL monitor: "
-					+ (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+			return ResponseEntity.ok(createErrorResponse("Unable to get ETL monitor: "
+					+ (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName())));
+		} finally {
+			monitorRequestInProgress.set(false);
 		}
 	}
 

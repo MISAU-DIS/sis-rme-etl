@@ -668,6 +668,7 @@
 <script>
 
     var monitorTimer = null;
+    var monitorRequestInProgress = false;
     var selectedEngineKey = null;
 
 
@@ -1323,6 +1324,10 @@
        ========================================================= */
 
     function loadMonitor() {
+        if (monitorRequestInProgress) {
+            return;
+        }
+        monitorRequestInProgress = true;
 
         var monitorUrl =
             "${pageContext.request.contextPath}/module/epts/etl/monitorData.json";
@@ -1347,10 +1352,13 @@
 
                 }
 
-                return response.json();
+                return response.status === 204 ? null : response.json();
 
             })
             .then(function(data) {
+                if (data === null) {
+                    return;
+                }
 
                 console.log(
                     "[ETL-MONITOR] Data received:",
@@ -1394,6 +1402,9 @@
                     "status-dot error";
 
 
+            })
+            .finally(function() {
+                monitorRequestInProgress = false;
             });
 
     }

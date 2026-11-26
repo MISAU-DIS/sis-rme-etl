@@ -136,10 +136,11 @@ public class EtlMonitorService {
 		}
 
 		EtlProgressMeter meter = item.getProgressMeter();
-		
+
 		info.setStatus(meter.getStatus() != null ? meter.getStatus().name() : info.getStatus());
 
-		String message = meter.getStatusMsg();
+		String message = meter.getLastException() != null ? meter.getLastException().getMessage()
+				: meter.getStatusMsg();
 
 		if (message == null || message.trim().isEmpty()) {
 			message = meter.getStatus() != null ? meter.getStatus().getDsc() : "";
