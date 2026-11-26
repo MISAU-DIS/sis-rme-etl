@@ -29,6 +29,7 @@ public class EtlMonitorService {
 		MonitorInfoDTO monitor = new MonitorInfoDTO();
 
 		if (this.processService.getProcessStarter() == null) {
+
 			if (processService.isEnabled()) {
 				monitor.setStatus("NOT_INITIALIZED");
 				monitor.setMessage("ETL is not initialized.");
@@ -46,14 +47,17 @@ public class EtlMonitorService {
 		int runningProcess = 0;
 		int stoppedProcess = 0;
 		int finishedProcess = 0;
+
 		for (ProcessController p : processes) {
 			runningProcess += p.isRunning() ? 1 : 0;
 			stoppedProcess += p.isStopped() ? 1 : 0;
 			finishedProcess += p.isFinished() ? 1 : 0;
 
 			List<OperationController<? extends EtlDatabaseObject>> runningOperations = p.getOperationsControllers();
-			if (runningOperations == null)
+
+			if (runningOperations == null) {
 				continue;
+			}
 
 			for (OperationController<? extends EtlDatabaseObject> operation : runningOperations) {
 				monitor.getOperations().add(createOperationInfo(p, operation));
@@ -61,7 +65,9 @@ public class EtlMonitorService {
 		}
 
 		int processCount = processes.size();
+
 		if (processCount == 0) {
+
 			if (!starter.isStarted()) {
 				monitor.setStatus("INITIALIZED");
 				monitor.setMessage("ETL is initialized.");
@@ -103,25 +109,34 @@ public class EtlMonitorService {
 
 	private OperationMonitorInfoDTO createOperationInfo(ProcessController process,
 			OperationController<? extends EtlDatabaseObject> operation) {
+
 		OperationMonitorInfoDTO info = new OperationMonitorInfoDTO();
+
 		info.setProcessId(process.getControllerId());
 		info.setOperationIdentifier(operation.getOperationIdentifier());
-		info.setStatus(operation.getOperationStatus() != null ? operation.getOperationStatus().name() : "NOT_INITIALIZED");
+		info.setStatus(
+				operation.getOperationStatus() != null ? operation.getOperationStatus().name() : "NOT_INITIALIZED");
 		info.setMessage(operation.getOperationStatus() != null ? operation.getOperationStatus().getDsc() : "");
 		info.setProgress(0.0);
 		info.setProcessed(0L);
 		info.setTotal(0L);
 
 		Engine<?> engine = operation.getCurrentActivititieMonitor();
-		if (engine == null)
+
+		if (engine == null) {
 			return info;
+		}
 
 		info.setEngineId(engine.getEngineId());
+
 		TableOperationProgressInfo item = engine.getTableOperationProgressInfo();
-		if (item == null || item.getProgressMeter() == null)
+
+		if (item == null || item.getProgressMeter() == null) {
 			return info;
+		}
 
 		EtlProgressMeter meter = item.getProgressMeter();
+		
 		info.setStatus(meter.getStatus() != null ? meter.getStatus().name() : info.getStatus());
 
 		String message = meter.getStatusMsg();

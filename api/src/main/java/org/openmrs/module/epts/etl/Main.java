@@ -33,11 +33,11 @@ public class Main implements Runnable {
 
 	public static final String OPENMRS_BASE_URL_GLOBAL_PROPERTY = "eptsetl.openmrsBaseUrl";
 
-	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 600L;
+	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 1200L;
 
 	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 5L;
 
-	private static final long DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS = 30L;
+	private static final long DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS = 60L;
 
 	public static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
 
