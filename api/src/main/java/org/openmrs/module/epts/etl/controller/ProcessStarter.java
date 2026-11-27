@@ -2,6 +2,10 @@ package org.openmrs.module.epts.etl.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
 import org.openmrs.module.epts.etl.conf.EtlConfiguration;
@@ -11,50 +15,90 @@ import org.openmrs.module.epts.etl.utilities.EtlLogger;
 import org.openmrs.module.epts.etl.utilities.concurrent.ThreadPoolService;
 import org.openmrs.module.epts.etl.utilities.concurrent.TimeCountDown;
 import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
-import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
 public class ProcessStarter implements ControllerStarter {
 
 	public static CommonUtilities utilities = CommonUtilities.getInstance();
 
-	private volatile boolean initialized;
-	private volatile boolean finalized;
+	private volatile boolean stopRequested;
+	private volatile boolean started;
 
-	protected EtlConfiguration etlConfig;
+	protected final List<ProcessController> currentControllers;
+	protected final List<ProcessController> completedControllers;
 
-	protected ProcessController currentController;
+	protected final List<EtlConfiguration> configs;
 
 	private final EtlLogger logger;
 
-	private final Object LOCK = new Object();
+	protected ProcessStarter(List<EtlConfiguration> configs, EtlLogger logger) {
+		this.configs = Collections.unmodifiableList(new ArrayList<>(configs));
+		this.currentControllers = new CopyOnWriteArrayList<>();
+		this.completedControllers = new CopyOnWriteArrayList<>();
 
-	public ProcessStarter(EtlConfiguration etlConfig) {
-		this.etlConfig = etlConfig;
+		if (logger == null) {
 
-		this.logger = EtlLogger.getLogger(ProcessStarter.class);
+			this.logger = EtlLogger.getLogger(ProcessStarter.class);
+		} else {
+			this.logger = logger;
+		}
 	}
 
-	public ProcessController getCurrentController() {
-		return currentController;
+	public List<ProcessController> getCurrentControllers() {
+		return Collections.unmodifiableList(new ArrayList<>(currentControllers));
 	}
 
-	public EtlConfiguration getEtlConfig() {
-		return this.etlConfig;
+	public List<ProcessController> getCompletedControllers() {
+		return Collections.unmodifiableList(new ArrayList<>(completedControllers));
 	}
 
-	public ProcessStarter(EtlConfiguration etlConfig, Logger logger) {
-		this.etlConfig = etlConfig;
+	public synchronized List<ProcessController> getAllControllers() {
+		List<ProcessController> controllers = new ArrayList<>(currentControllers);
+		controllers.addAll(completedControllers);
+		return Collections.unmodifiableList(controllers);
+	}
 
-		this.logger = new EtlLogger(logger);
+	public List<EtlConfiguration> getConfigurations() {
+		return configs;
+	}
+
+	public boolean isStarted() {
+		return started;
+	}
+
+	protected synchronized boolean markStarted() {
+		if (started)
+			return false;
+		started = true;
+		return true;
+	}
+
+	public boolean isStopRequested() {
+		return stopRequested;
+	}
+
+	public ProcessController getCurrentController(EtlConfiguration config) {
+
+		for (ProcessController controller : currentControllers) {
+
+			if (controller.getRelatedEtlConf().equals(config)) {
+				return controller;
+			}
+		}
+
+		return null;
+	}
+
+	public EtlConfiguration getEtlConfig(ProcessController controller) {
+		return controller.getRelatedEtlConf();
 	}
 
 	public EtlLogger getLogger() {
 		return logger;
 	}
 
-	public boolean isInitialized() {
-		return initialized;
+	public ProcessStarter recreate() throws ForbiddenOperationException, DBException {
+		return ProcessStarter.init(configs, logger);
 	}
 
 	/**
@@ -65,60 +109,86 @@ public class ProcessStarter implements ControllerStarter {
 	 * @throws IOException
 	 * @throws DBException
 	 */
-	public void init() throws ForbiddenOperationException, DBException {
-		if (this.initialized) {
-			return;
+	public static ProcessStarter init(List<EtlConfiguration> configs, EtlLogger logger)
+			throws ForbiddenOperationException, DBException {
+
+		if (configs == null || configs.isEmpty()) {
+			throw new ForbiddenOperationException("At least one static ETL configuration is required");
 		}
 
-		synchronized (LOCK) {
-			if (this.initialized) {
-				return;
+		ProcessStarter starter = new ProcessStarter(configs, logger);
+
+		starter.logger.debug("Initializing the ProcessStarter...");
+
+		for (EtlConfiguration config : configs) {
+
+			if (config.isDynamic()) {
+				throw new ForbiddenOperationException(
+						"Dynamic configuration must be initialized by DynamicProcessStarter: "
+								+ config.getConfigFilePath());
 			}
+			starter.logger.debug("Initializing ProcessController for configuration {} ", config.getConfigFilePath());
 
-			logger.debug("Initializing the ProcessStarter...");
+			starter.currentControllers.add(new ProcessController(starter, config));
 
-			logger.debug("Initializing ProcessController using " + this.etlConfig.getConfigFilePath());
-
-			this.currentController = new ProcessController(this, this.etlConfig);
-
-			logger.debug("ProcessController Initialized");
-
-			this.initialized = true;
-			this.finalized = false;
-
-			logger.debug("Starter Initialization Fineshed");
+			starter.logger.debug("ProcessController Initialized");
 		}
 
+		starter.logger.debug("Starter Initialization Finished");
+
+		return starter;
 	}
 
 	@Override
 	public void run() {
+
 		try {
-			applyStartupDebugDelayIfConfigured();
 
-			init();
-
-			ProcessController controller = this.currentController;
-
-			if (controller.getRelatedEtlConf().isDisabled()) {
-				logger.info("Operation " + controller.getControllerId() + " is disabled. Skipping...");
-				controller.markAsFinished();
-				handleControllerFinalization(controller);
+			if (!markStarted()) {
+				logger.warn("ProcessStarter has already been started");
 				return;
 			}
+			this.applyStartupDebugDelayIfConfigured();
 
-			startController(controller);
+			for (ProcessController controller : new ArrayList<>(this.currentControllers)) {
+
+				if (controller.getRelatedEtlConf().isDisabled()) {
+					logger.info("Operation " + controller.getControllerId() + " is disabled. Skipping...");
+					controller.markAsFinished();
+					handleControllerFinalization(controller);
+					continue;
+				}
+
+				startController(controller);
+			}
 
 			waitUntilFinalized();
 			logFinalStatus();
 		} catch (Exception e) {
 			logger.err("ProcessStarter failed", e);
 
-			if (this.currentController != null) {
-				this.currentController.requestStop();
-			}
+			this.requestStop();
+		}
+	}
 
-			throw new RuntimeException(e);
+	public synchronized void requestStop() {
+
+		if (this.stopRequested) {
+			return;
+		}
+
+		this.stopRequested = true;
+
+		for (ProcessController controller : new ArrayList<>(this.currentControllers)) {
+			controller.requestStop();
+		}
+	}
+
+	private synchronized void removeFinalizedController(ProcessController controller) {
+		this.currentControllers.remove(controller);
+
+		if (!this.completedControllers.contains(controller)) {
+			this.completedControllers.add(controller);
 		}
 	}
 
@@ -129,9 +199,10 @@ public class ProcessStarter implements ControllerStarter {
 		ProcessController controller = (ProcessController) controllerToFinalize;
 
 		if (controllerToFinalize.isFinished()) {
-			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
-				try {
 
+			if (controller.getRelatedEtlConf().getChildConfigFilePath() != null) {
+
+				try {
 					logger.warn(
 							"Loading next child conf file " + controller.getRelatedEtlConf().getChildConfigFilePath());
 
@@ -140,81 +211,116 @@ public class ProcessStarter implements ControllerStarter {
 
 					while (childConfig != null && childConfig.isDisabled()) {
 						logger.warn("Disabled config was found on the tree", childConfig.getConfigFilePath());
-						
-						childConfig = EtlConfiguration.loadFromFile(new File(childConfig.getChildConfigFilePath()));
+
+						String nextChildPath = childConfig.getChildConfigFilePath();
+
+						if (nextChildPath == null || nextChildPath.trim().isEmpty()) {
+							childConfig = null;
+							break;
+						}
+
+						childConfig = EtlConfiguration.loadFromFile(new File(nextChildPath));
 					}
 
-					if (childConfig == null) {
-						this.finalized = true;
-					} else {
-						ProcessController child = new ProcessController(this, childConfig);
+					if (childConfig != null) {
+						ProcessController childController = new ProcessController(this, childConfig);
 
-						this.currentController = child;
+						this.currentControllers.add(childController);
+						this.finalizeController(controller, true);
 
-						if (this.currentController.isDisabled()) {
-							logger.info("Operation " + this.currentController.getControllerId()
-									+ " is marked as disabled... skipping...");
+						ExecutorService executor = ThreadPoolService.getInstance()
+								.createNewThreadPoolExecutor(childController.getControllerId());
 
-							this.currentController.markAsFinished();
+						executor.execute(childController);
 
-							this.handleControllerFinalization(this.currentController);
-						} else {
-							ExecutorService executor = ThreadPoolService.getInstance()
-									.createNewThreadPoolExecutor(this.currentController.getControllerId());
-
-							executor.execute(this.currentController);
-
-							if (!controllerToFinalize.isDisabled()) {
-								ThreadPoolService.getInstance().terminateTread(logger,
-										controllerToFinalize.getControllerId(), controllerToFinalize);
-							}
+						if (!controllerToFinalize.isDisabled()) {
+							ThreadPoolService.getInstance().terminateTread(logger,
+									controllerToFinalize.getControllerId(), controllerToFinalize);
 						}
+					} else {
+						this.finalizeController(controller, false);
 					}
 				} catch (DBException e) {
 					throw new RuntimeException(e);
 				} catch (IOException e) {
 					throw new RuntimeException(e);
-				} finally {
-					controller.handleFinalization();
 				}
 			} else {
-				controller.handleFinalization();
-				this.finalized = true;
+				this.finalizeController(controller, false);
 			}
 		} else if (controllerToFinalize.isStopped()) {
-			controller.handleFinalization();
-			this.finalized = true;
+			this.finalizeController(controller, false);
 		}
+	}
 
+	protected void finalizeController(ProcessController controller, boolean removeController) {
+		controller.handleFinalization();
+
+		if (removeController) {
+			this.removeFinalizedController(controller);
+		}
 	}
 
 	public void applyStartupDebugDelayIfConfigured() {
+
 		if (EtlLogger.determineLogLevel().equals(Level.DEBUG)) {
 			TimeCountDown.sleep(10);
 		}
 	}
 
-	private void startController(ProcessController controller) {
+	protected void startController(ProcessController controller) {
 		ExecutorService executor = ThreadPoolService.getInstance()
 				.createNewThreadPoolExecutor(controller.getControllerId());
 
 		executor.execute(controller);
 	}
 
-	private void waitUntilFinalized() {
-		while (!this.finalized) {
+	public void waitUntilFinalized() {
+
+		while (!this.isFinalized()) {
 			TimeCountDown.sleep(15);
 
 			logger.warn("THE APPLICATION IS STILL RUNNING...", 60 * 15, true);
 		}
 	}
 
-	private void logFinalStatus() {
-		if (this.currentController.isFinished()) {
-			logger.warn("ALL JOBS ARE FINISHED");
-		} else if (this.currentController.isStopped()) {
-			logger.warn("ALL JOBS ARE STOPPED");
+	public boolean isFinalized() {
+
+		if (this.started && this.currentControllers.isEmpty()) {
+			return true;
+		} else if (this.started) {
+
+			for (ProcessController c : this.currentControllers) {
+
+				if (!c.isFinalized()) {
+					return false;
+				}
+			}
+
+			return false;
+		} else {
+			return false;
 		}
 	}
 
+	private void logFinalStatus() {
+
+		if (this.stopRequested) {
+			logger.warn("ALL JOBS ARE STOPPED");
+		} else {
+			logger.warn("ALL JOBS ARE FINISHED");
+		}
+	}
+
+	public synchronized void runExternalController(ProcessController controller) {
+
+		if (this.getCurrentController(controller.getRelatedEtlConf()) != null) {
+			throw new ForbiddenOperationException(
+					"The controller youu tried to start is already started within this starter!!");
+		}
+
+		this.currentControllers.add(controller);
+
+		startController(controller);
+	}
 }

@@ -1,26 +1,24 @@
 
 package org.openmrs.module.epts.etl.web.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.openmrs.module.epts.etl.controller.ProcessController;
 import org.openmrs.module.epts.etl.monitor.dto.MonitorInfoDTO;
 import org.openmrs.module.epts.etl.monitor.service.EtlMonitorService;
 import org.openmrs.module.epts.etl.service.EtlProcessService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Web controller responsible for the ETL monitor page and the monitor control
@@ -41,6 +39,7 @@ public class MonitorController {
 	private final EtlProcessService processService;
 
 	private final ObjectMapper objectMapper;
+	private final AtomicBoolean monitorRequestInProgress = new AtomicBoolean();
 
 	@Autowired
 	public MonitorController(EtlMonitorService monitorService, EtlProcessService processService) {
@@ -76,33 +75,34 @@ public class MonitorController {
 	 */
 	@RequestMapping(value = "/module/epts/etl/monitorData.json", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public String monitorData(
-			@RequestParam(value = "operationIdentifier", required = false) String operationIdentifier) {
+	public ResponseEntity<String> monitorData() {
+		if (!monitorRequestInProgress.compareAndSet(false, true)) {
+			return ResponseEntity.noContent().build();
+		}
 
 		try {
 
 			LOGGER.debug("[ETL-MONITOR] Getting ETL monitor");
 
-			if (operationIdentifier == null)
-				operationIdentifier = "sync-processor";
-
-			MonitorInfoDTO response = monitorService.getMonitor(operationIdentifier);
+			MonitorInfoDTO response = monitorService.retrieveMonitor();
 
 			if (response == null) {
 
 				LOGGER.warn("[ETL-MONITOR] No monitor available");
 
-				return createErrorResponse("No ETL monitor available");
+				return ResponseEntity.ok(createErrorResponse("No ETL monitor available"));
 			}
 
-			return objectMapper.writeValueAsString(response);
+			return ResponseEntity.ok(objectMapper.writeValueAsString(response));
 
 		} catch (Exception e) {
 
 			LOGGER.error("[ETL-MONITOR] Error getting ETL monitor", e);
 
-			return createErrorResponse("Unable to get ETL monitor: "
-					+ (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+			return ResponseEntity.ok(createErrorResponse("Unable to get ETL monitor: "
+					+ (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName())));
+		} finally {
+			monitorRequestInProgress.set(false);
 		}
 	}
 
@@ -123,13 +123,11 @@ public class MonitorController {
 
 			LOGGER.info("[ETL-START] Starting ETL...");
 
-			ProcessController controller = processService.start();
+			processService.start();
 
-			String operationId = controller != null ? controller.getControllerId() : null;
+			LOGGER.info("[ETL-START] ETL started");
 
-			LOGGER.info("[ETL-START] ETL started: {}", operationId);
-
-			return createOperationResponse("STARTED", "ETL iniciado com sucesso", operationId);
+			return createOperationResponse("STARTED", "ETL iniciado com sucesso");
 
 		} catch (Exception e) {
 
@@ -157,15 +155,11 @@ public class MonitorController {
 
 			LOGGER.info("[ETL-STOP] Stopping ETL...");
 
-			ProcessController controller = processService.getCurrentController();
-
 			processService.stop();
 
-			String operationId = controller != null ? controller.getControllerId() : null;
+			LOGGER.info("[ETL-STOP] Stop requested");
 
-			LOGGER.info("[ETL-STOP] Stop requested: {}", operationId);
-
-			return createOperationResponse("STOP_REQUESTED", "ETL stop requested successfully", operationId);
+			return createOperationResponse("STOP_REQUESTED", "ETL stop requested successfully");
 
 		} catch (Exception e) {
 
@@ -251,11 +245,6 @@ public class MonitorController {
 
 			response.setStatus("ERROR");
 			response.setMessage(message);
-			response.setOperationIdentifier(null);
-			response.setProgress(0.0);
-			response.setProcessed(0L);
-			response.setTotal(0L);
-
 			return objectMapper.writeValueAsString(response);
 
 		} catch (Exception e) {
@@ -269,7 +258,7 @@ public class MonitorController {
 	/**
 	 * Creates a successful response for an ETL operation.
 	 */
-	private String createOperationResponse(String status, String message, String operationId) {
+	private String createOperationResponse(String status, String message) {
 
 		try {
 
@@ -278,7 +267,6 @@ public class MonitorController {
 			response.put("status", status);
 			response.put("success", true);
 			response.put("message", message);
-			response.put("operationId", operationId);
 
 			return objectMapper.writeValueAsString(response);
 

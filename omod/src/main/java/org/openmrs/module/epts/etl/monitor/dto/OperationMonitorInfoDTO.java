@@ -1,23 +1,39 @@
 package org.openmrs.module.epts.etl.monitor.dto;
 
-public class TaskMonitorInfoDTO {
+public class OperationMonitorInfoDTO {
 
-    private String taskId;
+    private String processId;
+    private String operationIdentifier;
+    private String engineId;
     private String status;
     private String message;
+    private String errorMessage;
     private Double progress;
     private Long processed;
     private Long total;
 
-    public TaskMonitorInfoDTO() {
+    public String getProcessId() {
+        return processId;
     }
 
-    public String getTaskId() {
-        return taskId;
+    public void setProcessId(String processId) {
+        this.processId = processId;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public String getOperationIdentifier() {
+        return operationIdentifier;
+    }
+
+    public void setOperationIdentifier(String operationIdentifier) {
+        this.operationIdentifier = operationIdentifier;
+    }
+
+    public String getEngineId() {
+        return engineId;
+    }
+
+    public void setEngineId(String engineId) {
+        this.engineId = engineId;
     }
 
     public String getStatus() {
@@ -34,6 +50,14 @@ public class TaskMonitorInfoDTO {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 
     public Double getProgress() {

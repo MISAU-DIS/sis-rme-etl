@@ -178,7 +178,7 @@ public class OpenMrsInternalIndexUpdateProcessor extends AbstractOpenMrsIndexUpd
 				if (!Context.isAuthenticated()) {
 					if (configuration.getUsername() == null || configuration.getPassword() == null) {
 						throw new IllegalStateException("The ETL thread has no authenticated OpenMRS user. Configure "
-								+ "epts.etl.openmrs.index.username and epts.etl.openmrs.index.password");
+								+ "eptsetl.openmrsUsername and eptsetl.openmrsPassword");
 					}
 					Context.authenticate(configuration.getUsername(), configuration.getPassword());
 				}

@@ -2,6 +2,8 @@ package org.openmrs.module.epts.etl;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,19 +21,25 @@ import org.openmrs.module.epts.etl.utilities.db.conn.DBException;
 
 public class Main implements Runnable {
 
-	public static final String STARTUP_FILE_GLOBAL_PROPERTY = "epts.etl.startup.file";
+	public static final String STARTUP_FILE_GLOBAL_PROPERTY = "eptsetl.startupFile";
 
-	public static final String ENABLED_GLOBAL_PROPERTY = "epts.etl.enabled";
+	public static final String ENABLED_GLOBAL_PROPERTY = "eptsetl.enabled";
 
-	public static final String STARTUP_READINESS_TIMEOUT_SECONDS_GLOBAL_PROPERTY = "epts.etl.openmrs_readiness_timeout_seconds";
+	public static final String STARTUP_READINESS_TIMEOUT_SECONDS_GLOBAL_PROPERTY = "eptsetl.openmrsReadinessTimeoutSeconds";
 
-	public static final String STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY = "epts.etl.openmrs_readiness_poll_seconds";
+	public static final String STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY = "eptsetl.openmrsReadinessPollSeconds";
 
-	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 600L;
+	public static final String STARTUP_STABILIZATION_SECONDS_GLOBAL_PROPERTY = "eptsetl.openmrsStartupStabilizationSeconds";
 
-	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 5L;
+	public static final String OPENMRS_BASE_URL_GLOBAL_PROPERTY = "eptsetl.openmrsBaseUrl";
 
-	private static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
+	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 2400L;
+
+	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 15L;
+
+	private static final long DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS = 60L;
+
+	public static final EtlLogger LOG = EtlLogger.getLogger(Main.class);
 
 	private static final AtomicBoolean OPENMRS_START_TRIGGERED = new AtomicBoolean(false);
 
@@ -46,26 +54,47 @@ public class Main implements Runnable {
 	private static volatile boolean openMrsEtlEnabled;
 
 	public static void main(String[] synConfigFiles) throws IOException, DBException {
+		ProcessStarter starter = performeInitialization(synConfigFiles);
 
-		int i = 0;
+		if (starter == null) {
+			LOG.info("No automatic ETL configurations were found. Nothing to start.");
+			return;
+		}
+		starter.run();
+	}
+
+	private static ProcessStarter performeInitialization(String[] synConfigFiles)
+			throws ForbiddenOperationException, DBException {
+		List<EtlConfiguration> dynamics = new ArrayList<>();
+		List<EtlConfiguration> statics = new ArrayList<>();
 
 		for (EtlConfiguration etlConfig : loadSyncConfig(synConfigFiles)) {
 
-			ProcessStarter p;
-
 			if (!etlConfig.isManualStart()) {
 
-				i++;
-
-				if (i > 1) {
-					throw new ForbiddenOperationException("Currently not supported multiple Configuration files");
+				if (etlConfig.isDynamic()) {
+					dynamics.add(etlConfig);
+				} else {
+					statics.add(etlConfig);
 				}
 
-				p = etlConfig.isDynamic() ? new DynamicProcessStarter(etlConfig) : new ProcessStarter(etlConfig);
-
-				p.run();
 			}
 		}
+
+		ProcessStarter starter = null;
+
+		if (!statics.isEmpty() && !dynamics.isEmpty()) {
+			throw new ForbiddenOperationException(
+					"Mixing of static and dynamic configuration is currently not allowed!");
+		}
+
+		if (!statics.isEmpty()) {
+			starter = ProcessStarter.init(statics, LOG);
+		} else if (!dynamics.isEmpty()) {
+			starter = DynamicProcessStarter.init(dynamics, LOG);
+		}
+
+		return starter;
 	}
 
 	/**
@@ -111,6 +140,13 @@ public class Main implements Runnable {
 					STARTUP_READINESS_TIMEOUT_SECONDS_GLOBAL_PROPERTY, DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS);
 			long readinessPollSeconds = getPositiveGlobalProperty(STARTUP_READINESS_POLL_SECONDS_GLOBAL_PROPERTY,
 					DEFAULT_OPENMRS_READINESS_POLL_SECONDS);
+			long startupStabilizationSeconds = getNonNegativeGlobalProperty(
+					STARTUP_STABILIZATION_SECONDS_GLOBAL_PROPERTY, DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS);
+			String openMrsBaseUrl = Context.getAdministrationService().getGlobalProperty(OPENMRS_BASE_URL_GLOBAL_PROPERTY);
+
+			if (openMrsBaseUrl == null || openMrsBaseUrl.trim().isEmpty())
+				throw new IllegalStateException("The OpenMRS global property '" + OPENMRS_BASE_URL_GLOBAL_PROPERTY
+						+ "' must contain the OpenMRS base URL");
 
 			/*
 			 * Read the startup configuration.
@@ -123,63 +159,27 @@ public class Main implements Runnable {
 						+ "' must contain the ETL startup file path");
 			}
 
-			/*
-			 * Keep using the existing configuration loading mechanism.
-			 */
-			List<EtlConfiguration> configurations = loadSyncConfig(new String[] { startupFile.trim() });
-
-			if (configurations.isEmpty()) {
-
-				throw new IllegalStateException("No ETL configuration could be loaded from: " + startupFile);
-			}
-
-			if (configurations.size() > 1) {
-
-				throw new IllegalStateException("Currently not supported multiple Configuration files");
-			}
-
-			EtlConfiguration configuration = configurations.get(0);
+			String[] startupFiles = startupFile.split(",");
 
 			/*
-			 * Preserve the existing manual-start behavior.
-			 */
-			if (configuration.isManualStart()) {
-
-				LOG.info("ETL configuration is marked for manual start. " + "Skipping automatic OpenMRS startup.");
-
-				return;
-			}
-
-			/*
-			 * Create exactly the same type of ProcessStarter used by the traditional
-			 * launcher.
-			 */
-			ProcessStarter processStarter = configuration.isDynamic() ? new DynamicProcessStarter(configuration)
-					: new ProcessStarter(configuration);
-
-			/*
-			 * IMPORTANT:
+			 * Configuration loading and ProcessStarter initialization must also happen in
+			 * this worker. Both may access the database and are intentionally postponed
+			 * until OpenMRS is serving HTTP requests normally.
 			 *
-			 * Keep the exact instance used by the running ETL. The OMOD will access this
-			 * same object later.
-			 */
-			openMrsProcessStarter = processStarter;
-
-			/*
 			 * ProcessStarter.run() contains its own lifecycle and waits until the ETL is
-			 * finalized.
-			 *
-			 * Therefore it must execute outside the OpenMRS startup thread.
+			 * finalized, so none of this work may execute in the OpenMRS startup thread.
 			 */
 			Thread etlThread = new Thread(
-					() -> startWhenOpenMrsIsReady(processStarter, readinessTimeoutSeconds, readinessPollSeconds),
+					() -> startWhenOpenMrsIsReady(startupFiles, readinessTimeoutSeconds, readinessPollSeconds,
+							startupStabilizationSeconds, openMrsBaseUrl.trim()),
 					"epts-etl-starter");
 
 			etlThread.setDaemon(true);
 			etlThread.start();
 
 			LOG.info("EPTS ETL startup requested successfully. Waiting up to " + readinessTimeoutSeconds
-					+ " second(s) for OpenMRS readiness, checking every " + readinessPollSeconds + " second(s).");
+					+ " second(s) for OpenMRS readiness, checking every " + readinessPollSeconds
+					+ " second(s), with a final stabilization period of " + startupStabilizationSeconds + " second(s).");
 
 		} catch (Exception e) {
 
@@ -229,12 +229,32 @@ public class Main implements Runnable {
 		return value;
 	}
 
-	private static void startWhenOpenMrsIsReady(ProcessStarter processStarter, long timeoutSeconds, long pollSeconds) {
+	private static void startWhenOpenMrsIsReady(String[] startupFiles, long timeoutSeconds, long pollSeconds,
+			long stabilizationSeconds, String openMrsBaseUrl) {
+
 		try {
 			long timeoutNanos = Math.multiplyExact(timeoutSeconds, 1_000_000_000L);
+			long stabilizationNanos = Math.multiplyExact(stabilizationSeconds, 1_000_000_000L);
 			long deadline = System.nanoTime() + timeoutNanos;
+			long readySince = -1L;
 
-			while (!isOpenMrsReady()) {
+			while (true) {
+				long now = System.nanoTime();
+				int connectionTimeoutMillis = (int) Math.min(Integer.MAX_VALUE,
+						Math.multiplyExact(pollSeconds, 1000L));
+
+				if (isOpenMrsReady(openMrsBaseUrl, connectionTimeoutMillis)) {
+					if (readySince < 0) {
+						readySince = now;
+						LOG.info("OpenMRS context and HTTP connector are available. Waiting for startup stabilization.");
+					}
+
+					if (now - readySince >= stabilizationNanos)
+						break;
+				} else {
+					readySince = -1L;
+				}
+
 				if (timeoutSeconds == 0 || System.nanoTime() - deadline >= 0)
 					throw new IllegalStateException(
 							"OpenMRS did not become ready within " + timeoutSeconds + " second(s)");
@@ -242,7 +262,18 @@ public class Main implements Runnable {
 				Thread.sleep(Math.multiplyExact(pollSeconds, 1000L));
 			}
 
-			LOG.info("OpenMRS readiness confirmed. Starting EPTS ETL.");
+			LOG.info("OpenMRS startup is complete and stable. Initializing EPTS ETL.");
+			ProcessStarter processStarter = performeInitialization(startupFiles);
+
+			if (processStarter == null) {
+				LOG.info("No automatic ETL configurations were found. OpenMRS startup will not launch an ETL process.");
+				OPENMRS_START_TRIGGERED.set(false);
+				return;
+			}
+
+			/* Expose the starter only after OpenMRS readiness and ETL initialization. */
+			openMrsProcessStarter = processStarter;
+			LOG.info("EPTS ETL initialization completed. Starting ETL processing.");
 			processStarter.run();
 		} catch (InterruptedException exception) {
 			Thread.currentThread().interrupt();
@@ -253,19 +284,21 @@ public class Main implements Runnable {
 			openMrsProcessStarter = null;
 			OPENMRS_START_TRIGGERED.set(false);
 			LOG.err("The configured EPTS ETL readiness timeout or polling interval is too large.", exception);
-		} catch (RuntimeException exception) {
+		} catch (Exception exception) {
 			openMrsProcessStarter = null;
 			OPENMRS_START_TRIGGERED.set(false);
 			LOG.err("Failed to start EPTS ETL while waiting for OpenMRS readiness.", exception);
 		}
 	}
 
-	private static boolean isOpenMrsReady() {
+	private static boolean isOpenMrsReady(String openMrsBaseUrl, int connectionTimeoutMillis) {
 		if (Context.isRefreshingContext())
 			return false;
 
 		boolean sessionOpenedHere = false;
+
 		try {
+
 			if (!Context.isSessionOpen()) {
 				Context.openSession();
 				sessionOpenedHere = true;
@@ -273,10 +306,11 @@ public class Main implements Runnable {
 
 			/*
 			 * Do not invoke privileged API methods here. Opening a Hibernate session
-			 * successfully after the Spring context refresh is enough to confirm that
-			 * the OpenMRS service infrastructure is available to this worker thread.
+			 * successfully after the Spring context refresh is enough to confirm that the
+			 * OpenMRS service infrastructure is available to this worker thread.
 			 */
-			return Context.getAdministrationService() != null;
+			return Context.getAdministrationService() != null
+					&& isOpenMrsHttpConnectorAvailable(openMrsBaseUrl, connectionTimeoutMillis);
 		} catch (RuntimeException exception) {
 			LOG.warn("OpenMRS is not ready yet: " + exception.getMessage());
 			return false;
@@ -286,11 +320,55 @@ public class Main implements Runnable {
 		}
 	}
 
+	private static boolean isOpenMrsHttpConnectorAvailable(String openMrsBaseUrl, int connectionTimeoutMillis) {
+		HttpURLConnection connection = null;
+
+		try {
+			String sessionUrl = openMrsBaseUrl.endsWith("/") ? openMrsBaseUrl + "ws/rest/v1/session"
+					: openMrsBaseUrl + "/ws/rest/v1/session";
+			int requestTimeoutMillis = Math.min(connectionTimeoutMillis, 2000);
+
+			connection = (HttpURLConnection) new URL(sessionUrl).openConnection();
+			connection.setRequestMethod("GET");
+			connection.setConnectTimeout(requestTimeoutMillis);
+			connection.setReadTimeout(requestTimeoutMillis);
+			connection.setUseCaches(false);
+			connection.setInstanceFollowRedirects(false);
+			connection.setRequestProperty("Accept", "application/json");
+
+			int responseCode = connection.getResponseCode();
+			return responseCode == HttpURLConnection.HTTP_OK
+					|| responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
+					|| responseCode == HttpURLConnection.HTTP_FORBIDDEN;
+		} catch (IOException | IllegalArgumentException exception) {
+			LOG.warn("OpenMRS HTTP application is not ready yet at " + openMrsBaseUrl + ": " + exception.getMessage());
+			return false;
+		} finally {
+			if (connection != null)
+				connection.disconnect();
+		}
+	}
+
 	/**
 	 * Returns the actual ProcessStarter used by the ETL started through OpenMRS.
 	 */
 	public static ProcessStarter getOpenMrsProcessStarter() {
 		return openMrsProcessStarter;
+	}
+
+	/** Restarts a completed OpenMRS-managed starter with fresh controllers. */
+	public static synchronized boolean restartFromOpenMRS() throws DBException {
+		ProcessStarter current = openMrsProcessStarter;
+		if (current == null || !current.isFinalized())
+			return false;
+
+		ProcessStarter replacement = current.recreate();
+		openMrsProcessStarter = replacement;
+
+		Thread etlThread = new Thread(replacement, "epts-etl-starter-restart");
+		etlThread.setDaemon(true);
+		etlThread.start();
+		return true;
 	}
 
 	/**

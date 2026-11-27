@@ -65,8 +65,11 @@ public class EtlLoadHelper {
 		this.dstConf = new ArrayList<>();
 
 		for (EtlDatabaseObject obj : srcObjects) {
+
 			if (obj.hasDestinationRecords()) {
+
 				for (EtlDatabaseObject dst : obj.getDestinationObjects()) {
+
 					if (!this.dstConf.contains(dst.getRelatedConfiguration())) {
 						this.dstConf.add((DstConf) dst.getRelatedConfiguration());
 					}
@@ -114,7 +117,9 @@ public class EtlLoadHelper {
 		Connection srcConn = reader.unwrap(Connection.class);
 
 		if (this.hasDstConf()) {
+
 			for (DstConf dst : this.getDstConf()) {
+
 				try {
 					load(dst, srcConn, writers);
 				} catch (Exception e) {
@@ -178,6 +183,7 @@ public class EtlLoadHelper {
 			EtlDatabaseObject dstObject = r.retriveDestinationRecord(dst);
 
 			if (dstObject != null && dstObject.getEtlInfo().hasExceptionOnEtl()) {
+
 				if (isIgnorableException(dst, dstObject.getEtlInfo().getExceptionOnEtl())) {
 					logWarn("\n\t-> {} \n\t\t-> While processing record {} \n\t\t\t-> The issue will be logged!",
 							((EtlExceptionImpl) dstObject.getEtlInfo().getExceptionOnEtl()).getSuperLocalizedMessage(),
@@ -201,6 +207,7 @@ public class EtlLoadHelper {
 		DBException dbException = null;
 
 		while (cause != null) {
+
 			if (cause instanceof DBException) {
 				dbException = (DBException) cause;
 
@@ -296,6 +303,7 @@ public class EtlLoadHelper {
 			throws ParentNotYetMigratedException, DBException {
 
 		if (getActionType().isCreate() || getActionType().isUpdate()) {
+
 			for (EtlDatabaseObject loadRec : this.getAllReadyTransformedObjects(dstConf)) {
 
 				if (loadRec.getEtlInfo().hasParentsWithDefaultValues()) {
@@ -318,13 +326,16 @@ public class EtlLoadHelper {
 	}
 
 	void tryToAddToResult(EtlOperationItemResult<EtlDatabaseObject> resultItem) {
+
 		if (isPrincipalLoading()) {
 			getProcessor().getTaskResultInfo().addOrUpdate(resultItem);
 		}
 	}
 
 	void loadAndAddResult(EtlOperationResultHeader<EtlDatabaseObject> result, DstConf dstConf) {
+
 		if (isPrincipalLoading()) {
+
 			if (result != null) {
 				getProcessor().getTaskResultInfo().addAllFromOtherResult(result);
 			}
@@ -358,6 +369,7 @@ public class EtlLoadHelper {
 					|| dstConf.executePatchUpdateOnIdentifiedRecordAction()) {
 
 				for (EtlDatabaseObject obj : objects) {
+
 					if (obj.hasValuedObjectId()) {
 
 						if (obj.hasSharedPkObj()) {
@@ -482,8 +494,8 @@ public class EtlLoadHelper {
 			this.logTrace("Preparing the load of dstRecord " + etlInfo.getTransformedObject());
 
 			if (getActionType().isCreate() || getActionType().isUpdate()) {
-
 				etlInfo.loadDstParentInfo(srcConn, dstConn);
+
 				String errorMsg = "Found inconsistences on dstRecord " + etlInfo.getTransformedObject()
 						+ " but all were resolved!";
 
@@ -619,6 +631,7 @@ public class EtlLoadHelper {
 		EtlInfo parent = srcObject.getEtlInfo();
 
 		while (parent != null) {
+
 			if (tree.isEmpty()) {
 				tree = parent.getTransformedObject().toString();
 			} else {

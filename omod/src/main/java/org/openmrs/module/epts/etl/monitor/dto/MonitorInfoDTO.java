@@ -1,26 +1,15 @@
 package org.openmrs.module.epts.etl.monitor.dto;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class MonitorInfoDTO {
 
-    private String operationIdentifier;
     private String status;
     private String message;
-    private Double progress;
-    private Long processed;
-    private Long total;
-    private List<TaskMonitorInfoDTO> tasks;
+    private List<OperationMonitorInfoDTO> operations = new ArrayList<>();
 
     public MonitorInfoDTO() {
-    }
-
-    public String getOperationIdentifier() {
-        return operationIdentifier;
-    }
-
-    public void setOperationIdentifier(String operationIdentifier) {
-        this.operationIdentifier = operationIdentifier;
     }
 
     public String getStatus() {
@@ -39,35 +28,11 @@ public class MonitorInfoDTO {
         this.message = message;
     }
 
-    public Double getProgress() {
-        return progress;
+    public List<OperationMonitorInfoDTO> getOperations() {
+        return operations;
     }
 
-    public void setProgress(Double progress) {
-        this.progress = progress;
-    }
-
-    public Long getProcessed() {
-        return processed;
-    }
-
-    public void setProcessed(Long processed) {
-        this.processed = processed;
-    }
-
-    public Long getTotal() {
-        return total;
-    }
-
-    public void setTotal(Long total) {
-        this.total = total;
-    }
-
-    public List<TaskMonitorInfoDTO> getTasks() {
-        return tasks;
-    }
-
-    public void setTasks(List<TaskMonitorInfoDTO> tasks) {
-        this.tasks = tasks;
+    public void setOperations(List<OperationMonitorInfoDTO> operations) {
+        this.operations = operations;
     }
 }

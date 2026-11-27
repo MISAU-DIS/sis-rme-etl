@@ -253,6 +253,53 @@
             margin-bottom: 12px;
         }
 
+        #etl-monitor .operation-panel.selectable {
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #etl-monitor .operation-panel.selectable:hover {
+            border-color: #9fc5e8;
+        }
+
+        #etl-monitor .operation-panel.selected {
+            border-color: #31708f;
+            box-shadow: 0 0 0 2px rgba(49, 112, 143, 0.22);
+        }
+
+        #etl-monitor .operation-panel.selectable:focus-visible {
+            outline: 2px solid #31708f;
+            outline-offset: 4px;
+        }
+
+        #etl-monitor .operation-panel.selectable .operation-title::before {
+            content: "";
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            box-sizing: border-box;
+            margin-right: 8px;
+            border: 2px solid #64748b;
+            border-radius: 50%;
+            vertical-align: -2px;
+        }
+
+        #etl-monitor .operation-panel[aria-pressed="true"] .operation-title::before {
+            border-color: #31708f;
+            background: radial-gradient(circle, #31708f 0 3px, transparent 4px);
+        }
+
+        #etl-monitor .selected-engine-banner {
+            margin-bottom: 10px;
+            color: #555;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #etl-monitor .selected-engine-banner span {
+            color: #31708f;
+        }
+
         #etl-monitor .operation-header {
             display: flex;
             justify-content: space-between;
@@ -310,6 +357,24 @@
             word-break: break-all;
         }
 
+        #etl-monitor .operations-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        #etl-monitor .operation-empty {
+            color: #888;
+            text-align: center;
+        }
+
+        #etl-monitor .operation-metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: #777;
+            font-size: 11px;
+        }
+
         #etl-monitor .progress-label {
             display: flex;
             justify-content: space-between;
@@ -350,6 +415,25 @@
 
         #etl-monitor .message.visible {
             display: block;
+        }
+
+        #etl-monitor #monitorMessage {
+            margin: 0 0 12px;
+            padding: 9px;
+            background: #eef6fc;
+            color: #28536e;
+        }
+
+        #etl-monitor .operation-error {
+            overflow-wrap: anywhere;
+            margin-bottom: 10px;
+        }
+
+        #etl-monitor .engine-error-detail {
+            margin-top: 8px;
+            color: #a94442;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
         }
 
         /* =========================================================
@@ -494,10 +578,16 @@
              ===================================================== -->
 
         <div class="main">
+            <div id="monitorMessage" role="status" hidden></div>
 
             <!-- =================================================
                  SUMMARY
                  ================================================= -->
+
+            <div class="selected-engine-banner">
+                Dashboard do engine:
+                <span id="selectedEngineName">Nenhum engine selecionado</span>
+            </div>
 
             <div class="summary">
 
@@ -551,18 +641,20 @@
                             ✕
                         </span>
 
-                        Mensagens com erros
+                        Engine com erro
 
                     </div>
 
                     <div id="errors"
                          class="summary-value">
-                        0
+                        -
                     </div>
 
                     <div class="summary-description">
-                        Erros reportados pelo ETL
+                        Estado do engine selecionado
                     </div>
+
+                    <div id="selectedEngineError" class="engine-error-detail" hidden></div>
 
                 </div>
 
@@ -602,69 +694,13 @@
                  OPERATION
                  ================================================= -->
 
-            <div class="operation-panel">
-
-                <div class="operation-header">
-
-                    <div class="operation-title">
-                        Sincronização actual
-                    </div>
-
-                    <div id="operationStatus"
-                         class="operation-status">
-
-                        <span class="status-icon">
-                            ●
-                        </span>
-
-                        <span id="operationStatusText">
-                            IDLE
-                        </span>
-
-                    </div>
-
+            <div id="operationsList" class="operations-list">
+                <div class="operation-panel operation-empty">
+                    Nenhuma operação em execução.
                 </div>
-
-
-                <div class="operation-id">
-
-                    Operação:
-
-                    <span id="operationId">
-                        -
-                    </span>
-
-                </div>
-
-
-                <div class="progress-label">
-
-                    <span>
-                        Progresso
-                    </span>
-
-                    <span id="progressText">
-                        0%
-                    </span>
-
-                </div>
-
-
-                <div class="progress-container">
-
-                    <div id="progressBar"
-                         class="progress-bar">
-                        0%
-                    </div>
-
-                </div>
-
-
-                <div id="message"
-                     class="message">
-                </div>
-
             </div>
+
+            <div id="message" class="message"></div>
 
         </div>
 
@@ -676,6 +712,8 @@
 <script>
 
     var monitorTimer = null;
+    var monitorRequestInProgress = false;
+    var selectedEngineKey = null;
 
 
     /* =========================================================
@@ -900,6 +938,60 @@
     }
 
 
+    function getEngineKey(operation) {
+
+        return [
+            operation.processId || "",
+            operation.operationIdentifier || "",
+            operation.engineId || ""
+        ].join("|");
+    }
+
+
+    function updateSelectedEngineDashboard(operation) {
+
+        var selectedEngineName = document.getElementById("selectedEngineName");
+        var errorDetail = document.getElementById("selectedEngineError");
+        var errorMessage = operation && operation.errorMessage;
+        errorDetail.textContent = errorMessage || "";
+        errorDetail.hidden = !errorMessage;
+
+        if (!operation) {
+            selectedEngineName.innerText = "Nenhum engine selecionado";
+            document.getElementById("processed").innerText = "0";
+            document.getElementById("pending").innerText = "0";
+            document.getElementById("errors").innerText = "-";
+            return;
+        }
+
+        var processed = Number(operation.processed || 0);
+        var total = Number(operation.total || 0);
+        var statusClass = getStatusClass(operation.status);
+
+        selectedEngineName.innerText = operation.engineId
+            || operation.operationIdentifier
+            || "Engine sem identificador";
+        document.getElementById("processed").innerText = formatNumber(processed);
+        document.getElementById("pending").innerText = formatNumber(Math.max(0, total - processed));
+        document.getElementById("errors").innerText = statusClass === "error" ? "Sim" : "Não";
+    }
+
+
+    function selectEngine(operation, panel) {
+
+        selectedEngineKey = getEngineKey(operation);
+
+        var panels = document.querySelectorAll("#operationsList .operation-panel.selectable");
+        for (var i = 0; i < panels.length; i++) {
+            var selected = panels[i] === panel;
+            panels[i].classList.toggle("selected", selected);
+            panels[i].setAttribute("aria-pressed", selected ? "true" : "false");
+        }
+
+        updateSelectedEngineDashboard(operation);
+    }
+
+
     /* =========================================================
        MAIN UPDATE
        ========================================================= */
@@ -940,171 +1032,138 @@
             getStatusLabel(status);
 
 
-        /* -----------------------------------------------------
-           OPERATION
-           ----------------------------------------------------- */
+        var operations = data.operations || [];
+        var operationsList = document.getElementById("operationsList");
+        var selectedOperation = null;
+        var selectedPanel = null;
 
-        document.getElementById("operationId").innerText =
-            data.operationIdentifier || "-";
+        operationsList.innerHTML = "";
 
+        if (operations.length) {
+            var selectedStillAvailable = operations.some(function(operation) {
+                return getEngineKey(operation) === selectedEngineKey;
+            });
 
-        var operationStatus =
-            document.getElementById("operationStatus");
-
-
-        operationStatus.className =
-            "operation-status " + statusClass;
-
-
-        document.getElementById("operationStatusText").innerText =
-            getStatusLabel(status);
-
-
-        var statusIcon =
-            operationStatus.querySelector(".status-icon");
-
-
-        if (statusIcon) {
-
-            statusIcon.innerText =
-                getStatusIcon(status);
-
+            if (!selectedStillAvailable) {
+                selectedEngineKey = getEngineKey(operations[0]);
+            }
+        } else {
+            selectedEngineKey = null;
         }
 
+        if (!operations.length) {
+            var empty = document.createElement("div");
+            empty.className = "operation-panel operation-empty";
+            empty.innerText = "Nenhuma operação em execução.";
+            operationsList.appendChild(empty);
+        }
 
-        /* -----------------------------------------------------
-           PROCESSED
-           ----------------------------------------------------- */
+        operations.forEach(function(operation) {
+            var operationProgress = Math.max(0, Math.min(100, Number(operation.progress || 0)));
+            var operationProcessed = Number(operation.processed || 0);
+            var operationTotal = Number(operation.total || 0);
+            var operationStatusClass = getStatusClass(operation.status);
 
-        var processed =
-            Number(data.processed || 0);
+            var panel = document.createElement("div");
+            var operationKey = getEngineKey(operation);
+            panel.className = "operation-panel selectable";
+            panel.setAttribute("role", "button");
+            panel.setAttribute("tabindex", "0");
+            panel.setAttribute("aria-pressed", "false");
 
+            panel.onclick = function() {
+                selectEngine(operation, panel);
+            };
 
-        var total =
-            Number(data.total || 0);
-
-
-        document.getElementById("processed").innerText =
-            formatNumber(processed);
-
-
-        /* -----------------------------------------------------
-           PENDING
-           ----------------------------------------------------- */
-
-        var pending =
-            Math.max(
-                0,
-                total - processed
-            );
-
-
-        document.getElementById("pending").innerText =
-            formatNumber(pending);
-
-
-        /* -----------------------------------------------------
-           PROGRESS
-           ----------------------------------------------------- */
-
-        var progress =
-            Number(data.progress || 0);
-
-
-        progress =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    progress
-                )
-            );
-
-
-        var progressBar =
-            document.getElementById("progressBar");
-
-
-        progressBar.style.width =
-            progress + "%";
-
-
-        progressBar.innerText =
-            Math.round(progress) + "%";
-
-
-        document.getElementById("progressText").innerText =
-            progress.toFixed(2) + "%";
-
-
-        /* -----------------------------------------------------
-           ERRORS
-
-           Nesta release mantemos apenas o contador.
-           A visualização detalhada será implementada
-           numa release futura.
-           ----------------------------------------------------- */
-
-        var errorCount =
-            0;
-
-
-        if (data.tasks &&
-            data.tasks.length) {
-
-            for (var i = 0;
-                 i < data.tasks.length;
-                 i++) {
-
-                var task =
-                    data.tasks[i];
-
-
-                if (task &&
-                    task.status &&
-                    (
-                        String(task.status).toUpperCase() === "ERROR" ||
-                        String(task.status).toUpperCase() === "FAILED"
-                    )) {
-
-                    errorCount++;
-
+            panel.onkeydown = function(event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    selectEngine(operation, panel);
                 }
+            };
 
+            var header = document.createElement("div");
+            header.className = "operation-header";
+
+            var title = document.createElement("div");
+            title.className = "operation-title";
+            title.innerText = operation.operationIdentifier || "Operação sem identificador";
+
+            var operationStatus = document.createElement("div");
+            operationStatus.className = "operation-status " + operationStatusClass;
+            operationStatus.innerText = getStatusIcon(operation.status) + " " + getStatusLabel(operation.status);
+
+            header.appendChild(title);
+            header.appendChild(operationStatus);
+            panel.appendChild(header);
+
+            if (operation.errorMessage) {
+                var errorMessage = document.createElement("div");
+                errorMessage.className = "message visible operation-error";
+                errorMessage.textContent = "Último erro: " + operation.errorMessage;
+                panel.appendChild(errorMessage);
             }
 
+            var identifiers = document.createElement("div");
+            identifiers.className = "operation-id";
+            identifiers.innerText = "Processo: " + (operation.processId || "-")
+                + " | Engine activo: " + (operation.engineId || "-");
+            panel.appendChild(identifiers);
+
+            var progressLabel = document.createElement("div");
+            progressLabel.className = "progress-label";
+            progressLabel.innerText = "Progresso do engine activo: " + operationProgress.toFixed(2) + "%";
+            panel.appendChild(progressLabel);
+
+            var progressContainer = document.createElement("div");
+            progressContainer.className = "progress-container";
+            var progressBar = document.createElement("div");
+            progressBar.className = "progress-bar";
+            progressBar.style.width = operationProgress + "%";
+            progressBar.innerText = Math.round(operationProgress) + "%";
+            progressContainer.appendChild(progressBar);
+            panel.appendChild(progressContainer);
+
+            var metrics = document.createElement("div");
+            metrics.className = "operation-metrics";
+            metrics.innerText = "Processados: " + formatNumber(operationProcessed)
+                + " | Pendentes: " + formatNumber(Math.max(0, operationTotal - operationProcessed));
+            panel.appendChild(metrics);
+
+            if (operation.message) {
+                var operationMessage = document.createElement("div");
+                operationMessage.className = "message visible";
+                operationMessage.innerText = operation.message;
+                panel.appendChild(operationMessage);
+            }
+
+            operationsList.appendChild(panel);
+
+            if (operationKey === selectedEngineKey) {
+                selectedOperation = operation;
+                selectedPanel = panel;
+            }
+        });
+
+        if (selectedPanel) {
+            selectedPanel.classList.add("selected");
+            selectedPanel.setAttribute("aria-pressed", "true");
         }
 
-
-        document.getElementById("errors").innerText =
-            formatNumber(errorCount);
+        updateSelectedEngineDashboard(selectedOperation);
 
 
         /* -----------------------------------------------------
            MESSAGE
            ----------------------------------------------------- */
 
-        var messageElement =
-            document.getElementById("message");
+        var monitorMessage = document.getElementById("monitorMessage");
+        monitorMessage.textContent = data.message || "";
+        monitorMessage.hidden = !data.message;
 
-
-        if (data.message) {
-
-            messageElement.innerText =
-                data.message;
-
-            messageElement.className =
-                "message visible";
-
-        } else {
-
-            messageElement.innerText =
-                "";
-
-            messageElement.className =
-                "message";
-
-        }
+        var messageElement = document.getElementById("message");
+        messageElement.textContent = "";
+        messageElement.className = "message";
 
 
         /* -----------------------------------------------------
@@ -1306,18 +1365,13 @@
        ========================================================= */
 
     function loadMonitor() {
-
-        var operationIdentifier =
-            new URLSearchParams(window.location.search)
-                .get("operationIdentifier");
+        if (monitorRequestInProgress) {
+            return;
+        }
+        monitorRequestInProgress = true;
 
         var monitorUrl =
             "${pageContext.request.contextPath}/module/epts/etl/monitorData.json";
-
-        if (operationIdentifier) {
-            monitorUrl += "?operationIdentifier=" +
-                encodeURIComponent(operationIdentifier);
-        }
 
         fetch(
             monitorUrl,
@@ -1339,10 +1393,13 @@
 
                 }
 
-                return response.json();
+                return response.status === 204 ? null : response.json();
 
             })
             .then(function(data) {
+                if (data === null) {
+                    return;
+                }
 
                 console.log(
                     "[ETL-MONITOR] Data received:",
@@ -1386,31 +1443,9 @@
                     "status-dot error";
 
 
-                document.getElementById(
-                    "operationStatus"
-                ).className =
-                    "operation-status error";
-
-
-                document.getElementById(
-                    "operationStatusText"
-                ).innerText =
-                    "Falhou";
-
-
-                var statusIcon =
-                    document.querySelector(
-                        "#operationStatus .status-icon"
-                    );
-
-
-                if (statusIcon) {
-
-                    statusIcon.innerText =
-                        "✕";
-
-                }
-
+            })
+            .finally(function() {
+                monitorRequestInProgress = false;
             });
 
     }

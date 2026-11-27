@@ -87,6 +87,8 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 
 	private TimeController totalTimer;
 
+	private volatile Exception lastException;
+
 	public EtlProgressMeter() {
 		this.status = EtlOperationStatus.NOT_INITIALIZED;
 	}
@@ -108,6 +110,15 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		// maneiras que
 		// qualquer chamada ao refresh deve ser executada
 		this.updated = false;
+	}
+
+	public void setLastException(Exception lastException) {
+		this.lastException = lastException;
+	}
+
+	@JsonIgnore
+	public Exception getLastException() {
+		return lastException;
 	}
 
 	private EtlProgressMeter(String id) {
@@ -200,6 +211,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 
 	@JsonIgnore
 	public String getHumanReadbleEstimatedRemainingTime() {
+
 		if (this.getProcessed() == 0) {
 			return "CALCULATING...";
 		} else {
@@ -397,6 +409,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 	private void tryToInitializeTimeControllers() {
 
 		synchronized (LOCK) {
+
 			if (this.totalTimer == null) {
 				this.totalTimer = new TimeController();
 			}
@@ -417,6 +430,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 
 	@JsonIgnore
 	public String parseToJSON() {
+
 		try {
 			return new ObjectMapperProvider().getContext(EtlProgressMeter.class).writeValueAsString(this);
 		} catch (JsonProcessingException e) {
@@ -443,6 +457,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 
 	@Override
 	public boolean equals(Object obj) {
+
 		if (obj instanceof String) {
 			return utilities.isStringIn(this.id, obj.toString());
 		}
@@ -603,15 +618,19 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 		case RUNNING:
 			changeStatusToRunning();
 			break;
+
 		case STOPPED:
 			changeStatusToStopped();
 			break;
+
 		case FINISHED:
 			changeStatusToFinished();
 			break;
+
 		case SLEEPING:
 			changeStatusToSleeping();
 			break;
+
 		case STOPPED_DUE_ERROR:
 			changeStatusToStopped();
 			break;
