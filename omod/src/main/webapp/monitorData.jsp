@@ -263,8 +263,30 @@
         }
 
         #etl-monitor .operation-panel.selected {
-            border-color: #5b9bd5;
-            box-shadow: 0 0 0 2px rgba(91, 155, 213, 0.18);
+            border-color: #31708f;
+            box-shadow: 0 0 0 2px rgba(49, 112, 143, 0.22);
+        }
+
+        #etl-monitor .operation-panel.selectable:focus-visible {
+            outline: 2px solid #31708f;
+            outline-offset: 4px;
+        }
+
+        #etl-monitor .operation-panel.selectable .operation-title::before {
+            content: "";
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            box-sizing: border-box;
+            margin-right: 8px;
+            border: 2px solid #64748b;
+            border-radius: 50%;
+            vertical-align: -2px;
+        }
+
+        #etl-monitor .operation-panel[aria-pressed="true"] .operation-title::before {
+            border-color: #31708f;
+            background: radial-gradient(circle, #31708f 0 3px, transparent 4px);
         }
 
         #etl-monitor .selected-engine-banner {
@@ -393,6 +415,25 @@
 
         #etl-monitor .message.visible {
             display: block;
+        }
+
+        #etl-monitor #monitorMessage {
+            margin: 0 0 12px;
+            padding: 9px;
+            background: #eef6fc;
+            color: #28536e;
+        }
+
+        #etl-monitor .operation-error {
+            overflow-wrap: anywhere;
+            margin-bottom: 10px;
+        }
+
+        #etl-monitor .engine-error-detail {
+            margin-top: 8px;
+            color: #a94442;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
         }
 
         /* =========================================================
@@ -537,6 +578,7 @@
              ===================================================== -->
 
         <div class="main">
+            <div id="monitorMessage" role="status" hidden></div>
 
             <!-- =================================================
                  SUMMARY
@@ -611,6 +653,8 @@
                     <div class="summary-description">
                         Estado do engine selecionado
                     </div>
+
+                    <div id="selectedEngineError" class="engine-error-detail" hidden></div>
 
                 </div>
 
@@ -907,6 +951,10 @@
     function updateSelectedEngineDashboard(operation) {
 
         var selectedEngineName = document.getElementById("selectedEngineName");
+        var errorDetail = document.getElementById("selectedEngineError");
+        var errorMessage = operation && operation.errorMessage;
+        errorDetail.textContent = errorMessage || "";
+        errorDetail.hidden = !errorMessage;
 
         if (!operation) {
             selectedEngineName.innerText = "Nenhum engine selecionado";
@@ -1049,6 +1097,13 @@
             header.appendChild(operationStatus);
             panel.appendChild(header);
 
+            if (operation.errorMessage) {
+                var errorMessage = document.createElement("div");
+                errorMessage.className = "message visible operation-error";
+                errorMessage.textContent = "Último erro: " + operation.errorMessage;
+                panel.appendChild(errorMessage);
+            }
+
             var identifiers = document.createElement("div");
             identifiers.className = "operation-id";
             identifiers.innerText = "Processo: " + (operation.processId || "-")
@@ -1102,27 +1157,13 @@
            MESSAGE
            ----------------------------------------------------- */
 
-        var messageElement =
-            document.getElementById("message");
+        var monitorMessage = document.getElementById("monitorMessage");
+        monitorMessage.textContent = data.message || "";
+        monitorMessage.hidden = !data.message;
 
-
-        if (data.message) {
-
-            messageElement.innerText =
-                data.message;
-
-            messageElement.className =
-                "message visible";
-
-        } else {
-
-            messageElement.innerText =
-                "";
-
-            messageElement.className =
-                "message";
-
-        }
+        var messageElement = document.getElementById("message");
+        messageElement.textContent = "";
+        messageElement.className = "message";
 
 
         /* -----------------------------------------------------

@@ -139,8 +139,14 @@ public class EtlMonitorService {
 
 		info.setStatus(meter.getStatus() != null ? meter.getStatus().name() : info.getStatus());
 
-		String message = meter.getLastException() != null ? meter.getLastException().getMessage()
-				: meter.getStatusMsg();
+		Exception lastException = meter.getLastException();
+		if (lastException != null) {
+			String errorMessage = lastException.getMessage();
+			info.setErrorMessage(errorMessage == null || errorMessage.isBlank()
+					? lastException.getClass().getSimpleName() : errorMessage);
+		}
+
+		String message = meter.getStatusMsg();
 
 		if (message == null || message.trim().isEmpty()) {
 			message = meter.getStatus() != null ? meter.getStatus().getDsc() : "";

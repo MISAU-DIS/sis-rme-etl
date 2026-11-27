@@ -33,9 +33,9 @@ public class Main implements Runnable {
 
 	public static final String OPENMRS_BASE_URL_GLOBAL_PROPERTY = "eptsetl.openmrsBaseUrl";
 
-	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 1200L;
+	private static final long DEFAULT_OPENMRS_READINESS_TIMEOUT_SECONDS = 2400L;
 
-	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 5L;
+	private static final long DEFAULT_OPENMRS_READINESS_POLL_SECONDS = 15L;
 
 	private static final long DEFAULT_OPENMRS_STARTUP_STABILIZATION_SECONDS = 60L;
 

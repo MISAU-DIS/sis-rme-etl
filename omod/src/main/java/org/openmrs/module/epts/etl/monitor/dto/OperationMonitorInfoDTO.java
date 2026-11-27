@@ -7,6 +7,7 @@ public class OperationMonitorInfoDTO {
     private String engineId;
     private String status;
     private String message;
+    private String errorMessage;
     private Double progress;
     private Long processed;
     private Long total;
@@ -49,6 +50,14 @@ public class OperationMonitorInfoDTO {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 
     public Double getProgress() {

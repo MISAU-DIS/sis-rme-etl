@@ -87,7 +87,7 @@ public class EtlProgressMeter implements TimeCountDownInitializer {
 
 	private TimeController totalTimer;
 
-	private Exception lastException;
+	private volatile Exception lastException;
 
 	public EtlProgressMeter() {
 		this.status = EtlOperationStatus.NOT_INITIALIZED;
